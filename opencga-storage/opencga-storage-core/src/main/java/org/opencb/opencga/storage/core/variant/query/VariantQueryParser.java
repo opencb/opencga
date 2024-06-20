@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.query;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -455,6 +456,19 @@ public class VariantQueryParser {
                                             + defaultStudy.getVariantHeaderLines("INFO").keySet());
                         }
                     }
+                }
+            }
+        }
+
+        if (isValidParam(query, FILE)) {
+            ParsedQuery<String> files = splitValue(query, FILE);
+            for (String file : files.getValues()) {
+                Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(file, false, defaultStudy);
+                if (fileIdPair == null) {
+                    throw VariantQueryException.fileNotFound(file, defaultStudy.getName());
+                }
+                if (!metadataManager.isFileIndexed(fileIdPair.getKey(), fileIdPair.getValue())) {
+                    throw VariantQueryException.fileNotIndexed(file, metadataManager.getStudyName(fileIdPair.getKey()));
                 }
             }
         }

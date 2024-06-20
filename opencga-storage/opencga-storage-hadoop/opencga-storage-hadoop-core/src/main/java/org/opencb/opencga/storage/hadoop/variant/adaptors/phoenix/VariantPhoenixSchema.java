@@ -105,6 +105,7 @@ public final class VariantPhoenixSchema {
         CI_END_R("CI_END_R", PUnsignedInt.INSTANCE),
 
         TYPE("TYPE", PVarchar.INSTANCE),
+        ALLELES("ALLELES", PVarchar.INSTANCE),
 
         ANNOTATION_ID(ANNOTATION_PREFIX + "ID", PInteger.INSTANCE),
 

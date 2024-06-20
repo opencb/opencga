@@ -946,35 +946,78 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected TaskMetadata preRemove(String study, List<String> files, List<String> samples) throws StorageEngineException {
         AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
+        boolean force = getOptions().getBoolean(FORCE.key(), FORCE.defaultValue());
+        boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        metadataManager.updateStudyMetadata(study, studyMetadata -> {
-            List<Integer> fileIds = new ArrayList<>(files.size());
-            for (String file : files) {
-                FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), file);
-                if (fileMetadata == null) {
-                    throw VariantQueryException.fileNotFound(file, study);
-                }
-                if (fileMetadata.getType() == FileMetadata.Type.PARTIAL) {
-                    String virtualFileName = metadataManager.getFileName(
-                            studyMetadata.getId(),
-                            fileMetadata.getAttributes().getInt(FileMetadata.VIRTUAL_PARENT));
-                    throw new StorageEngineException("Unable to remove " + FileMetadata.Type.PARTIAL + " file. "
-                            + "Try removing its virtual file : '" + virtualFileName + "'");
-                }
-                fileIds.add(fileMetadata.getId());
-                if (!fileMetadata.isIndexed()) {
+
+        int studyId = metadataManager.getStudyId(study);
+        List<Integer> fileIds = new ArrayList<>(files.size());
+        for (String file : files) {
+            FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, file);
+            if (fileMetadata == null) {
+                throw VariantQueryException.fileNotFound(file, study);
+            }
+            if (fileMetadata.getType() == FileMetadata.Type.PARTIAL) {
+                String virtualFileName = metadataManager.getFileName(
+                        studyId,
+                        fileMetadata.getAttributes().getInt(FileMetadata.VIRTUAL_PARENT));
+                throw new StorageEngineException("Unable to remove " + FileMetadata.Type.PARTIAL + " file. "
+                        + "Try removing its virtual file : '" + virtualFileName + "'");
+            }
+            if (fileMetadata.getIndexStatus() == TaskMetadata.Status.NONE) {
+                if (force) {
+                    logger.info("Force remove. Removing non indexed file: " + fileMetadata.getName());
+                } else {
                     throw new StorageEngineException("Unable to remove non indexed file: " + fileMetadata.getName());
                 }
             }
+            if (fileMetadata.getIndexStatus() == TaskMetadata.Status.RUNNING) {
+                if (force) {
+                    logger.info("Force remove. Removing file while being indexed: " + fileMetadata.getName());
+                } else {
+                    throw new StorageEngineException("Unable to remove file while being indexed: " + fileMetadata.getName());
+                }
+            }
+            fileIds.add(fileMetadata.getId());
+        }
 
-            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+        metadataManager.updateStudyMetadata(study, studyMetadata -> {
+            List<TaskMetadata> tasksToAbort = new ArrayList<>();
+            HashSet<Integer> fileIdsSet = new HashSet<>(fileIds);
 
             batchFileOperation.set(metadataManager.addRunningTask(
                     studyMetadata.getId(),
                     REMOVE_OPERATION_NAME,
                     fileIds,
                     resume,
-                    TaskMetadata.Type.REMOVE));
+                    TaskMetadata.Type.REMOVE, runningTask -> {
+                        if (runningTask.getType() == TaskMetadata.Type.LOAD) {
+                            if (force && fileIdsSet.containsAll(runningTask.getFileIds())) {
+                                // Abort running load task as all files are being removed
+                                tasksToAbort.add(runningTask);
+                                return true;
+                            } else {
+                                if (force) {
+                                    logger.error("Unable to force remove the file while other files are being loaded.");
+                                }
+                                // Unable to remove files. Other files are being loaded.
+                                return false;
+                            }
+                        } else {
+                            // Unable to remove files. Other tasks are running.
+                            return false;
+                        }
+                    }));
+            // If the task was successfully created, abort other tasks.
+            for (TaskMetadata task : tasksToAbort) {
+                List<String> fileNames = task.getFileIds().stream()
+                        .map(fileId -> metadataManager.getFileName(studyMetadata.getId(), fileId))
+                        .collect(Collectors.toList());
+                TaskMetadata.Status status = TaskMetadata.Status.ABORTED;
+                logger.info("Force remove. Setting status to " + status + " of running task "
+                        + task.getName() + "('id=" + task.getId() + ") for files " + fileNames);
+                metadataManager.setStatus(studyMetadata.getId(), task.getId(), status);
+            }
 
             return studyMetadata;
         });

@@ -274,7 +274,7 @@ public class SampleIndexQueryParser {
         //} else if (isValidParam(query, FILE)) {
             // Add FILEs filter ?
         } else {
-            throw new IllegalStateException("Unable to query SamplesIndex");
+            throw new IllegalStateException("Unable to query SamplesIndex. Missing sample filter! Query: " + query.toJson());
         }
         boolean requireFamilyIndex = !mendelianErrorSet.isEmpty();
         SampleIndexSchema schema = schemaFactory.getSchema(studyId, sampleGenotypeQuery.keySet(), false, requireFamilyIndex);
@@ -1216,18 +1216,7 @@ public class SampleIndexQueryParser {
         CtBtFtCombinationIndexSchema.Filter ctBtTfFilter = schema.getCtBtTfIndex().getField().noOpFilter();
         IndexFilter clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
 
-        Boolean intergenic = null;
-
-        ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
-        if (!isValidParam(query, REGION)) {
-            if (!variantQueryXref.getGenes().isEmpty()
-                    && variantQueryXref.getIds().isEmpty()
-                    && variantQueryXref.getOtherXrefs().isEmpty()
-                    && variantQueryXref.getVariants().isEmpty()) {
-                // If only filtering by genes, is not intergenic.
-                intergenic = false;
-            }
-        }
+        final Boolean intergenic = isIntergenicQuery(query);
 
 //        BiotypeConsquenceTypeFlagCombination combination = BiotypeConsquenceTypeFlagCombination
 //                .fromQuery(query, Arrays.asList(schema.getTranscriptFlagIndexSchema().getField().getConfiguration().getValues()));
@@ -1237,18 +1226,10 @@ public class SampleIndexQueryParser {
         boolean tfCovered = false;
 
         if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
-            List<String> soNames = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
-            soNames = soNames.stream()
+            List<String> soNames = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())
+                    .stream()
                     .map(ct -> ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)))
                     .collect(Collectors.toList());
-            if (!soNames.contains(VariantAnnotationConstants.INTERGENIC_VARIANT)
-                    && !soNames.contains(VariantAnnotationConstants.REGULATORY_REGION_VARIANT)
-                    && !soNames.contains(VariantAnnotationConstants.TF_BINDING_SITE_VARIANT)) {
-                // All ct values but "intergenic_variant" and "regulatory_region_variant" are in genes (i.e. non-intergenic)
-                intergenic = false;
-            } else if (soNames.size() == 1 && soNames.contains(VariantAnnotationConstants.INTERGENIC_VARIANT)) {
-                intergenic = true;
-            } // else, leave undefined : intergenic = null
             boolean ctFilterCoveredBySummary = false;
             boolean ctBtCombinationCoveredBySummary = false;
             if (SampleIndexSchema.CUSTOM_LOF.containsAll(soNames)) {
@@ -1295,14 +1276,17 @@ public class SampleIndexQueryParser {
                 }
             }
 
-            // Do not use ctIndex if the CT filter is covered by the summary
-            // Use the ctIndex if:
+            // Do not use ctIndex for intergenic queries (intergenic == true)
+            // or queries that might return intergenic variants (intergenic == null)
+            //
+            // Use the ctIndex if any of:
             // - The CtFilter is not covered by the summary
             // - The query has the combination CT+BT , and it is not covered by the summary
             // - The query has the combination CT+TF
-            boolean useCtIndexFilter = !ctFilterCoveredBySummary
-                    || (!ctBtCombinationCoveredBySummary && combination.isBiotype())
-                    || combination.isFlag();
+            boolean useCtIndexFilter =
+                    intergenic == Boolean.FALSE && (!ctFilterCoveredBySummary
+                            || (!ctBtCombinationCoveredBySummary && combination.isBiotype())
+                            || combination.isFlag());
             if (useCtIndexFilter) {
                 ctCovered = completeIndex;
                 consequenceTypeFilter = schema.getCtIndex().getField().buildFilter(new OpValue<>("=", soNames));
@@ -1317,8 +1301,6 @@ public class SampleIndexQueryParser {
         }
 
         if (isValidParam(query, ANNOT_BIOTYPE)) {
-            // All biotype values are in genes (i.e. non-intergenic)
-            intergenic = false;
             boolean biotypeFilterCoveredBySummary = false;
             List<String> biotypes = query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key());
             if (BIOTYPE_SET.containsAll(biotypes)) {
@@ -1350,8 +1332,6 @@ public class SampleIndexQueryParser {
             List<String> transcriptFlags = query.getAsStringList(ANNOT_TRANSCRIPT_FLAG.key());
             tfFilter = schema.getTranscriptFlagIndexSchema().getField().buildFilter(new OpValue<>("=", transcriptFlags));
             tfCovered = completeIndex & tfFilter.isExactFilter();
-            // Transcript flags are in transcripts/genes. (i.e. non-intergenic)
-            intergenic = false;
             // TranscriptFlag filter is covered by index
             if (tfCovered) {
                 if (!isValidParam(query, GENE) && simpleCombination(combination)) {
@@ -1538,10 +1518,58 @@ public class SampleIndexQueryParser {
             // If intergenic is undefined, or true, CT and BT filters can not be used.
             biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
             consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
+            if (!biotypeFilter.isNoOp()) {
+                throw new IllegalStateException("Unexpected BT filter for intergenic=" + intergenic);
+            }
+            if (!consequenceTypeFilter.isNoOp()) {
+                throw new IllegalStateException("Unexpected CT filter for intergenic=" + intergenic);
+            }
         }
 
         return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex},
                 consequenceTypeFilter, biotypeFilter, tfFilter, ctBtTfFilter, clinicalFilter, populationFrequencyFilter);
+    }
+
+    private Boolean isIntergenicQuery(Query query) {
+        ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
+        if (!isValidParam(query, REGION)) {
+            if (!variantQueryXref.getGenes().isEmpty()
+                    && variantQueryXref.getIds().isEmpty()
+                    && variantQueryXref.getOtherXrefs().isEmpty()
+                    && variantQueryXref.getVariants().isEmpty()) {
+                // If only filtering by genes, is not intergenic.
+                return false;
+            }
+        }
+
+        if (isValidParam(query, ANNOT_BIOTYPE)) {
+            // All biotype values are in genes (i.e. non-intergenic)
+            return false;
+        }
+        if (isValidParam(query, ANNOT_BIOTYPE)) {
+            // All biotype values are in genes (i.e. non-intergenic)
+            return false;
+        }
+        if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+            // Transcript flags are in transcripts/genes. (i.e. non-intergenic)
+            return false;
+        }
+        if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
+            List<String> soNames = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
+            soNames = soNames.stream()
+                    .map(ct -> ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)))
+                    .collect(Collectors.toList());
+            if (!soNames.contains(VariantAnnotationConstants.INTERGENIC_VARIANT)
+                    && !soNames.contains(VariantAnnotationConstants.REGULATORY_REGION_VARIANT)
+                    && !soNames.contains(VariantAnnotationConstants.TF_BINDING_SITE_VARIANT)) {
+                // All ct values but "intergenic_variant" and "regulatory_region_variant" are in genes (i.e. non-intergenic)
+                return false;
+            } else if (soNames.size() == 1 && soNames.contains(VariantAnnotationConstants.INTERGENIC_VARIANT)) {
+                return true;
+            } // else, leave undefined : intergenic = null
+        }
+        // Unable to determine if the query is intergenic or not. Return null for uncertain.
+        return null;
     }
 
     private boolean simpleCombination(BiotypeConsquenceTypeFlagCombination combination) {

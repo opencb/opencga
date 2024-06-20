@@ -356,8 +356,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
 
         dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
             table.getScanner(new Scan()).iterator().forEachRemaining(r -> {
-                byte[] row = r.getRow();
-                Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(row);
+                Variant variant = VariantPhoenixKeyFactory.extractVariantFromResult(r);
 
                 NavigableMap<byte[], byte[]> cells = r.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
                 for (Map.Entry<byte[], byte[]> entry : cells.entrySet()) {

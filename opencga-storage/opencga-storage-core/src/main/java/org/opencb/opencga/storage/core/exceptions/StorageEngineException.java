@@ -41,6 +41,11 @@ public class StorageEngineException extends Exception {
         return unableToExecute("Already loaded", fileId, fileName);
     }
 
+    public static StorageEngineException invalidFileStatus(int fileId, String fileName) {
+        return unableToExecute("File is in INVALID status. Unable to load. File needs to be deleted from the variant-storage",
+                fileId, fileName);
+    }
+
     public static StorageEngineException otherOperationInProgressException(TaskMetadata operation, String jobOperationName,
                                                                            List<Integer> fileIds,
                                                                            VariantStorageMetadataManager mm) {
