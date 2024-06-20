@@ -42,6 +42,8 @@ public class JwtManager {
     // 32 characters to ensure it is at least 256 bits long
     public static final int SECRET_KEY_MIN_LENGTH = 32;
 
+    public static final String AUTH_ORIGIN = "authOrigin";
+
     public JwtManager(String algorithm) {
         this(algorithm, null, null);
     }
@@ -94,7 +96,7 @@ public class JwtManager {
             jwtBuilder.setClaims(claims);
         }
         if (type != null) {
-            jwtBuilder.addClaims(Collections.singletonMap("authOrigin", type));
+            jwtBuilder.addClaims(Collections.singletonMap(AUTH_ORIGIN, type));
         }
 
         jwtBuilder.setSubject(userId)
