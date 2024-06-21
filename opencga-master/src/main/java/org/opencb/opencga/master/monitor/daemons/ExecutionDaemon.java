@@ -319,6 +319,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
         logger.info("----- EXECUTION DAEMON  ----- pending={}, queued={}, running={}", pendingJobs, queuedJobs, runningJobs);
 
+        String fullpathname = "/opt/opencga/blobdata/test3/HG00096.chrom20.small.bam";
+        Path path = Paths.get(fullpathname);
+        logger.info("ExecutionDaemon:checkJobs(): fullpathname = {}; path = {}; Files.exists(path) = {}", fullpathname,
+                path, Files.exists(path));
+        logger.info("ExecutionDaemon:checkJobs(): fullpathname = {}; path = {}; FileUtils.existsFile(path.toFile()) = {}", fullpathname,
+                path, org.opencb.commons.utils.FileUtils.existsFile(path.toFile()));
+
             /*
             PENDING JOBS
              */

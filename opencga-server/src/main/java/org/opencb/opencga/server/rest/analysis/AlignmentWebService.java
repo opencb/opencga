@@ -94,10 +94,17 @@ public class AlignmentWebService extends AnalysisWebService {
         File bamFile = null;
         try {
             bamFile = catalogManager.getFileManager().get(study, params.getFileId(), QueryOptions.empty(), token).first();
-            logger.warn("bamFile ID = {}; bamFile.getUri = {}; Files.exists(Paths.get(bamFile.getUri()) = {}", bamFile.getId(),
+            logger.info("AlignmentWebService:indexRun(): bamFile ID = {}; bamFile.getUri = {}; Files.exists(Paths.get(bamFile.getUri()) = {}", bamFile.getId(),
                     bamFile.getUri(), Files.exists(Paths.get(bamFile.getUri())));
-            logger.warn("FileUtils.existsFile(Paths.get(bamFile.getUri()).toFile()) = " + FileUtils.existsFile(Paths.get(bamFile.getUri())
+            logger.info("AlignmentWebService:indexRun(): FileUtils.existsFile(Paths.get(bamFile.getUri()).toFile()) = " + FileUtils.existsFile(Paths.get(bamFile.getUri())
                     .toFile()));
+
+            String fullpathname = "/opt/opencga/blobdata/test3/HG00096.chrom20.small.bam";
+            java.nio.file.Path path = Paths.get(fullpathname);
+            logger.info("AlignmentWebService:indexRun(): fullpathname = {}; path = {}; Files.exists(path) = {}", fullpathname,
+                    path, Files.exists(path));
+            logger.info("AlignmentWebService:indexRun(): fullpathname = {}; path = {}; FileUtils.existsFile(path.toFile()) = {}", fullpathname,
+                    path, org.opencb.commons.utils.FileUtils.existsFile(path.toFile()));
         } catch (CatalogException e) {
             e.printStackTrace();
         }
