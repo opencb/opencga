@@ -110,6 +110,19 @@ public class PosixIOManager extends IOManager {
 
     @Override
     public boolean exists(URI uri) {
+        logger.info("Uri = {}; Path = (); Files.exists(Paths.get(uri)) ? {}", uri, Paths.get(uri), Files.exists(Paths.get(uri)));
+
+        try {
+            URI uri1 = new URI("file:///opt/opencga/blobdata/test3/HG00096.chrom20.small.bam");
+            logger.info("uri1 = {}; path1 = (); Files.exists(Paths.get(uri1)) ? {}", uri1, Paths.get(uri1), Files.exists(Paths.get(uri1)));
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+
+        String pathname1 = "/opt/opencga/blobdata/test3/HG00096.chrom20.small.bam";
+        Path path1 = Paths.get(pathname1);
+        logger.info("pathname1 = {}, path1 = {}; Files.exists(path1) ? {}", pathname1, path1, Files.exists(path1));
+
         return Files.exists(Paths.get(uri));
     }
 
