@@ -166,8 +166,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
     @Override
     protected void run() throws ToolException {
         // Create the tool runner
-        toolRunner = new ToolRunner(getOpencgaHome().toString(), catalogManager,
-                StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
+        toolRunner = new ToolRunner(getOpencgaHome().toString(), catalogManager, variantStorageManager);
 
         // Get alignment QC metrics to update
         if (catalogBamFile.getQualityControl() != null) {
