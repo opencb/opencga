@@ -1,0 +1,32 @@
+{"density": "MEDIUM",
+  "query": {"sample": "HCC1954"},
+  "title": "HCC1954",
+  "tracks": [{"id": "snv",
+    "query": {
+      "region": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y",
+      "sample": "HCC1954",
+      "study": "test@project:cancer",
+      "type": "SNV"},
+    "type": "SNV"},
+    {"id": "indel",
+      "query": {
+        "region": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y",
+        "sample": "HCC1954",
+        "study": "test@project:cancer",
+        "type": "INDEL,INSERTION,DELETION"},
+      "type": "INDEL"},
+    {"id": "cnv1",
+      "query": {
+        "region": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y",
+        "sample": "HCC1954",
+        "study": "test@project:cancer",
+        "type": "COPY_NUMBER"},
+      "type": "COPY-NUMBER"},
+    {"id": "rearr1",
+      "query": {
+        "region": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y",
+        "sample": "HCC1954",
+        "study": "test@project:cancer",
+        "type": "SV"},
+      "type": "REARRANGEMENT"}]
+}

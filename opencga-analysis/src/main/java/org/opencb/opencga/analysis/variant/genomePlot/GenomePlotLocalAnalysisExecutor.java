@@ -33,6 +33,7 @@ import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -79,6 +81,7 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
 
     @Override
     public void run() throws ToolException, IOException, CatalogException {
+        addStepParams();
 
         plotConfig = JacksonUtils.getDefaultObjectMapper().readerFor(GenomePlotConfig.class).readValue(getConfigFile());
 
@@ -119,7 +122,8 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
         if (MapUtils.isEmpty(errors)) {
             // Execute R script
             // circos.R ./snvs.tsv ./indels.tsv ./cnvs.tsv ./rearrs.tsv SampleId
-            String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/" + getToolId();
+            String rScriptPath = Paths.get(getExecutorParams().getString("opencgaHome")).resolve("analysis/" + GenomePlotAnalysis.ID)
+                    .toAbsolutePath().toString();
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
             inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, DOCKER_INPUT_PATH));
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
@@ -146,6 +150,7 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
 
             StopWatch stopWatch = StopWatch.createStarted();
             String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
+            addAttribute("CIRCOS_CLI", cmdline);
             logger.info("Docker command line: " + cmdline);
             logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
         } else {
@@ -441,14 +446,14 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
                                         + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition()
                                         + "\t" + variantType);
                             } else {
-                                pwOut.println(v.toString() + "\tBreakend mate is empty (variant type: " + variantType
+                                pwOut.println(v + "\tBreakend mate is empty (variant type: " + variantType
                                         + ")");
                             }
                         } else {
-                            pwOut.println(v.toString() + "\tBreakend is empty (variant type: " + variantType + ")");
+                            pwOut.println(v + "\tBreakend is empty (variant type: " + variantType + ")");
                         }
                     } else {
-                        pwOut.println(v.toString() + "\tSV is empty (variant type: " + variantType + ")");
+                        pwOut.println(v + "\tSV is empty (variant type: " + variantType + ")");
                     }
                 }
             }

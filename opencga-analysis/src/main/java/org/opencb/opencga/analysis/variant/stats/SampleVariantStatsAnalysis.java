@@ -332,4 +332,12 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
+    public SampleVariantStatsAnalysisParams getToolParams() {
+        return toolParams;
+    }
+
+    public SampleVariantStatsAnalysis setToolParams(SampleVariantStatsAnalysisParams toolParams) {
+        this.toolParams = toolParams;
+        return this;
+    }
 }
