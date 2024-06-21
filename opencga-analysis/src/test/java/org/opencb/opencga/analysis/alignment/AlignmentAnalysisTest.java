@@ -109,8 +109,6 @@ public class AlignmentAnalysisTest {
 
     @Before
     public void setUp() throws Throwable {
-//        System.setProperty("opencga.log.level", "INFO");
-//        Configurator.reconfigure();
         if (!indexed) {
             indexed = true;
 
