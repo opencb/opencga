@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v2_12_6;
+package org.opencb.opencga.app.migrations.v2.v2_12_6;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
@@ -10,7 +10,7 @@ import org.bson.conversions.Bson;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 
@@ -28,10 +28,10 @@ public class syncCohortsAndSamplesMigration extends MigrationTool {
 
     @Override
     protected void run() throws Exception {
-        MongoCollection<Document> sampleCollection = getMongoCollection(MongoDBAdaptorFactory.SAMPLE_COLLECTION);
-        MongoCollection<Document> sampleArchiveCollection = getMongoCollection(MongoDBAdaptorFactory.SAMPLE_ARCHIVE_COLLECTION);
+        MongoCollection<Document> sampleCollection = getMongoCollection(OrganizationMongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        MongoCollection<Document> sampleArchiveCollection = getMongoCollection(OrganizationMongoDBAdaptorFactory.SAMPLE_ARCHIVE_COLLECTION);
 
-        queryMongo(MongoDBAdaptorFactory.COHORT_COLLECTION, new Document(),
+        queryMongo(OrganizationMongoDBAdaptorFactory.COHORT_COLLECTION, new Document(),
                 Projections.include(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.SAMPLES.key()),
                 cohortDoc -> {
                     String cohortId = cohortDoc.getString(CohortDBAdaptor.QueryParams.ID.key());

@@ -1581,13 +1581,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void updateSampleCohortWithThreadsTest() throws Exception {
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, token).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token).first();
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, ownerToken).first();
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
-                .setSamples(Arrays.asList(sampleId1)), null, token).first();
+                .setSamples(Arrays.asList(sampleId1)), null, ownerToken).first();
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
-                .setSamples(Arrays.asList(sampleId2, sampleId3)), null, token).first();
+                .setSamples(Arrays.asList(sampleId2, sampleId3)), null, ownerToken).first();
 
         ExecutorService executorService = Executors.newFixedThreadPool(10,
                 new ThreadFactoryBuilder()
@@ -1605,7 +1605,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
             String sampleId = "SAMPLE_AUTO_" + i;
             executorService.submit(() -> {
                 try {
-                    catalogManager.getSampleManager().create(studyFqn, new Sample().setId(sampleId), QueryOptions.empty(), token);
+                    catalogManager.getSampleManager().create(studyFqn, new Sample().setId(sampleId), QueryOptions.empty(), ownerToken);
                 } catch (CatalogException e) {
                     throw new RuntimeException(e);
                 }
@@ -1632,7 +1632,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(Constants.ACTIONS, actionMap);
         for (List<String> innerSampleIds : sampleIds) {
-            Cohort myCohort1 = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", null, token).first();
+            Cohort myCohort1 = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", null, ownerToken).first();
             List<SampleReferenceParam> sampleReferenceParamList = new ArrayList<>(myCohort1.getNumSamples() + innerSampleIds.size());
             sampleReferenceParamList.addAll(myCohort1.getSamples().stream().map(s -> new SampleReferenceParam().setId(s.getId())).collect(Collectors.toList()));
             sampleReferenceParamList.addAll(innerSampleIds.stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()));
@@ -1641,7 +1641,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 try {
                     catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
                             new CohortUpdateParams().setSamples(sampleReferenceParamList),
-                            queryOptions, token);
+                            queryOptions, ownerToken);
                     System.out.println("Execution: " + executionId);
                 } catch (CatalogException e) {
                     throw new RuntimeException(e);
@@ -1654,8 +1654,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Ensure persistence
         Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.COHORT_IDS.key(), "MyCohort1");
-        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, sampleQuery, SampleManager.INCLUDE_SAMPLE_IDS, token);
-        Cohort myCohort1 = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", null, token).first();
+        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, sampleQuery, SampleManager.INCLUDE_SAMPLE_IDS, ownerToken);
+        Cohort myCohort1 = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", null, ownerToken).first();
         assertEquals(search.getNumResults(), myCohort1.getNumSamples());
         Set<String> sampleIdSet = search.getResults().stream().map(Sample::getId).collect(Collectors.toSet());
         assertTrue(myCohort1.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(sampleIdSet));
