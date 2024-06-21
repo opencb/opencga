@@ -16,10 +16,12 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.mongodb.BasicDBObject;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -66,6 +68,9 @@ import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import javax.naming.NamingException;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -1572,6 +1577,88 @@ public class CatalogManagerTest extends AbstractManagerTest {
                     fail();
             }
         }
+    }
+
+    @Test
+    public void updateSampleCohortWithThreadsTest() throws Exception {
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token).first();
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
+                .setSamples(Arrays.asList(sampleId1)), null, token).first();
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
+                .setSamples(Arrays.asList(sampleId2, sampleId3)), null, token).first();
+
+        ExecutorService executorService = Executors.newFixedThreadPool(10,
+                new ThreadFactoryBuilder()
+                        .setNameFormat("executor-service-%d")
+                        .build());
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        List<List<String>> sampleIds = new ArrayList<>(5);
+        List<String> innerArray = new ArrayList<>(50);
+        for (int i = 0; i < 250; i++) {
+            if (i % 50 == 0) {
+                System.out.println("i = " + i);
+            }
+
+            String sampleId = "SAMPLE_AUTO_" + i;
+            executorService.submit(() -> {
+                try {
+                    catalogManager.getSampleManager().create(studyFqn, new Sample().setId(sampleId), QueryOptions.empty(), token);
+                } catch (CatalogException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            if (innerArray.size() == 50) {
+                sampleIds.add(new ArrayList<>(innerArray));
+                innerArray.clear();
+            }
+            innerArray.add(sampleId);
+        }
+        sampleIds.add(new ArrayList<>(innerArray));
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
+
+        System.out.println("Creating 250 samples took " + stopWatch.getTime(TimeUnit.SECONDS) + " seconds");
+
+        stopWatch.stop();
+        stopWatch.reset();
+        stopWatch.start();
+        executorService = Executors.newFixedThreadPool(3);
+        int execution = 0;
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.SET);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(Constants.ACTIONS, actionMap);
+        for (List<String> innerSampleIds : sampleIds) {
+            Cohort myCohort1 = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", null, token).first();
+            List<SampleReferenceParam> sampleReferenceParamList = new ArrayList<>(myCohort1.getNumSamples() + innerSampleIds.size());
+            sampleReferenceParamList.addAll(myCohort1.getSamples().stream().map(s -> new SampleReferenceParam().setId(s.getId())).collect(Collectors.toList()));
+            sampleReferenceParamList.addAll(innerSampleIds.stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()));
+            int executionId = execution++;
+            executorService.submit(() -> {
+                try {
+                    catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
+                            new CohortUpdateParams().setSamples(sampleReferenceParamList),
+                            queryOptions, token);
+                    System.out.println("Execution: " + executionId);
+                } catch (CatalogException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
+        System.out.println("Attaching 250 samples took " + stopWatch.getTime(TimeUnit.SECONDS) + " seconds");
+
+        // Ensure persistence
+        Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.COHORT_IDS.key(), "MyCohort1");
+        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, sampleQuery, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        Cohort myCohort1 = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", null, token).first();
+        assertEquals(search.getNumResults(), myCohort1.getNumSamples());
+        Set<String> sampleIdSet = search.getResults().stream().map(Sample::getId).collect(Collectors.toSet());
+        assertTrue(myCohort1.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(sampleIdSet));
     }
 
     @Test
