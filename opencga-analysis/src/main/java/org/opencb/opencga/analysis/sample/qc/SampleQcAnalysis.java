@@ -242,8 +242,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
     @Override
     protected void run() throws ToolException {
         // Create the tool runner
-        toolRunner = new ToolRunner(getOpencgaHome().toString(), catalogManager,
-                StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
+        toolRunner = new ToolRunner(getOpencgaHome().toString(), catalogManager, variantStorageManager);
 
         // Sample variant stats
         if (runVariantStats) {
