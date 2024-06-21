@@ -16,7 +16,10 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.alignment.AlignmentCoverageAnalysis;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -48,6 +51,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
@@ -84,6 +89,20 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = AlignmentIndexParams.DESCRIPTION, required = true) AlignmentIndexParams params) {
+
+
+        File bamFile = null;
+        try {
+            bamFile = catalogManager.getFileManager().get(study, params.getFileId(), QueryOptions.empty(), token).first();
+            logger.warn("bamFile ID = {}; bamFile.getUri = {}; Files.exists(Paths.get(bamFile.getUri()) = {}", bamFile.getId(),
+                    bamFile.getUri(), Files.exists(Paths.get(bamFile.getUri())));
+            logger.warn("FileUtils.existsFile(Paths.get(bamFile.getUri()).toFile()) = " + FileUtils.existsFile(Paths.get(bamFile.getUri())
+                    .toFile()));
+        } catch (CatalogException e) {
+            e.printStackTrace();
+        }
+
+
         return submitJob(AlignmentIndexOperation.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
