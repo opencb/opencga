@@ -207,7 +207,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         // Execute the Samtools flag stats analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(SamtoolsWrapperAnalysis.class, study, samtoolsWrapperParams, outPath,
                 null, token);
-        addStepAttributes(executionResult);
+        addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
         if (executionResult.getStatus().getName() != Status.Type.DONE) {
@@ -261,7 +261,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         // Execute the Samtools stats analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(SamtoolsWrapperAnalysis.class, study, samtoolsWrapperParams, outPath,
                 null, token);
-        addStepAttributes(executionResult);
+        addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
         if (executionResult.getStatus().getName() != Status.Type.DONE) {
@@ -331,7 +331,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         // Execute the plot-bamstats analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(SamtoolsWrapperAnalysis.class, study, samtoolsWrapperParams, outPath,
                 null, token);
-        addStepAttributes(executionResult);
+        addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
         if (executionResult.getStatus().getName() != Status.Type.DONE) {
@@ -368,7 +368,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Execute the FastQC analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(FastqcWrapperAnalysis.class, study, fastqcWrapperParams, outPath, null, token);
-        addStepAttributes(executionResult);
+        addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
         if (executionResult.getStatus().getName() != Status.Type.DONE) {

@@ -278,7 +278,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         // Execute the sample variant stats analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(SampleVariantStatsAnalysis.class, study, sampleVariantStatsParams, outPath,
                 null, token);
-        addStepAttributes(executionResult);
+        addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
         if (executionResult.getStatus().getName() != Status.Type.DONE) {
@@ -324,7 +324,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         // Execute the mutational signature analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(MutationalSignatureAnalysis.class, study, mutationalSignatureParams, outPath,
                 null, token);
-        addStepAttributes(executionResult);
+        addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
         if (executionResult.getStatus().getName() != Status.Type.DONE) {
@@ -350,7 +350,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Execute the genome plot analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(GenomePlotAnalysis.class, study, genomePlotParams, outPath, null, token);
-        addStepAttributes(executionResult);
+        addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
         if (executionResult.getStatus().getName() != Status.Type.DONE) {

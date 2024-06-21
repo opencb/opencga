@@ -64,6 +64,8 @@ import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 public abstract class OpenCgaTool {
 
+    protected final static String STEP_EXECUTION_RESULT_ATTRIBUTE_KEY = "STEP_EXECUTION_RESULT";
+
     protected CatalogManager catalogManager;
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
@@ -499,18 +501,8 @@ public abstract class OpenCgaTool {
         erm.addAttribute(key, value);
     }
 
-    protected final void addStepAttributes(ExecutionResult executionResult) throws ToolException {
-        if (executionResult != null) {
-            if (CollectionUtils.isNotEmpty(executionResult.getSteps())) {
-                for (ToolStep step : executionResult.getSteps()) {
-                    if (MapUtils.isNotEmpty(step.getAttributes())) {
-                        for (Map.Entry<String, Object> entry : step.getAttributes().entrySet()) {
-                            erm.addStepAttribute(entry.getKey(), entry.getValue());
-                        }
-                    }
-                }
-            }
-        }
+    protected final void addStepAttribute(String key, Object value) throws ToolException {
+        erm.addStepAttribute(key, value);
     }
 
     protected final void moveFile(String study, Path source, Path destiny, String catalogDirectoryPath, String token) throws ToolException {
