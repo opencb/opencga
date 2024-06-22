@@ -36,7 +36,9 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -273,6 +275,24 @@ public class K8SExecutor implements BatchExecutor {
     @Override
     public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
         String jobName = buildJobName(jobId);
+
+        logger.info("K8SExecutor:execute(): getCommandLine() = {}", getCommandLine(getCommandLine(commandLine, stdout, stderr)));
+
+        int counter = 0;
+        for (VolumeMount volumeMount : volumeMounts) {
+            logger.info("VolumeMount #{}: {}", ++counter, volumeMount.toString());
+        }
+        counter = 0;
+        for (Volume volume : volumes) {
+            logger.info("Volume #{}: {}", ++counter, volume.toString());
+        }
+        String fullpathname = "/opt/opencga/blobdata/test3/HG00096.chrom20.small.bam";
+        java.nio.file.Path path = Paths.get(fullpathname);
+        logger.info("K8SExecutor:execute(): fullpathname = {}; path = {}; Files.exists(path) = {}", fullpathname,
+                path, Files.exists(path));
+        logger.info("K8SExecutor:execute(): fullpathname = {}; path = {}; FileUtils.existsFile(path.toFile()) = {}", fullpathname,
+                path, org.opencb.commons.utils.FileUtils.existsFile(path.toFile()));
+
         final io.fabric8.kubernetes.api.model.batch.Job k8sJob = new JobBuilder()
                 .withApiVersion("batch/v1")
                 .withKind("Job")
