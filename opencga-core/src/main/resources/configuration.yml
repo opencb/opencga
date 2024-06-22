@@ -210,6 +210,8 @@ analysis:
       #   effect: NoSchedule
 
       k8s.volumeMounts:
+        - name: blobdata
+          mountPath: /opt/opencga/blobdata
         - name: conf
           mountPath: /opt/opencga/conf
         - name: sessions
@@ -219,6 +221,9 @@ analysis:
         - name: analysisconf
           mountPath: /opt/opencga/analysis
       k8s.volumes:
+        - name: blobdata
+          persistentVolumeClaim:
+            claimName: "pvc-opencga-blobdata"
         - name: conf
           persistentVolumeClaim:
             claimName: "pvc-opencga-conf"
