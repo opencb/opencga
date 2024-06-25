@@ -25,6 +25,7 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.Optimizations;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
@@ -394,6 +395,12 @@ public class OrganizationManager extends AbstractManager {
         if (organization.getConfiguration() == null) {
             organization.setConfiguration(new OrganizationConfiguration());
         }
+        validateOrganizationConfiguration(organization);
+
+        organization.setAttributes(ParamUtils.defaultObject(organization.getAttributes(), HashMap::new));
+    }
+
+    private void validateOrganizationConfiguration(Organization organization) throws CatalogParameterException {
         if (CollectionUtils.isNotEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
             for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
                 ParamUtils.checkParameter(authenticationOrigin.getId(), "AuthenticationOrigin id");
@@ -409,7 +416,9 @@ public class OrganizationManager extends AbstractManager {
         }
         organization.getConfiguration().setDefaultUserExpirationDate(ParamUtils.defaultString(
                 organization.getConfiguration().getDefaultUserExpirationDate(), Constants.DEFAULT_USER_EXPIRATION_DATE));
-        organization.setAttributes(ParamUtils.defaultObject(organization.getAttributes(), HashMap::new));
+        if (organization.getConfiguration().getOptimizations() == null) {
+            organization.getConfiguration().setOptimizations(new Optimizations(false));
+        }
     }
 
     Set<String> getOrganizationOwnerAndAdmins(String organizationId) throws CatalogException {
