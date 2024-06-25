@@ -351,6 +351,14 @@ public class OrganizationManager extends AbstractManager {
                         throw new CatalogParameterException("Found duplicated authentication origin id '" + authenticationOrigin.getId()
                                 + "'.");
                     }
+                    // Check authOrigin OPENCGA-OPENCGA
+                    if ((authenticationOrigin.getType().equals(AuthenticationOrigin.AuthenticationType.OPENCGA)
+                            && !CatalogAuthenticationManager.OPENCGA.equals(authenticationOrigin.getId()))
+                            || (!authenticationOrigin.getType().equals(AuthenticationOrigin.AuthenticationType.OPENCGA)
+                            && CatalogAuthenticationManager.OPENCGA.equals(authenticationOrigin.getId()))) {
+                        throw new CatalogParameterException("AuthenticationOrigin type '" + AuthenticationOrigin.AuthenticationType.OPENCGA
+                                + "' must go together with id '" + CatalogAuthenticationManager.OPENCGA + "'.");
+                    }
                     updateAuthOriginIds.add(authenticationOrigin.getId());
                     if (i > 0) {
                         authOriginUpdateBuilder.append(", ");
