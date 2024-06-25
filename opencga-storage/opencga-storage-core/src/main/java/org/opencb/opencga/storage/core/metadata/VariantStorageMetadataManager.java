@@ -840,6 +840,19 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return fileDBAdaptor.fileIterator(studyId);
     }
 
+    public SampleMetadata getSampleMetadata(Integer studyId, Integer sampleId) {
+        return getSampleMetadata(studyId.intValue(), sampleId.intValue());
+    }
+
+    public SampleMetadata getSampleMetadata(int studyId, Integer sampleId) {
+        return getSampleMetadata(studyId, sampleId.intValue());
+    }
+
+    public SampleMetadata getSampleMetadata(int studyId, Object sample) {
+        int sampleId = getSampleIdOrFail(studyId, sample);
+        return getSampleMetadata(studyId, sampleId);
+    }
+
     public SampleMetadata getSampleMetadata(int studyId, int sampleId) {
         return sampleDBAdaptor.getSampleMetadata(studyId, sampleId, null);
     }
