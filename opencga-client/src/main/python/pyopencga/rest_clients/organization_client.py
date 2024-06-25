@@ -123,9 +123,9 @@ class Organization(_ParentRestClient):
             must be provided.
         :param bool include_result: Flag indicating to include the created or
             updated document result in the response.
-        :param str authentication_origins: Action to be performed if the array
-            of authenticationOrigins is being updated. Allowed values: ['ADD
-            SET REMOVE REPLACE']
+        :param str authentication_origins_action: Action to be performed if
+            the array of authenticationOrigins is being updated. Allowed
+            values: ['ADD SET REMOVE REPLACE']
         """
 
         return self._post(category='organizations', resource='update', query_id=organization, subcategory='configuration', data=data, **options)
