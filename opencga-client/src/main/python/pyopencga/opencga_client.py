@@ -115,9 +115,11 @@ class OpencgaClient(object):
             if refresh:
                 # TODO Change to refreshToken whenever it is properly implemented in OpenCGA
                 # data = {'refreshToken': self.refresh_token}
-                data = {'user': user, 'password': password, 'organization': organization}
+                data = {'user': user, 'password': password}
             else:
-                data = {'user': user, 'password': password, 'organization': organization}
+                data = {'user': user, 'password': password}
+            if organization:
+                data.update({'organization': organization})
             tokens = User(self.configuration).login(data=data).get_result(0)
             self.token = tokens['token']
             self.refresh_token = tokens['refreshToken']
