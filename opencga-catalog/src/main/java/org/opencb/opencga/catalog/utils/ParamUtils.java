@@ -124,9 +124,9 @@ public class ParamUtils {
         if (userId.equals(ParamConstants.ANONYMOUS_USER_ID) || userId.equals(ParamConstants.REGISTERED_USERS)) {
             throw new CatalogParameterException("User id cannot be one of the reserved OpenCGA users.");
         }
-        if (!userId.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
+        if (!userId.matches("^[A-Za-z0-9]([-_.@]?[A-Za-z0-9])*$")) {
             throw new CatalogParameterException("Invalid user id. Id needs to start by any character and might contain single '-', '_', "
-                    + "'.', symbols followed by any character or number.");
+                    + "'.' or '@' symbols followed by any character or number.");
         }
     }
 

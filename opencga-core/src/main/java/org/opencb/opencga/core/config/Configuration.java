@@ -198,8 +198,7 @@ public class Configuration {
         if (value != null && !(value instanceof String && ((String) value).isEmpty())) {
             if (reportedFields.add(field)) {
                 // Only log the first time a field is found
-                logger.warn("Ignored configuration option 'configuration.yml#{}' with value '{}'. The option was deprecated and removed.",
-                        field, value);
+                logger.warn("Ignored configuration option '{}' with value '{}'. The option was deprecated and removed.", field, value);
             }
         }
     }
@@ -251,9 +250,7 @@ public class Configuration {
 
     @Deprecated
     public Configuration setLogFile(String logFile) {
-        if (logFile != null) {
-            logger.warn("Deprecated option 'configuration.yml#logFile'");
-        }
+        reportUnusedField("configuration.yml#logFile", logFile);
         return this;
     }
 
@@ -264,7 +261,7 @@ public class Configuration {
 
     @Deprecated
     public Configuration setOpenRegister(boolean openRegister) {
-        reportUnusedField("openRegister", openRegister);
+        reportUnusedField("configuration.yml#openRegister", openRegister);
         return this;
     }
 
@@ -311,7 +308,7 @@ public class Configuration {
 
     @Deprecated
     public Configuration setAdmin(Admin admin) {
-        reportUnusedField("admin", admin);
+        reportUnusedField("configuration.yml#admin", admin);
         return this;
     }
 
@@ -396,7 +393,7 @@ public class Configuration {
 
     @Deprecated
     public Configuration setOptimizations(Optimizations optimizations) {
-        reportUnusedField("optimizations", optimizations);
+        reportUnusedField("configuration.yml#optimizations", optimizations);
         return this;
     }
 
@@ -416,7 +413,7 @@ public class Configuration {
 
     @Deprecated
     public Configuration setAuthentication(Authentication authentication) {
-        reportUnusedField("authentication", authentication);
+        reportUnusedField("configuration.yml#authentication", authentication);
         return this;
     }
 

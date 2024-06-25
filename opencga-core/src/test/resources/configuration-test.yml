@@ -37,7 +37,7 @@ catalog:
 server:
   rest:
     port: 8080
-    logFile: null
+    logFile: "some_file_but_this_field_is_deprecated"
     defaultLimit: 2000
     maxLimit: 5000
 

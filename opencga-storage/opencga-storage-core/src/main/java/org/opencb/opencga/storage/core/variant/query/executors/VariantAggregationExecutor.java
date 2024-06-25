@@ -4,7 +4,7 @@ import org.apache.solr.common.StringUtils;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

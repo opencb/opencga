@@ -173,6 +173,8 @@ public class VersionedMongoDBAdaptor {
                 Document result = iterator.next();
                 entryList.add(result);
 
+                entryList.add(result);
+
                 long uid = result.get(PRIVATE_UID, Number.class).longValue();
                 int version = result.get(VERSION, Number.class).intValue();
                 String transactionId = result.getString(PRIVATE_TRANSACTION_ID);

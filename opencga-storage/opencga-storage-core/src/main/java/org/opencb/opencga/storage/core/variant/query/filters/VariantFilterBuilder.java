@@ -5,32 +5,26 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
+import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-
 public class VariantFilterBuilder {
 
-    private final VariantStorageMetadataManager metadataManager;
-
-    public VariantFilterBuilder(VariantStorageMetadataManager metadataManager) {
-        this.metadataManager = metadataManager;
+    public VariantFilterBuilder() {
     }
 
-    public Predicate<Variant> buildFilter(Query query, QueryOptions queryOptions) {
+    public Predicate<Variant> buildFilter(ParsedVariantQuery variantQuery) {
 
         List<Predicate<Variant>> filters = new LinkedList<>();
 
-        addRegionFilters(query, filters);
-        addAnnotationFilters(query, filters);
+        addRegionFilters(variantQuery, filters);
+        addAnnotationFilters(variantQuery, filters);
 
         if (filters.isEmpty()) {
             return v -> true;
@@ -39,18 +33,18 @@ public class VariantFilterBuilder {
         }
     }
 
-    private void addRegionFilters(Query query, List<Predicate<Variant>> filters) {
+    private void addRegionFilters(ParsedVariantQuery variantQuery, List<Predicate<Variant>> filters) {
         List<Predicate<Variant>> regionFilters = new LinkedList<>();
 
-        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)) {
-            List<Region> regions = Region.parseRegions(query.getString(REGION.key()), true);
+        List<Region> regions = variantQuery.getRegions();
+        if (!regions.isEmpty()) {
             regions = VariantQueryUtils.mergeRegions(regions);
             for (Region region : regions) {
                 regionFilters.add(variant -> region.contains(variant.getChromosome(), variant.getStart()));
             }
         }
-        ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
-        Predicate<Variant> geneFilter = getGeneFilter(query, variantQueryXref.getGenes());
+        ParsedVariantQuery.VariantQueryXref variantQueryXref = variantQuery.getXrefs();
+        Predicate<Variant> geneFilter = getGeneFilter(variantQuery, variantQueryXref.getGenes());
         if (!variantQueryXref.getIds().isEmpty()) {
             Set<String> ids = new HashSet<>(variantQueryXref.getIds());
             regionFilters.add(variant -> ids.contains(variant.getAnnotation().getId()));
@@ -65,15 +59,14 @@ public class VariantFilterBuilder {
 
         if (!regionFilters.isEmpty()) {
             Set<String> bts;
-            if (VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_BIOTYPE)) {
-                bts = new HashSet<>(query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key()));
+            if (!variantQuery.getBiotypes().isEmpty()) {
+                bts = new HashSet<>(variantQuery.getBiotypes());
             } else {
                 bts = null;
             }
             Set<String> cts;
-            if (VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_CONSEQUENCE_TYPE)) {
-                cts = new HashSet<>(VariantQueryUtils
-                        .parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())));
+            if (!variantQuery.getConsequenceTypes().isEmpty()) {
+                cts = new HashSet<>(variantQuery.getConsequenceTypes());
             } else {
                 cts = null;
             }
@@ -99,12 +92,12 @@ public class VariantFilterBuilder {
         }
     }
 
-    private Predicate<Variant> getGeneFilter(Query query, List<String> genes) {
+    private Predicate<Variant> getGeneFilter(ParsedVariantQuery variantQuery, List<String> genes) {
         if (genes.isEmpty()) {
             return null;
         }
 
-        List<Region> geneRegions = Region.parseRegions(query.getString(VariantQueryUtils.ANNOT_GENE_REGIONS.key()));
+        List<Region> geneRegions = variantQuery.getGeneRegions();
         Predicate<Variant> geneRegionFilter;
         if (CollectionUtils.isEmpty(geneRegions)) {
             geneRegionFilter = null;
@@ -115,15 +108,14 @@ public class VariantFilterBuilder {
         Predicate<Variant> geneFilter;
 
         Set<String> bts;
-        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_BIOTYPE)) {
-            bts = new HashSet<>(query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key()));
+        if (!variantQuery.getBiotypes().isEmpty()) {
+            bts = new HashSet<>(variantQuery.getBiotypes());
         } else {
             bts = null;
         }
         Set<String> cts;
-        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_CONSEQUENCE_TYPE)) {
-            cts = new HashSet<>(VariantQueryUtils
-                    .parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())));
+        if (!variantQuery.getConsequenceTypes().isEmpty()) {
+            cts = new HashSet<>(variantQuery.getConsequenceTypes());
         } else {
             cts = null;
         }
@@ -151,31 +143,30 @@ public class VariantFilterBuilder {
         }
     }
 
-    private void addAnnotationFilters(Query query, List<Predicate<Variant>> filters) {
-//        ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
-        addClinicalFilters(query, filters);
+    private void addAnnotationFilters(ParsedVariantQuery variantQuery, List<Predicate<Variant>> filters) {
+//        ParsedVariantQuery.VariantQueryXref variantQueryXref = variantQuery.getXrefs();
+        addClinicalFilters(variantQuery, filters);
 
-        if (VariantQueryUtils.isValidParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
-            ParsedQuery<KeyOpValue<String, Float>> freqQuery
-                    = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY);
+        ParsedQuery<KeyOpValue<String, Float>> freqQuery = variantQuery.getPopulationFrequencyAlt();
+        if (!freqQuery.isEmpty()) {
             List<PopulationFrequencyVariantFilter.AltFreqFilter> freqFilters = freqQuery.mapValues(popFreq -> {
                 String[] split = popFreq.getKey().split(VariantQueryUtils.STUDY_POP_FREQ_SEPARATOR);
                 return new PopulationFrequencyVariantFilter.AltFreqFilter(split[0], split[1], popFreq.getOp(), popFreq.getValue());
             });
             filters.add(new PopulationFrequencyVariantFilter(freqQuery.getOperation(), freqFilters));
         }
-        if (VariantQueryUtils.isValidParam(query, ANNOT_POPULATION_REFERENCE_FREQUENCY)) {
-            ParsedQuery<KeyOpValue<String, Float>> freqQuery
-                    = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY);
+
+        freqQuery = variantQuery.getPopulationFrequencyRef();
+        if (!freqQuery.isEmpty()) {
             List<PopulationFrequencyVariantFilter.RefFreqFilter> freqFilters = freqQuery.mapValues(popFreq -> {
                 String[] split = popFreq.getKey().split(VariantQueryUtils.STUDY_POP_FREQ_SEPARATOR);
                 return new PopulationFrequencyVariantFilter.RefFreqFilter(split[0], split[1], popFreq.getOp(), popFreq.getValue());
             });
             filters.add(new PopulationFrequencyVariantFilter(freqQuery.getOperation(), freqFilters));
         }
-        if (VariantQueryUtils.isValidParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY)) {
-            ParsedQuery<KeyOpValue<String, Float>> freqQuery
-                    = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
+
+        freqQuery = variantQuery.getPopulationFrequencyMaf();
+        if (!freqQuery.isEmpty()) {
             List<PopulationFrequencyVariantFilter.MafFreqFilter> freqFilters = freqQuery.mapValues(popFreq -> {
                 String[] split = popFreq.getKey().split(VariantQueryUtils.STUDY_POP_FREQ_SEPARATOR);
                 return new PopulationFrequencyVariantFilter.MafFreqFilter(split[0], split[1], popFreq.getOp(), popFreq.getValue());
@@ -185,8 +176,8 @@ public class VariantFilterBuilder {
 
     }
 
-    private void addClinicalFilters(Query query, List<Predicate<Variant>> filters) {
-        List<Set<String>> clinicalCombinations = VariantQueryParser.parseClinicalCombination(query)
+    private void addClinicalFilters(ParsedVariantQuery variantQuery, List<Predicate<Variant>> filters) {
+        List<Set<String>> clinicalCombinations = variantQuery.getClinicalCombinations()
                 .stream().map(HashSet::new).collect(Collectors.toList());
         if (clinicalCombinations.isEmpty()) {
             return;

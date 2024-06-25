@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.core.config;
 
+
 /**
  * Created by imedina on 25/04/16.
  */
 public abstract class AbstractServerConfiguration {
 
     protected int port;
-    protected String logFile;
 
     public AbstractServerConfiguration() {
     }
@@ -35,7 +35,6 @@ public abstract class AbstractServerConfiguration {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ServerConfiguration{");
         sb.append("port=").append(port);
-        sb.append(", logFile='").append(logFile).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -49,13 +48,9 @@ public abstract class AbstractServerConfiguration {
         return this;
     }
 
-    public String getLogFile() {
-        return logFile;
-    }
-
-    public AbstractServerConfiguration setLogFile(String logFile) {
-        this.logFile = logFile;
-        return this;
+    @Deprecated
+    protected void setLogFile(Object o) {
+        Configuration.reportUnusedField("configuration.yml#server.[rest|grpc].logFile", o);
     }
 
 }
