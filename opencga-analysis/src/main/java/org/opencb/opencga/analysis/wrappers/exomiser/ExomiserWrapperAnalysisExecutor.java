@@ -49,11 +49,6 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private final static String EXOMISER_PROPERTIES_TEMPLATE_FILENAME = "application.properties";
     private static final String EXOMISER_OUTPUT_OPTIONS_FILENAME = "output.yml";
 
-    // These constants must match in the file application.properties to be replaced
-    private static final String HG38_DATA_VERSION_MARK = "put_here_hg38_data_version";
-    private static final String PHENOTYPE_DATA_VERSION_MARK = "put_here_phenotype_data_version";
-    private static final String CLINVAR_WHITELIST_MARK = "put_here_clinvar_whitelist";
-
     private String studyId;
     private String sampleId;
     private String exomiserVersion;
@@ -166,8 +161,8 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Copy the analysis
         try {
-            copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_ANALYSIS_TEMPLATE_FILENAME).toFile(),
-                    getOutDir().resolve(EXOMISER_ANALYSIS_TEMPLATE_FILENAME).toFile());
+            copyFile(openCgaHome.resolve("analysis/exomiser").resolve(exomiserVersion).resolve(EXOMISER_ANALYSIS_TEMPLATE_FILENAME)
+                            .toFile(), getOutDir().resolve(EXOMISER_ANALYSIS_TEMPLATE_FILENAME).toFile());
         } catch (IOException e) {
             throw new ToolException("Error copying Exomiser analysis file", e);
         }
@@ -175,30 +170,15 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         // Copy the application.properties and update data according to Exomiser version
         try {
             Path target = getOutDir().resolve(EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
-            copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_PROPERTIES_TEMPLATE_FILENAME).toFile(), target.toFile());
-            // Update hg38 data version
-            Command cmd = new Command("sed -i \"s/" + HG38_DATA_VERSION_MARK + "/" + getHg38DataVersion() + "/g\" " + target);
-            cmd.run();
-            // Update phenotype data version
-            cmd = new Command("sed -i \"s/" + PHENOTYPE_DATA_VERSION_MARK + "/" + getPhenotypeDataVersion() + "/g\" " + target);
-            cmd.run();
-            // Update clinvar whitelist
-            String whitelist;
-            String clinvarWhitelistFilename = getHg38DataVersion() + "_hg38_clinvar_whitelist.tsv.gz";
-            if (Files.exists(exomiserDataPath.resolve(getHg38DataVersion() + "_" + assembly).resolve(clinvarWhitelistFilename))) {
-                whitelist = "exomiser.hg38.variant-white-list-path=" + clinvarWhitelistFilename;
-            } else {
-                whitelist = "#exomiser.hg38.variant-white-list-path=${exomiser.hg38.data-version}_hg38_clinvar_whitelist.tsv.gz";
-            }
-            cmd = new Command("sed -i \"s/" + CLINVAR_WHITELIST_MARK + "/" + whitelist + "/g\" " + target);
-            cmd.run();
+            copyFile(openCgaHome.resolve("analysis/exomiser").resolve(exomiserVersion).resolve(EXOMISER_PROPERTIES_TEMPLATE_FILENAME)
+                    .toFile(), target.toFile());
         } catch (IOException e) {
             throw new ToolException("Error copying Exomiser properties file", e);
         }
 
         // Copy the output options
         try {
-            copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_OUTPUT_OPTIONS_FILENAME).toFile(),
+            copyFile(openCgaHome.resolve("analysis/exomiser").resolve(exomiserVersion).resolve(EXOMISER_OUTPUT_OPTIONS_FILENAME).toFile(),
                     getOutDir().resolve(EXOMISER_OUTPUT_OPTIONS_FILENAME).toFile());
         } catch (IOException e) {
             throw new ToolException("Error copying Exomiser output options file", e);

@@ -263,11 +263,14 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
 
         // Exomiser analysis files
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser")).toAbsolutePath();
+        List<String> exomiserVersions = Arrays.asList("13.1", "14.0");
         List<String> exomiserFiles = Arrays.asList("application.properties", "exomiser-analysis.yml", "output.yml");
-        for (String exomiserFile : exomiserFiles) {
-            inputStream = new FileInputStream("../opencga-app/app/analysis/exomiser/" + exomiserFile);
-            Files.copy(inputStream, analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
+        for (String exomiserVersion : exomiserVersions) {
+            analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser").resolve(exomiserVersion).toAbsolutePath());
+            for (String exomiserFile : exomiserFiles) {
+                inputStream = new FileInputStream("../opencga-app/app/analysis/exomiser/" + exomiserVersion + "/" + exomiserFile);
+                Files.copy(inputStream, analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
+            }
         }
 
         return opencgaHome;
