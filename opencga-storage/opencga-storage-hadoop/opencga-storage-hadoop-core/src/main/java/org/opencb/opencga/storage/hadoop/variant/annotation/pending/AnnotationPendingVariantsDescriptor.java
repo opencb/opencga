@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.annotation.pending;
 
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -16,8 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.SO;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.TYPE;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.*;
 
 public class AnnotationPendingVariantsDescriptor implements PendingVariantsDescriptor {
 
@@ -50,6 +50,7 @@ public class AnnotationPendingVariantsDescriptor implements PendingVariantsDescr
 
     public Scan configureScan(Scan scan, VariantStorageMetadataManager metadataManager) {
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, TYPE.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, ALLELES.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, SO.bytes());
         return scan;
     }
@@ -57,9 +58,22 @@ public class AnnotationPendingVariantsDescriptor implements PendingVariantsDescr
 
     public Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager, boolean overwrite) {
         return value -> {
+            byte[] alleles = null;
             if (overwrite || isPending(value)) {
+                for (Cell cell : value.rawCells()) {
+                    if (cell.getValueLength() > 0) {
+                        if (Bytes.equals(
+                                cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength(),
+                                ALLELES.bytes(), 0, ALLELES.bytes().length)) {
+                            alleles = CellUtil.cloneValue(cell);
+                        }
+                    }
+                }
                 Put put = new Put(value.getRow());
                 put.addColumn(FAMILY, COLUMN, VALUE);
+                if (alleles != null) {
+                    put.addColumn(FAMILY, ALLELES.bytes(), alleles);
+                }
                 return put;
             } else {
                 return new Delete(value.getRow());

@@ -207,7 +207,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
             int num = 0;
             ResultScanner resultScanner = table.getScanner(GenomeHelper.COLUMN_FAMILY_BYTES);
             for (Result result : resultScanner) {
-                Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
+                Variant variant = VariantPhoenixKeyFactory.extractVariantFromResult(result);
                 System.out.println("Variant = " + variant);
                 num++;
             }

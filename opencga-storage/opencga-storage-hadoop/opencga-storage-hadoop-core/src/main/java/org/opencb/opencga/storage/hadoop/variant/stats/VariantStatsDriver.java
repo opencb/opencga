@@ -178,6 +178,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             // See #1600
             // Add TYPE column to force scan ALL rows to avoid unlikely but possible timeouts fetching new variants
             scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
             // Remove STUDY filter
             scan.setFilter(null);
 

@@ -369,7 +369,7 @@ public class CheckVariantStatsDriver extends AbstractVariantsTableDriver {
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
 
-            Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(value.getRow());
+            Variant variant = VariantPhoenixKeyFactory.extractVariantFromResult(value);
             VariantType type = variant.getType();
             int chromosomeIdx = FileStatsWritable.getChromosomeIdx(variant.getChromosome());
             for (Cell cell : value.rawCells()) {

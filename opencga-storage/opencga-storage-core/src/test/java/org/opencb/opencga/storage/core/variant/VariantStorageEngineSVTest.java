@@ -16,6 +16,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
@@ -39,11 +40,14 @@ import static org.junit.Assert.assertNotNull;
 public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest {
 
     protected static StudyMetadata studyMetadata;
+    protected static StudyMetadata studyMetadata2;
     protected static boolean loaded = false;
     protected static StoragePipelineResult pipelineResult1;
     protected static StoragePipelineResult pipelineResult2;
+    protected static StoragePipelineResult pipelineResult3;
     protected static URI input1;
     protected static URI input2;
+    protected static URI input3;
 
     @Before
     public void before() throws Exception {
@@ -66,12 +70,22 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
         variantStorageEngine.getOptions().append(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key(), "expression,clinical");
         pipelineResult1 = runDefaultETL(input1, variantStorageEngine, studyMetadata, new QueryOptions()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "grch38")
         );
         input2 = getResourceUri("variant-test-sv_2.vcf");
         pipelineResult2 = runDefaultETL(input2, variantStorageEngine, studyMetadata, new QueryOptions()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "grch38"));
+
+        input3 = getResourceUri("variant-test-sv-large.vcf");
+        studyMetadata2 = new StudyMetadata(2, "s2");
+        pipelineResult3 = runDefaultETL(input3, variantStorageEngine, studyMetadata2, new QueryOptions()
+                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
+                .append(VariantStorageOptions.ASSEMBLY.key(), "grch38"));
+
     }
 
     @Test
@@ -88,7 +102,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
                 + 1
                 + 1 // negative cipos
                 ;
-        int count = variantStorageEngine.getDBAdaptor().count().first().intValue();
+        int count = variantStorageEngine.count(new VariantQuery().study(studyMetadata.getName())).first().intValue();
         assertEquals(expected, count);
     }
 
@@ -146,7 +160,10 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
 
     @Test
     public void exportVcf() throws Exception {
-        variantStorageEngine.exportData(null, VariantWriterFactory.VariantOutputFormat.VCF, null, new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions(QueryOptions.SORT, true));
+        variantStorageEngine.exportData(null, VariantWriterFactory.VariantOutputFormat.VCF, null,
+                new VariantQuery().unknownGenotype("./.").study(studyMetadata.getName()), new QueryOptions(QueryOptions.SORT, true));
+        variantStorageEngine.exportData(null, VariantWriterFactory.VariantOutputFormat.VCF, null,
+                new VariantQuery().unknownGenotype("./.").study(studyMetadata2.getName()), new QueryOptions(QueryOptions.SORT, true));
     }
 
     protected Map<String, Variant> readVariants(URI input) throws StorageEngineException, NonStandardCompliantSampleField {

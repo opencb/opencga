@@ -52,7 +52,7 @@ public class PendingVariantsReader extends AbstractHBaseDataReader<Variant> {
     protected List<Variant> convert(List<Result> results) {
         List<Variant> variants = new ArrayList<>(results.size());
         for (Result result : results) {
-            variants.add(VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow()));
+            variants.add(VariantPhoenixKeyFactory.extractVariantFromResult(result));
         }
         return variants;
     }
