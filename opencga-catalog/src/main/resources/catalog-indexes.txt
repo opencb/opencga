@@ -37,8 +37,8 @@
 {"collections": ["job"], "fields": {"outDir.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"visited": 1, "studyUid": 1}, "options": {}}
-{"collections": ["job"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"internal.status.id": 1, "_priority": 1, "_creationDate": 1}, "options": {}}
 {"collections": ["job"], "fields": {"_priority": 1, "_creationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"_priority": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
@@ -218,7 +218,7 @@
 {"collections": ["clinical", "clinical_archive"], "fields": {"family.members.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"family.members.samples.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"panels.uid": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical", "clinical_archive"], "fields": {"panelLock": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"panelLocked": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"locked": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"_dueDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"disorder.id": 1, "studyUid": 1}, "options": {}}

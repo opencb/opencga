@@ -241,8 +241,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--family-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String familyId;
     
-        @Parameter(names = {"--panel-lock"}, description = "The body web service panelLock parameter", required = false, arity = 1)
-        public Boolean panelLock;
+        @Parameter(names = {"--panel-locked"}, description = "The body web service panelLocked parameter", required = false, arity = 1)
+        public Boolean panelLocked;
     
         @Parameter(names = {"--analyst-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String analystId;
@@ -300,6 +300,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--responsible-postcode"}, description = "The body web service postcode parameter", required = false, arity = 1)
         public String responsiblePostcode;
+    
+        @Parameter(names = {"--interpretation-name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String interpretationName;
     
         @Parameter(names = {"--interpretation-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String interpretationDescription;
@@ -423,6 +426,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
+        @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
+        public Integer snapshot; 
+    
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
     
@@ -454,6 +460,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Interpretation UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of Interpretation names up to a maximum of 100", required = false, arity = 1)
+        public String name; 
     
         @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical Analysis id", required = false, arity = 1)
         public String clinicalAnalysisId; 
@@ -522,6 +531,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Interpretation UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of Interpretation names up to a maximum of 100", required = false, arity = 1)
+        public String name; 
     
         @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical Analysis id", required = false, arity = 1)
         public String clinicalAnalysisId; 
@@ -1674,6 +1686,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
+        @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
+        public Integer snapshot; 
+    
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
     
@@ -1721,7 +1736,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--include-interpretation"}, description = "Interpretation ID to include the fields related to this interpretation", required = false, arity = 1)
         public String includeInterpretation; 
     
-        @Parameter(names = {"--id"}, description = "List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
@@ -1802,7 +1817,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
         public String ct; 
     
-        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...", required = false, arity = 1)
+        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
         public String xref; 
     
         @Parameter(names = {"--biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
@@ -1961,8 +1976,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--disorder-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String disorderId;
     
-        @Parameter(names = {"--panel-lock"}, description = "The body web service panelLock parameter", required = false, arity = 1)
-        public Boolean panelLock;
+        @Parameter(names = {"--panel-locked"}, description = "The body web service panelLocked parameter", required = false, arity = 1)
+        public Boolean panelLocked;
     
         @Parameter(names = {"--proband-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String probandId;
@@ -2057,6 +2072,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
     
+        @Parameter(names = {"--panel-lock"}, description = "The body web service panelLock parameter", required = false, arity = 1)
+        public Boolean panelLock;
+    
     }
 
     @Parameters(commandNames = {"annotation-sets-annotations-update"}, commandDescription ="Update annotations from an annotationSet")
@@ -2106,6 +2124,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
+        @Parameter(names = {"--version"}, description = "Comma separated list of clinical versions. 'all' to get all the clinical versions. Not supported if multiple clinical ids are provided", required = false, arity = 1)
+        public String version; 
+    
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
         public boolean deleted = false; 
     
@@ -2140,6 +2161,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String name;
     
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
@@ -2277,6 +2301,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String name;
     
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;

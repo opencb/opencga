@@ -16,57 +16,28 @@
 
 package org.opencb.opencga.server;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Created by imedina on 02/01/16.
  */
 public abstract class AbstractStorageServer {
 
-    @Deprecated
-    protected Path configDir;
     protected Path opencgaHome;
     protected int port;
 
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
 
-    /**
-     * This is the default StorageEngine to use when it is not provided by the client.
-     */
-    @Deprecated
-    protected String defaultStorageEngine;
-
     protected Logger logger;
-
-
-    @Deprecated
-    public AbstractStorageServer() {
-        initDefaultConfigurationFiles();
-    }
-
-    @Deprecated
-    public AbstractStorageServer(int port, String defaultStorageEngine) {
-        initDefaultConfigurationFiles();
-
-        this.port = port;
-        if (StringUtils.isNotEmpty(defaultStorageEngine)) {
-            this.defaultStorageEngine = defaultStorageEngine;
-        } else {
-            this.defaultStorageEngine = storageConfiguration.getVariant().getDefaultEngine();
-        }
-    }
 
     public AbstractStorageServer(Path opencgaHome) {
         this(opencgaHome, 0);
@@ -93,33 +64,15 @@ public abstract class AbstractStorageServer {
         try {
             if (opencgaHome != null && Files.exists(opencgaHome) && Files.isDirectory(opencgaHome)
                     && Files.exists(opencgaHome.resolve("conf"))) {
-                logger.info("Loading configuration files from '{}'", opencgaHome.toString());
+                logger.info("Loading configuration files from '{}'", opencgaHome);
 //                generalConfiguration = GeneralConfiguration.load(GeneralConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
                 configuration = Configuration
-                        .load(new FileInputStream(new File(opencgaHome.resolve("conf").toFile().getAbsolutePath() + "/configuration.yml")));
+                        .load(Files.newInputStream(opencgaHome.resolve("conf").resolve("configuration.yml").toFile().toPath()));
                 storageConfiguration = StorageConfiguration
-                        .load(new FileInputStream(new File(opencgaHome.resolve("conf").toFile().getAbsolutePath() + "/storage-configuration.yml")));
+                        .load(Files.newInputStream(opencgaHome.resolve("conf").resolve("storage-configuration.yml").toFile().toPath()));
             }
         } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Deprecated
-    private void initDefaultConfigurationFiles() {
-        try {
-            if (System.getenv("OPENCGA_HOME") != null) {
-                initConfigurationFiles(Paths.get(System.getenv("OPENCGA_HOME") + "/conf"));
-            } else {
-                logger.info("Loading configuration files from inside JAR file");
-//                generalConfiguration = GeneralConfiguration.load(GeneralConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
-                configuration = Configuration
-                        .load(Configuration.class.getClassLoader().getResourceAsStream("configuration.yml"));
-                storageConfiguration = StorageConfiguration
-                        .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -133,7 +86,6 @@ public abstract class AbstractStorageServer {
     public String toString() {
         final StringBuilder sb = new StringBuilder("StorageServer{");
         sb.append("port=").append(port);
-        sb.append(", defaultStorageEngine='").append(defaultStorageEngine).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -144,14 +96,6 @@ public abstract class AbstractStorageServer {
 
     public void setPort(int port) {
         this.port = port;
-    }
-
-    public String getDefaultStorageEngine() {
-        return defaultStorageEngine;
-    }
-
-    public void setDefaultStorageEngine(String defaultStorageEngine) {
-        this.defaultStorageEngine = defaultStorageEngine;
     }
 
 }

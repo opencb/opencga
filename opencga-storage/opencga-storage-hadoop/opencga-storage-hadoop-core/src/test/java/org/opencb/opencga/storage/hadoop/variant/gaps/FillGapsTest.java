@@ -18,7 +18,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -356,8 +356,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
 
         dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
             table.getScanner(new Scan()).iterator().forEachRemaining(r -> {
-                byte[] row = r.getRow();
-                Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(row);
+                Variant variant = VariantPhoenixKeyFactory.extractVariantFromResult(r);
 
                 NavigableMap<byte[], byte[]> cells = r.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
                 for (Map.Entry<byte[], byte[]> entry : cells.entrySet()) {

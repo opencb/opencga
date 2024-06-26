@@ -28,7 +28,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -72,13 +72,13 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantQueryResult<Variant> get(ParsedVariantQuery query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(ParsedVariantQuery query) {
 
         List<Variant> variants = new ArrayList<>();
-        iterator(query, options).forEachRemaining(variants::add);
+        iterator(query).forEachRemaining(variants::add);
 
-        return new VariantQueryResult<>(0, variants.size(), variants.size(), Collections.emptyList(), variants, null,
-                DummyVariantStorageEngine.STORAGE_ENGINE_ID);
+        return new VariantQueryResult<>(0, variants.size(), variants.size(), Collections.emptyList(), variants,
+                DummyVariantStorageEngine.STORAGE_ENGINE_ID, query);
     }
 
     @Override
@@ -102,7 +102,8 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator(ParsedVariantQuery variantQuery, QueryOptions options) {
+    public VariantDBIterator iterator(ParsedVariantQuery variantQuery) {
+        QueryOptions options = variantQuery.getInputOptions();
         logger.info("Query " + variantQuery.getQuery().toJson());
         logger.info("QueryOptions " + options.toJson());
         logger.info("dbName " + dbName);

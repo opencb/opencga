@@ -139,6 +139,20 @@ public class VariantMatchers {
         return overlaps(new Region(variant.getChromosome(), variant.getStart(), variant.getEnd()), true);
     }
 
+    public static Matcher<Variant> samePosition(Variant variant) {
+        return new TypeSafeDiagnosingMatcher<Variant>() {
+            @Override
+            protected boolean matchesSafely(Variant item, Description mismatchDescription) {
+                return variant.sameGenomicVariant(item);
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("has same genomic region " + variant);
+            }
+        };
+    }
+
     public static Matcher<Variant> overlaps(Region region) {
         return overlaps(region, true);
     }

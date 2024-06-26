@@ -18,6 +18,7 @@ package org.opencb.opencga.core.config;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,16 @@ import java.util.Map;
  */
 public class Execution {
 
+    public static final String JOBS_REUSE_ENABLED = "jobs.reuse.enabled";
+    public static final boolean JOBS_REUSE_ENABLED_DEFAULT = true;
+    public static final String JOBS_REUSE_TOOLS = "jobs.reuse.tools";
+    public static final List<String> JOBS_REUSE_TOOLS_DEFAULT = Arrays.asList(
+            "variant-index",
+            "variant-stats-index",
+            "variant-annotation-index",
+            "variant-secondary-annotation-index",
+            "variant-secondary-sample-index"
+    );
     private String id;
     private String defaultQueue;
     private String availableQueues;

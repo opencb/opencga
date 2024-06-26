@@ -41,7 +41,7 @@ public final class VariantQueryParam implements QueryParam {
     private static final String ACCEPTS_AND_OR = "Accepts AND (" + AND + ") and OR (" + OR + ") operators.";
 
     public static final String ID_DESCR
-            = "List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T";
+            = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T";
     public static final VariantQueryParam ID = new VariantQueryParam("id", TEXT_ARRAY, ID_DESCR);
 
     public static final String REGION_DESCR
@@ -122,7 +122,7 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String INCLUDE_SAMPLE_ID_DESCR
             = "Include sampleId on each result";
-    public static final VariantQueryParam INCLUDE_SAMPLE_ID = new VariantQueryParam("includeSampleId", TEXT_ARRAY, INCLUDE_SAMPLE_ID_DESCR);
+    public static final VariantQueryParam INCLUDE_SAMPLE_ID = new VariantQueryParam("includeSampleId", BOOLEAN, INCLUDE_SAMPLE_ID_DESCR);
 
     public static final String SAMPLE_METADATA_DESCR
             = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.";
@@ -216,7 +216,7 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String ANNOT_XREF_DESCR
             = "List of any external reference, these can be genes, proteins or variants. "
-            + "Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...";
+            + "Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...";
     public static final VariantQueryParam ANNOT_XREF = new VariantQueryParam("xref", TEXT_ARRAY, ANNOT_XREF_DESCR);
 
     public static final String GENE_DESCR
