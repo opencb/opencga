@@ -67,7 +67,7 @@ jobs:
             ./.github/workflows/scripts/get_same_branch.sh ${{ steps.get_opencga_branch.outputs.opencga_branch }}
           fi
       - name: OpenCGA Enterprise Maven Build (skip tests)
-        run: ./run.sh build --storage-hadoop ${{ inputs.hadoop }} --opencga-home ./opencga-home/
+        run: ./build.sh --storage-hadoop ${{ inputs.hadoop }}
       - id: get_project_version
         uses: avides/actions-project-version-check@v1.3.0
         with:
