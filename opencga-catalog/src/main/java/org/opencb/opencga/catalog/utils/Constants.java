@@ -111,4 +111,6 @@ public class Constants {
      */
     public static final String JOB_DELETED_OUTPUT_DIRECTORY = "deletedOutputFiles";
 
+    public static final String DEFAULT_USER_EXPIRATION_DATE = "21000101000000";
+
 }

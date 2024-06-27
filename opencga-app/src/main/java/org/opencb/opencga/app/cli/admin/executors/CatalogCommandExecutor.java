@@ -23,13 +23,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.master.monitor.MonitorService;
 
 import javax.ws.rs.client.Client;
@@ -173,19 +171,12 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         validateConfiguration(commandOptions);
 
-        this.configuration.getAdmin().setAlgorithm("HS256");
-
-        this.configuration.getAdmin().setSecretKey(commandOptions.secretKey);
-        if (StringUtils.isEmpty(configuration.getAdmin().getSecretKey())) {
-            configuration.getAdmin().setSecretKey(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH));
-        }
-
         if (StringUtils.isEmpty(commandOptions.commonOptions.adminPassword)) {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            catalogManager.installCatalogDB("HS256", configuration.getAdmin().getSecretKey(), commandOptions.commonOptions.adminPassword,
+            catalogManager.installCatalogDB("HS256", commandOptions.secretKey, commandOptions.commonOptions.adminPassword,
                     commandOptions.email, commandOptions.force);
         }
     }

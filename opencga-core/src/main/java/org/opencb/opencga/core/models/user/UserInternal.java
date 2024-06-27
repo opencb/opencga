@@ -16,21 +16,34 @@
 
 package org.opencb.opencga.core.models.user;
 
-public class UserInternal {
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Internal;
+
+public class UserInternal extends Internal {
 
     private UserStatus status;
+    private int failedAttempts;
 
     public UserInternal() {
     }
 
     public UserInternal(UserStatus status) {
+        this(TimeUtils.getTime(), TimeUtils.getTime(), status);
+    }
+
+    public UserInternal(String registrationDate, String lastModified, UserStatus status) {
+        super(null, registrationDate, lastModified);
         this.status = status;
+        this.failedAttempts = 0;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("UserInternal{");
         sb.append("status=").append(status);
+        sb.append(", failedAttempts=").append(failedAttempts);
+        sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -41,6 +54,15 @@ public class UserInternal {
 
     public UserInternal setStatus(UserStatus status) {
         this.status = status;
+        return this;
+    }
+
+    public int getFailedAttempts() {
+        return failedAttempts;
+    }
+
+    public UserInternal setFailedAttempts(int failedAttempts) {
+        this.failedAttempts = failedAttempts;
         return this;
     }
 }

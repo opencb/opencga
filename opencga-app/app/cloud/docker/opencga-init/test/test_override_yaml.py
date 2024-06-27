@@ -1,11 +1,10 @@
+import os
 import subprocess
-from shutil import copyfile
+import sys
 import unittest
 import yaml
 from io import StringIO
-import sys
-import os
-
+from shutil import copyfile
 
 os.chdir(sys.path[0])
 
@@ -40,9 +39,6 @@ class Test_init_script(unittest.TestCase):
                     "--catalog-database-hosts", "test-catalog-database-host1,test-catalog-database-host2,test-catalog-database-host3",
                     "--catalog-database-user", "test-catalog-database-user",
                     "--catalog-database-password", "test-catalog-database-password",
-                    "--catalog-search-hosts", "test-catalog-search-host1,test-catalog-search-host2",
-                    "--catalog-search-user", "test-catalog-search-user",
-                    "--catalog-search-password", "test-catalog-search-password",
                     "--rest-host", "test-rest-host",
                     "--grpc-host", "test-grpc-host",
                     "--max-concurrent-jobs", "25",
@@ -170,18 +166,6 @@ class Test_init_script(unittest.TestCase):
         self.assertEqual(config["catalog"]["database"]["options"]["sslEnabled"], True)
         self.assertEqual(config["catalog"]["database"]["options"]["sslInvalidCertificatesAllowed"], True)
         self.assertEqual(config["catalog"]["database"]["options"]["authenticationDatabase"], "admin")
-        self.assertEqual(
-            config["catalog"]["searchEngine"]["hosts"][0], "test-catalog-search-host1"
-        )
-        self.assertEqual(
-            config["catalog"]["searchEngine"]["hosts"][1], "test-catalog-search-host2"
-        )
-        self.assertEqual(
-            config["catalog"]["searchEngine"]["user"], "test-catalog-search-user"
-        )
-        self.assertEqual(
-            config["catalog"]["searchEngine"]["password"], "test-catalog-search-password"
-        )
         self.assertEqual(config["analysis"]["execution"]["id"], "test-analysis-execution-mode")
         self.assertEqual(config["analysis"]["execution"]["maxConcurrentJobs"]["variant-index"], 25)
         self.assertEqual(client_config["rest"]["hosts"][0]["url"], "test-rest-host")
@@ -200,9 +184,6 @@ class Test_init_script(unittest.TestCase):
                     "--catalog-database-hosts", "test-catalog-database-host1,test-catalog-database-host2,test-catalog-database-host3",
                     "--catalog-database-user", "test-catalog-database-user",
                     "--catalog-database-password", "test-catalog-database-password",
-                    "--catalog-search-hosts", "test-catalog-search-host1,test-catalog-search-host2",
-                    "--catalog-search-user", "test-catalog-search-user",
-                    "--catalog-search-password", "test-catalog-search-password",
                     "--rest-host", "test-rest-host",
                     "--grpc-host", "test-grpc-host",
                     "--analysis-execution-mode", "AZURE",
@@ -273,9 +254,6 @@ class Test_init_script(unittest.TestCase):
                     "--catalog-database-hosts", "test-catalog-database-host1,test-catalog-database-host2,test-catalog-database-host3",
                     "--catalog-database-user", "test-catalog-database-user",
                     "--catalog-database-password", "test-catalog-database-password",
-                    "--catalog-search-hosts", "test-catalog-search-host1,test-catalog-search-host2",
-                    "--catalog-search-user", "test-catalog-search-user",
-                    "--catalog-search-password", "test-catalog-search-password",
                     "--rest-host", "test-rest-host",
                     "--grpc-host", "test-grpc-host",
                     "--analysis-execution-mode", "k8s",
@@ -357,12 +335,6 @@ class Test_init_script(unittest.TestCase):
                 "test-catalog-database-user",
                 "--catalog-database-password",
                 "test-catalog-database-password",
-                "--catalog-search-hosts",
-                "test-catalog-search-host1,test-catalog-search-host2",
-                "--catalog-search-user",
-                "test-catalog-search-user",
-                "--catalog-search-password",
-                "test-catalog-search-password",
                 "--rest-host",
                 "test-rest-host",
                 "--grpc-host",
@@ -437,12 +409,6 @@ class Test_init_script(unittest.TestCase):
                 "test-catalog-database-user",
                 "--catalog-database-password",
                 "test-catalog-database-password",
-                "--catalog-search-hosts",
-                "test-catalog-search-host1,test-catalog-search-host2",
-                "--catalog-search-user",
-                "test-catalog-search-user",
-                "--catalog-search-password",
-                "test-catalog-search-password",
                 "--rest-host",
                 "test-rest-host",
                 "--grpc-host",
@@ -519,12 +485,6 @@ class Test_init_script(unittest.TestCase):
                 "test-catalog-database-user",
                 "--catalog-database-password",
                 "test-catalog-database-password",
-                "--catalog-search-hosts",
-                "test-catalog-search-host1,test-catalog-search-host2",
-                "--catalog-search-user",
-                "test-catalog-search-user",
-                "--catalog-search-password",
-                "test-catalog-search-password",
                 "--rest-host",
                 "test-rest-host",
                 "--grpc-host",
@@ -604,12 +564,6 @@ class Test_init_script(unittest.TestCase):
                 "test-catalog-database-user",
                 "--catalog-database-password",
                 "test-catalog-database-password",
-                "--catalog-search-hosts",
-                "test-catalog-search-host1,test-catalog-search-host2",
-                "--catalog-search-user",
-                "test-catalog-search-user",
-                "--catalog-search-password",
-                "test-catalog-search-password",
                 "--rest-host",
                 "test-rest-host",
                 "--grpc-host",
@@ -688,12 +642,6 @@ class Test_init_script(unittest.TestCase):
                 "test-catalog-database-user",
                 "--catalog-database-password",
                 "test-catalog-database-password",
-                "--catalog-search-hosts",
-                "test-catalog-search-host1,test-catalog-search-host2",
-                "--catalog-search-user",
-                "test-catalog-search-user",
-                "--catalog-search-password",
-                "test-catalog-search-password",
                 "--rest-host",
                 "test-rest-host",
                 "--grpc-host",

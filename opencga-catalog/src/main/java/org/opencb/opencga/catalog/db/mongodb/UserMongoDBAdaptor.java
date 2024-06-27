@@ -427,27 +427,35 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
 
     @Override
     public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        Map<String, Object> userParameters = new HashMap<>();
+        UpdateDocument document = new UpdateDocument();
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key()};
-        filterStringParams(parameters, userParameters, acceptedParams);
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), ACCOUNT_EXPIRATION_DATE.key()};
+        filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
-            userParameters.put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
-            userParameters.put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
+            document.getSet().put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        final String[] acceptedLongParams = {QueryParams.QUOTA.key(), QueryParams.SIZE.key()};
-        filterLongParams(parameters, userParameters, acceptedLongParams);
+        final String[] acceptedIntParams = {INTERNAL_FAILED_ATTEMPTS.key()};
+        filterIntParams(parameters, document.getSet(), acceptedIntParams);
+
+        final String[] acceptedObjectParams = {QueryParams.QUOTA.key()};
+        filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
-        filterMapParams(parameters, userParameters, acceptedMapParams);
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        if (!userParameters.isEmpty()) {
-            return new OpenCGAResult(userCollection.update(parseQuery(query), new Document("$set", userParameters), null));
+        if (!document.toFinalUpdateDocument().isEmpty()) {
+            document.getSet().put(INTERNAL_LAST_MODIFIED, TimeUtils.getTime());
         }
 
-        return OpenCGAResult.empty();
+        Document userUpdate = document.toFinalUpdateDocument();
+        if (userUpdate.isEmpty()) {
+            throw new CatalogDBException("Nothing to be updated.");
+        }
+
+        return new OpenCGAResult(userCollection.update(parseQuery(query), userUpdate, null));
     }
 
     @Override
@@ -476,11 +484,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkId(userId);
         Query query = new Query(QueryParams.ID.key(), userId);
-        OpenCGAResult update = update(query, parameters, QueryOptions.empty());
-        if (update.getNumUpdated() != 1) {
-            throw new CatalogDBException("Could not update user " + userId);
-        }
-        return update;
+        return update(query, parameters, QueryOptions.empty());
     }
 
     OpenCGAResult setStatus(Query query, String status) throws CatalogDBException {
@@ -666,8 +670,6 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
                     case EMAIL:
                     case ORGANIZATION:
                     case INTERNAL_STATUS_DATE:
-                    case SIZE:
-                    case QUOTA:
                     case ACCOUNT_AUTHENTICATION_ID:
                     case ACCOUNT_CREATION_DATE:
                     case TOOL_ID:

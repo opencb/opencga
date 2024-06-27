@@ -19,9 +19,6 @@ parser.add_argument("--catalog-database-ssl", required=False, default=True)
 parser.add_argument("--catalog-database-authentication-database", required=False, default="admin")
 parser.add_argument("--catalog-database-authentication-mechanism", required=False)
 parser.add_argument("--catalog-database-replica-set", required=False)
-parser.add_argument("--catalog-search-hosts", required=True)
-parser.add_argument("--catalog-search-user", required=False)
-parser.add_argument("--catalog-search-password", required=False)
 parser.add_argument("--rest-host", required=True)
 parser.add_argument("--grpc-host", required=True)
 parser.add_argument("--analysis-execution-mode", required=False)
@@ -137,13 +134,6 @@ if args.catalog_database_authentication_database is not None:
     config["catalog"]["database"]["options"]["authenticationDatabase"] = args.catalog_database_authentication_database
 if args.catalog_database_authentication_mechanism is not None:
     config["catalog"]["database"]["options"]["authenticationMechanism"] = args.catalog_database_authentication_mechanism
-
-# Inject search database
-hostOverride(config["catalog"]["searchEngine"], args.catalog_search_hosts)
-
-if args.catalog_search_user is not None:
-    config["catalog"]["searchEngine"]["user"] = args.catalog_search_user
-    config["catalog"]["searchEngine"]["password"] = args.catalog_search_password
 
 # Inject execution settings
 config["analysis"]["scratchDir"] = "/tmp/opencga_scratch"

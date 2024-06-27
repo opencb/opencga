@@ -8,15 +8,17 @@ import java.util.List;
 public class OrganizationConfiguration {
 
     private List<AuthenticationOrigin> authenticationOrigins;
+    private String defaultUserExpirationDate;
     private Optimizations optimizations;
     private TokenConfiguration token;
 
     public OrganizationConfiguration() {
     }
 
-    public OrganizationConfiguration(List<AuthenticationOrigin> authenticationOrigins, Optimizations optimizations,
-                                     TokenConfiguration token) {
+    public OrganizationConfiguration(List<AuthenticationOrigin> authenticationOrigins, String defaultUserExpirationDate,
+                                     Optimizations optimizations, TokenConfiguration token) {
         this.authenticationOrigins = authenticationOrigins;
+        this.defaultUserExpirationDate = defaultUserExpirationDate;
         this.optimizations = optimizations;
         this.token = token;
     }
@@ -25,6 +27,7 @@ public class OrganizationConfiguration {
     public String toString() {
         final StringBuilder sb = new StringBuilder("OrganizationConfiguration{");
         sb.append("authenticationOrigins=").append(authenticationOrigins);
+        sb.append(", defaultUserExpirationDate='").append(defaultUserExpirationDate).append('\'');
         sb.append(", optimizations=").append(optimizations);
         sb.append(", token=").append(token);
         sb.append('}');
@@ -37,6 +40,15 @@ public class OrganizationConfiguration {
 
     public OrganizationConfiguration setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
         this.authenticationOrigins = authenticationOrigins;
+        return this;
+    }
+
+    public String getDefaultUserExpirationDate() {
+        return defaultUserExpirationDate;
+    }
+
+    public OrganizationConfiguration setDefaultUserExpirationDate(String defaultUserExpirationDate) {
+        this.defaultUserExpirationDate = defaultUserExpirationDate;
         return this;
     }
 

@@ -10,21 +10,23 @@ import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.OrganizationUserUpdateParams;
+import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserQuota;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -41,7 +43,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
     @Test
     public void ensureAuthOriginCannotBeRemovedTest() throws CatalogException {
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Collections.emptyList(), null, new TokenConfiguration()));
+                Collections.emptyList(), Constants.DEFAULT_USER_EXPIRATION_DATE, null, new TokenConfiguration()));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("OPENCGA");
         catalogManager.getOrganizationManager().update(organizationId, updateParams, INCLUDE_RESULT, ownerToken);
@@ -52,7 +54,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Arrays.asList(authOrigin, authOrigin2), null, new TokenConfiguration()));
+                Arrays.asList(authOrigin, authOrigin2), Constants.DEFAULT_USER_EXPIRATION_DATE, null, new TokenConfiguration()));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("OPENCGA");
@@ -65,7 +67,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         authOrigin2.setType(AuthenticationOrigin.AuthenticationType.LDAP);
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Arrays.asList(authOrigin, authOrigin2), null, new TokenConfiguration()));
+                Arrays.asList(authOrigin, authOrigin2), Constants.DEFAULT_USER_EXPIRATION_DATE, null, new TokenConfiguration()));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("origin id");
@@ -76,7 +78,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
     public void updateAuthOriginTest() throws CatalogException {
         AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Collections.singletonList(authOrigin), null, new TokenConfiguration()));
+                Collections.singletonList(authOrigin), Constants.DEFAULT_USER_EXPIRATION_DATE, null, new TokenConfiguration()));
 
         Organization organization = catalogManager.getOrganizationManager().update(organizationId, updateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(authOrigin.getId(), organization.getConfiguration().getAuthenticationOrigins().get(0).getId());
@@ -148,6 +150,71 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), noAccessToken1).first();
         assertEquals(1, organization.getProjects().size());
         assertEquals(projectFqn1, organization.getProjects().get(0).getFqn());
+    }
+
+    @Test
+    public void validateUserUpdateParamsTest() {
+        OrganizationUserUpdateParams expiredDateParam = new OrganizationUserUpdateParams()
+                .setAccount(new OrganizationUserUpdateParams.Account("20200101100000"));
+        CatalogParameterException exception = assertThrows(CatalogParameterException.class, () -> catalogManager.getOrganizationManager()
+                .updateUser(organizationId, normalUserId1, expiredDateParam, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("expired"));
+
+        OrganizationUserUpdateParams invalidMailParam = new OrganizationUserUpdateParams()
+                .setEmail("invalidEmail");
+        exception = assertThrows(CatalogParameterException.class, () -> catalogManager.getOrganizationManager().updateUser(organizationId,
+                normalUserId1, invalidMailParam, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("not valid"));
+    }
+
+    @Test
+    public void updateUserInformationTest() throws CatalogException {
+        Date date = TimeUtils.getDate();
+        Calendar cl = Calendar.getInstance();
+        cl.setTime(date);
+        cl.add(Calendar.YEAR, 1);
+        String expirationTime = TimeUtils.getTime(cl.getTime());
+
+        OrganizationUserUpdateParams userUpdateParams = new OrganizationUserUpdateParams()
+                .setName("newName")
+                .setEmail("mail@mail.com")
+                .setAccount(new OrganizationUserUpdateParams.Account(expirationTime))
+                .setQuota(new UserQuota(1000, 1000000, 1000, 1000000))
+                .setAttributes(Collections.singletonMap("key1", "value1"));
+        updateAndAssertChanges(organizationId, userUpdateParams, opencgaToken);
+
+        userUpdateParams = new OrganizationUserUpdateParams()
+                .setName("newName2")
+                .setEmail("mai2l@mail.com")
+                .setAccount(new OrganizationUserUpdateParams.Account(expirationTime))
+                .setQuota(new UserQuota(1001, 1010000, 1010, 1100000))
+                .setAttributes(Collections.singletonMap("key2", "value2"));
+        updateAndAssertChanges(null, userUpdateParams, ownerToken);
+
+        userUpdateParams = new OrganizationUserUpdateParams()
+                .setName("newName3")
+                .setEmail("mai3l@mail.com")
+                .setAccount(new OrganizationUserUpdateParams.Account(expirationTime))
+                .setQuota(new UserQuota(3001, 1010300, 1013, 1300000))
+                .setAttributes(Collections.singletonMap("key3", "value3"));
+        updateAndAssertChanges(null, userUpdateParams, orgAdminToken1);
+
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getOrganizationManager().updateUser(organizationId, normalUserId1, userUpdateParams, INCLUDE_RESULT, normalToken1);
+    }
+
+    private void updateAndAssertChanges(String orgId, OrganizationUserUpdateParams userUpdateParams, String token) throws CatalogException {
+        User user = catalogManager.getOrganizationManager().updateUser(orgId, normalUserId1, userUpdateParams, INCLUDE_RESULT, token).first();
+        assertEquals(userUpdateParams.getName(), user.getName());
+        assertEquals(userUpdateParams.getEmail(), user.getEmail());
+        assertEquals(userUpdateParams.getAccount().getExpirationDate(), user.getAccount().getExpirationDate());
+        assertEquals(userUpdateParams.getQuota().getCpuUsage(), user.getQuota().getCpuUsage());
+        assertEquals(userUpdateParams.getQuota().getDiskUsage(), user.getQuota().getDiskUsage());
+        assertEquals(userUpdateParams.getQuota().getMaxCpu(), user.getQuota().getMaxCpu());
+        assertEquals(userUpdateParams.getQuota().getMaxDisk(), user.getQuota().getMaxDisk());
+        for (String key : userUpdateParams.getAttributes().keySet()) {
+            assertEquals(userUpdateParams.getAttributes().get(key), user.getAttributes().get(key));
+        }
     }
 
     @Test
