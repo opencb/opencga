@@ -247,9 +247,9 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 }
                 return transactionalUpdate(clientSession, documentResult.first(), parameters, variableSetList, queryOptions);
             });
-        } catch (CatalogDBException e) {
+        } catch (Exception e) {
             logger.error("Could not update cohort {}: {}", cohortUid, e.getMessage(), e);
-            throw new CatalogDBException("Could not update cohort " + cohortUid + ": " + e.getMessage(), e.getCause());
+            throw new CatalogDBException("Could not update cohort " + cohortUid + ": " + e.getMessage(), e);
         }
     }
 
