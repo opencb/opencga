@@ -26,12 +26,14 @@ public class Analysis {
     private String scratchDir;
 
     private Execution execution;
+    private OperationConfig operations;
 
     private List<FrameworkConfiguration> frameworks;
 
     public Analysis() {
         packages = new ArrayList<>();
         execution = new Execution();
+        operations = new OperationConfig();
         frameworks = new ArrayList<>();
     }
 
@@ -41,6 +43,15 @@ public class Analysis {
 
     public Analysis setPackages(List<String> packages) {
         this.packages = packages;
+        return this;
+    }
+
+    public OperationConfig getOperations() {
+        return operations;
+    }
+
+    public Analysis setOperations(OperationConfig operations) {
+        this.operations = operations;
         return this;
     }
 
