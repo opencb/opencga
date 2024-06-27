@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v3_2_0.TASK_5964;
+package org.opencb.opencga.app.migrations.v3.v3_2_0.TASK_5964;
 
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
