@@ -262,7 +262,6 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         queryParams.putIfNotNull("count", commandOptions.count);
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotEmpty("user", commandOptions.user);
-        queryParams.putIfNotEmpty("account", commandOptions.account);
         queryParams.putIfNotEmpty("authenticationId", commandOptions.authenticationId);
 
         return enterpriseOpenCGAClient.getEnterpriseAdminClient().searchUsers(queryParams);

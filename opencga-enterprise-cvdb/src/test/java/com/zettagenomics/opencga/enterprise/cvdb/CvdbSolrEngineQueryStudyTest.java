@@ -685,11 +685,6 @@ public class CvdbSolrEngineQueryStudyTest {
         query.put(CI_ANALYIST_DATE_NAME, strDate);
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, userToken);
         System.out.println(result.getNumResults());
-
-        //        assertTrue(result.getNumResults() > 0);
-//        for (Interpretation ci : result.getResults()) {
-//            assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ci.getAnalyst().getDate());
-//        }
     }
 
     @Test
