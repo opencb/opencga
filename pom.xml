@@ -56,7 +56,9 @@
         <!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
 
-        <opencga-hadoop-shaded.id-default>hdi5.1</opencga-hadoop-shaded.id-default>
+        <opencga.hadoop.thirdparty.version>1.0.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
+
+        <opencga-hadoop-shaded.id-default>hdi3.1</opencga-hadoop-shaded.id-default>
         <opencga-storage-hadoop-lib.artifactId-default>opencga-storage-hadoop-${opencga-hadoop-shaded.id-default}</opencga-storage-hadoop-lib.artifactId-default>
         <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id-default}</opencga-hadoop-shaded.id>
         <opencga-storage-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-storage-hadoop-lib.artifactId>

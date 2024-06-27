@@ -165,7 +165,7 @@
         <dependency>
             <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
             <artifactId>${opencga-storage-hadoop-thirdparty.artifactId}</artifactId>
-            <version>${opencga-thirdparty.version}</version>
+            <version>${opencga.hadoop.thirdparty.version}</version>
             <scope>test</scope>
             <type>test-jar</type>
             <exclusions>
