@@ -42,7 +42,8 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -278,25 +279,24 @@ public class VariantSearchManager {
      * according a given query.
      *
      * @param collection   Collection name
-     * @param query        Query
-     * @param queryOptions Query options
+     * @param variantQuery Parsed variant query
      * @return List of Variant objects
      * @throws VariantSearchException VariantSearchException
      * @throws IOException   IOException
      */
-    public VariantQueryResult<Variant> query(String collection, Query query, QueryOptions queryOptions)
+    public VariantQueryResult<Variant> query(String collection, ParsedVariantQuery variantQuery)
             throws VariantSearchException, IOException {
-        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        SolrQuery solrQuery = solrQueryParser.parse(variantQuery.getQuery(), variantQuery.getInputOptions());
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<Variant> queryResult;
         try {
             queryResult = solrCollection.query(solrQuery, VariantSearchModel.class,
-                    new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions)));
+                    new VariantSearchToVariantConverter(VariantField.getIncludeFields(variantQuery.getInputOptions())));
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error executing variant query", e);
         }
 
-        return new VariantQueryResult<>(queryResult, null, SEARCH_ENGINE_ID);
+        return new VariantQueryResult<>(queryResult, SEARCH_ENGINE_ID, variantQuery);
     }
 
     /**
@@ -310,7 +310,7 @@ public class VariantSearchManager {
      * @throws VariantSearchException VariantSearchException
      * @throws IOException   IOException
      */
-    public VariantQueryResult<VariantSearchModel> nativeQuery(String collection, Query query, QueryOptions queryOptions)
+    public DataResult<VariantSearchModel> nativeQuery(String collection, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         SolrCollection solrCollection = solrManager.getCollection(collection);
@@ -321,7 +321,7 @@ public class VariantSearchManager {
             throw new VariantSearchException("Error executing variant query (nativeQuery)", e);
         }
 
-        return new VariantQueryResult<>(queryResult, null, SEARCH_ENGINE_ID);
+        return queryResult;
     }
 
     /**

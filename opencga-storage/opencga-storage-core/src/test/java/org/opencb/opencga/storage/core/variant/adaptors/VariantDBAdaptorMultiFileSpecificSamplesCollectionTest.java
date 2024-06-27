@@ -5,7 +5,8 @@ import org.junit.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -55,19 +56,19 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
 
     protected VariantQueryResult<Variant> query(Query query, QueryOptions options) {
         try {
-            query = variantStorageEngine.preProcessQuery(query, options);
+            ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
             VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
-            String collection = VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(query, options, scm, DB_NAME);
+            String collection = VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(variantQuery.getQuery(), options, scm, DB_NAME);
 
             // Do not execute this test if the query is not covered by the specific search index collection
-            Assume.assumeThat(query.toJson(), collection, CoreMatchers.notNullValue());
+            Assume.assumeThat(variantQuery.getQuery().toJson(), collection, CoreMatchers.notNullValue());
 
             if (options.getInt(QueryOptions.LIMIT, 0) <= 0) {
                 options = new QueryOptions(options);
                 options.put(QueryOptions.LIMIT, 100000);
             }
 
-            return variantStorageEngine.getVariantSearchManager().query(collection, query, options);
+            return variantStorageEngine.getVariantSearchManager().query(collection, variantQuery);
         } catch (StorageEngineException | VariantSearchException | IOException e) {
             e.printStackTrace();
             Assert.fail(e.getMessage());

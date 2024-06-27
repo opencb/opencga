@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.variant;
+package org.opencb.opencga.core.models.operations.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 

@@ -169,10 +169,10 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--overwrite"}, description = "Overwrite aggregation for all files and variants. Repeat operation for already processed variants.", required = false, help = true, arity = 0)
         public boolean overwrite = false;
     
-        @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed index operation", required = false, help = true, arity = 0)
         public boolean resume = false;
     
     }
@@ -316,7 +316,7 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--annotation-id"}, description = "The body web service annotationId parameter", required = false, arity = 1)
+        @Parameter(names = {"--annotation-id"}, description = "New Variant Annotation identifier", required = false, arity = 1)
         public String annotationId;
     
     }
@@ -386,6 +386,9 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, help = true, arity = 0)
         public boolean resume = false;
     
+        @Parameter(names = {"--force"}, description = "The body web service force parameter", required = false, help = true, arity = 0)
+        public boolean force = false;
+    
     }
 
     @Parameters(commandNames = {"variant-family-aggregate"}, commandDescription ="Find variants where not all the samples are present, and fill the empty values.")
@@ -424,13 +427,13 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--samples"}, description = "The body web service samples parameter", required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = "Samples within the same study to aggregate", required = false, arity = 1)
         public String samples;
     
-        @Parameter(names = {"--gaps-genotype"}, description = "The body web service gapsGenotype parameter", required = false, arity = 1)
+        @Parameter(names = {"--gaps-genotype"}, description = "Genotype to be used in gaps. Either 0/0, ./. or ?/?", required = false, arity = 1)
         public String gapsGenotype;
     
-        @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed index operation", required = false, help = true, arity = 0)
         public boolean resume = false;
     
     }
@@ -545,7 +548,7 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--fail-on-malformed-lines"}, description = "Fail when encountering malformed lines. (yes, no, auto) [auto]", required = false, arity = 1)
         public String failOnMalformedLines;
     
-        @Parameter(names = {"--family"}, description = "Indicate that the files to be loaded are part of a family. This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards", required = false, help = true, arity = 0)
+        @Parameter(names = {"--family"}, description = "Indicate that the files to be loaded are part of a family. This will set 'load-hom-ref' to YES if it was in AUTO", required = false, help = true, arity = 0)
         public boolean family = false;
     
         @Parameter(names = {"--somatic"}, description = "Indicate that the files to be loaded contain somatic samples. This will set 'load-hom-ref' to YES if it was in AUTO.", required = false, help = true, arity = 0)
@@ -688,7 +691,7 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--index-params-fail-on-malformed-lines"}, description = "Fail when encountering malformed lines. (yes, no, auto) [auto]", required = false, arity = 1)
         public String indexParamsFailOnMalformedLines;
     
-        @Parameter(names = {"--index-params-family"}, description = "Indicate that the files to be loaded are part of a family. This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards", required = false, help = true, arity = 0)
+        @Parameter(names = {"--index-params-family"}, description = "Indicate that the files to be loaded are part of a family. This will set 'load-hom-ref' to YES if it was in AUTO", required = false, help = true, arity = 0)
         public boolean indexParamsFamily = false;
     
         @Parameter(names = {"--index-params-somatic"}, description = "Indicate that the files to be loaded contain somatic samples. This will set 'load-hom-ref' to YES if it was in AUTO.", required = false, help = true, arity = 0)

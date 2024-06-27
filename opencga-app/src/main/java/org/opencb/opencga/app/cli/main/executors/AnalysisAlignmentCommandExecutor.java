@@ -405,7 +405,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), AlignmentIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
+            putNestedIfNotEmpty(beanParams, "fileId",commandOptions.fileId, true);
             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
 
             alignmentIndexParams = JacksonUtils.getDefaultObjectMapper().copy()

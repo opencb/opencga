@@ -33,8 +33,8 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantFileIndexJobLauncherParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -107,9 +107,8 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
         ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                 .append(ParamConstants.STUDY_PARAM, studyId), outDir, null, false, sessionId);
 
-        assertEquals(2, er.getSteps().size());
+        assertEquals(1, er.getSteps().size());
         assertEquals("variant-index", er.getSteps().get(0).getId());
-        assertEquals("family-index", er.getSteps().get(1).getId());
 
         variantManager.iterator(new Query(VariantQueryParam.STUDY.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);

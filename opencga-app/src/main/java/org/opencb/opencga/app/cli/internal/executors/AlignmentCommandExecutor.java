@@ -18,7 +18,7 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentCoverageAnalysis;
-import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
 import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
@@ -121,10 +121,12 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void indexRun() throws Exception {
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory,
-                alignmentCommandOptions.internalJobOptions.jobId, alignmentCommandOptions.internalJobOptions.dryRun);
+        ObjectMap params = new AlignmentIndexParams(
+                cliOptions.fileId,
+                cliOptions.overwrite
+        ).toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        alignmentManager.index(cliOptions.study, cliOptions.file, cliOptions.outdir, cliOptions.commonOptions.token);
+        toolRunner.execute(AlignmentIndexOperation.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
 

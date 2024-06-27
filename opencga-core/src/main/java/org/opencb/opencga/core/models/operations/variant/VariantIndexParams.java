@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.variant;
+package org.opencb.opencga.core.models.operations.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.annotations.DataField;
@@ -81,7 +81,7 @@ public class VariantIndexParams extends ToolParams {
 
     @DataField(description = "List of files to be indexed.")
     private String file;
-    @DataField(description = "Resume a previously failed index operation")
+    @DataField(description = ParamConstants.RESUME_DESCRIPTION)
     private boolean resume;
     @DataField(description = "Output directory")
     private String outdir;
@@ -101,7 +101,7 @@ public class VariantIndexParams extends ToolParams {
     private String failOnMalformedLines;
 
     @DataField(description = "Indicate that the files to be loaded are part of a family. "
-            + "This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards")
+            + "This will set 'load-hom-ref' to YES if it was in AUTO")
     private boolean family;
     @DataField(description = "Indicate that the files to be loaded contain somatic samples. "
             + "This will set 'load-hom-ref' to YES if it was in AUTO.")

@@ -112,6 +112,7 @@ public abstract class VariantStatisticsManager {
         }
     }
 
+    @Deprecated
     public static void checkAndUpdateCalculatedCohorts(
             VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata, Collection<String> cohorts, boolean updateStats)
             throws StorageEngineException {

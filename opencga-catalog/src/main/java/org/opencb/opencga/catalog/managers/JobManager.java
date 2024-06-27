@@ -43,6 +43,7 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
@@ -667,7 +668,7 @@ public class JobManager extends ResourceManager<Job> {
 
     private boolean jobEligibleToReuse(String inputJobId, Job job) {
         boolean enabled = configuration.getAnalysis().getExecution().getOptions()
-                .getBoolean("jobs.reuse.enabled", true);
+                .getBoolean(Execution.JOBS_REUSE_ENABLED, Execution.JOBS_REUSE_ENABLED_DEFAULT);
         if (!enabled) {
             return false;
         }
@@ -678,9 +679,9 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         List<String> availableTools = configuration.getAnalysis().getExecution().getOptions()
-                .getAsStringList("jobs.reuse.tools");
+                .getAsStringList(Execution.JOBS_REUSE_TOOLS);
         if (availableTools.isEmpty()) {
-            availableTools = Collections.singletonList("variant-.*");
+            availableTools = Execution.JOBS_REUSE_TOOLS_DEFAULT;
         }
         String toolId = job.getTool().getId();
         boolean validTool = false;

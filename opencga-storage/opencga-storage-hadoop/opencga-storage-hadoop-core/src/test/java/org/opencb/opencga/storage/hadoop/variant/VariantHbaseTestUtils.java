@@ -46,6 +46,7 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
@@ -64,6 +65,7 @@ import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGene
 
 import java.io.*;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -72,7 +74,6 @@ import java.util.stream.IntStream;
 import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getTmpRootDir;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest.configuration;
 
 /**
  *  Utility class for VariantStorage hadoop tests
@@ -159,7 +160,7 @@ public class VariantHbaseTestUtils {
             for (Result result : resultScanner) {
                 Variant variant;
                 try {
-                    variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
+                    variant = VariantPhoenixKeyFactory.extractVariantFromResult(result);
                 } catch (RuntimeException e) {
                     os.println(Arrays.toString(result.getRow()));
                     os.println("--------------------");
@@ -236,8 +237,11 @@ public class VariantHbaseTestUtils {
     }
 
     private static void printVariantsFromDBAdaptor(VariantHadoopDBAdaptor dbAdaptor, PrintStream out) {
-        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "all,SAMPLE_ID")
-                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL),
+        if (dbAdaptor.getMetadataManager().getStudyIds().isEmpty()) {
+            out.println("No studies found!");
+            return;
+        }
+        VariantDBIterator iterator = dbAdaptor.iterator(new VariantQuery().includeSampleId(true).includeSampleAll(),
                 new QueryOptions("simpleGenotypes", true));
         ObjectMapper mapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         while (iterator.hasNext()) {
@@ -406,7 +410,7 @@ public class VariantHbaseTestUtils {
     }
 
     private static void printVcf(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
-        try (OutputStream os = new FileOutputStream(outDir.resolve("variant." + studyMetadata.getName() + ".vcf").toFile())) {
+        try (OutputStream os = Files.newOutputStream(outDir.resolve("variant." + studyMetadata.getName() + ".vcf"))) {
             Query query = new Query(VariantQueryParam.STUDY.key(), studyMetadata.getName())
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL)
                     .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".");

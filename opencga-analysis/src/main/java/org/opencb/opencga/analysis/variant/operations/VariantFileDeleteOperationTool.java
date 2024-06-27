@@ -20,7 +20,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.common.StringUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
+import org.opencb.opencga.core.models.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -55,6 +55,7 @@ public class VariantFileDeleteOperationTool extends OperationTool {
             throw new ToolException("Missing file/s");
         }
         params.put(VariantStorageOptions.RESUME.key(), variantFileDeleteParams.isResume());
+        params.put(VariantStorageOptions.FORCE.key(), variantFileDeleteParams.isForce());
     }
 
     @Override

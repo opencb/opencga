@@ -28,7 +28,7 @@ public class HBaseTaskMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
 
     @Override
     public Iterator<TaskMetadata> taskIterator(int studyId, List<TaskMetadata.Status> statusFilter, boolean reversed) {
-        if (statusFilter == null) {
+        if (statusFilter == null || statusFilter.isEmpty()) {
             return iterator(getTaskRowKeyPrefix(studyId), TaskMetadata.class, reversed);
         } else if (statusFilter.contains(TaskMetadata.Status.READY)) {
             EnumSet<TaskMetadata.Status> set = EnumSet.copyOf(statusFilter);

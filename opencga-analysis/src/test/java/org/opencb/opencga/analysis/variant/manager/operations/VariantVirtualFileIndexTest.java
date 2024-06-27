@@ -26,7 +26,7 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

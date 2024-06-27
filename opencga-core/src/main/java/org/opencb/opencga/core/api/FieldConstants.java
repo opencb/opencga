@@ -68,9 +68,7 @@ public class FieldConstants {
     public static final String NOTES_VISIBILITY_PARAM = "visibility";
 
     //Sample
-    public static final String SAMPLE_ID_DESCRIPTION = "Sample data model hosts information about any biological material, normally "
-            + "extracted from an _Individual_, that is used for a particular analysis. This is the main data model, it stores the most "
-            + "basic and important information.";
+    public static final String SAMPLE_ID_DESCRIPTION = "Sample ID.";
     public static final String SAMPLE_PROCESSING_DESCRIPTION = "Describes how the sample was processed in the lab.";
     public static final String SAMPLE_SAMPLE_COLLECTION_DESCRIPTION = "Describes how the sample was collected.";
     public static final String SAMPLE_QUALITY_CONTROL_DESCRIPTION = "Contains different metrics to evaluate the quality of the sample.";
@@ -525,6 +523,16 @@ public class FieldConstants {
     public static final String VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Variant stats description.";
     public static final String VARIANT_STATS_QUERY_DESCRIPTION = "Variant stats query in JSON format.";
 
+    // Alignment index parameter descriptions
+    public static final String ALIGNMENT_INDEX_FILE_ID_DESCRIPTION = "File ID, (i.e., BAM/CRAM file ID).";
+    public static final String ALIGNMENT_INDEX_OVERWRITE_DESCRIPTION = "Flag to force indexing.";
+
+    // Coverage index parameter descriptions
+    public static final String COVERAGE_INDEX_BAM_FILE_ID_DESCRIPTION = "BAM file ID.";
+    public static final String COVERAGE_INDEX_BAI_FILE_ID_DESCRIPTION = "BAI file ID.";
+    public static final String COVERAGE_INDEX_OVERWRITE_DESCRIPTION = "Window size (i.e., the size of the bins, in bases, for the output"
+        + " of the BIGWIG file).";
+
     // Alignment QC analysis (asample-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
     public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"
@@ -532,4 +540,6 @@ public class FieldConstants {
             + AlignmentQcParams.FASTQC_METRICS_SKIP_VALUE;
     public static final String ALIGNMENT_QC_OVERWRITE_DESCRIPTION = "To overwrite the QC metrics already computed.";
 
+    // Exomiser
+    public static final String EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION = "Clinical analysis type: SINGLE or FAMILY.";
 }

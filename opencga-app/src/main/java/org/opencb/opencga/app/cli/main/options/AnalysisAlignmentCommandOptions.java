@@ -160,14 +160,14 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean dryRun; 
     
-        @Parameter(names = {"--bam-file-id"}, description = "The body web service bamFileId parameter", required = false, arity = 1)
+        @Parameter(names = {"--bam-file-id"}, description = "BAM file ID.", required = false, arity = 1)
         public String bamFileId;
     
-        @Parameter(names = {"--bai-file-id"}, description = "The body web service baiFileId parameter", required = false, arity = 1)
+        @Parameter(names = {"--bai-file-id"}, description = "BAI file ID.", required = false, arity = 1)
         public String baiFileId;
     
-        @Parameter(names = {"--window-size"}, description = "The body web service windowSize parameter", required = false, arity = 1)
-        public Integer windowSize;
+        @Parameter(names = {"--window-size"}, description = "Window size (i.e., the size of the bins, in bases, for the output of the BIGWIG file).", required = false, arity = 1)
+        public Integer windowSize = 50;
     
     }
 
@@ -441,10 +441,10 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean dryRun; 
     
-        @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
-        public String file;
+        @Parameter(names = {"--file-id"}, description = "File ID, (i.e., BAM/CRAM file ID).", required = false, arity = 1)
+        public String fileId;
     
-        @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--overwrite"}, description = "Flag to force indexing.", required = false, help = true, arity = 0)
         public boolean overwrite = false;
     
     }
