@@ -1403,22 +1403,29 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         }
         ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
 
-        // Get the clinical status that are CLOSED
+        // Get the clinical status that are CLOSED and DONE
         Set<String> closedStatus = new HashSet<>();
+        Set<String> doneStatus = new HashSet<>();
         for (ClinicalStatusValue clinicalStatusValue : clinicalConfiguration.getStatus()) {
             if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.CLOSED)) {
                 closedStatus.add(clinicalStatusValue.getId());
+            } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.DONE)) {
+                doneStatus.add(clinicalStatusValue.getId());
             }
         }
 
         // If the current clinical analysis:
-        // - is locked
-        // - the user wants to update the locked status
-        // - the user wants to update the status to/from a closed status
+        // - is locked or panelLocked
+        // - the user wants to update the locked or panelLocked status
+        // - the user wants to update the status to/from a done|closed status
         boolean adminPermissionsChecked = false;
-        if (clinicalAnalysis.isLocked() || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
+        if (clinicalAnalysis.isLocked() || clinicalAnalysis.isPanelLocked()
+                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
+                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.DONE
                 || updateParamsClone.getLocked() != null
-                || (updateParams.getStatus() != null && closedStatus.contains(updateParams.getStatus().getId()))) {
+                || updateParams.getPanelLocked() != null
+                || (updateParams.getStatus() != null && (closedStatus.contains(updateParams.getStatus().getId())
+                || doneStatus.contains(updateParams.getStatus().getId())))) {
             authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
                     ClinicalAnalysisPermissions.ADMIN);
 

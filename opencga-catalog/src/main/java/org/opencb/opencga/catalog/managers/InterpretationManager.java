@@ -926,12 +926,17 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         // Check if user has permissions to write clinical analysis
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(organizationId, study.getUid(),
                 interpretation.getClinicalAnalysisId(), INCLUDE_CLINICAL_ANALYSIS, userId).first();
-        authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
-                ClinicalAnalysisPermissions.WRITE);
-
         if (clinicalAnalysis.isLocked()) {
             throw new CatalogException("Could not update the Interpretation. Case is locked so no further modifications can be made to"
                     + " the Interpretation.");
+        }
+
+        if (interpretation.isLocked() || updateParams.getLocked() != null) {
+            authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
+                    ClinicalAnalysisPermissions.ADMIN);
+        } else {
+            authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
+                    ClinicalAnalysisPermissions.WRITE);
         }
 
         List<Event> events = new ArrayList<>();
