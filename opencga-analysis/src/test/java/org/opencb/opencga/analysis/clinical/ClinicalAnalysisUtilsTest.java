@@ -51,15 +51,6 @@ public class ClinicalAnalysisUtilsTest {
         clinicalTest.catalogManagerResource = opencga.getCatalogManagerExternalResource();
         clinicalTest.setUp();
 
-        // Exomiser analysis
-        Path exomiserDataPath = opencga.getOpencgaHome().resolve("analysis/exomiser");
-        Files.createDirectories(exomiserDataPath);
-        Path parent = Paths.get(ClinicalAnalysisUtilsTest.class.getClassLoader().getResource("pheno").getPath()).getParent();
-        Files.copy(parent.resolve("exomiser/application.properties"), exomiserDataPath.resolve("application.properties"),
-                StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(parent.resolve("exomiser/output.yml"), exomiserDataPath.resolve("output.yml"),
-                StandardCopyOption.REPLACE_EXISTING);
-
         // Storage
         ObjectMap storageOptions = new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
@@ -76,6 +67,10 @@ public class ClinicalAnalysisUtilsTest {
         variantStorageManager.index(clinicalTest.studyFqn, "HG005.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
         variantStorageManager.index(clinicalTest.studyFqn, "HG006.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
         variantStorageManager.index(clinicalTest.studyFqn, "HG007.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG104.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG105.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG106.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG107.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
 
         return clinicalTest;
     }

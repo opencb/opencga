@@ -2,15 +2,22 @@ package org.opencb.opencga.core.models.alignment;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class CoverageIndexParams extends ToolParams {
     public static final String DESCRIPTION = "Coverage computation parameters";
 
+    @DataField(id = "bamFileId", description = FieldConstants.COVERAGE_INDEX_BAM_FILE_ID_DESCRIPTION, required = true)
     private String bamFileId;
+
+    @DataField(id = "baiFileId", description = FieldConstants.COVERAGE_INDEX_BAI_FILE_ID_DESCRIPTION)
     private String baiFileId;
 
-    @JsonProperty(defaultValue = "1")
+    @DataField(id = "windowSize", description = FieldConstants.COVERAGE_INDEX_OVERWRITE_DESCRIPTION,
+            defaultValue = ParamConstants.COVERAGE_WINDOW_SIZE_DEFAULT)
     private int windowSize;
 
     public CoverageIndexParams() {

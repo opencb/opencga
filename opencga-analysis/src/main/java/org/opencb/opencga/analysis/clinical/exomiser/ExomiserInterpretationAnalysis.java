@@ -37,7 +37,6 @@ import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -47,10 +46,10 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -71,6 +70,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     private String studyId;
     private String clinicalAnalysisId;
     private String sampleId;
+    private ClinicalAnalysis.Type clinicalAnalysisType;
     private String exomiserVersion;
 
     private ClinicalAnalysis clinicalAnalysis;
@@ -119,6 +119,15 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         }
         sampleId = clinicalAnalysis.getProband().getSamples().get(0).getId();
 
+        // Check clinical analysis type
+        if (clinicalAnalysis.getType() == ClinicalAnalysis.Type.FAMILY) {
+            clinicalAnalysisType = ClinicalAnalysis.Type.FAMILY;
+        } else {
+            clinicalAnalysisType = ClinicalAnalysis.Type.SINGLE;
+        }
+        logger.info("The clinical analysis type is {}, so the Exomiser will be run in mode {}", clinicalAnalysis.getType(),
+                clinicalAnalysisType);
+
         // Check exomiser version
         if (StringUtils.isEmpty(exomiserVersion)) {
             // Missing exomiser version use the default one
@@ -138,7 +147,9 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
             ExomiserWrapperAnalysisExecutor exomiserExecutor = getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
                     .setStudyId(studyId)
                     .setSampleId(sampleId)
+                    .setClinicalAnalysisType(clinicalAnalysisType)
                     .setExomiserVersion(exomiserVersion);
+
             exomiserExecutor.execute();
 
             saveInterpretation(studyId, clinicalAnalysis, exomiserExecutor.getDockerImageName(), exomiserExecutor.getDockerImageVersion());
@@ -193,7 +204,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
         // Prepare variant query
         List<String> sampleIds = new ArrayList<>();
-        if (clinicalAnalysis.getFamily() != null && CollectionUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
+        if (clinicalAnalysis.getType() == ClinicalAnalysis.Type.FAMILY && clinicalAnalysis.getFamily() != null
+                && CollectionUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
             for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
                 Individual individual = IndividualQcUtils.getIndividualById(studyId, member.getId(), getCatalogManager(), getToken());
                 if (CollectionUtils.isNotEmpty(individual.getSamples())) {

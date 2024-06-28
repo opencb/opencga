@@ -62,6 +62,8 @@ public class PrepareFillMissingDriver extends AbstractVariantsTableDriver {
         scan.setCacheBlocks(false);
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getStudyColumn(getStudyId()).bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getFillMissingColumn(getStudyId()).bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
 
         LOG.info(scan.toString());
 

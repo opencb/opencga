@@ -7,7 +7,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
-import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.AnalysisTool;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -32,6 +31,8 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
     public String getDockerImageName() throws ToolException {
         return getConfiguration().getAnalysis().getOpencgaExtTools().split(":")[0];
     }
+
+    public static final String DOCKER_CLI_MSG = "Docker CLI: ";
 
     public String getDockerImageVersion() throws ToolException {
         if (getConfiguration().getAnalysis().getOpencgaExtTools().contains(":")) {

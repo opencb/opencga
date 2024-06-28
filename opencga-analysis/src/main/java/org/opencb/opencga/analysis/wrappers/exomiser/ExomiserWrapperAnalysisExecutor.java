@@ -18,6 +18,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
@@ -52,6 +53,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private String studyId;
     private String sampleId;
     private String exomiserVersion;
+    private ClinicalAnalysis.Type clinicalAnalysisType;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -112,22 +114,24 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         // Check multi-sample (family) analysis
         File pedigreeFile = null;
         Pedigree pedigree = null;
-        if (individual.getMother() != null && individual.getMother().getId() != null
-                && individual.getFather() != null && individual.getFather().getId() != null) {
-            Family family = IndividualQcUtils.getFamilyByIndividualId(getStudyId(), individual.getId(),
-                    getVariantStorageManager().getCatalogManager(), getToken());
-            if (family != null) {
-                pedigree = FamilyManager.getPedigreeFromFamily(family, individual.getId());
-            }
+        if (clinicalAnalysisType == ClinicalAnalysis.Type.FAMILY) {
+            if (individual.getMother() != null && individual.getMother().getId() != null
+                    && individual.getFather() != null && individual.getFather().getId() != null) {
+                Family family = IndividualQcUtils.getFamilyByIndividualId(getStudyId(), individual.getId(),
+                        getVariantStorageManager().getCatalogManager(), getToken());
+                if (family != null) {
+                    pedigree = FamilyManager.getPedigreeFromFamily(family, individual.getId());
+                }
 
-            if (pedigree != null) {
-                if (individual.getFather() != null) {
-                    samples.add(individual.getFather().getSamples().get(0).getId());
+                if (pedigree != null) {
+                    if (individual.getFather() != null) {
+                        samples.add(individual.getFather().getSamples().get(0).getId());
+                    }
+                    if (individual.getMother() != null) {
+                        samples.add(individual.getMother().getSamples().get(0).getId());
+                    }
+                    pedigreeFile = createPedigreeFile(family, pedigree);
                 }
-                if (individual.getMother() != null) {
-                    samples.add(individual.getMother().getSamples().get(0).getId());
-                }
-                pedigreeFile = createPedigreeFile(family, pedigree);
             }
         }
         File sampleFile = createSampleFile(individual, hpos, pedigree);
@@ -209,7 +213,9 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                 .append(" --spring.config.location=/jobdir/").append(EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: {}", sb);
+        String msg = DOCKER_CLI_MSG + sb;
+        logger.info(msg);
+        addWarning(msg);
         runCommandLine(sb.toString());
     }
 
@@ -539,6 +545,15 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     public ExomiserWrapperAnalysisExecutor setExomiserVersion(String exomiserVersion) {
         this.exomiserVersion = exomiserVersion;
+        return this;
+    }
+
+    public ClinicalAnalysis.Type getClinicalAnalysisType() {
+        return clinicalAnalysisType;
+    }
+
+    public ExomiserWrapperAnalysisExecutor setClinicalAnalysisType(ClinicalAnalysis.Type clinicalAnalysisType) {
+        this.clinicalAnalysisType = clinicalAnalysisType;
         return this;
     }
 }

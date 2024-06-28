@@ -13,14 +13,19 @@ public class ExomiserWrapperParams extends ToolParams {
     @DataField(id = "exomiserVersion", description = FieldConstants.EXOMISER_VERSION_DESCRIPTION)
     private String exomiserVersion;
 
+    @DataField(id = "clinicalAnalysisType", description = FieldConstants.EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION,
+            defaultValue = "SINGLE")
+    private String clinicalAnalysisType;
+
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
     public ExomiserWrapperParams() {
     }
 
-    public ExomiserWrapperParams(String sample, String exomiserVersion, String outdir) {
+    public ExomiserWrapperParams(String sample, String clinicalAnalysisType, String exomiserVersion, String outdir) {
         this.sample = sample;
+        this.clinicalAnalysisType = clinicalAnalysisType;
         this.exomiserVersion = exomiserVersion;
         this.outdir = outdir;
     }
@@ -29,6 +34,7 @@ public class ExomiserWrapperParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ExomiserWrapperParams{");
         sb.append("sample='").append(sample).append('\'');
+        sb.append(", clinicalAnalysisType=").append(clinicalAnalysisType);
         sb.append("exomiserVersion='").append(exomiserVersion).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
@@ -41,6 +47,15 @@ public class ExomiserWrapperParams extends ToolParams {
 
     public ExomiserWrapperParams setSample(String sample) {
         this.sample = sample;
+        return this;
+    }
+
+    public String getClinicalAnalysisType() {
+        return clinicalAnalysisType;
+    }
+
+    public ExomiserWrapperParams setClinicalAnalysisType(String clinicalAnalysisType) {
+        this.clinicalAnalysisType = clinicalAnalysisType;
         return this;
     }
 
