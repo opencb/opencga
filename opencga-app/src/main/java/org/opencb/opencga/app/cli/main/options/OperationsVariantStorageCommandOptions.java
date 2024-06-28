@@ -157,13 +157,22 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--overwrite"}, description = "Overwrite aggregation for all files and variants. Repeat operation for already processed variants.", required = false, help = true, arity = 0)
         public boolean overwrite = false;
     
-        @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed index operation", required = false, help = true, arity = 0)
         public boolean resume = false;
     
     }
@@ -185,6 +194,15 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
         public String project; 
@@ -217,6 +235,15 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
         public String project; 
@@ -277,10 +304,19 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--annotation-id"}, description = "The body web service annotationId parameter", required = false, arity = 1)
+        @Parameter(names = {"--annotation-id"}, description = "New Variant Annotation identifier", required = false, arity = 1)
         public String annotationId;
     
     }
@@ -332,6 +368,15 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -340,6 +385,9 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, help = true, arity = 0)
         public boolean resume = false;
+    
+        @Parameter(names = {"--force"}, description = "The body web service force parameter", required = false, help = true, arity = 0)
+        public boolean force = false;
     
     }
 
@@ -367,16 +415,25 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--samples"}, description = "The body web service samples parameter", required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = "Samples within the same study to aggregate", required = false, arity = 1)
         public String samples;
     
-        @Parameter(names = {"--gaps-genotype"}, description = "The body web service gapsGenotype parameter", required = false, arity = 1)
+        @Parameter(names = {"--gaps-genotype"}, description = "Genotype to be used in gaps. Either 0/0, ./. or ?/?", required = false, arity = 1)
         public String gapsGenotype;
     
-        @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed index operation", required = false, help = true, arity = 0)
         public boolean resume = false;
     
     }
@@ -404,6 +461,15 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -446,6 +512,15 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -473,7 +548,7 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--fail-on-malformed-lines"}, description = "Fail when encountering malformed lines. (yes, no, auto) [auto]", required = false, arity = 1)
         public String failOnMalformedLines;
     
-        @Parameter(names = {"--family"}, description = "Indicate that the files to be loaded are part of a family. This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards", required = false, help = true, arity = 0)
+        @Parameter(names = {"--family"}, description = "Indicate that the files to be loaded are part of a family. This will set 'load-hom-ref' to YES if it was in AUTO", required = false, help = true, arity = 0)
         public boolean family = false;
     
         @Parameter(names = {"--somatic"}, description = "Indicate that the files to be loaded contain somatic samples. This will set 'load-hom-ref' to YES if it was in AUTO.", required = false, help = true, arity = 0)
@@ -565,6 +640,15 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -607,7 +691,7 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--index-params-fail-on-malformed-lines"}, description = "Fail when encountering malformed lines. (yes, no, auto) [auto]", required = false, arity = 1)
         public String indexParamsFailOnMalformedLines;
     
-        @Parameter(names = {"--index-params-family"}, description = "Indicate that the files to be loaded are part of a family. This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards", required = false, help = true, arity = 0)
+        @Parameter(names = {"--index-params-family"}, description = "Indicate that the files to be loaded are part of a family. This will set 'load-hom-ref' to YES if it was in AUTO", required = false, help = true, arity = 0)
         public boolean indexParamsFamily = false;
     
         @Parameter(names = {"--index-params-somatic"}, description = "Indicate that the files to be loaded contain somatic samples. This will set 'load-hom-ref' to YES if it was in AUTO.", required = false, help = true, arity = 0)
@@ -699,6 +783,15 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--project", "-p"}, description = "project", required = false, arity = 1)
         public String project; 
     
@@ -737,6 +830,15 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--studies"}, description = "The body web service studies parameter", required = false, arity = 1)
         public String studies;
     
@@ -768,6 +870,15 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -804,11 +915,20 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--project", "-p"}, description = "The body web service project parameter", required = false, arity = 1)
         public String project;
     
-        @Parameter(names = {"--dry-run"}, description = "The body web service dryRun parameter", required = false, help = true, arity = 0)
-        public boolean dryRun = false;
+        @Parameter(names = {"--body_dry-run"}, description = "The body web service dryRun parameter", required = false, help = true, arity = 0)
+        public boolean bodyDryRun = false;
     
         @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, help = true, arity = 0)
         public boolean resume = false;
@@ -838,6 +958,15 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -876,6 +1005,15 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -935,6 +1073,15 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -972,6 +1119,15 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -1020,6 +1176,15 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
         public String project; 
     
@@ -1060,6 +1225,15 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -1125,6 +1299,15 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
         public String project; 
     
@@ -1159,6 +1342,15 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -1195,6 +1387,15 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--cohort"}, description = "The body web service cohort parameter", required = false, arity = 1)
         public String cohort;
     
@@ -1229,6 +1430,15 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--cohort"}, description = "The body web service cohort parameter", required = false, arity = 1)
         public String cohort;
@@ -1273,6 +1483,15 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 

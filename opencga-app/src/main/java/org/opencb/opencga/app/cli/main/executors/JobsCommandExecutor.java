@@ -97,6 +97,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             case "update":
                 queryResponse = update();
                 break;
+            case "kill":
+                queryResponse = kill();
+                break;
             case "log-head":
                 queryResponse = headLog();
                 break;
@@ -255,6 +258,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
             putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
+            putNestedIfNotEmpty(beanParams, "scheduledStartTime",commandOptions.scheduledStartTime, true);
             putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
 
             jobRetryParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -398,6 +402,20 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), JobUpdateParams.class);
         }
         return openCGAClient.getJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
+    }
+
+    private RestResponse<Job> kill() throws Exception {
+        logger.debug("Executing kill in Jobs command line");
+
+        JobsCommandOptions.KillCommandOptions commandOptions = jobsCommandOptions.killCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getJobClient().kill(commandOptions.job, queryParams);
     }
 
     private RestResponse<FileContent> headLog() throws Exception {

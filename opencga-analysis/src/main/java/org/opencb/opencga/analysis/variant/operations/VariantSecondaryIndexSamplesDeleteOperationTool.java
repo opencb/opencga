@@ -22,7 +22,8 @@ import org.opencb.opencga.core.models.common.Enums;
 @Tool(id = VariantSecondaryIndexSamplesDeleteOperationTool.ID,
         description = VariantSecondaryIndexSamplesDeleteOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION,
-        resource = Enums.Resource.VARIANT)
+        resource = Enums.Resource.VARIANT,
+        priority = Enums.Priority.HIGH)
 @Deprecated
 public class VariantSecondaryIndexSamplesDeleteOperationTool extends OperationTool {
 

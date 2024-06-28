@@ -230,11 +230,11 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         HashMap<String, Object> params = new HashMap<>();
         String jobId = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, "job1", "", null, null, null, null, ownerToken).first().getId();
+                params, "job1", "", null, null, null, null, false, ownerToken).first().getId();
         String jobId2 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, "job2", "", null, null, null, null, normalToken2).first().getId();
+                params, "job2", "", null, null, null, null, false, normalToken2).first().getId();
         String jobId3 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, "job3", "", null, null, null, null, normalToken3).first().getId();
+                params, "job3", "", null, null, null, null, false, normalToken3).first().getId();
 
         daemon.checkPendingJobs(organizationIds);
 
@@ -268,7 +268,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         HashMap<String, Object> params = new HashMap<>();
         String job1 = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, ownerToken).first().getId();
         String job2 = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, null, null,
-                Collections.singletonList(job1), null, null, null, ownerToken).first().getId();
+                Collections.singletonList(job1), null, null, null, false, ownerToken).first().getId();
 
         daemon.checkPendingJobs(organizationIds);
 
@@ -297,7 +297,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         // And create a new job to simulate a normal successfully dependency
         String job3 = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, null, null,
-                Collections.singletonList(job1), null, null, null, ownerToken).first().getId();
+                Collections.singletonList(job1), null, null, null, false, ownerToken).first().getId();
         daemon.checkPendingJobs(organizationIds);
 
         jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job3, QueryOptions.empty(), ownerToken);
@@ -310,7 +310,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         HashMap<String, Object> params = new HashMap<>();
         Job firstJob = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, ownerToken).first();
         Job job = catalogManager.getJobManager().submit(studyFqn2, "files-delete", Enums.Priority.MEDIUM, params, null, null,
-                Collections.singletonList(firstJob.getUuid()), null, null, null, ownerToken).first();
+                Collections.singletonList(firstJob.getUuid()), null, null, null, false, ownerToken).first();
         assertEquals(1, job.getDependsOn().size());
         assertEquals(firstJob.getId(), job.getDependsOn().get(0).getId());
         assertEquals(firstJob.getUuid(), job.getDependsOn().get(0).getUuid());

@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.job;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -136,6 +137,9 @@ public class Job extends PrivateStudyUid {
             description = FieldConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION)
     private String scheduledStartTime;
 
+    @DataField(id = ParamConstants.JOB_DRY_RUN, since = "3.2.0", description = ParamConstants.JOB_DRY_RUN_DESCRIPTION)
+    private boolean dryRun;
+
     @DataField(id = "execution", indexed = true,
             description = FieldConstants.JOB_EXECUTION_DESCRIPTION)
     private ExecutionResult execution;
@@ -175,8 +179,8 @@ public class Job extends PrivateStudyUid {
 
     public Job(String id, String uuid, String description, ToolInfo tool, String userId, String commandLine, Map<String, Object> params,
                String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal, File outDir,
-               List<File> input, List<File> output, List<Job> dependsOn, String parentId, String scheduledStartTime, List<String> tags,
-               ExecutionResult execution, boolean visited, File stdout, File stderr, int release, JobStudyParam study,
+               List<File> input, List<File> output, List<Job> dependsOn, String parentId, String scheduledStartTime, boolean dryRun,
+               List<String> tags, ExecutionResult execution, boolean visited, File stdout, File stderr, int release, JobStudyParam study,
                Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
@@ -195,6 +199,7 @@ public class Job extends PrivateStudyUid {
         this.dependsOn = dependsOn;
         this.parentId = parentId;
         this.scheduledStartTime = scheduledStartTime;
+        this.dryRun = dryRun;
         this.tags = tags;
         this.execution = execution;
         this.visited = visited;
@@ -226,6 +231,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", dependsOn=").append(dependsOn);
         sb.append(", parentId='").append(parentId).append('\'');
         sb.append(", scheduledStartTime='").append(scheduledStartTime).append('\'');
+        sb.append(", dryRun=").append(dryRun);
         sb.append(", execution=").append(execution);
         sb.append(", stdout=").append(stdout);
         sb.append(", stderr=").append(stderr);
@@ -402,6 +408,15 @@ public class Job extends PrivateStudyUid {
 
     public Job setScheduledStartTime(String scheduledStartTime) {
         this.scheduledStartTime = scheduledStartTime;
+        return this;
+    }
+
+    public boolean isDryRun() {
+        return dryRun;
+    }
+
+    public Job setDryRun(boolean dryRun) {
+        this.dryRun = dryRun;
         return this;
     }
 

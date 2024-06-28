@@ -243,6 +243,15 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--source"}, description = "Comma separated list of sources to import panels from. Current supported sources are 'panelapp' and 'cancer-gene-census'", required = false, arity = 1)
         public String source;
     

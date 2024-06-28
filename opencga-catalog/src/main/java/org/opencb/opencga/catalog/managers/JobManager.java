@@ -43,6 +43,7 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
@@ -494,7 +495,7 @@ public class JobManager extends ResourceManager<Job> {
                 jobDescription = "Retry from job '" + jobRetry.getJob() + "'";
             }
             return submit(studyStr, job.getTool().getId(), priority, params, jobId, jobDescription, jobDependsOn, jobTags, job.getId(),
-                    jobRetry.getScheduledStartTime(), attributes, token);
+                    jobRetry.getScheduledStartTime(), job.isDryRun(), attributes, token);
         } else {
             throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getId());
         }
@@ -502,7 +503,7 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)
             throws CatalogException {
-        return submit(studyStr, toolId, priority, params, null, null, null, null, null, null, token);
+        return submit(studyStr, toolId, priority, params, null, null, null, null, null, null, false, token);
     }
 
     public OpenCGAResult<Job> submitProject(String projectStr, String toolId, Enums.Priority priority,
@@ -520,20 +521,20 @@ public class JobManager extends ResourceManager<Job> {
         if (studies.isEmpty()) {
             throw new CatalogException("Project '" + projectStr + "' not found!");
         }
-        return submit(studies.get(0), toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, null, null, token);
+        return submit(studies.get(0), toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, null, null, false, token);
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
                                      String jobDescription, List<String> jobDependsOn, List<String> jobTags, @Nullable String jobParentId,
-                                     @Nullable String scheduledStartTime, String token) throws CatalogException {
+                                     @Nullable String scheduledStartTime, Boolean dryRun, String token) throws CatalogException {
         return submit(studyStr, toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, jobParentId, scheduledStartTime,
-                null, token);
+                dryRun, null, token);
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
                                      String jobDescription, List<String> jobDependsOn, List<String> jobTags,
-                                     @Nullable String jobParentId, @Nullable String scheduledStartTime, Map<String, Object> attributes,
-                                     String token) throws CatalogException {
+                                     @Nullable String jobParentId, @Nullable String scheduledStartTime, Boolean dryRun,
+                                     Map<String, Object> attributes, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -551,8 +552,8 @@ public class JobManager extends ResourceManager<Job> {
                 .append("jobTags", jobTags)
                 .append("jobParentId", jobParentId)
                 .append("scheduledStartTime", scheduledStartTime)
+                .append("dryRun", dryRun)
                 .append("token", token);
-
         Job job = new Job();
         job.setId(jobId);
         job.setDescription(jobDescription);
@@ -564,6 +565,7 @@ public class JobManager extends ResourceManager<Job> {
         job.setParentId(jobParentId);
         job.setScheduledStartTime(scheduledStartTime);
         job.setPriority(priority);
+        job.setDryRun(dryRun != null && dryRun);
         job.setDependsOn(jobDependsOn != null
                 ? jobDependsOn.stream().map(j -> new Job().setId(j)).collect(Collectors.toList())
                 : Collections.emptyList());
@@ -666,7 +668,7 @@ public class JobManager extends ResourceManager<Job> {
 
     private boolean jobEligibleToReuse(String inputJobId, Job job) {
         boolean enabled = configuration.getAnalysis().getExecution().getOptions()
-                .getBoolean("jobs.reuse.enabled", true);
+                .getBoolean(Execution.JOBS_REUSE_ENABLED, Execution.JOBS_REUSE_ENABLED_DEFAULT);
         if (!enabled) {
             return false;
         }
@@ -677,9 +679,9 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         List<String> availableTools = configuration.getAnalysis().getExecution().getOptions()
-                .getAsStringList("jobs.reuse.tools");
+                .getAsStringList(Execution.JOBS_REUSE_TOOLS);
         if (availableTools.isEmpty()) {
-            availableTools = Collections.singletonList("variant-.*");
+            availableTools = Execution.JOBS_REUSE_TOOLS_DEFAULT;
         }
         String toolId = job.getTool().getId();
         boolean validTool = false;

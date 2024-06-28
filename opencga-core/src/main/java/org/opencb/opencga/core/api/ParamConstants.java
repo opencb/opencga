@@ -77,7 +77,7 @@ public class ParamConstants {
     public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names" + REGEX_SUPPORT;
     public static final String BODY_PARAM = "body";
     public static final String OVERWRITE = "overwrite";
-
+    private static final String UP_TO_100 = " up to a maximum of 100";
 
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
     public static final String CELLBASE_VERSION = "v5.2";
@@ -90,6 +90,8 @@ public class ParamConstants {
     public static final String POP_FREQ_GNOMAD_GENOMES = "GNOMAD_GENOMES";
 
     public static final String OPENCGA_TOKEN_CLI_PARAM = "--opencga-token";
+
+    public static final String RESUME_DESCRIPTION = "Resume a previously failed index operation";
 
     public static final String CATEGORY = "category";
     public static final String CATEGORY_DESCRIPTION = "Category corresponding to the id's provided.";
@@ -155,10 +157,10 @@ public class ParamConstants {
     public static final String ORGANIZATION_DESCRIPTION = "Organization id";
     public static final String ORGANIZATION = "organization";
     // ---------------------------------------------
+    public static final String USER_ID_DESCRIPTION = "Comma separated list user IDs" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String USER_ID_PARAM = "id";
     public static final String USER_DESCRIPTION = "User ID";
     public static final String USERS_DESCRIPTION = "Comma separated list of user IDs";
-    public static final String USER_ACCOUNT_TYPE = "account";
-    public static final String USER_ACCOUNT_TYPE_DESCRIPTION = "Account type [GUEST, FULL, ADMINISTRATOR]";
     public static final String USER_AUTHENTICATION_ORIGIN = "authenticationId";
     public static final String USER_AUTHENTICATION_ORIGIN_DESCRIPTION = "Authentication origin ID";
     public static final String USER_CREATION_DATE = "creationDate";
@@ -570,6 +572,10 @@ public class ParamConstants {
     public static final String JOB_TAGS_DESCRIPTION = "Job tags";
     public static final String JOB_SCHEDULED_START_TIME_DESCRIPTION = FieldConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION;
     public static final String JOB_SCHEDULED_START_TIME = FieldConstants.JOB_SCHEDULED_START_TIME;
+    public static final String JOB_DRY_RUN = "dryRun";
+    public static final String JOB_DRY_RUN_DESCRIPTION = "Flag indicating that the job will be executed in dry-run mode. In this mode,"
+            + " OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will"
+            + " not actually run.";
 
     // ---------------------------------------------
     public static final String JOB_INPUT_FILES_PARAM = "input";
@@ -1489,7 +1495,6 @@ public class ParamConstants {
     public static final String ADMIN_CATALOG_INSTALL_EMAIL = "The body web service email parameter";
     public static final String ADMIN_CATALOG_INSTALL_ORGANIZATION = "The body web service organization parameter";
     public static final String ADMIN_CATALOG_JWT_SECRETKEY = "The body web service secretKey parameter";
-    private static final String UP_TO_100 = " up to a maximum of 100";
     public static final String FILES_DESCRIPTION = "Comma separated list of file IDs or names" + UP_TO_100;
     public static final String FILES_ID_DESCRIPTION = "Comma separated list of file IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String FILES_UUID_DESCRIPTION = "Comma separated list file UUIDs" + UP_TO_100;

@@ -83,6 +83,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -105,6 +106,7 @@ import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
+import org.opencb.opencga.master.monitor.schedulers.JobScheduler;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
@@ -163,6 +165,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     private final QueryOptions queryOptions;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final JobScheduler jobScheduler;
 
     static {
         TOOL_CLI_MAP = new HashMap<String, String>() {{
@@ -263,7 +266,10 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         queryOptions = new QueryOptions()
                 .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
                         JobDBAdaptor.QueryParams.CREATION_DATE.key()))
-                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+                .append(QueryOptions.ORDER, QueryOptions.ASCENDING)
+                .append(QueryOptions.LIMIT, NUM_JOBS_HANDLED);
+
+        this.jobScheduler = new JobScheduler(catalogManager, token);
 
         if (CollectionUtils.isEmpty(packages)) {
             this.packages = Collections.singletonList(ToolFactory.DEFAULT_PACKAGE);
@@ -299,6 +305,20 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
     protected void checkJobs() throws CatalogException {
         List<String> organizationIds = catalogManager.getAdminManager().getOrganizationIds(token);
+
+        /*
+        QUEUED JOBS
+        */
+        checkQueuedJobs(organizationIds);
+
+        /*
+        RUNNING JOBS
+        */
+        checkRunningJobs(organizationIds);
+
+        long totalPendingJobs = 0;
+        long totalQueuedJobs = 0;
+        long totalRunningJobs = 0;
         for (String organizationId : organizationIds) {
             long pendingJobs = -1;
             long queuedJobs = -1;
@@ -312,22 +332,46 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             }
             logger.info("----- EXECUTION DAEMON  ----- Organization={} --> pending={}, queued={}, running={}", organizationId, pendingJobs,
                     queuedJobs, runningJobs);
+            totalPendingJobs += pendingJobs;
+            totalQueuedJobs += queuedJobs;
+            totalRunningJobs += runningJobs;
         }
 
-        /*
-        PENDING JOBS
-        */
-        checkPendingJobs(organizationIds);
+        if (totalQueuedJobs == 0) {
+            // If there are no queued jobs, we can queue new jobs
+            List<Job> pendingJobs = new LinkedList<>();
+            List<Job> runningJobs = new LinkedList<>();
 
-        /*
-        QUEUED JOBS
-        */
-        checkQueuedJobs(organizationIds);
+            for (String organizationId : organizationIds) {
+                try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, pendingJobsQuery, queryOptions, token)) {
+                    while (iterator.hasNext()) {
+                        pendingJobs.add(iterator.next());
+                    }
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
 
-        /*
-        RUNNING JOBS
-        */
-        checkRunningJobs(organizationIds);
+                try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, runningJobsQuery, queryOptions, token)) {
+                    while (iterator.hasNext()) {
+                        runningJobs.add(iterator.next());
+                    }
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
+            }
+
+            jobScheduler.addJobs(pendingJobs, Collections.emptyList(), runningJobs);
+            Iterator<Job> iterator = jobScheduler.iterator();
+            boolean success = false;
+            while (iterator.hasNext() && !success) {
+                Job job = iterator.next();
+                try {
+                     success = checkPendingJob(job) > 0;
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
+            }
+        }
     }
 
     protected void checkRunningJobs(List<String> organizationIds) {
@@ -481,7 +525,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                 while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
                     try {
                         Job job = iterator.next();
-                        handledPendingJobs += checkPendingJob(organizationId, job);
+                        handledPendingJobs += checkPendingJob(job);
                     } catch (Exception e) {
                         logger.error("{}", e.getMessage(), e);
                     }
@@ -495,14 +539,15 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     /**
      * Check everything is correct and queues the job.
      *
-     * @param organizationId Organization id.
      * @param job Job object.
      * @return 1 if the job has changed the status, 0 otherwise.
      */
-    protected int checkPendingJob(String organizationId, Job job) {
+    protected int checkPendingJob(Job job) {
         if (StringUtils.isEmpty(job.getStudy().getId())) {
-            return abortJob(job, "Missing mandatory 'studyUuid' field");
+            return abortJob(job, "Missing mandatory 'study' field");
         }
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudyFqn(job.getStudy().getId());
+        String organizationId = catalogFqn.getOrganizationId();
 
         if (StringUtils.isEmpty(job.getTool().getId())) {
             return abortJob(job, "Tool id '" + job.getTool().getId() + "' not found.");
@@ -813,7 +858,11 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                     .append(STUDY_PARAM, job.getStudy().getId());
             return buildCli(internalCli, "tools execute-job", params);
         } else {
-            return buildCli(internalCli, internalCommand, job.getParams());
+            ObjectMap params = new ObjectMap(job.getParams());
+            if (job.isDryRun()) {
+                params.put("dry-run", true);
+            }
+            return buildCli(internalCli, internalCommand, params);
         }
     }
 

@@ -577,9 +577,12 @@ public class VariantHBaseQueryParser {
 ////            filters.addFilter(keyOnlyFilter);
 //            scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
 //        }
-        if (selectElements.getFields().contains(VariantField.TYPE) || !scan.hasFamilies()) {
-            scan.addColumn(family, VariantColumn.TYPE.bytes());
-        }
+
+        // Alleles must always be included.
+        scan.addColumn(family, VariantColumn.ALLELES.bytes());
+        // Because alleles column may be empty, we must still ensure that we get, at least, one result per row.
+        // Include "type" column, which is never empty.
+        scan.addColumn(family, VariantColumn.TYPE.bytes());
 
 //        if (!columnPrefixes.isEmpty()) {
 //            MultipleColumnPrefixFilter columnPrefixFilter = new MultipleColumnPrefixFilter(
