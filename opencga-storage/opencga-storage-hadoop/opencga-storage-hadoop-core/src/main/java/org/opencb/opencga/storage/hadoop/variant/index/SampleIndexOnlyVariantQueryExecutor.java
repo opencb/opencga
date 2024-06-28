@@ -180,13 +180,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     private boolean isFullyCoveredQuery(Query inputQuery, QueryOptions options) {
         Query query = new Query(inputQuery);
 
-        if (!isQueryCovered(query)) {
-            return false;
-        }
 //        ParsedVariantQuery parsedVariantQuery = variantQueryProjectionParser.parseQuery(query, options, true);
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
 
-        return isIncludeCovered(sampleIndexQuery, inputQuery, options);
+        return isQueryCovered(sampleIndexQuery.getUncoveredQuery())
+                && isIncludeCovered(sampleIndexQuery, inputQuery, options);
     }
 
     private boolean isQueryCovered(Query query) {
