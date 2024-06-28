@@ -534,7 +534,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
 
         @Override
-        public <T extends Tool> int run(Class<T> clazz, String[] args) throws StorageEngineException {
+        public <T extends Tool> Result run(Class<T> clazz, String[] args) throws StorageEngineException {
             try {
                 // Copy configuration
                 Configuration conf = new Configuration(false);
@@ -547,14 +547,14 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 if (((Number) o).intValue() != 0) {
                     throw new StorageEngineException("Error executing MapReduce. Exit code: " + o);
                 }
-                return ((Number) o).intValue();
+                return new Result(((Number) o).intValue(), new ObjectMap());
             } catch (Exception e) {
                 throw new StorageEngineException("Error executing MapReduce.", e);
             }
         }
 
         @Override
-        public int run(String executable, String[] args) {
+        public Result run(String executable, String[] args) {
             try {
                 // Copy configuration
                 Configuration conf = new Configuration(false);
@@ -569,7 +569,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 if (((Number) o).intValue() != 0) {
                     throw new RuntimeException("Exit code = " + o);
                 }
-                return ((Number) o).intValue();
+                return new Result(((Number) o).intValue(), new ObjectMap());
 
             } catch (Exception e) {
 //                e.printStackTrace();
