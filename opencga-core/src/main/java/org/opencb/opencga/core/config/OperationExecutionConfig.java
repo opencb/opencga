@@ -1,9 +1,12 @@
 package org.opencb.opencga.core.config;
 
+import java.util.Map;
+
 public class OperationExecutionConfig {
 
     private Policy policy;
-    private int maxRetryAttempts;
+    private int maxAttempts;
+    private Map<String, String> jobParams;
 
     public enum Policy {
         IMMEDIATE,
@@ -14,16 +17,16 @@ public class OperationExecutionConfig {
     public OperationExecutionConfig() {
     }
 
-    public OperationExecutionConfig(Policy policy, int maxRetryAttempts) {
+    public OperationExecutionConfig(Policy policy, int maxAttempts) {
         this.policy = policy;
-        this.maxRetryAttempts = maxRetryAttempts;
+        this.maxAttempts = maxAttempts;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("OperationExecutionConfig{");
         sb.append("policy=").append(policy);
-        sb.append(", maxRetryAttempts=").append(maxRetryAttempts);
+        sb.append(", maxAttempts=").append(maxAttempts);
         sb.append('}');
         return sb.toString();
     }
@@ -37,12 +40,21 @@ public class OperationExecutionConfig {
         return this;
     }
 
-    public int getMaxRetryAttempts() {
-        return maxRetryAttempts;
+    public int getMaxAttempts() {
+        return maxAttempts;
     }
 
-    public OperationExecutionConfig setMaxRetryAttempts(int maxRetryAttempts) {
-        this.maxRetryAttempts = maxRetryAttempts;
+    public OperationExecutionConfig setMaxAttempts(int maxAttempts) {
+        this.maxAttempts = maxAttempts;
         return this;
+    }
+
+    public OperationExecutionConfig setJobParams(Map<String, String> jobParams) {
+        this.jobParams = jobParams;
+        return this;
+    }
+
+    public Map<String, String> getJobParams() {
+        return jobParams;
     }
 }
