@@ -2,15 +2,19 @@ package org.opencb.opencga.core.config;
 
 public class OperationConfig {
 
+    private OperationExecutionConfig annotationIndex;
     private OperationExecutionConfig variantSecondaryAnnotationIndex;
     private OperationExecutionConfig variantSecondarySampleIndex;
 
     public OperationConfig() {
-        variantSecondaryAnnotationIndex = new OperationExecutionConfig();
-        variantSecondarySampleIndex = new OperationExecutionConfig();
+        this.annotationIndex = new OperationExecutionConfig();
+        this.variantSecondaryAnnotationIndex = new OperationExecutionConfig();
+        this.variantSecondarySampleIndex = new OperationExecutionConfig();
     }
 
-    public OperationConfig(OperationExecutionConfig variantSecondaryAnnotationIndex, OperationExecutionConfig variantSecondarySampleIndex) {
+    public OperationConfig(OperationExecutionConfig annotationIndex, OperationExecutionConfig variantSecondaryAnnotationIndex,
+                           OperationExecutionConfig variantSecondarySampleIndex) {
+        this.annotationIndex = annotationIndex;
         this.variantSecondaryAnnotationIndex = variantSecondaryAnnotationIndex;
         this.variantSecondarySampleIndex = variantSecondarySampleIndex;
     }
@@ -18,10 +22,20 @@ public class OperationConfig {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("OperationConfig{");
-        sb.append("variantSecondaryAnnotationIndex=").append(variantSecondaryAnnotationIndex);
+        sb.append("annotationIndex=").append(annotationIndex);
+        sb.append(", variantSecondaryAnnotationIndex=").append(variantSecondaryAnnotationIndex);
         sb.append(", variantSecondarySampleIndex=").append(variantSecondarySampleIndex);
         sb.append('}');
         return sb.toString();
+    }
+
+    public OperationExecutionConfig getAnnotationIndex() {
+        return annotationIndex;
+    }
+
+    public OperationConfig setAnnotationIndex(OperationExecutionConfig annotationIndex) {
+        this.annotationIndex = annotationIndex;
+        return this;
     }
 
     public OperationExecutionConfig getVariantSecondaryAnnotationIndex() {

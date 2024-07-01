@@ -386,6 +386,7 @@ public class FieldConstants {
 
     //ProjectInternal
     public static final String PROJECT_INTERNAL_DATA_STORES = "Default value is VARIANT.";
+    public static final String PROJECT_INTERNAL_VARIANT = "Variant index statuses.";
     public static final String PROJECT_CELLBASE = "Cellbase configuration.";
 
     //StudyNotification
@@ -421,6 +422,7 @@ public class FieldConstants {
     //StudyInternal
     public static final String STUDY_INTERNAL_INDEX = "Study index.";
     public static final String STUDY_INTERNAL_CONFIGURATION = "Study configuration.";
+    public static final String STUDY_INTERNAL_VARIANT = "Variant index statuses.";
 
     //AdditionalInfo
     public static final String ADDITIONAL_INFO_TYPE = "Type of the additional info.";

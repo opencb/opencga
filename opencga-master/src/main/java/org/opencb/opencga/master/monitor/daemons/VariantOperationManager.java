@@ -1,8 +1,10 @@
 package org.opencb.opencga.master.monitor.daemons;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantSecondaryAnnotationIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantSecondarySampleIndexOperationTool;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -17,6 +19,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.variant.OperationIndexStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +47,9 @@ public class VariantOperationManager {
         this.token = token;
     }
 
-    public void checkPendingVariantOperations() {
-        if (configuration.getVariantSecondaryAnnotationIndex().getPolicy() == OperationExecutionConfig.Policy.NEVER
+    public void checkPendingVariantOperations() throws CatalogException {
+        if (configuration.getAnnotationIndex().getPolicy() == OperationExecutionConfig.Policy.NEVER
+                && configuration.getVariantSecondaryAnnotationIndex().getPolicy() == OperationExecutionConfig.Policy.NEVER
                 && configuration.getVariantSecondarySampleIndex().getPolicy() == OperationExecutionConfig.Policy.NEVER) {
             // Nothing to do
             return;
@@ -58,9 +62,10 @@ public class VariantOperationManager {
         if (hour < 5) {
             isNightTime = true;
         }
-        if (!isNightTime && configuration.getVariantSecondaryAnnotationIndex().getPolicy() == OperationExecutionConfig.Policy.NIGHTLY
+        if (!isNightTime && configuration.getAnnotationIndex().getPolicy() == OperationExecutionConfig.Policy.NIGHTLY
+                && configuration.getVariantSecondaryAnnotationIndex().getPolicy() == OperationExecutionConfig.Policy.NIGHTLY
                 && configuration.getVariantSecondarySampleIndex().getPolicy() == OperationExecutionConfig.Policy.NIGHTLY) {
-            // Waiting until night time
+            logger.info("Waiting until night time to check secondary indexes...");
             return;
         }
 
@@ -73,14 +78,32 @@ public class VariantOperationManager {
                     if (CollectionUtils.isNotEmpty(project.getStudies())) {
                         // Check project tools
                         List<String> studyFqns = project.getStudies().stream().map(Study::getFqn).collect(Collectors.toList());
-                        if (isNightTime || configuration.getVariantSecondaryAnnotationIndex().getPolicy() == OperationExecutionConfig.Policy.IMMEDIATE) {
+                        boolean annotationIndexPending = StringUtils.equals(OperationIndexStatus.PENDING,
+                                project.getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+                        if (isNightTime || configuration.getAnnotationIndex().getPolicy() == OperationExecutionConfig.Policy.IMMEDIATE) {
+                            if (jobDoesNotExist(studyFqns, VariantAnnotationIndexOperationTool.ID)) {
+                                Map<String, Object> paramsMap = new HashMap<>();
+                                paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
+                                catalogManager.getJobManager().submit(studyFqns.get(0), VariantAnnotationIndexOperationTool.ID,
+                                        Enums.Priority.MEDIUM, paramsMap, token);
+                            } else {
+                                logger.debug("There's already a job planned for the tool '{}'", VariantAnnotationIndexOperationTool.ID);
+                            }
+                        } else {
+                            logger.warn("Job policy '{}' not satisfied", configuration.getAnnotationIndex().getPolicy());
+                        }
+
+                        if (!annotationIndexPending && (isNightTime
+                                || configuration.getVariantSecondaryAnnotationIndex().getPolicy()
+                                == OperationExecutionConfig.Policy.IMMEDIATE)) {
                             if (jobDoesNotExist(studyFqns, VariantSecondaryAnnotationIndexOperationTool.ID)) {
                                 Map<String, Object> paramsMap = new HashMap<>();
                                 paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
                                 catalogManager.getJobManager().submit(studyFqns.get(0), VariantSecondaryAnnotationIndexOperationTool.ID,
                                         Enums.Priority.MEDIUM, paramsMap, token);
                             } else {
-                                logger.debug("There's already a job planned for the tool '{}'", VariantSecondaryAnnotationIndexOperationTool.ID);
+                                logger.debug("There's already a job planned for the tool '{}'",
+                                        VariantSecondaryAnnotationIndexOperationTool.ID);
                             }
                         } else {
                             logger.warn("Job policy '{}' not satisfied", configuration.getVariantSecondaryAnnotationIndex().getPolicy());
@@ -89,16 +112,20 @@ public class VariantOperationManager {
                         // Check study tools
                         for (Study study : project.getStudies()) {
                             if (study.getInternal().getStatus() != null) { // TODO: To be changed for the variant status
-                                if (isNightTime || configuration.getVariantSecondarySampleIndex().getPolicy() == OperationExecutionConfig.Policy.IMMEDIATE) {
-                                    if (jobDoesNotExist(Collections.singletonList(study.getFqn()), VariantSecondarySampleIndexOperationTool.ID)) {
+                                if (isNightTime || configuration.getVariantSecondarySampleIndex().getPolicy()
+                                        == OperationExecutionConfig.Policy.IMMEDIATE) {
+                                    if (jobDoesNotExist(Collections.singletonList(study.getFqn()),
+                                            VariantSecondarySampleIndexOperationTool.ID)) {
                                         Map<String, Object> paramsMap = new HashMap<>();
                                         catalogManager.getJobManager().submit(study.getFqn(), VariantSecondarySampleIndexOperationTool.ID,
                                                 Enums.Priority.MEDIUM, paramsMap, token);
                                     } else {
-                                        logger.debug("There's already a job planned for the tool '{}'", VariantSecondarySampleIndexOperationTool.ID);
+                                        logger.debug("There's already a job planned for the tool '{}'",
+                                                VariantSecondarySampleIndexOperationTool.ID);
                                     }
                                 } else {
-                                    logger.warn("Job policy '{}' not satisfied", configuration.getVariantSecondaryAnnotationIndex().getPolicy());
+                                    logger.warn("Job policy '{}' not satisfied",
+                                            configuration.getVariantSecondaryAnnotationIndex().getPolicy());
                                 }
                             }
                         }
