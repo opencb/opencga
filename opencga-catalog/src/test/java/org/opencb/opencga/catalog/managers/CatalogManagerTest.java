@@ -1173,6 +1173,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testKillJob() throws CatalogException {
+        Job job = catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
+        assertFalse(job.getInternal().isKillJobRequested());
+
+        catalogManager.getJobManager().kill(studyFqn, job.getId(), ownerToken);
+        job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), ownerToken).first();
+        assertTrue(job.getInternal().isKillJobRequested());
+    }
+
+    @Test
     public void testCreateJobAndReuse() throws CatalogException {
         String project1 = catalogManager.getProjectManager().create("testCreateJobAndReuse_project1", "", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerToken).first().getId();
