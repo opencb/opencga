@@ -26,13 +26,13 @@ import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class InterpretationCreateParams {
 
+    private String name;
     private String description;
     private String clinicalAnalysisId;
     private String creationDate;
@@ -50,11 +50,12 @@ public class InterpretationCreateParams {
     public InterpretationCreateParams() {
     }
 
-    public InterpretationCreateParams(String description, String clinicalAnalysisId, String creationDate, String modificationDate,
+    public InterpretationCreateParams(String name, String description, String clinicalAnalysisId, String creationDate, String modificationDate,
                                       ClinicalAnalystParam analyst, InterpretationMethod method, List<ClinicalVariant> primaryFindings,
                                       List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
                                       List<ClinicalCommentParam> comments, StatusParam status, Boolean locked,
                                       Map<String, Object> attributes) {
+        this.name = name;
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
         this.creationDate = creationDate;
@@ -71,7 +72,7 @@ public class InterpretationCreateParams {
     }
 
     public static InterpretationCreateParams of(Interpretation interpretation) {
-        return new InterpretationCreateParams(interpretation.getDescription(),
+        return new InterpretationCreateParams(interpretation.getName(), interpretation.getDescription(),
                 interpretation.getClinicalAnalysisId(), interpretation.getCreationDate(), interpretation.getModificationDate(),
                 ClinicalAnalystParam.of(interpretation.getAnalyst()), interpretation.getMethod(), interpretation.getPrimaryFindings(),
                 interpretation.getSecondaryFindings(),
@@ -89,7 +90,8 @@ public class InterpretationCreateParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("InterpretationCreateParams{");
-        sb.append("description='").append(description).append('\'');
+        sb.append("name='").append(name).append('\'');
+        sb.append(", description='").append(description).append('\'');
         sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -99,23 +101,32 @@ public class InterpretationCreateParams {
         sb.append(", secondaryFindings=").append(secondaryFindings);
         sb.append(", panels=").append(panels);
         sb.append(", comments=").append(comments);
-        sb.append(", status=").append(status);
         sb.append(", locked=").append(locked);
+        sb.append(", status=").append(status);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
 
     public Interpretation toClinicalInterpretation() {
-        return new Interpretation(null, description, clinicalAnalysisId, analyst != null ? analyst.toClinicalAnalyst() : null, method,
+        return new Interpretation("", name, description, clinicalAnalysisId, analyst != null ? analyst.toClinicalAnalyst() : null, method,
                 creationDate, modificationDate,  locked != null ? locked : false, primaryFindings, secondaryFindings,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
-                status != null ? status.toStatus() : null, attributes);
+                status != null ? status.toClinicalStatus() : null, attributes);
     }
 
     public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {
         return new ObjectMap(getUpdateObjectMapper().writeValueAsString(this.toClinicalInterpretation()));
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public InterpretationCreateParams setName(String name) {
+        this.name = name;
+        return this;
     }
 
     public String getDescription() {

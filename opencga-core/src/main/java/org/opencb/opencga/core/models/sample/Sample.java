@@ -107,8 +107,7 @@ public class Sample extends Annotable {
     private int release;
 
     /**
-     * Generic: Autoincremental version assigned to the registered entry. By default, updates does not create new versions. To enable
-     * versioning, users must set the `incVersion` flag from the /update web service when updating the document.
+     * Generic: Autoincremental version assigned to the registered entry.
      *
      * @apiNote Immutable
      */

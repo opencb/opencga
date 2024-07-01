@@ -347,7 +347,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "disorder.id",commandOptions.disorderId, true);
             putNestedIfNotEmpty(beanParams, "proband.id",commandOptions.probandId, true);
             putNestedIfNotEmpty(beanParams, "family.id",commandOptions.familyId, true);
-            putNestedIfNotNull(beanParams, "panelLock",commandOptions.panelLock, true);
+            putNestedIfNotNull(beanParams, "panelLocked",commandOptions.panelLocked, true);
             putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
             putNestedIfNotEmpty(beanParams, "report.title",commandOptions.reportTitle, true);
             putNestedIfNotEmpty(beanParams, "report.overview",commandOptions.reportOverview, true);
@@ -367,6 +367,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "responsible.address",commandOptions.responsibleAddress, true);
             putNestedIfNotEmpty(beanParams, "responsible.city",commandOptions.responsibleCity, true);
             putNestedIfNotEmpty(beanParams, "responsible.postcode",commandOptions.responsiblePostcode, true);
+            putNestedIfNotEmpty(beanParams, "interpretation.name",commandOptions.interpretationName, true);
             putNestedIfNotEmpty(beanParams, "interpretation.description",commandOptions.interpretationDescription, true);
             putNestedIfNotEmpty(beanParams, "interpretation.clinicalAnalysisId",commandOptions.interpretationClinicalAnalysisId, true);
             putNestedIfNotEmpty(beanParams, "interpretation.creationDate",commandOptions.interpretationCreationDate, true);
@@ -419,6 +420,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("dueDate", commandOptions.dueDate);
         queryParams.putIfNotEmpty("qualityControlSummary", commandOptions.qualityControlSummary);
         queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
@@ -439,6 +441,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("name", commandOptions.name);
         queryParams.putIfNotEmpty("clinicalAnalysisId", commandOptions.clinicalAnalysisId);
         queryParams.putIfNotEmpty("analystId", commandOptions.analystId);
         queryParams.putIfNotEmpty("methodName", commandOptions.methodName);
@@ -471,6 +474,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("name", commandOptions.name);
         queryParams.putIfNotEmpty("clinicalAnalysisId", commandOptions.clinicalAnalysisId);
         queryParams.putIfNotEmpty("analystId", commandOptions.analystId);
         queryParams.putIfNotEmpty("methodName", commandOptions.methodName);
@@ -1123,6 +1127,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("dueDate", commandOptions.dueDate);
         queryParams.putIfNotEmpty("qualityControlSummary", commandOptions.qualityControlSummary);
         queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
@@ -1271,7 +1276,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
             putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
             putNestedIfNotEmpty(beanParams, "disorder.id",commandOptions.disorderId, true);
-            putNestedIfNotNull(beanParams, "panelLock",commandOptions.panelLock, true);
+            putNestedIfNotNull(beanParams, "panelLocked",commandOptions.panelLocked, true);
             putNestedIfNotEmpty(beanParams, "proband.id",commandOptions.probandId, true);
             putNestedIfNotEmpty(beanParams, "family.id",commandOptions.familyId, true);
             putNestedIfNotNull(beanParams, "locked",commandOptions.locked, true);
@@ -1303,6 +1308,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "priority.id",commandOptions.priorityId, true);
             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotNull(beanParams, "panelLock",commandOptions.panelLock, true);
 
             clinicalAnalysisUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -1347,6 +1353,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("version", commandOptions.version);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -1382,6 +1389,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), InterpretationCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "clinicalAnalysisId",commandOptions.clinicalAnalysisId, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
@@ -1471,6 +1479,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), InterpretationUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
             putNestedIfNotEmpty(beanParams, "method.name",commandOptions.methodName, true);

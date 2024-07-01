@@ -31,6 +31,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class InterpretationUpdateParams {
 
+    private String name;
     private String description;
     private ClinicalAnalystParam analyst;
     private InterpretationMethod method;
@@ -47,11 +48,12 @@ public class InterpretationUpdateParams {
     public InterpretationUpdateParams() {
     }
 
-    public InterpretationUpdateParams(String description, ClinicalAnalystParam analyst, InterpretationMethod method,
+    public InterpretationUpdateParams(String name, String description, ClinicalAnalystParam analyst, InterpretationMethod method,
                                       String creationDate, String modificationDate, List<ClinicalVariant> primaryFindings,
                                       List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
                                       List<ClinicalCommentParam> comments, StatusParam status, Boolean locked,
                                       Map<String, Object> attributes) {
+        this.name = name;
         this.description = description;
         this.analyst = analyst;
         this.method = method;
@@ -74,7 +76,8 @@ public class InterpretationUpdateParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("InterpretationUpdateParams{");
-        sb.append("description='").append(description).append('\'');
+        sb.append("name='").append(name).append('\'');
+        sb.append(", description='").append(description).append('\'');
         sb.append(", analyst=").append(analyst);
         sb.append(", method=").append(method);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -88,6 +91,15 @@ public class InterpretationUpdateParams {
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public InterpretationUpdateParams setName(String name) {
+        this.name = name;
+        return this;
     }
 
     public String getDescription() {

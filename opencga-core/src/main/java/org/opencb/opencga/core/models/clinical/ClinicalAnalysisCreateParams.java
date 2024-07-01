@@ -46,7 +46,7 @@ public class ClinicalAnalysisCreateParams {
     private FamilyParam family;
 
     private List<PanelReferenceParam> panels;
-    private Boolean panelLock;
+    private Boolean panelLocked;
 
     @Deprecated
     private ClinicalAnalystParam analyst;
@@ -75,7 +75,7 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        List<PanelReferenceParam> panels, Boolean panelLock, List<ClinicalAnalystParam> analysts,
+                                        List<PanelReferenceParam> panels, Boolean panelLocked, List<ClinicalAnalystParam> analysts,
                                         ClinicalReport report, ClinicalRequest request, ClinicalResponsible responsible,
                                         InterpretationCreateParams interpretation, ClinicalConsentAnnotationParam consent,
                                         String creationDate, String modificationDate, String dueDate, List<ClinicalCommentParam> comments,
@@ -90,7 +90,7 @@ public class ClinicalAnalysisCreateParams {
         this.proband = proband;
         this.family = family;
         this.panels = panels;
-        this.panelLock = panelLock;
+        this.panelLocked = panelLocked;
         this.report = report;
         this.request = request;
         this.responsible = responsible;
@@ -120,7 +120,7 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getPanels() != null
                         ? clinicalAnalysis.getPanels().stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())
                         : null,
-                clinicalAnalysis.isPanelLock(),
+                clinicalAnalysis.isPanelLocked(),
                 clinicalAnalysis.getAnalysts() != null
                         ? clinicalAnalysis.getAnalysts().stream().map(ClinicalAnalystParam::of).collect(Collectors.toList())
                         : null,
@@ -155,7 +155,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", panels=").append(panels);
-        sb.append(", panelLock=").append(panelLock);
+        sb.append(", panelLocked=").append(panelLocked);
         sb.append(", analysts=").append(analysts);
         sb.append(", report=").append(report);
         sb.append(", request=").append(request);
@@ -231,14 +231,14 @@ public class ClinicalAnalysisCreateParams {
         }
 
         return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f,
-                diseasePanelList, panelLock != null ? panelLock : false, false, primaryInterpretation, new LinkedList<>(),
+                diseasePanelList, panelLocked != null ? panelLocked : false, false, primaryInterpretation, new LinkedList<>(),
                 consent != null ? consent.toClinicalConsentAnnotation() : null,
                 clinicalAnalystList, report, request, responsible, priority != null ? priority.toClinicalPriorityAnnotation() : null,
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
-                1,
+                1, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null,
-                annotationSets, attributes, status != null ? status.toStatus() : null);
+                annotationSets, attributes, status != null ? status.toClinicalStatus() : null);
     }
 
     public String getId() {
@@ -313,12 +313,12 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public Boolean getPanelLock() {
-        return panelLock;
+    public Boolean getPanelLocked() {
+        return panelLocked;
     }
 
-    public ClinicalAnalysisCreateParams setPanelLock(Boolean panelLock) {
-        this.panelLock = panelLock;
+    public ClinicalAnalysisCreateParams setPanelLocked(Boolean panelLocked) {
+        this.panelLocked = panelLocked;
         return this;
     }
 

@@ -44,7 +44,7 @@ public class ClinicalAnalysisUpdateParams {
     private List<FileReferenceParam> files;
 
     private List<PanelReferenceParam> panels;
-    private Boolean panelLock;
+    private Boolean panelLocked;
 
     private ProbandParam proband;
     private FamilyParam family;
@@ -77,7 +77,7 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        List<PanelReferenceParam> panels, Boolean panelLock, Boolean locked,
+                                        List<PanelReferenceParam> panels, Boolean panelLocked, Boolean locked,
                                         List<ClinicalAnalystParam> analysts, ClinicalReport report, ClinicalRequest request,
                                         ClinicalResponsible responsible, ClinicalAnalysisQualityControlUpdateParam qualityControl,
                                         ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
@@ -92,7 +92,7 @@ public class ClinicalAnalysisUpdateParams {
         this.proband = proband;
         this.family = family;
         this.panels = panels;
-        this.panelLock = panelLock;
+        this.panelLocked = panelLocked;
         this.locked = locked;
         this.analysts = analysts;
         this.report = report;
@@ -123,7 +123,7 @@ public class ClinicalAnalysisUpdateParams {
                 proband != null ? proband.toIndividual() : null,
                 family != null ? family.toFamily() : null,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
-                panelLock != null ? panelLock : false,
+                panelLocked != null ? panelLocked : false,
                 locked != null && locked,
                 null, null,
                 consent != null ? consent.toClinicalConsentAnnotation() : null,
@@ -133,10 +133,10 @@ public class ClinicalAnalysisUpdateParams {
                 report, request, responsible,
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
-                1,
+                1, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 qualityControl != null ? qualityControl.toClinicalQualityControl() : null, null, null, annotationSets, attributes,
-                status != null ? status.toStatus() : null);
+                status != null ? status.toClinicalStatus() : null);
     }
 
     @Override
@@ -148,7 +148,7 @@ public class ClinicalAnalysisUpdateParams {
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
         sb.append(", panels=").append(panels);
-        sb.append(", panelLock=").append(panelLock);
+        sb.append(", panelLocked=").append(panelLocked);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", locked=").append(locked);
@@ -243,12 +243,22 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
+    @Deprecated
     public Boolean getPanelLock() {
-        return panelLock;
+        return getPanelLocked();
     }
 
+    @Deprecated
     public ClinicalAnalysisUpdateParams setPanelLock(Boolean panelLock) {
-        this.panelLock = panelLock;
+        return setPanelLocked(panelLock);
+    }
+
+    public Boolean getPanelLocked() {
+        return panelLocked;
+    }
+
+    public ClinicalAnalysisUpdateParams setPanelLocked(Boolean panelLocked) {
+        this.panelLocked = panelLocked;
         return this;
     }
 

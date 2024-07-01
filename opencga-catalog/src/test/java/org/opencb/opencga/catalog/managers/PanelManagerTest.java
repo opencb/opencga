@@ -244,7 +244,7 @@ public class PanelManagerTest extends AbstractManagerTest {
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), ownerToken);
         catalogManager.getInterpretationManager().create(studyFqn, case2.getId(), interpretation5,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), ownerToken);
-        catalogManager.getClinicalAnalysisManager().update(studyFqn, case2.getId(), new ClinicalAnalysisUpdateParams().setPanelLock(true),
+        catalogManager.getClinicalAnalysisManager().update(studyFqn, case2.getId(), new ClinicalAnalysisUpdateParams().setPanelLocked(true),
                 QueryOptions.empty(), ownerToken);
 
         // case 3

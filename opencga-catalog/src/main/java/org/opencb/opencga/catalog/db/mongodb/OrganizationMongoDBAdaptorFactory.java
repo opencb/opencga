@@ -48,6 +48,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String INDIVIDUAL_ARCHIVE_COLLECTION = "individual_archive";
     public static final String FAMILY_ARCHIVE_COLLECTION = "family_archive";
     public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
+    public static final String CLINICAL_ANALYSIS_ARCHIVE_COLLECTION = "clinical_archive";
     public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
 
     public static final String DELETED_NOTE_COLLECTION = "note_deleted";
@@ -89,6 +90,7 @@ public class OrganizationMongoDBAdaptorFactory {
             INDIVIDUAL_ARCHIVE_COLLECTION,
             FAMILY_ARCHIVE_COLLECTION,
             PANEL_ARCHIVE_COLLECTION,
+            CLINICAL_ANALYSIS_ARCHIVE_COLLECTION,
             INTERPRETATION_ARCHIVE_COLLECTION,
 
             DELETED_NOTE_COLLECTION,
@@ -176,6 +178,7 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection individualArchivedCollection = mongoDataStore.getCollection(INDIVIDUAL_ARCHIVE_COLLECTION);
         MongoDBCollection familyArchivedCollection = mongoDataStore.getCollection(FAMILY_ARCHIVE_COLLECTION);
         MongoDBCollection panelArchivedCollection = mongoDataStore.getCollection(PANEL_ARCHIVE_COLLECTION);
+        MongoDBCollection clinicalArchivedCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_ARCHIVE_COLLECTION);
         MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
 
         MongoDBCollection deletedNotesCollection = mongoDataStore.getCollection(DELETED_NOTE_COLLECTION);
@@ -211,7 +214,8 @@ public class OrganizationMongoDBAdaptorFactory {
         userDBAdaptor = new UserMongoDBAdaptor(userCollection, deletedUserCollection, configuration, this);
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, configuration, this);
         panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, panelArchivedCollection, deletedPanelCollection, configuration, this);
-        clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, configuration, this);
+        clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, clinicalArchivedCollection, deletedClinicalCollection,
+                configuration, this);
         interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, interpretationArchivedCollection,
                 deletedInterpretationCollection, configuration, this);
 //        metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, configuration, this);
