@@ -5,6 +5,14 @@ get_xetabase_branch() {
   # Input parameter (branch name)
   input_branch="$1"
 
+  # If the branch begins with 'TASK' and exists in the opencga-enterprise repository, I return it
+  if [[ $input_branch == TASK* ]]; then
+    if [ "$(git ls-remote https://github.com/zetta-genomics/opencga-enterprise.git "$input_branch" )" ] ; then
+      echo "$GIT_BRANCH";
+      exit 0;
+    fi
+  fi
+
   # Check if the branch name is "develop" in that case return the same branch name
   if [[ "$input_branch" == "develop" ]]; then
     echo "develop"
@@ -16,7 +24,7 @@ get_xetabase_branch() {
     # Extract the MAJOR part of the branch name
     MAJOR=${BASH_REMATCH[1]}
     # Calculate the XETABASE_MAJOR by subtracting 3 from MAJOR
-    XETABASE_MAJOR=$((MAJOR - 3))
+    XETABASE_MAJOR=$((MAJOR - 1))
     # Check if the XETABASE_MAJOR is negative
     if (( XETABASE_MAJOR < 0 )); then
       echo "Error: 'MAJOR' digit after subtraction results in a negative number."
