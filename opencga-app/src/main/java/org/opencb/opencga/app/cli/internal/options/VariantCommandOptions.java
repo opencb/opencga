@@ -70,6 +70,8 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
+import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_SAMPLE_DESCRIPTION;
+import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_VERSION_DESCRIPTION;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION;
@@ -1842,11 +1844,14 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--sample"}, description = FieldConstants.SAMPLE_ID_DESCRIPTION, required = true)
+        @Parameter(names = {"--sample"}, description = EXOMISER_SAMPLE_DESCRIPTION, required = true)
         public String sample;
 
         @Parameter(names = {"--clinical-analysis-type"}, description = FieldConstants.EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION)
         public String clinicalAnalysisType = ClinicalAnalysis.Type.SINGLE.name();
+
+        @Parameter(names = {"--exomiser-version"}, description = EXOMISER_VERSION_DESCRIPTION)
+        public String exomiserVersion;
 
         @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
         public String outdir;

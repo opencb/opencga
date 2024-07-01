@@ -216,7 +216,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
-        #' @param data Exomizer interpretation analysis params.
+        #' @param data Exomiser interpretation analysis params.
         runInterpreterExomiser=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/exomiser", subcategoryId=NULL, action="run", params=params,
                 httpMethod="POST", as.queryParam=NULL, ...),
