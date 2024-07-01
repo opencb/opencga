@@ -54,14 +54,18 @@ public class ClientsGenerator {
         System.out.println("outDir " + outDir);
         String binary = clientsGeneratorDir + "/" + language + "_client_generator.py";
         ProcessBuilder processBuilder = new ProcessBuilder("python3", binary, restFilePath, outDir);
+        System.out.println("python3 " + binary + " " + restFilePath + " " + outDir);
         Process p;
         try {
             p = processBuilder.start();
             BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream()));
             String line;
             while ((line = input.readLine()) != null) {
                 logger.info("{} library generator: {}", language, line);
-                System.out.println(language + " library generator: " + line);
+            }
+            while ((line = error.readLine()) != null) {
+                logger.error("{} library generator: {}", language, line);
             }
             p.waitFor();
             input.close();

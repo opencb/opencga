@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.auth.authorization;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -79,18 +80,42 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         }
-        throw new CatalogAuthorizationException("Permission denied: Only the organization owner or administrators can update the project.");
+        try {
+            checkUserIsStudyAdminInAllStudiesOfProject(organizationId, projectId, userId);
+        } catch (CatalogException e) {
+            throw new CatalogAuthorizationException("Permission denied: Only the organization owner, administrators, or users who are "
+                    + "study administrators in all studies within the project can update the project.", e);
+        }
+    }
+
+    private void checkUserIsStudyAdminInAllStudiesOfProject(String organizationId, long projectUid, String userId) throws CatalogException {
+        Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), projectUid);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(), StudyDBAdaptor.QueryParams.FQN.key()));
+        OpenCGAResult<Study> studyResult = dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).get(query, options);
+        List<String> nonAdminStudyIds = new ArrayList<>();
+        for (Study study : studyResult.getResults()) {
+            for (Group group : study.getGroups()) {
+                if (group.getId().equals(ADMINS_GROUP)) {
+                    if (!group.getUserIds().contains(userId)) {
+                        nonAdminStudyIds.add(study.getFqn());
+                    }
+                    break;
+                }
+            }
+        }
+        if (!nonAdminStudyIds.isEmpty()) {
+            throw new CatalogAuthorizationException("Permission denied: User " + userId + " is not an administrator of the following"
+                    + " studies: " + String.join(", ", nonAdminStudyIds));
+        }
     }
 
     @Override
-    public void checkCanViewOrganization(String organizationId, String userId) throws CatalogException {
+    public void checkCanViewOrganization(String organizationId, String userId) throws CatalogAuthorizationException {
         if (isOpencgaAdministrator(organizationId, userId)) {
             return;
         }
-        // Check user belongs to organization
-        if (!dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).exists(userId)) {
-            throw new CatalogAuthorizationException("Permission denied. User '" + userId + "' does not belong to the organization.");
-        }
+        checkUserExists(organizationId, userId);
     }
 
     @Override
@@ -220,11 +245,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public boolean isOpencgaAdministrator(String organization, String userId) throws CatalogException {
+    public boolean isOpencgaAdministrator(String organization, String userId) throws CatalogAuthorizationException {
         if (ParamConstants.ADMIN_ORGANIZATION.equals(organization) || userId.startsWith(ParamConstants.ADMIN_ORGANIZATION + ":")) {
             // Check user exists in ADMIN ORGANIZATION
             String user = userId.replace(ParamConstants.ADMIN_ORGANIZATION + ":", "");
-            dbAdaptorFactory.getCatalogUserDBAdaptor(ParamConstants.ADMIN_ORGANIZATION).checkId(user);
+            checkUserExists(ParamConstants.ADMIN_ORGANIZATION, user);
             return true;
         }
         return false;
@@ -1013,6 +1038,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     Auxiliar methods
     ====================================
      */
+
+    private void checkUserExists(String organizationId, String userId) throws CatalogAuthorizationException {
+        try {
+            dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).checkId(userId);
+        } catch (CatalogException e) {
+            throw new CatalogAuthorizationException("User '" + userId + "' not authorized to see Org '" + organizationId + "'.", e);
+        }
+    }
 
     /**
      * Retrieves the groupId where the members belongs to.

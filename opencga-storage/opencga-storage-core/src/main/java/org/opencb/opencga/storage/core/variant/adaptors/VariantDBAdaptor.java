@@ -23,12 +23,12 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
@@ -37,8 +37,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.addSamplesMetadataIfRequested;
-
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -46,21 +44,6 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.ad
  */
 public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
 
-    /**
-     * This method inserts Variants into the given Study. If the Study already exists then it just adds the new Sample
-     * genotypes, also new variants are inserted. If it is a new Study then Sample genotypes are added to the new Study.
-     *
-     * @param variants  List of variants in OpenCB data model to be inserted
-     * @param studyName Name or alias of the study
-     * @param options   Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A DataResult with the number of inserted variants
-     */
-    @Deprecated
-    default DataResult insert(List<Variant> variants, String studyName, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
     /**
      * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
      * the 'include' and 'exclude' fields at options.
@@ -71,26 +54,29 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @return A DataResult with the result of the query
      */
     default VariantQueryResult<Variant> get(Iterator<?> variants, Query query, QueryOptions options) {
-        DataResult<Variant> queryResult = iterator(variants, query, options).toDataResult();
-        return addSamplesMetadataIfRequested(queryResult, query, options, getMetadataManager());
+        ParsedVariantQuery variantQuery = new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true);
+        try (VariantDBIterator iterator = iterator(variants, query, options)) {
+            return iterator.toDataResult(variantQuery);
+        } catch (Exception e) {
+            throw VariantQueryException.internalException(e);
+        }
     }
 
     @Deprecated
     default VariantDBIterator iterator(Query query, QueryOptions options) {
-        return iterator(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true), options);
+        return iterator(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true));
     }
 
-    VariantDBIterator iterator(ParsedVariantQuery query, QueryOptions options);
+    VariantDBIterator iterator(ParsedVariantQuery query);
 
     /**
      * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
      * the 'include' and 'exclude' fields at options.
      *
      * @param query   Query to be executed in the database to filter variants
-     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A DataResult with the result of the query
      */
-    VariantQueryResult<Variant> get(ParsedVariantQuery query, QueryOptions options);
+    VariantQueryResult<Variant> get(ParsedVariantQuery query);
 
     /**
      * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
@@ -102,7 +88,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      */
     @Deprecated
     default VariantQueryResult<Variant> get(Query query, QueryOptions options) {
-        return get(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true), options);
+        return get(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true));
     }
 
     /**

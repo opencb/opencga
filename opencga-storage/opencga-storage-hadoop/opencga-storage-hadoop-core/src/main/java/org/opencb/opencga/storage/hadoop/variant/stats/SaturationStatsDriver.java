@@ -106,6 +106,7 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
             maxSampleId += maxSampleIdInStudy;
         }
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
 
 //        scan.setFilter(new KeyOnlyFilter());
         scan.setFilter(

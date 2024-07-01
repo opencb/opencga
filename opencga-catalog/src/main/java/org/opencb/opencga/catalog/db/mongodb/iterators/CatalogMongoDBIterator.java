@@ -183,25 +183,28 @@ public class CatalogMongoDBIterator<E> implements DBIterator<E> {
     }
 
     protected boolean includeField(QueryOptions options, List<String> fields) {
-        Set<String> includedFields = new HashSet<>(fields);
         if (options.containsKey(QueryOptions.INCLUDE)) {
             List<String> currentIncludeList = options.getAsStringList(QueryOptions.INCLUDE);
             for (String include : currentIncludeList) {
-                if (includedFields.contains(include)) {
-                    return true;
+                for (String field : fields) {
+                    if (include.startsWith(field)) {
+                        return true;
+                    }
                 }
             }
             return false;
         } else if (options.containsKey(QueryOptions.EXCLUDE)) {
             List<String> currentExcludeList = options.getAsStringList(QueryOptions.EXCLUDE);
             for (String exclude : currentExcludeList) {
-                if (includedFields.contains(exclude)) {
-                    return false;
+                for (String field : fields) {
+                    if (exclude.equals(field)) {
+                        return false;
+                    }
                 }
+
             }
             return true;
         }
-
         return true;
     }
 

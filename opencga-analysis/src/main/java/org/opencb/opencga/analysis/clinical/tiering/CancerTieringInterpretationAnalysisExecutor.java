@@ -41,7 +41,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;

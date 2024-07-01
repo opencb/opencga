@@ -16,52 +16,132 @@
 
 package org.opencb.opencga.core.config;
 
+import java.util.Objects;
+
 /**
  * Created by imedina on 22/05/16.
  */
 public class RestServerConfiguration extends AbstractServerConfiguration {
 
-    private int defaultLimit;
-    private int maxLimit;
-
-
+    public HttpConfiguration httpConfiguration = new HttpConfiguration();
     public RestServerConfiguration() {
     }
 
     public RestServerConfiguration(int port) {
-        this(port, 2000, 5000);
-    }
-
-    public RestServerConfiguration(int port, int defaultLimit, int maxLimit) {
         super(port);
-        this.defaultLimit = defaultLimit;
-        this.maxLimit = maxLimit;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("RestServerConfiguration{");
-        sb.append("defaultLimit=").append(defaultLimit);
-        sb.append(", maxLimit=").append(maxLimit);
+        sb.append("port=").append(port);
+        sb.append(", httpConfiguration=").append(httpConfiguration);
         sb.append('}');
         return sb.toString();
     }
 
-    public int getDefaultLimit() {
-        return defaultLimit;
+    @Deprecated
+    protected void setDefaultLimit(Object o) {
+        Configuration.reportUnusedField("configuration.yml#server.rest.defaultLimit", o);
     }
 
-    public RestServerConfiguration setDefaultLimit(int defaultLimit) {
-        this.defaultLimit = defaultLimit;
+    @Deprecated
+    protected void setMaxLimit(Object o) {
+        Configuration.reportUnusedField("configuration.yml#server.rest.maxLimit", o);
+    }
+
+    public HttpConfiguration getHttpConfiguration() {
+        return httpConfiguration;
+    }
+
+    public RestServerConfiguration setHttpConfiguration(HttpConfiguration httpConfiguration) {
+        this.httpConfiguration = httpConfiguration;
         return this;
     }
 
-    public int getMaxLimit() {
-        return maxLimit;
-    }
+    public static class HttpConfiguration {
+        private int outputBufferSize = -1;
+        private int outputAggregationSize = -1;
+        private int requestHeaderSize = -1;
+        private int responseHeaderSize = -1;
+        private int headerCacheSize = -1;
 
-    public RestServerConfiguration setMaxLimit(int maxLimit) {
-        this.maxLimit = maxLimit;
-        return this;
+        public int getOutputBufferSize() {
+            return outputBufferSize;
+        }
+
+        public HttpConfiguration setOutputBufferSize(int outputBufferSize) {
+            this.outputBufferSize = outputBufferSize;
+            return this;
+        }
+
+        public int getOutputAggregationSize() {
+            return outputAggregationSize;
+        }
+
+        public HttpConfiguration setOutputAggregationSize(int outputAggregationSize) {
+            this.outputAggregationSize = outputAggregationSize;
+            return this;
+        }
+
+        public int getRequestHeaderSize() {
+            return requestHeaderSize;
+        }
+
+        public HttpConfiguration setRequestHeaderSize(int requestHeaderSize) {
+            this.requestHeaderSize = requestHeaderSize;
+            return this;
+        }
+
+        public int getResponseHeaderSize() {
+            return responseHeaderSize;
+        }
+
+        public HttpConfiguration setResponseHeaderSize(int responseHeaderSize) {
+            this.responseHeaderSize = responseHeaderSize;
+            return this;
+        }
+
+        public int getHeaderCacheSize() {
+            return headerCacheSize;
+        }
+
+        public HttpConfiguration setHeaderCacheSize(int headerCacheSize) {
+            this.headerCacheSize = headerCacheSize;
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("HttpConfiguration{");
+            sb.append("outputBufferSize=").append(outputBufferSize);
+            sb.append(", outputAggregationSize=").append(outputAggregationSize);
+            sb.append(", requestHeaderSize=").append(requestHeaderSize);
+            sb.append(", responseHeaderSize=").append(responseHeaderSize);
+            sb.append(", headerCacheSize=").append(headerCacheSize);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            HttpConfiguration that = (HttpConfiguration) o;
+            return outputBufferSize == that.outputBufferSize &&
+                    outputAggregationSize == that.outputAggregationSize &&
+                    requestHeaderSize == that.requestHeaderSize &&
+                    responseHeaderSize == that.responseHeaderSize &&
+                    headerCacheSize == that.headerCacheSize;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(outputBufferSize, outputAggregationSize, requestHeaderSize, responseHeaderSize, headerCacheSize);
+        }
     }
 }

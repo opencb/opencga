@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.mongodb.BasicDBObject;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
@@ -101,6 +102,35 @@ public class CatalogManagerTest extends AbstractManagerTest {
         JwtPayload payload = catalogManager.getUserManager().validateToken(token);
         assertEquals(ParamConstants.OPENCGA_USER_ID, payload.getUserId());
         assertEquals(ParamConstants.ADMIN_ORGANIZATION, payload.getOrganization());
+    }
+
+    @Test
+    public void searchUsersTest() throws CatalogException {
+        OpenCGAResult<User> search = catalogManager.getUserManager().search(organizationId, new Query(), QueryOptions.empty(), opencgaToken);
+        assertEquals(8, search.getNumResults());
+        for (User user : search.getResults()) {
+            if (noAccessUserId1.equals(user.getId())) {
+                assertEquals(0, user.getProjects().size());
+            } else if (user.getId().startsWith("normalUser")) {
+                assertEquals(1, user.getProjects().size());
+            } else {
+                assertEquals(2, user.getProjects().size());
+            }
+        }
+
+        search = catalogManager.getUserManager().search(null, new Query(), QueryOptions.empty(), ownerToken);
+        assertEquals(8, search.getNumResults());
+
+        search = catalogManager.getUserManager().search(null, new Query(), QueryOptions.empty(), orgAdminToken2);
+        assertEquals(8, search.getNumResults());
+
+        search = catalogManager.getUserManager().search(null, new Query(), QueryOptions.empty(), orgAdminToken1);
+        assertEquals(8, search.getNumResults());
+
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().search(null, new Query(),
+                QueryOptions.empty(), studyAdminToken1));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().search(null, new Query(),
+                QueryOptions.empty(), normalToken1));
     }
 
     @Test
@@ -257,6 +287,65 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testGetProjectsFromUserInfo() throws CatalogException {
+        String userId = organizationId;
+        catalogManager.getUserManager().create(userId, "test", "mail@mail.com", TestParamConstants.PASSWORD, organizationId, null,
+                opencgaToken);
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("test")), ownerToken);
+        String token = catalogManager.getUserManager().login(organizationId, userId, TestParamConstants.PASSWORD).getToken();
+
+        DataResult<User> user = catalogManager.getUserManager().get(organizationId, userId, new QueryOptions(), token);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, normalUserId3, new QueryOptions(), normalToken3);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, orgOwnerUserId, new QueryOptions(), ownerToken);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, orgAdminUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, studyAdminUserId1, new QueryOptions(), studyAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, normalUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+
+        user = catalogManager.getUserManager().get(null, normalUserId1, new QueryOptions(), normalToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, normalUserId3, new QueryOptions(), normalToken3);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, orgOwnerUserId, new QueryOptions(), ownerToken);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, orgAdminUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, studyAdminUserId1, new QueryOptions(), studyAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, normalUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+    }
+
+    @Test
     public void testModifyUser() throws CatalogException, InterruptedException, IOException {
         ObjectMap params = new ObjectMap();
         String newName = "Changed Name " + RandomStringUtils.randomAlphanumeric(10);
@@ -336,6 +425,15 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     private String getAdminToken() throws CatalogException, IOException {
         return catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+    }
+
+    @Test
+    public void createUserUsingMailAsId() throws CatalogException {
+        catalogManager.getUserManager().create(new User().setId("hello.mail@mymail.org").setName("Hello"), TestParamConstants.PASSWORD, ownerToken);
+        AuthenticationResponse login = catalogManager.getUserManager().login(organizationId, "hello.mail@mymail.org", TestParamConstants.PASSWORD);
+        assertNotNull(login);
+        User user = catalogManager.getUserManager().get(organizationId, "hello.mail@mymail.org", new QueryOptions(), login.getToken()).first();
+        assertEquals("hello.mail@mymail.org", user.getId());
     }
 
     @Test
@@ -480,6 +578,29 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(acls.stream().map(x -> String.valueOf(x.get("member"))).collect(Collectors.toSet()).contains("@group_cancer_some_thing_else"));
     }
 
+    @Test
+    public void getUserInfoTest() throws CatalogException {
+        OpenCGAResult<User> result = catalogManager.getUserManager().get(organizationId, orgOwnerUserId, QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(2, result.first().getProjects().size());
+
+        result = catalogManager.getUserManager().get(organizationId, orgAdminUserId1, QueryOptions.empty(), orgAdminToken1);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(2, result.first().getProjects().size());
+
+        result = catalogManager.getUserManager().get(organizationId, studyAdminUserId1, QueryOptions.empty(), studyAdminToken1);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(2, result.first().getProjects().size());
+
+        result = catalogManager.getUserManager().get(organizationId, normalUserId1, QueryOptions.empty(), normalToken1);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(1, result.first().getProjects().size());
+    }
+
     /**
      * Project methods ***************************
      */
@@ -542,6 +663,82 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("found");
         catalogManager.getProjectManager().update(project1, options, null, ownerToken);
+    }
+
+    @Test
+    public void updateProjectPermissionTest() throws CatalogException {
+        ObjectMap params = new ObjectMap()
+                .append(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), "my new description");
+        Project project = catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, ownerToken).first();
+        assertEquals("my new description", project.getDescription());
+
+        params.put(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), "my new description 2");
+        project = catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken2).first();
+        assertEquals("my new description 2", project.getDescription());
+
+        params.put(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), "my new description 3");
+        project = catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, studyAdminToken1).first();
+        assertEquals("my new description 3", project.getDescription());
+
+        // Make normalUser1 admin of first study
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(normalUserId1)), ownerToken);
+        // And remove normalUser1 from the admins group of the second study (just in case)
+        catalogManager.getStudyManager().updateGroup(studyFqn2, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.REMOVE,
+                new GroupUpdateParams(Collections.singletonList(normalUserId1)), ownerToken);
+
+        CatalogAuthorizationException catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, normalToken1));
+        assertFalse(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+
+        catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, normalToken2));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+
+        // Remove orgAdminUser1 from the administrators group of the organization
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(OrganizationDBAdaptor.QueryParams.ADMINS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+        catalogManager.getOrganizationManager().update(organizationId, new OrganizationUpdateParams()
+                .setAdmins(Collections.singletonList(orgAdminUserId1)), options, ownerToken);
+
+        catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken1));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+
+        // Create a third study
+        catalogManager.getStudyManager().create(project1, new Study().setId("study_3"), null, ownerToken);
+        catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken1));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains("study_3"));
+
+        // Add orgAdminUser1 to the administrators group of the third study
+        catalogManager.getStudyManager().updateGroup("study_3", ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(orgAdminUserId1)), ownerToken);
+        catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken1));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+        assertFalse(catalogAuthorizationException.getCause().getMessage().contains("study_3"));
+
+        // Add orgAdminUser1 to the administrators group of the second study
+        catalogManager.getStudyManager().updateGroup(studyFqn2, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(orgAdminUserId1)), ownerToken);
+        catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken1));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertFalse(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+        assertFalse(catalogAuthorizationException.getCause().getMessage().contains("study_3"));
+
+        // Add orgAdminUser1 to the administrators group of the remaining study
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(orgAdminUserId1)), ownerToken);
+        catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken1);
     }
 
     @Test

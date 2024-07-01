@@ -26,6 +26,7 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -52,6 +53,7 @@ public class VariantDeleteOperationManager extends OperationManager {
 
     public void removeFile(String study, List<String> inputFiles, URI outdir, String token) throws CatalogException, StorageEngineException {
         // Update study metadata BEFORE executing the operation and fetching files from Catalog
+        boolean force = variantStorageEngine.getOptions().getBoolean(VariantStorageOptions.FORCE.key());
         StudyMetadata studyMetadata = synchronizeCatalogStudyFromStorage(study, token, true);
 
         List<String> fileNames = new ArrayList<>();
@@ -62,7 +64,15 @@ public class VariantDeleteOperationManager extends OperationManager {
                 if (!catalogIndexStatus.equals(VariantIndexStatus.READY)) {
                     // Might be partially loaded in VariantStorage. Check FileMetadata
                     FileMetadata fileMetadata = variantStorageEngine.getMetadataManager().getFileMetadata(studyMetadata.getId(), fileStr);
-                    if (fileMetadata == null || fileMetadata.getIndexStatus() != TaskMetadata.Status.NONE) {
+                    boolean canBeRemoved;
+                    if (force) {
+                        // When forcing remove, just require the file to be registered in the storage
+                        canBeRemoved = fileMetadata != null;
+                    } else {
+                        // Otherwise, require the file to be in status NONE
+                        canBeRemoved = fileMetadata != null && fileMetadata.getIndexStatus() != TaskMetadata.Status.NONE;
+                    }
+                    if (!canBeRemoved) {
                         throw new CatalogException("Unable to remove variants from file " + file.getName() + ". "
                                 + "IndexStatus = " + catalogIndexStatus);
                     }

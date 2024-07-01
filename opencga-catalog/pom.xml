@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>3.1.0-SNAPSHOT</version>
+        <version>3.2.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -245,6 +245,12 @@
                 <filtering>false</filtering>
                 <includes>
                     <include>template.zip</include>
+                </includes>
+            </testResource>
+            <testResource>
+                <directory>../opencga-core/src/test/resources</directory>
+                <includes>
+                    <include>log4j2-test.xml</include>
                 </includes>
             </testResource>
         </testResources>
