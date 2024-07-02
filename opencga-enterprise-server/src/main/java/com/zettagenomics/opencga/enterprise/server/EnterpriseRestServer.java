@@ -70,7 +70,8 @@ public class EnterpriseRestServer extends RestServer {
 
                     FilterHolder casAuthenticationFilterHolder = new FilterHolder();
                     casAuthenticationFilterHolder.setName("CAS Authentication Filter");
-                    casAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.AuthenticationFilter");
+//                    casAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.AuthenticationFilter");
+                    casAuthenticationFilterHolder.setClassName("com.zettagenomics.opencga.enterprise.server.sso.OpencgaAuthenticationFilter");
                     casInitParameters = new HashMap<>();
                     casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
@@ -101,7 +102,8 @@ public class EnterpriseRestServer extends RestServer {
 
                     FilterHolder samlAuthenticationFilterHolder = new FilterHolder();
                     samlAuthenticationFilterHolder.setName("CAS Authentication Filter");
-                    samlAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.Saml11AuthenticationFilter");
+//                    samlAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.Saml11AuthenticationFilter");
+                    samlAuthenticationFilterHolder.setClassName("com.zettagenomics.opencga.enterprise.server.sso.Saml11OpencgaAuthenticationFilter");
                     samlInitParameters = new HashMap<>();
                     samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
