@@ -103,10 +103,7 @@ function manage_dependency() {
       exit 1
    fi
   fi
-
   git checkout "$BRANCH_NAME"
-
-
   local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
   if [ "$VERSION" == "$REPO_VERSION" ];then
     log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+
+
 ## Navigate to the root folder where the pom.xml is
 cd "$(dirname "$0")"/../../../ || exit 2
 
