@@ -38,6 +38,7 @@ public class OrganizationsCommandOptions {
         public SearchNotesCommandOptions searchNotesCommandOptions;
         public DeleteNotesCommandOptions deleteNotesCommandOptions;
         public UpdateNotesCommandOptions updateNotesCommandOptions;
+        public UpdateConfigurationCommandOptions updateConfigurationCommandOptions;
         public InfoCommandOptions infoCommandOptions;
         public UpdateCommandOptions updateCommandOptions;
 
@@ -51,6 +52,7 @@ public class OrganizationsCommandOptions {
         this.searchNotesCommandOptions = new SearchNotesCommandOptions();
         this.deleteNotesCommandOptions = new DeleteNotesCommandOptions();
         this.updateNotesCommandOptions = new UpdateNotesCommandOptions();
+        this.updateConfigurationCommandOptions = new UpdateConfigurationCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
     
@@ -213,6 +215,47 @@ public class OrganizationsCommandOptions {
     
         @Parameter(names = {"--visibility"}, description = "Enum param allowed values: PUBLIC, PRIVATE", required = false, arity = 1)
         public String visibility;
+    
+    }
+
+    @Parameters(commandNames = {"configuration-update"}, commandDescription ="Update the Organization configuration attributes")
+    public class UpdateConfigurationCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = true, arity = 1)
+        public String organization; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+        @Parameter(names = {"--authentication-origins-action"}, description = "Action to be performed if the array of authenticationOrigins is being updated.", required = false, arity = 1)
+        public String authenticationOriginsAction = "ADD"; 
+    
+        @Parameter(names = {"--optimizations-simplify-permissions"}, description = "The body web service simplifyPermissions parameter", required = false, help = true, arity = 0)
+        public boolean optimizationsSimplifyPermissions = false;
+    
+        @Parameter(names = {"--token-algorithm"}, description = "The body web service algorithm parameter", required = false, arity = 1)
+        public String tokenAlgorithm;
+    
+        @Parameter(names = {"--token-secret-key"}, description = "The body web service secretKey parameter", required = false, arity = 1)
+        public String tokenSecretKey;
+    
+        @Parameter(names = {"--token-expiration"}, description = "The body web service expiration parameter", required = false, arity = 1)
+        public Long tokenExpiration;
     
     }
 
