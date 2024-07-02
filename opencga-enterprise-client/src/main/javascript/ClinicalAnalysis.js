@@ -951,13 +951,13 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     /** Get clinical variant summary from CVDB
     * @param {String} project - Project ID.
     * @param {String} cvId - Variant ID (or list of IDs separated by commas).
-    * @param {String} ciStatusId - Clinical interpretation status ID (or list of IDs separated by commas).
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    statsCvdbVariant(project, cvId, ciStatusId, params) {
-        return this._get("analysis", null, "clinical/cvdb/variant", null, "stats", {project, cvId, ciStatusId, ...params});
+    statsCvdbVariant(project, cvId, params) {
+        return this._get("analysis", null, "clinical/cvdb/variant", null, "stats", {project, cvId, ...params});
     }
 
     /** Calculate and fetch clinical variant evidence aggregation stats

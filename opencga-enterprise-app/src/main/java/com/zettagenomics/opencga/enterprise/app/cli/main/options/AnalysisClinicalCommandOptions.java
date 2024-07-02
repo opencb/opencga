@@ -2089,7 +2089,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = true, arity = 1)
         public String cvId; 
     
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = true, arity = 1)
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
     }

@@ -1086,11 +1086,12 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().statsCvdbVariant(commandOptions.project, commandOptions.cvId, commandOptions.ciStatusId, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().statsCvdbVariant(commandOptions.project, commandOptions.cvId, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsCvdbVariantEvidence() throws Exception {

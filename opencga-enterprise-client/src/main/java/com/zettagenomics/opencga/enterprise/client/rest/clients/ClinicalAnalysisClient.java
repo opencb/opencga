@@ -1009,18 +1009,17 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * Get clinical variant summary from CVDB.
      * @param project Project ID.
      * @param cvId Variant ID (or list of IDs separated by commas).
-     * @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas).
      * @param params Map containing any of the following optional parameters.
      *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ClinicalVariantSummaryStats> statsCvdbVariant(String project, String cvId, String ciStatusId, ObjectMap params)
+    public RestResponse<ClinicalVariantSummaryStats> statsCvdbVariant(String project, String cvId, ObjectMap params)
             throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.putIfNotNull("project", project);
         params.putIfNotNull("cvId", cvId);
-        params.putIfNotNull("ciStatusId", ciStatusId);
         return execute("analysis", null, "clinical/cvdb/variant", null, "stats", params, GET, ClinicalVariantSummaryStats.class);
     }
 
