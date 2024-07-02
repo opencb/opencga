@@ -39,8 +39,7 @@ public class StudyInternal extends Internal {
             description = FieldConstants.STUDY_INTERNAL_CONFIGURATION)
     private StudyConfiguration configuration;
 
-    @DataField(id = "variant", uncommentedClasses = {"StudyInternalVariant"},
-            description = FieldConstants.STUDY_INTERNAL_VARIANT)
+    @DataField(id = "variant", description = FieldConstants.STUDY_INTERNAL_VARIANT)
     private StudyInternalVariant variant;
 
     public StudyInternal() {

@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.core.config;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +29,8 @@ public class Analysis {
     private String scratchDir;
 
     private Execution execution;
+
+    @DataField(id = "operations", description = FieldConstants.CONFIGURATION_ANALYSIS_OPERATIONS)
     private OperationConfig operations;
 
     private List<FrameworkConfiguration> frameworks;

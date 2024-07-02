@@ -28,8 +28,7 @@ public class ProjectInternal extends Internal {
             description = FieldConstants.PROJECT_INTERNAL_DATA_STORES)
     private Datastores datastores;
 
-    @DataField(id = "variant", uncommentedClasses = {"ProjectInternalVariant"},
-            description = FieldConstants.PROJECT_INTERNAL_VARIANT)
+    @DataField(id = "variant", description = FieldConstants.PROJECT_INTERNAL_VARIANT)
     private ProjectInternalVariant variant;
 
     public ProjectInternal() {

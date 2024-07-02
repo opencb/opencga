@@ -1,20 +1,29 @@
 package org.opencb.opencga.core.config;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 public class OperationConfig {
 
-    private OperationExecutionConfig annotationIndex;
+    @DataField(id = "variantAnnotationIndex", description = FieldConstants.VARIANT_ANNOTATION_INDEX_OPERATION_CONFIGURATION)
+    private OperationExecutionConfig variantAnnotationIndex;
+
+    @DataField(id = "variantSecondaryAnnotationIndex",
+            description = FieldConstants.VARIANT_SECONDARY_ANNOTATION_INDEX_OPERATION_CONFIGURATION)
     private OperationExecutionConfig variantSecondaryAnnotationIndex;
+
+    @DataField(id = "variantSecondarySampleIndex", description = FieldConstants.VARIANT_SECONDARY_SAMPLE_INDEX_OPERATION_CONFIGURATION)
     private OperationExecutionConfig variantSecondarySampleIndex;
 
     public OperationConfig() {
-        this.annotationIndex = new OperationExecutionConfig();
+        this.variantAnnotationIndex = new OperationExecutionConfig();
         this.variantSecondaryAnnotationIndex = new OperationExecutionConfig();
         this.variantSecondarySampleIndex = new OperationExecutionConfig();
     }
 
-    public OperationConfig(OperationExecutionConfig annotationIndex, OperationExecutionConfig variantSecondaryAnnotationIndex,
+    public OperationConfig(OperationExecutionConfig variantAnnotationIndex, OperationExecutionConfig variantSecondaryAnnotationIndex,
                            OperationExecutionConfig variantSecondarySampleIndex) {
-        this.annotationIndex = annotationIndex;
+        this.variantAnnotationIndex = variantAnnotationIndex;
         this.variantSecondaryAnnotationIndex = variantSecondaryAnnotationIndex;
         this.variantSecondarySampleIndex = variantSecondarySampleIndex;
     }
@@ -22,19 +31,19 @@ public class OperationConfig {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("OperationConfig{");
-        sb.append("annotationIndex=").append(annotationIndex);
+        sb.append("variantAnnotationIndex=").append(variantAnnotationIndex);
         sb.append(", variantSecondaryAnnotationIndex=").append(variantSecondaryAnnotationIndex);
         sb.append(", variantSecondarySampleIndex=").append(variantSecondarySampleIndex);
         sb.append('}');
         return sb.toString();
     }
 
-    public OperationExecutionConfig getAnnotationIndex() {
-        return annotationIndex;
+    public OperationExecutionConfig getVariantAnnotationIndex() {
+        return variantAnnotationIndex;
     }
 
-    public OperationConfig setAnnotationIndex(OperationExecutionConfig annotationIndex) {
-        this.annotationIndex = annotationIndex;
+    public OperationConfig setVariantAnnotationIndex(OperationExecutionConfig variantAnnotationIndex) {
+        this.variantAnnotationIndex = variantAnnotationIndex;
         return this;
     }
 

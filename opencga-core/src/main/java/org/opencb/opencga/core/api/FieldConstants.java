@@ -379,6 +379,35 @@ public class FieldConstants {
     public static final String JOB_STUDY = "Job study.";
     public static final String JOB_STUDY_PARAM_OTHERS = "List of strings.";
 
+    // Analysis configuration
+    public static final String CONFIGURATION_ANALYSIS_OPERATIONS = "Object containing the configuration of several analysis operations.";
+
+    // Analysis Operation configuration
+    public static final String VARIANT_ANNOTATION_INDEX_OPERATION_CONFIGURATION = "Operation execution configuration for the variant"
+            + " annotation index tool.";
+    public static final String VARIANT_SECONDARY_ANNOTATION_INDEX_OPERATION_CONFIGURATION = "Operation execution configuration for the"
+            + " variant secondary annotation index tool.";;
+    public static final String VARIANT_SECONDARY_SAMPLE_INDEX_OPERATION_CONFIGURATION = "Operation execution configuration for the variant"
+            + " secondary sample index tool.";
+
+    // OperationExecutionConfig
+    public static final String OPERATION_EXECUTION_CONFIG_POLICY = "The policy parameter determines when an automatic tool will run."
+            + " There are three options for this setting:\n"
+            + "IMMEDIATE means the tool will run automatically as soon as it is needed, ensuring prompt execution.\n"
+            + "NIGHTLY means the tool will run automatically when necessary but only between 24:00 and 5:00, reducing disruptions during"
+            + " peak hours.\n"
+            + "NEVER means the tool will not run automatically and will require manual initiation, giving users full control over when it" +
+            " operates.\n"
+            + "By setting this parameter, users can choose the most appropriate timing for the tool's execution based on their needs.";
+    public static final String OPERATION_EXECUTION_CONFIG_MAX_ATTEMPTS = "The maxAttempts parameter establishes the maximum number of times"
+            + " the automatic process will attempt to launch the tool in the event of a failure. This setting ensures that the tool will"
+            + " make multiple attempts to run successfully, up to the specified limit, before ceasing further attempts."
+            + " By configuring this parameter, users can control the resilience of the tool's execution process in response to failures.";
+    public static final String OPERATION_EXECUTION_CONFIG_JOB_PARAMS = "The jobParams parameter contains the job parameters required for"
+            + " the tool to run. This parameter ensures that all necessary configurations and values are predefined, enabling the tool"
+            + " to operate correctly without needing additional input each time it is executed. By setting this parameter, users can"
+            + " streamline the tool's execution process and ensure consistency in its operation..";
+
     //Project
     public static final String PROJECT_FQN = "Full Qualified Name (organization@projectId).";
     public static final String PROJECT_ORGANISM = "Organism to which the project belongs.";
@@ -388,6 +417,16 @@ public class FieldConstants {
     public static final String PROJECT_INTERNAL_DATA_STORES = "Default value is VARIANT.";
     public static final String PROJECT_INTERNAL_VARIANT = "Variant index statuses.";
     public static final String PROJECT_CELLBASE = "Cellbase configuration.";
+
+    // ProjectInternalVariant
+    public static final String INTERNAL_VARIANT_ANNOTATION_INDEX = "Project internal variant containing the current status of the"
+            + " variant annotation index.";
+    public static final String INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX = "Project internal variant containing the current status of the"
+            + " variant secondary annotation index.";
+
+    // StudyInternalVariant
+    public static final String INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX = "Study internal variant containing the current status of the"
+            + " variant secondary sample index.";
 
     //StudyNotification
     public static final String STUDY_NOTIFICATION_WEBHOOK = "Url of the study notification.";

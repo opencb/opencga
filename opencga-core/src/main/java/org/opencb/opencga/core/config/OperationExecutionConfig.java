@@ -1,11 +1,19 @@
 package org.opencb.opencga.core.config;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 import java.util.Map;
 
 public class OperationExecutionConfig {
 
+    @DataField(id = "policy", description = FieldConstants.OPERATION_EXECUTION_CONFIG_POLICY)
     private Policy policy;
+
+    @DataField(id = "maxAttempts", description = FieldConstants.OPERATION_EXECUTION_CONFIG_MAX_ATTEMPTS)
     private int maxAttempts;
+
+    @DataField(id = "jobParams", description = FieldConstants.OPERATION_EXECUTION_CONFIG_JOB_PARAMS)
     private Map<String, String> jobParams;
 
     public enum Policy {

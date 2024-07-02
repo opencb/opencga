@@ -1,9 +1,13 @@
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.variant.InternalVariantOperationIndex;
 
 public class StudyInternalVariant {
 
+    @DataField(id = "secondarySampleIndex", uncommentedClasses = {"InternalVariantOperationIndex"},
+            description = FieldConstants.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX)
     private InternalVariantOperationIndex secondarySampleIndex;
 
     public StudyInternalVariant() {

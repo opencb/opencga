@@ -63,7 +63,7 @@ public class VariantOperationOrchestrator {
     }
 
     public void checkPendingVariantOperations() throws CatalogException, ToolException {
-        checkPendingVariantOperations(operationConfig.getAnnotationIndex(), new VariantAnnotationIndexOperationRules());
+        checkPendingVariantOperations(operationConfig.getVariantAnnotationIndex(), new VariantAnnotationIndexOperationRules());
         checkPendingVariantOperations(operationConfig.getVariantSecondaryAnnotationIndex(),
                 new VariantSecondaryAnnotationIndexOperationRules());
         checkPendingVariantOperations(operationConfig.getVariantSecondarySampleIndex(), new VariantSecondarySampleIndexOperationRules());

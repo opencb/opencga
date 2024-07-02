@@ -1,10 +1,17 @@
 package org.opencb.opencga.core.models.project;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.variant.InternalVariantOperationIndex;
 
 public class ProjectInternalVariant {
 
+    @DataField(id = "annotationIndex", uncommentedClasses = {"InternalVariantOperationIndex"},
+            description = FieldConstants.INTERNAL_VARIANT_ANNOTATION_INDEX)
     private InternalVariantOperationIndex annotationIndex;
+
+    @DataField(id = "secondaryAnnotationIndex", uncommentedClasses = {"InternalVariantOperationIndex"},
+            description = FieldConstants.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX)
     private InternalVariantOperationIndex secondaryAnnotationIndex;
 
     public ProjectInternalVariant() {
