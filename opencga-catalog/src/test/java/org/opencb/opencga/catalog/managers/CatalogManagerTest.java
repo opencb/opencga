@@ -1180,6 +1180,18 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getJobManager().kill(studyFqn, job.getId(), ownerToken);
         job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), ownerToken).first();
         assertTrue(job.getInternal().isKillJobRequested());
+
+        for (String status : Arrays.asList(Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.ERROR)) {
+            job = catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
+            catalogManager.getJobManager().update(studyFqn, job.getId(),
+                    new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), new Enums.ExecutionStatus(status)),
+                    QueryOptions.empty(), ownerToken);
+            // Try to kill job that is already finished
+            String jobId = job.getId();
+            CatalogException catalogException = assertThrows(CatalogException.class, () -> catalogManager.getJobManager().kill(studyFqn, jobId, ownerToken));
+            assertTrue(catalogException.getMessage().contains("status"));
+        }
+
     }
 
     @Test
