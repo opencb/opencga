@@ -143,7 +143,7 @@ public class OrganizationClient extends AbstractParentClient {
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
-     *       authenticationOrigins: Action to be performed if the array of authenticationOrigins is being updated.
+     *       authenticationOriginsAction: Action to be performed if the array of authenticationOrigins is being updated.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

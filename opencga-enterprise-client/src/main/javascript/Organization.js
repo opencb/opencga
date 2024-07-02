@@ -113,7 +113,7 @@ export default class Organization extends OpenCGAParentClass {
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
     * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.
     *     The default value is false.
-    * @param {"ADD SET REMOVE REPLACE"} [params.authenticationOrigins = "ADD"] - Action to be performed if the array of
+    * @param {"ADD SET REMOVE REPLACE"} [params.authenticationOriginsAction = "ADD"] - Action to be performed if the array of
     *     authenticationOrigins is being updated. The default value is ADD.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */

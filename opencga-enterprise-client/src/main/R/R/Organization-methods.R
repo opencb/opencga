@@ -24,7 +24,7 @@
 #' | searchNotes | /{apiVersion}/organizations/notes/search | include, exclude, creationDate, modificationDate, id, scope, visibility, uuid, userId, tags, version |
 #' | deleteNotes | /{apiVersion}/organizations/notes/{id}/delete | id[*], includeResult |
 #' | updateNotes | /{apiVersion}/organizations/notes/{id}/update | include, exclude, id[*], includeResult, body[*] |
-#' | updateConfiguration | /{apiVersion}/organizations/{organization}/configuration/update | include, exclude, organization[*], includeResult, authenticationOrigins, body[*] |
+#' | updateConfiguration | /{apiVersion}/organizations/{organization}/configuration/update | include, exclude, organization[*], includeResult, authenticationOriginsAction, body[*] |
 #' | info | /{apiVersion}/organizations/{organization}/info | include, exclude, organization[*] |
 #' | update | /{apiVersion}/organizations/{organization}/update | include, exclude, organization[*], includeResult, adminsAction, body[*] |
 #'
@@ -94,7 +94,7 @@ setMethod("organizationClient", "OpencgaR", function(OpencgaR, id, organization,
         #' @param exclude Fields excluded in the response, whole JSON path must be provided.
         #' @param organization Organization id.
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
-        #' @param authenticationOrigins Action to be performed if the array of authenticationOrigins is being updated. Allowed values: ['ADD SET REMOVE REPLACE']
+        #' @param authenticationOriginsAction Action to be performed if the array of authenticationOrigins is being updated. Allowed values: ['ADD SET REMOVE REPLACE']
         #' @param data JSON containing the params to be updated.
         updateConfiguration=fetchOpenCGA(object=OpencgaR, category="organizations", categoryId=organization,
                 subcategory="configuration", subcategoryId=NULL, action="update", params=params, httpMethod="POST",

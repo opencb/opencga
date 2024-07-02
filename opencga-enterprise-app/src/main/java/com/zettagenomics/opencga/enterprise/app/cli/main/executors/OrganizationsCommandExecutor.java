@@ -236,7 +236,7 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        queryParams.putIfNotNull("authenticationOrigins", commandOptions.authenticationOrigins);
+        queryParams.putIfNotNull("authenticationOriginsAction", commandOptions.authenticationOriginsAction);
 
 
         OrganizationConfiguration organizationConfiguration = null;

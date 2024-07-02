@@ -242,8 +242,8 @@ public class OrganizationsCommandOptions {
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     
-        @Parameter(names = {"--authentication-origins"}, description = "Action to be performed if the array of authenticationOrigins is being updated.", required = false, arity = 1)
-        public String authenticationOrigins = "ADD"; 
+        @Parameter(names = {"--authentication-origins-action"}, description = "Action to be performed if the array of authenticationOrigins is being updated.", required = false, arity = 1)
+        public String authenticationOriginsAction = "ADD"; 
     
         @Parameter(names = {"--optimizations-simplify-permissions"}, description = "The body web service simplifyPermissions parameter", required = false, help = true, arity = 0)
         public boolean optimizationsSimplifyPermissions = false;
