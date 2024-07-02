@@ -1291,7 +1291,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiParam(value = PROJECT_PARAM_DESCRIPTION, required = true) @QueryParam(PROJECT_PARAM_NAME) String projectId,
             @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM_NAME) String studyId,
             @ApiParam(value = CV_ID_DESCR, required = true) @QueryParam(CV_ID_NAME) String variantIds,
-            @ApiParam(value = CI_STATUS_ID_DESCR, required = true) @QueryParam(CI_STATUS_ID_NAME) String interpretationStatusId) {
+            @ApiParam(value = CI_STATUS_ID_DESCR) @QueryParam(CI_STATUS_ID_NAME) String interpretationStatusId) {
         return run(() -> {
             return cvdbEngine.getClinicalVariantSummaryStats(variantIds, interpretationStatusId, projectId, studyId, token);
         });
