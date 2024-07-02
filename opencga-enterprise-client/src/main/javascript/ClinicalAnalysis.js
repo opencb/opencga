@@ -91,8 +91,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Calculate and fetch clinical analysis aggregation stats
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.projectId] - Project ID.
-    * @param {String} [params.studyId] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.project] - Project ID.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
     * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -232,8 +232,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Filter and fetch clinical analyses from CVDB
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.projectId] - Project ID.
-    * @param {String} [params.studyId] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.project] - Project ID.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
@@ -387,8 +387,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Calculate and fetch clinical interpretation aggregation stats
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.projectId] - Project ID.
-    * @param {String} [params.studyId] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.project] - Project ID.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
     * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -529,8 +529,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Filter and fetch clinical interpretations from CVDB
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.projectId] - Project ID.
-    * @param {String} [params.studyId] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.project] - Project ID.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
@@ -669,8 +669,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Calculate and fetch clinical variant aggregation stats
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.projectId] - Project ID.
-    * @param {String} [params.studyId] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.project] - Project ID.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
     * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -810,8 +810,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Filter and fetch clinical variants from CVDB
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.projectId] - Project ID.
-    * @param {String} [params.studyId] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.project] - Project ID.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
@@ -948,10 +948,22 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
         return this._get("analysis", null, "clinical/cvdb/variant", null, "query", params);
     }
 
+    /** Get clinical variant summary from CVDB
+    * @param {String} project - Project ID.
+    * @param {String} cvId - Variant ID (or list of IDs separated by commas).
+    * @param {String} ciStatusId - Clinical interpretation status ID (or list of IDs separated by commas).
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    statsCvdbVariant(project, cvId, ciStatusId, params) {
+        return this._get("analysis", null, "clinical/cvdb/variant", null, "stats", {project, cvId, ciStatusId, ...params});
+    }
+
     /** Calculate and fetch clinical variant evidence aggregation stats
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.projectId] - Project ID.
-    * @param {String} [params.studyId] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.project] - Project ID.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
     * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1092,8 +1104,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Filter and fetch clinical variant evidences from CVDB
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.projectId] - Project ID.
-    * @param {String} [params.studyId] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.project] - Project ID.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
@@ -1833,6 +1845,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {Boolean} [params.panelIntersection] - Intersect panel genes and regions with given genes and regions from que input query.
     *     This will prevent returning variants from regions out of the panel.
     * @param {String} [params.trait] - List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
+    * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     queryVariant(params) {

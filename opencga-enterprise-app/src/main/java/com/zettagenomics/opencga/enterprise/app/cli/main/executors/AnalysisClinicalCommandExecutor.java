@@ -13,6 +13,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
@@ -134,6 +135,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
                 break;
             case "cvdb-variant-query":
                 queryResponse = queryCvdbVariant();
+                break;
+            case "cvdb-variant-stats":
+                queryResponse = statsCvdbVariant();
                 break;
             case "cvdb-variant-evidence-aggregation-stats":
                 queryResponse = aggregationStatsCvdbVariantEvidence();
@@ -425,8 +429,8 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.AggregationStatsCvdbCaseCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbCaseCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
-        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
+        queryParams.putIfNotEmpty("project", commandOptions.project);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -514,6 +518,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
         queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdbCase(queryParams);
     }
@@ -524,8 +531,8 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.QueryCvdbCaseCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbCaseCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
-        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
+        queryParams.putIfNotEmpty("project", commandOptions.project);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -615,6 +622,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdbCase(queryParams);
     }
@@ -663,8 +673,8 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.AggregationStatsCvdbInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbInterpretationCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
-        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
+        queryParams.putIfNotEmpty("project", commandOptions.project);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -752,6 +762,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
         queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdbInterpretation(queryParams);
     }
@@ -762,8 +775,8 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.QueryCvdbInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbInterpretationCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
-        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
+        queryParams.putIfNotEmpty("project", commandOptions.project);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -853,6 +866,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdbInterpretation(queryParams);
     }
@@ -863,8 +879,8 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.AggregationStatsCvdbVariantCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbVariantCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
-        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
+        queryParams.putIfNotEmpty("project", commandOptions.project);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -952,6 +968,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
         queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdbVariant(queryParams);
     }
@@ -962,8 +981,8 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.QueryCvdbVariantCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbVariantCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
-        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
+        queryParams.putIfNotEmpty("project", commandOptions.project);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -1053,8 +1072,25 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdbVariant(queryParams);
+    }
+
+    private RestResponse<ClinicalVariantSummaryStats> statsCvdbVariant() throws Exception {
+        logger.debug("Executing statsCvdbVariant in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.StatsCvdbVariantCommandOptions commandOptions = analysisClinicalCommandOptions.statsCvdbVariantCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().statsCvdbVariant(commandOptions.project, commandOptions.cvId, commandOptions.ciStatusId, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsCvdbVariantEvidence() throws Exception {
@@ -1063,8 +1099,8 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.AggregationStatsCvdbVariantEvidenceCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbVariantEvidenceCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
-        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
+        queryParams.putIfNotEmpty("project", commandOptions.project);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -1152,6 +1188,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
         queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdbVariantEvidence(queryParams);
     }
@@ -1162,8 +1201,8 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.QueryCvdbVariantEvidenceCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbVariantEvidenceCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
-        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
+        queryParams.putIfNotEmpty("project", commandOptions.project);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -1253,6 +1292,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdbVariantEvidence(queryParams);
     }
@@ -2068,6 +2110,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("panelFeatureType", commandOptions.panelFeatureType);
         queryParams.putIfNotNull("panelIntersection", commandOptions.panelIntersection);
         queryParams.putIfNotEmpty("trait", commandOptions.trait);
+        queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

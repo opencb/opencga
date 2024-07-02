@@ -102,9 +102,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Calculate and fetch clinical analysis aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/case/aggregationStats
 
-        :param str project_id: Project ID.
-        :param str study_id: Study ID (or list of study IDs separated by
-            commas), or '*' for all studies of the current user.
+        :param str project: Project ID.
+        :param str study: Study ID (or list of study IDs separated by commas),
+            or '*' for all studies of the current user.
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
         :param str ca_description: Clinical analysis description (word or list
@@ -351,9 +351,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical analyses from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/case/query
 
-        :param str project_id: Project ID.
-        :param str study_id: Study ID (or list of study IDs separated by
-            commas), or '*' for all studies of the current user.
+        :param str project: Project ID.
+        :param str study: Study ID (or list of study IDs separated by commas),
+            or '*' for all studies of the current user.
         :param str include: Fields included in the response, whole JSON path
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
@@ -618,9 +618,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Calculate and fetch clinical interpretation aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/interpretation/aggregationStats
 
-        :param str project_id: Project ID.
-        :param str study_id: Study ID (or list of study IDs separated by
-            commas), or '*' for all studies of the current user.
+        :param str project: Project ID.
+        :param str study: Study ID (or list of study IDs separated by commas),
+            or '*' for all studies of the current user.
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
         :param str ca_description: Clinical analysis description (word or list
@@ -869,9 +869,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical interpretations from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/interpretation/query
 
-        :param str project_id: Project ID.
-        :param str study_id: Study ID (or list of study IDs separated by
-            commas), or '*' for all studies of the current user.
+        :param str project: Project ID.
+        :param str study: Study ID (or list of study IDs separated by commas),
+            or '*' for all studies of the current user.
         :param str include: Fields included in the response, whole JSON path
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
@@ -1115,9 +1115,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Calculate and fetch clinical variant aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variant/aggregationStats
 
-        :param str project_id: Project ID.
-        :param str study_id: Study ID (or list of study IDs separated by
-            commas), or '*' for all studies of the current user.
+        :param str project: Project ID.
+        :param str study: Study ID (or list of study IDs separated by commas),
+            or '*' for all studies of the current user.
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
         :param str ca_description: Clinical analysis description (word or list
@@ -1365,9 +1365,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical variants from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variant/query
 
-        :param str project_id: Project ID.
-        :param str study_id: Study ID (or list of study IDs separated by
-            commas), or '*' for all studies of the current user.
+        :param str project: Project ID.
+        :param str study: Study ID (or list of study IDs separated by commas),
+            or '*' for all studies of the current user.
         :param str include: Fields included in the response, whole JSON path
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
@@ -1606,14 +1606,33 @@ class ClinicalAnalysis(_ParentRestClient):
 
         return self._get(category='analysis', resource='query', subcategory='clinical/cvdb/variant', **options)
 
+    def stats_cvdb_variant(self, project, cv_id, ci_status_id, **options):
+        """
+        Get clinical variant summary from CVDB.
+        PATH: /{apiVersion}/analysis/clinical/cvdb/variant/stats
+
+        :param str ci_status_id: Clinical interpretation status ID (or list of
+            IDs separated by commas). (REQUIRED)
+        :param str cv_id: Variant ID (or list of IDs separated by commas).
+            (REQUIRED)
+        :param str project: Project ID. (REQUIRED)
+        :param str study: Study ID (or list of study IDs separated by commas),
+            or '*' for all studies of the current user.
+        """
+
+        options['project'] = project
+        options['cvId'] = cv_id
+        options['ciStatusId'] = ci_status_id
+        return self._get(category='analysis', resource='stats', subcategory='clinical/cvdb/variant', **options)
+
     def aggregation_stats_cvdb_variant_evidence(self, **options):
         """
         Calculate and fetch clinical variant evidence aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variantEvidence/aggregationStats
 
-        :param str project_id: Project ID.
-        :param str study_id: Study ID (or list of study IDs separated by
-            commas), or '*' for all studies of the current user.
+        :param str project: Project ID.
+        :param str study: Study ID (or list of study IDs separated by commas),
+            or '*' for all studies of the current user.
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
         :param str ca_description: Clinical analysis description (word or list
@@ -1862,9 +1881,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical variant evidences from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variantEvidence/query
 
-        :param str project_id: Project ID.
-        :param str study_id: Study ID (or list of study IDs separated by
-            commas), or '*' for all studies of the current user.
+        :param str project: Project ID.
+        :param str study: Study ID (or list of study IDs separated by commas),
+            or '*' for all studies of the current user.
         :param str include: Fields included in the response, whole JSON path
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
@@ -2877,6 +2896,8 @@ class ClinicalAnalysis(_ParentRestClient):
             returning variants from regions out of the panel.
         :param str trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.:
             IDs, histologies, descriptions,...
+        :param str ci_status_id: Clinical interpretation status ID (or list of
+            IDs separated by commas).
         """
 
         return self._get(category='analysis', resource='query', subcategory='clinical/variant', **options)

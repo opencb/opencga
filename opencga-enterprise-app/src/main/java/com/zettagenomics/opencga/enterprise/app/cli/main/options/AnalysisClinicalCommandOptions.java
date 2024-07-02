@@ -44,6 +44,7 @@ public class AnalysisClinicalCommandOptions {
         public QueryCvdbInterpretationCommandOptions queryCvdbInterpretationCommandOptions;
         public AggregationStatsCvdbVariantCommandOptions aggregationStatsCvdbVariantCommandOptions;
         public QueryCvdbVariantCommandOptions queryCvdbVariantCommandOptions;
+        public StatsCvdbVariantCommandOptions statsCvdbVariantCommandOptions;
         public AggregationStatsCvdbVariantEvidenceCommandOptions aggregationStatsCvdbVariantEvidenceCommandOptions;
         public QueryCvdbVariantEvidenceCommandOptions queryCvdbVariantEvidenceCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
@@ -94,6 +95,7 @@ public class AnalysisClinicalCommandOptions {
         this.queryCvdbInterpretationCommandOptions = new QueryCvdbInterpretationCommandOptions();
         this.aggregationStatsCvdbVariantCommandOptions = new AggregationStatsCvdbVariantCommandOptions();
         this.queryCvdbVariantCommandOptions = new QueryCvdbVariantCommandOptions();
+        this.statsCvdbVariantCommandOptions = new StatsCvdbVariantCommandOptions();
         this.aggregationStatsCvdbVariantEvidenceCommandOptions = new AggregationStatsCvdbVariantEvidenceCommandOptions();
         this.queryCvdbVariantEvidenceCommandOptions = new QueryCvdbVariantEvidenceCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
@@ -372,11 +374,11 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
-        public String projectId; 
+        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
+        public String project; 
     
-        @Parameter(names = {"--study-id"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
-        public String studyId; 
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        public String study; 
     
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
@@ -647,11 +649,11 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
-        public String projectId; 
+        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
+        public String project; 
     
-        @Parameter(names = {"--study-id"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
-        public String studyId; 
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        public String study; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
@@ -966,11 +968,11 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
-        public String projectId; 
+        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
+        public String project; 
     
-        @Parameter(names = {"--study-id"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
-        public String studyId; 
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        public String study; 
     
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
@@ -1241,11 +1243,11 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
-        public String projectId; 
+        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
+        public String project; 
     
-        @Parameter(names = {"--study-id"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
-        public String studyId; 
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        public String study; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
@@ -1522,11 +1524,11 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
-        public String projectId; 
+        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
+        public String project; 
     
-        @Parameter(names = {"--study-id"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
-        public String studyId; 
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        public String study; 
     
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
@@ -1797,11 +1799,11 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
-        public String projectId; 
+        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
+        public String project; 
     
-        @Parameter(names = {"--study-id"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
-        public String studyId; 
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        public String study; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
@@ -2072,17 +2074,37 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
+    @Parameters(commandNames = {"cvdb-variant-stats"}, commandDescription ="Get clinical variant summary from CVDB")
+    public class StatsCvdbVariantCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = true, arity = 1)
+        public String project; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = true, arity = 1)
+        public String cvId; 
+    
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = true, arity = 1)
+        public String ciStatusId; 
+    
+    }
+
     @Parameters(commandNames = {"cvdb-variant-evidence-aggregation-stats"}, commandDescription ="Calculate and fetch clinical variant evidence aggregation stats")
     public class AggregationStatsCvdbVariantEvidenceCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
-        public String projectId; 
+        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
+        public String project; 
     
-        @Parameter(names = {"--study-id"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
-        public String studyId; 
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        public String study; 
     
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
@@ -2353,11 +2375,11 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
-        public String projectId; 
+        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
+        public String project; 
     
-        @Parameter(names = {"--study-id"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
-        public String studyId; 
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        public String study; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
@@ -4156,6 +4178,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
         public String trait; 
+    
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciStatusId; 
     
     }
 

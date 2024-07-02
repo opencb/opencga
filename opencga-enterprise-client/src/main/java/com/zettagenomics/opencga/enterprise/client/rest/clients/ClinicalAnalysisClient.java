@@ -19,6 +19,7 @@ package com.zettagenomics.opencga.enterprise.client.rest.clients;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
+import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -151,8 +152,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Calculate and fetch clinical analysis aggregation stats.
      * @param params Map containing any of the following optional parameters.
-     *       projectId: Project ID.
-     *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       project: Project ID.
+     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
      *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -291,8 +292,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical analyses from CVDB.
      * @param params Map containing any of the following optional parameters.
-     *       projectId: Project ID.
-     *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       project: Project ID.
+     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
@@ -448,8 +449,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Calculate and fetch clinical interpretation aggregation stats.
      * @param params Map containing any of the following optional parameters.
-     *       projectId: Project ID.
-     *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       project: Project ID.
+     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
      *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -589,8 +590,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical interpretations from CVDB.
      * @param params Map containing any of the following optional parameters.
-     *       projectId: Project ID.
-     *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       project: Project ID.
+     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
@@ -728,8 +729,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Calculate and fetch clinical variant aggregation stats.
      * @param params Map containing any of the following optional parameters.
-     *       projectId: Project ID.
-     *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       project: Project ID.
+     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
      *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -868,8 +869,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical variants from CVDB.
      * @param params Map containing any of the following optional parameters.
-     *       projectId: Project ID.
-     *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       project: Project ID.
+     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
@@ -1005,10 +1006,29 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     }
 
     /**
+     * Get clinical variant summary from CVDB.
+     * @param project Project ID.
+     * @param cvId Variant ID (or list of IDs separated by commas).
+     * @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas).
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ClinicalVariantSummaryStats> statsCvdbVariant(String project, String cvId, String ciStatusId, ObjectMap params)
+            throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.putIfNotNull("project", project);
+        params.putIfNotNull("cvId", cvId);
+        params.putIfNotNull("ciStatusId", ciStatusId);
+        return execute("analysis", null, "clinical/cvdb/variant", null, "stats", params, GET, ClinicalVariantSummaryStats.class);
+    }
+
+    /**
      * Calculate and fetch clinical variant evidence aggregation stats.
      * @param params Map containing any of the following optional parameters.
-     *       projectId: Project ID.
-     *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       project: Project ID.
+     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
      *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1148,8 +1168,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical variant evidences from CVDB.
      * @param params Map containing any of the following optional parameters.
-     *       projectId: Project ID.
-     *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       project: Project ID.
+     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
@@ -1933,6 +1953,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       panelIntersection: Intersect panel genes and regions with given genes and regions from que input query. This will prevent
      *            returning variants from regions out of the panel.
      *       trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
