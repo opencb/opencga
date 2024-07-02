@@ -94,7 +94,7 @@ public class JobClient extends AbstractParentClient {
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
      *       userId: User that created the job.
-     *       priority: Priority of the job.
+     *       jobPriority: Priority of the job.
      *       status: Filter by status.
      *       internalStatus: Filter by internal status.
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
@@ -152,7 +152,7 @@ public class JobClient extends AbstractParentClient {
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
      *       userId: User that created the job.
-     *       priority: Priority of the job.
+     *       jobPriority: Priority of the job.
      *       status: Filter by status.
      *       internalStatus: Filter by internal status.
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
@@ -180,7 +180,7 @@ public class JobClient extends AbstractParentClient {
      *       limit: Maximum number of jobs to be returned.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       internalStatus: Filter by internal status.
-     *       priority: Priority of the job.
+     *       jobPriority: Priority of the job.
      *       userId: User that created the job.
      *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.

@@ -194,8 +194,8 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
         public String userId; 
     
-        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
-        public String priority; 
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
     
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
@@ -318,8 +318,8 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
         public String userId; 
     
-        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
-        public String priority; 
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
     
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 

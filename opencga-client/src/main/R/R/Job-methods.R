@@ -21,10 +21,10 @@
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/jobs/acl/{members}/update | members[*], action[*], body[*] |
 #' | create | /{apiVersion}/jobs/create | study, body[*] |
-#' | distinct | /{apiVersion}/jobs/distinct | study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field[*] |
+#' | distinct | /{apiVersion}/jobs/distinct | study, otherStudies, id, uuid, toolId, toolType, userId, jobPriority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field[*] |
 #' | retry | /{apiVersion}/jobs/retry | jobId, jobDescription, jobDependsOn, jobTags, study, body[*] |
-#' | search | /{apiVersion}/jobs/search | include, exclude, limit, skip, count, study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted |
-#' | top | /{apiVersion}/jobs/top | limit, study, internalStatus, priority, userId, toolId |
+#' | search | /{apiVersion}/jobs/search | include, exclude, limit, skip, count, study, otherStudies, id, uuid, toolId, toolType, userId, jobPriority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted |
+#' | top | /{apiVersion}/jobs/top | limit, study, internalStatus, jobPriority, userId, toolId |
 #' | acl | /{apiVersion}/jobs/{jobs}/acl | jobs[*], member, silent |
 #' | delete | /{apiVersion}/jobs/{jobs}/delete | study, jobs[*] |
 #' | info | /{apiVersion}/jobs/{jobs}/info | include, exclude, jobs[*], study, deleted |
@@ -67,7 +67,7 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param toolId Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param toolType Tool type executed by the job [OPERATION, ANALYSIS].
         #' @param userId User that created the job.
-        #' @param priority Priority of the job.
+        #' @param jobPriority Priority of the job.
         #' @param status Filter by status.
         #' @param internalStatus Filter by internal status.
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
@@ -108,7 +108,7 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param toolId Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param toolType Tool type executed by the job [OPERATION, ANALYSIS].
         #' @param userId User that created the job.
-        #' @param priority Priority of the job.
+        #' @param jobPriority Priority of the job.
         #' @param status Filter by status.
         #' @param internalStatus Filter by internal status.
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
@@ -128,7 +128,7 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param limit Maximum number of jobs to be returned.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param internalStatus Filter by internal status.
-        #' @param priority Priority of the job.
+        #' @param jobPriority Priority of the job.
         #' @param userId User that created the job.
         #' @param toolId Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         top=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,

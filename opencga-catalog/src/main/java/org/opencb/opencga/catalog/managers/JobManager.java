@@ -544,15 +544,15 @@ public class JobManager extends ResourceManager<Job> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("toolId", toolId)
-                .append("priority", priority)
+                .append("jobPriority", priority)
                 .append("params", params)
                 .append("jobId", jobId)
                 .append("jobDescription", jobDescription)
                 .append("jobDependsOn", jobDependsOn)
                 .append("jobTags", jobTags)
                 .append("jobParentId", jobParentId)
-                .append("scheduledStartTime", scheduledStartTime)
-                .append("dryRun", dryRun)
+                .append("jobScheduledStartTime", scheduledStartTime)
+                .append("jobDryRun", dryRun)
                 .append("token", token);
         Job job = new Job();
         job.setId(jobId);

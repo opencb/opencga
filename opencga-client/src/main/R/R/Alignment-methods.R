@@ -19,19 +19,19 @@
 #'
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
-#' | runBwa | /{apiVersion}/analysis/alignment/bwa/run | study, jobId, jobDependsOn, jobDescription, jobTags, scheduledStartTime, priority, dryRun, body[*] |
-#' | runCoverageIndex | /{apiVersion}/analysis/alignment/coverage/index/run | study, jobId, jobDependsOn, jobDescription, jobTags, scheduledStartTime, priority, dryRun, body[*] |
-#' | coverageQcGeneCoverageStatsRun | /{apiVersion}/analysis/alignment/coverage/qc/geneCoverageStats/run | study, jobId, jobDependsOn, jobDescription, jobTags, scheduledStartTime, priority, dryRun, body[*] |
+#' | runBwa | /{apiVersion}/analysis/alignment/bwa/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runCoverageIndex | /{apiVersion}/analysis/alignment/coverage/index/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | coverageQcGeneCoverageStatsRun | /{apiVersion}/analysis/alignment/coverage/qc/geneCoverageStats/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | queryCoverage | /{apiVersion}/analysis/alignment/coverage/query | file[*], study, region, gene, offset, onlyExons, range, windowSize, splitResults |
 #' | ratioCoverage | /{apiVersion}/analysis/alignment/coverage/ratio | file1[*], file2[*], study, skipLog2, region, gene, offset, onlyExons, windowSize, splitResults |
 #' | statsCoverage | /{apiVersion}/analysis/alignment/coverage/stats | file[*], gene[*], study, threshold |
-#' | runDeeptools | /{apiVersion}/analysis/alignment/deeptools/run | study, jobId, jobDependsOn, jobDescription, jobTags, scheduledStartTime, priority, dryRun, body[*] |
-#' | runFastqc | /{apiVersion}/analysis/alignment/fastqc/run | study, jobId, jobDependsOn, jobDescription, jobTags, scheduledStartTime, priority, dryRun, body[*] |
-#' | runIndex | /{apiVersion}/analysis/alignment/index/run | study, jobId, jobDependsOn, jobDescription, jobTags, scheduledStartTime, priority, dryRun, body[*] |
-#' | runPicard | /{apiVersion}/analysis/alignment/picard/run | study, jobId, jobDependsOn, jobDescription, jobTags, scheduledStartTime, priority, dryRun, body[*] |
-#' | runQc | /{apiVersion}/analysis/alignment/qc/run | study, jobId, jobDependsOn, jobDescription, jobTags, scheduledStartTime, priority, dryRun, body[*] |
+#' | runDeeptools | /{apiVersion}/analysis/alignment/deeptools/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runFastqc | /{apiVersion}/analysis/alignment/fastqc/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runIndex | /{apiVersion}/analysis/alignment/index/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runPicard | /{apiVersion}/analysis/alignment/picard/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runQc | /{apiVersion}/analysis/alignment/qc/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | query | /{apiVersion}/analysis/alignment/query | limit, skip, count, file[*], study, region, gene, offset, onlyExons, minMappingQuality, maxNumMismatches, maxNumHits, properlyPaired, maxInsertSize, skipUnmapped, skipDuplicated, regionContained, forceMDField, binQualities, splitResults |
-#' | runSamtools | /{apiVersion}/analysis/alignment/samtools/run | study, jobId, jobDependsOn, jobDescription, jobTags, scheduledStartTime, priority, dryRun, body[*] |
+#' | runSamtools | /{apiVersion}/analysis/alignment/samtools/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #'
 #' @md
 #' @seealso \url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation
@@ -49,9 +49,9 @@ setMethod("alignmentClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
-        #' @param scheduledStartTime Time when the job is scheduled to start.
-        #' @param priority Priority of the job.
-        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data BWA parameters.
         runBwa=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="alignment/bwa",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -63,9 +63,9 @@ setMethod("alignmentClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
-        #' @param scheduledStartTime Time when the job is scheduled to start.
-        #' @param priority Priority of the job.
-        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Coverage computation parameters.
         runCoverageIndex=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="alignment/coverage/index", subcategoryId=NULL, action="run", params=params,
@@ -78,9 +78,9 @@ setMethod("alignmentClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
-        #' @param scheduledStartTime Time when the job is scheduled to start.
-        #' @param priority Priority of the job.
-        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Gene coverage stats parameters for a given BAM file and a list of genes.
         coverageQcGeneCoverageStatsRun=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="alignment/coverage/qc/geneCoverageStats", subcategoryId=NULL, action="run", params=params,
@@ -134,9 +134,9 @@ setMethod("alignmentClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
-        #' @param scheduledStartTime Time when the job is scheduled to start.
-        #' @param priority Priority of the job.
-        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Deeptools parameters. Supported Deeptools commands: bamCoverage, bamCompare.
         runDeeptools=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="alignment/deeptools", subcategoryId=NULL, action="run", params=params, httpMethod="POST",
@@ -149,9 +149,9 @@ setMethod("alignmentClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
-        #' @param scheduledStartTime Time when the job is scheduled to start.
-        #' @param priority Priority of the job.
-        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data FastQC parameters.
         runFastqc=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="alignment/fastqc",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -163,9 +163,9 @@ setMethod("alignmentClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
-        #' @param scheduledStartTime Time when the job is scheduled to start.
-        #' @param priority Priority of the job.
-        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Alignment index params.
         runIndex=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="alignment/index",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -177,9 +177,9 @@ setMethod("alignmentClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
-        #' @param scheduledStartTime Time when the job is scheduled to start.
-        #' @param priority Priority of the job.
-        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Picard parameters. Supported Picard commands: CollectHsMetrics, CollectWgsMetrics, BedToIntervalList.
         runPicard=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="alignment/picard",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -191,9 +191,9 @@ setMethod("alignmentClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
-        #' @param scheduledStartTime Time when the job is scheduled to start.
-        #' @param priority Priority of the job.
-        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Alignment quality control (QC) parameters. It computes: stats, flag stats and fastqc metrics. The BAM file ID is mandatory and in order to skip some metrics, use the following keywords (separated by commas): stats, flagstats, fastqc.
         runQc=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="alignment/qc",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -230,9 +230,9 @@ setMethod("alignmentClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
-        #' @param scheduledStartTime Time when the job is scheduled to start.
-        #' @param priority Priority of the job.
-        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Samtools parameters. Supported Samtools commands: sort, index, view, stats, flagstat, dict, faidx, depth, plot-bamstats.
         runSamtools=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="alignment/samtools", subcategoryId=NULL, action="run", params=params, httpMethod="POST",

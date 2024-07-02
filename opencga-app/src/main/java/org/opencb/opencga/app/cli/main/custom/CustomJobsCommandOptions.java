@@ -64,8 +64,8 @@ public class CustomJobsCommandOptions {
         @Parameter(names = {"--user-id"}, description = ParamConstants.JOB_USER_DESCRIPTION, arity = 1)
         public String userId;
 
-        @Parameter(names = {"--priority"}, description = ParamConstants.JOB_PRIORITY_DESCRIPTION, arity = 1)
-        public String priority;
+        @Parameter(names = {"--job-priority"}, description = ParamConstants.JOB_PRIORITY_DESCRIPTION, arity = 1)
+        public String jobPriority;
 
         @Parameter(names = {"--internal-status"}, description = ParamConstants.JOB_STATUS_DESCRIPTION, arity = 1)
         public String internalStatus;
