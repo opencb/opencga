@@ -109,7 +109,7 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory);
         authorizationDBAdaptorFactory = new AuthorizationMongoDBAdaptorFactory((MongoDBAdaptorFactory) catalogDBAdaptorFactory,
                 configuration);
-        authenticationFactory = new AuthenticationFactory(catalogDBAdaptorFactory);
+        authenticationFactory = new AuthenticationFactory(catalogDBAdaptorFactory, configuration);
         logger.debug("CatalogManager configureManager");
         configureManagers(configuration);
     }
