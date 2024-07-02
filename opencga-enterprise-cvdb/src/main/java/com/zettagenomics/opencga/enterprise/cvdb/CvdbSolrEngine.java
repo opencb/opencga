@@ -42,7 +42,6 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.clinical.ClinicalAcmg;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
 import org.opencb.biodata.models.clinical.interpretation.stats.InterpretationSummaryStats;
@@ -613,8 +612,9 @@ public class CvdbSolrEngine {
     // CLINICAL VARIANT SUMMARY
     //----------------------------------------------------------------------
 
-    public DataResult<ClinicalVariantSummaryStats> getClinicalVariantSummary(List<String> variantIds, String projectId, String studyId,
-                                                                        String token) throws CatalogException, IOException, CvdbException {
+    public DataResult<ClinicalVariantSummaryStats> getClinicalVariantSummaryStats(List<String> variantIds, String interpretationStatusId,
+                                                                                  String projectId, String studyId, String token)
+            throws CatalogException, IOException, CvdbException {
         if (CollectionUtils.isEmpty(variantIds)) {
             throw new CvdbException("Missing variant ID(s) when running clinical variant summary");
         }
@@ -630,6 +630,10 @@ public class CvdbSolrEngine {
         } else {
             query.put(STUDY_PARAM_NAME, studyId);
         }
+        if (StringUtils.isNotEmpty(interpretationStatusId)) {
+            // Set clinical interpretation status ID
+            query.put(CI_STATUS_ID_NAME, interpretationStatusId);
+        }
         QueryOptions queryOptions = new QueryOptions();
 
         StopWatch stopWatch = StopWatch.createStarted();
@@ -638,62 +642,30 @@ public class CvdbSolrEngine {
         for (String variantId : variantIds) {
             ClinicalVariantSummaryStats stats = new ClinicalVariantSummaryStats();
 
-            // Query
+            // Set clinical variant ID
             query.put(CV_ID_NAME, variantId);
 
-            // Clinical analysis query options
-//            queryOptions.put(INCLUDE, "id,interpretation.id,secondaryInterpretations.id,interpretation.primaryFindings.impl.id"
-//                    + "interpretation.primaryFindings.evidences.phenotypes,interpretation.primaryFindings.evidences.classification");
             DataResult<ClinicalAnalysis> caDataResult = searchClinicalAnalyses(query, queryOptions, token);
             stats.setNumCases(caDataResult.getNumResults());
-            int numPrimary = 0;
-            int numSecondary = 0;
-            InterpretationSummaryStats primIterpretationStats = new InterpretationSummaryStats();
-            InterpretationSummaryStats secIterpretationsStats = new InterpretationSummaryStats();
+
             for (ClinicalAnalysis ca : caDataResult.getResults()) {
-                if (ca.getInterpretation() != null && CollectionUtils.isNotEmpty(ca.getInterpretation().getPrimaryFindings())) {
-                    for (ClinicalVariant cv : ca.getInterpretation().getPrimaryFindings()) {
-                        if (cv.getId().equals(variantId)) {
-                            numPrimary++;
-                            if (CollectionUtils.isNotEmpty(cv.getEvidences())) {
-                                for (ClinicalVariantEvidence cve : cv.getEvidences()) {
-                                    updateTranscriptCounts(cve.getGenomicFeature(), primIterpretationStats);
-                                    updateModeOfInheritanceCounts(cve.getModeOfInheritances(), primIterpretationStats);
-                                    updatePanelCounts(cve.getPanelId(), primIterpretationStats);
-                                    updatePhenotypeCounts(cve.getPhenotypes(), primIterpretationStats);
-                                    updateReviewCounts(cve.getReview(), primIterpretationStats);
-                                    updateClassificationCounts(cve.getClassification(), primIterpretationStats);
-                                }
-                            }
-                        }
-                    }
+                // Disorder counts
+                if (ca.getDisorder() != null && StringUtils.isNotEmpty(ca.getDisorder().getId())) {
+                    updateCount(ca.getDisorder().getId(), stats.getClinicalAnalysisDisorderCounts());
                 }
+
+                // Primary interpretation counts
+                if (ca.getInterpretation() != null && CollectionUtils.isNotEmpty(ca.getInterpretation().getPrimaryFindings())) {
+                    updateInterpretationCounts(variantId, ca.getInterpretation(), true, stats);
+                }
+
+                // Secondary interpretations counts
                 if (CollectionUtils.isNotEmpty(ca.getSecondaryInterpretations())) {
                     for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
-                        if (CollectionUtils.isNotEmpty(secondaryInterpretation.getPrimaryFindings())) {
-                            for (ClinicalVariant cv : secondaryInterpretation.getPrimaryFindings()) {
-                                if (cv.getId().equals(variantId)) {
-                                    numSecondary++;
-                                    if (CollectionUtils.isNotEmpty(cv.getEvidences())) {
-                                        for (ClinicalVariantEvidence cve : cv.getEvidences()) {
-                                            updateTranscriptCounts(cve.getGenomicFeature(), primIterpretationStats);
-                                            updateModeOfInheritanceCounts(cve.getModeOfInheritances(), primIterpretationStats);
-                                            updatePanelCounts(cve.getPanelId(), primIterpretationStats);
-                                            updatePhenotypeCounts(cve.getPhenotypes(), secIterpretationsStats);
-                                            updateReviewCounts(cve.getReview(), primIterpretationStats);
-                                            updateClassificationCounts(cve.getClassification(), secIterpretationsStats);
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        updateInterpretationCounts(variantId, ca.getInterpretation(), false, stats);
                     }
                 }
             }
-            stats.setNumPrimaryInterpretations(numPrimary);
-            stats.setNumSecondaryInterpretations(numSecondary);
-            stats.setPrimaryInterpretationSummary(primIterpretationStats);
-            stats.setSecondaryInterpretationsSummary(secIterpretationsStats);
 
             // Add summary to the list
             statsList.add(stats);
@@ -703,7 +675,8 @@ public class CvdbSolrEngine {
         return new DataResult<>(dbTime, null, statsList.size(), statsList, statsList.size());
     }
 
-    public DataResult<ClinicalVariantSummaryStats> getClinicalVariantSummary(String variantId, String projectId, String studyId, String token)
+    public DataResult<ClinicalVariantSummaryStats> getClinicalVariantSummaryStats(String variantId, String interpretationStatusId,
+                                                                                  String projectId, String studyId, String token)
             throws CatalogException, IOException, CvdbException {
         // Checking parameter
         if (StringUtils.isEmpty(variantId)) {
@@ -711,7 +684,7 @@ public class CvdbSolrEngine {
         }
         List<String> ids = new ArrayList<>();
         ids.addAll(Arrays.asList(variantId.split(",")));
-        return getClinicalVariantSummary(ids, projectId, studyId, token);
+        return getClinicalVariantSummaryStats(ids, interpretationStatusId, projectId, studyId, token);
     }
 
     //----------------------------------------------------------------------
@@ -1116,9 +1089,53 @@ public class CvdbSolrEngine {
         return  includeList;
     }
 
-    private void updateTranscriptCounts(GenomicFeature genomicFeature, InterpretationSummaryStats stats) {
-        if (genomicFeature != null && StringUtils.isNotEmpty(genomicFeature.getTranscriptId())) {
-            updateCount(genomicFeature.getTranscriptId(), stats.getEvidenceTranscriptCounts());
+    private void updateInterpretationCounts(String variantId, Interpretation interpretation, boolean isPrimaryInterpreation,
+                                            ClinicalVariantSummaryStats stats) {
+        for (ClinicalVariant cv : interpretation.getPrimaryFindings()) {
+            if (cv.getId().equals(variantId)) {
+                if (isPrimaryInterpreation) {
+                    // Primary interpretation counts
+                    stats.setNumPrimaryInterpretations(1 + stats.getNumPrimaryInterpretations());
+                } else {
+                    // Secondary interpretation counts
+                    stats.setNumSecondaryInterpretations(1 + stats.getNumSecondaryInterpretations());
+                }
+
+                // Variant status counts
+                if (cv.getStatus() != null) {
+                    updateCount(cv.getStatus().name(), stats.getVariantStatusCounts());
+                }
+
+                // Variant confidence counts
+                if (cv.getConfidence() != null && cv.getConfidence().getValue() != null) {
+                    updateCount(cv.getConfidence().getValue().name(), stats.getVariantConfidenceCounts());
+                }
+
+                // Variant evidence counts
+                if (CollectionUtils.isNotEmpty(cv.getEvidences())) {
+                    for (ClinicalVariantEvidence cve : cv.getEvidences()) {
+                        updateGenomicFeatureCounts(cve.getGenomicFeature(), stats.getInterpretationSummaryStats());
+                        updateModeOfInheritanceCounts(cve.getModeOfInheritances(), stats.getInterpretationSummaryStats());
+                        updatePanelCounts(cve.getPanelId(), stats.getInterpretationSummaryStats());
+                        updateReviewCounts(cve.getReview(), stats.getInterpretationSummaryStats());
+                        updateClassificationCounts(cve.getClassification(), stats.getInterpretationSummaryStats());
+                    }
+                }
+            }
+        }
+    }
+
+    private void updateGenomicFeatureCounts(GenomicFeature genomicFeature, InterpretationSummaryStats stats) {
+        if (genomicFeature != null) {
+            // Gene name counts
+            if (StringUtils.isNotEmpty(genomicFeature.getGeneName())) {
+                updateCount(genomicFeature.getGeneName(), stats.getEvidenceGeneNameCounts());
+            }
+
+            // Transcript ID counts
+            if (StringUtils.isNotEmpty(genomicFeature.getTranscriptId())) {
+                updateCount(genomicFeature.getTranscriptId(), stats.getEvidenceTranscriptCounts());
+            }
         }
     }
 
@@ -1136,84 +1153,45 @@ public class CvdbSolrEngine {
         }
     }
 
-    private void updatePhenotypeCounts(List<Phenotype> phenotypes, InterpretationSummaryStats stats) {
-        if (CollectionUtils.isNotEmpty(phenotypes)) {
-            for (Phenotype phenotype : phenotypes) {
-                if (StringUtils.isNotEmpty(phenotype.getId())) {
-                    updateCount(phenotype.getId(), stats.getEvidencePhenotypeCounts());
-                }
+    private void updateReviewCounts(ClinicalEvidenceReview review, InterpretationSummaryStats stats) {
+        if (review != null) {
+            // Review tier counts
+            updateCount(review.getTier(), stats.getEvidenceReviewTierCounts());
+
+            // Review ACMG counts
+            updateAcmgCounts(review.getAcmg(), stats.getEvidenceReviewAcmgCounts());
+
+            // Review clinical significance counts
+            if (review.getClinicalSignificance() != null) {
+                updateCount(review.getClinicalSignificance().name(), stats.getEvidenceReviewClinicalSignificanceCounts());
             }
         }
     }
 
-    private void updateReviewCounts(ClinicalEvidenceReview review, InterpretationSummaryStats summary) {
-        if (review != null) {
-            updateTierCounts(review.getTier(), summary);
-            updateAcmgCounts(review.getAcmg(), summary);
-            updateClinicalSignificanceCounts(review.getClinicalSignificance(), summary);
-        }
-    }
-
-    private void updateClassificationCounts(VariantClassification variantClassification, InterpretationSummaryStats summary) {
+    private void updateClassificationCounts(VariantClassification variantClassification, InterpretationSummaryStats stats) {
         if (variantClassification != null) {
-            updateDrugResponseCounts(variantClassification.getDrugResponse(), summary);
-            updateTraitAssociationCounts(variantClassification.getTraitAssociation(), summary);
-            updateFunctionalEffectCounts(variantClassification.getFunctionalEffect(), summary);
-            updateTumorigenesisCounts(variantClassification.getTumorigenesis(), summary);
+            // Classification ACMG counts
+            updateAcmgCounts(variantClassification.getAcmg(), stats.getEvidenceClassificationAcmgCounts());
         }
     }
 
-    private void updateTierCounts(String tier, InterpretationSummaryStats stats) {
-        if (StringUtils.isNotEmpty(tier)) {
-            updateCount(tier, stats.getEvidenceReviewTierCounts());
-        }
-    }
-
-    private void updateAcmgCounts(List<ClinicalAcmg> acmgs, InterpretationSummaryStats stats) {
+    private void updateAcmgCounts(List<ClinicalAcmg> acmgs, Map<String, Integer> counts) {
         if (CollectionUtils.isNotEmpty(acmgs)) {
             for (ClinicalAcmg acmg : acmgs) {
                 if (StringUtils.isNotEmpty(acmg.getClassification())) {
-                    updateCount(acmg.getClassification(), stats.getEvidenceReviewAcmgCounts());
+                    updateCount(acmg.getClassification(), counts);
                 }
             }
-        }
-    }
-
-    private void updateClinicalSignificanceCounts(ClinicalProperty.ClinicalSignificance significance, InterpretationSummaryStats stats) {
-        if (significance != null) {
-            updateCount(significance.name(), stats.getEvidenceReviewClinicalSignificanceCounts());
-        }
-    }
-
-    private void updateDrugResponseCounts(VariantClassification.DrugResponse drugResponse, InterpretationSummaryStats stats) {
-        if (drugResponse != null) {
-            updateCount(drugResponse.name(), stats.getEvidenceDrugResponseCounts());
-        }
-    }
-
-    private void updateTraitAssociationCounts(VariantClassification.TraitAssociation traitAssociation, InterpretationSummaryStats stats) {
-        if (traitAssociation != null) {
-            updateCount(traitAssociation.name(), stats.getEvidenceTraitAssociationCounts());
-        }
-    }
-
-    private void updateFunctionalEffectCounts(VariantClassification.FunctionalEffect functionalEffect, InterpretationSummaryStats stats) {
-        if (functionalEffect != null) {
-            updateCount(functionalEffect.name(), stats.getEvidenceFunctionalEffectCounts());
-        }
-    }
-
-    private void updateTumorigenesisCounts(VariantClassification.Tumorigenesis tumorigenesis, InterpretationSummaryStats stats) {
-        if (tumorigenesis != null) {
-            updateCount(tumorigenesis.name(), stats.getEvidenceTumorigenesisCounts());
         }
     }
 
     private void updateCount(String key, Map<String, Integer> counts) {
-        if (!counts.containsKey(key)) {
-            counts.put(key, 1);
-        } else {
-            counts.put(key, 1 + counts.get(key));
+        if (StringUtils.isNotEmpty(key)) {
+            if (!counts.containsKey(key)) {
+                counts.put(key, 1);
+            } else {
+                counts.put(key, 1 + counts.get(key));
+            }
         }
     }
 

@@ -35,6 +35,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.IOException;
 
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_NAME;
+
 /**
  * Created by jtarraga on 11/11/17.
  */
@@ -62,14 +64,20 @@ public class CvdbUtils {
                 new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
                 new QueryOptions(QueryOptions.INCLUDE,ProjectDBAdaptor.QueryParams.ID.key()), token).first();
 
+        // Check the filter interpretation status ID
+        String interpretationStatusId = null;
+        if (query.containsKey(CI_STATUS_ID_NAME)) {
+            interpretationStatusId = query.getString(CI_STATUS_ID_NAME);
+            query.remove(CI_STATUS_ID_NAME);
+        }
         // First, get clinical variants
         OpenCGAResult<ClinicalVariant> result = clinicalInterpretationManager.get(query, queryOptions, token);
 
         // Then, set summary for those clinical variants
         for (ClinicalVariant cv : result.getResults()) {
-            DataResult<ClinicalVariantSummaryStats> summaryStatsResult = cvdbEngine.getClinicalVariantSummary(cv.getId(), project.getFqn(),
-                    studyId, token);
-            cv.setSummary(summaryStatsResult.first());
+            DataResult<ClinicalVariantSummaryStats> summaryStatsResult = cvdbEngine.getClinicalVariantSummaryStats(cv.getId(),
+                    interpretationStatusId, project.getFqn(), studyId, token);
+            cv.setStats(summaryStatsResult.first());
         }
         return result;
     }

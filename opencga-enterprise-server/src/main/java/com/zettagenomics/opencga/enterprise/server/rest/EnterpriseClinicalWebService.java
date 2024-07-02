@@ -6,6 +6,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.CvdbUtils;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
@@ -1284,14 +1285,15 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/cvdb/variant/summary")
+    @Path("/cvdb/variant/stats")
     @ApiOperation(value = CLINICAL_VARIANT_SUMMARY_DESCRIPTION, response = ClinicalVariantSummaryStats.class)
-    public Response getClinicalVariantSummary(
+    public Response getClinicalVariantSummaryStats(
             @ApiParam(value = PROJECT_PARAM_DESCRIPTION, required = true) @QueryParam(PROJECT_PARAM_NAME) String projectId,
             @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM_NAME) String studyId,
-            @ApiParam(value = CV_ID_DESCR, required = true) @QueryParam(CV_ID_NAME) String variantIds) {
+            @ApiParam(value = CV_ID_DESCR, required = true) @QueryParam(CV_ID_NAME) String variantIds,
+            @ApiParam(value = CI_STATUS_ID_DESCR, required = true) @QueryParam(CI_STATUS_ID_NAME) String interpretationStatusId) {
         return run(() -> {
-            return cvdbEngine.getClinicalVariantSummary(variantIds, projectId, studyId, token);
+            return cvdbEngine.getClinicalVariantSummaryStats(variantIds, interpretationStatusId, projectId, studyId, token);
         });
     }
 
@@ -1379,6 +1381,8 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = "panelIntersection", value = VariantCatalogQueryUtils.PANEL_INTERSECTION_DESC, dataType = "boolean", paramType = "query"),
 
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
     })
     public Response variantQuery() {
         // Get all query options
@@ -1392,6 +1396,13 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
                 String includeInterpretation = uriInfo.getQueryParameters().get(INCLUDE_INTERPRETATION).get(0);
                 logger.info("Adding the includeInterpretation ({}) to the variant query", includeInterpretation);
                 query.put(INCLUDE_INTERPRETATION, includeInterpretation);
+            }
+            if (uriInfo.getQueryParameters().containsKey(CI_STATUS_ID_NAME)) {
+                String interpretationStatusId = uriInfo.getQueryParameters().get(CI_STATUS_ID_NAME).get(0);
+                if ( StringUtils.isNotEmpty(interpretationStatusId)) {
+                    logger.info("Adding the interpretation status ID ({}) to the variant query", interpretationStatusId);
+                    query.put(CI_STATUS_ID_NAME, interpretationStatusId);
+                }
             }
 
             return CvdbUtils.getClinicalVariant(query, queryOptions, clinicalInterpretationManager, cvdbEngine, token);

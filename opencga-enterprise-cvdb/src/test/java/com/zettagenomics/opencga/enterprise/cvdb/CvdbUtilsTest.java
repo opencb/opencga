@@ -264,7 +264,7 @@ public class CvdbUtilsTest {
         assertEquals(1, cvResult.getNumResults());
         assertTrue(TestUtilities.existsVariantId(query.getString(VariantQueryParam.ID.key()), cvResult.getResults()));
 
-        DataResult<ClinicalVariantSummaryStats> summaryResult = cvdbEngine.getClinicalVariantSummary(query.getString(VariantQueryParam.ID.key()), PROJECT, STUDY, token);
+        DataResult<ClinicalVariantSummaryStats> summaryResult = cvdbEngine.getClinicalVariantSummaryStats(query.getString(VariantQueryParam.ID.key()), null, PROJECT, STUDY, token);
         assertEquals(1, summaryResult.getNumResults());
     }
 
@@ -284,7 +284,7 @@ public class CvdbUtilsTest {
         DataResult<ClinicalVariant> cvResult = CvdbUtils.getClinicalVariant(query, queryOptions, clinicalInterpretationManager, cvdbEngine, token);
         assertEquals(1, cvResult.getNumResults());
         assertTrue(TestUtilities.existsVariantId(query.getString(VariantQueryParam.ID.key()), cvResult.getResults()));
-        assertNotNull(cvResult.first().getSummary());
+        assertNotNull(cvResult.first().getStats());
 //        assertEquals(1, cvResult.first().getSummary().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().size());
 //        assertEquals(1, (int) cvResult.first().getSummary().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().get("TIER3"));
     }
