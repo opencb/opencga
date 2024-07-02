@@ -415,8 +415,8 @@ public class JobManager extends ResourceManager<Job> {
             }
 
             if (!job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.PENDING)
-                    && job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.QUEUED)
-                    && job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.RUNNING)) {
+                    && !job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.QUEUED)
+                    && !job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.RUNNING)) {
                 throw new CatalogException("Cannot kill job '" + jobId + "' in status " + job.getInternal().getStatus().getId());
             }
 
