@@ -1,6 +1,7 @@
 package org.opencb.opencga.master.monitor.daemons;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -19,10 +20,12 @@ import org.opencb.opencga.core.config.OperationConfig;
 import org.opencb.opencga.core.config.OperationExecutionConfig;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.variant.OperationIndexStatus;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +41,7 @@ public class VariantOperationOrchestrator {
     private final String token;
 
     private static final String ATTEMPT = "attempt";
+    private static final String FAILED_ATTEMPT_JOB_IDS = "failedAttemptJobIds";
 
     protected static Logger logger = LoggerFactory.getLogger(VariantOperationOrchestrator.class);
 
@@ -102,7 +106,13 @@ public class VariantOperationOrchestrator {
 
                     // 3. Check general rules
                     if (noPendingJobs(studyFqns, operationRules.dependantTools())) {
-                        int numAttempts = 1;
+                        // Get last execution of this job
+                        Job lastJobExecution = findLastJobExecution(studyFqns.get(0), toolId);
+                        ObjectMap attributes = getNewAttributes(lastJobExecution);
+                        if (attributes.getInt(ATTEMPT) > config.getMaxAttempts()) {
+                            logger.info("Max attempts reached for tool '{}' in project '{}'. Skipping.", toolId, project.getFqn());
+                            continue;
+                        }
 
                         Map<String, Object> paramsMap;
                         if (config.getJobParams() == null) {
@@ -112,8 +122,8 @@ public class VariantOperationOrchestrator {
                         }
                         paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
                         catalogManager.getJobManager().submit(studyFqns.get(0), toolId, Enums.Priority.HIGH, paramsMap, null,
-                                generateJobDescription(config, operationRules, numAttempts), null,
-                                Collections.singletonList(ORCHESTRATOR_TAG), new ObjectMap(ATTEMPT, numAttempts), token);
+                                generateJobDescription(config, operationRules, attributes), null,
+                                Collections.singletonList(ORCHESTRATOR_TAG), attributes, token);
                     }
                 } else if (tool.scope() == Tool.Scope.STUDY) {
                     for (Study study : project.getStudies()) {
@@ -129,18 +139,13 @@ public class VariantOperationOrchestrator {
 
                         // 3. Check general rules
                         if (noPendingJobs(study.getFqn(), operationRules.dependantTools())) {
-                            int numAttempts = 1;
                             // Get last execution of this job
-//                        Job lastJobExecution = null;
-//                        int attempt = 1;
-//                        if (lastJobExecution != null) {
-//                            // Check if the job was automatically executed, and get the attempts
-//                            if (orchestratorMade) check attempts ...
-//                            {
-//                                attempt = job.getAttributes.get("attempt") +1;
-//                            }
-//                        }
-
+                            Job lastJobExecution = findLastJobExecution(study.getFqn(), toolId);
+                            ObjectMap attributes = getNewAttributes(lastJobExecution);
+                            if (attributes.getInt(ATTEMPT) > config.getMaxAttempts()) {
+                                logger.info("Max attempts reached for tool '{}' in study '{}'. Skipping.", toolId, study.getFqn());
+                                continue;
+                            }
 
                             Map<String, Object> paramsMap;
                             if (config.getJobParams() == null) {
@@ -150,8 +155,8 @@ public class VariantOperationOrchestrator {
                             }
                             paramsMap.put(ParamConstants.STUDY_PARAM, study.getFqn());
                             catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.HIGH, paramsMap, null,
-                                    generateJobDescription(config, operationRules, numAttempts), null,
-                                    Collections.singletonList(ORCHESTRATOR_TAG), new ObjectMap(ATTEMPT, numAttempts), token);
+                                    generateJobDescription(config, operationRules, attributes), null,
+                                    Collections.singletonList(ORCHESTRATOR_TAG), attributes, token);
                         }
                     }
                 } else {
@@ -161,12 +166,15 @@ public class VariantOperationOrchestrator {
         }
     }
 
-    private String generateJobDescription(OperationExecutionConfig config, OperationRules operationRules, int numAttempts) {
+    private String generateJobDescription(OperationExecutionConfig config, OperationRules operationRules, ObjectMap attributes) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("Job automatically launched by the orchestrator: \n");
         stringBuilder.append("- Tool: ").append(operationRules.getToolId()).append(".\n");
         stringBuilder.append("- Policy: ").append(config.getPolicy()).append(".\n");
-        stringBuilder.append("- Number of attempts: ").append(numAttempts).append(" out of ").append(config.getMaxAttempts()).append(".\n");
+        stringBuilder.append("- Number of attempts: ").append(attributes.getInt(ATTEMPT)).append(" out of ").append(config.getMaxAttempts())
+                .append(".\n");
+        String jobIds = StringUtils.join(attributes.getAsStringList(FAILED_ATTEMPT_JOB_IDS), ", ");
+        stringBuilder.append("- Job ids from previous attempts: ").append(jobIds).append(".\n");
         return stringBuilder.toString();
     }
 
@@ -283,6 +291,40 @@ public class VariantOperationOrchestrator {
             }
         }
         return true;
+    }
+
+    private Job findLastJobExecution(String studyId, String toolId) throws CatalogException {
+            Query query = new Query()
+                    .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), toolId);
+            QueryOptions queryOptions = new QueryOptions()
+                    .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
+                    .append(QueryOptions.ORDER, QueryOptions.DESCENDING)
+                    .append(QueryOptions.LIMIT, 1);
+
+            OpenCGAResult<Job> search = catalogManager.getJobManager().search(studyId, query, queryOptions, token);
+            return search.getNumResults() > 0 ? search.first() : null;
+    }
+
+    private ObjectMap getNewAttributes(Job job) {
+        ObjectMap attributes = new ObjectMap();
+        // If job was launched by the Orchestrator and failed, extract number of attempts
+        if (job != null && (Enums.ExecutionStatus.ERROR.equals(job.getInternal().getStatus().getId())
+                || Enums.ExecutionStatus.ABORTED.equals(job.getInternal().getStatus().getId()))
+                && job.getTags().contains(ORCHESTRATOR_TAG)) {
+            ObjectMap jobAttributes = new ObjectMap(job.getAttributes());
+            int jobAttempt = jobAttributes.getInt(ATTEMPT);
+
+            List<String> jobIds = new ArrayList<>(jobAttributes.getAsStringList(FAILED_ATTEMPT_JOB_IDS));
+            // Add last job id
+            jobIds.add(job.getId());
+
+            attributes.put(ATTEMPT, jobAttempt + 1);
+            attributes.put(FAILED_ATTEMPT_JOB_IDS, jobIds);
+        } else {
+            attributes.put(ATTEMPT, 1);
+            attributes.put(FAILED_ATTEMPT_JOB_IDS, Collections.emptyList());
+        }
+        return attributes;
     }
 
 }
