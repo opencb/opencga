@@ -258,8 +258,8 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             Runtime.getRuntime().addShutdownHook(hook);
             job.submit();
             JobID jobID = job.getJobID();
-            jobID.appendTo(new StringBuilder(ApplicationId.appIdStrPrefix)).toString();
-            printKeyValue(MR_APPLICATION_ID, jobID);
+            String applicationId = jobID.appendTo(new StringBuilder(ApplicationId.appIdStrPrefix)).toString();
+            printKeyValue(MR_APPLICATION_ID, applicationId);
             return job.waitForCompletion(true);
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);

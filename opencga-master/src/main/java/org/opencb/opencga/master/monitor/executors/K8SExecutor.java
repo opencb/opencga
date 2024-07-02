@@ -312,7 +312,7 @@ public class K8SExecutor implements BatchExecutor {
                                                 .withImagePullPolicy(imagePullPolicy)
                                                 .withResources(resources)
                                                 .addAllToEnv(envVars)
-                                                .withCommand("/bin/sh", "-c")
+                                                .withCommand("/bin/bash", "-c")
                                                 .withArgs("trap 'touch " + DIND_DONE_FILE + "' EXIT ; "
                                                         + getCommandLine(commandLine, stdout, stderr))
                                                 .withVolumeMounts(volumeMounts)
@@ -469,7 +469,7 @@ public class K8SExecutor implements BatchExecutor {
         // https://stackoverflow.com/questions/692000/how-do-i-write-standard-error-to-a-file-while-using-tee-with-a-pipe
         if (stderr != null) {
             if (logToStdout) {
-                commandLine = commandLine + " 2> >( tee -a \"" + stderr.toAbsolutePath() + "\")";
+                commandLine = commandLine + " 2> >( tee -a \"" + stderr.toAbsolutePath() + "\" >&2 )";
             } else {
                 commandLine = commandLine + " 2>> " + stderr.toAbsolutePath();
             }
