@@ -61,7 +61,7 @@ import java.util.Map;
  */
 public class OpenCGATestExternalResource extends ExternalResource {
 
-    private final CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
+    private final CatalogManagerExternalResource catalogManagerExternalResource;
     private Path opencgaHome;
     private String storageEngine;
     private boolean initiated = false;
@@ -70,20 +70,26 @@ public class OpenCGATestExternalResource extends ExternalResource {
     private StorageConfiguration storageConfiguration;
     private StorageEngineFactory storageEngineFactory;
     private ToolRunner toolRunner;
-
+    protected Path sourceAnalysisPath;
 
     public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
 
     public OpenCGATestExternalResource() {
-        this(false);
+        this(false, Paths.get("../opencga-app/app/analysis/"));
     }
 
     public OpenCGATestExternalResource(boolean storageHadoop) {
+        this(storageHadoop, Paths.get("../opencga-app/app/analysis/"));
+    }
+
+    public OpenCGATestExternalResource(boolean storageHadoop, Path sourceAnalysisPath) {
         if (storageHadoop) {
             this.storageEngine = HadoopVariantStorageEngine.STORAGE_ENGINE_ID;
         } else {
             this.storageEngine = DummyVariantStorageEngine.STORAGE_ENGINE_ID;
         }
+        this.sourceAnalysisPath = sourceAnalysisPath;
+        catalogManagerExternalResource = new CatalogManagerExternalResource(sourceAnalysisPath);
     }
 
     @Override
@@ -218,9 +224,9 @@ public class OpenCGATestExternalResource extends ExternalResource {
         catalogManagerExternalResource.getConfiguration().getAdmin().setAlgorithm(null);
         catalogManagerExternalResource.getConfiguration().serialize(
                 new FileOutputStream(conf.resolve("configuration.yml").toFile()));
-        InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
-
-        storageConfiguration = StorageConfiguration.load(inputStream, "yml");
+        try (InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
+            storageConfiguration = StorageConfiguration.load(inputStream, "yml");
+        }
 
         storageConfiguration.getVariant().setDefaultEngine(storageEngine);
         if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
@@ -254,20 +260,22 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         // Mutational signatue analysis
         Path analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/mutational-signature")).toAbsolutePath();
-        inputStream = new FileInputStream("../opencga-app/app/analysis/mutational-signature/sv_clustering.R");
-        Files.copy(inputStream, analysisPath.resolve("sv_clustering.R"), StandardCopyOption.REPLACE_EXISTING);
+
+        Files.copy(sourceAnalysisPath.resolve("mutational-signature/sv_clustering.R"),
+                analysisPath.resolve("sv_clustering.R"), StandardCopyOption.REPLACE_EXISTING);
 
         // Pedigree graph analysis
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
-        inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
-        Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
+
+        Files.copy(sourceAnalysisPath.resolve("pedigree-graph/ped.R"),
+                analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
 
         // Exomiser analysis files
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser")).toAbsolutePath();
         List<String> exomiserFiles = Arrays.asList("application.properties", "exomiser-analysis.yml", "output.yml");
         for (String exomiserFile : exomiserFiles) {
-            inputStream = new FileInputStream("../opencga-app/app/analysis/exomiser/" + exomiserFile);
-            Files.copy(inputStream, analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(sourceAnalysisPath.resolve("exomiser").resolve(exomiserFile),
+                    analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
         }
 
         return opencgaHome;
