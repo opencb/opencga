@@ -24,6 +24,7 @@ import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.organizations.Organization;
+import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.user.OrganizationUserUpdateParams;
@@ -171,6 +172,25 @@ public class OrganizationClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("organizations", null, "user", user, "update", params, POST, User.class);
+    }
+
+    /**
+     * Update the Organization configuration attributes.
+     * @param organization Organization id.
+     * @param data JSON containing the params to be updated.
+     * @param params Map containing any of the following optional parameters.
+     *       include: Fields included in the response, whole JSON path must be provided.
+     *       exclude: Fields excluded in the response, whole JSON path must be provided.
+     *       includeResult: Flag indicating to include the created or updated document result in the response.
+     *       authenticationOriginsAction: Action to be performed if the array of authenticationOrigins is being updated.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<OrganizationConfiguration> updateConfiguration(String organization, OrganizationConfiguration data, ObjectMap
+        params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("organizations", organization, "configuration", null, "update", params, POST, OrganizationConfiguration.class);
     }
 
     /**

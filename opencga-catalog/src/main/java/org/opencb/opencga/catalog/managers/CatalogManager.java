@@ -307,7 +307,7 @@ public class CatalogManager implements AutoCloseable {
 
     public void installIndexes(String organizationId, String token) throws CatalogException {
         JwtPayload payload = userManager.validateToken(token);
-        String userId = payload.getUserId();
+        String userId = payload.getUserId(organizationId);
         if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin();
         }
