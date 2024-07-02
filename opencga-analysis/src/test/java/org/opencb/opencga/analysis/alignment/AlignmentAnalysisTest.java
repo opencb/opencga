@@ -278,7 +278,7 @@ public class AlignmentAnalysisTest {
         String geneName = "BRCA2";
         params.setGenes(Arrays.asList(geneName));
 
-        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, "coverage-job-id", token);
+        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, "coverage-job-id", false, token);
 
         bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
                 null, null), false, token).first();
@@ -301,7 +301,7 @@ public class AlignmentAnalysisTest {
         AlignmentIndexParams params = new AlignmentIndexParams();
         params.setFileId(bamFile.getId());
         Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
-        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-non-readonly-coverage-index", token);
+        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-non-readonly-coverage-index", false, token);
 
         // Checking BAI file
         Path baiPath = nonReadOnlyDir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
@@ -330,7 +330,7 @@ public class AlignmentAnalysisTest {
         AlignmentIndexParams params = new AlignmentIndexParams();
         params.setFileId(bamFile.getId());
         Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
-        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", token);
+        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", false, token);
 
         // Checking BAI file
         Path baiPath = alignmentIndexOutdir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
@@ -358,7 +358,7 @@ public class AlignmentAnalysisTest {
         AlignmentIndexParams indexParams = new AlignmentIndexParams();
         indexParams.setFileId(bamFile.getId());
         Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
-        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-non-readonly-alignment-coverage-index", token);
+        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-non-readonly-alignment-coverage-index", false, token);
 
         // Checking BAI file
         Path baiPath = nonReadOnlyDir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
@@ -374,7 +374,7 @@ public class AlignmentAnalysisTest {
         coverageOarams.setBamFileId(bamFile.getId());
         coverageOarams.setBaiFileId(baiFile.getId());
         Path coverageIndexOutdir = Paths.get(opencga.createTmpOutdir("_coverage_index"));
-        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", token);
+        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", false, token);
 
         // Checking BW file
         Path bwPath = nonReadOnlyDir.resolve(bamFilename + AlignmentConstants.BIGWIG_EXTENSION);
@@ -400,7 +400,7 @@ public class AlignmentAnalysisTest {
         AlignmentIndexParams indexParams = new AlignmentIndexParams();
         indexParams.setFileId(bamFile.getId());
         Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
-        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", token);
+        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", false, token);
 
         // Checking BAI file
         Path baiPath = readOnlyDir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
@@ -419,7 +419,7 @@ public class AlignmentAnalysisTest {
         coverageOarams.setBamFileId(bamFile.getId());
         coverageOarams.setBaiFileId(baiFile.getId());
         Path coverageIndexOutdir = Paths.get(opencga.createTmpOutdir("_coverage_index"));
-        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", token);
+        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", false, token);
 
         // Checking BW file
         Path bwPath = coverageIndexOutdir.resolve(bamFilename + AlignmentConstants.BIGWIG_EXTENSION);

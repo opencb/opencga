@@ -71,7 +71,7 @@ class Job(_ParentRestClient):
         :param str tool_type: Tool type executed by the job [OPERATION,
             ANALYSIS].
         :param str user_id: User that created the job.
-        :param str priority: Priority of the job.
+        :param str job_priority: Priority of the job.
         :param str status: Filter by status.
         :param str internal_status: Filter by internal status.
         :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
@@ -142,7 +142,7 @@ class Job(_ParentRestClient):
         :param str tool_type: Tool type executed by the job [OPERATION,
             ANALYSIS].
         :param str user_id: User that created the job.
-        :param str priority: Priority of the job.
+        :param str job_priority: Priority of the job.
         :param str status: Filter by status.
         :param str internal_status: Filter by internal status.
         :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
@@ -173,7 +173,7 @@ class Job(_ParentRestClient):
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param str internal_status: Filter by internal status.
-        :param str priority: Priority of the job.
+        :param str job_priority: Priority of the job.
         :param str user_id: User that created the job.
         :param str tool_id: Tool ID executed by the job. Also admits basic
             regular expressions using the operator '~', i.e. '~{perl-regex}'
@@ -248,6 +248,18 @@ class Job(_ParentRestClient):
         """
 
         return self._post(category='jobs', resource='update', query_id=jobs, data=data, **options)
+
+    def kill(self, job, **options):
+        """
+        Send a signal to kill a pending or running job.
+        PATH: /{apiVersion}/jobs/{job}/kill
+
+        :param str job: Job ID or UUID. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        return self._post(category='jobs', resource='kill', query_id=job, **options)
 
     def head_log(self, job, **options):
         """

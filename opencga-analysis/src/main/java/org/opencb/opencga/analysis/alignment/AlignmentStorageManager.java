@@ -27,23 +27,17 @@ import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.models.FileInfo;
 import org.opencb.opencga.analysis.models.StudyInfo;
-import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
-import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
@@ -70,6 +64,7 @@ public class AlignmentStorageManager extends StorageManager {
 
     private AlignmentStorageEngine alignmentStorageEngine;
     private String jobId;
+    private boolean dryRun;
 
     private static final Map<String, String> statsMap = new HashMap<>();
 
@@ -82,12 +77,13 @@ public class AlignmentStorageManager extends StorageManager {
         initStatsMap();
     }
 
-    public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, String jobId) {
+    public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, String jobId, boolean dryRun) {
         super(catalogManager, storageEngineFactory);
 
         // TODO: Create this alignmentStorageEngine by reflection
         this.alignmentStorageEngine = new LocalAlignmentStorageEngine();
         this.jobId = jobId;
+        this.dryRun = dryRun;
 
         initStatsMap();
     }

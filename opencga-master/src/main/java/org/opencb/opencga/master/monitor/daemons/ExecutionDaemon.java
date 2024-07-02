@@ -83,6 +83,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -105,6 +106,7 @@ import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
+import org.opencb.opencga.master.monitor.schedulers.JobScheduler;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
@@ -112,6 +114,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -134,21 +137,19 @@ import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 /**
  * Created by imedina on 16/06/16.
  */
-public class ExecutionDaemon extends MonitorParentDaemon {
+public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
     public static final String OUTDIR_PARAM = "outdir";
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_SECONDS = (int) TimeUnit.MINUTES.toSeconds(10);
     public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
     private final StorageConfiguration storageConfiguration;
-    private String internalCli;
-    private JobManager jobManager;
-    private FileManager fileManager;
+    private final String internalCli;
+    private final JobManager jobManager;
+    private final FileManager fileManager;
     private final Map<String, Long> jobsCountByType = new HashMap<>();
     private final Map<String, Long> retainedLogsTime = new HashMap<>();
 
     private List<String> packages;
-
-    private Path defaultJobDir;
 
     private static final Map<String, String> TOOL_CLI_MAP;
 
@@ -164,6 +165,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private final QueryOptions queryOptions;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final JobScheduler jobScheduler;
 
     static {
         TOOL_CLI_MAP = new HashMap<String, String>() {{
@@ -257,8 +259,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         this.storageConfiguration = storageConfiguration;
         this.internalCli = appHome + "/bin/opencga-internal.sh";
 
-        this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
-
         pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.PENDING);
         queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED);
         runningJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING);
@@ -266,7 +266,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         queryOptions = new QueryOptions()
                 .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
                         JobDBAdaptor.QueryParams.CREATION_DATE.key()))
-                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+                .append(QueryOptions.ORDER, QueryOptions.ASCENDING)
+                .append(QueryOptions.LIMIT, NUM_JOBS_HANDLED);
+
+        this.jobScheduler = new JobScheduler(catalogManager, token);
 
         if (CollectionUtils.isEmpty(packages)) {
             this.packages = Collections.singletonList(ToolFactory.DEFAULT_PACKAGE);
@@ -277,22 +280,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     @Override
-    public void run() {
-        while (!exit) {
-            try {
-                Thread.sleep(interval);
-            } catch (InterruptedException e) {
-                if (!exit) {
-                    e.printStackTrace();
-                }
-            }
+    public void apply() throws Exception {
+        checkJobs();
+    }
 
-            try {
-                checkJobs();
-            } catch (Exception e) {
-                logger.error("Catch exception " + e.getMessage(), e);
-            }
-        }
+    @Override
+    public void close() throws IOException {
+        batchExecutor.close();
 
         try {
             logger.info("Attempt to shutdown webhook executor");
@@ -311,6 +305,20 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     protected void checkJobs() throws CatalogException {
         List<String> organizationIds = catalogManager.getAdminManager().getOrganizationIds(token);
+
+        /*
+        QUEUED JOBS
+        */
+        checkQueuedJobs(organizationIds);
+
+        /*
+        RUNNING JOBS
+        */
+        checkRunningJobs(organizationIds);
+
+        long totalPendingJobs = 0;
+        long totalQueuedJobs = 0;
+        long totalRunningJobs = 0;
         for (String organizationId : organizationIds) {
             long pendingJobs = -1;
             long queuedJobs = -1;
@@ -324,22 +332,46 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
             logger.info("----- EXECUTION DAEMON  ----- Organization={} --> pending={}, queued={}, running={}", organizationId, pendingJobs,
                     queuedJobs, runningJobs);
+            totalPendingJobs += pendingJobs;
+            totalQueuedJobs += queuedJobs;
+            totalRunningJobs += runningJobs;
         }
 
-        /*
-        PENDING JOBS
-        */
-        checkPendingJobs(organizationIds);
+        if (totalQueuedJobs == 0) {
+            // If there are no queued jobs, we can queue new jobs
+            List<Job> pendingJobs = new LinkedList<>();
+            List<Job> runningJobs = new LinkedList<>();
 
-        /*
-        QUEUED JOBS
-        */
-        checkQueuedJobs(organizationIds);
+            for (String organizationId : organizationIds) {
+                try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, pendingJobsQuery, queryOptions, token)) {
+                    while (iterator.hasNext()) {
+                        pendingJobs.add(iterator.next());
+                    }
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
 
-        /*
-        RUNNING JOBS
-        */
-        checkRunningJobs(organizationIds);
+                try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, runningJobsQuery, queryOptions, token)) {
+                    while (iterator.hasNext()) {
+                        runningJobs.add(iterator.next());
+                    }
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
+            }
+
+            jobScheduler.addJobs(pendingJobs, Collections.emptyList(), runningJobs);
+            Iterator<Job> iterator = jobScheduler.iterator();
+            boolean success = false;
+            while (iterator.hasNext() && !success) {
+                Job job = iterator.next();
+                try {
+                     success = checkPendingJob(job) > 0;
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
+            }
+        }
     }
 
     protected void checkRunningJobs(List<String> organizationIds) {
@@ -362,6 +394,20 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     protected int checkRunningJob(Job job) {
         Enums.ExecutionStatus jobStatus = getCurrentStatus(job);
+
+        if (killSignalSent(job)) {
+            logger.info("Kill signal request received for job '{} (status={})'. Attempting to abort execution.", job.getId(),
+                    job.getInternal().getStatus().getId());
+            try {
+                if (batchExecutor.kill(job.getId())) {
+                    return abortJob(job, "Job was already in execution. Job killed by the user.");
+                } else {
+                    return 0;
+                }
+            } catch (Exception e) {
+                return abortJob(job, "Error trying to kill the job.", e);
+            }
+        }
 
         switch (jobStatus.getId()) {
             case Enums.ExecutionStatus.RUNNING:
@@ -428,6 +474,20 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected int checkQueuedJob(Job job) {
         Enums.ExecutionStatus status = getCurrentStatus(job);
 
+        if (killSignalSent(job)) {
+            logger.info("Kill signal request received for job '{} (status={})'. Attempting to avoid execution.", job.getId(),
+                    job.getInternal().getStatus().getId());
+            try {
+                if (batchExecutor.kill(job.getId())) {
+                    return abortJob(job, "Job was already queued. Job killed by the user.");
+                } else {
+                    return 0;
+                }
+            } catch (Exception e) {
+                return abortJob(job, "Error trying to kill the job.", e);
+            }
+        }
+
         switch (status.getId()) {
             case Enums.ExecutionStatus.QUEUED:
                 // Job is still queued
@@ -465,7 +525,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
                     try {
                         Job job = iterator.next();
-                        handledPendingJobs += checkPendingJob(organizationId, job);
+                        handledPendingJobs += checkPendingJob(job);
                     } catch (Exception e) {
                         logger.error("{}", e.getMessage(), e);
                     }
@@ -479,17 +539,24 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     /**
      * Check everything is correct and queues the job.
      *
-     * @param organizationId Organization id.
      * @param job Job object.
      * @return 1 if the job has changed the status, 0 otherwise.
      */
-    protected int checkPendingJob(String organizationId, Job job) {
+    protected int checkPendingJob(Job job) {
         if (StringUtils.isEmpty(job.getStudy().getId())) {
-            return abortJob(job, "Missing mandatory 'studyUuid' field");
+            return abortJob(job, "Missing mandatory 'study' field");
         }
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudyFqn(job.getStudy().getId());
+        String organizationId = catalogFqn.getOrganizationId();
 
         if (StringUtils.isEmpty(job.getTool().getId())) {
             return abortJob(job, "Tool id '" + job.getTool().getId() + "' not found.");
+        }
+
+        if (killSignalSent(job)) {
+            logger.info("Kill signal request received for job '{} (status={})'. Job did not start the execution.", job.getId(),
+                    job.getInternal().getStatus().getId());
+            return abortJob(job, "Job killed by the user.");
         }
 
         if (!canBeQueued(organizationId, job)) {
@@ -604,6 +671,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         notifyStatusChange(job);
 
         return 1;
+    }
+
+    private boolean killSignalSent(Job job) {
+        return job.getInternal().isKillJobRequested();
     }
 
     protected void checkToolExecutionPermission(String organizationId, Job job) throws Exception {
@@ -755,12 +826,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         try {
             catalogManager.getIoManagerFactory().get(folder.getUri()).createDirectory(folder.getUri(), true);
         } catch (CatalogIOException | IOException e) {
-            // Submit job to delete job folder
-            ObjectMap params = new ObjectMap()
-                    .append("files", folder.getUuid())
-                    .append("study", job.getStudy().getId())
-                    .append(Constants.SKIP_TRASH, true);
-            jobManager.submit(job.getStudy().getId(), FileDeleteTask.ID, Enums.Priority.LOW, params, token);
             throw new CatalogException("Cannot create job directory '" + folder.getUri() + "' for path '" + folder.getPath() + "'");
         }
 
@@ -793,7 +858,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .append(STUDY_PARAM, job.getStudy().getId());
             return buildCli(internalCli, "tools execute-job", params);
         } else {
-            return buildCli(internalCli, internalCommand, job.getParams());
+            ObjectMap params = new ObjectMap(job.getParams());
+            if (job.isDryRun()) {
+                params.put("dry-run", true);
+            }
+            return buildCli(internalCli, internalCommand, params);
         }
     }
 
@@ -872,6 +941,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         if (!batchExecutor.canBeQueued()) {
             return false;
+        }
+
+        if (StringUtils.isNotEmpty(job.getScheduledStartTime())) {
+            Date date = TimeUtils.toDate(job.getScheduledStartTime());
+            if (date.after(new Date())) {
+                logger.debug("Job '{}' can't be queued yet. It is scheduled to start at '{}'.", job.getId(), job.getScheduledStartTime());
+                return false;
+            }
         }
 
         Integer maxJobs = catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().get(job.getTool().getId());
@@ -1135,7 +1212,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private void sendWebhookNotification(Job job, URL url) throws URISyntaxException, CatalogException, CloneNotSupportedException {
-        JobInternal jobInternal = new JobInternal(null, null, null, job.getInternal().getWebhook().clone(), null);
+        JobInternal jobInternal = new JobInternal(null, null, null, job.getInternal().getWebhook().clone(), null, false);
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams()
                 .setInternal(jobInternal);
 

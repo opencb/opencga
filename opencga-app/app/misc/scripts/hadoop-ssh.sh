@@ -37,9 +37,11 @@ for arg in "$@" ; do
     arg=$(echo "$arg" | sed "s/'/'\\\\\\''/g") # aaa'aaa --> 'aaa'\''aaa'
     CMD="${CMD}'${arg}' "
 done
-echo ${CMD}
+echo ${CMD} 1>&2
 
 ${SSHPASS_CMD} ssh ${SSH_OPTS} "${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" /bin/bash << EOF
+
+echo "PID=\$\$" >&2
 
 export HADOOP_CLASSPATH=${HADOOP_CLASSPATH}
 export HADOOP_USER_CLASSPATH_FIRST=${HADOOP_USER_CLASSPATH_FIRST}

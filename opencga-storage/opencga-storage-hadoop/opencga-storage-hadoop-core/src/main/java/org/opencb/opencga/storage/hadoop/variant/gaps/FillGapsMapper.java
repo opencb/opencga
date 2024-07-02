@@ -7,7 +7,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
 
 import java.io.IOException;
@@ -28,7 +28,7 @@ public class FillGapsMapper extends VariantMapper<ImmutableBytesWritable, Mutati
         Configuration configuration = context.getConfiguration();
         HBaseManager hBaseManager = new HBaseManager(configuration);
 
-        String archiveTableName = context.getConfiguration().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME);
+        String archiveTableName = context.getConfiguration().get(ArchiveTableHelper.CONFIG_ARCHIVE_TABLE_NAME);
         Collection<Integer> samples = FillGapsFromArchiveMapper.getSamples(configuration);
 
         fillGapsTask = new FillGapsFromVariantTask(hBaseManager, archiveTableName,

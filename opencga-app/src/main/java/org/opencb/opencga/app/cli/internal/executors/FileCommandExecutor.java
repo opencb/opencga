@@ -90,7 +90,8 @@ public class FileCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(options.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, options.studyId);
 
-        toolRunner.execute(PostLinkSampleAssociation.class, params, outDir, fileCommandOptions.internalJobOptions.jobId, token);
+        toolRunner.execute(PostLinkSampleAssociation.class, params, outDir, fileCommandOptions.internalJobOptions.jobId,
+                fileCommandOptions.internalJobOptions.dryRun, token);
     }
 
     private void fetch() throws ToolException {
@@ -98,7 +99,7 @@ public class FileCommandExecutor extends InternalCommandExecutor {
 
         Path outDir = Paths.get(options.outDir);
 
-        toolRunner.execute(FetchAndRegisterTask.class, new FileFetch(options.url, options.path), outDir, null, options.commonOptions.token);
+        toolRunner.execute(FetchAndRegisterTask.class, new FileFetch(options.url, options.path), outDir, null, false, options.commonOptions.token);
     }
 
     private void tsvLoad() throws ToolException {

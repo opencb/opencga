@@ -52,6 +52,11 @@ public @interface Tool {
      */
     String description() default "";
 
+    /**
+     * @return Tool priority.
+     */
+    Enums.Priority priority() default Enums.Priority.MEDIUM;
+
     enum Type {
         OPERATION,
         ANALYSIS;

@@ -30,7 +30,7 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.IOException;
@@ -122,7 +122,7 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
     public static void setArchiveTable(Configuration conf, String archiveTable) {
-        conf.set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, archiveTable);
+        conf.set(ArchiveTableHelper.CONFIG_ARCHIVE_TABLE_NAME, archiveTable);
     }
 
     public HBaseVariantTableNameGenerator getHBaseVariantTableNameGenerator() {

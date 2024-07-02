@@ -24,7 +24,7 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 @Tool(id = VariantAnnotationDeleteOperationTool.ID, description = VariantAnnotationDeleteOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.PROJECT,
-        resource = Enums.Resource.VARIANT)
+        resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantAnnotationDeleteOperationTool extends OperationTool {
 
     public static final String ID = "variant-annotation-delete";

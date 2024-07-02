@@ -21,7 +21,7 @@ import org.opencb.opencga.core.models.operations.variant.VariantScoreDeleteParam
 import org.opencb.opencga.core.models.common.Enums;
 
 @Tool(id= VariantScoreDeleteOperationTool.ID,
-        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantScoreDeleteOperationTool extends OperationTool {
 
     public static final String ID = "variant-score-delete";

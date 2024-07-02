@@ -23,7 +23,8 @@ import org.opencb.opencga.core.models.common.Enums;
 @Tool(id = VariantAnnotationSaveOperationTool.ID, description = VariantAnnotationSaveOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.PROJECT,
-        resource = Enums.Resource.VARIANT)
+        resource = Enums.Resource.VARIANT,
+        priority = Enums.Priority.HIGH)
 public class VariantAnnotationSaveOperationTool extends OperationTool {
 
     public static final String ID = "variant-annotation-save";

@@ -202,7 +202,7 @@ public class FamilyAnalysisTest extends GenericTest {
         params.setFamilyId(family.getId());
 
         toolRunner.execute(PedigreeGraphAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir, null,
-                sessionIdUser);
+                false, sessionIdUser);
 
         String b64Image = PedigreeGraphUtils.getB64Image(outDir);
         MatcherAssert.assertThat(b64Image, CoreMatchers.startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHg"));

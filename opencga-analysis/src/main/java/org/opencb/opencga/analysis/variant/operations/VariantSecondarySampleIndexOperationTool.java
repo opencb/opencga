@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Tool(id = VariantSecondarySampleIndexOperationTool.ID, description = VariantSecondarySampleIndexOperationTool.DESCRIPTION,
-        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantSecondarySampleIndexOperationTool extends OperationTool {
 
     public static final String ID = "variant-secondary-sample-index";

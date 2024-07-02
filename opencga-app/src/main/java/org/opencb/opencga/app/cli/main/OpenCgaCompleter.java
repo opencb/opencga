@@ -49,7 +49,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> jobsList = asList( "acl-update","create","distinct","retry","search","top","acl","delete","info","update","log-head","log-tail")
+    private List<Candidate> jobsList = asList( "acl-update","create","distinct","retry","search","top","acl","delete","info","update","kill","log-head","log-tail")
             .stream()
             .map(Candidate::new)
             .collect(toList());

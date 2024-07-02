@@ -314,7 +314,7 @@ public class VariantAnalysisTest {
         try {
             toolRunner.execute(VariantIndexOperationTool.class,
                     new VariantIndexParams().setFile(file.getId()).setAnnotate(true),
-                    Paths.get(opencga.createTmpOutdir()), null, token);
+                    Paths.get(opencga.createTmpOutdir()), null, false, token);
         } catch (ToolException e) {
             System.out.println(ExceptionUtils.prettyExceptionMessage(e, true, true));
         }
@@ -330,7 +330,7 @@ public class VariantAnalysisTest {
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
                 .setSamples(samples.subList(1, 3));
-        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", false, token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
         checkExecutionResult(ar);
@@ -355,7 +355,7 @@ public class VariantAnalysisTest {
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
                 .setCohort(Arrays.asList("c1", "c2"));
-        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", false, token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
         checkExecutionResult(ar);
@@ -382,7 +382,7 @@ public class VariantAnalysisTest {
         VariantStatsAnalysisParams params = new VariantStatsAnalysisParams()
                 .setSamples(samples.subList(1, 3))
                 .setRegion(region);
-        ExecutionResult ar = toolRunner.execute(VariantStatsAnalysis.class, STUDY, params, outDir, "", token);
+        ExecutionResult ar = toolRunner.execute(VariantStatsAnalysis.class, STUDY, params, outDir, "", false, token);
         checkExecutionResult(ar);
 
         MutableInt count = new MutableInt();
@@ -480,7 +480,7 @@ public class VariantAnalysisTest {
         params.getVariantQuery()
                 .appendQuery(query)
                 .setRegion(region);
-        ExecutionResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, STUDY, params, outDir, null, token);
+        ExecutionResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, STUDY, params, outDir, null, false, token);
 
         if (nothingToDo) {
             assertEquals("All samples stats indexed. Nothing to do!", result.getEvents().get(0).getMessage());
@@ -516,7 +516,7 @@ public class VariantAnalysisTest {
         CohortVariantStatsAnalysis analysis = new CohortVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", false, token);
         List<String> samples = file.getSampleIds();
         analysis.setStudy(STUDY)
                 .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 3)));
@@ -533,7 +533,7 @@ public class VariantAnalysisTest {
                 .setIndex(true);
 
         ExecutionResult result = toolRunner.execute(CohortVariantStatsAnalysis.class, STUDY, toolParams,
-                outDir, null, token);
+                outDir, null, false, token);
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
         Cohort cohort = catalogManager.getCohortManager().get(STUDY, StudyEntry.DEFAULT_COHORT, new QueryOptions(), token).first();
@@ -557,7 +557,7 @@ public class VariantAnalysisTest {
 
         outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats_index_2"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        result = toolRunner.execute(CohortVariantStatsAnalysis.class, STUDY, toolParams, outDir, null, token);
+        result = toolRunner.execute(CohortVariantStatsAnalysis.class, STUDY, toolParams, outDir, null, false, token);
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
 
@@ -580,7 +580,7 @@ public class VariantAnalysisTest {
         variantExportParams.setOutputFileName("chr22.vcf");
 
         toolRunner.execute(VariantExportTool.class,
-                variantExportParams.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+                variantExportParams.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
         assertTrue(outDir.resolve(variantExportParams.getOutputFileName() + ".gz").toFile().exists());
     }
 
@@ -595,7 +595,7 @@ public class VariantAnalysisTest {
         variantExportParams.setOutputFileName("chr1-5-22");
         variantExportParams.setOutputFileFormat(VariantWriterFactory.VariantOutputFormat.ENSEMBL_VEP.name());
         toolRunner.execute(VariantExportTool.class,
-                variantExportParams.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+                variantExportParams.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
     }
 
     @Test
@@ -615,7 +615,7 @@ public class VariantAnalysisTest {
         variantExportParams.setInclude("id,studies.samples");
 
         toolRunner.execute(VariantExportTool.class,
-                variantExportParams.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+                variantExportParams.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
 
         System.out.println(outDir);
         Path tped = outDir.resolve(variantExportParams.getOutputFileName() + ".tped");
@@ -636,7 +636,7 @@ public class VariantAnalysisTest {
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", false, token);
         List<String> samples = file.getSampleIds();
         analysis.setStudy(STUDY)
                 .setCaseCohortSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 2)))
@@ -650,7 +650,7 @@ public class VariantAnalysisTest {
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_phenotype"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", false, token);
 
         analysis.setStudy(STUDY)
                 .setPhenotype(PHENOTYPE_NAME);
@@ -665,7 +665,7 @@ public class VariantAnalysisTest {
         params.setSample(file.getSampleIds());
 
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class,
-                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
         checkExecutionResult(er, false);
     }
 
@@ -680,7 +680,7 @@ public class VariantAnalysisTest {
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class,
                 params.toObjectMap()
                         .append(ParamConstants.STUDY_PARAM, STUDY)
-                        .append("executionMethod", "byGene"), outDir, null, token);
+                        .append("executionMethod", "byGene"), outDir, null, false, token);
         checkExecutionResult(er, false);
         assertEquals(4, er.getAttributes().get("otherGenesCount"));
         assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
@@ -696,7 +696,7 @@ public class VariantAnalysisTest {
         params.setBiotype(VariantAnnotationConstants.PROTEIN_CODING);
 
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class,
-                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
         checkExecutionResult(er, false);
         assertEquals(0, er.getAttributes().get("otherGenesCount"));
         assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
@@ -712,7 +712,7 @@ public class VariantAnalysisTest {
         params.setBiotype("nonsense_mediated_decay");
 
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class,
-                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
         checkExecutionResult(er, false);
         assertEquals(3, er.getAttributes().get("otherGenesCount")); // MIR1909 only has miRNA biotype
         assertEquals(0, er.getAttributes().get("proteinCodingGenesCount"));
@@ -749,7 +749,7 @@ public class VariantAnalysisTest {
 //                + "," + "TR_V_gene");
 
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class,
-                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
         checkExecutionResult(er, false);
     }
 
@@ -761,7 +761,7 @@ public class VariantAnalysisTest {
         params.setQuery("(biotype=protein_coding AND ct=missense_variant AND gene=BRCA2) OR (gene=BTN3A2)");
 
         ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class,
-                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
 //        checkExecutionResult(er, false);
     }
 
@@ -792,7 +792,7 @@ public class VariantAnalysisTest {
         params.setSkip("catalogue");
 
         toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
-                outDir, null, token);
+                outDir, null, false, token);
 
         java.io.File catalogueFile = outDir.resolve(MutationalSignatureAnalysis.SIGNATURE_COEFFS_FILENAME).toFile();
         byte[] bytes = Files.readAllBytes(catalogueFile.toPath());
@@ -852,7 +852,7 @@ public class VariantAnalysisTest {
         params.setSkip("fitting");
 
         toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
-                outDir, null, token);
+                outDir, null, false, token);
 
         java.io.File catalogueFile = outDir.resolve(MutationalSignatureAnalysis.CATALOGUES_FILENAME_DEFAULT).toFile();
         byte[] bytes = Files.readAllBytes(catalogueFile.toPath());
@@ -912,7 +912,7 @@ public class VariantAnalysisTest {
         params.setSkip("catalogue");
 
         toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
-                outDir, null, token);
+                outDir, null, false, token);
 
         java.io.File catalogueFile = outDir.resolve(MutationalSignatureAnalysis.SIGNATURE_COEFFS_FILENAME).toFile();
         byte[] bytes = Files.readAllBytes(catalogueFile.toPath());
@@ -962,7 +962,7 @@ public class VariantAnalysisTest {
         params.setSkip("catalogue");
 
         toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
-                snvFittingOutDir, null, token);
+                snvFittingOutDir, null, false, token);
 
         java.io.File snvSignatureFittingFile = snvFittingOutDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
         assertTrue(snvSignatureFittingFile.exists());
@@ -994,7 +994,7 @@ public class VariantAnalysisTest {
         params.setSkip("catalogue");
 
         toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
-                svFittingOutDir, null, token);
+                svFittingOutDir, null, false, token);
 
         java.io.File svSignatureFittingFile = svFittingOutDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
         assertTrue(svSignatureFittingFile.exists());
@@ -1011,7 +1011,7 @@ public class VariantAnalysisTest {
         hrdParams.setIndelQuery("{\"sample\": \"" + cancer_sample + "\", \"type\": \"" + VariantType.INDEL + "\"}");
         hrdParams.setBootstrap(true);
 
-        toolRunner.execute(HRDetectAnalysis.class, hrdParams, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY), hrdetectOutDir, null, token);
+        toolRunner.execute(HRDetectAnalysis.class, hrdParams, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY), hrdetectOutDir, null, false, token);
 
         java.io.File hrDetectFile = hrdetectOutDir.resolve(HRDetectAnalysis.HRDETECT_SCORES_FILENAME_DEFAULT).toFile();
         assertTrue("File missing : " + hrDetectFile, hrDetectFile.exists());
@@ -1092,7 +1092,7 @@ public class VariantAnalysisTest {
         params.setFile(file.getId());
 
         toolRunner.execute(ClinicalAnalysisLoadTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM,
-                CANCER_STUDY), loadingOutDir, null, token);
+                CANCER_STUDY), loadingOutDir, null, false, token);
 
         String ca1Id = "SAP-45016-1";
         String ca2Id = "OPA-6607-1";

@@ -25,7 +25,8 @@ import java.util.List;
 
 @Tool(id = VariantAggregateFamilyOperationTool.ID, description = VariantAggregateFamilyOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION,
-        resource = Enums.Resource.VARIANT)
+        resource = Enums.Resource.VARIANT,
+        priority = Enums.Priority.HIGH)
 public class VariantAggregateFamilyOperationTool extends OperationTool {
     public static final String ID = "variant-aggregate-family";
     public static final String DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values.";

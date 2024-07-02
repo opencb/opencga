@@ -33,7 +33,7 @@ import java.net.URI;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Tool(id = VariantFileDeleteOperationTool.ID, description = VariantFileDeleteOperationTool.DESCRIPTION,
-        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantFileDeleteOperationTool extends OperationTool {
 
     public static final String ID = "variant-file-delete";

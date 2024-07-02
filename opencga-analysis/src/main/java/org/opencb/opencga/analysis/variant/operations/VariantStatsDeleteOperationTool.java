@@ -25,7 +25,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 @Tool(id = VariantStatsDeleteOperationTool.ID, description = VariantStatsDeleteOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.STUDY,
-        resource = Enums.Resource.VARIANT)
+        resource = Enums.Resource.VARIANT,
+        priority = Enums.Priority.HIGH)
 public class VariantStatsDeleteOperationTool extends OperationTool {
 
     public static final String ID = "variant-stats-delete";

@@ -31,7 +31,7 @@ import java.util.List;
 
 @Deprecated
 @Tool(id = VariantFamilyIndexOperationTool.ID, description = VariantFamilyIndexOperationTool.DESCRIPTION,
-        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantFamilyIndexOperationTool extends OperationTool {
 
     public static final String ID = "variant-family-index";

@@ -72,15 +72,15 @@ public class VariantVirtualFileIndexTest extends AbstractVariantOperationManager
         toolRunner.execute(VariantIndexOperationTool.class, new VariantIndexParams()
                         .setFile("chr20.variant-test-file.vcf.gz")
                         .setLoadSplitData("REGION")
-                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, sessionId);
+                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, false, sessionId);
         toolRunner.execute(VariantIndexOperationTool.class, new VariantIndexParams()
                         .setFile("chr21.variant-test-file.vcf.gz")
                         .setLoadSplitData("REGION")
-                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, sessionId);
+                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, false, sessionId);
         toolRunner.execute(VariantIndexOperationTool.class, new VariantIndexParams()
                         .setFile("chr22.variant-test-file.vcf.gz")
                         .setLoadSplitData("REGION")
-                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, sessionId);
+                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, false, sessionId);
 
         File file = catalogManager.getFileManager().get(studyId, "chr20.variant-test-file.vcf.gz", null, sessionId).first();
         assertTrue(FileUtils.isPartial(file));

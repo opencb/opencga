@@ -373,7 +373,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
         String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        String[] acceptedBooleanParams = {QueryParams.VISITED.key()};
+        String[] acceptedBooleanParams = {QueryParams.VISITED.key(), QueryParams.INTERNAL_KILL_JOB_REQUESTED.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
         String[] acceptedStringListParams = {QueryParams.TAGS.key()};

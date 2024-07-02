@@ -38,7 +38,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.util.*;
 
-@Tool(id = FileUnlinkTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Unlink files.")
+@Tool(id = FileUnlinkTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Unlink files.",
+        priority = Enums.Priority.HIGH)
 public class FileUnlinkTask extends OpenCgaTool {
 
     public final static String ID = "files-unlink";

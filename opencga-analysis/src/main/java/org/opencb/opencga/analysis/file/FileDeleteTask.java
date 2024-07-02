@@ -42,7 +42,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import java.io.IOException;
 import java.util.*;
 
-@Tool(id = FileDeleteTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Delete files.")
+@Tool(id = FileDeleteTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Delete files.",
+        priority = Enums.Priority.HIGH)
 public class FileDeleteTask extends OpenCgaTool {
 
     public final static String ID = "files-delete";

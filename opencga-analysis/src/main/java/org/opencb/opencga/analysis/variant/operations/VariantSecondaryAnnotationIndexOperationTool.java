@@ -23,7 +23,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 @Tool(id = VariantSecondaryAnnotationIndexOperationTool.ID, description = VariantSecondaryAnnotationIndexOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.PROJECT,
-        resource = Enums.Resource.VARIANT)
+        resource = Enums.Resource.VARIANT,
+        priority = Enums.Priority.HIGH)
 public class VariantSecondaryAnnotationIndexOperationTool extends OperationTool {
 
     public static final String ID = "variant-secondary-annotation-index";

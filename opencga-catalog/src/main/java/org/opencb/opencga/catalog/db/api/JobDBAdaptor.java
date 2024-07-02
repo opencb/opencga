@@ -126,6 +126,7 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_WEBHOOK("internal.webhook", OBJECT, ""),
         INTERNAL_EVENTS("internal.events", OBJECT, ""),
+        INTERNAL_KILL_JOB_REQUESTED("internal.killJobRequested", BOOLEAN, ""),
         OUT_DIR("outDir", OBJECT, ""),
 
         INPUT("input", OBJECT, ""),

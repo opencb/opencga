@@ -99,12 +99,22 @@ public class JobWSServer extends OpenCGAWSServer {
             } else {
                 jobTags = Collections.emptyList();
             }
-            OpenCGAResult<Job> result = catalogManager.getJobManager().retry(study, params,
-                    null, jobId, jobDescription, jobDependsOn, jobTags, token);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().retry(study, params, null, jobId, jobDescription, jobDependsOn,
+                    jobTags, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    @POST
+    @Path("/{job}/kill")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Send a signal to kill a pending or running job", response = Job.class)
+    public Response kill(
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION, required = true) @PathParam("job") String jobId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
+        return run(() -> catalogManager.getJobManager().kill(study, jobId, token));
     }
 
     @GET

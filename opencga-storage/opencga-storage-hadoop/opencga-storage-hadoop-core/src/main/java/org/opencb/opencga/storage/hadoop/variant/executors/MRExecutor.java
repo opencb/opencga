@@ -16,12 +16,14 @@
 
 package org.opencb.opencga.storage.hadoop.variant.executors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.util.Tool;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +32,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
@@ -44,6 +48,29 @@ public abstract class MRExecutor {
     private ObjectMap options;
     private List<String> env;
     private static Logger logger = LoggerFactory.getLogger(MRExecutor.class);
+    private static final Pattern STDOUT_KEY_VALUE_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+=[^=]+$");
+
+    public static class Result {
+        private final int exitValue;
+        private final ObjectMap result;
+
+        public Result(int exitValue, ObjectMap result) {
+            this.exitValue = exitValue;
+            this.result = result;
+        }
+
+        public int getExitValue() {
+            return exitValue;
+        }
+
+        public ObjectMap getResult() {
+            return result;
+        }
+
+        public String getErrorMessage() {
+            return result.getString(AbstractHBaseDriver.ERROR_MESSAGE);
+        }
+    }
 
     public MRExecutor init(ObjectMap options) {
         this.options = options;
@@ -76,24 +103,30 @@ public abstract class MRExecutor {
         return System.getProperty("app.home", "");
     }
 
-    public <T extends Tool> void run(Class<T> execClass, String[] args, String taskDescription)
+    public <T extends Tool> ObjectMap run(Class<T> execClass, String[] args, String taskDescription)
             throws StorageEngineException {
 
         StopWatch stopWatch = StopWatch.createStarted();
         logger.info("------------------------------------------------------");
         logger.info(taskDescription);
         logger.info("------------------------------------------------------");
-        int exitValue = run(execClass, args);
+        Result result = run(execClass, args);
+        int exitValue = result.getExitValue();
         logger.info("------------------------------------------------------");
         logger.info("Exit value: {}", exitValue);
         logger.info("Total time: {}", TimeUtils.durationToString(stopWatch));
 
         if (exitValue != 0) {
-            throw new StorageEngineException("Error executing MapReduce for : \"" + taskDescription + "\"");
+            String message = "Error executing MapReduce for : \"" + taskDescription + "\"";
+            if (StringUtils.isNotEmpty(result.getErrorMessage())) {
+                message += " : " + result.getErrorMessage();
+            }
+            throw new StorageEngineException(message);
         }
+        return result.getResult();
     }
 
-    protected <T extends Tool> int run(Class<T> execClass, String[] args) throws StorageEngineException {
+    protected <T extends Tool> Result run(Class<T> execClass, String[] args) throws StorageEngineException {
         String hadoopRoute = options.getString(MR_HADOOP_BIN.key(), MR_HADOOP_BIN.defaultValue());
         String jar = getJarWithDependencies(options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
@@ -112,7 +145,7 @@ public abstract class MRExecutor {
         }
     }
 
-    public abstract int run(String executable, String[] args) throws StorageEngineException;
+    public abstract Result run(String executable, String[] args) throws StorageEngineException;
 
     protected ObjectMap getOptions() {
         return options;
@@ -129,4 +162,20 @@ public abstract class MRExecutor {
         }
     }
 
+    protected static ObjectMap readResult(String output) {
+        ObjectMap result = new ObjectMap();
+        for (String line : output.split(System.lineSeparator())) {
+            Matcher matcher = STDOUT_KEY_VALUE_PATTERN.matcher(line);
+            if (matcher.find()) {
+                String[] split = line.split("=");
+                if (split.length == 2) {
+                    Object old = result.put(split[0], split[1]);
+                    if (old != null) {
+                        result.put(split[0], old + "," + split[1]);
+                    }
+                }
+            }
+        }
+        return result;
+    }
 }

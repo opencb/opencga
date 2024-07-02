@@ -22,7 +22,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 @Tool(id = VariantAnnotationRebuilderOperationTool.ID, description = VariantAnnotationRebuilderOperationTool.ID,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.PROJECT,
-        resource = Enums.Resource.VARIANT)
+        resource = Enums.Resource.VARIANT,
+        priority = Enums.Priority.HIGH)
 public class VariantAnnotationRebuilderOperationTool extends OperationTool {
 
     public static final String ID = "variant-annotation-rebuilder";

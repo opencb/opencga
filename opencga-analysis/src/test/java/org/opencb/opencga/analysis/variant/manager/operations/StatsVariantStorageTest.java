@@ -212,7 +212,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         options.put(ParamConstants.STUDY_PARAM, studyId);
 
         ToolRunner toolRunner = new ToolRunner(null, catalogManager, opencga.getStorageEngineFactory());
-        toolRunner.execute(VariantStatsIndexOperationTool.class, params, options, Paths.get(tmpOutdir), null, sessionId);
+        toolRunner.execute(VariantStatsIndexOperationTool.class, params, options, Paths.get(tmpOutdir), null, false, sessionId);
     }
 
     @Test

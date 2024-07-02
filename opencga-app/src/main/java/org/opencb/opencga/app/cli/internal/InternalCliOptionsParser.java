@@ -297,6 +297,9 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--job"}, description = "Job id executing the command line", arity = 1)
         public String jobId;
 
+        @Parameter(names = {"--dry-run"}, description = "Dry run mode execution", arity = 0)
+        public boolean dryRun;
+
         @Parameter(names = {"--job-id"}, hidden = true, description = "Deprecated, use --job", arity = 1)
         @Deprecated
         public void setJobId(String job) {

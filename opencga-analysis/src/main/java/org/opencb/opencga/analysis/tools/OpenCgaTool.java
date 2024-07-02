@@ -67,6 +67,7 @@ public abstract class OpenCgaTool {
 
     private String jobId;
     private String opencgaHome;
+    private boolean dryRun;
     protected String token;
 
     protected final ObjectMap params;
@@ -92,19 +93,20 @@ public abstract class OpenCgaTool {
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
-                                   ObjectMap params, Path outDir, String jobId, String token) {
+                                   ObjectMap params, Path outDir, String jobId, boolean dryRun, String token) {
         VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
-        return setUp(opencgaHome, catalogManager, manager, params, outDir, jobId, token);
+        return setUp(opencgaHome, catalogManager, manager, params, outDir, jobId, dryRun, token);
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                                   ObjectMap params, Path outDir, String jobId, String token) {
+                                   ObjectMap params, Path outDir, String jobId, boolean dryRun, String token) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
         this.configuration = catalogManager.getConfiguration();
         this.variantStorageManager = variantStorageManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
         this.jobId = jobId;
+        this.dryRun = dryRun;
         this.token = token;
         if (params != null) {
             this.params.putAll(params);
@@ -243,10 +245,14 @@ public abstract class OpenCgaTool {
             try {
                 currentStep = "check";
                 privateCheck();
-                check();
-                currentStep = null;
-                erm.setSteps(getSteps());
-                run();
+                if (dryRun) {
+                    logger.info("Dry run enabled. Sleep for 5 seconds and skip execution.");
+                    Thread.sleep(5000);
+                } else {
+                    currentStep = null;
+                    erm.setSteps(getSteps());
+                    run();
+                }
             } catch (ToolException e) {
                 throw e;
             } catch (Exception e) {
@@ -308,6 +314,7 @@ public abstract class OpenCgaTool {
         if (toolParams != null) {
             toolParams.updateParams(getParams());
         }
+        check();
     }
 
     /**

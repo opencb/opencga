@@ -24,7 +24,7 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import java.util.*;
 
 @Tool(id = PostLinkSampleAssociation.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION,
-        description = PostLinkSampleAssociation.DESCRIPTION)
+        description = PostLinkSampleAssociation.DESCRIPTION, priority = Enums.Priority.HIGH)
 public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
 
     public static final String ID = "postlink";

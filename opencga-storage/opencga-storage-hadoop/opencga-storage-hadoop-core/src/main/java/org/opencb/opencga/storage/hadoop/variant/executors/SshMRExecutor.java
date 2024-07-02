@@ -7,14 +7,18 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
@@ -39,20 +43,54 @@ public class SshMRExecutor extends MRExecutor {
     }
 
     @Override
-    public int run(String executable, String[] args) throws StorageEngineException {
+    public Result run(String executable, String[] args) throws StorageEngineException {
         String commandLine = buildCommand(executable, args);
         List<String> env = buildEnv();
 
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            logger.info("Shutdown hook. Killing MR jobs");
+            logger.info("Read output key-value:");
+            ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
+            for (Map.Entry<String, Object> entry : result.entrySet()) {
+                logger.info(" - " + entry.getKey() + ": " + entry.getValue());
+            }
+            List<String> mrJobs = result.getAsStringList(AbstractHBaseDriver.MR_APPLICATION_ID);
+            logger.info("MR jobs to kill: " + mrJobs);
+            for (String mrJob : mrJobs) {
+                logger.info("Killing MR job " + mrJob);
+                String commandLineKill = buildCommand("yarn", "application", "-kill", mrJob);
+                Command command = new Command(commandLineKill, env);
+                command.run();
+                int exitValue = command.getExitValue();
+                if (exitValue != 0) {
+                    logger.error("Error killing MR job " + mrJob);
+                }
+            }
+        }));
         Command command = new Command(commandLine, env);
+        command.setErrorOutputStream(outputStream);
         command.run();
         int exitValue = command.getExitValue();
 
+        ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
         if (exitValue == 0) {
             copyOutputFiles(args, env);
         }
-        return exitValue;
+        return new Result(exitValue, result);
     }
 
+    /**
+     * Copy output files from remote server to local filesystem.
+     * <p>
+     * This method will look for the "output" argument in the args array.
+     * The value of the argument is expected to be a path.
+     *
+     * @param args Arguments passed to the executable
+     * @param env  Environment variables
+     * @return Path to the output file
+     * @throws StorageEngineException if there is an issue copying the files
+     */
     private Path copyOutputFiles(String[] args, List<String> env) throws StorageEngineException {
         List<String> argsList = Arrays.asList(args);
         int outputIdx = argsList.indexOf("output");
@@ -83,6 +121,7 @@ public class SshMRExecutor extends MRExecutor {
                 return Paths.get(targetOutput);
             }
         }
+        // Nothing to copy
         return null;
     }
 

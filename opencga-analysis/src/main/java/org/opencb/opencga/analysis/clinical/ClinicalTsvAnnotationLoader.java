@@ -32,7 +32,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import java.util.Collections;
 
 @Tool(id = ClinicalTsvAnnotationLoader.ID, resource = Enums.Resource.CLINICAL_ANALYSIS, type = Tool.Type.OPERATION,
-        description = "Load annotations from TSV file.")
+        description = "Load annotations from TSV file.", priority = Enums.Priority.HIGH)
 public class ClinicalTsvAnnotationLoader extends TsvAnnotationLoader {
     public final static String ID = "clinical-tsv-load";
 
