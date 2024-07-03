@@ -190,13 +190,14 @@ public abstract class OpenCgaTool {
                 exception = e;
             }
             if (!erm.isClosed()) {
-                privateLogger.error("Unexpected system shutdown!");
+                String message = "Unexpected system shutdown. Job killed by the system.";
+                privateLogger.error(message);
                 try {
                     if (scratchDir != null) {
                         deleteScratchDirectory();
                     }
                     if (exception == null) {
-                        exception = new RuntimeException("Unexpected system shutdown");
+                        exception = new RuntimeException(message);
                     }
                     logException(exception);
                     ExecutionResult result = erm.close(exception);
@@ -258,12 +259,19 @@ public abstract class OpenCgaTool {
             } catch (Exception e) {
                 throw new ToolException(e);
             }
+            Runtime.getRuntime().removeShutdownHook(hook);
         } catch (Throwable e) {
             exception = e;
+            // Do not use a finally block to remove shutdownHook, as finally blocks will be executed even if the JVM is killed,
+            // and this would throw IllegalStateException("Shutdown in progress");
+            try {
+                Runtime.getRuntime().removeShutdownHook(hook);
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+            }
             throw e;
         } finally {
             deleteScratchDirectory();
-            Runtime.getRuntime().removeShutdownHook(hook);
             stopMemoryMonitor();
             result = erm.close(exception);
             logException(exception);

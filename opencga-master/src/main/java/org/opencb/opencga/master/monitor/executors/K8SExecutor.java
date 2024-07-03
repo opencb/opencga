@@ -18,9 +18,9 @@ package org.opencb.opencga.master.monitor.executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.*;
-import io.fabric8.kubernetes.api.model.batch.Job;
-import io.fabric8.kubernetes.api.model.batch.JobBuilder;
-import io.fabric8.kubernetes.api.model.batch.JobSpecBuilder;
+import io.fabric8.kubernetes.api.model.batch.v1.Job;
+import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
+import io.fabric8.kubernetes.api.model.batch.v1.JobSpecBuilder;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.*;
@@ -90,6 +90,7 @@ public class K8SExecutor implements BatchExecutor {
             .withMountPath("/usr/share/pod")
             .build();
     private static final String DIND_DONE_FILE = "/usr/share/pod/done";
+    public static final String JOB_NAME = "job-name";
 
     private final String namespace;
     private final String imageName;
@@ -134,7 +135,7 @@ public class K8SExecutor implements BatchExecutor {
         this.imagePullPolicy = execution.getOptions().getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
         this.imagePullSecrets = buildLocalObjectReference(execution.getOptions().get(K8S_IMAGE_PULL_SECRETS));
         this.ttlSecondsAfterFinished = execution.getOptions().getInt(K8S_TTL_SECONDS_AFTER_FINISHED, 3600);
-        this.terminationGracePeriodSeconds = execution.getOptions().getInt(K8S_TERMINATION_GRACE_PERIOD_SECONDS, 60);
+        this.terminationGracePeriodSeconds = execution.getOptions().getInt(K8S_TERMINATION_GRACE_PERIOD_SECONDS, 5 * 60);
         this.logToStdout = execution.getOptions().getBoolean(K8S_LOG_TO_STDOUT, true);
         nodeSelector = getMap(execution.getOptions(), K8S_NODE_SELECTOR);
         if (execution.getOptions().containsKey(K8S_SECURITY_CONTEXT)) {
@@ -243,10 +244,9 @@ public class K8SExecutor implements BatchExecutor {
             }
 
             @Override
-            public void onClose(KubernetesClientException e) {
+            public void onClose(WatcherException e) {
                 if (e != null) {
                     logger.error("Catch exception at jobs watcher", e);
-                    throw e;
                 }
             }
         });
@@ -268,10 +268,9 @@ public class K8SExecutor implements BatchExecutor {
             }
 
             @Override
-            public void onClose(KubernetesClientException e) {
+            public void onClose(WatcherException e) {
                 if (e != null) {
                     logger.error("Catch exception at pods watcher", e);
-                    throw e;
                 }
             }
         });
@@ -287,7 +286,7 @@ public class K8SExecutor implements BatchExecutor {
     @Override
     public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
         String jobName = buildJobName(jobId);
-        final io.fabric8.kubernetes.api.model.batch.Job k8sJob = new JobBuilder()
+        final io.fabric8.kubernetes.api.model.batch.v1.Job k8sJob = new JobBuilder()
                 .withApiVersion("batch/v1")
                 .withKind("Job")
                 .withMetadata(new ObjectMetaBuilder()
@@ -425,28 +424,48 @@ public class K8SExecutor implements BatchExecutor {
         switch (getStatus(jobId)) {
             case Enums.ExecutionStatus.DONE:
             case Enums.ExecutionStatus.ERROR:
-            case Enums.ExecutionStatus.ABORTED:
-                return false;
-            case Enums.ExecutionStatus.UNKNOWN:
-                logger.warn("Job '" + k8sJobName + "' not found!");
-                return false;
+            case Enums.ExecutionStatus.ABORTED: {
+                return jobPodExists(k8sJobName);
+            }
+            case Enums.ExecutionStatus.UNKNOWN: {
+                logger.warn("K8s Job '" + k8sJobName + "' not found!");
+                return jobPodExists(k8sJobName);
+            }
             case Enums.ExecutionStatus.QUEUED:
             case Enums.ExecutionStatus.PENDING:
-            case Enums.ExecutionStatus.RUNNING:
-                Job k8Job = getKubernetesClient()
-                        .batch()
-                        .jobs()
-                        .inNamespace(namespace)
-                        .withName(k8sJobName)
-                        .get();
-
-                return getKubernetesClient()
-                        .batch()
-                        .jobs()
-                        .delete(k8Job);
+            case Enums.ExecutionStatus.RUNNING: {
+                deleteJobIfAny(k8sJobName);
+                return jobPodExists(k8sJobName);
+            }
             default:
                 return false;
         }
+    }
+
+    private void deleteJobIfAny(String k8sJobName) {
+        Job k8Job = getKubernetesClient()
+                .batch()
+                .v1()
+                .jobs()
+                .inNamespace(namespace)
+                .withName(k8sJobName)
+                .get();
+
+        if (k8Job != null) {
+            logger.info("Deleting kubernetes job '" + k8Job.getMetadata().getName() + "'");
+            getKubernetesClient()
+                    .batch()
+                    .v1()
+                    .jobs()
+                    .inNamespace(namespace)
+                    .withName(k8sJobName)
+                    .withGracePeriod(terminationGracePeriodSeconds)
+                    .delete();
+        }
+    }
+
+    private boolean jobPodExists(String k8sJobName) {
+        return getJobPod(k8sJobName) == null;
     }
 
     @Override
@@ -502,13 +521,21 @@ public class K8SExecutor implements BatchExecutor {
         if (statusFromK8sJob.equalsIgnoreCase(Enums.ExecutionStatus.UNKNOWN)
                 || statusFromK8sJob.equalsIgnoreCase(Enums.ExecutionStatus.QUEUED)) {
             logger.warn("Job status " + statusFromK8sJob + " . Fetch POD info");
-            List<Pod> pods = getKubernetesClient().pods().withLabel("job-name", k8sJobName).list(1, null).getItems();
-            if (!pods.isEmpty()) {
-                Pod pod = pods.get(0);
+            Pod pod = getJobPod(k8sJobName);
+            if (pod != null) {
                 return getStatusFromPod(pod);
             }
         }
         return statusFromK8sJob;
+    }
+
+    private Pod getJobPod(String k8sJobName) {
+        List<Pod> pods = getKubernetesClient().pods().withLabel(JOB_NAME, k8sJobName).list(1, null).getItems();
+        if (pods.isEmpty()) {
+            return null;
+        } else {
+            return pods.get(0);
+        }
     }
 
     private String getJobName(Pod pod) {
@@ -518,7 +545,7 @@ public class K8SExecutor implements BatchExecutor {
                 || pod.getStatus().getPhase() == null) {
             return null;
         }
-        return pod.getMetadata().getLabels().get("job-name");
+        return pod.getMetadata().getLabels().get(JOB_NAME);
     }
 
     private String getStatusFromPod(Pod pod) {
