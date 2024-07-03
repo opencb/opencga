@@ -365,17 +365,19 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         Enums.ExecutionStatus jobStatus = getCurrentStatus(job);
 
         if (killSignalSent(job)) {
-            logger.info("Kill signal request received for job '{} (status={})'. Attempting to abort execution.", job.getId(),
+            logger.info("[{}] - Kill signal request received for job with status='{}'. Attempting to abort execution.", job.getId(),
                     job.getInternal().getStatus().getId());
             try {
                 if (batchExecutor.kill(job.getId())) {
                     return abortKillJob(job, "Job was already in execution. Job killed by the user.");
                 } else {
-                    logger.info("Kill signal send for job '{}'. Waiting for job to finish.", job.getId());
+                    logger.info("[{}] - Kill signal send. Waiting for job to finish.", job.getId());
                     return 0;
                 }
             } catch (Exception e) {
-                return abortJob(job, "Error trying to kill the job.", e);
+                // Skip this job. Will be retried next loop iteration
+                logger.error("[{}] - Error trying to kill the job: {}", job.getId(), e.getMessage(), e);
+                return 0;
             }
         }
 
@@ -444,18 +446,21 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     protected int checkQueuedJob(Job job) {
         Enums.ExecutionStatus status = getCurrentStatus(job);
 
-        if (killSignalSent(job)) {
-            logger.info("Kill signal request received for job '{} (status={})'. Attempting to avoid execution.", job.getId(),
+        // If the job is already running, let the running-jobs step check it
+        if (killSignalSent(job) && !status.getId().equals(Enums.ExecutionStatus.RUNNING)) {
+            logger.info("[{}] - Kill signal request received for job with status='{}'. Attempting to avoid execution.", job.getId(),
                     job.getInternal().getStatus().getId());
             try {
                 if (batchExecutor.kill(job.getId())) {
                     return abortKillJob(job, "Job was already queued. Job killed by the user.");
                 } else {
-                    logger.info("Kill signal send for job '{}'. Waiting for job to finish.", job.getId());
+                    logger.info("[{}] - Kill signal send. Waiting for job to finish.", job.getId());
                     return 0;
                 }
             } catch (Exception e) {
-                return abortJob(job, "Error trying to kill the job.", e);
+                logger.error("[{}] - Error trying to kill the job: {}", job.getId(), e.getMessage(), e);
+                // Skip this job. Will be retried next loop iteration
+                return 0;
             }
         }
 
@@ -539,7 +544,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         }
 
         if (killSignalSent(job)) {
-            logger.info("Kill signal request received for job '{} (status={})'. Job did not start the execution.", job.getId(),
+            logger.info("[{}] - Kill signal request received for job with status='{}'. Job did not start the execution.", job.getId(),
                     job.getInternal().getStatus().getId());
             return abortJob(job, "Job killed by the user.");
         }
@@ -988,12 +993,12 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     private int abortJob(Job job, String description) {
-        logger.info("Aborting job: {} - Reason: '{}'", job.getId(), description);
+        logger.info("[{}] - Aborting job - Reason: '{}'", job.getId(), description);
         return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED, description));
     }
 
     private int abortKillJob(Job job, String description) {
-        logger.info("Aborting job: {} - Reason: '{}'", job.getId(), description);
+        logger.info("[{}] -Aborting job - Reason: '{}'", job.getId(), description);
         return processFinishedJob(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED, description));
     }
 
@@ -1056,7 +1061,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         logger.info("[{}] - Registering job results from '{}'", job.getId(), Paths.get(job.getOutDir().getUri()));
 
         ExecutionResult execution = readExecutionResult(job);
-        if (execution != null) {
+        if (execution == null) {
+            logger.warn("[{}] - Execution result not found", job.getId());
+        } else {
             if (execution.getEnd() == null) {
                 // This could happen if the job finished abruptly
                 logger.info("[{}] Missing end date at ExecutionResult", job.getId());
@@ -1125,34 +1132,34 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
         updateParams.setInternal(new JobInternal());
         // Check status of analysis result or if there are files that could not be moved to outdir to decide the final result
-        if (execution == null) {
-            updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
-                    "Job could not finish successfully. Missing execution result"));
-        } else {
-            switch (status.getId()) {
-                case Enums.ExecutionStatus.DONE:
-                case Enums.ExecutionStatus.READY:
-                    if (execution.getStatus().getName().equals(Status.Type.ERROR)) {
-                        // Discrepancy between the status in the execution result and the status of the job
-                        status.setDescription("Job could not finish successfully."
-                                + " Execution result status: " + execution.getStatus().getName());
-                        updateParams.getInternal().setStatus(status);
-                    } else {
-                        updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
-                    }
-                    break;
-                case Enums.ExecutionStatus.ABORTED:
+        switch (status.getId()) {
+            case Enums.ExecutionStatus.DONE:
+            case Enums.ExecutionStatus.READY:
+                if (execution == null) {
+                    // Regardless of the status, without execution result, we will set the status to ERROR
+                    updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
+                            "Job could not finish successfully. Missing execution result"));
+                } else if (execution.getStatus().getName() == Status.Type.ERROR) {
+                    // Discrepancy between the status in the execution result and the status of the job
+                    status.setDescription("Job could not finish successfully."
+                            + " Execution result status: " + execution.getStatus().getName());
                     updateParams.getInternal().setStatus(status);
-                    break;
-                case Enums.ExecutionStatus.ERROR:
-                default:
-                    if (status.getDescription() == null) {
-                        status.setDescription("Job could not finish successfully");
-                    }
-                    updateParams.getInternal().setStatus(status);
-                    break;
-            }
+                } else {
+                    updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
+                }
+                break;
+            case Enums.ExecutionStatus.ABORTED:
+                updateParams.getInternal().setStatus(status);
+                break;
+            case Enums.ExecutionStatus.ERROR:
+            default:
+                if (status.getDescription() == null) {
+                    status.setDescription("Job could not finish successfully");
+                }
+                updateParams.getInternal().setStatus(status);
+                break;
         }
+
 
         logger.info("[{}] - Updating job information", job.getId());
         // We update the job information
