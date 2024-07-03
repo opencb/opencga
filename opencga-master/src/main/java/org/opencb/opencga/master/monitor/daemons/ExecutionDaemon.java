@@ -400,8 +400,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                     job.getInternal().getStatus().getId());
             try {
                 if (batchExecutor.kill(job.getId())) {
-                    return abortJob(job, "Job was already in execution. Job killed by the user.");
+                    return abortKillJob(job, "Job was already in execution. Job killed by the user.");
                 } else {
+                    logger.info("Kill signal send for job '{}'. Waiting for job to finish.", job.getId());
                     return 0;
                 }
             } catch (Exception e) {
@@ -479,8 +480,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                     job.getInternal().getStatus().getId());
             try {
                 if (batchExecutor.kill(job.getId())) {
-                    return abortJob(job, "Job was already queued. Job killed by the user.");
+                    return abortKillJob(job, "Job was already queued. Job killed by the user.");
                 } else {
+                    logger.info("Kill signal send for job '{}'. Waiting for job to finish.", job.getId());
                     return 0;
                 }
             } catch (Exception e) {
@@ -1007,6 +1009,11 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED, description));
     }
 
+    private int abortKillJob(Job job, String description) {
+        logger.info("Aborting job: {} - Reason: '{}'", job.getId(), description);
+        return processFinishedJob(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED, description));
+    }
+
     private int setStatus(Job job, Enums.ExecutionStatus status) {
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setInternal(new JobInternal(status));
 
@@ -1138,22 +1145,28 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         if (execution == null) {
             updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
                     "Job could not finish successfully. Missing execution result"));
-        } else if (execution.getStatus().getName().equals(Status.Type.ERROR)) {
-            updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
-                    "Job could not finish successfully"));
         } else {
             switch (status.getId()) {
                 case Enums.ExecutionStatus.DONE:
                 case Enums.ExecutionStatus.READY:
-                    updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
+                    if (execution.getStatus().getName().equals(Status.Type.ERROR)) {
+                        // Discrepancy between the status in the execution result and the status of the job
+                        status.setDescription("Job could not finish successfully."
+                                + " Execution result status: " + execution.getStatus().getName());
+                        updateParams.getInternal().setStatus(status);
+                    } else {
+                        updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
+                    }
                     break;
                 case Enums.ExecutionStatus.ABORTED:
-                    updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job aborted!"));
+                    updateParams.getInternal().setStatus(status);
                     break;
                 case Enums.ExecutionStatus.ERROR:
                 default:
-                    updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
-                            "Job could not finish successfully"));
+                    if (status.getDescription() == null) {
+                        status.setDescription("Job could not finish successfully");
+                    }
+                    updateParams.getInternal().setStatus(status);
                     break;
             }
         }
