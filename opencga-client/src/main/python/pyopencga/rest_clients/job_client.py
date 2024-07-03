@@ -106,6 +106,8 @@ class Job(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         """

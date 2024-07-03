@@ -480,7 +480,8 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public OpenCGAResult<Job> retry(String studyStr, JobRetryParams jobRetry, Enums.Priority priority, String jobId, String jobDescription,
-                                    List<String> jobDependsOn, List<String> jobTags, String token) throws CatalogException {
+                                    List<String> jobDependsOn, List<String> jobTags, String jobScheduledStartTime, String token)
+            throws CatalogException {
         Job job = get(studyStr, jobRetry.getJob(), new QueryOptions(), token).first();
         if (jobRetry.isForce()
                 || job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)
@@ -495,7 +496,7 @@ public class JobManager extends ResourceManager<Job> {
                 jobDescription = "Retry from job '" + jobRetry.getJob() + "'";
             }
             return submit(studyStr, job.getTool().getId(), priority, params, jobId, jobDescription, jobDependsOn, jobTags, job.getId(),
-                    jobRetry.getScheduledStartTime(), job.isDryRun(), attributes, token);
+                    jobScheduledStartTime, job.isDryRun(), attributes, token);
         } else {
             throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getId());
         }
