@@ -34,6 +34,7 @@ public class SshMRExecutor extends MRExecutor {
     private static final String HADOOP_SSH_KEY_ENV  = "HADOOP_SSH_KEY";
     // env-var expected by "sshpass -e"
     private static final String SSHPASS_ENV = "SSHPASS";
+    public static final String PID = "PID";
     private static Logger logger = LoggerFactory.getLogger(SshMRExecutor.class);
 
     @Override
@@ -48,13 +49,15 @@ public class SshMRExecutor extends MRExecutor {
         List<String> env = buildEnv();
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        Thread hook = new Thread(() -> {
             logger.info("Shutdown hook. Killing MR jobs");
             logger.info("Read output key-value:");
             ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
             for (Map.Entry<String, Object> entry : result.entrySet()) {
                 logger.info(" - " + entry.getKey() + ": " + entry.getValue());
             }
+            String remotePid = result.getString(PID);
+            logger.info("Remote PID: " + remotePid);
             List<String> mrJobs = result.getAsStringList(AbstractHBaseDriver.MR_APPLICATION_ID);
             logger.info("MR jobs to kill: " + mrJobs);
             for (String mrJob : mrJobs) {
@@ -65,14 +68,41 @@ public class SshMRExecutor extends MRExecutor {
                 int exitValue = command.getExitValue();
                 if (exitValue != 0) {
                     logger.error("Error killing MR job " + mrJob);
+                } else {
+                    logger.info("MR job " + mrJob + " killed!");
                 }
             }
-        }));
+            if (remotePid != null) {
+                int remoteProcessGraceKillPeriod = getOptions()
+                        .getInt(MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS.key(),
+                                MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS.defaultValue());
+                logger.info("Wait up to " + remoteProcessGraceKillPeriod + "s for the remote process to finish");
+                String commandLineWaitPid = buildCommand("bash", "-c", ""
+                        + "pid=" + remotePid + "; "
+                        + "i=0; "
+                        + "while [ $(( i++ )) -lt " + remoteProcessGraceKillPeriod + " ] && ps -p $pid > /dev/null; do sleep 1; done; "
+                        + "if ps -p $pid > /dev/null; then "
+                        + "   echo \"Kill remote ssh process $pid\"; "
+                        + "   ps -p $pid; "
+                        + "   kill -15 $pid; "
+                        + "else "
+                        + "   echo \"Process $pid finished\"; "
+                        + " fi");
+                Command command = new Command(commandLineWaitPid, env);
+                command.run();
+                if (command.getExitValue() != 0) {
+                    logger.error("Error waiting for remote process to finish");
+                } else {
+                    logger.info("Remote process finished!");
+                }
+            }
+        });
+        Runtime.getRuntime().addShutdownHook(hook);
         Command command = new Command(commandLine, env);
         command.setErrorOutputStream(outputStream);
         command.run();
         int exitValue = command.getExitValue();
-
+        Runtime.getRuntime().removeShutdownHook(hook);
         ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
         if (exitValue == 0) {
             copyOutputFiles(args, env);

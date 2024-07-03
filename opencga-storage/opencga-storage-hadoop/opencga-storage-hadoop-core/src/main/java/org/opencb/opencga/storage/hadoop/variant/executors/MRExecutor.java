@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -49,6 +50,7 @@ public abstract class MRExecutor {
     private List<String> env;
     private static Logger logger = LoggerFactory.getLogger(MRExecutor.class);
     private static final Pattern STDOUT_KEY_VALUE_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+=[^=]+$");
+    private static final Pattern EXCEPTION = Pattern.compile("^Exception in thread \"main\" ([^:]+: .+)$");
 
     public static class Result {
         private final int exitValue;
@@ -120,6 +122,8 @@ public abstract class MRExecutor {
             String message = "Error executing MapReduce for : \"" + taskDescription + "\"";
             if (StringUtils.isNotEmpty(result.getErrorMessage())) {
                 message += " : " + result.getErrorMessage();
+            } else {
+                message += " : Unidentified error executing MapReduce job. Check logs for more information.";
             }
             throw new StorageEngineException(message);
         }
@@ -164,9 +168,9 @@ public abstract class MRExecutor {
 
     protected static ObjectMap readResult(String output) {
         ObjectMap result = new ObjectMap();
+        List<String> exceptions = new ArrayList<>();
         for (String line : output.split(System.lineSeparator())) {
-            Matcher matcher = STDOUT_KEY_VALUE_PATTERN.matcher(line);
-            if (matcher.find()) {
+            if (STDOUT_KEY_VALUE_PATTERN.matcher(line).find()) {
                 String[] split = line.split("=");
                 if (split.length == 2) {
                     Object old = result.put(split[0], split[1]);
@@ -174,7 +178,15 @@ public abstract class MRExecutor {
                         result.put(split[0], old + "," + split[1]);
                     }
                 }
+            } else if (EXCEPTION.matcher(line).find()) {
+                Matcher matcher = EXCEPTION.matcher(line);
+                if (matcher.find()) {
+                    exceptions.add(matcher.group(1));
+                }
             }
+        }
+        if (!exceptions.isEmpty() && !result.containsKey(AbstractHBaseDriver.ERROR_MESSAGE)) {
+            result.put(AbstractHBaseDriver.ERROR_MESSAGE, String.join(", ", exceptions));
         }
         return result;
     }

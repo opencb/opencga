@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 
 if [ -z "${HADOOP_SSH_USER}" ] ; then
@@ -24,6 +24,8 @@ SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerA
 if [ -n "${HADOOP_SSH_KEY}" ] && [ -f "${HADOOP_SSH_KEY}" ] ; then
   SSH_OPTS="${SSH_OPTS} -i ${HADOOP_SSH_KEY}"
 fi
+
+trap 'echo "SSH Process interrupted! Run time : ${SECONDS}s" && exit 1 1>&2 ' INT TERM
 
 echo "Connect to Hadoop edge node ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" 1>&2
 
@@ -61,3 +63,10 @@ exec ${CMD}
 
 EOF
 
+EXIT_CODE=$?
+
+echo "SSH Process completed!" 1>&2
+echo " - Run time : ${SECONDS}s" 1>&2
+echo " - Exit code: ${EXIT_CODE}" 1>&2
+
+exit ${EXIT_CODE}

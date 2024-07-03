@@ -11,10 +11,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.mapreduce.Counter;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.JobID;
-import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -245,12 +242,16 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             LOGGER.info("Shutdown hook called!");
             LOGGER.info("Gracefully stopping the job '" + job.getJobID() + "' ...");
             try {
-                if (!job.isComplete()) {
-                    job.killJob();
+                if (job.getJobState() == JobStatus.State.RUNNING) {
+                    if (!job.isComplete()) {
+                        job.killJob();
+                    }
+                    LOGGER.info("Job '" + job.getJobID() + "' stopped!");
+                } else {
+                    LOGGER.info("Job '" + job.getJobID() + "' is not running. Nothing to do.");
                 }
-                LOGGER.info("Job '" + job.getJobID() + "' stopped!");
 //                onError();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 LOGGER.error("Error", e);
             }
         });
@@ -260,9 +261,18 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             JobID jobID = job.getJobID();
             String applicationId = jobID.appendTo(new StringBuilder(ApplicationId.appIdStrPrefix)).toString();
             printKeyValue(MR_APPLICATION_ID, applicationId);
-            return job.waitForCompletion(true);
-        } finally {
+            boolean completion = job.waitForCompletion(true);
             Runtime.getRuntime().removeShutdownHook(hook);
+            return completion;
+        } catch (Exception e) {
+            // Do not use a finally block to remove shutdownHook, as finally blocks will be executed even if the JVM is killed,
+            // and this would throw IllegalStateException("Shutdown in progress");
+            try {
+                Runtime.getRuntime().removeShutdownHook(hook);
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+            }
+            throw e;
         }
     }
 
@@ -354,6 +364,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         FileSystem fileSystem = outdir.getFileSystem(getConf());
         fileSystem.delete(outdir, true);
         fileSystem.cancelDeleteOnExit(outdir);
+        LOGGER.info("Temporary file deleted!");
     }
 
     public class MapReduceOutputFile {
