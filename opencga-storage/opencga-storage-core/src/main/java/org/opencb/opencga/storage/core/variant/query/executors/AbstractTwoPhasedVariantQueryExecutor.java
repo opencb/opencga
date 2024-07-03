@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
@@ -133,7 +133,7 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
 //    }
 
     protected int getLimit(QueryOptions options) {
-        return options.getInt(QueryOptions.LIMIT);
+        return options.getInt(QueryOptions.LIMIT, -1);
     }
 
     protected int getSkip(QueryOptions options) {

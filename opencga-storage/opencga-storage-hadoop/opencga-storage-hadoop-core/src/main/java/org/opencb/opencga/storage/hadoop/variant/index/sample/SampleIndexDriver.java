@@ -7,10 +7,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.exceptions.IllegalArgumentIOException;
-import org.apache.hadoop.hbase.filter.BinaryPrefixComparator;
-import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.hadoop.hbase.filter.QualifierFilter;
-import org.apache.hadoop.hbase.filter.ValueFilter;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.InputFormat;
@@ -200,13 +197,17 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
     @Override
     protected Job setupJob(Job job, String archiveTable, String table) throws IOException {
-        FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ALL,
+        FilterList filterGt = new FilterList(FilterList.Operator.MUST_PASS_ALL,
                 new QualifierFilter(EQUAL, new BinaryPrefixComparator(Bytes.toBytes(VariantPhoenixSchema.buildStudyColumnsPrefix(study)))),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'0', '|', '0', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'0', '/', '0', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'.', '/', '.', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'.', '|', '.', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'.', SEPARATOR_BYTE}))
+        );
+        FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE,
+                new QualifierFilter(EQUAL, new BinaryComparator(VariantPhoenixSchema.VariantColumn.ALLELES.bytes())),
+                filterGt
         );
 
         List<Scan> scans;
@@ -220,6 +221,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 if (StringUtils.isNotEmpty(region)) {
                     VariantHBaseQueryParser.addRegionFilter(scan, Region.parseRegion(region));
                 }
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
                 scan.setFilter(filter);
                 scans.add(scan);
                 for (int sample : samplesSubSet) {
@@ -247,6 +250,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 VariantHBaseQueryParser.addRegionFilter(scan, Region.parseRegion(region));
             }
             scan.setFilter(filter);
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
 
             int approxExpectedNumColumns =
                     sampleIds.size()

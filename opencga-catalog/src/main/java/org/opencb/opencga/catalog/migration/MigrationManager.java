@@ -125,14 +125,20 @@ public class MigrationManager {
     public void runMigration(String version, Collection<Migration.MigrationDomain> domains,
                              Collection<Migration.MigrationLanguage> languages, boolean offline, String appHome, ObjectMap params,
                              String token) throws CatalogException, IOException {
-        // Migrate all organizations
-        for (String organizationId : dbAdaptorFactory.getOrganizationIds()) {
-            if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
-                runMigration(organizationId, version, domains, languages, offline, appHome, params, token);
+        runMigration(ParamConstants.ADMIN_ORGANIZATION, version, domains, languages, offline, appHome, params, token);
+
+        // ***** Starts code to remove in future versions. Reload MongoDBAdaptorFactory to avoid Notes migration issue. *****/
+        try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory())) {
+            for (String organizationId : mongoDBAdaptorFactory.getOrganizationIds()) {
+                // ***** Finish code to remove in future versions. Reload MongoDBAdaptorFactory to avoid Notes migration issue. *****/
+
+                // Migrate all organizations
+    //        for (String organizationId : dbAdaptorFactory.getOrganizationIds()) {
+                if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+                    runMigration(organizationId, version, domains, languages, offline, appHome, params, token);
+                }
             }
         }
-        // Lastly, migrate the admin organization
-        runMigration(ParamConstants.ADMIN_ORGANIZATION, version, domains, languages, offline, appHome, params, token);
     }
 
     public void runMigration(String organizationId, String version, Collection<Migration.MigrationDomain> domains,

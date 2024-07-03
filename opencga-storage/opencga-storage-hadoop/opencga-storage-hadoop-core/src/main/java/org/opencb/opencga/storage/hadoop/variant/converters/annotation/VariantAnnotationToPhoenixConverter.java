@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -24,6 +23,7 @@ import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.commons.utils.CompressionUtils;
+import org.opencb.opencga.storage.core.variant.annotation.converters.VariantAnnotationModelUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
@@ -62,6 +62,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
     }
 
     private int annotationId;
+    private VariantAnnotationModelUtils variantAnnotationModelUtils = new VariantAnnotationModelUtils();
 
     @Deprecated
     public VariantAnnotationToPhoenixConverter(byte[] columnFamily) {
@@ -114,10 +115,6 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
 //        Set<String> hpo = new HashSet<>();
         Set<String> drugs = new HashSet<>();
         Set<String> proteinKeywords = new HashSet<>();
-        // Contains all the xrefs, and the id, the geneNames and transcripts
-        Set<String> xrefs = new HashSet<>();
-
-        addNotNull(xrefs, variantAnnotation.getId());
 
         List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes() == null
                 ? Collections.emptyList()
@@ -125,7 +122,9 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         for (ConsequenceType consequenceType : consequenceTypes) {
             addNotNull(genes, consequenceType.getGeneName());
             addNotNull(genes, consequenceType.getGeneId());
+            addNotNull(genes, consequenceType.getEnsemblGeneId());
             addNotNull(transcripts, consequenceType.getTranscriptId());
+            addNotNull(transcripts, consequenceType.getEnsemblTranscriptId());
             addNotNull(biotype, consequenceType.getBiotype());
             addAllNotNull(flags, consequenceType.getTranscriptFlags());
 
@@ -192,32 +191,14 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
                 if (proteinVariantAnnotation.getKeywords() != null) {
                     proteinKeywords.addAll(proteinVariantAnnotation.getKeywords());
                 }
-                addNotNull(xrefs, proteinVariantAnnotation.getUniprotName());
-                addNotNull(xrefs, proteinVariantAnnotation.getUniprotAccession());
-                addNotNull(xrefs, proteinVariantAnnotation.getUniprotVariantId());
             }
         }
 
-        if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
-            for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
-                addNotNull(xrefs, evidenceEntry.getId());
-            }
-        }
-
-        xrefs.addAll(genes);
-        xrefs.addAll(transcripts);
-        if (variantAnnotation.getXrefs() != null) {
-            for (Xref xref : variantAnnotation.getXrefs()) {
-                addNotNull(xrefs, xref.getId());
-            }
-        }
 
         if (variantAnnotation.getGeneTraitAssociation() != null) {
             for (GeneTraitAssociation geneTrait : variantAnnotation.getGeneTraitAssociation()) {
                 addNotNull(geneTraitName, geneTrait.getName());
                 addNotNull(geneTraitId, geneTrait.getId());
-                addNotNull(xrefs, geneTrait.getHpo());
-                addNotNull(xrefs, geneTrait.getId());
             }
         }
 
@@ -234,6 +215,8 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         geneBiotype.remove(null);
         geneSoFlag.remove(null);
         soFlag.remove(null);
+
+        Set<String> xrefs = variantAnnotationModelUtils.extractXRefs(variantAnnotation);
 
         map.put(CHROMOSOME, variantAnnotation.getChromosome());
         map.put(POSITION, variantAnnotation.getStart());

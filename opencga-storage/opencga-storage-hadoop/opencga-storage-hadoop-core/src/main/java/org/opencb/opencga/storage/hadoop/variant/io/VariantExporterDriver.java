@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOu
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
@@ -188,7 +189,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
             VariantMapReduceUtil.setNoneReduce(job);
         }
 
-        VariantQueryParser variantQueryParser = new VariantQueryParser(null, getMetadataManager());
+        VariantQueryParser variantQueryParser = new HadoopVariantQueryParser(null, getMetadataManager());
         ParsedVariantQuery variantQuery = variantQueryParser.parseQuery(query, options);
         Query query = variantQuery.getQuery();
         if (VariantHBaseQueryParser.isSupportedQuery(query)) {

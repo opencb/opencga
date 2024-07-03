@@ -35,6 +35,13 @@ public interface PendingVariantsDescriptor {
 
     boolean createTableIfNeeded(String tableName, HBaseManager hBaseManager) throws IOException;
 
+    /**
+     * Configure the scan to read from the variants table.
+     *
+     * @param scan Scan to configure
+     * @param metadataManager Metadata manager
+     * @return The same scan object
+     */
     Scan configureScan(Scan scan, VariantStorageMetadataManager metadataManager);
 
     Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager, boolean overwrite);
