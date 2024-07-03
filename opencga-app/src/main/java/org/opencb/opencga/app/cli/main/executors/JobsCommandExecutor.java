@@ -210,7 +210,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
         queryParams.putIfNotEmpty("userId", commandOptions.userId);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotEmpty("priority", commandOptions.priority);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
@@ -286,7 +286,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
         queryParams.putIfNotEmpty("userId", commandOptions.userId);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotEmpty("priority", commandOptions.priority);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
@@ -313,7 +313,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotEmpty("priority", commandOptions.priority);
         queryParams.putIfNotEmpty("userId", commandOptions.userId);
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {

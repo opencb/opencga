@@ -48,7 +48,7 @@ public class CustomJobsCommandExecutor extends CustomCommandExecutor {
         query.putIfNotEmpty(ParamConstants.JOB_TOOL_ID_PARAM, c.toolId);
         query.putIfNotEmpty(ParamConstants.INTERNAL_STATUS_PARAM, c.internalStatus);
         query.putIfNotEmpty(ParamConstants.JOB_USER_PARAM, c.userId);
-        query.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, c.jobPriority);
+        query.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, c.priority);
         query.putAll(c.commonOptions.params);
 
         new JobsTopManager(openCGAClient, query, c.iterations, c.jobsLimit, c.delay, c.plain, c.columns).run();

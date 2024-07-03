@@ -67,7 +67,7 @@ export default class Job extends OpenCGAParentClass {
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
     * @param {String} [params.userId] - User that created the job.
-    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {String} [params.priority] - Priority of the job.
     * @param {String} [params.status] - Filter by status.
     * @param {String} [params.internalStatus] - Filter by internal status.
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
@@ -120,7 +120,7 @@ export default class Job extends OpenCGAParentClass {
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
     * @param {String} [params.userId] - User that created the job.
-    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {String} [params.priority] - Priority of the job.
     * @param {String} [params.status] - Filter by status.
     * @param {String} [params.internalStatus] - Filter by internal status.
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
@@ -145,7 +145,7 @@ export default class Job extends OpenCGAParentClass {
     * @param {Number} [params.limit = "20"] - Maximum number of jobs to be returned. The default value is 20.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @param {String} [params.internalStatus] - Filter by internal status.
-    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {String} [params.priority] - Priority of the job.
     * @param {String} [params.userId] - User that created the job.
     * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.

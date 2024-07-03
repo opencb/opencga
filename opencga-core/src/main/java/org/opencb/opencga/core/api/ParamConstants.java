@@ -559,7 +559,8 @@ public class ParamConstants {
     public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
     public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
-    public static final String JOB_PRIORITY_PARAM = "jobPriority";
+    public static final String JOB_PRIORITY_PARAM = "priority";
+    public static final String SUBMIT_JOB_PRIORITY_PARAM = "jobPriority";
     public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";
     public static final String JOB_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
     public static final String JOB_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
