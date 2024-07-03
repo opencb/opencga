@@ -381,18 +381,22 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         VariantQueryResult<Variant> result = query(new Query(SAMPLE_METADATA.key(), true).append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL), options);
         System.out.println("samples(ALL) = " + result.getSamples());
 
-        for (int i : new int[]{1, 3, 6, 8, 10}) {
+        int numSamples = metadataManager.getStudyIds().stream().mapToInt(id -> metadataManager.getIndexedSamples(id).size()).sum();
+        assertEquals(8, numSamples);
+        for (int i : new int[]{1, 3, 6, numSamples, 10}) {
             result = query(new VariantQuery().sampleSkip(i).includeSampleAll().sampleMetadata(true), options);
 //            System.out.println("samples(SKIP=" + i + ") = " + result.getSamples());
-            assertEquals(Math.max(0, 8 - i), result.getSamples().values().stream().mapToInt(List::size).sum());
-            assertEquals(Math.max(0, 8 - i), result.getNumSamples().intValue());
-            assertEquals(8, result.getNumTotalSamples().intValue());
+            int expected = Math.max(0, numSamples - i);
+            assertEquals("Skip = " + i + " , expected " + expected + " out of 8 samples", expected, result.getSamples().values().stream().mapToInt(List::size).sum());
+            assertEquals("Skip = " + i + " , expected " + expected + " out of 8 samples", expected, result.getNumSamples().intValue());
+            assertEquals(numSamples, result.getNumTotalSamples().intValue());
 
             result = query(new VariantQuery().sampleLimit(i).includeSampleAll().sampleMetadata(true), options);
 //            System.out.println("samples(LIMIT=" + i + ") = " + result.getSamples());
-            assertEquals(Math.min(8, i), result.getSamples().values().stream().mapToInt(List::size).sum());
-            assertEquals(Math.min(8, i), result.getNumSamples().intValue());
-            assertEquals(8, result.getNumTotalSamples().intValue());
+            expected = Math.min(numSamples, i);
+            assertEquals("Limit = " + i + " , expected " + expected + " out of 8 samples", expected, result.getSamples().values().stream().mapToInt(List::size).sum());
+            assertEquals("Limit = " + i + " , expected " + expected + " out of 8 samples", expected, result.getNumSamples().intValue());
+            assertEquals(numSamples, result.getNumTotalSamples().intValue());
         }
     }
 
