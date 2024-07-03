@@ -5,10 +5,10 @@ public class InternalVariantOperationIndex {
     private OperationIndexStatus status;
 
     public InternalVariantOperationIndex() {
-        this(0, new OperationIndexStatus());
+        this(new OperationIndexStatus());
     }
 
-    public InternalVariantOperationIndex(int numTries, OperationIndexStatus status) {
+    public InternalVariantOperationIndex(OperationIndexStatus status) {
         this.status = status;
     }
 
