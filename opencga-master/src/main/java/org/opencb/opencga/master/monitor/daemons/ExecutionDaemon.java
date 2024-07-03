@@ -338,39 +338,8 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         }
 
         if (totalQueuedJobs == 0) {
-            // If there are no queued jobs, we can queue new jobs
-            List<Job> pendingJobs = new LinkedList<>();
-            List<Job> runningJobs = new LinkedList<>();
-
-            for (String organizationId : organizationIds) {
-                try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, pendingJobsQuery, queryOptions, token)) {
-                    while (iterator.hasNext()) {
-                        pendingJobs.add(iterator.next());
-                    }
-                } catch (Exception e) {
-                    logger.error("{}", e.getMessage(), e);
-                }
-
-                try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, runningJobsQuery, queryOptions, token)) {
-                    while (iterator.hasNext()) {
-                        runningJobs.add(iterator.next());
-                    }
-                } catch (Exception e) {
-                    logger.error("{}", e.getMessage(), e);
-                }
-            }
-
-            jobScheduler.addJobs(pendingJobs, Collections.emptyList(), runningJobs);
-            Iterator<Job> iterator = jobScheduler.iterator();
-            boolean success = false;
-            while (iterator.hasNext() && !success) {
-                Job job = iterator.next();
-                try {
-                     success = checkPendingJob(job) > 0;
-                } catch (Exception e) {
-                    logger.error("{}", e.getMessage(), e);
-                }
-            }
+            // Check PENDING jobs
+            checkPendingJobs(organizationIds);
         }
     }
 
@@ -518,20 +487,34 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     protected void checkPendingJobs(List<String> organizationIds) {
-        // Clear job counts each cycle
-        jobsCountByType.clear();
+        // If there are no queued jobs, we can queue new jobs
+        List<Job> pendingJobs = new LinkedList<>();
+        List<Job> runningJobs = new LinkedList<>();
 
         for (String organizationId : organizationIds) {
-            int handledPendingJobs = 0;
             try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, pendingJobsQuery, queryOptions, token)) {
-                while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                    try {
-                        Job job = iterator.next();
-                        handledPendingJobs += checkPendingJob(job);
-                    } catch (Exception e) {
-                        logger.error("{}", e.getMessage(), e);
-                    }
+                while (iterator.hasNext()) {
+                    pendingJobs.add(iterator.next());
                 }
+            } catch (Exception e) {
+                logger.error("{}", e.getMessage(), e);
+            }
+
+            try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, runningJobsQuery, queryOptions, token)) {
+                while (iterator.hasNext()) {
+                    runningJobs.add(iterator.next());
+                }
+            } catch (Exception e) {
+                logger.error("{}", e.getMessage(), e);
+            }
+        }
+
+        Iterator<Job> iterator = jobScheduler.schedule(pendingJobs, Collections.emptyList(), runningJobs);
+        boolean success = false;
+        while (iterator.hasNext() && !success) {
+            Job job = iterator.next();
+            try {
+                success = checkPendingJob(job) > 0;
             } catch (Exception e) {
                 logger.error("{}", e.getMessage(), e);
             }

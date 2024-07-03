@@ -21,8 +21,6 @@ import java.util.*;
 
 public class JobScheduler {
 
-    private TreeMap<Float, Job> jobTreeMap;
-
     private final CatalogManager catalogManager;
     private final String token;
 
@@ -39,23 +37,6 @@ public class JobScheduler {
     public JobScheduler(CatalogManager catalogManager, String token) {
         this.catalogManager = catalogManager;
         this.token = token;
-        this.jobTreeMap = new TreeMap<>();
-    }
-
-    public void addJobs(List<Job> pendingJobs, List<Job> queuedJobs, List<Job> runningJobs) {
-        jobTreeMap.clear();
-        try {
-            getUserRoles();
-        } catch (CatalogException e) {
-            throw new RuntimeException("Scheduler exception: " + e.getMessage(), e);
-        }
-
-        StopWatch stopWatch = StopWatch.createStarted();
-        for (Job job : pendingJobs) {
-            float priority = getPriorityWeight(job);
-            jobTreeMap.put(priority, job);
-        }
-        logger.debug("Time spent scheduling jobs: {}", TimeUtils.durationToString(stopWatch));
     }
 
     private void getUserRoles() throws CatalogException {
@@ -96,14 +77,6 @@ public class JobScheduler {
             this.userRoles.put(id, new UserRole());
         }
         return this.userRoles.get(id);
-    }
-
-    public Job getNext() {
-        return jobTreeMap.pollLastEntry().getValue();
-    }
-
-    public void emtpy() {
-        jobTreeMap.clear();
     }
 
     private float getPriorityWeight(Job job) {
@@ -176,7 +149,22 @@ public class JobScheduler {
         return appPriority * 0.6f + usersPriority * 0.4f;
     }
 
-    public Iterator<Job> iterator() {
+    public Iterator<Job> schedule(List<Job> pendingJobs, List<Job> queuedJobs, List<Job> runningJobs) {
+        TreeMap<Float, Job> jobTreeMap = new TreeMap<>();
+
+        try {
+            getUserRoles();
+        } catch (CatalogException e) {
+            throw new RuntimeException("Scheduler exception: " + e.getMessage(), e);
+        }
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        for (Job job : pendingJobs) {
+            float priority = getPriorityWeight(job);
+            jobTreeMap.put(priority, job);
+        }
+        logger.debug("Time spent scheduling jobs: {}", TimeUtils.durationToString(stopWatch));
+
         return jobTreeMap.values().iterator();
     }
 
