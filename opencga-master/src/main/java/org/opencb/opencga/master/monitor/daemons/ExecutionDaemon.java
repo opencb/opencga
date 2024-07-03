@@ -492,6 +492,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     protected void checkPendingJobs(List<String> organizationIds) {
+        // Clear job counts each cycle
+        jobsCountByType.clear();
+
         // If there are no queued jobs, we can queue new jobs
         List<Job> pendingJobs = new LinkedList<>();
         List<Job> runningJobs = new LinkedList<>();
@@ -502,7 +505,8 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                     pendingJobs.add(iterator.next());
                 }
             } catch (Exception e) {
-                logger.error("{}", e.getMessage(), e);
+                logger.error("Error listing pending jobs from organization {}", organizationId, e);
+                return;
             }
 
             try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, runningJobsQuery, queryOptions, token)) {
@@ -510,7 +514,8 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                     runningJobs.add(iterator.next());
                 }
             } catch (Exception e) {
-                logger.error("{}", e.getMessage(), e);
+                logger.error("Error listing running jobs from organization {}", organizationId, e);
+                return;
             }
         }
 
@@ -1153,7 +1158,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                 break;
             case Enums.ExecutionStatus.ERROR:
             default:
-                if (status.getDescription() == null) {
+                if (StringUtils.isEmpty(status.getDescription())) {
                     status.setDescription("Job could not finish successfully");
                 }
                 updateParams.getInternal().setStatus(status);
