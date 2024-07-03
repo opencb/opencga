@@ -239,6 +239,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -258,7 +259,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
             putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
-            putNestedIfNotEmpty(beanParams, "scheduledStartTime",commandOptions.scheduledStartTime, true);
             putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
 
             jobRetryParams = JacksonUtils.getDefaultObjectMapper().copy()

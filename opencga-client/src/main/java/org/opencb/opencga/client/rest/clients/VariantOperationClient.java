@@ -90,10 +90,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -111,10 +111,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: Project [organization@]project where project can be either the ID or the alias.
      *       annotationId: Annotation identifier.
      * @return a RestResponse object.
@@ -133,10 +133,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: Project [organization@]project where project can be either the ID or the alias.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
@@ -156,10 +156,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: Project [organization@]project where project can be either the ID or the alias.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -193,10 +193,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -215,10 +215,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -237,10 +237,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -259,10 +259,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -281,10 +281,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -303,10 +303,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: project.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -325,10 +325,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -346,10 +346,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -369,10 +369,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -390,10 +390,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -412,10 +412,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -448,10 +448,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       name: Unique name of the score within the study.
      *       resume: Resume a previously failed remove.
@@ -479,10 +479,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -501,10 +501,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: Project [organization@]project where project can be either the ID or the alias.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
@@ -525,10 +525,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -562,10 +562,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: Project [organization@]project where project can be either the ID or the alias.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
@@ -584,10 +584,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       samples: Samples to remove. Needs to provide all the samples in the secondary index.
      * @return a RestResponse object.
@@ -607,10 +607,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -629,10 +629,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -650,10 +650,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

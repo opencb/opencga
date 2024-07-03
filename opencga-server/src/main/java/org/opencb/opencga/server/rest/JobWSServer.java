@@ -81,6 +81,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTagsStr,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String jobScheduledStartTime,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "job", required = true) JobRetryParams params
 
@@ -100,7 +101,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 jobTags = Collections.emptyList();
             }
             OpenCGAResult<Job> result = catalogManager.getJobManager().retry(study, params, null, jobId, jobDescription, jobDependsOn,
-                    jobTags, token);
+                    jobTags, jobScheduledStartTime, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

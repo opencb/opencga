@@ -211,9 +211,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -251,9 +251,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("annotationId", commandOptions.annotationId);
 
@@ -270,9 +270,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -318,9 +318,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
 
 
@@ -387,9 +387,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -428,9 +428,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -469,9 +469,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -511,9 +511,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -579,9 +579,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -652,9 +652,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
 
 
@@ -690,9 +690,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
 
 
         VariantStorageMetadataRepairToolParams variantStorageMetadataRepairToolParams = null;
@@ -726,9 +726,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -766,9 +766,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
 
 
         VariantPruneParams variantPruneParams = null;
@@ -783,7 +783,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "project",commandOptions.project, true);
-            putNestedIfNotNull(beanParams, "dryRun",commandOptions.bodyDryRun, true);
+            putNestedIfNotNull(beanParams, "dryRun",commandOptions.dryRun, true);
             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
 
             variantPruneParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -803,9 +803,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -844,9 +844,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -913,9 +913,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("name", commandOptions.name);
         queryParams.putIfNotNull("resume", commandOptions.resume);
@@ -937,9 +937,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -981,9 +981,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -1023,9 +1023,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -1092,9 +1092,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -1134,9 +1134,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("samples", commandOptions.samples);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -1157,9 +1157,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -1197,9 +1197,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -1240,9 +1240,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("scheduledStartTime", commandOptions.scheduledStartTime);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());

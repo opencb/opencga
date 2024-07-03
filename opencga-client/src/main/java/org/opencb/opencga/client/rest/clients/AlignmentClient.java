@@ -65,10 +65,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -87,10 +87,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -109,10 +109,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -196,10 +196,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -218,10 +218,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -240,10 +240,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -263,10 +263,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -286,10 +286,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -341,10 +341,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
-     *       scheduledStartTime: Time when the job is scheduled to start.
-     *       priority: Priority of the job.
-     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
-     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

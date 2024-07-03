@@ -22,7 +22,7 @@
 #' | updateAcl | /{apiVersion}/jobs/acl/{members}/update | members[*], action[*], body[*] |
 #' | create | /{apiVersion}/jobs/create | study, body[*] |
 #' | distinct | /{apiVersion}/jobs/distinct | study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field[*] |
-#' | retry | /{apiVersion}/jobs/retry | jobId, jobDescription, jobDependsOn, jobTags, study, body[*] |
+#' | retry | /{apiVersion}/jobs/retry | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, study, body[*] |
 #' | search | /{apiVersion}/jobs/search | include, exclude, limit, skip, count, study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted |
 #' | top | /{apiVersion}/jobs/top | limit, study, internalStatus, priority, userId, toolId |
 #' | acl | /{apiVersion}/jobs/{jobs}/acl | jobs[*], member, silent |
@@ -89,6 +89,7 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data job.
         retry=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,

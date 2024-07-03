@@ -415,8 +415,8 @@ public class JobManager extends ResourceManager<Job> {
             }
 
             if (!job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.PENDING)
-                    && job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.QUEUED)
-                    && job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.RUNNING)) {
+                    && !job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.QUEUED)
+                    && !job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.RUNNING)) {
                 throw new CatalogException("Cannot kill job '" + jobId + "' in status " + job.getInternal().getStatus().getId());
             }
 
@@ -479,7 +479,8 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public OpenCGAResult<Job> retry(String studyStr, JobRetryParams jobRetry, Enums.Priority priority, String jobId, String jobDescription,
-                                    List<String> jobDependsOn, List<String> jobTags, String token) throws CatalogException {
+                                    List<String> jobDependsOn, List<String> jobTags, String jobScheduledStartTime, String token)
+            throws CatalogException {
         Job job = get(studyStr, jobRetry.getJob(), new QueryOptions(), token).first();
         if (jobRetry.isForce()
                 || job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)
@@ -494,7 +495,7 @@ public class JobManager extends ResourceManager<Job> {
                 jobDescription = "Retry from job '" + jobRetry.getJob() + "'";
             }
             return submit(studyStr, job.getTool().getId(), priority, params, jobId, jobDescription, jobDependsOn, jobTags, job.getId(),
-                    jobRetry.getScheduledStartTime(), job.isDryRun(), attributes, token);
+                    jobScheduledStartTime, job.isDryRun(), attributes, token);
         } else {
             throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getId());
         }
@@ -543,15 +544,15 @@ public class JobManager extends ResourceManager<Job> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("toolId", toolId)
-                .append("priority", priority)
+                .append("jobPriority", priority)
                 .append("params", params)
                 .append("jobId", jobId)
                 .append("jobDescription", jobDescription)
                 .append("jobDependsOn", jobDependsOn)
                 .append("jobTags", jobTags)
                 .append("jobParentId", jobParentId)
-                .append("scheduledStartTime", scheduledStartTime)
-                .append("dryRun", dryRun)
+                .append("jobScheduledStartTime", scheduledStartTime)
+                .append("jobDryRun", dryRun)
                 .append("token", token);
         Job job = new Job();
         job.setId(jobId);

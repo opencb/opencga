@@ -259,6 +259,9 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -267,9 +270,6 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--force"}, description = "The body web service force parameter", required = false, help = true, arity = 0)
         public boolean force = false;
-    
-        @Parameter(names = {"--scheduled-start-time"}, description = "The body web service scheduledStartTime parameter", required = false, arity = 1)
-        public String scheduledStartTime;
     
         @DynamicParameter(names = {"--params"}, description = "The body web service params parameter. Use: --params key=value", required = false)
         public Map<String, ?> params = new HashMap<>(); //Dynamic parameters must be initialized;

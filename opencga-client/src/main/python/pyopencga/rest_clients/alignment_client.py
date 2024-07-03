@@ -33,11 +33,11 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
-        :param str scheduled_start_time: Time when the job is scheduled to
+        :param str job_scheduled_start_time: Time when the job is scheduled to
             start.
-        :param str priority: Priority of the job.
-        :param bool dry_run: Flag indicating that the job will be executed in
-            dry-run mode. In this mode, OpenCGA will validate that all
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
             parameters and prerequisites are correctly set for successful
             execution, but the job will not actually run.
         """
@@ -57,11 +57,11 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
-        :param str scheduled_start_time: Time when the job is scheduled to
+        :param str job_scheduled_start_time: Time when the job is scheduled to
             start.
-        :param str priority: Priority of the job.
-        :param bool dry_run: Flag indicating that the job will be executed in
-            dry-run mode. In this mode, OpenCGA will validate that all
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
             parameters and prerequisites are correctly set for successful
             execution, but the job will not actually run.
         """
@@ -83,11 +83,11 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
-        :param str scheduled_start_time: Time when the job is scheduled to
+        :param str job_scheduled_start_time: Time when the job is scheduled to
             start.
-        :param str priority: Priority of the job.
-        :param bool dry_run: Flag indicating that the job will be executed in
-            dry-run mode. In this mode, OpenCGA will validate that all
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
             parameters and prerequisites are correctly set for successful
             execution, but the job will not actually run.
         """
@@ -185,11 +185,11 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
-        :param str scheduled_start_time: Time when the job is scheduled to
+        :param str job_scheduled_start_time: Time when the job is scheduled to
             start.
-        :param str priority: Priority of the job.
-        :param bool dry_run: Flag indicating that the job will be executed in
-            dry-run mode. In this mode, OpenCGA will validate that all
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
             parameters and prerequisites are correctly set for successful
             execution, but the job will not actually run.
         """
@@ -209,11 +209,11 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
-        :param str scheduled_start_time: Time when the job is scheduled to
+        :param str job_scheduled_start_time: Time when the job is scheduled to
             start.
-        :param str priority: Priority of the job.
-        :param bool dry_run: Flag indicating that the job will be executed in
-            dry-run mode. In this mode, OpenCGA will validate that all
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
             parameters and prerequisites are correctly set for successful
             execution, but the job will not actually run.
         """
@@ -233,11 +233,11 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
-        :param str scheduled_start_time: Time when the job is scheduled to
+        :param str job_scheduled_start_time: Time when the job is scheduled to
             start.
-        :param str priority: Priority of the job.
-        :param bool dry_run: Flag indicating that the job will be executed in
-            dry-run mode. In this mode, OpenCGA will validate that all
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
             parameters and prerequisites are correctly set for successful
             execution, but the job will not actually run.
         """
@@ -261,11 +261,11 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
-        :param str scheduled_start_time: Time when the job is scheduled to
+        :param str job_scheduled_start_time: Time when the job is scheduled to
             start.
-        :param str priority: Priority of the job.
-        :param bool dry_run: Flag indicating that the job will be executed in
-            dry-run mode. In this mode, OpenCGA will validate that all
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
             parameters and prerequisites are correctly set for successful
             execution, but the job will not actually run.
         """
@@ -290,11 +290,11 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
-        :param str scheduled_start_time: Time when the job is scheduled to
+        :param str job_scheduled_start_time: Time when the job is scheduled to
             start.
-        :param str priority: Priority of the job.
-        :param bool dry_run: Flag indicating that the job will be executed in
-            dry-run mode. In this mode, OpenCGA will validate that all
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
             parameters and prerequisites are correctly set for successful
             execution, but the job will not actually run.
         """
@@ -358,11 +358,11 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
-        :param str scheduled_start_time: Time when the job is scheduled to
+        :param str job_scheduled_start_time: Time when the job is scheduled to
             start.
-        :param str priority: Priority of the job.
-        :param bool dry_run: Flag indicating that the job will be executed in
-            dry-run mode. In this mode, OpenCGA will validate that all
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
             parameters and prerequisites are correctly set for successful
             execution, but the job will not actually run.
         """
