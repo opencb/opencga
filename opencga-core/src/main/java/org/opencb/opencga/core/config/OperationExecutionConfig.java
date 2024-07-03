@@ -3,6 +3,7 @@ package org.opencb.opencga.core.config;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
+import java.util.Collections;
 import java.util.Map;
 
 public class OperationExecutionConfig {
@@ -23,11 +24,13 @@ public class OperationExecutionConfig {
     }
 
     public OperationExecutionConfig() {
+        this(Policy.NIGHTLY, 3, Collections.emptyMap());
     }
 
-    public OperationExecutionConfig(Policy policy, int maxAttempts) {
+    public OperationExecutionConfig(Policy policy, int maxAttempts, Map<String, String> jobParams) {
         this.policy = policy;
         this.maxAttempts = maxAttempts;
+        this.jobParams = jobParams;
     }
 
     @Override
@@ -35,6 +38,7 @@ public class OperationExecutionConfig {
         final StringBuilder sb = new StringBuilder("OperationExecutionConfig{");
         sb.append("policy=").append(policy);
         sb.append(", maxAttempts=").append(maxAttempts);
+        sb.append(", jobParams=").append(jobParams);
         sb.append('}');
         return sb.toString();
     }

@@ -40,8 +40,8 @@ public class VariantOperationOrchestrator {
     private final OperationConfig operationConfig;
     private final String token;
 
-    private static final String ATTEMPT = "attempt";
-    private static final String FAILED_ATTEMPT_JOB_IDS = "failedAttemptJobIds";
+    static final String ATTEMPT = "attempt";
+    static final String FAILED_ATTEMPT_JOB_IDS = "failedAttemptJobIds";
 
     protected static Logger logger = LoggerFactory.getLogger(VariantOperationOrchestrator.class);
 
@@ -168,13 +168,13 @@ public class VariantOperationOrchestrator {
 
     private String generateJobDescription(OperationExecutionConfig config, OperationRules operationRules, ObjectMap attributes) {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("Job automatically launched by the orchestrator: \n");
-        stringBuilder.append("- Tool: ").append(operationRules.getToolId()).append(".\n");
-        stringBuilder.append("- Policy: ").append(config.getPolicy()).append(".\n");
-        stringBuilder.append("- Number of attempts: ").append(attributes.getInt(ATTEMPT)).append(" out of ").append(config.getMaxAttempts())
-                .append(".\n");
+        stringBuilder.append("Job automatically launched by the orchestrator. ");
+        stringBuilder.append("Tool: ").append(operationRules.getToolId()).append("; ");
+        stringBuilder.append("Policy: ").append(config.getPolicy()).append("; ");
+        stringBuilder.append("Attempt number: ").append(attributes.getInt(ATTEMPT)).append(" out of ").append(config.getMaxAttempts())
+                .append("; ");
         String jobIds = StringUtils.join(attributes.getAsStringList(FAILED_ATTEMPT_JOB_IDS), ", ");
-        stringBuilder.append("- Job ids from previous attempts: ").append(jobIds).append(".\n");
+        stringBuilder.append("Job ids from previous attempts: ").append(jobIds).append(".");
         return stringBuilder.toString();
     }
 
@@ -293,7 +293,7 @@ public class VariantOperationOrchestrator {
         return true;
     }
 
-    private Job findLastJobExecution(String studyId, String toolId) throws CatalogException {
+    Job findLastJobExecution(String studyId, String toolId) throws CatalogException {
             Query query = new Query()
                     .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), toolId);
             QueryOptions queryOptions = new QueryOptions()

@@ -442,6 +442,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         INTERNAL_CONFIGURATION_VARIANT_ENGINE("internal.configuration.variantEngine", Type.OBJECT, ""),
         INTERNAL_CONFIGURATION_VARIANT_ENGINE_OPTIONS("internal.configuration.variantEngine.options", Type.OBJECT, ""),
         INTERNAL_CONFIGURATION_VARIANT_ENGINE_SAMPLE_INDEX("internal.configuration.variantEngine.sampleIndex", Type.OBJECT, ""),
+        INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX("internal.variant.secondarySampleIndex", OBJECT, ""),
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),

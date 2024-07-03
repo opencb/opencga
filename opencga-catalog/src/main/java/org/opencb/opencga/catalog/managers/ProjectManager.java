@@ -72,6 +72,8 @@ public class ProjectManager extends AbstractManager {
             ProjectDBAdaptor.QueryParams.ATTRIBUTES.key()
     ));
     private static final Set<String> PROTECTED_UPDATABLE_FIELDS = new HashSet<>(Arrays.asList(
+            ProjectDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
+            ProjectDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
             ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(),
             ProjectDBAdaptor.QueryParams.CELLBASE.key()
     ));
@@ -471,6 +473,28 @@ public class ProjectManager extends AbstractManager {
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+    }
+
+    public OpenCGAResult<Project> setProjectInternalVariant(String projectStr, ProjectInternalVariant variant, QueryOptions options,
+                                                            String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+        ParamUtils.checkObj(variant, "ProjectInternalVariant");
+
+        ObjectMap parameters = new ObjectMap();
+        if (variant.getAnnotationIndex() != null) {
+            parameters.put(ProjectDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), variant.getAnnotationIndex());
+        }
+        if (variant.getSecondaryAnnotationIndex() != null) {
+            parameters.put(ProjectDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
+                    variant.getSecondaryAnnotationIndex());
+        }
+
+        return update(projectStr, parameters, options, true, token);
     }
 
     public OpenCGAResult<Project> setDatastoreVariant(String projectStr, DataStore dataStore, String token) throws CatalogException {

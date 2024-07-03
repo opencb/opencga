@@ -82,9 +82,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTagsStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = "job", required = true) JobRetryParams params
-
-    ) {
+            @ApiParam(value = "job", required = true) JobRetryParams params) {
         try {
             List<String> jobDependsOn;
             if (StringUtils.isNotEmpty(dependsOn)) {
