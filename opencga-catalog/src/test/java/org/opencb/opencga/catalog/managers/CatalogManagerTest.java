@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Optimizations;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.AclEntry;
 import org.opencb.opencga.core.models.AclEntryList;
@@ -49,6 +50,7 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
+import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.DataStore;
@@ -2328,7 +2330,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
                 Arrays.asList("user4", "user7"), aclList.getResults().get(2));
 
-        catalogManager.getConfiguration().getOptimizations().setSimplifyPermissions(true);
+        catalogManager.getOrganizationManager().updateConfiguration(organizationId, new OrganizationConfiguration().setOptimizations(new Optimizations(true)), null, ownerToken);
         aclList = catalogManager.getAdminManager().getEffectivePermissions(studyFqn, Arrays.asList(s_7Id, s_8Id, s_9Id), Enums.Resource.SAMPLE.name(), ownerToken);
         assertEquals(3, aclList.getNumResults());
         assertPermissions(s_7Id, Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
