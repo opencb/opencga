@@ -215,12 +215,10 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testProjectScopeTask() throws Exception {
+    public void testProjectScopeTaskAndScheduler() throws Exception {
         // User 2 to admins group in study1 but not in study2
         catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList(normalUserId2)), ownerToken);
-//        catalogManager.getStudyManager().updateAcl(studyFqn2, normalUserId2, new StudyAclParams().setTemplate(AuthorizationManager.ROLE_VIEW_ONLY),
-//                ParamUtils.AclAction.SET, ownerToken);
 
         // User 3 to admins group in both study1 and study2
         catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
@@ -229,29 +227,97 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
                 new GroupUpdateParams(Collections.singletonList(normalUserId3)), ownerToken);
 
         HashMap<String, Object> params = new HashMap<>();
-        String jobId = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, "job1", "", null, null, null, null, false, ownerToken).first().getId();
+        String jobId1 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
+                params, "job1", "", null, null, null, null, false, normalToken2).first().getId();
         String jobId2 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, "job2", "", null, null, null, null, false, normalToken2).first().getId();
+                params, "job2", "", null, null, null, null, false, orgAdminToken1).first().getId();
         String jobId3 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, "job3", "", null, null, null, null, false, normalToken3).first().getId();
+                params, "job3", "", null, null, null, null, false, ownerToken).first().getId();
+        String jobId4 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
+                params, "job4", "", null, null, null, null, false, normalToken3).first().getId();
 
-        daemon.checkPendingJobs(organizationIds);
+        daemon.checkJobs();
 
         // Job sent by the owner
-        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), ownerToken);
+        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId3, QueryOptions.empty(), ownerToken);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.QUEUED);
 
-        // Job sent by user2 (admin from study1 but not from study2)
+        // Job sent by normal user
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId1, QueryOptions.empty(), ownerToken);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.PENDING);
+
+        // Job sent by study administrator
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId4, QueryOptions.empty(), ownerToken);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.PENDING);
+
         jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId2, QueryOptions.empty(), ownerToken);
         assertEquals(1, jobOpenCGAResult.getNumResults());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.PENDING);
+
+        daemon.checkJobs();
+
+        // Because there's already a QUEUED job, it should not process any more jobs
+        // Job sent by the owner
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId3, QueryOptions.empty(), ownerToken);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.QUEUED);
+
+        // Job sent normal user
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId1, QueryOptions.empty(), ownerToken);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.PENDING);
+
+        // Job sent by study administrator
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId4, QueryOptions.empty(), ownerToken);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.PENDING);
+
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId2, QueryOptions.empty(), ownerToken);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.PENDING);
+
+        // Set to DONE jobId3 so it can process more jobs
+        catalogManager.getJobManager().update(studyFqn, jobId3, new PrivateJobUpdateParams()
+                .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))), QueryOptions.empty(), ownerToken);
+
+        daemon.checkJobs();
+        // Job sent by normal user should still be PENDING
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId1, QueryOptions.empty(), ownerToken);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.PENDING);
+
+        // Job sent by study administrator
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId4, QueryOptions.empty(), ownerToken);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.PENDING);
+
+        // Job sent by org admin
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId2, QueryOptions.empty(), ownerToken);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.QUEUED);
+
+        // Set to DONE jobId2 so it can process more jobs
+        catalogManager.getJobManager().update(studyFqn, jobId2, new PrivateJobUpdateParams()
+                .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))), QueryOptions.empty(), ownerToken);
+
+        daemon.checkJobs();
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId1, QueryOptions.empty(), ownerToken);
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.ABORTED);
         assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription()
                 .contains("can only be executed by the project owners or members of " + ParamConstants.ADMINS_GROUP));
 
-        // Job sent by user3 (admin from study1 and study2)
-        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId3, QueryOptions.empty(), ownerToken);
+        // Job sent by study administrator
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId4, QueryOptions.empty(), ownerToken);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.PENDING);
+
+        daemon.checkJobs(); // to process jobId4
+
+        // Job sent by study administrator
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId4, QueryOptions.empty(), ownerToken);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.QUEUED);
 
@@ -260,7 +326,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         jobOpenCGAResult = catalogManager.getJobManager().search(studyFqn2, new Query(),
                 new QueryOptions(ParamConstants.OTHER_STUDIES_FLAG, true), ownerToken);
-        assertEquals(2, jobOpenCGAResult.getNumResults());
+        assertEquals(3, jobOpenCGAResult.getNumResults());
     }
 
     @Test
@@ -418,6 +484,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
                 Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri());
 
         thrown.expect(CatalogAuthorizationException.class);
+        thrown.expectMessage("view log file");
         catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, normalToken2);
     }
 

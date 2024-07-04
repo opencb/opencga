@@ -138,8 +138,10 @@ public class JobScheduler {
         UserRole userRole = getUserRole(organizationId, userId);
         if (userRole.isSuperAdmin) {
             usersPriority = usersPriority * 1;
-        } else if (userRole.isOrganizationOwner(organizationId) || userRole.isOrganizationAdmin(organizationId)) {
+        } else if (userRole.isOrganizationOwner(organizationId)) {
             usersPriority = usersPriority * 0.8f;
+        } else if (userRole.isOrganizationAdmin(organizationId)) {
+            usersPriority = usersPriority * 0.75f;
         } else if (userRole.isStudyAdmin(job.getStudy().getId())) {
             usersPriority = usersPriority * 0.6f;
         } else {
@@ -150,7 +152,7 @@ public class JobScheduler {
     }
 
     public Iterator<Job> schedule(List<Job> pendingJobs, List<Job> queuedJobs, List<Job> runningJobs) {
-        TreeMap<Float, Job> jobTreeMap = new TreeMap<>();
+        TreeMap<Float, List<Job>> jobTreeMap = new TreeMap<>();
 
         try {
             getUserRoles();
@@ -161,11 +163,23 @@ public class JobScheduler {
         StopWatch stopWatch = StopWatch.createStarted();
         for (Job job : pendingJobs) {
             float priority = getPriorityWeight(job);
-            jobTreeMap.put(priority, job);
+            if (!jobTreeMap.containsKey(priority)) {
+                jobTreeMap.put(priority, new ArrayList<>());
+            }
+            jobTreeMap.get(priority).add(job);
         }
         logger.debug("Time spent scheduling jobs: {}", TimeUtils.durationToString(stopWatch));
 
-        return jobTreeMap.values().iterator();
+        stopWatch.reset();
+        stopWatch.start();
+        // Obtain iterator
+        List<Job> allJobs = new ArrayList<>();
+        for (Float priority : jobTreeMap.descendingKeySet()) {
+            allJobs.addAll(jobTreeMap.get(priority));
+        }
+        logger.debug("Time spent creating iterator: {}", TimeUtils.durationToString(stopWatch));
+
+        return allJobs.iterator();
     }
 
     private static class UserRole {

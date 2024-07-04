@@ -1063,8 +1063,12 @@ public class JobManager extends ResourceManager<Job> {
                 if (job.getStdout() != null && job.getStdout().getUri() != null) {
                     logFile = Paths.get(job.getStdout().getUri());
                 } else {
-                    // The log file hasn't yet been registered
-                    logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log");
+                    if (job.getOutDir() != null && job.getOutDir().getUri() != null) {
+                        // The log file hasn't yet been registered
+                        logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log");
+                    } else {
+                        throw CatalogAuthorizationException.deny(userId, "view log file");
+                    }
                 }
             }
 
