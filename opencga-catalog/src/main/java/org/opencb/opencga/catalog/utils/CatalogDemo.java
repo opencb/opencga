@@ -17,8 +17,10 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.Group;
@@ -48,7 +50,7 @@ public final class CatalogDemo {
      */
     public static void createDemoDatabase(CatalogManager catalogManager, String organizationId, String adminPassword, boolean force)
             throws CatalogException {
-        catalogManager.installCatalogDB("HS256", catalogManager.getConfiguration().getAdmin().getSecretKey(), adminPassword,
+        catalogManager.installCatalogDB("HS256", PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH), adminPassword,
                 "opencga@admin.com", force);
         String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
         try {

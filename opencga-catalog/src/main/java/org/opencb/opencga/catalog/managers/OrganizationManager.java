@@ -27,15 +27,19 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.Optimizations;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.organizations.*;
+import org.opencb.opencga.core.models.user.OrganizationUserUpdateParams;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -288,8 +292,71 @@ public class OrganizationManager extends AbstractManager {
         return result;
     }
 
+    public OpenCGAResult<User> updateUser(@Nullable String organizationId, String userId, OrganizationUserUpdateParams updateParams,
+                                          QueryOptions options, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
+                .append("userId", userId)
+                .append("updateParams", updateParams)
+                .append("options", options)
+                .append("token", token);
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        String myOrganizationId = StringUtils.isNotEmpty(organizationId) ? organizationId : tokenPayload.getOrganization();
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(myOrganizationId, tokenPayload.getUserId(myOrganizationId));
+            ParamUtils.checkObj(updateParams, "OrganizationUserUpdateParams");
+            getUserDBAdaptor(myOrganizationId).checkId(userId);
+
+            if (StringUtils.isNotEmpty(updateParams.getEmail())) {
+                ParamUtils.checkEmail(updateParams.getEmail());
+            }
+            if (updateParams.getQuota() != null) {
+                if (updateParams.getQuota().getDiskUsage() < 0) {
+                    throw new CatalogException("Disk usage cannot be negative");
+                }
+                if (updateParams.getQuota().getCpuUsage() < 0) {
+                    throw new CatalogException("CPU usage cannot be negative");
+                }
+                if (updateParams.getQuota().getMaxDisk() < 0) {
+                    throw new CatalogException("Max disk cannot be negative");
+                }
+                if (updateParams.getQuota().getMaxCpu() < 0) {
+                    throw new CatalogException("Max CPU cannot be negative");
+                }
+            }
+            if (updateParams.getAccount() != null && StringUtils.isNotEmpty(updateParams.getAccount().getExpirationDate())) {
+                ParamUtils.checkDateIsNotExpired(updateParams.getAccount().getExpirationDate(), "expirationDate");
+            }
+
+            ObjectMap updateMap;
+            try {
+                updateMap = updateParams.getUpdateMap();
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse OrganizationUserUpdateParams object: " + e.getMessage(), e);
+            }
+            OpenCGAResult<User> updateResult = getUserDBAdaptor(myOrganizationId).update(userId, updateMap);
+            auditManager.auditUpdate(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, userId, "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated user
+                OpenCGAResult<User> result = getUserDBAdaptor(myOrganizationId).get(userId, options);
+                updateResult.setResults(result.getResults());
+            }
+
+            return updateResult;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, userId, "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     public OpenCGAResult<OrganizationConfiguration> updateConfiguration(String organizationId, OrganizationConfiguration updateParams,
-                                                           QueryOptions options, String token) throws CatalogException {
+                                                                        QueryOptions options, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String userId = tokenPayload.getUserId(organizationId);
 
@@ -480,6 +547,12 @@ public class OrganizationManager extends AbstractManager {
         if (organization.getConfiguration() == null) {
             organization.setConfiguration(new OrganizationConfiguration());
         }
+        validateOrganizationConfiguration(organization);
+
+        organization.setAttributes(ParamUtils.defaultObject(organization.getAttributes(), HashMap::new));
+    }
+
+    private void validateOrganizationConfiguration(Organization organization) throws CatalogParameterException {
         if (CollectionUtils.isNotEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
             for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
                 ParamUtils.checkParameter(authenticationOrigin.getId(), "AuthenticationOrigin id");
@@ -493,7 +566,11 @@ public class OrganizationManager extends AbstractManager {
                 || StringUtils.isEmpty(organization.getConfiguration().getToken().getSecretKey())) {
             organization.getConfiguration().setToken(TokenConfiguration.init());
         }
-        organization.setAttributes(ParamUtils.defaultObject(organization.getAttributes(), HashMap::new));
+        organization.getConfiguration().setDefaultUserExpirationDate(ParamUtils.defaultString(
+                organization.getConfiguration().getDefaultUserExpirationDate(), Constants.DEFAULT_USER_EXPIRATION_DATE));
+        if (organization.getConfiguration().getOptimizations() == null) {
+            organization.getConfiguration().setOptimizations(new Optimizations(false));
+        }
     }
 
     Set<String> getOrganizationOwnerAndAdmins(String organizationId) throws CatalogException {
