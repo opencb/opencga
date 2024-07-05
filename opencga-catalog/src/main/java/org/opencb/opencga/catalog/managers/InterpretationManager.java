@@ -309,7 +309,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 List<Panel> panelList = new ArrayList<>(clinicalPanelIds.size());
                 for (Panel panel : interpretation.getPanels()) {
                     if (!clinicalPanelIds.containsKey(panel.getId())) {
-                        throw new CatalogException("'panelLock' from ClinicalAnalysis is set to True. Please, leave list of panels empty"
+                        throw new CatalogException("'" + ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key()
+                                + "' from ClinicalAnalysis is set to True. Please, leave list of panels empty"
                                 + " so they can be inherited or pass at least a subset of the panels defined in the Clinical Analysis.");
                     }
                     panelList.add(clinicalPanelIds.get(panel.getId()));
@@ -999,8 +1000,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         if (updateParams != null && CollectionUtils.isNotEmpty(updateParams.getPanels())) {
             if (clinicalAnalysis.isPanelLocked()) {
-                throw new CatalogException("Updating panels from Interpretation is not allowed. 'panelLock' from ClinicalAnalysis is set "
-                        + "to True.");
+                throw new CatalogException("Updating panels from Interpretation is not allowed. '"
+                        + ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key() + "' from ClinicalAnalysis is set to True.");
             }
 
             // Validate and get panels
@@ -1145,7 +1146,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                         + " the Interpretation.");
             }
             if (clinicalAnalysis.isPanelLocked()) {
-                throw new CatalogException("Could not revert the Interpretation. 'panelLock' is set to True, so no further modifications"
+                throw new CatalogException("Could not revert the Interpretation. '"
+                        + ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key() + "' is set to True, so no further modifications"
                         + " can be made to the Interpretation.");
             }
 

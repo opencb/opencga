@@ -1583,7 +1583,8 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
 
         if (CollectionUtils.isNotEmpty(updateParamsClone.getPanels()) && updateParamsClone.getPanelLocked() != null
                 && updateParamsClone.getPanelLocked()) {
-            throw new CatalogException("Updating the list of panels and setting 'panelLock' to true at the same time is not allowed.");
+            throw new CatalogException("Updating the list of panels and setting '"
+                    + ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key() + "' to true at the same time is not allowed.");
         }
 
         if (CollectionUtils.isNotEmpty(updateParamsClone.getPanels())) {
@@ -1610,9 +1611,11 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             // in order to set panelLock to true. Otherwise, that action is not allowed.
             Set<String> panelIds = clinicalAnalysis.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
             String exceptionMsgPrefix = "The interpretation '";
-            String exceptionMsgSuffix = "' does not contain any of the case panels. 'panelLock' can only be set to true if all"
+            String exceptionMsgSuffix = "' does not contain any of the case panels. '"
+                    + ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key() + "' can only be set to true if all"
                     + " all Interpretations contains a non-empty subset of the panels used by the case.";
-            String alternativeExceptionMsgSuffix = "' is using a panel not defined by the case. 'panelLock' can only be set to true if all"
+            String alternativeExceptionMsgSuffix = "' is using a panel not defined by the case. '"
+                    + ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key() + "' can only be set to true if all"
                     + " all Interpretations contains a non-empty subset of the panels used by the case.";
             if (clinicalAnalysis.getInterpretation() != null) {
                 if (CollectionUtils.isEmpty(clinicalAnalysis.getInterpretation().getPanels())) {
