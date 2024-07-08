@@ -1394,7 +1394,7 @@
 
                 <!-- cellbase -->
                 <OPENCGA.CELLBASE.REST.HOST>https://uk.ws.zettagenomics.com/cellbase/</OPENCGA.CELLBASE.REST.HOST>
-                <OPENCGA.CELLBASE.VERSION>v5.2</OPENCGA.CELLBASE.VERSION>
+                <OPENCGA.CELLBASE.VERSION>v5.8</OPENCGA.CELLBASE.VERSION>
             </properties>
         </profile>
 
