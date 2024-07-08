@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -53,6 +54,7 @@ import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.master.monitor.executors.BatchExecutor;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -212,6 +214,27 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         checkStatus(getJob(jobId), Enums.ExecutionStatus.ABORTED);
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.ABORTED);
         assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription().contains("not an empty directory"));
+    }
+
+    @Test
+    public void dryRunExecutionTest() throws Exception {
+        ObjectMap params = new ObjectMap();
+        String jobId1 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
+                params, "job1", "", null, null, null, null, true, ownerToken).first().getId();
+        daemon.checkJobs();
+        Job job = catalogManager.getJobManager().get(studyFqn, jobId1, null, ownerToken).first();
+
+        StorageConfiguration storageConfiguration = new StorageConfiguration();
+        storageConfiguration.getVariant().setDefaultEngine("mongodb");
+        ToolRunner toolRunner = new ToolRunner(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
+                StorageEngineFactory.get(storageConfiguration));
+        toolRunner.execute(job, ownerToken);
+        daemon.checkJobs();
+
+        job = catalogManager.getJobManager().get(studyFqn, jobId1, null, ownerToken).first();
+        assertEquals(Enums.ExecutionStatus.DONE, job.getInternal().getStatus().getId());
+        assertEquals(1, job.getExecution().getSteps().size());
+        assertEquals("check", job.getExecution().getSteps().get(0).getId());
     }
 
     @Test
