@@ -544,6 +544,12 @@ public class ClinicalQueryParser {
         return variantQuery;
     }
 
+    protected void logQueries(Query query, QueryOptions queryOptions, SolrQuery solrQuery, String title) {
+        logger.info("{} query: {}", title, query.toJson());
+        logger.info("{} query options: {}", title, queryOptions.toJson());
+        logger.info("Solr query: {}", solrQuery.toQueryString());
+    }
+
     //-------------------------------------------------------------------------
     //  A G G R E G A T I O N      S T A T S     /     F A C E T
     //-------------------------------------------------------------------------

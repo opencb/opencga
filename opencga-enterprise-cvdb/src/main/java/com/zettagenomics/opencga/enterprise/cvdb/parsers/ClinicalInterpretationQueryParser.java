@@ -21,7 +21,6 @@ import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIncludeHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -79,9 +78,10 @@ public class ClinicalInterpretationQueryParser extends ClinicalQueryParser {
         join = "{!join from=ciId to=id fromIndex=" + getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX) + "}";
         addStringFilters(filters, join, solrQuery);
 
-        // Return Solr query
-        logger.info("Solr query: {}", solrQuery.toQueryString());
+        // Log queries
+        logQueries(query, queryOptions, solrQuery, "Clinical interpretation");
 
+        // Return Solr query
         return solrQuery;
     }
 
