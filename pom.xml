@@ -199,7 +199,7 @@
         </mailingList>
     </mailingLists>
 
-    <repositories>
+<!--    <repositories>-->
 <!--        <repository>-->
 <!--            <id>ossrh</id>-->
 <!--            <url>https://oss.sonatype.org/content/repositories/snapshots</url>-->
@@ -208,15 +208,15 @@
 <!--                <updatePolicy>daily</updatePolicy>-->
 <!--            </snapshots>-->
 <!--        </repository>-->
-        <repository>
-            <id>github</id>
-            <url>https://maven.pkg.github.com/opencb/*</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
-            </snapshots>
-        </repository>
-    </repositories>
+<!--        <repository>-->
+<!--            <id>github</id>-->
+<!--            <url>https://maven.pkg.github.com/opencb/*</url>-->
+<!--            <snapshots>-->
+<!--                <enabled>true</enabled>-->
+<!--                <updatePolicy>daily</updatePolicy>-->
+<!--            </snapshots>-->
+<!--        </repository>-->
+<!--    </repositories>-->
 
     <dependencyManagement>
         <dependencies>
