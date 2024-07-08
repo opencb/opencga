@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.core.common;
 
-import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +31,6 @@ import java.util.Properties;
 public class MailUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(MailUtils.class);
-
-
 
     public static void sendResetPasswordMail(String to, String newPassword, final String mailUser, final String mailPassword,
                                              String mailHost, String mailPort, String userId) throws Exception {

@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.config.Email;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
@@ -29,16 +29,15 @@ public final class AuthenticationFactory {
     private final Map<String, Map<String, AuthenticationManager>> authenticationManagerMap;
     private final Logger logger = LoggerFactory.getLogger(AuthenticationFactory.class);
     private final DBAdaptorFactory catalogDBAdaptorFactory;
+    private final Configuration configuration;
 
-    public AuthenticationFactory(DBAdaptorFactory catalogDBAdaptorFactory) {
+    public AuthenticationFactory(DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
+        this.configuration = configuration;
         authenticationManagerMap = new ConcurrentHashMap<>();
     }
 
     public void configureOrganizationAuthenticationManager(Organization organization) throws CatalogException {
-        // TODO: Pass proper email values
-        Email email = new Email();
-
         Map<String, AuthenticationManager> tmpAuthenticationManagerMap = new HashMap<>();
 
         long expiration = organization.getConfiguration().getToken().getExpiration();
@@ -59,7 +58,8 @@ public final class AuthenticationFactory {
                             break;
                         case OPENCGA:
                             CatalogAuthenticationManager catalogAuthenticationManager =
-                                    new CatalogAuthenticationManager(catalogDBAdaptorFactory, email, algorithm, secretKey, expiration);
+                                    new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration.getEmail(), algorithm,
+                                            secretKey, expiration);
                             tmpAuthenticationManagerMap.put(CatalogAuthenticationManager.INTERNAL, catalogAuthenticationManager);
                             tmpAuthenticationManagerMap.put(CatalogAuthenticationManager.OPENCGA, catalogAuthenticationManager);
                             break;
