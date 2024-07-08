@@ -40,14 +40,12 @@ public class Configuration {
      */
     private String logDir;
 
-    @Deprecated
-    private boolean openRegister;
-
     private String databasePrefix;
     private String workspace;
     private String jobDir;
 
-    private Admin admin;
+    private int maxLoginAttempts;
+
     private Monitor monitor;
     private HealthCheck healthCheck;
     private Audit audit;
@@ -59,14 +57,11 @@ public class Configuration {
     private Analysis analysis;
     private Panel panel;
 
-    private Optimizations optimizations;
-
     private ServerConfiguration server;
-    private Authentication authentication;
-
-    private static Logger logger;
 
     private static final Set<String> reportedFields = new HashSet<>();
+
+    private static final Logger logger;
 
     private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
 
@@ -75,7 +70,6 @@ public class Configuration {
     }
 
     public Configuration() {
-        admin = new Admin();
         monitor = new Monitor();
         healthCheck = new HealthCheck();
         audit = new Audit();
@@ -84,9 +78,7 @@ public class Configuration {
         catalog = new Catalog();
         analysis = new Analysis();
         panel = new Panel();
-        optimizations = new Optimizations();
         server = new ServerConfiguration();
-        authentication = new Authentication();
     }
 
     public void serialize(OutputStream configurationOututStream) throws IOException {
@@ -122,9 +114,17 @@ public class Configuration {
             throw new IOException("Configuration file could not be parsed: " + e.getMessage(), e);
         }
 
+        addDefaultValueIfMissing(configuration);
+
         // We must always overwrite configuration with environment parameters
         overwriteWithEnvironmentVariables(configuration);
         return configuration;
+    }
+
+    private static void addDefaultValueIfMissing(Configuration configuration) {
+        if (configuration.getMaxLoginAttempts() <= 0) {
+            configuration.setMaxLoginAttempts(5);
+        }
     }
 
     private static void overwriteWithEnvironmentVariables(Configuration configuration) {
@@ -145,6 +145,9 @@ public class Configuration {
                         break;
                     case "OPENCGA_MONITOR_PORT":
                         configuration.getMonitor().setPort(Integer.parseInt(value));
+                        break;
+                    case "OPENCGA.MAX_LOGIN_ATTEMPTS":
+                        configuration.setMaxLoginAttempts(Integer.parseInt(value));
                         break;
                     case "OPENCGA_EXECUTION_MODE":
                     case "OPENCGA_EXECUTION_ID":
@@ -177,18 +180,6 @@ public class Configuration {
                     case "OPENCGA_CATALOG_DB_CONNECTIONS_PER_HOST":
                         configuration.getCatalog().getDatabase().getOptions().put("connectionsPerHost", value);
                         break;
-                    case "OPENCGA_CATALOG_SEARCH_HOST":
-                        configuration.getCatalog().getSearchEngine().setHosts(Collections.singletonList(value));
-                        break;
-                    case "OPENCGA_CATALOG_SEARCH_TIMEOUT":
-                        configuration.getCatalog().getSearchEngine().getOptions().put("timeout", value);
-                        break;
-                    case "OPENCGA_CATALOG_SEARCH_BATCH":
-                        configuration.getCatalog().getSearchEngine().getOptions().put("insertBatchSize", value);
-                        break;
-                    case "OPENCGA_OPTIMIZATIONS_SIMPLIFY_PERMISSIONS":
-                        configuration.getOptimizations().setSimplifyPermissions(Boolean.parseBoolean(value));
-                        break;
                     case "OPENCGA_SERVER_REST_PORT":
                         configuration.getServer().getRest().setPort(Integer.parseInt(value));
                         break;
@@ -219,16 +210,17 @@ public class Configuration {
         sb.append(", logDir='").append(logDir).append('\'');
         sb.append(", databasePrefix='").append(databasePrefix).append('\'');
         sb.append(", workspace='").append(workspace).append('\'');
-        sb.append(", admin=").append(admin);
+        sb.append(", jobDir='").append(jobDir).append('\'');
+        sb.append(", maxLoginAttempts=").append(maxLoginAttempts);
         sb.append(", monitor=").append(monitor);
+        sb.append(", healthCheck=").append(healthCheck);
         sb.append(", audit=").append(audit);
         sb.append(", hooks=").append(hooks);
         sb.append(", email=").append(email);
         sb.append(", catalog=").append(catalog);
+        sb.append(", analysis=").append(analysis);
         sb.append(", panel=").append(panel);
-        sb.append(", optimizations=").append(optimizations);
         sb.append(", server=").append(server);
-        sb.append(", authentication=").append(authentication);
         sb.append('}');
         return sb.toString();
     }
@@ -263,13 +255,13 @@ public class Configuration {
     }
 
     @Deprecated
-    public boolean isOpenRegister() {
-        return openRegister;
+    public Boolean isOpenRegister() {
+        return null;
     }
 
     @Deprecated
     public Configuration setOpenRegister(boolean openRegister) {
-        this.openRegister = openRegister;
+        reportUnusedField("configuration.yml#openRegister", openRegister);
         return this;
     }
 
@@ -300,12 +292,23 @@ public class Configuration {
         return this;
     }
 
-    public Admin getAdmin() {
-        return admin;
+    public int getMaxLoginAttempts() {
+        return maxLoginAttempts;
     }
 
+    public Configuration setMaxLoginAttempts(int maxLoginAttempts) {
+        this.maxLoginAttempts = maxLoginAttempts;
+        return this;
+    }
+
+    @Deprecated
+    public Admin getAdmin() {
+        return null;
+    }
+
+    @Deprecated
     public Configuration setAdmin(Admin admin) {
-        this.admin = admin;
+        reportUnusedField("configuration.yml#admin", admin);
         return this;
     }
 
@@ -383,12 +386,14 @@ public class Configuration {
         return this;
     }
 
+    @Deprecated
     public Optimizations getOptimizations() {
-        return optimizations;
+        return null;
     }
 
+    @Deprecated
     public Configuration setOptimizations(Optimizations optimizations) {
-        this.optimizations = optimizations;
+        reportUnusedField("configuration.yml#optimizations", optimizations);
         return this;
     }
 
@@ -401,12 +406,15 @@ public class Configuration {
         return this;
     }
 
+    @Deprecated
     public Authentication getAuthentication() {
-        return authentication;
+        return null;
     }
 
-    public void setAuthentication(Authentication authentication) {
-        this.authentication = authentication;
+    @Deprecated
+    public Configuration setAuthentication(Authentication authentication) {
+        reportUnusedField("configuration.yml#authentication", authentication);
+        return this;
     }
 
     public HealthCheck getHealthCheck() {

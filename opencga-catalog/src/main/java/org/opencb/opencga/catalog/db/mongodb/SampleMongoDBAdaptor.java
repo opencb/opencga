@@ -1327,17 +1327,18 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+            boolean simplifyPermissions = simplifyPermissions();
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.SAMPLE, user,
-                        configuration));
+                        simplifyPermissions));
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            SamplePermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.SAMPLE, configuration));
+                            SamplePermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.SAMPLE, simplifyPermissions));
                 } else {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, SamplePermissions.VIEW.name(),
-                            Enums.Resource.SAMPLE, configuration));
+                            Enums.Resource.SAMPLE, simplifyPermissions));
                 }
             }
 
