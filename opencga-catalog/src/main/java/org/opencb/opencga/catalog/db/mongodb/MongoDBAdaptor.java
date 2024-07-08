@@ -28,10 +28,12 @@ import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 
@@ -701,6 +703,24 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
             throw new CatalogDBException("Study " + studyUid + " not found");
         }
         return dataResult.first();
+    }
+
+    /**
+     * Method to obtain whether permissions should be simplified or not.
+     *
+     * @return true if permissions should be simplified, false otherwise.
+     * @throws CatalogDBException if there is any error obtaining the organization configuration.
+     */
+    protected boolean simplifyPermissions() throws CatalogDBException {
+        Organization organization = dbAdaptorFactory.getCatalogOrganizationDBAdaptor()
+                .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
+        if (organization.getConfiguration().getOptimizations() != null) {
+            return organization.getConfiguration().getOptimizations().isSimplifyPermissions();
+        } else {
+            logger.warn("Organization '{}' configuration does not contain the 'optimizations.simplifyPermissions' field. Defaulting"
+                    + " to false", organization.getId());
+            return false;
+        }
     }
 
     public class NestedArrayUpdateDocument {

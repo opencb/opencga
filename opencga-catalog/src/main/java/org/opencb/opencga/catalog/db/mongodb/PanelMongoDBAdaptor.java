@@ -722,14 +722,15 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+            boolean simplifyPermissions = simplifyPermissions();
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.DISEASE_PANEL, user,
-                        configuration));
+                        simplifyPermissions));
             } else {
                 // Get the document query needed to check the permissions as well
                 andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, PanelPermissions.VIEW.name(),
-                        Enums.Resource.DISEASE_PANEL, configuration));
+                        Enums.Resource.DISEASE_PANEL, simplifyPermissions));
             }
 
             query.remove(ParamConstants.ACL_PARAM);

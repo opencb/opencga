@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.spec.SecretKeySpec;
+import java.io.Closeable;
 import java.security.Key;
 import java.util.Collections;
 import java.util.Date;
@@ -37,7 +38,7 @@ import java.util.Map;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class AuthenticationManager {
+public abstract class AuthenticationManager implements Closeable {
 
     protected JwtManager jwtManager;
 

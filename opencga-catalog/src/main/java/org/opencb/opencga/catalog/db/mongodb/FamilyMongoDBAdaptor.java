@@ -1191,17 +1191,18 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+            boolean simplifyPermissions = simplifyPermissions();
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FAMILY, user,
-                        configuration));
+                        simplifyPermissions));
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY, configuration));
+                            FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY, simplifyPermissions));
                 } else {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FamilyPermissions.VIEW.name(),
-                            Enums.Resource.FAMILY, configuration));
+                            Enums.Resource.FAMILY, simplifyPermissions));
                 }
             }
 

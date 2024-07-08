@@ -11,7 +11,7 @@ import java.util.Map;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
-public class OrganizationUpdateParams {
+public final class OrganizationUpdateParams {
 
     @DataField(id = "name", description = FieldConstants.ORGANIZATION_NAME_DESCRIPTION)
     private String name;
@@ -28,9 +28,6 @@ public class OrganizationUpdateParams {
     @DataField(id = "modificationDate", description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
-    @DataField(id = "configuration", description = FieldConstants.ORGANIZATION_CONFIGURATION_DESCRIPTION)
-    private OrganizationConfiguration configuration;
-
     @DataField(id = "attributes",  description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
@@ -38,13 +35,12 @@ public class OrganizationUpdateParams {
     }
 
     public OrganizationUpdateParams(String name, String owner, List<String> admins, String creationDate, String modificationDate,
-                                    OrganizationConfiguration configuration, Map<String, Object> attributes) {
+                                    Map<String, Object> attributes) {
         this.name = name;
         this.owner = owner;
         this.admins = admins;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
-        this.configuration = configuration;
         this.attributes = attributes;
     }
 
@@ -61,7 +57,6 @@ public class OrganizationUpdateParams {
         sb.append(", admins=").append(admins);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", configuration=").append(configuration);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -109,15 +104,6 @@ public class OrganizationUpdateParams {
 
     public OrganizationUpdateParams setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
-        return this;
-    }
-
-    public OrganizationConfiguration getConfiguration() {
-        return configuration;
-    }
-
-    public OrganizationUpdateParams setConfiguration(OrganizationConfiguration configuration) {
-        this.configuration = configuration;
         return this;
     }
 
