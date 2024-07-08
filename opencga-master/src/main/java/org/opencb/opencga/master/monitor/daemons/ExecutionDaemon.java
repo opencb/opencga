@@ -140,6 +140,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_SECONDS = (int) TimeUnit.MINUTES.toSeconds(10);
     public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
     private final StorageConfiguration storageConfiguration;
+    private final VariantOperationOrchestrator voo;
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
@@ -256,6 +257,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         this.fileManager = catalogManager.getFileManager();
         this.storageConfiguration = storageConfiguration;
         this.internalCli = appHome + "/bin/opencga-internal.sh";
+        this.voo = new VariantOperationOrchestrator(catalogManager, token);
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
 
@@ -285,6 +287,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 if (!exit) {
                     e.printStackTrace();
                 }
+            }
+
+            try {
+                voo.checkPendingVariantOperations();
+            } catch (Exception e) {
+                logger.error("Catch exception " + e.getMessage(), e);
             }
 
             try {

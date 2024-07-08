@@ -36,7 +36,7 @@ public class VariantOperationOrchestratorTest extends AbstractManagerTest {
         // Change to immediate
         catalogManager.getConfiguration().getAnalysis().getOperations().getVariantAnnotationIndex().setPolicy(OperationExecutionConfig.Policy.IMMEDIATE).setMaxAttempts(2);
 
-        voo = new VariantOperationOrchestrator(catalogManager, catalogManager.getConfiguration(), expiringToken);
+        voo = new VariantOperationOrchestrator(catalogManager, expiringToken);
 
         // Set all operations to PENDING
         catalogManager.getProjectManager().setProjectInternalVariant(projectFqn1, new ProjectInternalVariant(

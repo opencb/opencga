@@ -15,7 +15,6 @@ import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.OperationConfig;
 import org.opencb.opencga.core.config.OperationExecutionConfig;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -49,15 +48,14 @@ public class VariantOperationOrchestrator {
      * Initialize VariantOperationOrchestrator with the catalog manager, configuration and token.
      *
      * @param catalogManager Instance of a working CatalogManager.
-     * @param operationConfig  Main configuration file.
      * @param token          Valid administrator token.
      */
-    public VariantOperationOrchestrator(CatalogManager catalogManager, Configuration operationConfig, String token) {
+    public VariantOperationOrchestrator(CatalogManager catalogManager, String token) {
         this.catalogManager = catalogManager;
-        if (operationConfig.getAnalysis().getOperations() == null) {
+        if (catalogManager.getConfiguration().getAnalysis().getOperations() == null) {
             this.operationConfig = new OperationConfig();
         } else {
-            this.operationConfig = operationConfig.getAnalysis().getOperations();
+            this.operationConfig = catalogManager.getConfiguration().getAnalysis().getOperations();
         }
         this.token = token;
     }
