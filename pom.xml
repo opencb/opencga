@@ -846,6 +846,12 @@
                 <groupId>com.databricks</groupId>
                 <artifactId>SnpEff</artifactId>
                 <version>${snpeff.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>distlib</groupId>
+                        <artifactId>distlib</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.parquet</groupId>
