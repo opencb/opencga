@@ -210,9 +210,10 @@
         </repository>
         <repository>
             <id>github</id>
-            <url>https://maven.pkg.github.com/opencb</url>
+            <url>https://maven.pkg.github.com/opencb/*</url>
             <snapshots>
                 <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
             </snapshots>
         </repository>
     </repositories>
