@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class VariantOperationOrchestrator {
+public class VariantOperationJanitor {
 
     public static final String ORCHESTRATOR_TAG = "VariantOperationOrchestrator";
     private final CatalogManager catalogManager;
@@ -42,7 +42,7 @@ public class VariantOperationOrchestrator {
     static final String ATTEMPT = "attempt";
     static final String FAILED_ATTEMPT_JOB_IDS = "failedAttemptJobIds";
 
-    protected static Logger logger = LoggerFactory.getLogger(VariantOperationOrchestrator.class);
+    protected static Logger logger = LoggerFactory.getLogger(VariantOperationJanitor.class);
 
     /**
      * Initialize VariantOperationOrchestrator with the catalog manager, configuration and token.
@@ -50,7 +50,7 @@ public class VariantOperationOrchestrator {
      * @param catalogManager Instance of a working CatalogManager.
      * @param token          Valid administrator token.
      */
-    public VariantOperationOrchestrator(CatalogManager catalogManager, String token) {
+    public VariantOperationJanitor(CatalogManager catalogManager, String token) {
         this.catalogManager = catalogManager;
         if (catalogManager.getConfiguration().getAnalysis().getOperations() == null) {
             this.operationConfig = new OperationConfig();
@@ -61,15 +61,15 @@ public class VariantOperationOrchestrator {
     }
 
     public void checkPendingVariantOperations() throws CatalogException, ToolException {
-        checkPendingVariantOperations(operationConfig.getVariantAnnotationIndex(), new VariantAnnotationIndexOperationRules());
+        checkPendingVariantOperations(operationConfig.getVariantAnnotationIndex(), new VariantAnnotationIndexOperationChore());
         checkPendingVariantOperations(operationConfig.getVariantSecondaryAnnotationIndex(),
-                new VariantSecondaryAnnotationIndexOperationRules());
-        checkPendingVariantOperations(operationConfig.getVariantSecondarySampleIndex(), new VariantSecondarySampleIndexOperationRules());
+                new VariantSecondaryAnnotationIndexOperationChore());
+        checkPendingVariantOperations(operationConfig.getVariantSecondarySampleIndex(), new VariantSecondarySampleIndexOperationChore());
     }
 
-    private void checkPendingVariantOperations(OperationExecutionConfig config, OperationRules operationRules)
+    private void checkPendingVariantOperations(OperationExecutionConfig config, OperationChore operationChore)
             throws CatalogException, ToolException {
-        String toolId = operationRules.getToolId();
+        String toolId = operationChore.getToolId();
         if (config.getPolicy() == OperationExecutionConfig.Policy.NEVER) {
             logger.info("Automatic operation '{}' is disabled. Nothing to do.", toolId);
             return;
@@ -94,7 +94,7 @@ public class VariantOperationOrchestrator {
                 if (tool.scope() == Tool.Scope.PROJECT) {
                     List<String> studyFqns = project.getStudies().stream().map(Study::getFqn).collect(Collectors.toList());
                     // 1. Check if operation is pending
-                    operationRules.isOperationRequired(project, null);
+                    operationChore.isOperationRequired(project, null);
 
                     // 2. Check if the operation is already created on any study of the project
                     if (pendingJobs(studyFqns, toolId)) {
@@ -103,7 +103,7 @@ public class VariantOperationOrchestrator {
                     }
 
                     // 3. Check general rules
-                    if (noPendingJobs(studyFqns, operationRules.dependantTools())) {
+                    if (noPendingJobs(studyFqns, operationChore.dependantTools())) {
                         // Get last execution of this job
                         Job lastJobExecution = findLastJobExecution(studyFqns.get(0), toolId);
                         ObjectMap attributes = getNewAttributes(lastJobExecution);
@@ -120,13 +120,13 @@ public class VariantOperationOrchestrator {
                         }
                         paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
                         catalogManager.getJobManager().submit(studyFqns.get(0), toolId, Enums.Priority.HIGH, paramsMap, null,
-                                generateJobDescription(config, operationRules, attributes), null,
+                                generateJobDescription(config, operationChore, attributes), null,
                                 Collections.singletonList(ORCHESTRATOR_TAG), attributes, token);
                     }
                 } else if (tool.scope() == Tool.Scope.STUDY) {
                     for (Study study : project.getStudies()) {
                         // 1. Check if operation is pending
-                        operationRules.isOperationRequired(project, study);
+                        operationChore.isOperationRequired(project, study);
 
                         // 2. Check if the operation is already created
                         if (pendingJobs(study.getFqn(), toolId)) {
@@ -136,7 +136,7 @@ public class VariantOperationOrchestrator {
                         }
 
                         // 3. Check general rules
-                        if (noPendingJobs(study.getFqn(), operationRules.dependantTools())) {
+                        if (noPendingJobs(study.getFqn(), operationChore.dependantTools())) {
                             // Get last execution of this job
                             Job lastJobExecution = findLastJobExecution(study.getFqn(), toolId);
                             ObjectMap attributes = getNewAttributes(lastJobExecution);
@@ -153,7 +153,7 @@ public class VariantOperationOrchestrator {
                             }
                             paramsMap.put(ParamConstants.STUDY_PARAM, study.getFqn());
                             catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.HIGH, paramsMap, null,
-                                    generateJobDescription(config, operationRules, attributes), null,
+                                    generateJobDescription(config, operationChore, attributes), null,
                                     Collections.singletonList(ORCHESTRATOR_TAG), attributes, token);
                         }
                     }
@@ -164,10 +164,10 @@ public class VariantOperationOrchestrator {
         }
     }
 
-    private String generateJobDescription(OperationExecutionConfig config, OperationRules operationRules, ObjectMap attributes) {
+    private String generateJobDescription(OperationExecutionConfig config, OperationChore operationChore, ObjectMap attributes) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("Job automatically launched by the orchestrator. ");
-        stringBuilder.append("Tool: ").append(operationRules.getToolId()).append("; ");
+        stringBuilder.append("Tool: ").append(operationChore.getToolId()).append("; ");
         stringBuilder.append("Policy: ").append(config.getPolicy()).append("; ");
         stringBuilder.append("Attempt number: ").append(attributes.getInt(ATTEMPT)).append(" out of ").append(config.getMaxAttempts())
                 .append("; ");
@@ -176,7 +176,7 @@ public class VariantOperationOrchestrator {
         return stringBuilder.toString();
     }
 
-    private interface OperationRules {
+    private interface OperationChore {
 
         String getToolId();
 
@@ -186,7 +186,7 @@ public class VariantOperationOrchestrator {
 
     }
 
-    private class VariantSecondarySampleIndexOperationRules implements OperationRules {
+    private static class VariantSecondarySampleIndexOperationChore implements OperationChore {
 
         @Override
         public String getToolId() {
@@ -205,7 +205,7 @@ public class VariantOperationOrchestrator {
         }
     }
 
-    private class VariantSecondaryAnnotationIndexOperationRules implements OperationRules {
+    private static class VariantSecondaryAnnotationIndexOperationChore implements OperationChore {
 
         @Override
         public String getToolId() {
@@ -224,7 +224,7 @@ public class VariantOperationOrchestrator {
         }
     }
 
-    private class VariantAnnotationIndexOperationRules implements OperationRules {
+    private static class VariantAnnotationIndexOperationChore implements OperationChore {
 
         @Override
         public String getToolId() {
