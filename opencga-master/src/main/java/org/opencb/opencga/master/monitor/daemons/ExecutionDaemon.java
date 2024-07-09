@@ -847,16 +847,13 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     public static String buildCli(String internalCli, Job job) {
         String toolId = job.getTool().getId();
         String internalCommand = TOOL_CLI_MAP.get(toolId);
-        if (StringUtils.isEmpty(internalCommand)) {
+        if (StringUtils.isEmpty(internalCommand) || job.isDryRun()) {
             ObjectMap params = new ObjectMap()
                     .append(JOB_PARAM, job.getId())
                     .append(STUDY_PARAM, job.getStudy().getId());
             return buildCli(internalCli, "tools execute-job", params);
         } else {
             ObjectMap params = new ObjectMap(job.getParams());
-            if (job.isDryRun()) {
-                params.put("dry-run", true);
-            }
             return buildCli(internalCli, internalCommand, params);
         }
     }
