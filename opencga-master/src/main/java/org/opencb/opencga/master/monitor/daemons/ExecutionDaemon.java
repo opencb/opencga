@@ -158,7 +158,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     // On first iteration, it will queue 50 out of the 100 pending jobs. It will check up to 50 queue-running changes out of the 65
     // (15 + 50 from pending), and it will check up to 50 finished jobs from the running ones.
     // On second iteration, it will queue the remaining 50 pending jobs, and so on...
-    private static final int NUM_JOBS_HANDLED = 50;
+    private static final int MAX_NUM_JOBS = 50;
     private final Query pendingJobsQuery;
     private final Query queuedJobsQuery;
     private final Query runningJobsQuery;
@@ -264,10 +264,10 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         runningJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING);
         // Sort jobs by priority and creation date
         queryOptions = new QueryOptions()
-                .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
-                        JobDBAdaptor.QueryParams.CREATION_DATE.key()))
+                .append(QueryOptions.SORT,
+                        Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(), JobDBAdaptor.QueryParams.CREATION_DATE.key()))
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING)
-                .append(QueryOptions.LIMIT, NUM_JOBS_HANDLED);
+                .append(QueryOptions.LIMIT, MAX_NUM_JOBS);
 
         this.jobScheduler = new JobScheduler(catalogManager, token);
 
@@ -307,14 +307,14 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         List<String> organizationIds = catalogManager.getAdminManager().getOrganizationIds(token);
 
         /*
-        QUEUED JOBS
-        */
-        checkQueuedJobs(organizationIds);
-
-        /*
         RUNNING JOBS
         */
         checkRunningJobs(organizationIds);
+
+        /*
+        QUEUED JOBS
+        */
+        checkQueuedJobs(organizationIds);
 
         long totalPendingJobs = 0;
         long totalQueuedJobs = 0;
@@ -347,7 +347,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         for (String organizationId : organizationIds) {
             int handledRunningJobs = 0;
             try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, runningJobsQuery, queryOptions, token)) {
-                while (handledRunningJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                while (handledRunningJobs < MAX_NUM_JOBS && iterator.hasNext()) {
                     try {
                         Job job = iterator.next();
                         handledRunningJobs += checkRunningJob(job);
@@ -423,7 +423,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         for (String organizationId : organizationIds) {
             int handledQueuedJobs = 0;
             try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, queuedJobsQuery, queryOptions, token)) {
-                while (handledQueuedJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                while (handledQueuedJobs < MAX_NUM_JOBS && iterator.hasNext()) {
                     try {
                         Job job = iterator.next();
                         handledQueuedJobs += checkQueuedJob(job);
