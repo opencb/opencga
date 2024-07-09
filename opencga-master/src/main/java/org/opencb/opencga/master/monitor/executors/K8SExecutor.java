@@ -224,7 +224,12 @@ public class K8SExecutor implements BatchExecutor {
                 .withEnv(new EnvVar("DOCKER_TLS_CERTDIR", "", null))
 //                .withResources(resources) // TODO: Should we add resources here?
                 .withCommand("/bin/sh", "-c")
-                .addToArgs("dockerd-entrypoint.sh & while ! test -f " + DIND_DONE_FILE + "; do sleep 5; done; exit 0")
+                .addToArgs("dockerd-entrypoint.sh & "
+                        // Add trap to capture TERM signal and finish main process
+                        + "trap '"
+                        + "echo \"Container terminated! ;\n"
+                        + "touch " + DIND_DONE_FILE + " ' TERM ;"
+                        + "while ! test -f " + DIND_DONE_FILE + "; do sleep 5; done; exit 0")
                 .addToVolumeMounts(DOCKER_GRAPH_VOLUMEMOUNT)
                 .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)
                 .addAllToVolumeMounts(volumeMounts)
@@ -502,11 +507,11 @@ public class K8SExecutor implements BatchExecutor {
 
         // Add trap to capture TERM signal and kill the main process
         String trapTerm = "trap '"
-                + "echo \"Job interrupted! Run time : ${SECONDS}s\" ;\n"
+                + "echo \"Job terminated! Run time : ${SECONDS}s\" ;\n"
                 + "touch INTERRUPTED ;\n"
                 + "if [ -s PID ] && ps -p $(cat PID) > /dev/null; then\n"
                 + "  kill -15 $(cat PID) ;\n"
-                + "fi' TERM INT ;";
+                + "fi' TERM ;";
 
         // Launch the main process in background.
         String mainProcess = commandLine + " &";
