@@ -27,11 +27,14 @@ import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
+import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -41,6 +44,8 @@ import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryPar
  * Created by jtarraga on 11/11/17.
  */
 public class CvdbUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CvdbUtils.class);
 
     private CvdbUtils() {
         throw new IllegalStateException("Utility class");
@@ -74,10 +79,15 @@ public class CvdbUtils {
         OpenCGAResult<ClinicalVariant> result = clinicalInterpretationManager.get(query, queryOptions, token);
 
         // Then, set summary for those clinical variants
-        for (ClinicalVariant cv : result.getResults()) {
-            DataResult<ClinicalVariantSummaryStats> summaryStatsResult = cvdbEngine.getClinicalVariantSummaryStats(cv.getId(),
-                    interpretationStatusId, project.getFqn(), studyId, token);
-            cv.setStats(summaryStatsResult.first());
+        String projectId = FqnUtils.getProject(project.getFqn());
+        if (!cvdbEngine.existCollections(projectId)) {
+            LOGGER.warn("No CVDB collections were found for project ID {}, so no summary statistics will be returned", projectId);
+        } else {
+            for (ClinicalVariant cv : result.getResults()) {
+                DataResult<ClinicalVariantSummaryStats> summaryStatsResult = cvdbEngine.getClinicalVariantSummaryStats(cv.getId(),
+                        interpretationStatusId, project.getFqn(), studyId, token);
+                cv.setStats(summaryStatsResult.first());
+            }
         }
         return result;
     }
