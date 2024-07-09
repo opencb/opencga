@@ -312,8 +312,7 @@ public class K8SExecutor implements BatchExecutor {
                                                 .withResources(resources)
                                                 .addAllToEnv(envVars)
                                                 .withCommand("/bin/bash", "-c")
-                                                .withArgs("trap 'touch " + DIND_DONE_FILE + "' EXIT ; "
-                                                        + getCommandLine(commandLine, stdout, stderr))
+                                                .withArgs(getCommandLine(commandLine, stdout, stderr))
                                                 .withVolumeMounts(volumeMounts)
                                                 .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)
                                                 .withSecurityContext(securityContext)
@@ -500,7 +499,29 @@ public class K8SExecutor implements BatchExecutor {
                 commandLine = commandLine + " >> " + stdout.toAbsolutePath();
             }
         }
-        return commandLine;
+
+        // Add trap to capture TERM signal and kill the main process
+        String trapTerm = "trap '"
+                + "echo \"Job interrupted! Run time : ${SECONDS}s\" ;\n"
+                + "touch INTERRUPTED ;\n"
+                + "if [ -s PID ] && ps -p $(cat PID) > /dev/null; then\n"
+                + "  kill -15 $(cat PID) ;\n"
+                + "fi' TERM INT ;";
+
+        // Launch the main process in background.
+        String mainProcess = commandLine + " &";
+
+        String wait = "PID=$! ; \n"
+                + "echo $PID > PID ; \n"
+                + "while ps -p \"$PID\" >/dev/null; do \n"
+                + "    sleep 1 ; \n"
+                + "done \n"
+                + "touch '" + DIND_DONE_FILE + "' \n"
+                + "if [ -f INTERRUPTED ]; then\n"
+                + "  exit 1\n"
+                + "fi";
+
+        return trapTerm + " " + mainProcess + " " + wait;
     }
 
     private String getStatusForce(String k8sJobName) {
