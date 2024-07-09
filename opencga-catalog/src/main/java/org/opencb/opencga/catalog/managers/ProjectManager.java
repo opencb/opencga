@@ -320,7 +320,8 @@ public class ProjectManager extends AbstractManager {
             }
             try {
                 CellBaseConfiguration cellBaseConfiguration = ParamUtils.defaultObject(project.getCellbase(),
-                        new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION));
+                        new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION,
+                                ParamConstants.CELLBASE_DATA_RELEASE, ParamConstants.CELLBASE_APIKEY));
                 cellBaseConfiguration = CellBaseValidator.validate(cellBaseConfiguration,
                         project.getOrganism().getScientificName(),
                         project.getOrganism().getAssembly(), true);
