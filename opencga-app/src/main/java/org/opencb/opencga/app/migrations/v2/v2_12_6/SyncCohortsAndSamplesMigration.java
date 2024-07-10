@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
         language = Migration.MigrationLanguage.JAVA,
         date = 20240621
 )
-public class syncCohortsAndSamplesMigration extends MigrationTool {
+public class SyncCohortsAndSamplesMigration extends MigrationTool {
 
     @Override
     protected void run() throws Exception {
