@@ -1271,6 +1271,28 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testKillJob() throws CatalogException {
+        Job job = catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
+        assertFalse(job.getInternal().isKillJobRequested());
+
+        catalogManager.getJobManager().kill(studyFqn, job.getId(), ownerToken);
+        job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), ownerToken).first();
+        assertTrue(job.getInternal().isKillJobRequested());
+
+        for (String status : Arrays.asList(Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.ERROR)) {
+            job = catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
+            catalogManager.getJobManager().update(studyFqn, job.getId(),
+                    new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), new Enums.ExecutionStatus(status)),
+                    QueryOptions.empty(), ownerToken);
+            // Try to kill job that is already finished
+            String jobId = job.getId();
+            CatalogException catalogException = assertThrows(CatalogException.class, () -> catalogManager.getJobManager().kill(studyFqn, jobId, ownerToken));
+            assertTrue(catalogException.getMessage().contains("status"));
+        }
+
+    }
+
+    @Test
     public void testCreateJobAndReuse() throws CatalogException {
         String project1 = catalogManager.getProjectManager().create("testCreateJobAndReuse_project1", "", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerToken).first().getId();
@@ -1290,7 +1312,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Same params, different order, empty jobId
         OpenCGAResult<Job> result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 1),
-                "", "", Collections.emptyList(), Collections.emptyList(), ownerToken);
+                "", "", Collections.emptyList(), Collections.emptyList(), null, null, false, ownerToken);
         assertEquals(job1, result.first().getId());
         assertEquals(1, result.getEvents().size());
         assertEquals("reuse", result.getEvents().get(0).getId());
@@ -1301,13 +1323,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Same params, but with jobId
         result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "MyJobId", "",
-                Collections.emptyList(), Collections.emptyList(), ownerToken);
+                Collections.emptyList(), Collections.emptyList(), null, null, false, ownerToken);
         assertNotEquals(job1, result.first().getId());
         assertEquals("MyJobId", result.first().getId());
 
         // Same params, but with dependencies
         result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "", "",
-                Collections.singletonList(job1), Collections.emptyList(), ownerToken);
+                Collections.singletonList(job1), Collections.emptyList(), null, null, false, ownerToken);
         assertNotEquals(job1, result.first().getId());
     }
 
@@ -1315,13 +1337,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void submitJobWithDependenciesFromDifferentStudies() throws CatalogException {
         Job first = catalogManager.getJobManager().submit(studyFqn, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
         Job second = catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
-                Collections.singletonList(first.getUuid()), null, ownerToken).first();
+                Collections.singletonList(first.getUuid()), null, null, null, false, ownerToken).first();
         assertEquals(first.getId(), second.getDependsOn().get(0).getId());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
         catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
-                Collections.singletonList(first.getId()), null, ownerToken);
+                Collections.singletonList(first.getId()), null, null, null, false, ownerToken);
     }
 
     @Test
@@ -1387,9 +1409,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Job job2 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file2"), ownerToken).first();
 
         Job job3 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file3"), null, null,
-                Arrays.asList(job1.getId(), job2.getId()), null, ownerToken).first();
+                Arrays.asList(job1.getId(), job2.getId()), null, null, null, false, ownerToken).first();
         Job job4 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file4"), null, null,
-                Arrays.asList(job1.getUuid(), job2.getUuid()), null, ownerToken).first();
+                Arrays.asList(job1.getUuid(), job2.getUuid()), null, null, null, false, ownerToken).first();
 
         assertEquals(2, job3.getDependsOn().size());
         assertEquals(job1.getUuid(), job3.getDependsOn().get(0).getUuid());

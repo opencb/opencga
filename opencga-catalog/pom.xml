@@ -205,10 +205,6 @@
             <artifactId>azure</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-client</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.microsoft.azure</groupId>
             <artifactId>azure-batch</artifactId>
         </dependency>
