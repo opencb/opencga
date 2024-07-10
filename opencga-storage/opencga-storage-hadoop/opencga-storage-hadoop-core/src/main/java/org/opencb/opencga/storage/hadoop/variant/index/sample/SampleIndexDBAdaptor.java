@@ -834,7 +834,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                     sampleIndexExtraBatches, batch -> SampleIndexSchema.toRowKey(batch * preSplitSize));
             if (newRegions != 0) {
                 // Log number of new regions
-                logger.info("Created {} new regions in table '{}'", newRegions, sampleIndexTable);
+                logger.info("Sample index table '" + sampleIndexTable + "' expanded with " + newRegions + " new regions");
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);

@@ -27,7 +27,7 @@ public class VariantSetupParams extends ToolParams {
             + "If not provided, the value will be inferred from the file type.")
     private String averageFileSize;
 
-    @DataField(description = "Number of variants per sample. This number is only used as a hint. "
+    @DataField(description = "Number of variants per sample (non hom_ref variants). This number is only used as a hint. "
             + "If the real number of variants per sample is different, the loader should be able to handle it. "
             + "If not provided, the value will be inferred from the file type.")
     private Integer variantsPerSample;

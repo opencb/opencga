@@ -12,11 +12,14 @@ import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class VariantSetupOperationManager extends OperationManager {
 
 
     public static final String ID = "variant-setup";
+    private static Logger logger = LoggerFactory.getLogger(VariantSetupOperationManager.class);
 
     public VariantSetupOperationManager(VariantStorageManager variantStorageManager, VariantStorageEngine variantStorageEngine) {
         super(variantStorageManager, variantStorageEngine);
@@ -127,8 +130,7 @@ public class VariantSetupOperationManager extends OperationManager {
             }
         }
         if (hasVariantSetup(study)) {
-            // TODO: Allow double setup if no files are loaded?
-            throw new IllegalArgumentException("Study " + studyStr + " is already setup");
+            logger.info("Study {} was already setup. Re executing variant-setup", studyStr);
         }
 
         if (params.getExpectedFiles() == null || params.getExpectedFiles() <= 0) {
@@ -145,15 +147,20 @@ public class VariantSetupOperationManager extends OperationManager {
 
     public static boolean hasVariantSetup(Study study) {
         boolean hasSetup = false;
+        VariantSetupResult setup = getVariantSetupResult(study);
+        if (setup != null && setup.getStatus() == VariantSetupResult.Status.READY) {
+            hasSetup = true;
+        }
+        return hasSetup;
+    }
+
+    private static VariantSetupResult getVariantSetupResult(Study study) {
         if (study.getInternal() != null
                 && study.getInternal().getConfiguration() != null
                 && study.getInternal().getConfiguration().getVariantEngine() != null) {
-            VariantSetupResult setup = study.getInternal().getConfiguration().getVariantEngine().getSetup();
-            if (setup != null && setup.getStatus() == VariantSetupResult.Status.READY) {
-                hasSetup = true;
-            }
+            return study.getInternal().getConfiguration().getVariantEngine().getSetup();
         }
-        return hasSetup;
+        return null;
     }
 
 }

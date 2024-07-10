@@ -1200,7 +1200,7 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--average-file-size"}, description = "Average size of the files that will be loaded. This number is only used as a hint. If the real size of the files is different, the loader should be able to handle it. Accepts units. e.g. 435MB, 2GB, 86KB. If not provided, the value will be inferred from the file type.", required = false, arity = 1)
         public String averageFileSize;
     
-        @Parameter(names = {"--variants-per-sample"}, description = "Number of variants per sample. This number is only used as a hint. If the real number of variants per sample is different, the loader should be able to handle it. If not provided, the value will be inferred from the file type.", required = false, arity = 1)
+        @Parameter(names = {"--variants-per-sample"}, description = "Number of variants per sample (non hom_ref variants). This number is only used as a hint. If the real number of variants per sample is different, the loader should be able to handle it. If not provided, the value will be inferred from the file type.", required = false, arity = 1)
         public Integer variantsPerSample;
     
         @Parameter(names = {"--average-samples-per-file"}, description = "Average number of samples per file. This number is only used as a hint. If the real number of samples per file is different, the loader should be able to handle it. If not provided, the value will be inferred from the expectedSamples and expectedFiles and dataDistribution.", required = false, arity = 1)

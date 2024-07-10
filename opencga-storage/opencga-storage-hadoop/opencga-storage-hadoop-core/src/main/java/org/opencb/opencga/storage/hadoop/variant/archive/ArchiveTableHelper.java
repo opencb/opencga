@@ -211,7 +211,7 @@ public class ArchiveTableHelper extends GenomeHelper {
                 batch -> generateBatchSplitsHuman(rowKeyFactory, splitsPerBatch, batch),
                 extraBatches, batch -> Bytes.toBytes(rowKeyFactory.generateBlockIdFromBatch(batch)));
         if (newRegions > 0) {
-            logger.info("Table '" + archiveTable + "' expanded with " + newRegions + " new regions for batch " + thisBatch);
+            logger.info("Archive table '" + archiveTable + "' expanded with " + newRegions + " new regions for batch " + thisBatch);
         }
     }
 
