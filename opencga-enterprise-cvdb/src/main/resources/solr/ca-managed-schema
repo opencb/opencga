@@ -585,7 +585,7 @@
     <field name="familyMemberIds" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="panelIds" type="string" indexed="true" stored="true" multiValued="true"/>
 
-    <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="report" type="text_en" indexed="true" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 

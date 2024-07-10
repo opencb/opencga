@@ -580,7 +580,7 @@
 	<!-- Clinical interpretation -->
 
     <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
-	<field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
+	<field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
 
 	<!-- Panel IDs contain IDs -->
     <field name="panelIds" type="string" indexed="true" stored="true" multiValued="true"/>
@@ -595,7 +595,7 @@
 	<field name="methodVersion" type="string" indexed="true" stored="true" multiValued="false"/>
 	<field name="methodCommit" type="string" indexed="true" stored="true" multiValued="false"/>
 	<!-- Method software/dependencies are stores: name == version -->
-	<field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
+	<field name="methodDependencies" type="text_en" indexed="true" stored="true" multiValued="true"/>
 
 	<!-- Comments are stores: author == message == tag1:tag2:.. == date -->
     <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
@@ -604,7 +604,7 @@
 
     <field name="statusId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="statusName" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="statusDescription" type="text_en" indexed="true" stored="true" multiValued="false"/>
     <field name="statusDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
 
 	<field name="creationDate" type="pdate" indexed="true" stored="true" multiValued="false"/>

@@ -252,7 +252,7 @@ public class ClinicalQueryParser {
         // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
 
         // <field name="discussionAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
-        addStringFilters("discussionAuthor", query.getString(ClinicalQueryParam.CV_DISCUSSION_AUTHOR_NAME), filters);
+        addTextFilters("discussionAuthor", query.getString(ClinicalQueryParam.CV_DISCUSSION_AUTHOR_NAME), filters);
 
         // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("discussionDate", query.getString(ClinicalQueryParam.CV_DISCUSSION_DATE_NAME), filters);

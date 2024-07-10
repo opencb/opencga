@@ -8,14 +8,16 @@ import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryPa
 import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalInterpretationQueryParser;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -2411,6 +2413,189 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
+    public void testClinicalAnalysisQueryByCaReport() throws CvdbException, CatalogException, IOException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CA_REPORT_NAME, "testing");
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MINIMUM_JSON);
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(ca.getReport().getDiscussion().getText().contains(query.getString(CA_REPORT_NAME)));
+        }
+    }
+
+    @Test
+    public void testClinicalAnalysisQueryByCiDescription() throws CvdbException, CatalogException, IOException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_DESCRIPTION_NAME, "genomics_england_tiering");
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "interpretation.description");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            boolean found = false;
+            if (StringUtils.isNotEmpty(ca.getInterpretation().getDescription())
+                    && ca.getInterpretation().getDescription().contains(query.getString(CI_DESCRIPTION_NAME))) {
+                found = true;
+                break;
+            }
+            assertTrue(found);
+        }
+    }
+
+    @Test
+    public void testClinicalAnalysisQueryByCvCt() throws CvdbException, CatalogException, IOException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, "missense_variant");
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            boolean found = false;
+            for (ClinicalVariant cv : ca.getInterpretation().getPrimaryFindings()) {
+                for (ConsequenceType ct : cv.getAnnotation().getConsequenceTypes()) {
+                    for (SequenceOntologyTerm sot : ct.getSequenceOntologyTerms()) {
+                        if (sot.getName().equals(query.getString(CV_ANNOT_CONSEQUENCE_TYPE_NAME))) {
+                            found = true;
+                        }
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+    }
+
+    @Test
+    public void testClinicalAnalysisQueryByCvCtAND() throws CvdbException, CatalogException, IOException {
+        List<String> soTerms = Arrays.asList("stop_gained", "missense_variant");
+
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, StringUtils.join(soTerms, ";"));
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            boolean found = false;
+            for (ClinicalVariant cv : ca.getInterpretation().getPrimaryFindings()) {
+                for (ConsequenceType ct : cv.getAnnotation().getConsequenceTypes()) {
+                    List<String> soList = ct.getSequenceOntologyTerms().stream().map(sot -> sot.getName()).collect(Collectors.toList());
+                    if (soList.contains(soTerms.get(0)) && soList.contains(soTerms.get(1))) {
+                        found = true;
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+    }
+
+    @Test
+    public void testClinicalAnalysisQueryByCvCtOR() throws CvdbException, CatalogException, IOException {
+        List<String> soTerms = Arrays.asList("stop_gained", "missense_variant");
+
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, StringUtils.join(soTerms, ","));
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            boolean found = false;
+            for (ClinicalVariant cv : ca.getInterpretation().getPrimaryFindings()) {
+                for (ConsequenceType ct : cv.getAnnotation().getConsequenceTypes()) {
+                    List<String> soList = ct.getSequenceOntologyTerms().stream().map(sot -> sot.getName()).collect(Collectors.toList());
+                    if (soList.contains(soTerms.get(0)) || soList.contains(soTerms.get(1))) {
+                        found = true;
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+    }
+
+    @Test
+    public void testClinicalAnalysisQueryByCveClinicalSignificance() throws CvdbException, CatalogException, IOException {
+        // &cveClinicalSignificance=likely_benign
+
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CVE_CLINICAL_SIGNIFICANCE_NAME, ClinicalProperty.ClinicalSignificance.LIKELY_BENIGN);
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            boolean found = false;
+            for (ClinicalVariant cv : ca.getInterpretation().getPrimaryFindings()) {
+                for (ClinicalVariantEvidence cve : cv.getEvidences()) {
+                    if (cve.getClassification().getClinicalSignificance() == ClinicalProperty.ClinicalSignificance.LIKELY_BENIGN) {
+                        found = true;
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+    }
+
+    /* Code to update clinical analysis for testing:
+
+        ObjectWriter objectWriter = JacksonUtils.getDefaultObjectMapper().writerFor(ClinicalAnalysis.class);
+        if ("OPA-6522-1".equals(ca.getId())) {
+          ca.setReport(new ClinicalReport().setDiscussion(new ClinicalDiscussion().setText("Text for testing purposes")));
+          ca.getInterpretation().getPrimaryFindings().get(0).getEvidences().get(0).getClassification().setClinicalSignificance(ClinicalProperty.ClinicalSignificance.LIKELY_BENIGN);
+          ca.getInterpretation().getPrimaryFindings().get(1).getAnnotation().getConsequenceTypes().get(0).getSequenceOntologyTerms().add(new SequenceOntologyTerm("SO:0001587", "stop_gained"));
+          ca.getInterpretation().getPrimaryFindings().get(2).getAnnotation().getConsequenceTypes().get(0).getSequenceOntologyTerms().add(new SequenceOntologyTerm("SO:0001821", "inframe_insertion"));
+
+          objectWriter.writeValue(Paths.get("/tmp/ca1.new.json").toFile(), ca);
+        }
+     */
+
+    @Test
     public void test() throws CatalogException, IOException, CvdbException {
         // https://test.app.zettagenomics.com/task-5516/opencga/webservices/rest/v2/analysis/clinical
         // /cvdb/case/query?studyId=eglh&ciPanelId=Congenital_neutropaenia-PanelAppId-28&sid=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTcwOTEzMTMzNywiZXhwIjoxNzA5MTM0OTM3fQ.jR3Fh7-5aRitqmKl64IJAKXG2Z5_omRbHmxTt5fB8es&limit=1
@@ -2427,6 +2612,8 @@ public class CvdbSolrEngineQueryTest {
             assertTrue(StringUtils.isNotEmpty(ca.getId()));
         }
     }
+
+
 
     //-----------------------------------------------------------------------
     //-----------------------------------------------------------------------
@@ -2507,5 +2694,3 @@ public class CvdbSolrEngineQueryTest {
         }
     }
 }
-
-

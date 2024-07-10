@@ -878,7 +878,7 @@ public class CvdbSolrEngineQueryStudyTest {
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_ID.key(), study0.getId());
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
-        assertEquals(4, result.getNumResults());
+        assertEquals(5, result.getNumResults());
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_ID.key(), study1.getId());
@@ -888,7 +888,7 @@ public class CvdbSolrEngineQueryStudyTest {
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
-        assertEquals(8, result.getNumResults());
+        assertEquals(9, result.getNumResults());
 
         // Check existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
