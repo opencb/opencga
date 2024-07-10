@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 public class VariantOperationJanitor {
 
-    public static final String ORCHESTRATOR_TAG = "VariantOperationOrchestrator";
+    public static final String TAG = "VariantOperationJanitor";
     private final CatalogManager catalogManager;
     private final OperationConfig operationConfig;
     private final String token;
@@ -45,7 +45,7 @@ public class VariantOperationJanitor {
     protected static Logger logger = LoggerFactory.getLogger(VariantOperationJanitor.class);
 
     /**
-     * Initialize VariantOperationOrchestrator with the catalog manager, configuration and token.
+     * Initialize VariantOperationJanitor with the catalog manager, configuration and token.
      *
      * @param catalogManager Instance of a working CatalogManager.
      * @param token          Valid administrator token.
@@ -121,7 +121,7 @@ public class VariantOperationJanitor {
                         paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
                         catalogManager.getJobManager().submit(studyFqns.get(0), toolId, Enums.Priority.HIGH, paramsMap, null,
                                 generateJobDescription(config, operationChore, attributes), null,
-                                Collections.singletonList(ORCHESTRATOR_TAG), attributes, token);
+                                Collections.singletonList(TAG), attributes, token);
                     }
                 } else if (tool.scope() == Tool.Scope.STUDY) {
                     for (Study study : project.getStudies()) {
@@ -154,7 +154,7 @@ public class VariantOperationJanitor {
                             paramsMap.put(ParamConstants.STUDY_PARAM, study.getFqn());
                             catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.HIGH, paramsMap, null,
                                     generateJobDescription(config, operationChore, attributes), null,
-                                    Collections.singletonList(ORCHESTRATOR_TAG), attributes, token);
+                                    Collections.singletonList(TAG), attributes, token);
                         }
                     }
                 } else {
@@ -166,7 +166,7 @@ public class VariantOperationJanitor {
 
     private String generateJobDescription(OperationExecutionConfig config, OperationChore operationChore, ObjectMap attributes) {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("Job automatically launched by the orchestrator. ");
+        stringBuilder.append("Job automatically launched by the variant operation janitor. ");
         stringBuilder.append("Tool: ").append(operationChore.getToolId()).append("; ");
         stringBuilder.append("Policy: ").append(config.getPolicy()).append("; ");
         stringBuilder.append("Attempt number: ").append(attributes.getInt(ATTEMPT)).append(" out of ").append(config.getMaxAttempts())
@@ -305,10 +305,10 @@ public class VariantOperationJanitor {
 
     private ObjectMap getNewAttributes(Job job) {
         ObjectMap attributes = new ObjectMap();
-        // If job was launched by the Orchestrator and failed, extract number of attempts
+        // If job was launched by the Janitor and failed, extract number of attempts
         if (job != null && (Enums.ExecutionStatus.ERROR.equals(job.getInternal().getStatus().getId())
                 || Enums.ExecutionStatus.ABORTED.equals(job.getInternal().getStatus().getId()))
-                && job.getTags().contains(ORCHESTRATOR_TAG)) {
+                && job.getTags().contains(TAG)) {
             ObjectMap jobAttributes = new ObjectMap(job.getAttributes());
             int jobAttempt = jobAttributes.getInt(ATTEMPT);
 

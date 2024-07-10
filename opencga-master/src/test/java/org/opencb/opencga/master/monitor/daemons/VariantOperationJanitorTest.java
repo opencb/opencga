@@ -24,7 +24,7 @@ import static org.junit.Assert.*;
 
 public class VariantOperationJanitorTest extends AbstractManagerTest {
 
-    private VariantOperationJanitor voo;
+    private VariantOperationJanitor janitor;
 
     @Override
     @Before
@@ -36,7 +36,7 @@ public class VariantOperationJanitorTest extends AbstractManagerTest {
         // Change to immediate
         catalogManager.getConfiguration().getAnalysis().getOperations().getVariantAnnotationIndex().setPolicy(OperationExecutionConfig.Policy.IMMEDIATE).setMaxAttempts(2);
 
-        voo = new VariantOperationJanitor(catalogManager, expiringToken);
+        janitor = new VariantOperationJanitor(catalogManager, expiringToken);
 
         // Set all operations to PENDING
         catalogManager.getProjectManager().setProjectInternalVariant(projectFqn1, new ProjectInternalVariant(
@@ -51,11 +51,11 @@ public class VariantOperationJanitorTest extends AbstractManagerTest {
 
     @Test
     public void checkPendingVariantOperations() throws CatalogException, ToolException {
-        voo.checkPendingVariantOperations();
-        Job lastJobExecution = voo.findLastJobExecution(studyFqn, VariantAnnotationIndexOperationTool.ID);
+        janitor.checkPendingVariantOperations();
+        Job lastJobExecution = janitor.findLastJobExecution(studyFqn, VariantAnnotationIndexOperationTool.ID);
         assertNotNull(lastJobExecution);
         assertEquals(Enums.ExecutionStatus.PENDING, lastJobExecution.getInternal().getStatus().getId());
-        assertTrue(lastJobExecution.getTags().contains(VariantOperationJanitor.ORCHESTRATOR_TAG));
+        assertTrue(lastJobExecution.getTags().contains(VariantOperationJanitor.TAG));
         assertEquals(1, lastJobExecution.getAttributes().get(VariantOperationJanitor.ATTEMPT));
         String jobId = lastJobExecution.getId();
         // Set status to ERROR
@@ -63,11 +63,11 @@ public class VariantOperationJanitorTest extends AbstractManagerTest {
         catalogManager.getJobManager().update(studyFqn, lastJobExecution.getId(), updateParams, QueryOptions.empty(), ownerToken);
 
 
-        voo.checkPendingVariantOperations();
-        lastJobExecution = voo.findLastJobExecution(studyFqn, VariantAnnotationIndexOperationTool.ID);
+        janitor.checkPendingVariantOperations();
+        lastJobExecution = janitor.findLastJobExecution(studyFqn, VariantAnnotationIndexOperationTool.ID);
         assertNotNull(lastJobExecution);
         assertEquals(Enums.ExecutionStatus.PENDING, lastJobExecution.getInternal().getStatus().getId());
-        assertTrue(lastJobExecution.getTags().contains(VariantOperationJanitor.ORCHESTRATOR_TAG));
+        assertTrue(lastJobExecution.getTags().contains(VariantOperationJanitor.TAG));
         assertEquals(2, lastJobExecution.getAttributes().get(VariantOperationJanitor.ATTEMPT));
         assertEquals(1, ((List<String>) lastJobExecution.getAttributes().get(VariantOperationJanitor.FAILED_ATTEMPT_JOB_IDS)).size());
         assertEquals(jobId, ((List<String>) lastJobExecution.getAttributes().get(VariantOperationJanitor.FAILED_ATTEMPT_JOB_IDS)).get(0));
@@ -75,14 +75,14 @@ public class VariantOperationJanitorTest extends AbstractManagerTest {
         catalogManager.getJobManager().update(studyFqn, lastJobExecution.getId(), updateParams, QueryOptions.empty(), ownerToken);
 
         // Check a third time (This time it shouldn't create a new job)
-        voo.checkPendingVariantOperations();
-        lastJobExecution = voo.findLastJobExecution(studyFqn, VariantAnnotationIndexOperationTool.ID);
+        janitor.checkPendingVariantOperations();
+        lastJobExecution = janitor.findLastJobExecution(studyFqn, VariantAnnotationIndexOperationTool.ID);
         assertNotNull(lastJobExecution);
         assertEquals(Enums.ExecutionStatus.ERROR, lastJobExecution.getInternal().getStatus().getId());
         assertEquals(2, lastJobExecution.getAttributes().get(VariantOperationJanitor.ATTEMPT));
         assertEquals(1, ((List<String>) lastJobExecution.getAttributes().get(VariantOperationJanitor.FAILED_ATTEMPT_JOB_IDS)).size());
         assertEquals(jobId, ((List<String>) lastJobExecution.getAttributes().get(VariantOperationJanitor.FAILED_ATTEMPT_JOB_IDS)).get(0));
-        assertTrue(lastJobExecution.getTags().contains(VariantOperationJanitor.ORCHESTRATOR_TAG));
+        assertTrue(lastJobExecution.getTags().contains(VariantOperationJanitor.TAG));
 
     }
 
