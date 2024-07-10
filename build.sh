@@ -326,19 +326,20 @@ function build_opencga_enterprise() {
 # Function to upload the opencga and opencga-enterprise test reports to the Zettagenomics test report server
 #It is do it with azure and AZ_COPY command
 function publish_reports() {
-  if [ "$SAVE_REPORTS" == "true" ];then
-    ## Move to opencga-enterprise to build or test
-    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
-    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
-    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/reports/opencga-enterprise/$VERSION_FOLDER/ --recursive
-    azcopy copy "$LOG_FILE" https://zettatest.blob.core.windows.net/reports/opencga-enterprise/$VERSION_FOLDER/ --recursive
-    if [[ "$?" -ne 0 ]] ; then
-      log_summary "[ERROR] AZ_COPY FAILED!!!!!"
-    else
-      log_summary "Test reports uploaded correctly to /$VERSION_FOLDER/"
-    fi
-  fi
+#  if [ "$SAVE_REPORTS" == "true" ];then
+#    ## Move to opencga-enterprise to build or test
+#    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+#    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
+#    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+#    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/reports/opencga-enterprise/$VERSION_FOLDER/ --recursive
+#    azcopy copy "$LOG_FILE" https://zettatest.blob.core.windows.net/reports/opencga-enterprise/$VERSION_FOLDER/ --recursive
+#    if [[ "$?" -ne 0 ]] ; then
+#      log_summary "[ERROR] AZ_COPY FAILED!!!!!"
+#    else
+#      log_summary "Test reports uploaded correctly to /$VERSION_FOLDER/"
+#    fi
+#  fi
+ log_summary "[WARNING] AZ_COPY Unavailable!!!!!"
 }
 
 # Function to upload the docker of Oopencga-enterprise to https://hub.docker.com/repositories/zettagenomics
