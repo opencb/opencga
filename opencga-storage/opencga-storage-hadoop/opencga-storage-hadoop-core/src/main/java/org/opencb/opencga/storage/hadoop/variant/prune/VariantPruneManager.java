@@ -205,7 +205,7 @@ public class VariantPruneManager {
                         Result[] get = table.get(gets);
                         for (int i = 0; i < get.length; i++) {
                             Result result = get[i];
-                            Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
+                            Variant variant = VariantPhoenixKeyFactory.extractVariantFromResult(result);
                             VariantPruneReportRecord record = batch.get(i);
                             if (!variant.sameGenomicVariant(record.getVariant())) {
                                 throw new IllegalStateException("Error checking report! Expected "

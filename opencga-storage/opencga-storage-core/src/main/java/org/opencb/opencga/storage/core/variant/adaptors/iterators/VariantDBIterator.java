@@ -16,14 +16,14 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
-import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,20 +131,33 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
         }
     }
 
-    public final DataResult<Variant> toDataResult() {
+
+    // TODO: The VariantDBIterator should be able to return the samples in the result
+    //   This class should contain a ParsedVariantQuery
+//    public final VariantQueryResult<Variant> toVariantQueryResult() {
+//    }
+
+    public final VariantQueryResult<Variant> toDataResult(ParsedVariantQuery variantQuery) {
         List<Variant> result = new ArrayList<>();
         this.forEachRemaining(result::add);
 
         int numResults = result.size();
         int numTotalResults = -1; // Unknown numTotalResults
 
-        return new DataResult<>((int) getTimeFetching(TimeUnit.MILLISECONDS), Collections.emptyList(), numResults, result, numTotalResults);
+        DataResult<Variant> dataResult = new DataResult<>((int)
+                getTimeFetching(TimeUnit.MILLISECONDS),
+                Collections.emptyList(),
+                numResults,
+                result,
+                numTotalResults);
+        return new VariantQueryResult<>(dataResult, variantQuery);
     }
 
-    public final VariantQueryResult<Variant> toDataResult(Map<String, List<String>> samples) {
-        return new VariantQueryResult<>(toDataResult(), samples);
+    public final List<Variant> toList() {
+        List<Variant> result = new ArrayList<>();
+        this.forEachRemaining(result::add);
+        return result;
     }
-
 
     protected interface TimeFunction<R, E extends Exception> {
         R call() throws E;
@@ -192,7 +205,11 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
     }
 
     public VariantDBIterator localSkip(int skip) {
-        Iterators.advance(this, skip);
+        int i = 0;
+        while (i < skip && hasNext()) {
+            next();
+            i++;
+        }
         return this;
     }
 

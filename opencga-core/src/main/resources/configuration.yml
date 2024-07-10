@@ -6,6 +6,9 @@ databasePrefix: ${OPENCGA.DB.PREFIX}
 workspace: ${OPENCGA.USER.WORKSPACE}
 jobDir: ${OPENCGA.USER.WORKSPACE}/jobs
 
+# Maximum number of login attempts before banning a user account
+maxLoginAttempts: ${OPENCGA.MAX_LOGIN_ATTEMPTS}
+
 panel:
   host: "http://resources.opencb.org/opencb/opencga/disease-panels"
 
@@ -19,69 +22,24 @@ catalog:
     options:
       authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
       connectionsPerHost: ${OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST}
-  ## Solr Search engine configuration, by default is the same than storage
-  searchEngine:
-    # List of hosts pointing either to the Solr nodes directly using a complete URL or to the zookeper nodes with HOST:PORT
-    #    Example for Solr connection:       http://opencga-solr-01.zone:8983/solr
-    #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
-    hosts:
-      - ${OPENCGA.CATALOG.SEARCH.HOST}
-    user: ""
-    password: ""
-    options:
-      mode: "cloud"
-      timeout: ${OPENCGA.CATALOG.SEARCH.TIMEOUT}
-      insertBatchSize: ${OPENCGA.CATALOG.SEARCH.BATCH}
-
-## We support multiple Authentication providers, if none is provided then we use an internal authentication implementation
-authentication:
-  # Session expiration time in seconds
-  expiration: 3600
-  authenticationOrigins:
-# Custom LDAP | LDAPS configuration example
-#  - id: ldaps                                              # Any id
-#    type: LDAP
-#    host: ldaps://localhost:636                            # or ldap://localhost:123
-#    options:
-#      authUserId: ""                                       # Auth user id and password if querying the LDAP system requires authentication. By default, empty.
-#      authPassword: ""                                     # Auth user id and password if querying the LDAP system requires authentication. By default, empty.
-#      usersSearch: dc=ge,dc=co,dc=uk                       # Mandatory field. Base search to look for users. By default, empty.
-#      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Mandatory field. Base search to look for groups. By default, empty.
-#      fullNameKey: displayname                             # Key to get the user's full name when importing users. By default, 'displayname'.
-#      memberKey: member                                    # Key within groups to extract the user id. By default, 'member'.
-#      dnKey: dn                                            # Key to get the user's DN or RDN unique identifier. By default, 'dn'.
-#      dnFormat: "%s"                                       # Formatter to extract the user's DN if it is contained within a larger string. By default, '%s' to take the whole string.
-#      uidKey: uid                                          # Key to get the user id to be used in OpenCGA. By default, 'uid'.
-#      uidFormat: "%s"                                      # Formatter to extract the user id if the uid is contained within a larger string. By default, '%s' to take the whole string.
-#      sslInvalidCertificatesAllowed: false                 # If using LDAPs with a custom certificate, set to true to accept any certificate. By default, false.
-#      connectionTimeout: 500                               # Connection timeout value. Default: 500 ms
-#      readTimeout: 1000                                    # Read timeout value. Default: 1000 ms
-
-# Azure AD configuration example
-#  - id: aad                                               # Any id
-#    type: AzureAD
-#    host:
-#    options:
-#      tenantId: xxxx              # Mandatory. Tenant id
-#      authClientId: xxxx          # Mandatory. Client id of the client with permissions to authenticate users.
-#      syncClientId: xxxx          # Mandatory. Client id of the client with permissions to inspect active directory.
-#      syncSecretKey: xxxx         # Mandatory: Secret key of the client with permissions to inspect active directory.
-#      filters: tokenField1=aa,bb,cc;tokenField2=aa,bb,cc  # Optional. Filters to be applied. OpenCGA will check if tokenField1 = aa or bb
-#                # or cc and tokenField2 = aa or bb or cc. If any of the filters don't succeed, even if the user is properly authenticated
-#                # in AAD, the user will not be able to generate a token and login in OpenCGA.
 
 server:
   rest:
     port: ${OPENCGA.SERVER.REST.PORT}
-    logFile: null
-    defaultLimit: 2000
-    maxLimit: 5000
+    httpConfiguration:
+      # The size in bytes of the output buffer used to aggregate HTTP output
+      outputBufferSize: 32768
+      # The maximum size in bytes for HTTP output to be aggregated
+      outputAggregationSize: 8192
+      # The maximum allowed size in bytes for a HTTP request header
+      requestHeaderSize: 8192
+      # The maximum allowed size in bytes for a HTTP response header
+      responseHeaderSize: 8192
+      # The maximum allowed size in bytes for a HTTP header field cache
+      headerCacheSize: 4096
+
   grpc:
     port: ${OPENCGA.SERVER.GRPC.PORT}
-    logFile: null
-
-optimizations:
-  simplifyPermissions: ${OPENCGA_OPTIMIZATIONS_SIMPLIFY_PERMISSIONS}
 
 audit:
   manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
@@ -140,7 +98,8 @@ analysis:
     maxConcurrentJobs:
       variant-index: 20
       variant-annotation-index: 5
-      variant-secondary-index: 2
+      variant-secondary-annotation-index: 2
+      variant-secondary-sample-index: 2
     options:
       ## Job reuse policy. Do not create a new job if an equivalent PENDING or QUEUED job exists.
       jobs.reuse.enabled: true
@@ -150,6 +109,7 @@ analysis:
         - "variant-stats-index"
         - "variant-annotation-index"
         - "variant-secondary-annotation-index"
+        - "variant-secondary-sample-index"
       ## Local executor configuration
       local.maxConcurrentJobs: 2    # Max number of concurrent jobs to be executed locally in the master
       ## Azure Batch Service configuration example

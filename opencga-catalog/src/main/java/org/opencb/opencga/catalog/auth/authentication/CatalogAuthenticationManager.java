@@ -64,6 +64,17 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         this.logger = LoggerFactory.getLogger(CatalogAuthenticationManager.class);
     }
 
+    public static void validateAuthenticationOriginConfiguration(AuthenticationOrigin authenticationOrigin) throws CatalogException {
+        if (!OPENCGA.equals(authenticationOrigin.getId())) {
+            throw new CatalogException("Unknown authentication origin. Expected origin id '" + OPENCGA + "' but received '"
+                    + authenticationOrigin.getId() + "'.");
+        }
+        if (authenticationOrigin.getType() != AuthenticationOrigin.AuthenticationType.OPENCGA) {
+            throw new CatalogException("Unknown authentication type. Expected type '" + AuthenticationOrigin.AuthenticationType.OPENCGA
+                    + "' but received '" + authenticationOrigin.getType() + "'.");
+        }
+    }
+
     @Override
     public AuthenticationResponse authenticate(String organizationId, String userId, String password)
             throws CatalogAuthenticationException {
@@ -102,12 +113,12 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
     @Override
     public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration) {
-        return jwtManager.createJWTToken(organizationId, userId, claims, expiration);
+        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.OPENCGA, userId, claims, expiration);
     }
 
     @Override
     public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims) {
-        return jwtManager.createJWTToken(organizationId, userId, claims, 0L);
+        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.OPENCGA, userId, claims, 0L);
     }
 
     @Override
@@ -131,7 +142,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         String mailHost = this.emailConfig.getHost();
         String mailPort = this.emailConfig.getPort();
         try {
-            MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
+            MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort, userId);
             result = dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).resetPassword(userId, email, newPassword);
         } catch (Exception e) {
             throw new CatalogException("Email could not be sent.", e);
@@ -144,5 +155,9 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         return new AuthenticationOrigin()
                 .setId(CatalogAuthenticationManager.OPENCGA)
                 .setType(AuthenticationOrigin.AuthenticationType.OPENCGA);
+    }
+
+    @Override
+    public void close() {
     }
 }

@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptorFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -35,6 +36,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.migration.MigrationManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
@@ -107,7 +109,7 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory);
         authorizationDBAdaptorFactory = new AuthorizationMongoDBAdaptorFactory((MongoDBAdaptorFactory) catalogDBAdaptorFactory,
                 configuration);
-        authenticationFactory = new AuthenticationFactory(catalogDBAdaptorFactory);
+        authenticationFactory = new AuthenticationFactory(catalogDBAdaptorFactory, configuration);
         logger.debug("CatalogManager configureManager");
         configureManagers(configuration);
     }
@@ -259,6 +261,10 @@ public class CatalogManager implements AutoCloseable {
         if (!PasswordUtils.isStrongPassword(password)) {
             throw new CatalogException("Invalid password. Check password strength for user ");
         }
+        if (StringUtils.isEmpty(secretKey)) {
+            logger.info("Generating secret key");
+            secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
+        }
         ParamUtils.checkParameter(secretKey, "secretKey");
         ParamUtils.checkParameter(password, "password");
         JwtUtils.validateJWTKey(algorithm, secretKey);
@@ -267,7 +273,7 @@ public class CatalogManager implements AutoCloseable {
 
         OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration(
                 Collections.singletonList(CatalogAuthenticationManager.createOpencgaAuthenticationOrigin()),
-                new Optimizations(), new TokenConfiguration(algorithm, secretKey, 3600L));
+                Constants.DEFAULT_USER_EXPIRATION_DATE, new Optimizations(), new TokenConfiguration(algorithm, secretKey, 3600L));
         organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, null, null,
                         organizationConfiguration, null),
                 QueryOptions.empty(), null);
@@ -301,7 +307,7 @@ public class CatalogManager implements AutoCloseable {
 
     public void installIndexes(String organizationId, String token) throws CatalogException {
         JwtPayload payload = userManager.validateToken(token);
-        String userId = payload.getUserId();
+        String userId = payload.getUserId(organizationId);
         if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin();
         }

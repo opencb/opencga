@@ -22,23 +22,23 @@ import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyP
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
+import org.opencb.opencga.core.models.operations.variant.VariantConfigureParams;
 import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantFileDeleteParams;
+import org.opencb.opencga.core.models.operations.variant.VariantFileIndexJobLauncherParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantPruneParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSampleDeleteParams;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsDeleteParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
+import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataSynchronizeParams;
+import org.opencb.opencga.core.models.operations.variant.VariantStudyDeleteParams;
 import org.opencb.opencga.core.models.study.VariantSetupResult;
-import org.opencb.opencga.core.models.variant.VariantConfigureParams;
-import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
-import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantPruneParams;
-import org.opencb.opencga.core.models.variant.VariantSampleDeleteParams;
 import org.opencb.opencga.core.models.variant.VariantSetupParams;
-import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
-import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -399,6 +399,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "file",commandOptions.file, true);
             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
 
             variantFileDeleteParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

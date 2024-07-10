@@ -879,18 +879,19 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
+            boolean simplifyPermissions = simplifyPermissions();
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.COHORT, user,
-                        configuration));
+                        simplifyPermissions));
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            CohortPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.COHORT, configuration));
+                            CohortPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.COHORT, simplifyPermissions));
                 } else {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, CohortPermissions.VIEW.name(),
-                            Enums.Resource.COHORT, configuration));
+                            Enums.Resource.COHORT, simplifyPermissions));
                 }
             }
 

@@ -17,13 +17,9 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import io.jsonwebtoken.lang.Collections;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -34,9 +30,7 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.*;
 
@@ -116,9 +110,6 @@ public class VariantIndexOperationTool extends OperationTool {
     protected List<String> getSteps() {
         List<String> steps = new ArrayList<>();
         steps.add(getId());
-        if (indexParams.isFamily()) {
-            steps.add("family-index");
-        }
         return steps;
     }
 
@@ -159,26 +150,5 @@ public class VariantIndexOperationTool extends OperationTool {
                 }
             }
         });
-
-        if (indexParams.isFamily()) {
-            step("family-index", () -> {
-                if (inputFiles.isEmpty()) {
-                    // Nothing to do!
-                    return;
-                }
-                OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getCatalogManager().getFileManager()
-                        .search(study,
-                                new Query(FileDBAdaptor.QueryParams.URI.key(), inputFiles),
-                                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), getToken());
-
-                Set<String> samples = new HashSet<>();
-                for (org.opencb.opencga.core.models.file.File file : fileResult.getResults()) {
-                    samples.addAll(file.getSampleIds());
-                }
-                if (!samples.isEmpty()) {
-                    variantStorageManager.familyIndexBySamples(study, samples, params, getToken());
-                }
-            });
-        }
     }
 }
