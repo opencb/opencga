@@ -46,7 +46,8 @@ public class CellBaseConfiguration {
     private String apiKey;
 
     public CellBaseConfiguration() {
-        this(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION);
+        this(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION, ParamConstants.CELLBASE_DATA_RELEASE,
+                ParamConstants.CELLBASE_APIKEY);
     }
 
     public CellBaseConfiguration(String url, String version) {

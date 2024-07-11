@@ -270,6 +270,13 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/cancerTiering', data=data, **options)
@@ -288,6 +295,13 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/exomiser', data=data, **options)
@@ -306,6 +320,13 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/team', data=data, **options)
@@ -324,6 +345,13 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/tiering', data=data, **options)
@@ -342,6 +370,13 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/zetta', data=data, **options)
@@ -361,6 +396,13 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='load', subcategory='clinical', data=data, **options)
@@ -495,6 +537,13 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         :param bool auxiliar_index: Index auxiliar collection to improve
             performance assuming RGA is completely indexed.
         """

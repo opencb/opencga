@@ -98,7 +98,7 @@
         <httpclient.version>4.5.6</httpclient.version>
         <oauth2-oidc-sdk.version>5.64.4</oauth2-oidc-sdk.version>
         <passay.version>1.6.1</passay.version>
-        <kubernetes.version>4.3.0</kubernetes.version>
+        <kubernetes.version>6.13.1</kubernetes.version>
         <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
         <ant.version>1.10.12</ant.version>
         <httpcore.version>4.4.13</httpcore.version>
@@ -846,6 +846,12 @@
                 <groupId>com.databricks</groupId>
                 <artifactId>SnpEff</artifactId>
                 <version>${snpeff.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>distlib</groupId>
+                        <artifactId>distlib</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.parquet</groupId>
@@ -969,6 +975,21 @@
             <dependency>
                 <groupId>io.fabric8</groupId>
                 <artifactId>kubernetes-model</artifactId>
+                <version>${kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-model-core</artifactId>
+                <version>${kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-client-api</artifactId>
+                <version>${kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-model-batch</artifactId>
                 <version>${kubernetes.version}</version>
             </dependency>
             <dependency>
@@ -1408,7 +1429,7 @@
 
                 <!-- cellbase -->
                 <OPENCGA.CELLBASE.REST.HOST>https://uk.ws.zettagenomics.com/cellbase/</OPENCGA.CELLBASE.REST.HOST>
-                <OPENCGA.CELLBASE.VERSION>v5.2</OPENCGA.CELLBASE.VERSION>
+                <OPENCGA.CELLBASE.VERSION>v5.8</OPENCGA.CELLBASE.VERSION>
             </properties>
         </profile>
 

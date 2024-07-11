@@ -34,7 +34,7 @@
 #' | updateNotes | /{apiVersion}/studies/{study}/notes/{id}/update | include, exclude, study[*], id[*], includeResult, body[*] |
 #' | permissionRules | /{apiVersion}/studies/{study}/permissionRules | study[*], entity[*] |
 #' | updatePermissionRules | /{apiVersion}/studies/{study}/permissionRules/update | study[*], entity[*], action, body[*] |
-#' | runTemplates | /{apiVersion}/studies/{study}/templates/run | study[*], jobId, jobDependsOn, jobDescription, jobTags, body[*] |
+#' | runTemplates | /{apiVersion}/studies/{study}/templates/run | study[*], jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | uploadTemplates | /{apiVersion}/studies/{study}/templates/upload | file, study[*] |
 #' | deleteTemplates | /{apiVersion}/studies/{study}/templates/{templateId}/delete | study[*], templateId[*] |
 #' | update | /{apiVersion}/studies/{study}/update | include, exclude, study[*], includeResult, body[*] |
@@ -221,6 +221,9 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, group, id, members, stud
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Template loader parameters.
         runTemplates=fetchOpenCGA(object=OpencgaR, category="studies", categoryId=study, subcategory="templates",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
