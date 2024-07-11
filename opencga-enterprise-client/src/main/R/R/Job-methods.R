@@ -22,13 +22,14 @@
 #' | updateAcl | /{apiVersion}/jobs/acl/{members}/update | members[*], action[*], body[*] |
 #' | create | /{apiVersion}/jobs/create | study, body[*] |
 #' | distinct | /{apiVersion}/jobs/distinct | study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field[*] |
-#' | retry | /{apiVersion}/jobs/retry | jobId, jobDescription, jobDependsOn, jobTags, study, body[*] |
+#' | retry | /{apiVersion}/jobs/retry | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, study, body[*] |
 #' | search | /{apiVersion}/jobs/search | include, exclude, limit, skip, count, study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted |
 #' | top | /{apiVersion}/jobs/top | limit, study, internalStatus, priority, userId, toolId |
 #' | acl | /{apiVersion}/jobs/{jobs}/acl | jobs[*], member, silent |
 #' | delete | /{apiVersion}/jobs/{jobs}/delete | study, jobs[*] |
 #' | info | /{apiVersion}/jobs/{jobs}/info | include, exclude, jobs[*], study, deleted |
 #' | update | /{apiVersion}/jobs/{jobs}/update | include, exclude, jobs[*], study, includeResult, body |
+#' | kill | /{apiVersion}/jobs/{job}/kill | job[*], study |
 #' | headLog | /{apiVersion}/jobs/{job}/log/head | job[*], study, offset, lines, type |
 #' | tailLog | /{apiVersion}/jobs/{job}/log/tail | job[*], study, lines, type |
 #'
@@ -88,6 +89,7 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data job.
         retry=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
@@ -168,6 +170,13 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param data body.
         update=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=jobs, subcategory=NULL, subcategoryId=NULL,
                 action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/jobs/{job}/kill:
+        #' Send a signal to kill a pending or running job.
+        #' @param job Job ID or UUID.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        kill=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=job, subcategory=NULL, subcategoryId=NULL,
+                action="kill", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/jobs/{job}/log/head:
         #' Show the first lines of a log file (up to a limit).

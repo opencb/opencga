@@ -25,7 +25,7 @@
 #' | create | /{apiVersion}/analysis/clinical/create | include, exclude, study, skipCreateDefaultInterpretation, includeResult, body[*] |
 #' | aggregationStatsCvdbCase | /{apiVersion}/analysis/clinical/cvdb/case/aggregationStats | projectId, studyId, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer, cveReviewText, field |
 #' | queryCvdbCase | /{apiVersion}/analysis/clinical/cvdb/case/query | projectId, studyId, include, exclude, limit, skip, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer |
-#' | runCvdbIndex | /{apiVersion}/analysis/clinical/cvdb/index/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runCvdbIndex | /{apiVersion}/analysis/clinical/cvdb/index/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | aggregationStatsCvdbInterpretation | /{apiVersion}/analysis/clinical/cvdb/interpretation/aggregationStats | projectId, studyId, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer, cveReviewText, field |
 #' | queryCvdbInterpretation | /{apiVersion}/analysis/clinical/cvdb/interpretation/query | projectId, studyId, include, exclude, limit, skip, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer |
 #' | aggregationStatsCvdbVariant | /{apiVersion}/analysis/clinical/cvdb/variant/aggregationStats | projectId, studyId, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer, cveReviewText, field |
@@ -36,16 +36,16 @@
 #' | distinctInterpretation | /{apiVersion}/analysis/clinical/interpretation/distinct | study, id, uuid, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field[*] |
 #' | searchInterpretation | /{apiVersion}/analysis/clinical/interpretation/search | include, exclude, limit, skip, sort, study, id, uuid, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release |
 #' | infoInterpretation | /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info | include, exclude, interpretations[*], study, version, deleted |
-#' | runInterpreterCancerTiering | /{apiVersion}/analysis/clinical/interpreter/cancerTiering/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runInterpreterExomiser | /{apiVersion}/analysis/clinical/interpreter/exomiser/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runInterpreterTeam | /{apiVersion}/analysis/clinical/interpreter/team/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runInterpreterTiering | /{apiVersion}/analysis/clinical/interpreter/tiering/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runInterpreterZetta | /{apiVersion}/analysis/clinical/interpreter/zetta/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | load | /{apiVersion}/analysis/clinical/load | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runInterpreterCancerTiering | /{apiVersion}/analysis/clinical/interpreter/cancerTiering/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runInterpreterExomiser | /{apiVersion}/analysis/clinical/interpreter/exomiser/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runInterpreterTeam | /{apiVersion}/analysis/clinical/interpreter/team/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runInterpreterTiering | /{apiVersion}/analysis/clinical/interpreter/tiering/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runInterpreterZetta | /{apiVersion}/analysis/clinical/interpreter/zetta/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | load | /{apiVersion}/analysis/clinical/load | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | aggregationStatsRga | /{apiVersion}/analysis/clinical/rga/aggregationStats | limit, skip, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study, field[*] |
 #' | queryRgaGene | /{apiVersion}/analysis/clinical/rga/gene/query | include, exclude, limit, skip, count, includeIndividual, skipIndividual, limitIndividual, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | summaryRgaGene | /{apiVersion}/analysis/clinical/rga/gene/summary | limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
-#' | runRgaIndex | /{apiVersion}/analysis/clinical/rga/index/run | study, jobId, jobDescription, jobDependsOn, jobTags, auxiliarIndex, body[*] |
+#' | runRgaIndex | /{apiVersion}/analysis/clinical/rga/index/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, auxiliarIndex, body[*] |
 #' | queryRgaIndividual | /{apiVersion}/analysis/clinical/rga/individual/query | include, exclude, limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | summaryRgaIndividual | /{apiVersion}/analysis/clinical/rga/individual/summary | limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | queryRgaVariant | /{apiVersion}/analysis/clinical/rga/variant/query | include, exclude, limit, skip, count, includeIndividual, skipIndividual, limitIndividual, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
@@ -314,6 +314,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Parameters: Index clinical analyses of a OpenCGA project, a study or a list of clinical analyses into CVDB.
         runCvdbIndex=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/cvdb/index", subcategoryId=NULL, action="run", params=params, httpMethod="POST",
@@ -993,6 +996,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Cancer tiering interpretation analysis params.
         runInterpreterCancerTiering=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/cancerTiering", subcategoryId=NULL, action="run", params=params,
@@ -1005,6 +1011,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Exomizer interpretation analysis params.
         runInterpreterExomiser=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/exomiser", subcategoryId=NULL, action="run", params=params,
@@ -1017,6 +1026,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data TEAM interpretation analysis params.
         runInterpreterTeam=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/team", subcategoryId=NULL, action="run", params=params,
@@ -1029,6 +1041,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Tiering interpretation analysis params.
         runInterpreterTiering=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/tiering", subcategoryId=NULL, action="run", params=params,
@@ -1041,6 +1056,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Zetta interpretation analysis params.
         runInterpreterZetta=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/zetta", subcategoryId=NULL, action="run", params=params,
@@ -1053,6 +1071,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Parameters to load clinical analysis in OpenCGA catalog from a file.
         load=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
                 subcategoryId=NULL, action="load", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -1159,6 +1180,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param auxiliarIndex Index auxiliar collection to improve performance assuming RGA is completely indexed.
         #' @param data Recessive Gene Analysis index params.
         runRgaIndex=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
