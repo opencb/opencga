@@ -11,16 +11,17 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.parquet.hadoop.ParquetFileWriter;
 import org.apache.phoenix.mapreduce.util.PhoenixConfigurationUtil;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
@@ -52,6 +53,8 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
 public abstract class AbstractHBaseDriver extends Configured implements Tool {
     public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
     public static final String COLUMNS_TO_COUNT = "columns_to_count";
+    public static final String MR_APPLICATION_ID = "MR_APPLICATION_ID";
+    public static final String ERROR_MESSAGE = "ERROR_MESSAGE";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHBaseDriver.class);
     protected String table;
 
@@ -187,11 +190,19 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         boolean succeed = executeJob(job);
         if (!succeed) {
             LOGGER.error("error with job!");
+            if (!"NA".equals(job.getStatus().getFailureInfo())) {
+                LOGGER.error("Failure info: " + job.getStatus().getFailureInfo());
+                printKeyValue(ERROR_MESSAGE, job.getStatus().getFailureInfo());
+            }
+
         }
         LOGGER.info("=================================================");
         LOGGER.info("Finish job " + getJobName());
         LOGGER.info("Total time : " + TimeUtils.durationToString(stopWatch));
         LOGGER.info("=================================================");
+        for (Counter counter : job.getCounters().getGroup(COUNTER_GROUP_NAME)) {
+            printKeyValue(counter.getName(), counter.getValue());
+        }
         postExecution(job);
         close();
 
@@ -228,21 +239,48 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
     private boolean executeJob(Job job) throws IOException, InterruptedException, ClassNotFoundException {
         Thread hook = new Thread(() -> {
+            LOGGER.info("Shutdown hook called!");
+            LOGGER.info("Gracefully stopping the job '" + job.getJobID() + "' ...");
             try {
-                if (!job.isComplete()) {
-                    job.killJob();
+                if (job.getJobState() == JobStatus.State.RUNNING) {
+                    if (!job.isComplete()) {
+                        job.killJob();
+                    }
+                    LOGGER.info("Job '" + job.getJobID() + "' stopped!");
+                } else {
+                    LOGGER.info("Job '" + job.getJobID() + "' is not running. Nothing to do.");
                 }
 //                onError();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 LOGGER.error("Error", e);
             }
         });
         try {
             Runtime.getRuntime().addShutdownHook(hook);
-            return job.waitForCompletion(true);
-        } finally {
+            job.submit();
+            JobID jobID = job.getJobID();
+            String applicationId = jobID.appendTo(new StringBuilder(ApplicationId.appIdStrPrefix)).toString();
+            printKeyValue(MR_APPLICATION_ID, applicationId);
+            boolean completion = job.waitForCompletion(true);
             Runtime.getRuntime().removeShutdownHook(hook);
+            return completion;
+        } catch (Exception e) {
+            // Do not use a finally block to remove shutdownHook, as finally blocks will be executed even if the JVM is killed,
+            // and this would throw IllegalStateException("Shutdown in progress");
+            try {
+                Runtime.getRuntime().removeShutdownHook(hook);
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+            }
+            throw e;
         }
+    }
+
+    protected static void printKeyValue(String key, Object value) {
+        // Print key value using System.err directly so it can be read by the MRExecutor
+        // Do not use logger, as it may be redirected to a file or stdout
+        // Do not use stdout, as it won't be read by the MRExecutor
+        System.err.println(key + "=" + value);
     }
 
     protected boolean isLocal(Path path) {
@@ -326,6 +364,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         FileSystem fileSystem = outdir.getFileSystem(getConf());
         fileSystem.delete(outdir, true);
         fileSystem.cancelDeleteOnExit(outdir);
+        LOGGER.info("Temporary file deleted!");
     }
 
     public class MapReduceOutputFile {
@@ -502,6 +541,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             System.exit(code);
         } catch (Exception e) {
             LoggerFactory.getLogger(aClass).error("Error executing " + aClass, e);
+            printKeyValue(ERROR_MESSAGE, ExceptionUtils.prettyExceptionMessage(e, false, true));
             System.exit(1);
         }
     }
