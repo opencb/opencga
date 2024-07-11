@@ -250,6 +250,7 @@ public final class Enums {
         MOVE_AND_REGISTER,
 
         VISIT,
+        KILL_JOB,
 
         IMPORT,
 

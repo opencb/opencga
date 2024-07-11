@@ -23,6 +23,7 @@ import org.opencb.opencga.core.config.Execution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 /**
@@ -58,7 +59,11 @@ public class AzureBatchExecutor implements BatchExecutor {
         this.poolInformation = new PoolInformation().withPoolId(batchPoolId);
     }
 
-//    public void submitAzureTask(Job job, String token) throws IOException {
+    @Override
+    public void close() throws IOException {
+    }
+
+    //    public void submitAzureTask(Job job, String token) throws IOException {
 //        String jobId = getOrCreateAzureJob(job.getType());
 //        TaskAddParameter taskToAdd = new TaskAddParameter();
 //        taskToAdd.withId(job.getId()).withCommandLine(job.getCommandLine()).withContainerSettings(

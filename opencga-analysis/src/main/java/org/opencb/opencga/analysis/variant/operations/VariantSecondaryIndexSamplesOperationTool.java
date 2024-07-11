@@ -21,7 +21,7 @@ import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotat
 import org.opencb.opencga.core.models.common.Enums;
 
 @Tool(id = VariantSecondaryIndexSamplesOperationTool.ID,
-        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 @Deprecated
 public class VariantSecondaryIndexSamplesOperationTool extends OperationTool {
 

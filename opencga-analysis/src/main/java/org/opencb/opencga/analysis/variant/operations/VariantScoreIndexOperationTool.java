@@ -16,18 +16,16 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 
 import java.net.URI;
 
-import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
-
 @Tool(id= VariantScoreIndexOperationTool.ID, description = VariantScoreIndexOperationTool.DESCRIPTION,
-        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantScoreIndexOperationTool extends OperationTool {
 
     public static final String ID = "variant-score-index";
