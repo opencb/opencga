@@ -63,7 +63,7 @@ class Variant(_ParentRestClient):
             aliases 'loss_of_function' and 'protein_altering'.
         :param str xref: List of any external reference, these can be genes,
             proteins or variants. Accepted IDs include HGNC, Ensembl genes,
-            dbSNP, ClinVar, HPO, Cosmic, ...
+            dbSNP, ClinVar, HPO, Cosmic, HGVS ...
         :param str biotype: List of biotypes, e.g. protein_coding.
         :param str protein_substitution: Protein substitution scores include
             SIFT and PolyPhen. You can query using the score
@@ -124,8 +124,8 @@ class Variant(_ParentRestClient):
         Query variant annotations from any saved versions.
         PATH: /{apiVersion}/analysis/variant/annotation/query
 
-        :param str id: List of IDs, these can be rs IDs (dbSNP) or variants in
-            the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T.
+        :param str id: List of variant IDs in the format chrom:start:ref:alt,
+            e.g. 19:7177679:C:T.
         :param str region: List of regions, these can be just a single
             chromosome name or regions in the format chr:start-end, e.g.:
             2,3:100000-200000.
@@ -194,6 +194,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/cohort/stats', data=data, **options)
@@ -212,6 +219,13 @@ class Variant(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/exomiser', data=data, **options)
@@ -236,6 +250,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/export', data=data, **options)
@@ -279,6 +300,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/family/qc', data=data, **options)
@@ -294,6 +322,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param str file: Files to remove.
@@ -318,6 +353,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/gatk', data=data, **options)
@@ -341,6 +383,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/genomePlot', data=data, **options)
@@ -359,6 +408,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/gwas', data=data, **options)
@@ -377,6 +433,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/hrDetect', data=data, **options)
@@ -395,6 +458,13 @@ class Variant(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/index', data=data, **options)
@@ -414,6 +484,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/individual/qc', data=data, **options)
@@ -432,6 +509,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/inferredSex', data=data, **options)
@@ -475,6 +559,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/knockout', data=data, **options)
@@ -493,6 +584,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/mendelianError', data=data, **options)
@@ -615,6 +713,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/mutationalSignature', data=data, **options)
@@ -633,6 +738,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/plink', data=data, **options)
@@ -659,8 +771,8 @@ class Variant(_ParentRestClient):
             approximate count. Larger values increase accuracy but also
             increase execution time.
         :param str saved_filter: Use a saved filter at User level.
-        :param str id: List of IDs, these can be rs IDs (dbSNP) or variants in
-            the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T.
+        :param str id: List of variant IDs in the format chrom:start:ref:alt,
+            e.g. 19:7177679:C:T.
         :param str region: List of regions, these can be just a single
             chromosome name or regions in the format chr:start-end, e.g.:
             2,3:100000-200000.
@@ -785,7 +897,7 @@ class Variant(_ParentRestClient):
             aliases 'loss_of_function' and 'protein_altering'.
         :param str xref: List of any external reference, these can be genes,
             proteins or variants. Accepted IDs include HGNC, Ensembl genes,
-            dbSNP, ClinVar, HPO, Cosmic, ...
+            dbSNP, ClinVar, HPO, Cosmic, HGVS ...
         :param str biotype: List of biotypes, e.g. protein_coding.
         :param str protein_substitution: Protein substitution scores include
             SIFT and PolyPhen. You can query using the score
@@ -857,6 +969,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/relatedness', data=data, **options)
@@ -876,6 +995,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/rvtests', data=data, **options)
@@ -979,6 +1105,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/sample/eligibility', data=data, **options)
@@ -1003,6 +1136,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/sample/qc', data=data, **options)
@@ -1036,6 +1176,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/sample', data=data, **options)
@@ -1102,6 +1249,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/sample/stats', data=data, **options)
@@ -1122,6 +1276,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/stats/export', data=data, **options)
@@ -1140,6 +1301,13 @@ class Variant(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='variant/stats', data=data, **options)

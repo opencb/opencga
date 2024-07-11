@@ -277,6 +277,10 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -296,6 +300,10 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -314,6 +322,10 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -332,6 +344,10 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -350,6 +366,10 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -368,6 +388,10 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -498,6 +522,10 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       auxiliarIndex: Index auxiliar collection to improve performance assuming RGA is completely indexed.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -715,7 +743,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            execution time.
      *       savedFilter: Use a saved filter at User level.
      *       includeInterpretation: Interpretation ID to include the fields related to this interpretation.
-     *       id: List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T.
+     *       id: List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T.
      *       region: List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.:
      *            2,3:100000-200000.
      *       type: List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION,
@@ -763,7 +791,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ct: List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function'
      *            and 'protein_altering'.
      *       xref: List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes,
-     *            dbSNP, ClinVar, HPO, Cosmic, ...
+     *            dbSNP, ClinVar, HPO, Cosmic, HGVS ...
      *       biotype: List of biotypes, e.g. protein_coding.
      *       proteinSubstitution: Protein substitution scores include SIFT and PolyPhen. You can query using the score
      *            {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.

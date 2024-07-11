@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -137,11 +138,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         UpdateDocument updateDocument = getValidatedUpdateParams(clientSession, parameters, queryOptions);
         Document organizationUpdate = updateDocument.toFinalUpdateDocument();
 
-//        Query tmpQuery = new Query(QueryParams.ID.key(), organization.getId());
-//        Bson queryBson = parseQuery(tmpQuery);
-        Bson queryBson = Filters.eq(QueryParams.ID.key(), organizationId);
-
-        if (organizationUpdate.isEmpty()) {
+        if (organizationUpdate.isEmpty() && CollectionUtils.isEmpty(updateDocument.getNestedUpdateList())) {
             if (!parameters.isEmpty()) {
                 logger.error("Non-processed update parameters: {}", parameters.keySet());
                 throw new CatalogDBException("Update could not be performed. Some fields could not be processed.");
@@ -149,20 +146,52 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
             throw new CatalogDBException("Nothing to be updated");
         }
 
-        List<Event> events = new ArrayList<>();
-        logger.debug("Update organization. Query: {}, Update: {}", queryBson.toBsonDocument(), organizationUpdate.toBsonDocument());
-
         // Update study admins need to be executed before the actual update because we need to fetch the previous owner/admins in case
         // of an update on these fields.
         updateStudyAdmins(clientSession, parameters, queryOptions);
-        DataResult<?> updateResult = organizationCollection.update(clientSession, queryBson, organizationUpdate, null);
 
-        if (updateResult.getNumMatches() == 0) {
-            throw new CatalogDBException("Organization not found");
+        List<Event> events = new ArrayList<>();
+        DataResult<?> updateResult;
+        if (!organizationUpdate.isEmpty()) {
+            Bson queryBson = Filters.eq(QueryParams.ID.key(), organizationId);
+            logger.debug("Update organization. Query: {}, Update: {}", queryBson.toBsonDocument(), organizationUpdate.toBsonDocument());
+
+            updateResult = organizationCollection.update(clientSession, queryBson, organizationUpdate, null);
+
+            if (updateResult.getNumMatches() == 0) {
+                throw new CatalogDBException("Organization not found");
+            }
+            if (updateResult.getNumUpdated() == 0) {
+                events.add(new Event(Event.Type.WARNING, organizationId, "Organization was already updated"));
+            }
         }
-        if (updateResult.getNumUpdated() == 0) {
-            events.add(new Event(Event.Type.WARNING, organizationId, "Organization was already updated"));
+        if (CollectionUtils.isNotEmpty(updateDocument.getNestedUpdateList())) {
+            for (NestedArrayUpdateDocument nestedDocument : updateDocument.getNestedUpdateList()) {
+                Bson bsonQuery = new Document(nestedDocument.getQuery());
+                logger.debug("Update nested element from Organization. Query: {}, Update: {}", bsonQuery.toBsonDocument(),
+                        nestedDocument.getSet());
+                DataResult<?> result = organizationCollection.update(clientSession, bsonQuery, nestedDocument.getSet(), null);
+                if (result.getNumMatches() == 0) {
+                    throw new CatalogDBException("Couldn't update organization. Nothing could be found for query "
+                            + bsonQuery.toBsonDocument());
+                }
+            }
+            /*
+            for (NestedArrayUpdateDocument nestedDocument : updateDocument.getNestedUpdateList()) {
+                            Bson nestedBsonQuery = parseQuery(nestedDocument.getQuery()
+                                    .append(QueryParams.UID.key(), interpretation.getUid()));
+                            logger.debug("Update nested element from interpretation. Query: {}, Update: {}",
+                                    nestedBsonQuery.toBsonDocument(), nestedDocument.getSet());
+
+                            update = interpretationCollection.update(clientSession, nestedBsonQuery, nestedDocument.getSet(), null);
+
+                            if (update.getNumMatches() == 0) {
+                                throw CatalogDBException.uidNotFound("Interpretation", interpretationUid);
+                            }
+                        }
+            * */
         }
+
         logger.debug("Organization {} successfully updated", organizationId);
 
 
@@ -235,8 +264,33 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         String[] acceptedParams = { QueryParams.NAME.key() };
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        String[] acceptedObjectParams = { QueryParams.CONFIGURATION.key() };
+        String[] acceptedObjectParams = { QueryParams.CONFIGURATION_OPTIMIZATIONS.key(), QueryParams.CONFIGURATION_TOKEN.key() };
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+
+        // Authentication Origins action
+        if (parameters.containsKey(QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key())) {
+            Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+            ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, OrganizationDBAdaptor.AUTH_ORIGINS_FIELD);
+            String[] authOriginsParams = {QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key()};
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), authOriginsParams);
+                    break;
+                case REMOVE:
+                    fixAuthOriginsForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), authOriginsParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), authOriginsParams);
+                    break;
+                case REPLACE:
+                    filterReplaceParams(parameters.getAsList(QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key(), Map.class), document,
+                            m -> String.valueOf(m.get("id")), QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS_ID.key());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
+        }
 
         String owner = parameters.getString(QueryParams.OWNER.key(), null);
         if (StringUtils.isNotEmpty(owner)) {
@@ -312,6 +366,21 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         return document;
     }
 
+    private void fixAuthOriginsForRemoval(ObjectMap parameters) {
+        if (parameters.get(QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key()) == null) {
+            return;
+        }
+        List<Document> authOriginParamList = new LinkedList<>();
+        for (Object authOrigin : parameters.getAsList(QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key())) {
+            if (authOrigin instanceof AuthenticationOrigin) {
+                authOriginParamList.add(new Document("id", ((AuthenticationOrigin) authOrigin).getId()));
+            } else {
+                authOriginParamList.add(new Document("id", ((Map) authOrigin).get("id")));
+            }
+        }
+        parameters.putNested(QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key(), authOriginParamList, false);
+    }
+
     @Override
     public OpenCGAResult<Organization> delete(Organization organization) throws CatalogDBException {
         return null;
@@ -336,9 +405,6 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         }
         qOptions = filterQueryOptionsToIncludeKeys(qOptions,
                 OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
-        if (!qOptions.getBoolean(IS_ORGANIZATION_ADMIN_OPTION)) {
-            qOptions = filterQueryOptionsToExcludeKeys(qOptions, Arrays.asList(QueryParams.CONFIGURATION.key()));
-        }
 
         return organizationCollection.iterator(clientSession, new Document(), null, null, qOptions);
     }

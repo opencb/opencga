@@ -25,39 +25,39 @@
 #' | runCircos | /{apiVersion}/analysis/variant/circos/run | study, body[*] |
 #' | deleteCohortStats | /{apiVersion}/analysis/variant/cohort/stats/delete | study, cohort |
 #' | infoCohortStats | /{apiVersion}/analysis/variant/cohort/stats/info | study, cohort[*] |
-#' | runCohortStats | /{apiVersion}/analysis/variant/cohort/stats/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runExomiser | /{apiVersion}/analysis/variant/exomiser/run | study, jobId, jobDependsOn, jobDescription, jobTags, body[*] |
-#' | runExport | /{apiVersion}/analysis/variant/export/run | include, exclude, project, study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runCohortStats | /{apiVersion}/analysis/variant/cohort/stats/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runExomiser | /{apiVersion}/analysis/variant/exomiser/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runExport | /{apiVersion}/analysis/variant/export/run | include, exclude, project, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | genotypesFamily | /{apiVersion}/analysis/variant/family/genotypes | study, family, clinicalAnalysis, modeOfInheritance[*], penetrance, disorder |
-#' | runFamilyQc | /{apiVersion}/analysis/variant/family/qc/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | deleteFile | /{apiVersion}/analysis/variant/file/delete | jobId, jobDescription, jobDependsOn, jobTags, study, file, resume |
-#' | runGatk | /{apiVersion}/analysis/variant/gatk/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runGenomePlot | /{apiVersion}/analysis/variant/genomePlot/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runGwas | /{apiVersion}/analysis/variant/gwas/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runHrDetect | /{apiVersion}/analysis/variant/hrDetect/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runIndex | /{apiVersion}/analysis/variant/index/run | study, jobId, jobDependsOn, jobDescription, jobTags, body[*] |
-#' | runIndividualQc | /{apiVersion}/analysis/variant/individual/qc/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runInferredSex | /{apiVersion}/analysis/variant/inferredSex/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runFamilyQc | /{apiVersion}/analysis/variant/family/qc/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | deleteFile | /{apiVersion}/analysis/variant/file/delete | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, file, resume |
+#' | runGatk | /{apiVersion}/analysis/variant/gatk/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runGenomePlot | /{apiVersion}/analysis/variant/genomePlot/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runGwas | /{apiVersion}/analysis/variant/gwas/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runHrDetect | /{apiVersion}/analysis/variant/hrDetect/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runIndex | /{apiVersion}/analysis/variant/index/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runIndividualQc | /{apiVersion}/analysis/variant/individual/qc/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runInferredSex | /{apiVersion}/analysis/variant/inferredSex/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | queryKnockoutGene | /{apiVersion}/analysis/variant/knockout/gene/query | limit, skip, study, job |
 #' | queryKnockoutIndividual | /{apiVersion}/analysis/variant/knockout/individual/query | limit, skip, study, job |
-#' | runKnockout | /{apiVersion}/analysis/variant/knockout/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runMendelianError | /{apiVersion}/analysis/variant/mendelianError/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runKnockout | /{apiVersion}/analysis/variant/knockout/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runMendelianError | /{apiVersion}/analysis/variant/mendelianError/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | metadata | /{apiVersion}/analysis/variant/metadata | project, study, file, sample, includeStudy, includeFile, includeSample, include, exclude |
 #' | queryMutationalSignature | /{apiVersion}/analysis/variant/mutationalSignature/query | study, sample, type, ct, biotype, fileData, filter, qual, region, gene, panel, panelModeOfInheritance, panelConfidence, panelFeatureType, panelRoleInCancer, panelIntersection, msId, msDescription |
-#' | runMutationalSignature | /{apiVersion}/analysis/variant/mutationalSignature/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runPlink | /{apiVersion}/analysis/variant/plink/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runMutationalSignature | /{apiVersion}/analysis/variant/mutationalSignature/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runPlink | /{apiVersion}/analysis/variant/plink/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | query | /{apiVersion}/analysis/variant/query | include, exclude, limit, skip, count, sort, summary, approximateCount, approximateCountSamplingSize, savedFilter, id, region, type, reference, alternate, project, study, file, filter, qual, fileData, sample, genotype, sampleData, sampleAnnotation, sampleMetadata, unknownGenotype, sampleLimit, sampleSkip, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, includeStudy, includeFile, includeSample, includeSampleData, includeGenotype, includeSampleId, annotationExists, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait |
-#' | runRelatedness | /{apiVersion}/analysis/variant/relatedness/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runRvtests | /{apiVersion}/analysis/variant/rvtests/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runRelatedness | /{apiVersion}/analysis/variant/relatedness/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runRvtests | /{apiVersion}/analysis/variant/rvtests/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | aggregationStatsSample | /{apiVersion}/analysis/variant/sample/aggregationStats | savedFilter, region, type, project, study, file, filter, sample, genotype, sampleAnnotation, family, familyDisorder, familySegregation, familyMembers, familyProband, ct, biotype, populationFrequencyAlt, clinical, clinicalSignificance, clinicalConfirmedStatus, field |
-#' | runSampleEligibility | /{apiVersion}/analysis/variant/sample/eligibility/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runSampleQc | /{apiVersion}/analysis/variant/sample/qc/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runSampleEligibility | /{apiVersion}/analysis/variant/sample/eligibility/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runSampleQc | /{apiVersion}/analysis/variant/sample/qc/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | querySample | /{apiVersion}/analysis/variant/sample/query | limit, skip, variant, study, genotype |
-#' | runSample | /{apiVersion}/analysis/variant/sample/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runSample | /{apiVersion}/analysis/variant/sample/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | querySampleStats | /{apiVersion}/analysis/variant/sample/stats/query | region, type, study, file, filter, sampleData, ct, biotype, transcriptFlag, populationFrequencyAlt, clinical, clinicalSignificance, clinicalConfirmedStatus, study, filterTranscript, sample[*] |
-#' | runSampleStats | /{apiVersion}/analysis/variant/sample/stats/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runStatsExport | /{apiVersion}/analysis/variant/stats/export/run | project, study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runStats | /{apiVersion}/analysis/variant/stats/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runSampleStats | /{apiVersion}/analysis/variant/sample/stats/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runStatsExport | /{apiVersion}/analysis/variant/stats/export/run | project, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runStats | /{apiVersion}/analysis/variant/stats/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #'
 #' @md
 #' @seealso \url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation
@@ -87,7 +87,7 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param annotationExists Return only annotated variants.
         #' @param gene List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter.
         #' @param ct List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.
-        #' @param xref List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
+        #' @param xref List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...
         #' @param biotype List of biotypes, e.g. protein_coding.
         #' @param proteinSubstitution Protein substitution scores include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.
         #' @param conservation Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.
@@ -121,7 +121,7 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
 
         #' @section Endpoint /{apiVersion}/analysis/variant/annotation/query:
         #' Query variant annotations from any saved versions.
-        #' @param id List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T.
+        #' @param id List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T.
         #' @param region List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000.
         #' @param include Fields included in the response, whole JSON path must be provided.
         #' @param exclude Fields excluded in the response, whole JSON path must be provided.
@@ -162,6 +162,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Cohort variant stats params.
         runCohortStats=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/cohort/stats", subcategoryId=NULL, action="run", params=params, httpMethod="POST",
@@ -174,6 +177,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Exomiser parameters.
         runExomiser=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/exomiser",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -188,6 +194,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Variant export params.
         runExport=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/export",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -211,6 +220,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Family QC analysis params. Family ID. Relatedness method, by default 'PLINK/IBD'. Minor  allele frequence (MAF) is used to filter variants before computing relatedness, e.g.: 1000G:CEU>0.35 or cohort:ALL>0.05.
         runFamilyQc=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/family/qc", subcategoryId=NULL, action="run", params=params, httpMethod="POST",
@@ -222,6 +234,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param file Files to remove.
         #' @param resume Resume a previously failed indexation.
@@ -235,6 +250,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Gatk parameters. Supported Gatk commands: HaplotypeCaller.
         runGatk=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/gatk",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -246,6 +264,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Genome plot analysis params to customize the plot. The configuration file includes the title,  the plot density (i.e., the number of points to display), the general query and the list of tracks. Currently, the supported track types are: COPY-NUMBER, INDEL, REARRANGEMENT and SNV. In addition, each track can contain a specific query.
         runGenomePlot=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/genomePlot", subcategoryId=NULL, action="run", params=params, httpMethod="POST",
@@ -258,6 +279,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Gwas analysis params.
         runGwas=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/gwas",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -269,6 +293,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data HRDetect analysis parameters.
         runHrDetect=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/hrDetect",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -280,6 +307,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Variant index params.
         runIndex=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/index",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -291,6 +321,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Individual QC analysis params.
         runIndividualQc=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/individual/qc", subcategoryId=NULL, action="run", params=params,
@@ -303,6 +336,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Inferred sex analysis params.
         runInferredSex=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/inferredSex", subcategoryId=NULL, action="run", params=params, httpMethod="POST",
@@ -335,6 +371,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Gene knockout analysis params.
         runKnockout=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/knockout",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -346,6 +385,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Mendelian error analysis params.
         runMendelianError=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/mendelianError", subcategoryId=NULL, action="run", params=params,
@@ -396,6 +438,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Mutational signature analysis parameters to index the genome context for that sample, and to compute both catalogue counts and signature fitting. In order to skip one of them, , use the following keywords: , catalogue, fitting.
         runMutationalSignature=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/mutationalSignature", subcategoryId=NULL, action="run", params=params,
@@ -408,6 +453,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Plink params.
         runPlink=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/plink",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -424,7 +472,7 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param approximateCount Get an approximate count, instead of an exact total count. Reduces execution time.
         #' @param approximateCountSamplingSize Sampling size to get the approximate count. Larger values increase accuracy but also increase execution time.
         #' @param savedFilter Use a saved filter at User level.
-        #' @param id List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T.
+        #' @param id List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T.
         #' @param region List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000.
         #' @param type List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
         #' @param reference Reference allele.
@@ -466,7 +514,7 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param annotationExists Return only annotated variants.
         #' @param gene List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter.
         #' @param ct List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.
-        #' @param xref List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
+        #' @param xref List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...
         #' @param biotype List of biotypes, e.g. protein_coding.
         #' @param proteinSubstitution Protein substitution scores include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.
         #' @param conservation Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.
@@ -501,6 +549,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Relatedness analysis params.
         runRelatedness=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/relatedness", subcategoryId=NULL, action="run", params=params, httpMethod="POST",
@@ -513,6 +564,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data RvTests parameters. Supported RvTests commands: rvtest, vcf2kinship.
         runRvtests=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/rvtests",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -552,6 +606,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data .
         runSampleEligibility=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/sample/eligibility", subcategoryId=NULL, action="run", params=params,
@@ -564,6 +621,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Sample QC analysis params. Mutational signature and genome plot are calculated for somatic samples only. In order to skip some metrics, use the following keywords (separated by commas): variant-stats, signature, signature-catalogue, signature-fitting, genome-plot.
         runSampleQc=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/sample/qc", subcategoryId=NULL, action="run", params=params, httpMethod="POST",
@@ -586,6 +646,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Sample variant filter params.
         runSample=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/sample",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -618,6 +681,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Sample variant stats params. Use index=true and indexId='' to store the result in catalog sample QC. indexId=ALL requires an empty query. Use sample=all to compute sample stats of all samples in the variant storage.
         runSampleStats=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/sample/stats", subcategoryId=NULL, action="run", params=params, httpMethod="POST",
@@ -631,6 +697,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Variant stats export params.
         runStatsExport=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/stats/export", subcategoryId=NULL, action="run", params=params, httpMethod="POST",
@@ -643,6 +712,9 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Variant stats params.
         runStats=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/stats",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),

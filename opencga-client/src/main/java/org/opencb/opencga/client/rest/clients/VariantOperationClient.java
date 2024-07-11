@@ -28,21 +28,21 @@ import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyP
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
+import org.opencb.opencga.core.models.operations.variant.VariantConfigureParams;
 import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantFileDeleteParams;
+import org.opencb.opencga.core.models.operations.variant.VariantFileIndexJobLauncherParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantPruneParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSampleDeleteParams;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsDeleteParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
-import org.opencb.opencga.core.models.variant.VariantConfigureParams;
-import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
-import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantPruneParams;
-import org.opencb.opencga.core.models.variant.VariantSampleDeleteParams;
-import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
-import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
+import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataSynchronizeParams;
+import org.opencb.opencga.core.models.operations.variant.VariantStudyDeleteParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -90,6 +90,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -107,6 +111,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: Project [organization@]project where project can be either the ID or the alias.
      *       annotationId: Annotation identifier.
      * @return a RestResponse object.
@@ -125,6 +133,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: Project [organization@]project where project can be either the ID or the alias.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
@@ -144,6 +156,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: Project [organization@]project where project can be either the ID or the alias.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -177,6 +193,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -195,6 +215,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -213,6 +237,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -231,6 +259,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -249,6 +281,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -267,6 +303,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: project.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -285,6 +325,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -302,6 +346,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -321,6 +369,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -338,6 +390,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -356,6 +412,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -388,6 +448,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       name: Unique name of the score within the study.
      *       resume: Resume a previously failed remove.
@@ -415,6 +479,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -433,6 +501,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: Project [organization@]project where project can be either the ID or the alias.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
@@ -453,6 +525,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -486,6 +562,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       project: Project [organization@]project where project can be either the ID or the alias.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
@@ -504,6 +584,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       samples: Samples to remove. Needs to provide all the samples in the secondary index.
      * @return a RestResponse object.
@@ -523,6 +607,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -541,6 +629,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -558,6 +650,10 @@ public class VariantOperationClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

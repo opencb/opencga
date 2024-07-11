@@ -26,7 +26,7 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,15 +72,15 @@ public class VariantVirtualFileIndexTest extends AbstractVariantOperationManager
         toolRunner.execute(VariantIndexOperationTool.class, new VariantIndexParams()
                         .setFile("chr20.variant-test-file.vcf.gz")
                         .setLoadSplitData("REGION")
-                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, sessionId);
+                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, false, sessionId);
         toolRunner.execute(VariantIndexOperationTool.class, new VariantIndexParams()
                         .setFile("chr21.variant-test-file.vcf.gz")
                         .setLoadSplitData("REGION")
-                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, sessionId);
+                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, false, sessionId);
         toolRunner.execute(VariantIndexOperationTool.class, new VariantIndexParams()
                         .setFile("chr22.variant-test-file.vcf.gz")
                         .setLoadSplitData("REGION")
-                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, sessionId);
+                , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, false, sessionId);
 
         File file = catalogManager.getFileManager().get(studyId, "chr20.variant-test-file.vcf.gz", null, sessionId).first();
         assertTrue(FileUtils.isPartial(file));

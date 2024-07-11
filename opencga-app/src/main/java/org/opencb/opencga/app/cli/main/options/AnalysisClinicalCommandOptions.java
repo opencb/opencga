@@ -611,6 +611,15 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
     
@@ -649,6 +658,15 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
     
@@ -680,6 +698,15 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
     
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
@@ -722,6 +749,15 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
     
@@ -762,6 +798,15 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
     
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
@@ -944,6 +989,15 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
     
         @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
         public String file;
@@ -1231,6 +1285,15 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
     
         @Parameter(names = {"--auxiliar-index"}, description = "Index auxiliar collection to improve performance assuming RGA is completely indexed.", required = false, help = true, arity = 0)
         public boolean auxiliarIndex = false; 
@@ -1721,7 +1784,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--include-interpretation"}, description = "Interpretation ID to include the fields related to this interpretation", required = false, arity = 1)
         public String includeInterpretation; 
     
-        @Parameter(names = {"--id"}, description = "List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
@@ -1802,7 +1865,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
         public String ct; 
     
-        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...", required = false, arity = 1)
+        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
         public String xref; 
     
         @Parameter(names = {"--biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)

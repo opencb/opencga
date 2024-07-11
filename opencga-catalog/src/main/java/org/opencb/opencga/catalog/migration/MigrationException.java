@@ -21,8 +21,9 @@ public class MigrationException extends CatalogException {
                 + "cannot be accessed and run try again with '--offline' flag.");
     }
 
-    public static MigrationException outdatedMigration(Migration migration, String version) {
-        return new MigrationException("Migration '" + migration.id() + "' is outdated since version " + version + ". Please, update the "
-                + "migration from the previous latest version.");
+    public static MigrationException deprecatedMigration(Migration migration) {
+        return new MigrationException("Migration '" + migration.id() + "' can't be run since version '"
+                + migration.deprecatedSince() + "'. Please, run this migration from a previous OpenCGA version.");
     }
+
 }
