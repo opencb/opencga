@@ -91,9 +91,9 @@ public class LocalExecutorTest {
         for (int i = 0; i < 10; i++) {
             String jobId = "jobId-" + i;
 //            System.out.println("Checking status of job " + jobId);
-            while(!localExecutor.getStatus(jobId).equals("RUNNING")) {
-                Thread.sleep(10);
-            }
+            do {
+                Thread.sleep(100);
+            } while (!localExecutor.getStatus(jobId).equals("RUNNING"));
             assertEquals("RUNNING", localExecutor.getStatus(jobId));
             assertTrue(localExecutor.kill(jobId));
         }
