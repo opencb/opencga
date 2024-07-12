@@ -515,13 +515,20 @@ public class VariantOperationsTest {
         assertEquals("GRCh38", cellBaseUtils.getAssembly());
 
         String newCellbase = "https://uk.ws.zettagenomics.com/cellbase/";
-        String newCellbaseVersion = "v5.8";
+        String newCellbaseVersion = "v5.2";
+        String newCellbaseDataRelease = "1";
 
         assertNotEquals(newCellbase, cellBaseUtils.getURL());
         assertNotEquals(newCellbaseVersion, cellBaseUtils.getVersion());
+        assertNotEquals(newCellbaseDataRelease, cellBaseUtils.getDataRelease());
 
-        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase, newCellbaseVersion, "1", ""), false, null, token);
+        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase, newCellbaseVersion, newCellbaseDataRelease, ""), false, null, token);
         CellBaseConfiguration cellbaseConfiguration = catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getCellbase();
+
+        assertEquals(newCellbase, cellbaseConfiguration.getUrl());
+        assertEquals(newCellbaseVersion, cellbaseConfiguration.getVersion());
+        assertEquals(newCellbaseDataRelease, cellbaseConfiguration.getDataRelease());
+
 //        assertTrue(family.getPedigreeGraph() != null);
     }
 
