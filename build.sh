@@ -341,7 +341,7 @@ function publish_reports() {
 #    else
 #      log_summary "Test reports uploaded correctly to /$VERSION_FOLDER/"
 #    fi
-    log_summary "AZ_COPY upload test reports disabled.
+    log_summary "AZ_COPY upload test reports disabled."
   fi
 }
 
