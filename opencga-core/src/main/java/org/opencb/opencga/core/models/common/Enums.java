@@ -79,6 +79,7 @@ public final class Enums {
         CLINICAL,
         EXPRESSION,
         RGA,
+        NEXTFLOW,
         FUNCTIONAL;
 
         public List<String> getFullPermissionList() {

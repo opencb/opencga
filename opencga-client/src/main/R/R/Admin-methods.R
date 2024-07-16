@@ -43,7 +43,7 @@ setMethod("adminClient", "OpencgaR", function(OpencgaR, user, endpointName, para
         #' @param count Count the number of elements matching the group.
         #' @param limit Maximum number of documents (groups) to be returned.
         #' @param fields Comma separated list of fields by which to group by.
-        #' @param entity Entity to be grouped by. Allowed values: ['AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL']
+        #' @param entity Entity to be grouped by. Allowed values: ['AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA NEXTFLOW FUNCTIONAL']
         #' @param action Action performed.
         #' @param before Object before update.
         #' @param after Object after update.

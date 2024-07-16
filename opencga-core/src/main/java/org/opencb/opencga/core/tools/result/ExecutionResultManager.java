@@ -254,6 +254,10 @@ public class ExecutionResultManager {
         });
     }
 
+    public void setManualSteps(List<ToolStep> steps) throws ToolException {
+        updateResult(result -> result.setSteps(steps));
+    }
+
     public void errorStep() throws ToolException {
         updateResult(result -> getStep(result, result.getStatus().getStep())
                 .setStatus(Status.Type.ERROR).setEnd(now()));

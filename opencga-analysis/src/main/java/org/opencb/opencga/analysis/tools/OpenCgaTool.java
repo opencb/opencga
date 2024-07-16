@@ -43,6 +43,7 @@ import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
+import org.opencb.opencga.core.tools.result.ToolStep;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -480,6 +481,10 @@ public abstract class OpenCgaTool {
         } else {
             privateLogger.info("------- Skip step " + stepId + " -------");
         }
+    }
+
+    protected final void setManualSteps(List<ToolStep> steps) throws ToolException {
+        erm.setManualSteps(steps);
     }
 
     protected final boolean checkStep(String stepId) throws ToolException {
