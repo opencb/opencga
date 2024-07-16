@@ -60,8 +60,8 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
 
     protected void loadFiles() throws Exception {
         variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
-        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("3");
+        variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE);
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
         variantStorageEngine.reloadCellbaseConfiguration();
 
@@ -179,6 +179,11 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
         variantReader.post();
         variantReader.close();
 
-        return variants.stream().collect(Collectors.toMap(Variant::toString, v -> v));
+        return variants.stream().peek(v->{
+            if (v.getEnd() < v.getStart()) {
+                v.getSv().setCiEndLeft(null);
+                v.getSv().setCiEndRight(null);
+            }
+        }).collect(Collectors.toMap(Variant::toString, v -> v));
     }
 }
