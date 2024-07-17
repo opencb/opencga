@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -17,6 +18,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
@@ -45,7 +47,7 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
     public void before() throws Exception {
         variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
         variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE);
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE_GRCH38);
         if (!loaded) {
             clearDB(DB_NAME);
             loadFiles();
@@ -56,7 +58,7 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
     protected void loadFiles() throws Exception {
         variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
         variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE);
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE_GRCH38);
         studyMetadata = new StudyMetadata(1, "s1");
 //        variantStorageEngine.getOptions().append(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key(), "expression,clinical");
         input1 = getResourceUri("variant-test-bnd.vcf");
@@ -75,13 +77,13 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
 
     @Test
     public void getPairs() throws Exception {
-        getPairs(new Query());
-        getPairs(new Query(VariantQueryParam.REGION.key(), "2"));
-        getPairs(new Query(VariantQueryParam.REGION.key(), "17"));
-        getPairs(new Query(VariantQueryParam.REGION.key(), "2,13,5"));
-        getPairs(new Query(VariantQueryParam.REGION.key(), "2").append(VariantQueryParam.GENE.key(), "VPS53"));
-        getPairs(new Query(VariantQueryParam.GENE.key(), "VPS53"));
-        getPairs(new Query(VariantQueryParam.GENE.key(), "BRCA2"));
+        getPairs(new VariantQuery());
+        getPairs(new VariantQuery().region("2"));
+        getPairs(new VariantQuery().region("17"));
+        getPairs(new VariantQuery().region("2", "13", "5"));
+        getPairs(new VariantQuery().region("2").gene("LINC00423"));
+        getPairs(new VariantQuery().gene("LINC00423"));
+        getPairs(new VariantQuery().gene("ENSG00000263015"));
     }
 
     public void getPairs(Query inputQuery) throws Exception {
@@ -115,8 +117,8 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
         }
         assertNull(prevMateid);
         assertNull(prevId);
-        assertThat(duplicatedVariants, CoreMatchers.not(CoreMatchers.hasItem(CoreMatchers.anything())));
-
+        MatcherAssert.assertThat(duplicatedVariants, CoreMatchers.not(CoreMatchers.hasItem(CoreMatchers.anything())));
+        assertNotEquals(0, variants.size());
         // Check pagination
         testPagination(variantsList, query, 1);
         testPagination(variantsList, query, 2);
@@ -130,17 +132,19 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
         List<String> actualVariantsGet = new ArrayList<>(variantsList.size());
         List<String> actualVariantsIterator = new ArrayList<>(variantsList.size());
         for (int i = 0; i < variantsList.size(); i += batchSize) {
+            System.out.println(" --- limit = " + batchSize + " skip = " + i);
             QueryOptions options = new QueryOptions(QueryOptions.LIMIT, batchSize)
                     .append(QueryOptions.SKIP, i);
-            List<Variant> results = variantStorageEngine.get(query, options).getResults();
-            System.out.println("get = " + options.toJson() + " -> " + results.size() + " " + results);
+            List<Variant> results;
+            results = variantStorageEngine.get(query, options).getResults();
+            System.out.println("get = " + options.toJson() + " -> " + results.size() + " result " + results.stream().map(Variant::toString).collect(Collectors.joining("\", \"", "[ \"", "\" ]")));
             results.stream().map(Variant::toString).forEach(actualVariantsGet::add);
             assertTrue(results.size() <= batchSize);
 
             results = new ArrayList<>(batchSize);
             variantStorageEngine.iterator(query, options).forEachRemaining(results::add);
-            System.out.println("it  = " + options.toJson() + " -> " + results.size() + " " + results);
-            results.stream().map(Variant::toString).forEach(actualVariantsGet::add);
+            System.out.println("it = " + options.toJson() + " -> " + results.size() + " result " + results.stream().map(Variant::toString).collect(Collectors.joining("\", \"", "[ \"", "\" ]")));
+            results.stream().map(Variant::toString).forEach(actualVariantsIterator::add);
             assertTrue(results.size() <= batchSize);
 
         }

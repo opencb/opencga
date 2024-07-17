@@ -36,19 +36,7 @@ class JavaClientGenerator(RestClientGenerator):
 
         headers = []
         headers.append('/*')
-        headers.append('* Copyright 2015-' + str(date.today().year) + ' OpenCB')
-        headers.append('*')
-        headers.append('* Licensed under the Apache License, Version 2.0 (the "License");')
-        headers.append('* you may not use this file except in compliance with the License.')
-        headers.append('* You may obtain a copy of the License at')
-        headers.append('*')
-        headers.append('*     http://www.apache.org/licenses/LICENSE-2.0')
-        headers.append('*')
-        headers.append('* Unless required by applicable law or agreed to in writing, software')
-        headers.append('* distributed under the License is distributed on an "AS IS" BASIS,')
-        headers.append('* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.')
-        headers.append('* See the License for the specific language governing permissions and')
-        headers.append('* limitations under the License.')
+        headers.append(self.get_copyright_message(prefix='* '))
         headers.append('*/')
         headers.append('')
         # We need to calculate the Java package and no use: headers.append('package org.opencb.opencga.client.rest.clients;')
@@ -99,7 +87,6 @@ class JavaClientGenerator(RestClientGenerator):
         text.append('/**')
         text.append(' * This class contains methods for the {} webservices.'.format(
             self.categories[self.get_category_name(category)]))
-        text.append(' *{}Client version: {}'.format(' ' * 4, self.version))
         text.append(' *{}PATH: {}'.format(' ' * 4, self.get_category_path(category)))
         text.append(' */')
         text.append('public class {}Client extends {} {{'.format(self.categories[self.get_category_name(category)], parentClientClass))

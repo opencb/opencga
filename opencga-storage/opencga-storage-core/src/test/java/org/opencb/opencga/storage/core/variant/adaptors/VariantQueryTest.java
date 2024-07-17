@@ -28,6 +28,12 @@ public class VariantQueryTest {
             if (param.type() == QueryParam.Type.BOOLEAN || param.type() == QueryParam.Type.BOOLEAN_ARRAY) {
                 methodSet = getMethodSafe(param.key(), boolean.class);
                 expectedValue = true;
+            } else if (param.type() == QueryParam.Type.INTEGER || param.type() == QueryParam.Type.INTEGER_ARRAY) {
+                methodSet = getMethodSafe(param.key(), int.class);
+                expectedValue = 42;
+                if (methodSet == null) {
+                    methodSet = getMethodSafe(param.key(), Integer.class);
+                }
             } else {
                 expectedValue = RandomStringUtils.random(10);
                 methodSet = getMethodSafe(param.key(), String.class);

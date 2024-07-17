@@ -31,6 +31,8 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
     public static final String STDOUT_FILENAME = "stdout.txt";
     public static final String STDERR_FILENAME = "stderr.txt";
 
+    public static final String DOCKER_CLI_MSG = "Docker CLI: ";
+
     public String getDockerImageName() {
         return "opencb/opencga-ext-tools";
     }
