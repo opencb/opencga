@@ -7,7 +7,6 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.Query;
@@ -149,12 +148,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
             actualStudyEntry.getFiles().get(0).setFileId("");
             assertEquals(expectedStudyEntry.getFiles().get(0), actualStudyEntry.getFiles().get(0));
 
-
-            if (actual.getAlternate().equals("<DEL:ME:ALU>") || actual.getType().equals(VariantType.BREAKEND)) {
-                System.err.println("WARN: Variant " + actual + (actual.getAnnotation() == null ? " without annotation" : " with annotation"));
-            } else {
-                assertNotNull(actual.toString(), actual.getAnnotation());
-            }
+            assertNotNull(actual.toString(), actual.getAnnotation());
         }
     }
 
@@ -179,11 +173,6 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
         variantReader.post();
         variantReader.close();
 
-        return variants.stream().peek(v->{
-            if (v.getEnd() < v.getStart()) {
-                v.getSv().setCiEndLeft(null);
-                v.getSv().setCiEndRight(null);
-            }
-        }).collect(Collectors.toMap(Variant::toString, v -> v));
+        return variants.stream().collect(Collectors.toMap(Variant::toString, v -> v));
     }
 }

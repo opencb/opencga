@@ -217,6 +217,7 @@ public class VariantPhoenixKeyFactory {
                 alternate = VariantBuilder.DUP_TANDEM_ALT;
             }
             // Ignore CIEND on variants without an actual END. This includes Breakends and INSERTIONS
+            // These variants are not expected to have CIEND. This is a redundant check, as the CIEND should be empty after normalization.
             boolean ignoreCiend = Allele.wouldBeBreakpoint(alternateBytes) || end < start;
 
             alternate = alternate
