@@ -84,6 +84,9 @@ public class UserManager extends AbstractManager {
             if (oldPassword.equals(newPassword)) {
                 throw new CatalogException("New password is the same as the old password.");
             }
+            if (!PasswordUtils.isStrongPassword(newPassword)) {
+                throw new CatalogException("Invalid password. " + PasswordUtils.PASSWORD_REQUIREMENT);
+            }
 
             getUserDBAdaptor(organizationId).checkId(userId);
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
@@ -174,7 +177,7 @@ public class UserManager extends AbstractManager {
 
         try {
             if (StringUtils.isNotEmpty(password) && !PasswordUtils.isStrongPassword(password)) {
-                throw new CatalogException("Invalid password. Check password strength for user " + user.getId());
+                throw new CatalogException("Invalid password. " + PasswordUtils.PASSWORD_REQUIREMENT);
             }
             if (user.getProjects() != null && !user.getProjects().isEmpty()) {
                 throw new CatalogException("Creating user and projects in a single transaction is forbidden");
