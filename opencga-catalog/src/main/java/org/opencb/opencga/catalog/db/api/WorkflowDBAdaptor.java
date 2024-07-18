@@ -1,19 +1,30 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections4.map.LinkedMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.core.models.nextflow.NextFlow;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.nextflow.Workflow;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
-public interface NextFlowDBAdaptor extends CoreDBAdaptor<NextFlow> {
+public interface WorkflowDBAdaptor extends CoreDBAdaptor<Workflow> {
+
+    OpenCGAResult<Workflow> insert(Workflow workflow, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
         UID("uid", LONG, ""),
         UUID("uuid", TEXT, ""),
+        TYPE("type", TEXT, ""),
+        COMMAND_LINE("commandLine", TEXT, ""),
+        SCRIPTS("scripts", OBJECT, ""),
         RELEASE("release", INTEGER, ""), //  Release where the sample was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the sample

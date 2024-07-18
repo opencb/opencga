@@ -2,14 +2,18 @@ package org.opencb.opencga.analysis.tools;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.DockerUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.nextflow.NextFlowRunParams;
+import org.opencb.opencga.core.models.nextflow.Workflow;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.result.Status;
@@ -17,30 +21,34 @@ import org.opencb.opencga.core.tools.result.ToolStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Stream;
 
-import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.DOCKER_INPUT_PATH;
-import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.DOCKER_OUTPUT_PATH;
-
-@Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.NEXTFLOW, description = NextFlowExecutor.DESCRIPTION)
+@Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.WORKFLOW, description = NextFlowExecutor.DESCRIPTION)
 public class NextFlowExecutor extends OpenCgaTool {
 
     public final static String ID = "nextflow-run";
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
-    public final static String DOCKER_IMAGE = "nextflow/nextflow";
-
     @ToolParams
     protected NextFlowRunParams toolParams = new NextFlowRunParams();
 
-    private String script;
+    private Workflow workflow;
+
+    private Thread thread;
+    private final int monitorThreadPeriod = 5000;
 
     private final static Logger logger = LoggerFactory.getLogger(NextFlowExecutor.class);
 
@@ -52,48 +60,23 @@ public class NextFlowExecutor extends OpenCgaTool {
             throw new IllegalArgumentException("Missing Nextflow ID");
         }
 
-        // TODO: Change and look for Nextflow script
-        this.script = "params.str = 'Hello world!'\n" +
-                "\n" +
-                "process splitLetters {\n" +
-                "    output:\n" +
-                "    path 'chunk_*'\n" +
-                "\n" +
-                "    \"\"\"\n" +
-                "    printf '${params.str}' | split -b 6 - chunk_\n" +
-                "    \"\"\"\n" +
-                "}\n" +
-                "\n" +
-                "process convertToUpper {\n" +
-                "    input:\n" +
-                "    path x\n" +
-                "\n" +
-                "    output:\n" +
-                "    stdout\n" +
-                "\n" +
-                "    \"\"\"\n" +
-                "    cat $x | tr '[a-z]' '[A-Z]'\n" +
-                "    \"\"\"\n" +
-                "}\n" +
-                "\n" +
-                "process sleep {\n" +
-                "    input:\n" +
-                "    val x\n" +
-                "\n" +
-                "    \"\"\"\n" +
-                "    sleep 1\n" +
-                "    \"\"\"\n" +
-                "}\n" +
-                "\n" +
-                "workflow {\n" +
-                "    splitLetters | flatten | convertToUpper | view { it.trim() } | sleep\n" +
-                "}";
+        OpenCGAResult<Workflow> result = catalogManager.getWorkflowManager().get(toolParams.getId(), QueryOptions.empty(), token);
+        if (result.getNumResults() == 0) {
+            throw new ToolException("Workflow '" + toolParams.getId() + "' not found");
+        }
+        workflow = result.first();
+
+        if (workflow == null) {
+            throw new ToolException("Workflow '" + toolParams.getId() + "' is null");
+        }
     }
 
     @Override
     protected void run() throws Exception {
-        // Write main script file
-        Files.write(getOutDir().resolve("pipeline.nf"), script.getBytes());
+        for (Workflow.Script script : workflow.getScripts()) {
+            // Write script files
+            Files.write(getOutDir().resolve(script.getId()), script.getContent().getBytes());
+        }
 
         // Write nextflow.config file
         URL nextflowConfig = getClass().getResource("/nextflow.config");
@@ -105,29 +88,79 @@ public class NextFlowExecutor extends OpenCgaTool {
 
         // Execute docker image
         String workingDirectory = getOutDir().toAbsolutePath().toString();
-        List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-        inputBindings.add(new AbstractMap.SimpleEntry<>(workingDirectory, DOCKER_INPUT_PATH));
-        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(workingDirectory, DOCKER_OUTPUT_PATH);
-
-        // TODO: Copy nextflow.config and pipeline.nf to DOCKER_INPUT_PATH
 
         StringBuilder stringBuilder = new StringBuilder()
-                .append("nextflow run ").append(DOCKER_OUTPUT_PATH).append("/pipeline.nf")
-                .append(" --work-dir ").append(DOCKER_OUTPUT_PATH)
-                .append(" -with-report ").append(DOCKER_OUTPUT_PATH).append("/report.html");
+                .append("nextflow -c ").append(workingDirectory).append("/nextflow.config")
+                .append(" ").append(workflow.getCommandLine())
+//                .append(" run nextflow-io/rnaseq-nf -with-docker")
+//                .append(" run ").append(workingDirectory).append("/pipeline.nf")
+                .append(" -with-report ").append(workingDirectory).append("/report.html");
+        List<String> cliArgs = Arrays.asList(StringUtils.split(stringBuilder.toString(), " "));
+
+        startTraceFileMonitor();
 
         StopWatch stopWatch = StopWatch.createStarted();
-        Map<String, String> dockerParams = new HashMap<>();
-        dockerParams.put("user", "root");
-        String cmdline = DockerUtils.run(DOCKER_IMAGE, inputBindings, outputBinding, stringBuilder.toString(), dockerParams);
-        logger.info("Docker command line: " + cmdline);
+
+        // Execute nextflow binary
+        ProcessBuilder processBuilder = new ProcessBuilder(cliArgs);
+        // Establish the working directory of the process
+        processBuilder.directory(getOutDir().toFile());
+        logger.info("Executing: {}", stringBuilder);
+        Process p;
+        try {
+            p = processBuilder.start();
+            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            String line;
+            while ((line = input.readLine()) != null) {
+                logger.info("{}", line);
+            }
+            while ((line = error.readLine()) != null) {
+                logger.error("{} ", line);
+            }
+            p.waitFor();
+            input.close();
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Error executing cli: " + e.getMessage(), e);
+        }
+
         logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
 
         // Delete input files
-        Files.delete(getOutDir().resolve("pipeline.nf"));
+        for (Workflow.Script script : workflow.getScripts()) {
+            Files.delete(getOutDir().resolve(script.getId()));
+        }
         Files.delete(getOutDir().resolve("nextflow.config"));
 
+        endTraceFileMonitor();
+    }
+
+    @Override
+    protected void onShutdown() {
+        super.onShutdown();
+        endTraceFileMonitor();
+    }
+
+    protected void endTraceFileMonitor() {
+        if (thread != null) {
+            thread.interrupt();
+        }
         processTraceFile();
+    }
+
+    private void startTraceFileMonitor() {
+        thread = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Thread.sleep(monitorThreadPeriod);
+                } catch (InterruptedException e) {
+                    return;
+                }
+
+                processTraceFile();
+            }
+        });
+        thread.start();
     }
 
     private void processTraceFile() {
@@ -144,17 +177,17 @@ public class NextFlowExecutor extends OpenCgaTool {
                     Trace trace = new Trace(line);
                     ToolStep toolStep = trace.toToolStep();
                     steps.add(toolStep);
-                    System.out.println(trace);
                 });
             } catch (Exception e) {
                 logger.error("Error reading trace file: " + traceFile, e);
             }
         }
-
-        try {
-            setManualSteps(steps);
-        } catch (ToolException e) {
-            throw new RuntimeException(e);
+        if (CollectionUtils.isNotEmpty(steps)) {
+            try {
+                setManualSteps(steps);
+            } catch (ToolException e) {
+                logger.error("Error writing nextflow steps to ExecutionResult", e);
+            }
         }
     }
 
@@ -281,7 +314,6 @@ public class NextFlowExecutor extends OpenCgaTool {
                 throw new UncheckedIOException(e);
             }
         }
-
     }
 
     static Date toDate(String dateStr) {

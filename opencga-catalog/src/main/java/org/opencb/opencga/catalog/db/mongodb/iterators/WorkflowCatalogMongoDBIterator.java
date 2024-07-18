@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class NextFlowCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
+public class WorkflowCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
 
     private long studyUid;
     private String user;
@@ -25,13 +25,13 @@ public class NextFlowCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E>
     private static final int BUFFER_SIZE = 100;
     private static final String UID_VERSION_SEP = "___";
 
-    public NextFlowCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                                GenericDocumentComplexConverter<E> converter,
-                                                OrganizationMongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
+    public WorkflowCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                          GenericDocumentComplexConverter<E> converter,
+                                          OrganizationMongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
         this(mongoCursor, clientSession, converter, dbAdaptorFactory, 0, null, options);
     }
 
-    public NextFlowCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+    public WorkflowCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
                                           GenericDocumentComplexConverter<E> converter, OrganizationMongoDBAdaptorFactory dbAdaptorFactory,
                                           long studyUid, String user, QueryOptions options) {
         super(mongoCursor, clientSession, converter, null);
@@ -41,7 +41,7 @@ public class NextFlowCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E>
 
         this.options = options;
         this.nextflowListBuffer = new LinkedList<>();
-        this.logger = LoggerFactory.getLogger(NextFlowCatalogMongoDBIterator.class);
+        this.logger = LoggerFactory.getLogger(WorkflowCatalogMongoDBIterator.class);
     }
 
 }

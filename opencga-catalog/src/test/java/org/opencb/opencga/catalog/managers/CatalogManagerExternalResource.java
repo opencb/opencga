@@ -39,6 +39,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created on 05/05/16
@@ -177,6 +179,25 @@ public class CatalogManagerExternalResource extends ExternalResource {
             }
         }
         return resourcePath.toUri();
+    }
+
+    public String createTmpOutdir() throws IOException {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        // stackTrace[0] = "Thread.currentThread"
+        // stackTrace[1] = "newOutputUri"
+        // stackTrace[2] =  caller method
+        String testName = stackTrace[2].getMethodName();
+        return createTmpOutdir(testName);
+    }
+
+    public String createTmpOutdir(String suffix) throws IOException {
+        if (suffix.endsWith("_")) {
+            suffix = suffix.substring(0, suffix.length() - 1);
+        }
+        String folder = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
+        Path tmpOutDir = Paths.get(getCatalogManager().getConfiguration().getJobDir()).resolve(folder);
+        Files.createDirectories(tmpOutDir);
+        return tmpOutDir.toString();
     }
 
 }

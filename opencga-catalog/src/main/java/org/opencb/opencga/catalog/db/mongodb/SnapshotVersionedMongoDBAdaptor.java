@@ -138,6 +138,9 @@ public class SnapshotVersionedMongoDBAdaptor {
 
     protected void insert(ClientSession session, Document document) {
         String uuid = getClientSessionUuid(session);
+        document.put(VERSION, 1);
+        document.put(LAST_OF_VERSION, true);
+        document.put(LAST_OF_RELEASE, true);
         document.put(PRIVATE_TRANSACTION_ID, uuid);
         collection.insert(session, document, QueryOptions.empty());
         archiveCollection.insert(session, document, QueryOptions.empty());
