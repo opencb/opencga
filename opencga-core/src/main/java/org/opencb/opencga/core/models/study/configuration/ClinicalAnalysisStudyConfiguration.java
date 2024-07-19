@@ -1,10 +1,11 @@
 package org.opencb.opencga.core.models.study.configuration;
 
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
+import org.opencb.opencga.core.models.common.FlagValue;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class ClinicalAnalysisStudyConfiguration {
 
@@ -32,7 +33,6 @@ public class ClinicalAnalysisStudyConfiguration {
         List<ClinicalStatusValue> clinicalStatusValueList = new ArrayList<>(4);
         List<ClinicalStatusValue> interpretationStatusList = new ArrayList<>(3);
         List<ClinicalPriorityValue> priorities = new ArrayList<>(5);
-        Map<ClinicalAnalysis.Type, List<FlagValue>> flags = new HashMap<>();
         List<ClinicalConsent> clinicalConsentList = new ArrayList<>();
 
         clinicalStatusValueList.add(

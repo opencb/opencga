@@ -74,8 +74,8 @@ public class AddNewClinicalStatusValues extends MigrationTool {
 
     private Document fillStatusValues(String entity, String id, Document status, List<ClinicalStatusValue> statusValueList) {
         ClinicalStatus clinicalStatus = new ClinicalStatus();
-        String clinicalId = status != null ? status.getString("id") : null;
-        if (status == null || StringUtils.isEmpty(clinicalId)) {
+        String clinicalStatusId = status != null ? status.getString("id") : null;
+        if (status == null || StringUtils.isEmpty(clinicalStatusId)) {
             logger.warn("Status is empty or does not contain 'id' field. Setting default status value for {} '{}'", entity, id);
             for (ClinicalStatusValue clinicalStatusValue : statusValueList) {
                 if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.NOT_STARTED)) {
@@ -86,7 +86,7 @@ public class AddNewClinicalStatusValues extends MigrationTool {
             }
         } else {
             for (ClinicalStatusValue clinicalStatusValue : statusValueList) {
-                if (clinicalStatusValue.getId().equals(clinicalId)) {
+                if (clinicalStatusValue.getId().equals(clinicalStatusId)) {
                     clinicalStatus.setId(clinicalStatusValue.getId());
                     clinicalStatus.setDescription(clinicalStatusValue.getDescription());
                     clinicalStatus.setType(clinicalStatusValue.getType());
@@ -94,8 +94,10 @@ public class AddNewClinicalStatusValues extends MigrationTool {
                 }
             }
             if (clinicalStatus.getType() == null) {
-                logger.warn("Status '{}' not found in the list of available status values. Status type cannot be set for {} '{}'",
-                        clinicalId, entity, id);
+                logger.warn("Status '{}' not found in the list of available status values. Keeping original status for {} '{}'",
+                        clinicalStatusId, entity, id);
+                clinicalStatus.setId(clinicalStatusId);
+                clinicalStatus.setDescription(status.getString("description"));
             }
         }
         clinicalStatus.setDate(TimeUtils.getTime());
