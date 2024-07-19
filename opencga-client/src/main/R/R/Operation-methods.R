@@ -42,12 +42,12 @@
 #' | variantSecondaryAnnotationIndex | /{apiVersion}/operation/variant/secondary/annotation/index | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, study, body |
 #' | variantSecondarySampleIndex | /{apiVersion}/operation/variant/secondary/sample/index | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body |
 #' | configureVariantSecondarySampleIndex | /{apiVersion}/operation/variant/secondary/sample/index/configure | study, skipRebuild, body |
-#' | secondaryIndexVariant | /{apiVersion}/operation/variant/secondaryIndex | jobId, jobDescription, jobDependsOn, jobTags, project, study, body |
-#' | deleteVariantSecondaryIndex | /{apiVersion}/operation/variant/secondaryIndex/delete | jobId, jobDescription, jobDependsOn, jobTags, study, samples |
+#' | secondaryIndexVariant | /{apiVersion}/operation/variant/secondaryIndex | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, study, body |
+#' | deleteVariantSecondaryIndex | /{apiVersion}/operation/variant/secondaryIndex/delete | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, samples |
 #' | setupVariant | /{apiVersion}/operation/variant/setup | study, body |
-#' | deleteVariantStats | /{apiVersion}/operation/variant/stats/delete | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | indexVariantStats | /{apiVersion}/operation/variant/stats/index | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | deleteVariantStudy | /{apiVersion}/operation/variant/study/delete | jobId, jobDescription, jobDependsOn, jobTags, study, body |
+#' | deleteVariantStats | /{apiVersion}/operation/variant/stats/delete | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | indexVariantStats | /{apiVersion}/operation/variant/stats/index | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | deleteVariantStudy | /{apiVersion}/operation/variant/study/delete | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body |
 #'
 #' @md
 #' @seealso \url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation

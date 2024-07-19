@@ -342,7 +342,7 @@ public class VariantOperationsTest {
                             .setFile(file.getId())
                             .setAnnotate(false)
                             .setLoadHomRef(YesNoAuto.YES.name()),
-                    Paths.get(opencga.createTmpOutdir("_index")), "index", token);
+                    Paths.get(opencga.createTmpOutdir("_index")), "index", false, token);
             fail("Should have thrown an exception");
         } catch (ToolException e) {
             MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString("The variant storage has not been setup for study"));
@@ -389,7 +389,7 @@ public class VariantOperationsTest {
                 new VariantIndexParams()
                         .setFile(file.getId())
                         .setLoadHomRef(YesNoAuto.YES.name()),
-                Paths.get(opencga.createTmpOutdir("_index")), "index", token);
+                Paths.get(opencga.createTmpOutdir("_index")), "index", false, token);
 
         VariantStorageMetadataManager metadataManager = opencga.getVariantStorageEngineByProject(PROJECT_FQN).getMetadataManager();
         int studyId = metadataManager.getStudyId(study2fqn);
