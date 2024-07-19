@@ -54,6 +54,7 @@ public class ArchiveTableHelper extends GenomeHelper {
     public static final byte[] NON_REF_COLUMN_SUFIX_BYTES = Bytes.toBytes(NON_REF_COLUMN_SUFIX);
     public static final String REF_COLUMN_SUFIX = "_R";
     public static final byte[] REF_COLUMN_SUFIX_BYTES = Bytes.toBytes(REF_COLUMN_SUFIX);
+    public static final String CONFIG_ARCHIVE_TABLE_NAME          = "opencga.archive.table.name";
 
     private static Logger logger = LoggerFactory.getLogger(ArchiveTableHelper.class);
     private final AtomicReference<VariantFileMetadata> meta = new AtomicReference<>();

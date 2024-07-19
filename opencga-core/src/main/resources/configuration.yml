@@ -123,6 +123,8 @@ analysis:
       ## Kubernetes executor configuration example
       # k8s.masterUrl: "https://192.168.99.100:8443/"
       k8s.clientTimeout: 30000 # ms
+      k8s.terminationGracePeriodSeconds: 300 # s
+      k8s.logToStdout: true
       k8s.imageName: "opencb/opencga-base:${project.parent.version}-hdp3.1"
       k8s.imagePullPolicy: "IfNotPresent"
       #      k8s.imagePullSecrets:

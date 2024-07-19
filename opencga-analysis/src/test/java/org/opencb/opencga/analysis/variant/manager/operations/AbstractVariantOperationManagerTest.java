@@ -88,8 +88,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
  */
 public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
-    private String JOB_STATUS_FILE = "status.json";
-    private String OUT_LOG_EXTENSION = ".out";
+    private String OUT_LOG_EXTENSION = ".log";
     private String ERR_LOG_EXTENSION = ".err";
 
     protected CatalogManager catalogManager;
@@ -408,8 +407,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         try {
             logger.info("Scanning files from {} to move to {}", tmpOutdirPath, outDir.getUri());
             // Avoid copy the job.status file!
-            Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE)
-                    && !ExecutionResultManager.isExecutionResultFile(uri.getPath())
+            Predicate<URI> fileStatusFilter = uri -> !ExecutionResultManager.isExecutionResultFile(uri.getPath())
                     && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
                     && !uri.getPath().endsWith(ERR_LOG_EXTENSION);
             files = fileScanner.scan(ORGANIZATION, outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, fileStatusFilter,

@@ -267,9 +267,9 @@ public class HBaseMain extends AbstractMain {
         engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "");
 
         MRExecutor mrExecutor = engine.getMRExecutor();
-        int exitError = mrExecutor.run(tool, args.toArray(new String[0]));
-        if (exitError != 0) {
-            throw new Exception("Exec failed with exit number '" + exitError + "'");
+        MRExecutor.Result result = mrExecutor.run(tool, args.toArray(new String[0]));
+        if (result.getExitValue() != 0) {
+            throw new Exception("Exec failed with exit number '" + result.getExitValue() + "'");
         }
     }
 
@@ -327,7 +327,7 @@ public class HBaseMain extends AbstractMain {
             engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "");
 
             MRExecutor mrExecutor = engine.getMRExecutor();
-            int exitError = mrExecutor.run("hbase", args.toArray(new String[0]));
+            int exitError = mrExecutor.run("hbase", args.toArray(new String[0])).getExitValue();
             if (exitError != 0) {
                 throw new Exception("ExportSnapshot failed with exit number '" + exitError + "'");
             }

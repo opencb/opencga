@@ -165,7 +165,7 @@ public class RgaManagerTest {
             KnockoutAnalysisParams params = new KnockoutAnalysisParams();
             params.setSample(file.getSampleIds());
 
-            toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, ownerToken);
+            toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, false, ownerToken);
 
             File file = catalogManager.getFileManager().link(STUDY,
                     new FileLinkParams()

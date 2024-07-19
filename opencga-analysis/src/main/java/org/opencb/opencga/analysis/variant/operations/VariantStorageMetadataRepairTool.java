@@ -26,7 +26,7 @@ import java.util.*;
 import static org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams.What.*;
 
 @Tool(id = VariantStorageMetadataRepairTool.ID, description = VariantStorageMetadataRepairTool.DESCRIPTION,
-        type = Tool.Type.OPERATION, scope = Tool.Scope.GLOBAL, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, scope = Tool.Scope.GLOBAL, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantStorageMetadataRepairTool extends OperationTool {
     public static final String ID = "variant-storage-metadata-repair";
     public static final String DESCRIPTION = "Execute some repairs on Variant Storage Metadata. Advanced users only.";
