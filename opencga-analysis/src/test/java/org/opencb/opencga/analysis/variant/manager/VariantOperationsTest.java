@@ -47,16 +47,12 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
+import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
-import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -235,10 +231,10 @@ public class VariantOperationsTest {
                         .setFile(file.getId())
                         .setAnnotate(false)
                         .setLoadHomRef(YesNoAuto.YES.name()),
-                Paths.get(opencga.createTmpOutdir("_index")), "index", token);
+                Paths.get(opencga.createTmpOutdir("_index")), "index", false, token);
         toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY,
                 new VariantAnnotationIndexParams(),
-                Paths.get(opencga.createTmpOutdir("_annotation-index")), "index", token);
+                Paths.get(opencga.createTmpOutdir("_annotation-index")), "index", false, token);
 
         for (int i = 0; i < file.getSampleIds().size(); i++) {
             if (i % 2 == 0) {
@@ -320,7 +316,7 @@ public class VariantOperationsTest {
                     new VariantIndexParams()
                             .setForceReload(false)
                             .setFile(file.getId()),
-                    Paths.get(opencga.createTmpOutdir()), "index_reload", token);
+                    Paths.get(opencga.createTmpOutdir()), "index_reload", false, token);
             fail("Should have thrown an exception");
         } catch (ToolException e) {
             assertEquals(StorageEngineException.class, e.getCause().getClass());
@@ -331,7 +327,7 @@ public class VariantOperationsTest {
                 new VariantIndexParams()
                         .setForceReload(true)
                         .setFile(file.getId()),
-                Paths.get(opencga.createTmpOutdir()), "index_reload", token);
+                Paths.get(opencga.createTmpOutdir()), "index_reload", false, token);
 
     }
 
@@ -346,7 +342,7 @@ public class VariantOperationsTest {
 
         toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, STUDY,
                 new VariantSecondaryAnnotationIndexParams(),
-                Paths.get(opencga.createTmpOutdir()), "annotation_index", token);
+                Paths.get(opencga.createTmpOutdir()), "annotation_index", false, token);
 
         for (String sample : samples) {
             SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
@@ -374,7 +370,7 @@ public class VariantOperationsTest {
                     new VariantSecondarySampleIndexParams()
                             .setFamilyIndex(true)
                             .setSample(Arrays.asList(mother)),
-                    Paths.get(opencga.createTmpOutdir()), "index", token);
+                    Paths.get(opencga.createTmpOutdir()), "index", false, token);
             fail("Expected to fail");
         } catch (ToolException e) {
             assertEquals("Exception from step 'familyIndex'", e.getMessage());
@@ -386,7 +382,7 @@ public class VariantOperationsTest {
                 new VariantSecondarySampleIndexParams()
                         .setFamilyIndex(true)
                         .setSample(Arrays.asList(ParamConstants.ALL)),
-                Paths.get(opencga.createTmpOutdir()), "index", token);
+                Paths.get(opencga.createTmpOutdir()), "index", false, token);
         assertEquals(0, result.getEvents().size());
 
         for (String sample : samples) {
@@ -405,7 +401,7 @@ public class VariantOperationsTest {
         // Initially nothing should change, even after running a manual synchronization
         toolRunner.execute(VariantStorageMetadataSynchronizeOperationTool.class,
                 new VariantStorageMetadataSynchronizeParams().setStudy(STUDY_FQN),
-                Paths.get(opencga.createTmpOutdir()), "", catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken());
+                Paths.get(opencga.createTmpOutdir()), "", false, catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken());
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token)
@@ -477,7 +473,7 @@ public class VariantOperationsTest {
                 new VariantSecondarySampleIndexParams()
                         .setFamilyIndex(true)
                         .setSample(Arrays.asList(daughter)),
-                Paths.get(opencga.createTmpOutdir()), "index", token);
+                Paths.get(opencga.createTmpOutdir()), "index", false, token);
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
@@ -500,7 +496,7 @@ public class VariantOperationsTest {
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_index"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", false, token);
 
         List<Sample> samples = catalogManager.getSampleManager().get(STUDY, file.getSampleIds().subList(0, 2), QueryOptions.empty(), token).getResults();
         catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(samples), new QueryOptions(), token);
@@ -536,13 +532,20 @@ public class VariantOperationsTest {
         assertEquals("GRCh38", cellBaseUtils.getAssembly());
 
         String newCellbase = "https://uk.ws.zettagenomics.com/cellbase/";
-        String newCellbaseVersion = "v5.8";
+        String newCellbaseVersion = "v5.2";
+        String newCellbaseDataRelease = "1";
 
         assertNotEquals(newCellbase, cellBaseUtils.getURL());
         assertNotEquals(newCellbaseVersion, cellBaseUtils.getVersion());
+        assertNotEquals(newCellbaseDataRelease, cellBaseUtils.getDataRelease());
 
-        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase, newCellbaseVersion, "1", ""), false, null, token);
+        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase, newCellbaseVersion, newCellbaseDataRelease, ""), false, null, token);
         CellBaseConfiguration cellbaseConfiguration = catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getCellbase();
+
+        assertEquals(newCellbase, cellbaseConfiguration.getUrl());
+        assertEquals(newCellbaseVersion, cellbaseConfiguration.getVersion());
+        assertEquals(newCellbaseDataRelease, cellbaseConfiguration.getDataRelease());
+
 //        assertTrue(family.getPedigreeGraph() != null);
     }
 

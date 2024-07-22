@@ -224,6 +224,10 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
     }
 
     private void failAtLoadingFile(String x, String file1, URI outputUri) throws Exception {
+        failAtLoadingFile(x, file1, outputUri, 1);
+    }
+
+    private void failAtLoadingFile(String x, String file1, URI outputUri, int expectedRunningTasks) throws Exception {
         try {
             VariantStorageEngine engine = getMockedStorageEngine(new ObjectMap(VariantStorageOptions.STUDY.key(), STUDY_NAME));
             engine.index(Collections.singletonList(getResourceUri(x + file1)), outputUri);
@@ -236,11 +240,13 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
                 assertEquals(TaskMetadata.Status.NONE, fileMetadata.getIndexStatus());
                 List<TaskMetadata> runningTasks = new ArrayList<>();
                 metadataManager.getRunningTasks(studyId).forEach(runningTasks::add);
-                assertEquals(1, runningTasks.size());
-                assertEquals(TaskMetadata.Type.LOAD, runningTasks.get(0).getType());
-                assertEquals(TaskMetadata.Status.RUNNING, runningTasks.get(0).currentStatus());
-                assertEquals(Arrays.asList(fileMetadata.getId()), runningTasks.get(0).getFileIds());
+                assertEquals(expectedRunningTasks, runningTasks.size());
+                TaskMetadata taskMetadata = runningTasks.get(runningTasks.size() - 1);
+                assertEquals(TaskMetadata.Type.LOAD, taskMetadata.getType());
+                assertEquals(TaskMetadata.Status.RUNNING, taskMetadata.currentStatus());
+                assertEquals(Arrays.asList(fileMetadata.getId()), taskMetadata.getFileIds());
             } catch (AssertionError error) {
+                error.addSuppressed(e);
                 e.printStackTrace();
                 throw error;
             }
@@ -595,7 +601,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         String file2 = "1K.end.platinum-genomes-vcf-NA12878_S1.vcf.gz";
 
         failAtLoadingFile(resourceDir, file1, outDir);
-        failAtLoadingFile(resourceDir, file2, outDir);
+        failAtLoadingFile(resourceDir, file2, outDir, 2);
 //        try {
 //            getMockedStorageEngine().index(Collections.singletonList(getResourceUri(resourceDir + file1)), outDir);
 //            fail("Should have thrown an exception");
@@ -657,7 +663,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true);
         variantStorageEngine.getOptions().put(VariantStorageOptions.RESUME.key(), true);
-        variantStorageEngine.index(Collections.singletonList(getResourceUri(file1)), outDir);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri(resourceDir + file1)), outDir);
 
     }
 

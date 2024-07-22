@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.job;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -72,7 +73,6 @@ public class Job extends PrivateStudyUid {
     @DataField(id = "commandLine", indexed = true,
             description = FieldConstants.JOB_COMMAND_LINE)
     private String commandLine;
-
 
     @DataField(id = "params", indexed = true,
             description = FieldConstants.JOB_PARAMS)
@@ -129,6 +129,17 @@ public class Job extends PrivateStudyUid {
             description = FieldConstants.JOB_DEPENDS_ON_DESCRIPTION)
     private List<Job> dependsOn;
 
+    @DataField(id = FieldConstants.JOB_PARENT_ID, indexed = false, since = "3.2.0",
+            description = FieldConstants.JOB_PARENT_ID_DESCRIPTION)
+    private String parentId;
+
+    @DataField(id = FieldConstants.JOB_SCHEDULED_START_TIME, indexed = false, since = "3.2.0",
+            description = FieldConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION)
+    private String scheduledStartTime;
+
+    @DataField(id = ParamConstants.JOB_DRY_RUN, since = "3.2.0", description = ParamConstants.JOB_DRY_RUN_DESCRIPTION)
+    private boolean dryRun;
+
     @DataField(id = "execution", indexed = true,
             description = FieldConstants.JOB_EXECUTION_DESCRIPTION)
     private ExecutionResult execution;
@@ -168,8 +179,9 @@ public class Job extends PrivateStudyUid {
 
     public Job(String id, String uuid, String description, ToolInfo tool, String userId, String commandLine, Map<String, Object> params,
                String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal, File outDir,
-               List<File> input, List<File> output, List<Job> dependsOn, List<String> tags, ExecutionResult execution, boolean visited,
-               File stdout, File stderr, int release, JobStudyParam study, Map<String, Object> attributes) {
+               List<File> input, List<File> output, List<Job> dependsOn, String parentId, String scheduledStartTime, boolean dryRun,
+               List<String> tags, ExecutionResult execution, boolean visited, File stdout, File stderr, int release, JobStudyParam study,
+               Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
         this.tool = tool;
@@ -185,6 +197,9 @@ public class Job extends PrivateStudyUid {
         this.input = input;
         this.output = output;
         this.dependsOn = dependsOn;
+        this.parentId = parentId;
+        this.scheduledStartTime = scheduledStartTime;
+        this.dryRun = dryRun;
         this.tags = tags;
         this.execution = execution;
         this.visited = visited;
@@ -214,6 +229,9 @@ public class Job extends PrivateStudyUid {
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
         sb.append(", dependsOn=").append(dependsOn);
+        sb.append(", parentId='").append(parentId).append('\'');
+        sb.append(", scheduledStartTime='").append(scheduledStartTime).append('\'');
+        sb.append(", dryRun=").append(dryRun);
         sb.append(", execution=").append(execution);
         sb.append(", stdout=").append(stdout);
         sb.append(", stderr=").append(stderr);
@@ -372,6 +390,33 @@ public class Job extends PrivateStudyUid {
 
     public Job setDependsOn(List<Job> dependsOn) {
         this.dependsOn = dependsOn;
+        return this;
+    }
+
+    public String getParentId() {
+        return parentId;
+    }
+
+    public Job setParentId(String parentId) {
+        this.parentId = parentId;
+        return this;
+    }
+
+    public String getScheduledStartTime() {
+        return scheduledStartTime;
+    }
+
+    public Job setScheduledStartTime(String scheduledStartTime) {
+        this.scheduledStartTime = scheduledStartTime;
+        return this;
+    }
+
+    public boolean isDryRun() {
+        return dryRun;
+    }
+
+    public Job setDryRun(boolean dryRun) {
+        this.dryRun = dryRun;
         return this;
     }
 

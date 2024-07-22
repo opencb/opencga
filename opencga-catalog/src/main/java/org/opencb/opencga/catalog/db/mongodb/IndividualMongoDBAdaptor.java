@@ -1405,17 +1405,18 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+            boolean simplifyPermissions = simplifyPermissions();
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.INDIVIDUAL, user,
-                        configuration));
+                        simplifyPermissions));
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL, configuration));
+                            IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL, simplifyPermissions));
                 } else {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, IndividualPermissions.VIEW.name(),
-                            Enums.Resource.INDIVIDUAL, configuration));
+                            Enums.Resource.INDIVIDUAL, simplifyPermissions));
                 }
             }
 

@@ -405,9 +405,6 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         }
         qOptions = filterQueryOptionsToIncludeKeys(qOptions,
                 OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
-        if (!qOptions.getBoolean(IS_ORGANIZATION_ADMIN_OPTION)) {
-            qOptions = filterQueryOptionsToExcludeKeys(qOptions, Arrays.asList(QueryParams.CONFIGURATION.key()));
-        }
 
         return organizationCollection.iterator(clientSession, new Document(), null, null, qOptions);
     }

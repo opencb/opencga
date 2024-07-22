@@ -125,6 +125,7 @@ public class JobClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -252,6 +253,19 @@ public class JobClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("jobs", jobs, null, null, "update", params, POST, Job.class);
+    }
+
+    /**
+     * Send a signal to kill a pending or running job.
+     * @param job Job ID or UUID.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> kill(String job, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("jobs", job, null, null, "kill", params, POST, Job.class);
     }
 
     /**
