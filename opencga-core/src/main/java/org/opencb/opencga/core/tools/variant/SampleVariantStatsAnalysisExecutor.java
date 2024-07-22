@@ -95,6 +95,12 @@ public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaToolExec
         }
     }
 
+    protected void addStepParams() throws ToolException {
+        addAttribute("STUDY", study);
+        addAttribute("SAMPLES", sampleNames);
+        addAttribute("QUERY", variantQuery);
+    }
+
     public abstract int getDefaultBatchSize();
     public abstract int getMaxBatchSize();
 }

@@ -48,6 +48,8 @@ public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
     public final static String DESCRIPTION = "Samtools is a program for interacting with high-throughput sequencing data in SAM, BAM"
             + " and CRAM formats. " + SAMTOOLS_COMMAND_DESCRIPTION;
 
+    public final static String SAMTOOlS_DOCKER_CLI_KEY = "SAMTOOLS_DOCKER_CLI";
+
     @ToolParams
     protected final SamtoolsWrapperParams analysisParams = new SamtoolsWrapperParams();
 

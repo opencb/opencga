@@ -250,12 +250,17 @@ public class OpenCGATestExternalResource extends ExternalResource {
 //        Files.copy(inputStream, opencgaHome.resolve("examples")
 //                .resolve("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), StandardCopyOption.REPLACE_EXISTING);
 
-        // Mutational signatue analysis
+        // Mutational signature analysis files
         Path analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/mutational-signature")).toAbsolutePath();
         inputStream = new FileInputStream("../opencga-app/app/analysis/mutational-signature/sv_clustering.R");
         Files.copy(inputStream, analysisPath.resolve("sv_clustering.R"), StandardCopyOption.REPLACE_EXISTING);
 
-        // Pedigree graph analysis
+        // Genome plot analysis files
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/genome-plot")).toAbsolutePath();
+        inputStream = new FileInputStream("../opencga-app/app/analysis/genome-plot/circos.R");
+        Files.copy(inputStream, analysisPath.resolve("circos.R"), StandardCopyOption.REPLACE_EXISTING);
+
+        // Pedigree graph analysis files
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
         inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);

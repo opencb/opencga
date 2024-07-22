@@ -64,6 +64,9 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     public final static String MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME = "mutational_signature.json";
     public final static String MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME = "mutational_signature_fitting.json";
 
+    public final static String SV_CLUSTERING_CLI_KEY = "SV_CLUSTERING_CLI";
+    public final static String SIGNATURE_FIT_CLI_KEY = "SIGNATURE_FIT_CLI";
+
     public static final String CLUSTERED = "clustered";
     public static final String NON_CLUSTERED = "non-clustered";
     public static final String LENGTH_NA = "na";
@@ -185,20 +188,20 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         assembly = getAssembly(study, catalogManager, token);
 
         // Log messages
-        logger.info("Signagture id: {}", signatureParams.getId());
-        logger.info("Signagture description: {}", signatureParams.getDescription());
-        logger.info("Signagture sample: {}", signatureParams.getSample());
-        logger.info("Signagture query: {}", signatureParams.getQuery());
-        logger.info("Signagture fit id: {}", signatureParams.getFitId());
-        logger.info("Signagture fit method: {}", signatureParams.getFitMethod());
-        logger.info("Signagture fit sig. version: {}", signatureParams.getFitSigVersion());
-        logger.info("Signagture fit organ: {}", signatureParams.getFitOrgan());
-        logger.info("Signagture fit n boot: {}", signatureParams.getFitNBoot());
-        logger.info("Signagture fit threshold percentage: {}", signatureParams.getFitThresholdPerc());
-        logger.info("Signagture fit threshold p-value: {}", signatureParams.getFitThresholdPval());
-        logger.info("Signagture fit max. rare sigs.: {}", signatureParams.getFitMaxRareSigs());
-        logger.info("Signagture fit signatures file: {}", signaturesFile);
-        logger.info("Signagture fit rare signatures file: {}", rareSignaturesFile);
+        logger.info("Signature id: {}", signatureParams.getId());
+        logger.info("Signature description: {}", signatureParams.getDescription());
+        logger.info("Signature sample: {}", signatureParams.getSample());
+        logger.info("Signature query: {}", signatureParams.getQuery());
+        logger.info("Signature fit id: {}", signatureParams.getFitId());
+        logger.info("Signature fit method: {}", signatureParams.getFitMethod());
+        logger.info("Signature fit sig. version: {}", signatureParams.getFitSigVersion());
+        logger.info("Signature fit organ: {}", signatureParams.getFitOrgan());
+        logger.info("Signature fit n boot: {}", signatureParams.getFitNBoot());
+        logger.info("Signature fit threshold percentage: {}", signatureParams.getFitThresholdPerc());
+        logger.info("Signature fit threshold p-value: {}", signatureParams.getFitThresholdPval());
+        logger.info("Signature fit max. rare sigs.: {}", signatureParams.getFitMaxRareSigs());
+        logger.info("Signature fit signatures file: {}", signaturesFile);
+        logger.info("Signature fit rare signatures file: {}", rareSignaturesFile);
         logger.info("Skip: {}", signatureParams.getSkip());
     }
 

@@ -95,7 +95,7 @@ RCircos.Chromosome.Ideogram.Plot.my <- function (chrTextColor = 'grey', gridLine
   chroms <- unique(RCircos.Cyto$Chromosome)
   for (a.chr in 1:length(chroms)) {
     the.chr <- RCircos.Cyto[RCircos.Cyto$Chromosome == chroms[a.chr],
-                            ]
+    ]
     ##new RCircos version
     start <- the.chr$StartPoint[1]
     end <- the.chr$EndPoint[nrow(the.chr)]
@@ -133,13 +133,13 @@ RCircos.Chromosome.Ideogram.Plot.my <- function (chrTextColor = 'grey', gridLine
 }
 
 
-RCircos.Get.Plot.Data.nosort <- function (genomic.data, plot.type, validate=TRUE) 
+RCircos.Get.Plot.Data.nosort <- function (genomic.data, plot.type, validate=TRUE)
 {
 
   data.points <- rep(0, nrow(genomic.data))
   for (a.row in 1:nrow(genomic.data)) {
     chromosome <- as.character(genomic.data[a.row, 1])
-    location <- round((genomic.data[a.row, 2] + genomic.data[a.row, 
+    location <- round((genomic.data[a.row, 2] + genomic.data[a.row,
                                                              3])/2, digits = 0)
     data.points[a.row] <- RCircos.Data.Point(chromosome, location)
   }
@@ -153,7 +153,7 @@ RCircos.Heatmap.Plot.my <- function (heatmap.data, data.col, track.num, side, pl
   RCircos.Cyto <- RCircos.Get.Plot.Ideogram()
   RCircos.Pos <- RCircos.Get.Plot.Positions()
   RCircos.Par <- RCircos.Get.Plot.Parameters()
-  
+
   min.with <- 1000000
   heatmap.data$width <- heatmap.data$chromEnd - heatmap.data$chromStart
   heatmap.data <- heatmap.data[order(-heatmap.data$width),]  # make sure the narrowest plots are drawn as last
@@ -162,35 +162,35 @@ RCircos.Heatmap.Plot.my <- function (heatmap.data, data.col, track.num, side, pl
   heatmap.data$chromEnd[narrow.cn] <- heatmap.data$chromEnd[narrow.cn ] + flank
   heatmap.data$chromStart[narrow.cn ] <- heatmap.data$chromStart[narrow.cn ] - flank
   heatmap.data$chromStart[heatmap.data$chromStart<0] <- 0
-  
+
   heatmap.data <- RCircos.Get.Plot.Data.nosort(heatmap.data, "plot")
   heatmap.data1 <- RCircos.Get.Plot.Data.nosort(data.frame(Chromosome=heatmap.data$Chromosome, chromStart=heatmap.data$chromStart, chromEnd=heatmap.data$chromStart), "plot")
   heatmap.data2 <- RCircos.Get.Plot.Data.nosort(data.frame(Chromosome=heatmap.data$Chromosome, chromStart=heatmap.data$chromEnd, chromEnd=heatmap.data$chromEnd), "plot")
-  
-  
+
+
   if ((length(heatmap.ranges)==1) && (is.na(heatmap.ranges))) {
     ColorLevel <- RCircos.Par$heatmap.ranges
   } else {
     ColorLevel <- heatmap.ranges
   }
-  
+
   if ((length(heatmap.color)==1) && (is.na(heatmap.color))) {
     ColorRamp <- RCircos.Get.Heatmap.ColorScales(RCircos.Par$heatmap.color)
-  } 
-  
+  }
+
   columns <- 5:(ncol(heatmap.data) - 1)
   min.value <- min(as.matrix(heatmap.data[, columns]))
   max.value <- max(as.matrix(heatmap.data[, columns]))
-  
+
   heatmap.locations1 <- as.numeric(heatmap.data1[, ncol(heatmap.data2)])
   heatmap.locations2 <- as.numeric(heatmap.data2[, ncol(heatmap.data2)])
-  
+
   start <- heatmap.locations1 # -  RCircos.Par$heatmap.width/2
   end <- heatmap.locations2 # + RCircos.Par$heatmap.width/2
   data.chroms <- as.character(heatmap.data[, 1])
   chromosomes <- unique(data.chroms)
   cyto.chroms <- as.character(RCircos.Cyto$Chromosome)
-  
+
   for (a.chr in 1:length(chromosomes)) {
     cyto.rows <- which(cyto.chroms == chromosomes[a.chr])
     locations <- as.numeric(RCircos.Cyto$EndPoint[cyto.rows]) # chromosome locations
@@ -200,14 +200,14 @@ RCircos.Heatmap.Plot.my <- function (heatmap.data, data.col, track.num, side, pl
     start[data.rows[start[data.rows] < chr.start]] <- chr.start # chromosome starts for each point
     end[data.rows[end[data.rows] > chr.end]] <- chr.end # chromosome end for each point
   }
-  
+
   locations <- RCircos.Track.Positions.my(side, track.num)  # positions
   out.pos <- locations[1]
   in.pos <- locations[2]
   chroms <- unique(RCircos.Cyto$Chromosome)
   for (a.chr in 1:length(chroms)) {
     the.chr <- RCircos.Cyto[RCircos.Cyto$Chromosome == chroms[a.chr],
-                            ]
+    ]
     the.start <- the.chr$StartPoint[1]
     the.end <- the.chr$EndPoint[nrow(the.chr)]
     polygon.x <- c(RCircos.Pos[the.start:the.end, 1] * out.pos,
@@ -216,20 +216,20 @@ RCircos.Heatmap.Plot.my <- function (heatmap.data, data.col, track.num, side, pl
                    RCircos.Pos[the.end:the.start, 2] * in.pos)
     polygon(polygon.x, polygon.y, col = "white",  border = RCircos.Par$grid.line.color, lwd=0.3)
   }
-  
-  
+
+
   heatmap.value <- as.numeric(heatmap.data[, data.col])
   for (a.point in 1:length(heatmap.value)) {
-    
+
     the.level <- which(ColorLevel <= heatmap.value[a.point])
     cell.color <- heatmap.color[max(the.level)] # establish the color
-    
+
     the.start <- start[a.point]
     the.end <- end[a.point]
     #if (is.na(the.start) |  is.na(the.end)) {
     #    browser()
     #}
-    
+
     #Catch positions that fall outside a band (eg when using exome ideogram)
     if (is.na(the.start) || (is.na(the.end))) {
       next;
@@ -238,18 +238,18 @@ RCircos.Heatmap.Plot.my <- function (heatmap.data, data.col, track.num, side, pl
     polygon.y <- c(RCircos.Pos[the.start:the.end, 2] * out.pos, RCircos.Pos[the.end:the.start, 2] * in.pos)
     polygon(polygon.x, polygon.y, col = cell.color, border = NA)
   }
-  
+
 }
 
 
 RCircos.Link.Plot.my <- function (link.data, track.num, by.chromosome = FALSE, link.colors=NA)
 {
-  
+
   if (length(link.colors)==1) {
     link.colors <- rep('BurlyWood', nrow(link.data))
   }
-  
-  
+
+
   RCircos.Pos <- RCircos.Get.Plot.Positions()
   RCircos.Par <- RCircos.Get.Plot.Parameters()
   locations <- RCircos.Track.Positions.my('in', track.num)
@@ -282,14 +282,14 @@ RCircos.Link.Plot.my <- function (link.data, track.num, by.chromosome = FALSE, l
 }
 
 
-RCircos.Scatter.Plot.color <- function (scatter.data, data.col, track.num, side, scatter.colors, draw.bg =TRUE, no.sort=FALSE) 
+RCircos.Scatter.Plot.color <- function (scatter.data, data.col, track.num, side, scatter.colors, draw.bg =TRUE, no.sort=FALSE)
 {
 
   RCircos.Pos <- RCircos.Get.Plot.Positions()
   pch <- RCircos.Get.Plot.Parameters()$point.type
   cex <- RCircos.Get.Plot.Parameters()$point.size
   scatter.data <- RCircos.Get.Plot.Data.nosort(scatter.data, "plot")
-  
+
   locations <- RCircos.Track.Positions.my(side, track.num, track.heights = 4)
   out.pos <- locations[1]
   in.pos <- locations[2]
@@ -297,9 +297,9 @@ RCircos.Scatter.Plot.color <- function (scatter.data, data.col, track.num, side,
   data.ceiling <- max(scatter.data[, data.col])
 
   sub.height <- out.pos - point.bottom
-  
+
   RCircos.Track.Outline.my(out.pos, in.pos)
-  
+
   scatter.data[scatter.data[data.col]>data.ceiling, data.col] <- data.ceiling
   scatter.data[scatter.data[data.col]<(-data.ceiling), data.col] <- -data.ceiling
   scatter.data$height <- point.bottom + scatter.data[, data.col]/data.ceiling * sub.height
@@ -309,12 +309,12 @@ RCircos.Scatter.Plot.color <- function (scatter.data, data.col, track.num, side,
   points(scatter.data$x_coord,
          scatter.data$y_coord,
          col = scatter.colors,
-         pch = pch, 
+         pch = pch,
          cex = cex)
 }
 
 
-RCircos.Track.Outline.my <- function (out.pos, in.pos, num.layers = 1) 
+RCircos.Track.Outline.my <- function (out.pos, in.pos, num.layers = 1)
 {
   RCircos.Cyto <- RCircos.Get.Plot.Ideogram()
   RCircos.Pos <- RCircos.Get.Plot.Positions()
@@ -325,12 +325,12 @@ RCircos.Track.Outline.my <- function (out.pos, in.pos, num.layers = 1)
     the.chr <- RCircos.Cyto[RCircos.Cyto$Chromosome == chroms[a.chr], ]
     start <- the.chr$StartPoint[1]
     end <- the.chr$EndPoint[nrow(the.chr)]
-    polygon.x <- c(RCircos.Pos[start:end, 1] * out.pos, RCircos.Pos[end:start, 
+    polygon.x <- c(RCircos.Pos[start:end, 1] * out.pos, RCircos.Pos[end:start,
                                                                     1] * in.pos)
-    polygon.y <- c(RCircos.Pos[start:end, 2] * out.pos, RCircos.Pos[end:start, 
+    polygon.y <- c(RCircos.Pos[start:end, 2] * out.pos, RCircos.Pos[end:start,
                                                                     2] * in.pos)
     polygon(polygon.x, polygon.y, col = NULL, lwd=0.3, border=RCircos.Par$grid.line.color)
-    
+
     for (a.line in 1:(num.layers - 1)) {
       height <- out.pos - a.line * subtrack.height
       lines(RCircos.Pos[start:end, 1] * height, RCircos.Pos[start:end, 2] * height, col = RCircos.Par$grid.line.color, lwd=0.3)
@@ -339,18 +339,18 @@ RCircos.Track.Outline.my <- function (out.pos, in.pos, num.layers = 1)
 }
 
 
-RCircos.Track.Positions.my <- function (side, track.num, track.heights = 1) 
+RCircos.Track.Positions.my <- function (side, track.num, track.heights = 1)
 {
   RCircos.Par <- RCircos.Get.Plot.Parameters()
   one.track <- RCircos.Par$track.height + RCircos.Par$track.padding
   side <- tolower(side)
   if (side == "in") {
-    out.pos <- RCircos.Par$track.in.start - (track.num - 
+    out.pos <- RCircos.Par$track.in.start - (track.num -
                                                1) * one.track
-    in.pos <- out.pos - RCircos.Par$track.height - 
+    in.pos <- out.pos - RCircos.Par$track.height -
       one.track * ( track.heights - 1)
   } else if (side == "out") {
-    in.pos <- RCircos.Par$track.out.start + (track.num - 
+    in.pos <- RCircos.Par$track.out.start + (track.num -
                                                1) * one.track
     out.pos <- in.pos + RCircos.Par$track.height
   } else {
@@ -361,14 +361,14 @@ RCircos.Track.Positions.my <- function (side, track.num, track.heights = 1)
 
 
 set.plot.circosParams <- function(){
-  
+
   # circos parameters
   circosParams.my <- list()
-  
+
   #use these two circosParams to adjust circle size
   circosParams.my$plot.radius <- 2.15
   circosParams.my$genomeplot.margin <- 0.25
-  
+
   circosParams.my$track.background <- 'white'
   circosParams.my$highlight.width <- 0.2
   circosParams.my$point.size <- 0.3
@@ -379,53 +379,53 @@ set.plot.circosParams <- function(){
   circosParams.my$chr.name.pos <- 2.14 #3.45
   circosParams.my$track.in.start <- 3.05
   circosParams.my$track.out.start <- 3.2
-  
+
   circosParams.my$tracks.inside <- 10
   circosParams.my$tracks.outside <- 1
-  
+
   circosParams.my$line.width <- 1
   circosParams.my$link.line.width <- 0.5
-  
+
   circosParams.my$text.size <-  0.6
-  
+
   circosParams.my$text.color <- 'black'
-  
+
   circosParams.my$track.padding <- c(0.07,  0.0, 0.07, 0.0,0.07, 0)
-  
+
   circosParams.my$grid.line.color <- 'lightgrey'
   circosParams.my$chr.text.color <- 'grey'
-  
+
   circosParams.my$track.heights <- c(0.85, 0.07, 0.07, 0.1, 0.1,  0.1)
   circosParams.my$track.height <- 0.1
   circosParams.my$sub.tracks <- 1
   circosParams.my$heatmap.cols <- c(alpha('lightcoral', 1),
-                              alpha('lightcoral', 0.5),
-                              alpha('lightgrey',0.10),
-                              alpha('olivedrab2', 0.3),
-                              alpha('olivedrab2', 0.5),
-                              alpha('olivedrab2',.7),
-                              alpha('olivedrab2', 0.75),
-                              alpha('olivedrab3', 0.9),
-                              alpha('olivedrab4', 0.9))
+                                    alpha('lightcoral', 0.5),
+                                    alpha('lightgrey',0.10),
+                                    alpha('olivedrab2', 0.3),
+                                    alpha('olivedrab2', 0.5),
+                                    alpha('olivedrab2',.7),
+                                    alpha('olivedrab2', 0.75),
+                                    alpha('olivedrab3', 0.9),
+                                    alpha('olivedrab4', 0.9))
   circosParams.my$heatmap.ranges <- c(0,1,3,4,8,16, 32,64,1000)
-  
+
   #Set copynumber (and indel) colour scheme
   circosParams.my$heatmap.color.gain <- c( alpha('lightgrey',0.10), alpha('olivedrab2', 0.3),  alpha('olivedrab2', 0.5), alpha('olivedrab2',.7), alpha('olivedrab2', 0.75), alpha('olivedrab3', 0.9), alpha('olivedrab4', 0.9))
   circosParams.my$heatmap.ranges.gain <- c(0,2,4,8,16, 32,64,1000)
-  
+
   circosParams.my$heatmap.ranges.loh <- c(0,1,1000)
   circosParams.my$heatmap.color.loh <- c(alpha('lightcoral', 1), alpha('lightgrey',0.10))
-  
+
   circosParams.my$heatmap.key.gain.col <- alpha('olivedrab2', 0.3)
   circosParams.my$heatmap.key.loh.col <- alpha('lightcoral', 1)
   circosParams.my$heatmap.key.gain.title <- 'gain'
   circosParams.my$heatmap.key.loh.title <- 'LOH'
-  
+
   #tumour majorCN
   circosParams.my$heatmap.data.col.gain <- 8
   #tumour minorCN
   circosParams.my$heatmap.data.col.loh <- 7
-  
+
   #Indel colours
   circosParams.my$indel.mhomology <- 'firebrick4'
   circosParams.my$indel.repeatmediated <- 'firebrick1'
@@ -434,28 +434,28 @@ set.plot.circosParams <- function(){
   circosParams.my$indel.complex <- 'grey'
 
   return(circosParams.my)
-  
+
 }
 
 
-genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file, 
-                       sampleID, genome.v="hg19", ..., plot_title = NULL, 
-                       no_copynumber = FALSE, no_rearrangements = FALSE, no_indels = FALSE, out_format = "png", out_path = ".") {
-  
+genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
+                       sampleID, genome.v="hg19", ..., plot_title = NULL,
+                       no_snvs = FALSE, no_copynumber = FALSE, no_rearrangements = FALSE, no_indels = FALSE, out_format = "png", out_path = ".") {
+
   genome.ideogram = switch(genome.v,
                            "hg19" = "UCSC.HG19.Human.CytoBandIdeogram",
                            "hg38" = "UCSC.HG38.Human.CytoBandIdeogram")
   data(list=genome.ideogram, package = "RCircos");
   species.cyto <- get(genome.ideogram);
-  
+
   circosParams.my <- set.plot.circosParams()
-  
+
   # rearrangement links colors
   inv.col <- alpha('dodgerblue2', 1)
   del.col <- alpha('coral2', 1)
   dupl.col <-  alpha('darkgreen', 1)
   transloc.colour <- alpha('gray35', 1)
-  
+
   #Set up height, width and resolution parameters
   cPanelWidth = 0
   graph.height = 4100
@@ -463,20 +463,22 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
   graph.width = graph.height * graph.wd_ht_ratio
   graph.wd_res_ratio = (4100/550)
   graph.res = graph.width/graph.wd_res_ratio
-  
+
   graph.height.inches = graph.height/graph.res
   graph.width.inches = graph.width/graph.res
 
   # substitutions
-  subs <- read.table(file = snvs.file, sep = '\t', header = TRUE)
-  # subs <- read.table(file = '/home/dapregi/tmp/snvs.tsv', sep = '\t', header = TRUE)
-  subs$color[(subs$ref=='C' & subs$alt=='A') | (subs$ref=='G' & subs$alt=='T')] <- 'royalblue'
-  subs$color[(subs$ref=='C' & subs$alt=='G') | (subs$ref=='G' & subs$alt=='C')] <- 'black'
-  subs$color[(subs$ref=='C' & subs$alt=='T') | (subs$ref=='G' & subs$alt=='A')] <- 'red'
-  subs$color[(subs$ref=='T' & subs$alt=='A') | (subs$ref=='A' & subs$alt=='T')] <- 'grey'
-  subs$color[(subs$ref=='T' & subs$alt=='C') | (subs$ref=='A' & subs$alt=='G')] <- 'green2'
-  subs$color[(subs$ref=='T' & subs$alt=='G') | (subs$ref=='A' & subs$alt=='C')] <- 'hotpink'
-  
+  if (!no_snvs) {
+    subs <- read.table(file = snvs.file, sep = '\t', header = TRUE)
+    # subs <- read.table(file = '/home/dapregi/tmp/snvs.tsv', sep = '\t', header = TRUE)
+    subs$color[(subs$ref=='C' & subs$alt=='A') | (subs$ref=='G' & subs$alt=='T')] <- 'royalblue'
+    subs$color[(subs$ref=='C' & subs$alt=='G') | (subs$ref=='G' & subs$alt=='C')] <- 'black'
+    subs$color[(subs$ref=='C' & subs$alt=='T') | (subs$ref=='G' & subs$alt=='A')] <- 'red'
+    subs$color[(subs$ref=='T' & subs$alt=='A') | (subs$ref=='A' & subs$alt=='T')] <- 'grey'
+    subs$color[(subs$ref=='T' & subs$alt=='C') | (subs$ref=='A' & subs$alt=='G')] <- 'green2'
+    subs$color[(subs$ref=='T' & subs$alt=='G') | (subs$ref=='A' & subs$alt=='C')] <- 'hotpink'
+  }
+
   # indels
   indels <- read.table(file = indels.file, sep = '\t', header = TRUE)
   # indels <- read.table(file = '/home/dapregi/tmp/indels.tsv', sep = '\t', header = TRUE)
@@ -488,8 +490,8 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
     dels$color[dels$classification=='Microhomology-mediated'] <- circosParams.my$indel.mhomology
     dels$color[dels$classification=='Repeat-mediated'] <- circosParams.my$indel.repeatmediated
     dels$color[dels$classification=='None'] <- circosParams.my$indel.other
-  } 
-  
+  }
+
   # copy number
   cv.data <- data.frame()
   #Skip if no copynumber was requested
@@ -500,7 +502,7 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
       no_copynumber <- TRUE
     }
   }
-  
+
   # rearrangements
   rearrs <- data.frame()
   if (!no_rearrangements) {
@@ -509,11 +511,11 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
       no_rearrangements <- TRUE
     }
   }
-  
+
   ################################################################################
-  
+
   fn = file.path(out_path, paste(sampleID, ".genomePlot.", out_format, sep=''), fsep = .Platform$file.sep)
-  
+
   if (out_format == 'png') {
     png(file=fn, height=graph.height, width=(graph.width*(1/(1-cPanelWidth))), res=graph.res)
   } else if (out_format == 'svg') {
@@ -521,7 +523,7 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
   } else {
     stop("Invalid file type. Only png and svg are supported");
   }
-  
+
   RCircos.Set.Core.Components(cyto.info=species.cyto, chr.exclude=NULL,  tracks.inside=circosParams.my$tracks.inside,
                               tracks.outside=circosParams.my$tracks.outside);
 
@@ -530,31 +532,23 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
   circosParams$point.type <- circosParams.my$point.type
   circosParams$point.size <- circosParams.my$point.size
   RCircos.Reset.Plot.Parameters(circosParams)
-  
+
   par(mar=c(0.001, 0.001, 0.001, 0.001))
   par(mai=c(circosParams.my$genomeplot.margin, circosParams.my$genomeplot.margin, circosParams.my$genomeplot.margin, circosParams.my$genomeplot.margin))
   plot.new()
   plot.window(c(-circosParams.my$plot.radius,circosParams.my$plot.radius), c(-circosParams.my$plot.radius, circosParams.my$plot.radius))
   RCircos.Chromosome.Ideogram.Plot.my(circosParams.my$chr.text.color, circosParams.my$grid.line.color, circosParams.my$text.size);
-  
+
   title(main = sampleID)
-  
+
   if (!is.null(plot_title)) {
     title(paste(plot_title, sep=''), line=-1);
   }
-  
+
   # substitutions
-  # start.time <- Sys.time()
-  # summary(subs)
-  # subs$distance <- 10^subs$logDistPrev
-  # subs <- subs[subs$distance<400000,]
-  # print(nrow(subs))
-  if (exists("subs")) {
+  if (exists("subs") && (nrow(subs)>0)) {
     RCircos.Scatter.Plot.color(scatter.data=subs, data.col=6, track.num=1, side="in", scatter.colors = subs$color);
   }
-  # end.time <- Sys.time()
-  # time.taken <- end.time - start.time
-  # print(time.taken)
 
   # Insertions
   circosParams <- RCircos.Get.Plot.Parameters();
@@ -566,7 +560,7 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
   if (exists("ins") && nrow(ins)>0) {
     my.RCircos.Tile.Plot(tile.data=ins, track.num=5, side="in");
   }
-  
+
   # Deletions
   circosParams <- RCircos.Get.Plot.Parameters();
   circosParams$tile.color <- 'firebrick4'
@@ -574,8 +568,8 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
   if (exists("dels") && nrow(dels)>0) {
     my.RCircos.Tile.Plot(tile.data=dels, track.num=6, side="in", tile.colors=dels$color);
   }
-  
-  
+
+
   # Copy number
   if (exists('cv.data') && (nrow(cv.data)>0)) {
     heatmap.ranges.major <-circosParams.my$heatmap.ranges.gain
@@ -587,7 +581,7 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
     RCircos.Heatmap.Plot.my(heatmap.data=cv.data, data.col=6, track.num=8, side="in", heatmap.ranges=heatmap.ranges.minor , heatmap.color=heatmap.color.minor ); # minor copy number
 
   }
-  
+
   # Rearrangement
   # Chromosome chromStart  chromEnd Chromosome.1 chromStart.1 chromEnd.1 type
   link.colors <- vector()
@@ -601,7 +595,7 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
       RCircos.Link.Plot.my(link.data = rearrs, track.num=9, by.chromosome=TRUE, link.colors);
     }
   }
-  
+
   invisible(dev.off())
 
 }
@@ -614,6 +608,8 @@ option_list <- list(
               help="Genome version", metavar="character"),
   make_option(c("--plot_title"), type="character", default="",
               help="Plot title", metavar="character"),
+  make_option(c("--no_snvs"), action="store_true", default=FALSE,
+              help="No SNVs"),
   make_option(c("--no_copynumber"), action="store_true", default=FALSE,
               help="No CNV"),
   make_option(c("--no_rearrangements"), action="store_true", default=FALSE,
@@ -624,7 +620,7 @@ option_list <- list(
               help="Output format", metavar="character"),
   make_option(c("--out_path"), type="character", default=".",
               help="Output file path", metavar="character")
-  )
+)
 parser <- OptionParser(usage = "%prog [options] snvs_file indels_file cnvs_file rearrs_file sampleId", option_list=option_list)
 arguments <- parse_args(parser, positional_arguments = 5)
 opt <- arguments$options
@@ -632,5 +628,5 @@ args <- arguments$args
 
 
 genomePlot(args[1], args[2], args[3], args[4], args[5], genome.v=opt$genome_version, plot_title = opt$plot_title,
-           no_copynumber = opt$no_copynumber, no_rearrangements = opt$no_rearrangements, no_indels = opt$no_indels,
+           no_snvs = opt$no_snvs, no_copynumber = opt$no_copynumber, no_rearrangements = opt$no_rearrangements, no_indels = opt$no_indels,
            out_format = opt$out_format, out_path = opt$out_path)

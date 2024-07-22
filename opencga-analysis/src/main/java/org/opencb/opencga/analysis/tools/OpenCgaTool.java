@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.tools;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +45,7 @@ import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
+import org.opencb.opencga.core.tools.result.ToolStep;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,10 +58,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 public abstract class OpenCgaTool {
+
+    protected final static String STEP_EXECUTION_RESULT_ATTRIBUTE_KEY = "STEP_EXECUTION_RESULT";
 
     protected CatalogManager catalogManager;
     protected Configuration configuration;
@@ -111,7 +117,7 @@ public abstract class OpenCgaTool {
         if (params != null) {
             this.params.putAll(params);
         }
-        this.executorParams = new ObjectMap();
+        this.executorParams = getExecutorParams(params);
         this.outDir = outDir;
         //this.params.put("outDir", outDir.toAbsolutePath().toString());
 
@@ -126,7 +132,7 @@ public abstract class OpenCgaTool {
         if (params != null) {
             this.params.putAll(params);
         }
-        this.executorParams = new ObjectMap();
+        this.executorParams = getExecutorParams(params);
         this.outDir = outDir;
         //this.params.put("outDir", outDir.toAbsolutePath().toString());
 
@@ -510,6 +516,10 @@ public abstract class OpenCgaTool {
         erm.addAttribute(key, value);
     }
 
+    protected final void addStepAttribute(String key, Object value) throws ToolException {
+        erm.addStepAttribute(key, value);
+    }
+
     protected final void moveFile(String study, Path source, Path destiny, String catalogDirectoryPath, String token) throws ToolException {
         File file;
         try {
@@ -598,6 +608,16 @@ public abstract class OpenCgaTool {
      */
     private void loadStorageConfiguration() throws IOException {
         this.storageConfiguration = ConfigurationUtils.loadStorageConfiguration(opencgaHome);
+    }
+
+    private ObjectMap getExecutorParams(ObjectMap params) {
+        ObjectMap executorParams = new ObjectMap();
+        if (MapUtils.isNotEmpty(params)) {
+            if (params.containsKey(EXECUTOR_ID)) {
+                executorParams.put(EXECUTOR_ID, params.getString(EXECUTOR_ID));
+            }
+        }
+        return executorParams;
     }
 
     // TODO can this method be removed?

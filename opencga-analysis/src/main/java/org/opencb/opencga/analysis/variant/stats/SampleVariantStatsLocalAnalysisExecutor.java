@@ -53,6 +53,7 @@ public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsA
 
     @Override
     public void run() throws ToolException {
+        addStepParams();
 
         VariantStorageManager variantStorageManager = getVariantStorageManager();
 

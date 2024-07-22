@@ -22,6 +22,7 @@ import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -96,7 +97,7 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
         });
     }
 
-    public static FastQcMetrics parseResults(Path outDir) throws ToolException {
+    public static FastQcMetrics parseResults(Path outDir, String confJobDir) throws ToolException {
         Path fastQcPath = null;
         Path imgPath = null;
         for (java.io.File file : outDir.toFile().listFiles()) {
@@ -116,12 +117,16 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
                 // Replace absolute paths to relative paths
                 List<String> relativePaths = new ArrayList<>();
                 for (String path : fastQcMetrics.getFiles()) {
-                    int index = path.indexOf("JOBS/");
-                    relativePaths.add(index == -1 ? new java.io.File(path).getName() : path.substring(index));
+                    // Sanity check
+                    if (!path.startsWith(confJobDir)) {
+                        throw new ToolException("The FastQC file " + path + " is not in the configuration job folder "+ confJobDir);
+                    }
+                    relativePaths.add(path.substring(confJobDir.length() + 1));
                 }
                 fastQcMetrics.setFiles(relativePaths);
             } else {
-                throw new ToolException("Something wrong happened: FastQC file " + fastQcPath.getFileName() + " not found!");
+                String msg = DockerWrapperAnalysisExecutor.getStdErrMessage("Something wrong happened running FastQC analysis.", outDir);
+                throw new ToolException(msg);
             }
         } catch (IOException e) {
             new ToolException("Error parsing Alignment FastQC Metrics file: " + e.getMessage());
