@@ -44,6 +44,7 @@ public class LocalExecutor implements BatchExecutor {
     private static Logger logger;
     private final ExecutorService threadPool;
     private final Map<String, String> jobStatus;
+    private final Map<String, Command> runningJobs;
     private final int maxConcurrentJobs;
 
     public LocalExecutor(Execution execution) {
@@ -56,6 +57,17 @@ public class LocalExecutor implements BatchExecutor {
                 return size() > 1000;
             }
         });
+        runningJobs = Collections.synchronizedMap(new LinkedHashMap<String, Command>(1000) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Command> eldest) {
+                return size() > 1000;
+            }
+        });
+    }
+
+    @Override
+    public void close() throws IOException {
+        threadPool.shutdown();
     }
 
     @Override
@@ -65,8 +77,9 @@ public class LocalExecutor implements BatchExecutor {
             try {
                 Thread.currentThread().setName("LocalExecutor-" + nextThreadNum());
                 logger.info("Ready to run - {}", commandLine);
-                jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
                 Command com = new Command(commandLine);
+                runningJobs.put(jobId, com);
+                jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
 
                 DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(stdout.toFile()));
                 com.setOutputOutputStream(dataOutputStream);
@@ -78,6 +91,7 @@ public class LocalExecutor implements BatchExecutor {
                     logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
                     com.setStatus(RunnableProcess.Status.KILLED);
                     com.setExitValue(-2);
+                    runningJobs.remove(jobId);
                     closeOutputStreams(com);
                     jobStatus.put(jobId, Enums.ExecutionStatus.ERROR);
                 });
@@ -90,9 +104,11 @@ public class LocalExecutor implements BatchExecutor {
 
                 try {
                     Runtime.getRuntime().addShutdownHook(hook);
+                    runningJobs.put(jobId, com);
                     com.run();
                 } finally {
                     Runtime.getRuntime().removeShutdownHook(hook);
+                    runningJobs.remove(jobId);
                     closeOutputStreams(com);
                 }
 
@@ -135,7 +151,13 @@ public class LocalExecutor implements BatchExecutor {
 
     @Override
     public boolean kill(String jobId) throws Exception {
-        return false;
+        Command command = runningJobs.get(jobId);
+        if (command != null) {
+            command.destroy();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
