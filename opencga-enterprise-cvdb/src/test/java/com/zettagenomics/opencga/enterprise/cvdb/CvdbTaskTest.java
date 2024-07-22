@@ -111,7 +111,7 @@ public class CvdbTaskTest {
         params.setOverwrite(true);
 
         toolRunner.execute(CvdbIndexTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study.getId()), indexOutDir, null,
-                sessionIdUser);
+                false, sessionIdUser);
 
         ExecutionResult result = JacksonUtils.getDefaultObjectMapper().readerFor(ExecutionResult.class)
                 .readValue(indexOutDir.resolve(CvdbIndexTask.ID + ".result.json").toFile());
@@ -128,7 +128,7 @@ public class CvdbTaskTest {
         params.setOverwrite(false);
 
         toolRunner.execute(CvdbIndexTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study.getId()), indexOutDir, null,
-                sessionIdUser);
+                false, sessionIdUser);
 
         result = JacksonUtils.getDefaultObjectMapper().readerFor(ExecutionResult.class)
                 .readValue(indexOutDir.resolve(CvdbIndexTask.ID + ".result.json").toFile());
@@ -154,7 +154,7 @@ public class CvdbTaskTest {
         params.setOverwrite(true);
 
         toolRunner.execute(CvdbIndexTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study.getId()), indexOutDir, null,
-                sessionIdUser);
+                false, sessionIdUser);
 
         ExecutionResult result = JacksonUtils.getDefaultObjectMapper().readerFor(ExecutionResult.class)
                 .readValue(indexOutDir.resolve(CvdbIndexTask.ID + ".result.json").toFile());

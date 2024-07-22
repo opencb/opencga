@@ -306,7 +306,6 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
 
             userUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

@@ -299,7 +299,8 @@ public class CvdbUtilsTest {
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
                 .setSamples(samples.subList(1, 3));
-        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "",
+                false, token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
         TestUtilities.checkExecutionResult(ar, storageEngine);
