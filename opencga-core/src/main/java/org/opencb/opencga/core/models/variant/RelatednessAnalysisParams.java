@@ -16,27 +16,54 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import static org.opencb.biodata.models.constants.FieldConstants.RELATEDNESS_REPORT_HAPLOID_CALL_MODE_DESCRIPTION;
+import static org.opencb.biodata.models.constants.FieldConstants.RELATEDNESS_REPORT_MAF_DESCRIPTION;
+
 public class RelatednessAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Relatedness analysis params";
+    public static final String DESCRIPTION = "Relatedness analysis params.";
+
+    @DataField(id = "individuals", description = "List of individuals (separated by commas)")
     private List<String> individuals;
+
+    @DataField(id = "samples", description = "List of samples (separated by commas) to identify the individuals")
     private List<String> samples;
+
+    @DataField(id = "minorAlleleFreq", description = RELATEDNESS_REPORT_MAF_DESCRIPTION)
     private String minorAlleleFreq;
-    private String method;
+
+    @DataField(id = "haploidCallMode", description = RELATEDNESS_REPORT_HAPLOID_CALL_MODE_DESCRIPTION)
+    private String haploidCallMode;
+
+    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
     public RelatednessAnalysisParams() {
     }
 
-    public RelatednessAnalysisParams(List<String> individuals, List<String> samples, String minorAlleleFreq, String method, String outdir) {
+    public RelatednessAnalysisParams(List<String> individuals, List<String> samples, String minorAlleleFreq, String haploidCallMode, String outdir) {
         this.individuals = individuals;
         this.samples = samples;
         this.minorAlleleFreq = minorAlleleFreq;
-        this.method = method;
+        this.haploidCallMode = haploidCallMode;
         this.outdir = outdir;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("RelatednessAnalysisParams{");
+        sb.append("individuals=").append(individuals);
+        sb.append(", samples=").append(samples);
+        sb.append(", minorAlleleFreq='").append(minorAlleleFreq).append('\'');
+        sb.append(", haploidCallMode='").append(haploidCallMode).append('\'');
+        sb.append(", outdir='").append(outdir).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public List<String> getIndividuals() {
@@ -66,12 +93,12 @@ public class RelatednessAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getMethod() {
-        return method;
+    public String getHaploidCallMode() {
+        return haploidCallMode;
     }
 
-    public RelatednessAnalysisParams setMethod(String method) {
-        this.method = method;
+    public RelatednessAnalysisParams setHaploidCallMode(String haploidCallMode) {
+        this.haploidCallMode = haploidCallMode;
         return this;
     }
 

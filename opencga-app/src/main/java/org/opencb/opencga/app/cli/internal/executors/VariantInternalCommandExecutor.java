@@ -62,7 +62,6 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.operations.variant.*;
@@ -896,33 +895,29 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     private void relatedness() throws Exception {
         VariantCommandOptions.RelatednessCommandOptions cliOptions = variantCommandOptions.relatednessCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
 
-        RelatednessAnalysis relatednessAnalysis = new RelatednessAnalysis();
-        relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
-        relatednessAnalysis.setStudyId(cliOptions.study)
-                .setIndividualIds(cliOptions.individuals)
-                .setSampleIds(cliOptions.samples)
-                .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
-                .setMethod(cliOptions.method)
-                .start();
+        ObjectMap params = new RelatednessAnalysisParams(
+                cliOptions.individuals,
+                cliOptions.samples,
+                cliOptions.minorAlleleFreq,
+                cliOptions.haploidCallMode,
+                cliOptions.outdir)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(RelatednessAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, false, token);
     }
 
     private void familyQc() throws Exception {
         VariantCommandOptions.FamilyQcCommandOptions cliOptions = variantCommandOptions.familyQcCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
 
-        FamilyQcAnalysis familyQcAnalysis = new FamilyQcAnalysis();
-        familyQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
-        familyQcAnalysis.setStudyId(cliOptions.study)
-                .setFamilyId(cliOptions.family)
-                .setRelatednessMethod(cliOptions.relatednessMethod)
-                .setRelatednessMaf(cliOptions.relatednessMaf)
-                .start();
+        ObjectMap params = new FamilyQcAnalysisParams(
+                cliOptions.family,
+                cliOptions.relatednessMaf,
+                cliOptions.haploidCallMode,
+                cliOptions.outdir)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(FamilyQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, false, token);
     }
 
     private void individualQc() throws Exception {
