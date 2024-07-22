@@ -95,6 +95,7 @@ export default class Job extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
@@ -203,6 +204,16 @@ export default class Job extends OpenCGAParentClass {
     */
     update(jobs, data, params) {
         return this._post("jobs", jobs, null, null, "update", data, params);
+    }
+
+    /** Send a signal to kill a pending or running job
+    * @param {String} job - Job ID or UUID.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    kill(job, params) {
+        return this._post("jobs", job, null, null, "kill", params);
     }
 
     /** Show the first lines of a log file (up to a limit)

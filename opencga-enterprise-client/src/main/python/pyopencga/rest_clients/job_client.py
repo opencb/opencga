@@ -106,6 +106,8 @@ class Job(_ParentRestClient):
         :param str job_depends_on: Comma separated list of existing job IDs
             the job will depend on.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         """
@@ -248,6 +250,18 @@ class Job(_ParentRestClient):
         """
 
         return self._post(category='jobs', resource='update', query_id=jobs, data=data, **options)
+
+    def kill(self, job, **options):
+        """
+        Send a signal to kill a pending or running job.
+        PATH: /{apiVersion}/jobs/{job}/kill
+
+        :param str job: Job ID or UUID. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        return self._post(category='jobs', resource='kill', query_id=job, **options)
 
     def head_log(self, job, **options):
         """

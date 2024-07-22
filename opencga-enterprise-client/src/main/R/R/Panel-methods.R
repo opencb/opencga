@@ -22,7 +22,7 @@
 #' | updateAcl | /{apiVersion}/panels/acl/{members}/update | study, members[*], action[*], body[*] |
 #' | create | /{apiVersion}/panels/create | include, exclude, study, includeResult, body |
 #' | distinct | /{apiVersion}/panels/distinct | study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field[*] |
-#' | importPanels | /{apiVersion}/panels/import | study, jobId, jobDependsOn, jobDescription, jobTags, body |
+#' | importPanels | /{apiVersion}/panels/import | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body |
 #' | search | /{apiVersion}/panels/search | include, exclude, limit, skip, count, study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot |
 #' | acl | /{apiVersion}/panels/{panels}/acl | panels[*], study, member, silent |
 #' | delete | /{apiVersion}/panels/{panels}/delete | study, panels[*] |
@@ -90,6 +90,9 @@ setMethod("panelClient", "OpencgaR", function(OpencgaR, members, panels, endpoin
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Panel parameters.
         importPanels=fetchOpenCGA(object=OpencgaR, category="panels", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="import", params=params, httpMethod="POST", as.queryParam=NULL, ...),
