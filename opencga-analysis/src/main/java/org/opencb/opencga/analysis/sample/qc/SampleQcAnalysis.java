@@ -43,7 +43,6 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.Status;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -276,7 +275,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Execute the sample variant stats analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(SampleVariantStatsAnalysis.class, study, sampleVariantStatsParams, outPath,
-                null, token);
+                null, false, token);
         addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
@@ -322,7 +321,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Execute the mutational signature analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(MutationalSignatureAnalysis.class, study, mutationalSignatureParams, outPath,
-                null, token);
+                null, false, token);
         addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
@@ -348,7 +347,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                 .setConfigFile(sampleQcParams.getGpConfigFile());
 
         // Execute the genome plot analysis and add its step attributes if exist
-        ExecutionResult executionResult = toolRunner.execute(GenomePlotAnalysis.class, study, genomePlotParams, outPath, null, token);
+        ExecutionResult executionResult = toolRunner.execute(GenomePlotAnalysis.class, study, genomePlotParams, outPath, null, false,
+                token);
         addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status

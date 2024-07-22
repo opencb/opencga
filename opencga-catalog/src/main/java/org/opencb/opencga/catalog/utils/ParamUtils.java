@@ -174,6 +174,22 @@ public class ParamUtils {
         }
     }
 
+    public static void checkDateIsNotExpired(String dateStr, String param) throws CatalogParameterException {
+        if (StringUtils.isEmpty(dateStr)) {
+            throw CatalogParameterException.isNull(param);
+        } else {
+            // Validate date can be parsed and has the proper format
+            Date date = TimeUtils.toDate(dateStr);
+            if (date == null || dateStr.length() != 14) {
+                throw new CatalogParameterException("Unexpected '" + param + "' format. Expected format is 'yyyyMMddHHmmss'");
+            }
+            if (date.before(TimeUtils.getDate())) {
+                throw new CatalogParameterException("The date for '" + param + "' introduced is already expired. Please, introduce a valid"
+                        + " date in the future.");
+            }
+        }
+    }
+
     public static String checkDateOrGetCurrentDate(String date, String param) throws CatalogParameterException {
         if (StringUtils.isEmpty(date)) {
             return TimeUtils.getTime();

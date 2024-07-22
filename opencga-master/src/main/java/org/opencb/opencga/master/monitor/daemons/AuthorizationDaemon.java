@@ -21,7 +21,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 
-public class AuthorizationDaemon extends MonitorParentDaemon {
+public abstract class AuthorizationDaemon extends MonitorParentDaemon {
 
     private final String INTERNAL_DELIMITER = "__";
 

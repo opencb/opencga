@@ -6,7 +6,8 @@ import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
-@Tool(id = RgaAnalysis.ID, resource = Enums.Resource.RGA, type = Tool.Type.OPERATION, description = "Index RGA study.")
+@Tool(id = RgaAnalysis.ID, resource = Enums.Resource.RGA, type = Tool.Type.OPERATION, description = "Index RGA study.",
+        priority = Enums.Priority.HIGH)
 public class RgaAnalysis extends OperationTool {
     public final static String ID = "rga-index";
     public final static String DESCRIPTION = "Generate Recessive Gene Analysis secondary index";

@@ -209,7 +209,7 @@ public class AlignmentAnalysisTest {
         String geneName = "BRCA2";
         params.setGenes(Arrays.asList(geneName));
 
-        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, "coverage-job-id", token);
+        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, "coverage-job-id", false, token);
 
         bamFile = getCatalogFile(bamFilename);
         assertEquals(1, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
@@ -227,7 +227,7 @@ public class AlignmentAnalysisTest {
         AlignmentQcParams params = new AlignmentQcParams();
         params.setBamFile(bamFile.getId());
 
-        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, params, new ObjectMap(), outDir, null, token);
+        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, params, new ObjectMap(), outDir, null, false, token);
         assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.SAMTOOLS_FLAGSTATS_STEP));
         assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.SAMTOOLS_STATS_STEP));
         assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.PLOT_BAMSTATS_STEP));
@@ -253,7 +253,7 @@ public class AlignmentAnalysisTest {
         params.setBamFile(bamFile.getId());
         params.setSkip(StringUtils.join(Arrays.asList(STATS_SKIP_VALUE, FASTQC_METRICS_SKIP_VALUE), ","));
 
-        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, false, token);
         assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.SAMTOOLS_FLAGSTATS_STEP));
 
         // Check
@@ -276,7 +276,7 @@ public class AlignmentAnalysisTest {
         params.setBamFile(bamFile.getId());
         params.setSkip(StringUtils.join(Arrays.asList(FLAGSTATS_SKIP_VALUE, FASTQC_METRICS_SKIP_VALUE), ","));
 
-        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, false, token);
         assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.SAMTOOLS_STATS_STEP));
         assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.PLOT_BAMSTATS_STEP));
 
@@ -299,7 +299,7 @@ public class AlignmentAnalysisTest {
         params.setBamFile(bamFile.getId());
         params.setSkip(StringUtils.join(Arrays.asList(STATS_SKIP_VALUE, FLAGSTATS_SKIP_VALUE), ","));
 
-        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, false, token);
         assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.FASTQC_METRICS_STEP));
 
         // Check
@@ -321,12 +321,12 @@ public class AlignmentAnalysisTest {
         params.setBamFile(bamFile.getId());
         params.setSkip(StringUtils.join(Arrays.asList(STATS_SKIP_VALUE, FLAGSTATS_SKIP_VALUE), ","));
 
-        ExecutionResult executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        ExecutionResult executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, false, token);
         assertTrue(executeResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.FASTQC_METRICS_STEP));
 
         outDir = Paths.get(opencga.createTmpOutdir("_alignment_qc_fastqc_overwrite_and_overwrite_2"));
         params.setOverwrite(true);
-        executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, false, token);
         assertTrue(executeResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.FASTQC_METRICS_STEP));
 
         // Check
@@ -348,7 +348,7 @@ public class AlignmentAnalysisTest {
         params.setBamFile(bamFile.getId());
         params.setSkip(StringUtils.join(Arrays.asList(STATS_SKIP_VALUE, FLAGSTATS_SKIP_VALUE), ","));
 
-        ExecutionResult executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        ExecutionResult executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, false, token);
         assertTrue(executeResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.FASTQC_METRICS_STEP));
 
         // Check
@@ -359,7 +359,7 @@ public class AlignmentAnalysisTest {
 
         outDir = Paths.get(opencga.createTmpOutdir("_alignment_qc_fastqc_and_do_not_overwrite_2"));
 
-        executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, false, token);
         assertFalse(executeResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.FASTQC_METRICS_STEP));
 
         System.out.println("outdir = " + outDir);
@@ -388,7 +388,7 @@ public class AlignmentAnalysisTest {
         ExecutionResult executionResult;
         try {
             System.out.println("outdir = " + outDir);
-            executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+            executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, false, token);
         } catch (ToolException e) {
             assertTrue(e.getMessage().contains("Cannot open input file"));
             return;
@@ -419,7 +419,7 @@ public class AlignmentAnalysisTest {
         ExecutionResult executionResult;
         try {
             System.out.println("outdir = " + outDir);
-            executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+            executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, false, token);
         } catch (ToolException e) {
             assertTrue(e.getMessage().contains("No such file or directory"));
             return;
@@ -450,7 +450,7 @@ public class AlignmentAnalysisTest {
         ExecutionResult executionResult;
         try {
             System.out.println("outdir = " + outDir);
-            executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+            executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, false, token);
         } catch (ToolException e) {
             assertTrue(e.getMessage().contains("which didn't exist"));
             System.out.println("e.getMessage() = " + e.getMessage());
@@ -473,7 +473,7 @@ public class AlignmentAnalysisTest {
         AlignmentIndexParams params = new AlignmentIndexParams();
         params.setFileId(bamFile.getId());
         Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
-        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-non-readonly-coverage-index", token);
+        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-non-readonly-coverage-index", false, token);
 
         // Checking BAI file
         Path baiPath = nonReadOnlyDir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
@@ -502,7 +502,7 @@ public class AlignmentAnalysisTest {
         AlignmentIndexParams params = new AlignmentIndexParams();
         params.setFileId(bamFile.getId());
         Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
-        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", token);
+        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", false, token);
 
         // Checking BAI file
         Path baiPath = alignmentIndexOutdir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
@@ -530,7 +530,7 @@ public class AlignmentAnalysisTest {
         AlignmentIndexParams indexParams = new AlignmentIndexParams();
         indexParams.setFileId(bamFile.getId());
         Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
-        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-non-readonly-alignment-coverage-index", token);
+        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-non-readonly-alignment-coverage-index", false, token);
 
         // Checking BAI file
         Path baiPath = nonReadOnlyDir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
@@ -546,7 +546,7 @@ public class AlignmentAnalysisTest {
         coverageOarams.setBamFileId(bamFile.getId());
         coverageOarams.setBaiFileId(baiFile.getId());
         Path coverageIndexOutdir = Paths.get(opencga.createTmpOutdir("_coverage_index"));
-        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", token);
+        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", false, token);
 
         // Checking BW file
         Path bwPath = nonReadOnlyDir.resolve(bamFilename + AlignmentConstants.BIGWIG_EXTENSION);
@@ -572,7 +572,7 @@ public class AlignmentAnalysisTest {
         AlignmentIndexParams indexParams = new AlignmentIndexParams();
         indexParams.setFileId(bamFile.getId());
         Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
-        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", token);
+        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", false, token);
 
         // Checking BAI file
         Path baiPath = readOnlyDir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
@@ -591,7 +591,7 @@ public class AlignmentAnalysisTest {
         coverageOarams.setBamFileId(bamFile.getId());
         coverageOarams.setBaiFileId(baiFile.getId());
         Path coverageIndexOutdir = Paths.get(opencga.createTmpOutdir("_coverage_index"));
-        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", token);
+        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", false, token);
 
         // Checking BW file
         Path bwPath = coverageIndexOutdir.resolve(bamFilename + AlignmentConstants.BIGWIG_EXTENSION);

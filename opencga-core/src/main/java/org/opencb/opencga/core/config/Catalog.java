@@ -16,27 +16,33 @@
 
 package org.opencb.opencga.core.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Created by pfurio on 01/02/17.
  */
 public class Catalog {
 
     private DatabaseCredentials database;
-    private DatabaseCredentials searchEngine;
+
+    private static final Logger logger;
+
+    static {
+        logger = LoggerFactory.getLogger(Catalog.class);
+    }
 
     public Catalog() {
     }
 
-    public Catalog(DatabaseCredentials database, DatabaseCredentials searchEngine) {
+    public Catalog(DatabaseCredentials database) {
         this.database = database;
-        this.searchEngine = searchEngine;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Catalog{");
         sb.append("database=").append(database);
-        sb.append(", searchEngine=").append(searchEngine);
         sb.append('}');
         return sb.toString();
     }
@@ -50,12 +56,15 @@ public class Catalog {
         return this;
     }
 
+    @Deprecated
     public DatabaseCredentials getSearchEngine() {
-        return searchEngine;
+        return null;
     }
 
+    @Deprecated
     public Catalog setSearchEngine(DatabaseCredentials searchEngine) {
-        this.searchEngine = searchEngine;
+        logger.warn("Ignored configuration option 'configuration.yml#catalog.searchEngine' with value '{}'."
+                        + " The option was deprecated and removed.", searchEngine);
         return this;
     }
 

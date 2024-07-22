@@ -54,16 +54,25 @@ public class CustomStudiesCommandOptions {
         @Parameter(names = {"--resume"}, description = "Resume study metadata ingestion.", arity = 0)
         public boolean resume;
 
-        @Parameter(names = {"--jobId"}, description = "Job id.", arity = 1)
+        @Parameter(names = {"--job-id", "--jobId"}, description = "Job id.", arity = 1)
         public String jobId;
 
-        @Parameter(names = {"--jobDependsOn"}, description = "Job depends on.", arity = 1)
+        @Parameter(names = {"--job-depends-on", "--jobDependsOn"}, description = "Job depends on.", arity = 1)
         public String jobDependsOn;
 
-        @Parameter(names = {"--jobDescription"}, description = "Job description.", arity = 1)
+        @Parameter(names = {"--job-description", "--jobDescription"}, description = "Job description.", arity = 1)
         public String jobDescription;
 
-        @Parameter(names = {"--jobTags"}, description = "Job tags.", arity = 1)
+        @Parameter(names = {"--job-tags", "--jobTags"}, description = "Job tags.", arity = 1)
         public String jobTags;
+
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Job scheduled start time.", arity = 1)
+        public String jobScheduledStartTime;
+
+        @Parameter(names = {"--job-priority"}, description = "Job priority.", arity = 1)
+        public String jobPriority;
+
+        @Parameter(names = {"--job-dry-run"}, description = "Job dry-run mode.", arity = 1)
+        public Boolean jobDryRun;
     }
 }

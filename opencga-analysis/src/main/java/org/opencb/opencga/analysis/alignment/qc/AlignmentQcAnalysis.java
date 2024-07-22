@@ -43,7 +43,6 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.Status;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -205,7 +204,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Execute the Samtools flag stats analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(SamtoolsWrapperAnalysis.class, study, samtoolsWrapperParams, outPath,
-                null, token);
+                null, false, token);
         addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
@@ -259,7 +258,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Execute the Samtools stats analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(SamtoolsWrapperAnalysis.class, study, samtoolsWrapperParams, outPath,
-                null, token);
+                null, false, token);
         addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
@@ -329,7 +328,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Execute the plot-bamstats analysis and add its step attributes if exist
         ExecutionResult executionResult = toolRunner.execute(SamtoolsWrapperAnalysis.class, study, samtoolsWrapperParams, outPath,
-                null, token);
+                null, false, token);
         addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status
@@ -366,7 +365,8 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         FastqcWrapperParams fastqcWrapperParams = new FastqcWrapperParams(catalogBamFile.getId(), null, fastQcParams);
 
         // Execute the FastQC analysis and add its step attributes if exist
-        ExecutionResult executionResult = toolRunner.execute(FastqcWrapperAnalysis.class, study, fastqcWrapperParams, outPath, null, token);
+        ExecutionResult executionResult = toolRunner.execute(FastqcWrapperAnalysis.class, study, fastqcWrapperParams, outPath, null, false,
+                token);
         addStepAttribute(STEP_EXECUTION_RESULT_ATTRIBUTE_KEY, executionResult);
 
         // Check execution status

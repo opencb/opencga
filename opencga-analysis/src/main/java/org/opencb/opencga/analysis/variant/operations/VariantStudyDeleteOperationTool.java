@@ -32,7 +32,7 @@ import java.net.URI;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Tool(id = VariantStudyDeleteOperationTool.ID, description = VariantStudyDeleteOperationTool.DESCRIPTION,
-        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantStudyDeleteOperationTool extends OperationTool {
 
     public static final String ID = "variant-study-delete";

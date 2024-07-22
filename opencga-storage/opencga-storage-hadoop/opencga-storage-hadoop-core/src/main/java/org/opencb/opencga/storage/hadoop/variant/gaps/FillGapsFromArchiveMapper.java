@@ -6,7 +6,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractArchiveTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
@@ -63,7 +63,7 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         long timestamp = getMrHelper().getTimestamp();
         if (isFillGaps(context.getConfiguration())) {
             Collection<Integer> samples = getSamples(context.getConfiguration());
-            String archiveTableName = context.getConfiguration().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME);
+            String archiveTableName = context.getConfiguration().get(ArchiveTableHelper.CONFIG_ARCHIVE_TABLE_NAME);
             String gapsGenotype = context.getConfiguration().get(
                     FILL_GAPS_GAP_GENOTYPE.key(),
                     FILL_GAPS_GAP_GENOTYPE.defaultValue());
