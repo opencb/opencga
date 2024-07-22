@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Assume;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.DataResult;
@@ -452,6 +453,10 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
             assertThat(annotation.getConsequenceTypes(), VariantMatchers.isEmpty());
         }
 
+        for (Variant variant : variantStorageEngine) {
+            Variant thisVariant = variantStorageEngine.getVariant(DummyTestAnnotator.getRs(variant));
+            assertThat(thisVariant, VariantMatchers.samePosition(variant));
+        }
 
         // Get annotations from a deleted snapshot
         thrown.expectMessage("Variant Annotation snapshot \"v1\" not found!");

@@ -209,6 +209,10 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runInterpreterCancerTiering(data, params) {
@@ -224,6 +228,10 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runInterpreterExomiser(data, params) {
@@ -239,6 +247,10 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runInterpreterTeam(data, params) {
@@ -254,6 +266,10 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runInterpreterTiering(data, params) {
@@ -269,6 +285,10 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runInterpreterZetta(data, params) {
@@ -284,6 +304,10 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     load(data, params) {
@@ -401,6 +425,10 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @param {Boolean} [params.auxiliarIndex = "false"] - Index auxiliar collection to improve performance assuming RGA is completely
     *     indexed. The default value is false.
     * @returns {Promise} Promise object in the form of RestResponse instance.
@@ -602,8 +630,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     but also increase execution time.
     * @param {String} [params.savedFilter] - Use a saved filter at User level.
     * @param {String} [params.includeInterpretation] - Interpretation ID to include the fields related to this interpretation.
-    * @param {String} [params.id] - List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g.
-    *     rs116600158,19:7177679:C:T.
+    * @param {String} [params.id] - List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T.
     * @param {String} [params.region] - List of regions, these can be just a single chromosome name or regions in the format chr:start-end,
     *     e.g.: 2,3:100000-200000.
     * @param {String} [params.type] - List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS,
@@ -655,7 +682,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.ct] - List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases
     *     'loss_of_function' and 'protein_altering'.
     * @param {String} [params.xref] - List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC,
-    *     Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
+    *     Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...
     * @param {String} [params.biotype] - List of biotypes, e.g. protein_coding.
     * @param {String} [params.proteinSubstitution] - Protein substitution scores include SIFT and PolyPhen. You can query using the score
     *     {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.

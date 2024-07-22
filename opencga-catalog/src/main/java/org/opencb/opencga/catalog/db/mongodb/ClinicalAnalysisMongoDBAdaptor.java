@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.ClinicalAnalysisCatalogMongoDBIterator;
@@ -151,6 +152,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         for (Object file : parameters.getAsList(key)) {
             if (file instanceof File) {
                 fileParamList.add(new Document("uid", ((File) file).getUid()));
+            } else if (file instanceof Document) {
+                fileParamList.add(new Document("uid", ((Document) file).get("uid")));
+            } else {
+                throw new IllegalArgumentException("Expected a File or Document object");
             }
         }
         parameters.put(key, fileParamList);
@@ -814,6 +819,25 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
+    void removeFileReferences(ClientSession clientSession, long studyUid, long fileUid, Document file)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        ObjectMap parameters = new ObjectMap(FILES.key(), Collections.singletonList(file));
+        ObjectMap actionMap = new ObjectMap(FILES.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.FILES_UID.key(), fileUid);
+        OpenCGAResult<ClinicalAnalysis> result = get(query, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS);
+        for (ClinicalAnalysis clinicalAnalysis : result.getResults()) {
+            logger.debug("Removing file references from Clinical Analysis {}", clinicalAnalysis.getId());
+            ClinicalAudit clinicalAudit = new ClinicalAudit("OPENCGA", ClinicalAudit.Action.UPDATE_CLINICAL_ANALYSIS, "File "
+                    + file.getString(FileDBAdaptor.QueryParams.PATH.key()) + " was deleted. Remove file references from case.",
+                    TimeUtils.getTime());
+            transactionalUpdate(clientSession, clinicalAnalysis, parameters, null, Collections.singletonList(clinicalAudit), options);
+        }
+    }
+
     @Override
     public OpenCGAResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         return null;
@@ -1292,17 +1316,18 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         if (queryCopy.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || queryCopy.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, queryCopy.getLong(QueryParams.STUDY_UID.key()));
+            boolean simplifyPermissions = simplifyPermissions();
 
             if (queryCopy.containsKey(ParamConstants.ACL_PARAM)) {
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, queryCopy, Enums.Resource.CLINICAL_ANALYSIS, user,
-                        configuration));
+                        simplifyPermissions));
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            ClinicalAnalysisPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.CLINICAL_ANALYSIS, configuration));
+                            ClinicalAnalysisPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.CLINICAL_ANALYSIS, simplifyPermissions));
                 } else {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, ClinicalAnalysisPermissions.VIEW.name(),
-                            Enums.Resource.CLINICAL_ANALYSIS, configuration));
+                            Enums.Resource.CLINICAL_ANALYSIS, simplifyPermissions));
                 }
             }
 

@@ -25,7 +25,6 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.util.Tool;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -34,7 +33,6 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillMissingFromArchiveTask;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
@@ -54,7 +52,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
 /**
  * Created by mh719 on 21/11/2016.
  */
-public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver implements Tool {
+public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver {
 
     public static final String CONFIG_VARIANT_TABLE_NAME           = "opencga.variant.table.name";
     public static final String TIMESTAMP                           = "opencga.variant.table.timestamp";
@@ -266,7 +264,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     }
 
     protected String getArchiveTable() {
-        return getConf().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
+        return getConf().get(ArchiveTableHelper.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
     }
 
     protected HBaseVariantTableNameGenerator getTableNameGenerator() {
@@ -343,7 +341,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
 
     public static String[] buildArgs(String archiveTable, String variantsTable, int studyId, Collection<?> fileIds, ObjectMap other) {
-        other.put(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, archiveTable);
+        other.put(ArchiveTableHelper.CONFIG_ARCHIVE_TABLE_NAME, archiveTable);
         other.put(AbstractVariantsTableDriver.CONFIG_VARIANT_TABLE_NAME, variantsTable);
 
         other.put(STUDY_ID, studyId);

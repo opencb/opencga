@@ -15,7 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Tool(id = TemplateRunner.ID, description = TemplateRunner.DESCRIPTION, type = Tool.Type.OPERATION, resource = Enums.Resource.STUDY,
-        scope = Tool.Scope.STUDY)
+        scope = Tool.Scope.STUDY, priority = Enums.Priority.HIGH)
 public class TemplateRunner extends OperationTool {
 
     public static final String ID = "templates";

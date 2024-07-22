@@ -25,7 +25,8 @@ import java.util.Map;
         resource = Enums.Resource.VARIANT,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.PROJECT,
-        description = JulieTool.DESCRIPTION)
+        description = JulieTool.DESCRIPTION,
+        priority = Enums.Priority.HIGH)
 public class JulieTool extends OpenCgaTool {
 
     public static final String ID = "julie";

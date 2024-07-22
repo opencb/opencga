@@ -29,11 +29,11 @@ import org.opencb.opencga.core.config.ConfigurationOption;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -153,7 +153,7 @@ public class VariantMapReduceUtil {
     public static void initVariantMapperJob(Job job, Class<? extends VariantMapper> mapperClass, String variantTable,
                                                VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
                                                boolean skipSampleIndex) throws IOException {
-        query = new VariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
+        query = new HadoopVariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
 
         setQuery(job, query);
         setQueryOptions(job, queryOptions);
@@ -266,7 +266,7 @@ public class VariantMapReduceUtil {
     public static void initVariantRowMapperJob(Job job, Class<? extends VariantRowMapper> mapperClass, String variantTable,
                                                VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
                                                boolean skipSampleIndex) throws IOException {
-        query = new VariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
+        query = new HadoopVariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
 
         setQuery(job, query);
         setQueryOptions(job, queryOptions);

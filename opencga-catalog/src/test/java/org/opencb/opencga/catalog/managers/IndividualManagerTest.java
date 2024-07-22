@@ -1120,8 +1120,10 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         // Create individual
         catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual"), Collections.singletonList(sample.getId()),
+
                 QueryOptions.empty(), ownerToken);
         Individual individual = catalogManager.getIndividualManager().get(studyFqn, "individual", QueryOptions.empty(), ownerToken).first();
+
         assertEquals(1, individual.getSamples().get(0).getFileIds().size());
         assertEquals("variant-test-file.vcf.gz", individual.getSamples().get(0).getFileIds().get(0));
 
