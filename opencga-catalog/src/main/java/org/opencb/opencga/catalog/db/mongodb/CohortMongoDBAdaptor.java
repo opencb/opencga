@@ -235,22 +235,21 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     @Override
     public OpenCGAResult update(long cohortUid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Query query = new Query(QueryParams.UID.key(), cohortUid);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key(),
-                        QueryParams.SAMPLES.key() + "." + QueryParams.ID.key()));
-        OpenCGAResult<Cohort> documentResult = get(query, options);
-        if (documentResult.getNumResults() == 0) {
-            throw new CatalogDBException("Could not update cohort. Cohort uid '" + cohortUid + "' not found.");
-        }
-        String cohortId = documentResult.first().getId();
-
         try {
-            return runTransaction(clientSession -> transactionalUpdate(clientSession, documentResult.first(), parameters, variableSetList,
-                    queryOptions));
-        } catch (CatalogDBException e) {
-            logger.error("Could not update cohort {}: {}", cohortId, e.getMessage(), e);
-            throw new CatalogDBException("Could not update cohort " + cohortId + ": " + e.getMessage(), e.getCause());
+            return runTransaction(clientSession -> {
+                Query query = new Query(QueryParams.UID.key(), cohortUid);
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key(),
+                                QueryParams.SAMPLES.key() + "." + QueryParams.ID.key()));
+                OpenCGAResult<Cohort> documentResult = get(clientSession, query, options);
+                if (documentResult.getNumResults() == 0) {
+                    throw new CatalogDBException("Could not update cohort. Cohort uid '" + cohortUid + "' not found.");
+                }
+                return transactionalUpdate(clientSession, documentResult.first(), parameters, variableSetList, queryOptions);
+            });
+        } catch (Exception e) {
+            logger.error("Could not update cohort {}: {}", cohortUid, e.getMessage(), e);
+            throw new CatalogDBException("Could not update cohort " + cohortUid + ": " + e.getMessage(), e);
         }
     }
 
@@ -879,18 +878,19 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
+            boolean simplifyPermissions = simplifyPermissions();
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.COHORT, user,
-                        configuration));
+                        simplifyPermissions));
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            CohortPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.COHORT, configuration));
+                            CohortPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.COHORT, simplifyPermissions));
                 } else {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, CohortPermissions.VIEW.name(),
-                            Enums.Resource.COHORT, configuration));
+                            Enums.Resource.COHORT, simplifyPermissions));
                 }
             }
 

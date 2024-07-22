@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop</artifactId>
-        <version>3.2.0-SNAPSHOT</version>
+        <version>3.2.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -259,10 +259,6 @@
             <groupId>org.apache.parquet</groupId>
             <artifactId>parquet-hadoop</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>commons-lang</groupId>-->
-<!--            <artifactId>commons-lang</artifactId>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.ant</groupId>
             <artifactId>ant</artifactId>
@@ -429,6 +425,9 @@
                                     org.apache.logging.log4j:log4j-api
                                 </ignoredNonTestScopedDependency>
                                 <ignoredNonTestScopedDependency>
+                                    commons-lang:commons-lang
+                                </ignoredNonTestScopedDependency>
+                                <ignoredNonTestScopedDependency>
                                     org.opencb.opencga:opencga-storage-hadoop-compat-api
                                 </ignoredNonTestScopedDependency>
                             </ignoredNonTestScopedDependencies>
@@ -438,6 +437,9 @@
                                 </ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>
                                     org.apache.zookeeper:zookeeper
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    commons-lang:commons-lang
                                 </ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                         </configuration>

@@ -542,7 +542,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
     }
 
     @Override
-    public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Document> nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         return nativeGet(null, query, options);
     }
 

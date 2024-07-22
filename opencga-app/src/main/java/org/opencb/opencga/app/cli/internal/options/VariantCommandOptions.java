@@ -49,6 +49,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
@@ -1847,10 +1848,13 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
+        @Parameter(names = {"--sample"}, description = FieldConstants.SAMPLE_ID_DESCRIPTION, required = true)
         public String sample;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        @Parameter(names = {"--clinical-analysis-type"}, description = FieldConstants.EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION)
+        public String clinicalAnalysisType = ClinicalAnalysis.Type.SINGLE.name();
+
+        @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
         public String outdir;
     }
 }

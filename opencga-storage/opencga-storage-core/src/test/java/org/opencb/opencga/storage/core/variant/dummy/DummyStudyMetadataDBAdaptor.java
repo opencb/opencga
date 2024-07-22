@@ -222,7 +222,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
         }
 
         for (TaskMetadata value : TASK_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values()) {
-            if (statusFilter != null) {
+            if (statusFilter != null && !statusFilter.isEmpty()) {
                 if (!statusFilter.contains(value.currentStatus())) {
                     continue;
                 }

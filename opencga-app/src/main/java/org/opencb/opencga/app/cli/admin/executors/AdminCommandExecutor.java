@@ -22,7 +22,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.config.Admin;
 
 import java.util.Collections;
 
@@ -82,9 +81,6 @@ public abstract class AdminCommandExecutor extends CommandExecutor {
             configuration.getCatalog().getDatabase().setUser(user);
         }
 
-        if (configuration.getAdmin() == null) {
-            configuration.setAdmin(new Admin());
-        }
         if (StringUtils.isNotEmpty(password)) {
             configuration.getCatalog().getDatabase().setPassword(password);
         }

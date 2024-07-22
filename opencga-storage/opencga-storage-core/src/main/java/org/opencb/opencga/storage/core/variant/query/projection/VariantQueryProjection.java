@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.query.projection;
 
 import com.google.common.collect.Iterables;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
@@ -21,6 +22,7 @@ public final class VariantQueryProjection {
     private final int numSamples;
     private final int numTotalSamples;
 
+    private List<Event> events = new ArrayList<>();
 
     public VariantQueryProjection(StudyMetadata studyMetadata, List<Integer> samples, List<Integer> files) {
         this.fields = VariantField.getIncludeFields(null);
@@ -77,14 +79,28 @@ public final class VariantQueryProjection {
         return studies.values().stream().collect(Collectors.toMap(s -> s.studyMetadata.getId(), s -> s.samples));
     }
 
+    public Map<String, List<String>> getSampleNames() {
+        return studies.values().stream().collect(Collectors.toMap(s -> s.studyMetadata.getName(), s -> s.sampleNames));
+    }
+
     @Deprecated
     public Map<Integer, List<Integer>> getFiles() {
         return studies.values().stream().collect(Collectors.toMap(s -> s.studyMetadata.getId(), s -> s.files));
     }
 
+    public List<Event> getEvents() {
+        return events;
+    }
+
+    public VariantQueryProjection setEvents(List<Event> events) {
+        this.events = events;
+        return this;
+    }
+
     public static class StudyVariantQueryProjection {
         private StudyMetadata studyMetadata;
         private List<Integer> samples = Collections.emptyList();
+        private List<String> sampleNames = Collections.emptyList();
         private Map<Integer, List<Integer>> multiFileSampleFiles = Collections.emptyMap();
         private Set<Integer> multiFileSamples = Collections.emptySet();
         private List<Integer> files = Collections.emptyList();
@@ -126,6 +142,15 @@ public final class VariantQueryProjection {
 
         public StudyVariantQueryProjection setSamples(List<Integer> samples) {
             this.samples = samples;
+            return this;
+        }
+
+        public List<String> getSampleNames() {
+            return sampleNames;
+        }
+
+        public StudyVariantQueryProjection setSampleNames(List<String> sampleNames) {
+            this.sampleNames = sampleNames;
             return this;
         }
 

@@ -33,19 +33,18 @@ public class MailUtils {
     private static final Logger logger = LoggerFactory.getLogger(MailUtils.class);
 
     public static void sendResetPasswordMail(String to, String newPassword, final String mailUser, final String mailPassword,
-                                             String mailHost, String mailPort) throws Exception {
-        sendResetPasswordMail(to, newPassword, mailUser, mailPassword,
-                mailHost, mailPort, "true");
-    }
-
-    public static void sendResetPasswordMail(String to, String newPassword, final String mailUser, final String mailPassword,
-                                             String mailHost, String mailPort, String ssl) throws Exception {
+                                             String mailHost, String mailPort, String userId) throws Exception {
 
         Properties props = new Properties();
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", ssl);
         props.put("mail.smtp.host", mailHost);
         props.put("mail.smtp.port", mailPort);
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.starttls.required", "true");
+        props.put("mail.smtp.ssl.protocols", "TLSv1.2");
+        props.put("mail.smtp.ssl.checkserveridentity", "true");
+        props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
 
         Session session = Session.getInstance(props,
                 new javax.mail.Authenticator() {
@@ -59,18 +58,29 @@ public class MailUtils {
         message.setRecipients(Message.RecipientType.TO,
                 InternetAddress.parse(to));
 
-        message.setSubject("Your password has been reset");
-        message.setText("Hello, \n" +
-                "You can now login using this new password:" +
-                "\n\n" +
-                newPassword +
-                "\n\n\n" +
-                "Please change it when you first login" +
-                "\n\n" +
-                "Best regards,\n\n" +
-                "Systems Genomics Laboratory" +
-                "\n");
+        message.setSubject("XetaBase: Password Reset");
+        message.setText(getEmailContent(userId,newPassword));
         Transport.send(message);
+    }
+
+    public static String getEmailContent(String userId, String temporaryPassword) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Hi ").append(userId).append(",\n\n");
+        sb.append("We confirm that your password has been successfully reset.\n\n");
+        sb.append("Please find your new login credentials below:\n\n");
+        sb.append("User ID: ").append(userId).append("\n");
+        sb.append("Temporary Password: ").append(temporaryPassword).append("\n\n");
+        sb.append("For your security, we strongly recommend that you log in using the temporary password provided ");
+        sb.append("and promptly create a new password that is unique and known only to you. ");
+        sb.append("You can change your password by accessing \"Your Profile > Change Password\" in your User Profile.\n\n");
+        sb.append("If you did not request a password reset, please contact our support team immediately at support@zettagenomics.com.\n\n");
+        sb.append("Best regards,\n\n");
+        sb.append("ZettaGenomics Support Team \n\n");
+
+
+
+        return sb.toString();
     }
 
     public static void sendMail(String smtpServer, String to, String from, String subject, String body) throws Exception {

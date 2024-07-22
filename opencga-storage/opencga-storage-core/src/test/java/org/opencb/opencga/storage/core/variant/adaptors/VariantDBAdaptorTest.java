@@ -30,14 +30,11 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -47,6 +44,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.NoOpVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.filters.VariantFilterBuilder;
@@ -268,8 +267,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         VariantDBIterator iterator = dbAdaptor.iterator(variantsToQuery.iterator(), new Query(), new QueryOptions());
 
-        DataResult<Variant> queryResult = iterator.toDataResult();
-        assertEquals(variantsToQuery.size(), queryResult.getResults().size());
+        List<Variant> variants = iterator.toList();
+        assertEquals(variantsToQuery.size(), variants.size());
     }
 
     @Test
@@ -531,11 +530,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testGetAllVariants_variantId() {
         int i = 0;
         List<Variant> variants = new ArrayList<>();
+        Map<String, String> normalizedVariants = new HashMap<>();
         for (Variant variant : allVariants.getResults()) {
-            if (i++ % 10 == 0) {
-                if (!variant.isSymbolic()) {
-                    variants.add(variant);
-                }
+            if ((i++ % 10) == 0) {
+                variants.add(variant);
+            }
+            OriginalCall call = variant.getStudies().get(0).getFiles().get(0).getCall();
+            if (call != null) {
+                normalizedVariants.put(variant.toString(), call.getVariantId());
             }
         }
         List<Variant> result = query(new Query(ID.key(), variants), new QueryOptions()).getResults();
@@ -554,32 +556,61 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             }
         }
         assertEquals(expectedList, actualList);
+
+        normalizedVariants.forEach((key, value) -> {
+            System.out.println(key + " = " + value);
+        });
+        List<Variant> resultNormalized = query(new Query(ID.key(), normalizedVariants.values()).append(INCLUDE_FILE.key(), ALL), new QueryOptions()).getResults();
+        assertEquals(normalizedVariants.size(), resultNormalized.size());
+        assertTrue(!resultNormalized.isEmpty());
+        for (Variant variant : resultNormalized) {
+            String expected = normalizedVariants.get(variant.toString());
+            String actual = variant.getStudies().get(0).getFiles().get(0).getCall().getVariantId();
+            assertEquals(expected, actual);
+        }
     }
 
     @Test
     public void testGetAllVariants_xref() {
-        Query query = new Query(ANNOT_XREF.key(), "3:108634973:C:A,rs2032582,HP:0001250,VAR_048225,Q9BY64,ENSG00000250026,TMPRSS11B,COSM1421316");
-        queryResult = query(query, null);
-        assertThat(queryResult, everyResult(allVariantsSummary, anyOf(
-                hasAnnotation(at("3:108634973:C:A")),
-                with("id", Variant::getId, is("rs2032582")),
-                hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
-                        hasItem(with("HPO", GeneTraitAssociation::getHpo, is("HP:0001250"))))),
-                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
-                                with("UniprotVariantId", ProteinVariantAnnotation::getUniprotVariantId, is("VAR_048225")))))),
-                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
-                                with("UniprotName", ProteinVariantAnnotation::getUniprotAccession, is("Q9BY64")))))),
-                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("EnsemblGene", ConsequenceType::getGeneId, is("ENSG00000250026"))))),
-                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("GeneName", ConsequenceType::getGeneName, is("TMPRSS11B")))))
-//                hasAnnotation(with("VariantTraitAssociation", VariantAnnotation::getVariantTraitAssociation,
-//                        with("Cosmic", VariantTraitAssociation::getCosmic,
-//                                hasItem(with("MutationId", Cosmic::getMutationId, is("COSM1421316"))))))
-        )));
+        Map<String, Matcher<? super Variant>> matchers = new HashMap<>();
+        matchers.put("3:108634973:C:A", hasAnnotation(at("3:108634973:C:A")));
+        matchers.put("rs2032582", with("id", Variant::getId, is("rs2032582")));
+        matchers.put("HP:0001250", hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
+                hasItem(with("HPO", GeneTraitAssociation::getHpo, is("HP:0001250"))))));
+        matchers.put("VAR_048225", hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
+                        with("UniprotVariantId", ProteinVariantAnnotation::getUniprotVariantId, is("VAR_048225")))))));
+        matchers.put("Q9BY64", hasAnnotation(
+                with("ConsequenceType", VariantAnnotation::getConsequenceTypes, hasItem(
+                        with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
+                                with("UniprotAccession", ProteinVariantAnnotation::getUniprotAccession,
+                                        is("Q9BY64")))))));
+        matchers.put("ENSG00000250026", hasAnnotation(
+                with("ConsequenceType", VariantAnnotation::getConsequenceTypes, hasItem(
+                        with("GeneId", ConsequenceType::getGeneId,
+                                is("ENSG00000250026"))))));
+        matchers.put("TMPRSS11B", hasAnnotation(
+                with("ConsequenceType", VariantAnnotation::getConsequenceTypes, hasItem(
+                        with("GeneName", ConsequenceType::getGeneName,
+                                is("TMPRSS11B"))))));
+        matchers.put("COSM1421316", hasAnnotation(with("TraitAssociation", VariantAnnotation::getTraitAssociation, hasItem(
+                with("Cosmic", EvidenceEntry::getId, is("COSM1421316"))))));
 
+        // Query one by one
+        for (Map.Entry<String, Matcher<? super Variant>> entry : matchers.entrySet()) {
+            Query query = new Query(ANNOT_XREF.key(), entry.getKey());
+            queryResult = query(query, null);
+            assertThat(entry.getKey(), queryResult, everyResult(allVariantsSummary, allOf(entry.getValue())));
+
+            query = new Query(ID.key(), entry.getKey());
+            queryResult = query(query, null);
+            assertThat(entry.getKey(), queryResult, everyResult(allVariantsSummary, allOf(entry.getValue())));
+        }
+
+        // Query by all xrefs
+        Query query = new Query(ANNOT_XREF.key(), matchers.keySet());
+        queryResult = query(query, null);
+        assertThat(queryResult, everyResult(allVariantsSummary, anyOf(matchers.values())));
     }
 
     @Test
@@ -2420,7 +2451,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     private Matcher<Variant> withFilter(Query query) {
-        return VariantMatchers.withFilter(new VariantFilterBuilder(metadataManager).buildFilter(query, null), query.toJson());
+        ParsedVariantQuery parsedVariantQuery = variantStorageEngine.parseQuery(query, new QueryOptions());
+        return VariantMatchers.withFilter(new VariantFilterBuilder().buildFilter(parsedVariantQuery), query.toJson());
     }
 /*
     @Test
