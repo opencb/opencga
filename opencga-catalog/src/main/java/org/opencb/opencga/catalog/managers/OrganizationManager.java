@@ -185,7 +185,7 @@ public class OrganizationManager extends AbstractManager {
             organization = organizationCreateParams.toOrganization();
             validateOrganizationForCreation(organization, userId);
 
-            queryResult = catalogDBAdaptorFactory.createOrganization(organization, options, userId);
+            queryResult = getCatalogDBAdaptorFactory().createOrganization(organization, options, userId);
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 OpenCGAResult<Organization> result = getOrganizationDBAdaptor(organization.getId()).get(options);
                 organization = result.first();
@@ -211,7 +211,7 @@ public class OrganizationManager extends AbstractManager {
             auditManager.auditCreate(ParamConstants.ADMIN_ORGANIZATION, userId, Enums.Resource.ORGANIZATION, organization.getId(), "", "",
                     "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             try {
-                catalogDBAdaptorFactory.deleteOrganization(organization);
+                getCatalogDBAdaptorFactory().deleteOrganization(organization);
             } catch (Exception e1) {
                 logger.error("Error deleting organization from catalog after failing creating the folder in the filesystem", e1);
                 throw e;
@@ -592,7 +592,7 @@ public class OrganizationManager extends AbstractManager {
     public List<String> getOrganizationIds(String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         authorizationManager.checkIsOpencgaAdministrator(tokenPayload, "get all organization ids");
-        return catalogDBAdaptorFactory.getOrganizationIds();
+        return getCatalogDBAdaptorFactory().getOrganizationIds();
     }
 
     private void privatizeResults(OpenCGAResult<Organization> result) {

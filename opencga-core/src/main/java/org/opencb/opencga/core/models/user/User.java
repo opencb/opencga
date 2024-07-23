@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -49,14 +50,11 @@ public class User {
     @DataField(id = "organization", indexed = true, description = FieldConstants.USER_ORGANIZATION)
     private String organization;
 
-    @DataField(id = "account", indexed = true, description = FieldConstants.USER_ACCOUNT)
-    private Account account;
+    @DataField(id = "creationDate", since = "3.2.1", description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
+    private String creationDate;
 
-    /**
-     * An object describing the internal information of the User. This is managed by OpenCGA.
-     *
-     * @apiNote Internal
-     */
+    @DataField(id = "modificationDate", since = "3.2.1", description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
+    private String modificationDate;
 
     @DataField(id = "internal", indexed = true, description = FieldConstants.GENERIC_INTERNAL)
     private UserInternal internal;
@@ -89,25 +87,40 @@ public class User {
     public User() {
     }
 
-    public User(String id, Account account) {
-        this(id, id, null, null, account, new UserInternal(new UserStatus()), null, Collections.emptyList(), Collections.emptyMap(),
+    public User(String id) {
+        this(id, id, null, null, null, null, new UserInternal(new UserStatus()), null, Collections.emptyMap(),
                 new LinkedList<>(), Collections.emptyMap());
     }
 
     public User(String id, String name, String email, String organization, UserInternal internal) {
-        this(id, name, email, organization, null, internal, null, new ArrayList<>(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
+        this(id, name, email, organization, null, null, internal, null, new HashMap<>(), new LinkedList<>(), new HashMap<>());
     }
 
-    public User(String id, String name, String email, String organization, Account account, UserInternal internal, UserQuota quota,
-                List<Project> projects, Map<String, ObjectMap> configs, List<UserFilter> filters, Map<String, Object> attributes) {
+    public User(String id, String name, String email, String organization, UserInternal internal, UserQuota quota, List<Project> projects,
+                Map<String, ObjectMap> configs, List<UserFilter> filters, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.organization = organization;
-        this.account = account != null ? account : new Account();
         this.internal = internal;
         this.quota = quota;
         this.projects = projects;
+        this.configs = configs;
+        this.filters = filters;
+        this.attributes = attributes;
+    }
+
+    public User(String id, String name, String email, String organization, String creationDate, String modificationDate,
+                UserInternal internal, UserQuota quota, Map<String, ObjectMap> configs, List<UserFilter> filters,
+                Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.organization = organization;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
+        this.internal = internal;
+        this.quota = quota;
         this.configs = configs;
         this.filters = filters;
         this.attributes = attributes;
@@ -120,7 +133,8 @@ public class User {
         sb.append(", name='").append(name).append('\'');
         sb.append(", email='").append(email).append('\'');
         sb.append(", organization='").append(organization).append('\'');
-        sb.append(", account=").append(account);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", internal=").append(internal);
         sb.append(", quota=").append(quota);
         sb.append(", projects=").append(projects);
@@ -167,12 +181,34 @@ public class User {
         return this;
     }
 
-    public Account getAccount() {
-        return account;
+    public String getCreationDate() {
+        return creationDate;
     }
 
+    public User setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public User setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
+        return this;
+    }
+
+    @JsonIgnore
+    @Deprecated
+    public Account getAccount() {
+        return getInternal().getAccount();
+    }
+
+    @JsonIgnore
+    @Deprecated
     public User setAccount(Account account) {
-        this.account = account;
+        getInternal().setAccount(account);
         return this;
     }
 

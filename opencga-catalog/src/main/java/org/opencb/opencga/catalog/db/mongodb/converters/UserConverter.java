@@ -33,17 +33,12 @@ public class UserConverter extends OpenCgaMongoConverter<User> {
 
     @Override
     public User convertToDataModelType(Document document) {
-        // TODO: Remove this piece of code once we are sure User contains the migrated new account type from 1.4.2
-        Document account = (Document) document.get("account");
-        if (account != null && account.get("authentication") == null) {
-            String authOrigin = account.getString("authOrigin");
-            Document authentication = new Document()
-                    .append("id", authOrigin)
-                    .append("application", false);
-            account.put("authentication", authentication);
+        User user = super.convertToDataModelType(document);
+        // Add account to deprecated place
+        if (user.getInternal() != null && user.getInternal().getAccount() != null) {
+            user.setAccount(user.getInternal().getAccount());
         }
-
-        return super.convertToDataModelType(document);
+        return user;
     }
 
 }

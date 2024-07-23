@@ -441,9 +441,16 @@ public class FieldConstants {
     public static final String USER_ACCOUNT = "User account.";
 
     //Account
-    public static final String ACCOUNT_TYPE = "User account type can have the values GUEST, FULL and ADMINISTRATOR.";
-    public static final String ACCOUNT_EXPIRATION_DATE_DESCRIPTION = "Date the account expires.";
-    public static final String ACCOUNT_AUTHENTICATION = "How the account is authenticated";
+    public static final String INTERNAL_ACCOUNT_EXPIRATION_DATE_DESCRIPTION = "Date the account expires.";
+    public static final String INTERNAL_ACCOUNT_FAILED_ATTEMPTS_DESCRIPTION = "Number of consecutive failed attempts. When the user logs"
+            + " in successfully, this field is automatically reset to 0.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_DESCRIPTION = "Object containing the last time the password was changed and the"
+            + " expiration date.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_LAST_CHANGE_DATE_DESCRIPTION = "Date the user's password was last changed. This "
+            + "field will be null if the user account origin is different from OpenCGA.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE_DESCRIPTION = "Date the user's password expires. This field will"
+            + " be null if the user account origin is different from OpenCGA and the passwordExpiration feature is disabled.";
+    public static final String INTERNAL_ACCOUNT_AUTHENTICATION = "How the account is authenticated";
     public static final String USER_QUOTA = "User quota";
     public static final String USER_PROJECTS = "A List with related projects.";
     public static final String USER_SHARED_PROJECTS = "A List with shared projects.";

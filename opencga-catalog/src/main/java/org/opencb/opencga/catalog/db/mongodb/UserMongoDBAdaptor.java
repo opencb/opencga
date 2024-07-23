@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -54,6 +55,7 @@ import org.opencb.opencga.core.models.user.UserStatus;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.function.Consumer;
@@ -72,6 +74,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
     private UserConverter userConverter;
 
     private static final String PRIVATE_PASSWORD = "_password";
+    private static final String ARCHIVE_PASSWORD = "_archivePasswords";
 
     public UserMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection, Configuration configuration,
                               OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
@@ -118,6 +121,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
         Document userDocument = userConverter.convertToStorageType(user);
         userDocument.append(ID, user.getId());
         userDocument.append(PRIVATE_PASSWORD, encryptPassword(password));
+        userDocument.append(ARCHIVE_PASSWORD, Collections.singletonList(encryptPassword(password)));
 
         userCollection.insert(clientSession, userDocument, null);
     }
@@ -132,15 +136,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
     @Override
     public OpenCGAResult changePassword(String userId, String oldPassword, String newPassword)
             throws CatalogDBException, CatalogAuthenticationException {
-        Document bson = new Document(ID, userId)
-                .append(PRIVATE_PASSWORD, encryptPassword(oldPassword));
-        Bson set = Updates.set(PRIVATE_PASSWORD, encryptPassword(newPassword));
-
-        DataResult result = userCollection.update(bson, set, null);
-        if (result.getNumUpdated() == 0) {  //0 query matches.
-            throw CatalogAuthenticationException.incorrectUserOrPassword("Internal");
-        }
-        return new OpenCGAResult(result);
+        return setPassword(userId, oldPassword, newPassword);
     }
 
     @Override
@@ -160,15 +156,54 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
 
     @Override
     public OpenCGAResult resetPassword(String userId, String email, String newPassword) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), userId);
-        query.append(QueryParams.EMAIL.key(), email);
-        Bson bson = parseQuery(query);
+        return setPassword(userId, null, newPassword);
+    }
 
-        Bson set = Updates.set(PRIVATE_PASSWORD, encryptPassword(newPassword));
+    public OpenCGAResult setPassword(String userId, @Nullable String oldPassword, String newPassword) throws CatalogDBException {
+        List<Bson> queryFilter = new ArrayList<>();
+        queryFilter.add(Filters.eq(QueryParams.ID.key(), userId));
+        queryFilter.add(Filters.ne(ARCHIVE_PASSWORD, encryptPassword(newPassword)));
+        if (StringUtils.isNotEmpty(oldPassword)) {
+            queryFilter.add(Filters.eq(PRIVATE_PASSWORD, encryptPassword(oldPassword)));
+        }
+        Bson query = Filters.and(queryFilter);
 
-        DataResult result = userCollection.update(bson, set, null);
-        if (result.getNumUpdated() == 0) {  //0 query matches.
-            throw new CatalogDBException("Bad user or email");
+        UpdateDocument updateDocument = new UpdateDocument();
+        String encryptedPassword = encryptPassword(newPassword);
+        updateDocument.getSet().put(PRIVATE_PASSWORD, encryptedPassword);
+        updateDocument.getPush().put(ARCHIVE_PASSWORD, encryptedPassword);
+        updateDocument.getSet().put(INTERNAL_ACCOUNT_PASSWORD_LAST_CHANGE_DATE.key(), TimeUtils.getTime());
+        if (configuration.getAccount().getPasswordExpirationDays() > 0) {
+            Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
+            String stringDate = TimeUtils.getTime(date);
+            updateDocument.getSet().put(INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE.key(), stringDate);
+        }
+        Document update = updateDocument.toFinalUpdateDocument();
+
+        logger.debug("Change password: query '{}'; update: '{}'", query.toBsonDocument(), update);
+        DataResult<?> result = userCollection.update(query, update, null);
+        if (result.getNumUpdated() == 0) {
+            if (result.getNumMatches() == 0) {
+                Query userQuery = new Query(QueryParams.ID.key(), userId);
+                OpenCGAResult<Document> queryResult = nativeGet(userQuery,
+                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_PASSWORD, ARCHIVE_PASSWORD)));
+                if (queryResult.getNumResults() == 0) {
+                    throw new CatalogDBException("Could not update the password. User not found.");
+                }
+                Document userDocument = queryResult.first();
+                if (StringUtils.isNotEmpty(oldPassword)) {
+                    String dbPassword = userDocument.getString(PRIVATE_PASSWORD);
+                    if (!encryptPassword(oldPassword).equals(dbPassword)) {
+                        throw new CatalogDBException("Could not update the password. Please, verify that the current password is correct.");
+                    }
+                }
+                List<String> archivePassword = userDocument.getList(ARCHIVE_PASSWORD, String.class);
+                if (archivePassword.contains(encryptedPassword)) {
+                    throw new CatalogDBException("Could not update the password. The new password has already been used. Please, use"
+                            + " a different one.");
+                }
+            }
+            throw new CatalogDBException("Could not update the password. Please, verify that the current password is correct.");
         }
         return new OpenCGAResult(result);
     }
@@ -409,7 +444,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
 
         for (Document user : queryResult.getResults()) {
             ArrayList<Document> projects = (ArrayList<Document>) user.get("projects");
-            if (projects.size() > 0) {
+            if (CollectionUtils.isNotEmpty(projects)) {
                 List<Document> projectsTmp = new ArrayList<>(projects.size());
                 for (Document project : projects) {
                     Query query1 = new Query(ProjectDBAdaptor.QueryParams.UID.key(), project.get(ProjectDBAdaptor
@@ -429,7 +464,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
     public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), ACCOUNT_EXPIRATION_DATE.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), INTERNAL_ACCOUNT_EXPIRATION_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
@@ -437,7 +472,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
             document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        final String[] acceptedIntParams = {INTERNAL_FAILED_ATTEMPTS.key()};
+        final String[] acceptedIntParams = {INTERNAL_ACCOUNT_FAILED_ATTEMPTS.key()};
         filterIntParams(parameters, document.getSet(), acceptedIntParams);
 
         final String[] acceptedObjectParams = {QueryParams.QUOTA.key()};
@@ -670,8 +705,8 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
                     case EMAIL:
                     case ORGANIZATION:
                     case INTERNAL_STATUS_DATE:
-                    case ACCOUNT_AUTHENTICATION_ID:
-                    case ACCOUNT_CREATION_DATE:
+                    case INTERNAL_ACCOUNT_AUTHENTICATION_ID:
+                    case INTERNAL_ACCOUNT_CREATION_DATE:
                     case TOOL_ID:
                     case TOOL_NAME:
                     case TOOL_ALIAS:
