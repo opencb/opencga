@@ -446,7 +446,7 @@ public class FieldConstants {
             + " in successfully, this field is automatically reset to 0.";
     public static final String INTERNAL_ACCOUNT_PASSWORD_DESCRIPTION = "Object containing the last time the password was changed and the"
             + " expiration date.";
-    public static final String INTERNAL_ACCOUNT_PASSWORD_LAST_CHANGE_DATE_DESCRIPTION = "Date the user's password was last changed. This "
+    public static final String INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED_DESCRIPTION = "Date the user's password was last changed. This "
             + "field will be null if the user account origin is different from OpenCGA.";
     public static final String INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE_DESCRIPTION = "Date the user's password expires. This field will"
             + " be null if the user account origin is different from OpenCGA and the passwordExpiration feature is disabled.";

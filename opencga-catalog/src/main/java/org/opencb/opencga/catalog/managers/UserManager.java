@@ -62,8 +62,8 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.checkEmail;
  */
 public class UserManager extends AbstractManager {
 
-    static final QueryOptions INCLUDE_INTERNAL = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-            UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.INTERNAL.key()));
+    static final QueryOptions INCLUDE_INTERNAL = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
+            UserDBAdaptor.QueryParams.INTERNAL.key(), UserDBAdaptor.QueryParams.DEPRECATED_ACCOUNT.key()));
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     private final CatalogIOManager catalogIOManager;
     private final AuthenticationFactory authenticationFactory;
@@ -171,7 +171,7 @@ public class UserManager extends AbstractManager {
 
         // Set password expiration
         if (AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())) {
-            account.getPassword().setLastChangeDate(TimeUtils.getTime());
+            account.getPassword().setLastModified(TimeUtils.getTime());
         }
         if (!AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())
                 || configuration.getAccount().getPasswordExpirationDays() <= 0) {

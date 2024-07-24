@@ -7,7 +7,7 @@ workspace: ${OPENCGA.USER.WORKSPACE}
 jobDir: ${OPENCGA.USER.WORKSPACE}/jobs
 
 # Maximum number of login attempts before banning a user account
-maxLoginAttempts: ${OPENCGA.MAX_LOGIN_ATTEMPTS}
+maxLoginAttempts: ${OPENCGA.ACCOUNT.MAX_LOGIN_ATTEMPTS}
 
 panel:
   host: "http://resources.opencb.org/opencb/opencga/disease-panels"

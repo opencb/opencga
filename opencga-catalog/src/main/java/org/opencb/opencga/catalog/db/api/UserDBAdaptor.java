@@ -120,6 +120,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         ORGANIZATION("organization", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
+        DEPRECATED_ACCOUNT("account", OBJECT, ""), // Deprecated since 3.2.1 #TASK-6494 TODO: Remove in future releases
         INTERNAL("internal", OBJECT, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
@@ -129,7 +130,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         INTERNAL_ACCOUNT_CREATION_DATE("internal.account.creationDate", TEXT, ""),
         INTERNAL_ACCOUNT_EXPIRATION_DATE("internal.account.expirationDate", TEXT, ""),
         INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE("internal.account.password.expirationDate", TEXT, ""),
-        INTERNAL_ACCOUNT_PASSWORD_LAST_CHANGE_DATE("internal.account.password.lastChangeDate", TEXT, ""),
+        INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED("internal.account.password.lastModified", TEXT, ""),
         QUOTA("quota", OBJECT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
 

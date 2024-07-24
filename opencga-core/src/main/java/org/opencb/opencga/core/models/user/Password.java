@@ -8,22 +8,22 @@ public class Password {
     @DataField(id = "expirationDate", since = "3.2.1", description = FieldConstants.INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE_DESCRIPTION)
     private String expirationDate;
 
-    @DataField(id = "lastChangeDate", since = "3.2.1", description = FieldConstants.INTERNAL_ACCOUNT_PASSWORD_LAST_CHANGE_DATE_DESCRIPTION)
-    private String lastChangeDate;
+    @DataField(id = "lastModified", since = "3.2.1", description = FieldConstants.INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED_DESCRIPTION)
+    private String lastModified;
 
     public Password() {
     }
 
-    public Password(String expirationDate, String lastChangeDate) {
+    public Password(String expirationDate, String lastModified) {
         this.expirationDate = expirationDate;
-        this.lastChangeDate = lastChangeDate;
+        this.lastModified = lastModified;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Password{");
         sb.append("expirationDate='").append(expirationDate).append('\'');
-        sb.append(", lastChangeDate='").append(lastChangeDate).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -37,12 +37,12 @@ public class Password {
         return this;
     }
 
-    public String getLastChangeDate() {
-        return lastChangeDate;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public Password setLastChangeDate(String lastChangeDate) {
-        this.lastChangeDate = lastChangeDate;
+    public Password setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

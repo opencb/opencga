@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models.user;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -55,6 +54,10 @@ public class User {
 
     @DataField(id = "modificationDate", since = "3.2.1", description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+
+    @DataField(id = "account", description = FieldConstants.USER_ACCOUNT)
+    @Deprecated
+    private Account account;
 
     @DataField(id = "internal", indexed = true, description = FieldConstants.GENERIC_INTERNAL)
     private UserInternal internal;
@@ -199,16 +202,14 @@ public class User {
         return this;
     }
 
-    @JsonIgnore
     @Deprecated
     public Account getAccount() {
-        return getInternal().getAccount();
+        return account;
     }
 
-    @JsonIgnore
     @Deprecated
     public User setAccount(Account account) {
-        getInternal().setAccount(account);
+        this.account = account;
         return this;
     }
 

@@ -172,7 +172,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
         String encryptedPassword = encryptPassword(newPassword);
         updateDocument.getSet().put(PRIVATE_PASSWORD, encryptedPassword);
         updateDocument.getPush().put(ARCHIVE_PASSWORD, encryptedPassword);
-        updateDocument.getSet().put(INTERNAL_ACCOUNT_PASSWORD_LAST_CHANGE_DATE.key(), TimeUtils.getTime());
+        updateDocument.getSet().put(INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED.key(), TimeUtils.getTime());
         if (configuration.getAccount().getPasswordExpirationDays() > 0) {
             Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
             String stringDate = TimeUtils.getTime(date);

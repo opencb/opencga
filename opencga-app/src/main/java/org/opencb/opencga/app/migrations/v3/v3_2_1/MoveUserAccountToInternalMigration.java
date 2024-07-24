@@ -30,16 +30,19 @@ public class MoveUserAccountToInternalMigration extends MigrationTool {
                     Document internal = document.get("internal", Document.class);
                     internal.put("account", account);
 
-                    updateDocument.getSet().put("expirationDate", internal.get("lastModified"));
+                    updateDocument.getSet().put("modificationDate", internal.get("lastModified"));
                     updateDocument.getSet().put("creationDate", account.get("creationDate"));
                     account.remove("creationDate");
 
                     Document password = new Document()
                             .append("expirationDate", null)
-                            .append("lastChangedDate", internal.get("lastModified"));
+                            .append("lastModified", internal.get("lastModified"));
                     account.put("password", password);
                     account.put("failedAttempts", internal.get("failedAttempts"));
                     internal.remove("failedAttempts");
+
+                    updateDocument.getSet().put("internal", internal);
+                    updateDocument.getUnset().add("account");
 
                     bulk.add(new UpdateOneModel<>(Filters.eq("_id", document.get("_id")), updateDocument.toFinalUpdateDocument()));
                 });
