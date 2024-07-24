@@ -45,10 +45,9 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     @Override
     public synchronized DataResult<ProjectMetadata> getProjectMetadata() {
         final DataResult<ProjectMetadata> result = new DataResult<>();
-        if (projectMetadata == null) {
-            projectMetadata = new ProjectMetadata("hsapiens", "grch37", 1);
+        if (projectMetadata != null) {
+            result.setResults(Collections.singletonList(projectMetadata.copy()));
         }
-        result.setResults(Collections.singletonList(projectMetadata.copy()));
         return result;
     }
 
