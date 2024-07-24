@@ -573,11 +573,15 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public ProjectMetadata getAndUpdateProjectMetadata(ObjectMap options) throws StorageEngineException {
         ProjectMetadata projectMetadata = getProjectMetadata();
+
+        checkSameSpeciesAndAssembly(options, projectMetadata);
         if (options != null && (projectMetadata == null
                 || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(SPECIES.key())
                 || StringUtils.isEmpty(projectMetadata.getAssembly()) && options.containsKey(ASSEMBLY.key()))) {
 
             projectMetadata = updateProjectMetadata(pm -> {
+                // Check again, in case it was updated by another thread
+                checkSameSpeciesAndAssembly(options, pm);
                 if (pm == null) {
                     pm = new ProjectMetadata();
                 }
@@ -596,6 +600,25 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             });
         }
         return projectMetadata;
+    }
+
+    private static void checkSameSpeciesAndAssembly(ObjectMap options, ProjectMetadata projectMetadata) throws StorageEngineException {
+        if (options != null && projectMetadata != null) {
+            if (options.containsKey(ASSEMBLY.key())) {
+                if (StringUtils.isNotEmpty(projectMetadata.getAssembly()) && !projectMetadata.getAssembly()
+                        .equalsIgnoreCase(options.getString(ASSEMBLY.key()))) {
+                    throw new StorageEngineException("Incompatible assembly change from '" + projectMetadata.getAssembly() + "' to '"
+                            + options.getString(ASSEMBLY.key()) + "'");
+                }
+            }
+            if (options.containsKey(SPECIES.key())) {
+                if (StringUtils.isNotEmpty(projectMetadata.getSpecies()) && !projectMetadata.getSpecies()
+                        .equalsIgnoreCase(toCellBaseSpeciesName(options.getString(SPECIES.key())))) {
+                    throw new StorageEngineException("Incompatible species change from '" + projectMetadata.getSpecies() + "' to '"
+                            + options.getString(SPECIES.key()) + "'");
+                }
+            }
+        }
     }
 
     public DataResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)

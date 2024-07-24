@@ -43,8 +43,8 @@ public class SolrQueryParserTest {
 
     private String studyName = "platinum";
     private String flBase = "fl=other,geneToSoAcc,traits,type,soAcc,score_*,sift,passStats_*,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,"
-            + "popFreq_*,caddScaled,genes,chromosome,xrefs,start,gerp,polyphen,siftDesc,"
-            + "phastCons,phylop,altStats_*,id,chromosome,start,end,type";
+            + "popFreq_*,caddScaled,genes,chromosome,xrefs,start,gerp,polyphen,attr_id,siftDesc,"
+            + "phastCons,phylop,altStats_*";
     private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*";
     private String flDefaultStudy = flBase + ",fileInfo__" + studyName + "__*,qual__" + studyName + "__*,"
             + "filter__" + studyName + "__*,sampleFormat__" + studyName + "__*";

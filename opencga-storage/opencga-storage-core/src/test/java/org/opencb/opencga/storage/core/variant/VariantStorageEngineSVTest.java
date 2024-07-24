@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -20,6 +21,11 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -49,22 +55,27 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
     protected static URI input2;
     protected static URI input3;
 
+    @ClassRule
+    public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
+
     @Before
     public void before() throws Exception {
         if (!loaded) {
             clearDB(DB_NAME);
+        }
+        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
+        variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
+        variantStorageEngine.reloadCellbaseConfiguration();
+        solr.configure(variantStorageEngine);
+        if (!loaded) {
             loadFiles();
             loaded = true;
         }
     }
 
     protected void loadFiles() throws Exception {
-        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
-        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("3");
-        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
-        variantStorageEngine.reloadCellbaseConfiguration();
-
         input1 = getResourceUri("variant-test-sv.vcf");
         studyMetadata = new StudyMetadata(1, "s1");
         variantStorageEngine.getOptions().append(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key(), "expression,clinical");
@@ -86,6 +97,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "grch38"));
 
+        variantStorageEngine.secondaryIndex();
     }
 
     @Test
@@ -104,6 +116,18 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
                 ;
         int count = variantStorageEngine.count(new VariantQuery().study(studyMetadata.getName())).first().intValue();
         assertEquals(expected, count);
+    }
+
+    @Test
+    public void checkSecondaryAnnotationIndex() throws Exception {
+        VariantQueryExecutor variantQueryExecutor = variantStorageEngine.getVariantQueryExecutor(SearchIndexVariantQueryExecutor.class);
+        for (Variant variant : variantStorageEngine) {
+            ParsedVariantQuery query = variantStorageEngine
+                    .parseQuery(new Query(VariantQueryParam.ID.key(), variant.toString()), new QueryOptions());
+            VariantQueryResult<Variant> result = variantQueryExecutor.get(query);
+            assertEquals(1, result.getNumResults());
+            assertEquals(variant.toString(), result.first().toString());
+        }
     }
 
     @Test

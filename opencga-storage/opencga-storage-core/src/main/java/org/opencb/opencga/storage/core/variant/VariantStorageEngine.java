@@ -1362,6 +1362,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         throw new VariantQueryException("No VariantQueryExecutor found to run the query!");
     }
 
+    public final VariantQueryExecutor getVariantQueryExecutor(Class<? extends VariantQueryExecutor> clazz)
+            throws StorageEngineException {
+        Optional<VariantQueryExecutor> first = getVariantQueryExecutors()
+                .stream()
+                .filter(e -> e instanceof SearchIndexVariantQueryExecutor)
+                .findFirst();
+        if (first.isPresent()) {
+            return first.get();
+        } else {
+            throw new StorageEngineException("VariantQueryExecutor " + clazz + " not found");
+        }
+    }
+
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {
         try {
             return getVariantQueryParser().preProcessQuery(originalQuery, options);
