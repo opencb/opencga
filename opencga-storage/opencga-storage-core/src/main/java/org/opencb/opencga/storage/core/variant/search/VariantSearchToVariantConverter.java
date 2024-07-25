@@ -56,6 +56,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     public static final double MISSING_VALUE = -100.0;
     private static final String LIST_SEP = "___";
     private static final String FIELD_SEP = " -- ";
+    static final String HASH_PREFIX = "#";
 
     private final Logger logger = LoggerFactory.getLogger(VariantSearchToVariantConverter.class);
     private final Set<VariantField> includeFields;
@@ -79,10 +80,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     @Override
     public Variant convertToDataModelType(VariantSearchModel variantSearchModel) {
         // set chromosome, start, end, ref, alt from ID
-        Variant variant = new Variant(variantSearchModel.getId());
+        Variant variant = variantSearchModel.toVariantSimple();
 
-        // set ID, chromosome, start, end, ref, alt, type
-        variant.setId(variantSearchModel.getVariantId());
+        // set chromosome, start, end, ref, alt, type
 
         // set variant type
         if (StringUtils.isNotEmpty(variantSearchModel.getType())) {
@@ -662,8 +662,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         List<String> other = new ArrayList<>();
 
         // Set general Variant attributes: id, dbSNP, chromosome, start, end, type
-        variantSearchModel.setId(variant.toString());   // Internal unique ID e.g.  3:1000:AT:-
-        variantSearchModel.setVariantId(variant.getId());
+        String variantId = getVariantId(variant);
+        variantSearchModel.setId(variantId);   // Internal unique ID e.g.  3:1000:AT:-
+        variantSearchModel.setVariantId(variantId);
+        variantSearchModel.getAttr().put("attr_id", variant.toString());
         variantSearchModel.setChromosome(variant.getChromosome());
         variantSearchModel.setStart(variant.getStart());
         variantSearchModel.setEnd(variant.getEnd());
@@ -1019,8 +1021,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // This field contains all possible IDs: id, dbSNP, names, genes, transcripts, protein, clinvar, hpo, ...
         // This will help when searching by variant id. This is added at the end of the method after collecting all IDs
         Set<String> xrefs = variantAnnotationModelUtils.extractXRefs(variant.getAnnotation());
-        xrefs.add(variantSearchModel.getId());
-        xrefs.add(variantSearchModel.getVariantId());
+        xrefs.add(variantId);
         if (variant.getNames() != null && !variant.getNames().isEmpty()) {
             variant.getNames().forEach(name -> {
                 if (name != null) {
@@ -1030,6 +1031,20 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
         variantSearchModel.setXrefs(new ArrayList<>(xrefs));
         return variantSearchModel;
+    }
+
+    public static String getVariantId(Variant variant) {
+        String variantString = variant.toString();
+        if (variantString.length() > 32766) {
+            // variantString.length() >= Short.MAX_VALUE
+            return hashVariantId(variant, variantString);
+        } else {
+            return variantString;
+        }
+    }
+
+    public static String hashVariantId(Variant variant, String variantString) {
+        return HASH_PREFIX + variant.getChromosome() + ":" + variant.getStart() + ":" + Integer.toString(variantString.hashCode());
     }
 
     private void convertStudies(Variant variant, VariantSearchModel variantSearchModel, List<String> other) {
