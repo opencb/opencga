@@ -19,7 +19,7 @@
     </modules>
 
     <properties>
-        <opencga.version>2.12.6.1-SNAPSHOT</opencga.version>
+        <opencga.version>2.12.6.1</opencga.version>
         <pyopencga.version>1.10.6</pyopencga.version>
         <opencgar.version>1.10.6</opencgar.version>
         <cellbase.version>5.8.4</cellbase.version>
