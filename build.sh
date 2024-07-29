@@ -662,7 +662,7 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     ;;
   -f | --test-fail-never)
-    FAIL_NEVER="--fail-never"
+    FAIL_NEVER="--fail-never -Dsurefire.testFailureIgnore=true"
     COMMAND="test"
     shift # past argument
     ;;
