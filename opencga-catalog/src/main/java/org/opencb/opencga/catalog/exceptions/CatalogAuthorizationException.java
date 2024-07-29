@@ -20,6 +20,28 @@ package org.opencb.opencga.catalog.exceptions;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogAuthorizationException extends CatalogException {
+
+    public enum ErrorCode {
+        KILL_JOB("kill", "Only the job owner or the study administrator can kill a job.");
+
+        private final String permission;
+        private final String message;
+
+        ErrorCode(String permission, String message) {
+            this.permission = permission;
+            this.message = message;
+        }
+
+        public String getPermission() {
+            return permission;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+    }
+
+
     public CatalogAuthorizationException(String message) {
         super(message);
     }
@@ -61,6 +83,16 @@ public class CatalogAuthorizationException extends CatalogException {
                 + (userId == null || userId.isEmpty() ? "" : "User '" + userId + "'")
                 + " cannot " + permission + " "
                 + resource + " { id: " + id + (name == null || name.isEmpty() ? "" : ", name: \"" + name + "\"") + " }");
+    }
+
+    public static CatalogAuthorizationException deny(String userId, String resource, String id, ErrorCode errorCode) {
+        return deny(userId, resource, id, errorCode, null);
+    }
+
+    public static CatalogAuthorizationException deny(String userId, String resource, String id, ErrorCode errorCode, Throwable cause) {
+        return new CatalogAuthorizationException("Permission denied. "
+                + (userId == null || userId.isEmpty() ? "" : "User '" + userId + "'")
+                + " cannot " + errorCode.getPermission() + " " + resource + " { id: " + id + " }. " + errorCode.getMessage(), cause);
     }
 
     public static CatalogAuthorizationException deny(String userId, String description) {

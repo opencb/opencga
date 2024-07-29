@@ -11,7 +11,8 @@ import org.opencb.opencga.core.tools.migration.v2_0_0.VariantStorage200Migration
         resource = Enums.Resource.VARIANT,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.PROJECT,
-        description = VariantStorage200MigrationTool.DESCRIPTION)
+        description = VariantStorage200MigrationTool.DESCRIPTION,
+        priority = Enums.Priority.HIGH)
 public class VariantStorage200MigrationTool extends OpenCgaTool {
 
     public static final String ID = "variant-storage-migration-2.0.0";

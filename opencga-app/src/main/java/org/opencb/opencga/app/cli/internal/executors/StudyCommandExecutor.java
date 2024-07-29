@@ -45,6 +45,6 @@ public class StudyCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.studyId);
 
-        toolRunner.execute(TemplateRunner.class, params, Paths.get(cliOptions.outdir), cliOptions.jobOptions.jobId, token);
+        toolRunner.execute(TemplateRunner.class, params, Paths.get(cliOptions.outdir), cliOptions.jobOptions.jobId, cliOptions.jobOptions.dryRun, token);
     }
 }

@@ -215,6 +215,8 @@ public class AuditManager {
                 try {
                     dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId).insertAuditRecords(this.auditRecordMap.get(operationId));
                 } catch (CatalogDBException e) {
+                    // FIXME : How to raise attention on this silent error?
+                    // This is a critical error that should not happen.
                     logger.error("Could not audit operation '{}' -> Error: {}", operationId, e.getMessage(), e);
                 } finally {
                     this.auditRecordMap.get(operationId).clear();

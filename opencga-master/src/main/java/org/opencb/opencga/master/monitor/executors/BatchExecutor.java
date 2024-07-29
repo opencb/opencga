@@ -16,12 +16,13 @@
 
 package org.opencb.opencga.master.monitor.executors;
 
+import java.io.Closeable;
 import java.nio.file.Path;
 
 /**
  * Created by pfurio on 22/08/16.
  */
-public interface BatchExecutor {
+public interface BatchExecutor extends Closeable {
 
     String TIMEOUT = "timeout";
     String STDOUT = "stdout";
@@ -29,9 +30,7 @@ public interface BatchExecutor {
     String OUTDIR = "outdir";
     String NUM_THREADS = "num_threads";
     String MAX_MEM = "max_mem";
-    @Deprecated
-    String JOB_STATUS_FILE = "status.json";
-    String OUT_LOG_EXTENSION = ".out";
+    String OUT_LOG_EXTENSION = ".log";
     String ERR_LOG_EXTENSION = ".err";
 
     void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception;

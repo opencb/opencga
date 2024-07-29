@@ -259,8 +259,9 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
         Document studyDocument = studyResult.first();
 
+        boolean simplifyPermissions = simplifyPermissions();
         Map<String, Set<String>> groupsMap = getGroupUsersMap(studyDocument);
-        Map<String, Set<String>> studyUserPermissionsMap = extractUserPermissionsMap(groupsMap, studyDocument);
+        Map<String, Set<String>> studyUserPermissionsMap = extractUserPermissionsMap(groupsMap, studyDocument, simplifyPermissions);
 
         // Retrieve ACL list for the resources requested
         MongoDBCollection collection = getMainCollection(entry);
@@ -284,7 +285,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 throw new CatalogDBException("Resource id '" + resourceId + "' not found.");
             }
             Document resourceDocument = dataResultMap.get(resourceId);
-            Map<String, Set<String>> resourceUserPermissionsMap = extractUserPermissionsMap(groupsMap, resourceDocument);
+            Map<String, Set<String>> resourceUserPermissionsMap = extractUserPermissionsMap(groupsMap, resourceDocument,
+                    simplifyPermissions);
             Acl acl = convertPermissionsToAcl(groupsMap, studyUserPermissionsMap, resourceUserPermissionsMap, resourceId, entry);
             aclList.add(acl);
         }
@@ -357,7 +359,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         return new Acl(id, resource.name(), permissionList, TimeUtils.getDate().getTime());
     }
 
-    private Map<String, Set<String>> extractUserPermissionsMap(Map<String, Set<String>> groupsMap, Document document) {
+    private Map<String, Set<String>> extractUserPermissionsMap(Map<String, Set<String>> groupsMap, Document document,
+                                                               boolean simplifyPermissions) {
         Set<String> allUsers = groupsMap.get(ParamConstants.MEMBERS_GROUP);
 
         // Map of userId - List of permissions
@@ -383,8 +386,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 }
             }
 
-            boolean simplifyPermissions = configuration.getOptimizations() != null
-                    && configuration.getOptimizations().isSimplifyPermissions();
             Set<String> userIdsWithPermissions = new HashSet<>();
 
             // Personal ACLs
