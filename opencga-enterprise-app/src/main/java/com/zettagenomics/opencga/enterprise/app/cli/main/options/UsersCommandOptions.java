@@ -285,9 +285,6 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
         @Parameter(names = {"--email"}, description = "The body web service email parameter", required = false, arity = 1)
         public String email;
     
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
     }
 
 }

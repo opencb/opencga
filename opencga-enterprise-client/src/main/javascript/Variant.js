@@ -160,6 +160,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runCohortStats(data, params) {
@@ -175,6 +179,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runExomiser(data, params) {
@@ -193,6 +201,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runExport(data, params) {
@@ -224,6 +236,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runFamilyQc(data, params) {
@@ -237,6 +253,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @param {String} [params.file] - Files to remove.
     * @param {Boolean} [params.resume] - Resume a previously failed indexation.
@@ -255,6 +275,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runGatk(data, params) {
@@ -272,6 +296,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runGenomePlot(data, params) {
@@ -287,6 +315,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runGwas(data, params) {
@@ -302,6 +334,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runHrDetect(data, params) {
@@ -317,6 +353,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runIndex(data, params) {
@@ -332,6 +372,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runIndividualQc(data, params) {
@@ -347,6 +391,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runInferredSex(data, params) {
@@ -386,6 +434,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runKnockout(data, params) {
@@ -401,6 +453,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runMendelianError(data, params) {
@@ -486,6 +542,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runMutationalSignature(data, params) {
@@ -501,6 +561,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runPlink(data, params) {
@@ -648,6 +712,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runRelatedness(data, params) {
@@ -663,6 +731,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runRvtests(data, params) {
@@ -733,6 +805,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runSampleEligibility(data, params) {
@@ -751,6 +827,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runSampleQc(data, params) {
@@ -779,6 +859,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runSample(data, params) {
@@ -826,6 +910,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runSampleStats(data, params) {
@@ -842,6 +930,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runStatsExport(data, params) {
@@ -857,6 +949,10 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobDescription] - Job description.
     * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
     * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runStats(data, params) {

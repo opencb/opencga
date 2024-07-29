@@ -97,6 +97,9 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             case "update":
                 queryResponse = update();
                 break;
+            case "kill":
+                queryResponse = kill();
+                break;
             case "log-head":
                 queryResponse = headLog();
                 break;
@@ -236,6 +239,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -398,6 +402,20 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
                     .readValue(beanParams.toJson(), JobUpdateParams.class);
         }
         return enterpriseOpenCGAClient.getEnterpriseJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
+    }
+
+    private RestResponse<Job> kill() throws Exception {
+        logger.debug("Executing kill in Jobs command line");
+
+        JobsCommandOptions.KillCommandOptions commandOptions = jobsCommandOptions.killCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().kill(commandOptions.job, queryParams);
     }
 
     private RestResponse<FileContent> headLog() throws Exception {
