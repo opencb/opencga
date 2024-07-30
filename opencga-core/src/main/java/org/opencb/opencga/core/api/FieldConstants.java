@@ -37,6 +37,36 @@ public class FieldConstants {
     public static final String QUALITY_CONTROL_FILES_DESCRIPTION = "File IDs related to the quality control.";
     public static final String QUALITY_CONTROL_COMMENTS_DESCRIPTION = "Comments related to the quality control.";
 
+    // Organization
+    public static final String ORGANIZATION_ID_DESCRIPTION = "Organization unique identifier.";
+    public static final String ORGANIZATION_NAME_DESCRIPTION = "Organization name.";
+    public static final String ORGANIZATION_DOMAIN_DESCRIPTION = "Organization domain. Example: 'zettagenomics.com'.";
+    public static final String ORGANIZATION_OWNER_DESCRIPTION = "Owner of the organization.";
+    public static final String ORGANIZATION_ADMINS_DESCRIPTION = "Administrative users of the organization.";
+    public static final String ORGANIZATION_PROJECTS_DESCRIPTION = "Projects the organization holds.";
+    public static final String ORGANIZATION_NOTES_DESCRIPTION = "Notes of organization scope.";
+//    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
+//            + "contains all the configuration necessary to be able to communicate with the external authentication origins.";
+    public static final String ORGANIZATION_CONFIGURATION_DESCRIPTION = "Organization configuration information.";
+    public static final String ORGANIZATION_INTERNAL_DESCRIPTION = "Organization internal information.";
+
+    // Notes
+    public static final String NOTES_ID_DESCRIPTION = "Note unique identifier.";
+    public static final String NOTES_SCOPE_DESCRIPTION = "Scope of the Note.";
+    public static final String NOTES_STUDY_DESCRIPTION = "Study FQN if the Note scope is STUDY.";
+    public static final String NOTES_TAGS_DESCRIPTION = "Note tags.";
+    public static final String NOTES_USER_ID_DESCRIPTION = "User that wrote that Note.";
+    public static final String NOTES_VISIBILITY_DESCRIPTION = "Visibility of the Note.";
+    public static final String NOTES_VALUE_TYPE_DESCRIPTION = "Type of the value written in the Note.";
+    public static final String NOTES_VALUE_DESCRIPTION = "Value stored in the Note.";
+
+    public static final String NOTES_ID_PARAM = "id";
+    public static final String NOTES_SCOPE_PARAM = "scope";
+    public static final String NOTES_STUDY_PARAM = "study";
+    public static final String NOTES_TAGS_PARAM = "tags";
+    public static final String NOTES_USER_ID_PARAM = "userId";
+    public static final String NOTES_VISIBILITY_PARAM = "visibility";
+
     //Sample
     public static final String SAMPLE_ID_DESCRIPTION = "Sample ID.";
     public static final String SAMPLE_PROCESSING_DESCRIPTION = "Describes how the sample was processed in the lab.";
@@ -309,16 +339,25 @@ public class FieldConstants {
             + "ERROR, UNKNOWN, REGISTERING, UNREGISTERED, ABORTED, DELETED.";
     public static final String JOB_INTERNAL_EVENTS_DESCRIPTION = "Events of the internal job.";
     public static final String JOB_INTERNAL_WEBHOOK_DESCRIPTION = "Job internal Webhook.";
+    public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION = "Flag used to track whether a user has requested to"
+            + " terminate the execution of a job before its natural completion. When set to true, it indicates that a request has been"
+            + " made to prematurely terminate the ongoing job execution. Its value is typically checked periodically during the"
+            + " execution of the job to determine if termination is necessary.";
 
     //JobInternalWebhook
     public static final String JOB_INTERNAL_WEBHOOK_URL_DESCRIPTION = "Webhook URL.";
     public static final String JOB_INTERNAL_WEBHOOK_STATUS_DESCRIPTION = "Webhook status map can have the values SUCCESS or ERROR.";
+
+    public static final String JOB_PARENT_ID = "jobParentId";
+    public static final String JOB_SCHEDULED_START_TIME = "jobScheduledStartTime";
 
     public static final String JOB_OUT_DIR_DESCRIPTION = "Output dir for the job.";
     public static final String JOB_INPUT_DESCRIPTION = "List of input files.";
     public static final String JOB_OUTPUT_DESCRIPTION = "List of output files.";
     public static final String JOB_TAGS_DESCRIPTION = "List of tags for the job.";
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "List of jobs the current job depends on.";
+    public static final String JOB_PARENT_ID_DESCRIPTION = "Id of the job that generated this job (if any)";
+    public static final String JOB_SCHEDULED_START_TIME_DESCRIPTION = "Time when the job is scheduled to start.";
     public static final String JOB_EXECUTION_DESCRIPTION = "Result of the execution.";
 
     //ExecutorInfo
@@ -350,7 +389,7 @@ public class FieldConstants {
     public static final String JOB_STUDY_PARAM_OTHERS = "List of strings.";
 
     //Project
-    public static final String PROJECT_FQN = "Full Qualified Name (user@projectId).";
+    public static final String PROJECT_FQN = "Full Qualified Name (organization@projectId).";
     public static final String PROJECT_ORGANISM = "Organism to which the project belongs.";
     public static final String PROJECT_STUDIES = "Project study list.";
 
@@ -380,6 +419,7 @@ public class FieldConstants {
             + "JOBS, CLINICAL_ANALYSES and DISEASE_PANELS. The value is a List of permission rules ";
     public static final String STUDY_URI = "Study uri";
     public static final String STUDY_EXTERNAL_SOURCES = "A List with related external sources.";
+    public static final String STUDY_NOTES_DESCRIPTION = "Notes of scope=STUDY.";
     public static final String STUDY_TYPE = "Study type description";
 
     //PermissionRule

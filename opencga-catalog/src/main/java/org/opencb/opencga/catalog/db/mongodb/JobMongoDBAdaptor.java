@@ -73,7 +73,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
     private JobConverter jobConverter;
 
     public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBCollection deletedJobCollection, Configuration configuration,
-                             MongoDBAdaptorFactory dbAdaptorFactory) {
+                             OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.jobCollection = jobCollection;
@@ -129,7 +129,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
             throw new CatalogDBException("Job { id: '" + job.getId() + "'} already exists.");
         }
 
-        long jobUid = getNewUid();
+        long jobUid = getNewUid(clientSession);
         job.setUid(jobUid);
         job.setStudyUid(studyId);
         if (StringUtils.isEmpty(job.getUuid())) {
@@ -373,7 +373,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
         String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        String[] acceptedBooleanParams = {QueryParams.VISITED.key()};
+        String[] acceptedBooleanParams = {QueryParams.VISITED.key(), QueryParams.INTERNAL_KILL_JOB_REQUESTED.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
         String[] acceptedStringListParams = {QueryParams.TAGS.key()};
@@ -814,13 +814,15 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+            boolean simplifyPermissions = simplifyPermissions();
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
-                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.JOB, user, configuration));
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.JOB, user,
+                        simplifyPermissions));
             } else {
                 // Get the document query needed to check the permissions as well
                 andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, JobPermissions.VIEW.name(),
-                        Enums.Resource.JOB, configuration));
+                        Enums.Resource.JOB, simplifyPermissions));
             }
 
             query.remove(ParamConstants.ACL_PARAM);

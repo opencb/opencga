@@ -30,7 +30,6 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.*;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -50,6 +49,7 @@ import static org.junit.Assert.*;
 @Ignore
 public class RgaManagerTest {
 
+    public static final String ORGANIZATION = "test";
     public static final String OWNER = "owner";
     public static final String USER = "user";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
@@ -165,7 +165,7 @@ public class RgaManagerTest {
             KnockoutAnalysisParams params = new KnockoutAnalysisParams();
             params.setSample(file.getSampleIds());
 
-            toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, ownerToken);
+            toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, false, ownerToken);
 
             File file = catalogManager.getFileManager().link(STUDY,
                     new FileLinkParams()
@@ -183,8 +183,8 @@ public class RgaManagerTest {
     }
 
     public void setUpCatalogManager() throws CatalogException {
-        catalogManager.getUserManager().create(OWNER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
-        ownerToken = catalogManager.getUserManager().login(OWNER, PASSWORD).getToken();
+        catalogManager.getUserManager().create(OWNER, "User Name", "mail@ebi.ac.uk", PASSWORD, ORGANIZATION, null, opencga.getAdminToken());
+        ownerToken = catalogManager.getUserManager().login(ORGANIZATION, OWNER, PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh37", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), ownerToken).first().getId();
@@ -199,8 +199,8 @@ public class RgaManagerTest {
             catalogManager.getSampleManager().create(STUDY, sample, null, ownerToken);
         }
 
-        catalogManager.getUserManager().create(USER, "Other Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, opencga.getAdminToken());
-        userToken = catalogManager.getUserManager().login(USER, PASSWORD).getToken();
+        catalogManager.getUserManager().create(USER, "Other Name", "mail2@ebi.ac.uk", PASSWORD, ORGANIZATION, null, opencga.getAdminToken());
+        userToken = catalogManager.getUserManager().login(ORGANIZATION, USER, PASSWORD).getToken();
     }
 
     @Test

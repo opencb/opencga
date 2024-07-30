@@ -20,6 +20,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -29,17 +30,18 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
-import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.AclEntry;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.Enums;
@@ -60,15 +62,12 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
  */
 public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements AuthorizationDBAdaptor {
 
-    private final Map<Enums.Resource, List<MongoDBCollection>> dbCollectionMap = new HashMap<>();
-
     private static final String ANONYMOUS = "*";
     static final String MEMBER_WITH_INTERNAL_ACL = "_withInternalAcls";
 
-    public AuthorizationMongoDBAdaptor(DBAdaptorFactory dbFactory, Configuration configuration) {
+    public AuthorizationMongoDBAdaptor(OrganizationMongoDBAdaptorFactory dbFactory, Configuration configuration) {
         super(configuration, LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
-        this.dbAdaptorFactory = (MongoDBAdaptorFactory) dbFactory;
-        initCollectionConnections();
+        this.dbAdaptorFactory = dbFactory;
     }
 
     enum QueryParams implements QueryParam {
@@ -118,30 +117,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
     }
 
-    private void initCollectionConnections() {
-        this.dbCollectionMap.put(Enums.Resource.STUDY,
-                Collections.singletonList(dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()));
-        this.dbCollectionMap.put(Enums.Resource.COHORT,
-                Collections.singletonList(dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection()));
-        this.dbCollectionMap.put(Enums.Resource.FILE,
-                Collections.singletonList(dbAdaptorFactory.getCatalogFileDBAdaptor().getCollection()));
-        this.dbCollectionMap.put(Enums.Resource.JOB,
-                Collections.singletonList(dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection()));
-        this.dbCollectionMap.put(Enums.Resource.CLINICAL_ANALYSIS,
-                Collections.singletonList(dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getCollection()));
-
-        // Versioned models will always have first the main collection and second the archive collection
-        this.dbCollectionMap.put(Enums.Resource.INDIVIDUAL, Arrays.asList(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getCollection(),
-                dbAdaptorFactory.getCatalogIndividualDBAdaptor().getIndividualArchiveCollection()));
-        this.dbCollectionMap.put(Enums.Resource.SAMPLE, Arrays.asList(dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection(),
-                dbAdaptorFactory.getCatalogSampleDBAdaptor().getArchiveSampleCollection()));
-        this.dbCollectionMap.put(Enums.Resource.DISEASE_PANEL,
-                Arrays.asList(dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection(),
-                        dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelArchiveCollection()));
-        this.dbCollectionMap.put(Enums.Resource.FAMILY, Arrays.asList(dbAdaptorFactory.getCatalogFamilyDBAdaptor().getCollection(),
-                dbAdaptorFactory.getCatalogFamilyDBAdaptor().getArchiveFamilyCollection()));
-    }
-
     private List<String> getFullPermissions(Enums.Resource resource) {
         List<String> permissionList = new ArrayList<>(resource.getFullPermissionList());
         permissionList.add("NONE");
@@ -174,13 +149,14 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
      * @param membersList Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
      * @param entry       Entity where the query will be performed.
      * @return A map of [acl, user_defined_acl] -> user -> List of permissions and the string id of the resource queried.
+     * @throws CatalogDBException CatalogDBException.
      */
-    private EntryPermission internalGet(long resourceId, List<String> membersList, Enums.Resource entry) {
+    private EntryPermission internalGet(long resourceId, List<String> membersList, Enums.Resource entry) throws CatalogDBException {
         EntryPermission entryPermission = new EntryPermission();
 
         List<String> members = (membersList == null ? Collections.emptyList() : membersList);
 
-        MongoDBCollection collection = dbCollectionMap.get(entry).get(0);
+        MongoDBCollection collection = getMainCollection(entry);
 
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_UID, resourceId)));
@@ -261,6 +237,225 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
 
         return entryPermission;
+    }
+
+    /**
+     * Fetch the effective permissions of every user.
+     *
+     * @param studyUid        Study where the resources belong.
+     * @param resourceIdList  List of resource ids.
+     * @param entry           Entity where the query will be performed.
+     * @return A list of ACL object.
+     * @throws CatalogDBException CatalogDBException if the study or the resourcers cannot be found.
+     */
+    public List<Acl> effectivePermissions(long studyUid, List<String> resourceIdList, Enums.Resource entry) throws CatalogDBException {
+        // Get groups and array of ACLs from the study document
+        MongoDBCollection studyCollection = getMainCollection(Enums.Resource.STUDY);
+        Bson studyQuery = Filters.eq(PRIVATE_UID, studyUid);
+        Bson studyProjection = Projections.include(StudyDBAdaptor.QueryParams.GROUPS.key(), QueryParams.ACL.key());
+        DataResult<Document> studyResult = studyCollection.find(studyQuery, studyProjection, null);
+        if (studyResult.getNumMatches() == 0) {
+            throw new CatalogDBException("Study uid '" + studyUid + "' not found");
+        }
+        Document studyDocument = studyResult.first();
+
+        boolean simplifyPermissions = simplifyPermissions();
+        Map<String, Set<String>> groupsMap = getGroupUsersMap(studyDocument);
+        Map<String, Set<String>> studyUserPermissionsMap = extractUserPermissionsMap(groupsMap, studyDocument, simplifyPermissions);
+
+        // Retrieve ACL list for the resources requested
+        MongoDBCollection collection = getMainCollection(entry);
+        Bson query = Filters.and(
+                Filters.eq(PRIVATE_STUDY_UID, studyUid),
+                Filters.in(ID, resourceIdList)
+        );
+        Bson projection = Projections.include(QueryParams.ID.key(), QueryParams.ACL.key());
+
+        logger.debug("Get Acl: {}", query.toBsonDocument());
+        DataResult<Document> dataResult = collection.find(query, projection, null);
+        Map<String, Document> dataResultMap = new HashMap<>();
+        for (Document result : dataResult.getResults()) {
+            dataResultMap.put(result.getString(ID), result);
+        }
+
+        // Process resourceIdList in order
+        List<Acl> aclList = new ArrayList<>(resourceIdList.size());
+        for (String resourceId : resourceIdList) {
+            if (!dataResultMap.containsKey(resourceId)) {
+                throw new CatalogDBException("Resource id '" + resourceId + "' not found.");
+            }
+            Document resourceDocument = dataResultMap.get(resourceId);
+            Map<String, Set<String>> resourceUserPermissionsMap = extractUserPermissionsMap(groupsMap, resourceDocument,
+                    simplifyPermissions);
+            Acl acl = convertPermissionsToAcl(groupsMap, studyUserPermissionsMap, resourceUserPermissionsMap, resourceId, entry);
+            aclList.add(acl);
+        }
+
+        return aclList;
+    }
+
+    private Acl convertPermissionsToAcl(Map<String, Set<String>> groupsMap, Map<String, Set<String>> studyUserPermissionsMap,
+                                        Map<String, Set<String>> resourceUserPermissionsMap, String id, Enums.Resource resource) {
+        Set<String> adminUsers = groupsMap.get(ParamConstants.ADMINS_GROUP);
+
+        // Init permission map
+        Map<String, Set<String>> permissionMap = new HashMap<>();
+        List<String> resourcePermissions = resource.getFullPermissionList();
+        for (String permission : resource.getFullPermissionList()) {
+            permissionMap.put(permission, new HashSet<>());
+        }
+
+        // Store permissions at the resource level
+        for (Map.Entry<String, Set<String>> entry : resourceUserPermissionsMap.entrySet()) {
+            for (String permission : entry.getValue()) {
+                permissionMap.get(permission).add(entry.getKey());
+            }
+        }
+
+        // List of correspondence of study permissions
+        Map<String, String> studyPermissionsToResourcePermissionsMap = new HashMap<>();
+        for (String resourcePermission : resourcePermissions) {
+            String studyPermission;
+            if (!"NONE".equals(resourcePermission)) {
+                studyPermission = resource.toStudyPermission(resourcePermission);
+            } else {
+                studyPermission = "NONE";
+            }
+            studyPermissionsToResourcePermissionsMap.put(studyPermission, resourcePermission);
+        }
+
+        // Iterate and only store permissions at the study level if no permissions were given at the resource level
+        for (Map.Entry<String, Set<String>> entry : studyUserPermissionsMap.entrySet()) {
+            String userId = entry.getKey();
+            Set<String> studyPermissions = entry.getValue();
+            if (resourceUserPermissionsMap.get(userId).isEmpty()) {
+                // Loop over all study permissions given to the user
+                for (String studyPermission : studyPermissions) {
+                    if (studyPermissionsToResourcePermissionsMap.containsKey(studyPermission)) {
+                        String resourcePermission = studyPermissionsToResourcePermissionsMap.get(studyPermission);
+                        permissionMap.get(resourcePermission).add(userId);
+                    }
+                }
+            }
+        }
+
+        Set<String> usersWithNoAccess = new HashSet<>(studyUserPermissionsMap.keySet());
+        usersWithNoAccess.removeAll(adminUsers);
+        // Generate ACL object
+        List<Acl.Permission> permissionList = new ArrayList<>(resourcePermissions.size());
+        for (String resourcePermission : resourcePermissions) {
+            Set<String> userIdSet = permissionMap.get(resourcePermission);
+            if (!"NONE".equals(resourcePermission)) {
+                // Remove users with access from usersWithNoAccess set
+                usersWithNoAccess.removeAll(userIdSet);
+                // Add admin users to users with this permission
+                userIdSet.addAll(adminUsers);
+
+                permissionList.add(new Acl.Permission(resourcePermission, new ArrayList<>(userIdSet)));
+            }
+        }
+        permissionList.add(new Acl.Permission("NONE", new ArrayList<>(usersWithNoAccess)));
+
+        return new Acl(id, resource.name(), permissionList, TimeUtils.getDate().getTime());
+    }
+
+    private Map<String, Set<String>> extractUserPermissionsMap(Map<String, Set<String>> groupsMap, Document document,
+                                                               boolean simplifyPermissions) {
+        Set<String> allUsers = groupsMap.get(ParamConstants.MEMBERS_GROUP);
+
+        // Map of userId - List of permissions
+        Map<String, Set<String>> userPermissionsMap = new HashMap<>();
+        for (String userId : allUsers) {
+            userPermissionsMap.put(userId, new HashSet<>());
+        }
+
+        // Group ACLs
+        List<String> aclList = document.getList(QueryParams.ACL.key(), String.class);
+        if (CollectionUtils.isNotEmpty(aclList)) {
+            List<String> personalAcls = new ArrayList<>(aclList.size());
+            List<String> groupAcls = new ArrayList<>(aclList.size());
+            List<String> anonymousAcls = new ArrayList<>(aclList.size());
+
+            for (String acl : aclList) {
+                if (acl.startsWith("@")) {
+                    groupAcls.add(acl);
+                } else if (acl.startsWith(ParamConstants.ANONYMOUS_USER_ID + INTERNAL_DELIMITER)) {
+                    anonymousAcls.add(acl);
+                } else {
+                    personalAcls.add(acl);
+                }
+            }
+
+            Set<String> userIdsWithPermissions = new HashSet<>();
+
+            // Personal ACLs
+            for (String acl : personalAcls) {
+                String[] split = acl.split(INTERNAL_DELIMITER, 2);
+                String userId = split[0];
+                String permission = split[1];
+                if (!userPermissionsMap.containsKey(userId)) {
+                    throw new IllegalStateException("User id '" + userId + "' with permissions was not found in the '"
+                            + ParamConstants.MEMBERS_GROUP + "' group.");
+                }
+                userIdsWithPermissions.add(userId);
+                userPermissionsMap.get(userId).add(permission);
+            }
+
+            // Anonymous ACLs
+            List<String> anonymousPermissions = new ArrayList<>(anonymousAcls.size());
+            for (String acl : anonymousAcls) {
+                String[] split = acl.split(INTERNAL_DELIMITER, 2);
+                String permission = split[1];
+                anonymousPermissions.add(permission);
+            }
+            // Assign anonymous permissions
+            if (!anonymousPermissions.isEmpty()) {
+                for (Map.Entry<String, Set<String>> tmpEntry : userPermissionsMap.entrySet()) {
+                    // Only add permissions if "simplifyPermissions" or if the user hasn't been given any acls personally
+                    if (simplifyPermissions || tmpEntry.getValue().isEmpty()) {
+                        tmpEntry.getValue().addAll(anonymousPermissions);
+                    }
+                }
+            }
+
+            // Group ACLs
+            Map<String, List<String>> groupPermissions = new HashMap<>();
+            for (String acl : groupAcls) {
+                String[] split = acl.split(INTERNAL_DELIMITER, 2);
+                String groupId = split[0];
+                String permission = split[1];
+
+                if (!groupPermissions.containsKey(groupId)) {
+                    groupPermissions.put(groupId, new LinkedList<>());
+                }
+                groupPermissions.get(groupId).add(permission);
+            }
+            // Assign group permissions
+            for (Map.Entry<String, List<String>> tmpEntry : groupPermissions.entrySet()) {
+                String groupId = tmpEntry.getKey();
+                List<String> tmpPermissionList = tmpEntry.getValue();
+
+                for (String userId : groupsMap.get(groupId)) {
+                    if (simplifyPermissions || !userIdsWithPermissions.contains(userId)) {
+                        userPermissionsMap.get(userId).addAll(tmpPermissionList);
+                    }
+                }
+            }
+        }
+        return userPermissionsMap;
+    }
+
+    private static Map<String, Set<String>> getGroupUsersMap(Document studyDocument) {
+        // Generate a map of group - set of userIds
+        Map<String, Set<String>> groupsMap = new HashMap<>();
+        List<Document> groups = studyDocument.getList(StudyDBAdaptor.QueryParams.GROUPS.key(), Document.class);
+        for (Document group : groups) {
+            String groupId = group.getString(ID);
+            List<String> userIds = group.getList("userIds", String.class);
+            groupsMap.put(groupId, new HashSet<>(userIds));
+        }
+
+        return groupsMap;
     }
 
     static class EntryPermission {
@@ -394,8 +589,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 setToMembers(aclParam.getIds(), members, aclParam.getPermissions(), aclParam.getResource(), clientSession);
 
                 // We store that those members have internal permissions
-                setMembersHaveInternalPermissionsDefined(studyId, members, aclParam.getResource(),
-                        clientSession);
+                setMembersHaveInternalPermissionsDefined(clientSession, studyId, members, aclParam.getResource()
+                );
             }
 
             return endWrite(startTime, aclParams.get(0).getIds().size(), aclParams.get(0).getIds().size(), null);
@@ -466,8 +661,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 addToMembers(aclParam.getIds(), members, aclParam.getPermissions(), aclParam.getResource(), clientSession);
 
                 // We store that those members have internal permissions
-                setMembersHaveInternalPermissionsDefined(studyId, members, aclParam.getResource(),
-                        clientSession);
+                setMembersHaveInternalPermissionsDefined(clientSession, studyId, members, aclParam.getResource()
+                );
             }
 
             return endWrite(startTime, aclParams.get(0).getIds().size(), aclParams.get(0).getIds().size(), null);
@@ -522,8 +717,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(userList)) {
             // We first add the member to the @members group in case they didn't belong already
-            dbAdaptorFactory.getCatalogStudyDBAdaptor().addUsersToGroup(clientSession, studyId, CatalogAuthorizationManager.MEMBERS_GROUP,
-                    userList);
+            dbAdaptorFactory.getCatalogStudyDBAdaptor()
+                    .addUsersToGroup(clientSession, studyId, CatalogAuthorizationManager.MEMBERS_GROUP, userList);
         }
     }
 
@@ -534,7 +729,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             long startTime = startQuery();
 
             for (AuthorizationManager.CatalogAclParams aclParam : aclParams) {
-                removeFromMembers(clientSession, aclParam.getIds(), members, aclParam.getPermissions(), aclParam.getResource());
+                removeFromMembers(clientSession, aclParam.getIds(), members, aclParam.getPermissions(),
+                        aclParam.getResource());
             }
 
             return endWrite(startTime, aclParams.get(0).getIds().size(), aclParams.get(0).getIds().size(), null);
@@ -589,7 +785,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             removePermissions(clientSession, studyId, members, Enums.Resource.DISEASE_PANEL);
             removePermissions(clientSession, studyId, members, Enums.Resource.FAMILY);
             removePermissions(clientSession, studyId, members, Enums.Resource.CLINICAL_ANALYSIS);
-            removeFromMembers(clientSession, Arrays.asList(studyId), members, null, Enums.Resource.STUDY);
+            removeFromMembers(clientSession, Collections.singletonList(studyId), members, null, Enums.Resource.STUDY);
 
             return endWrite(tmpStartTime, -1, -1, null);
         });
@@ -597,14 +793,13 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     // TODO: Make this method transactional
     @Override
-    public OpenCGAResult setAcls(List<Long> resourceIds, AclEntryList<?> acls, Enums.Resource resource)
-            throws CatalogDBException {
+    public OpenCGAResult setAcls(List<Long> resourceIds, AclEntryList<?> acls, Enums.Resource resource) throws CatalogDBException {
         validateEntry(resource);
 
         for (long resourceId : resourceIds) {
             // Get current permissions for resource and override with new ones set for members (already existing or not)
-            Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), resource)
-                    .getPermissions();
+            Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(),
+                    resource).getPermissions();
             for (AclEntry<?> acl : acls.getAcl()) {
                 // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
                 List<String> permissions = acl.getPermissions().stream().map(Enum::name).collect(Collectors.toList());
@@ -633,8 +828,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         return OpenCGAResult.empty();
     }
 
-    private void setMembersHaveInternalPermissionsDefined(long studyId, List<String> members, Enums.Resource resource,
-                                                          ClientSession clientSession) {
+    private void setMembersHaveInternalPermissionsDefined(ClientSession clientSession, long studyId, List<String> members,
+                                                          Enums.Resource resource) throws CatalogDBException {
         Document queryDocument = new Document()
                 .append(PRIVATE_UID, studyId);
 
@@ -691,61 +886,62 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_UID));
-        MongoDBIterator<Document> iterator = dbCollectionMap.get(entry.getResource()).get(0).iterator(query, options);
-        while (iterator.hasNext()) {
-            Document myDocument = iterator.next();
-            Set<String> effectivePermissions = new HashSet<>();
-            Set<String> manualPermissions = new HashSet<>();
-            Set<String> permissionRulesApplied = new HashSet<>();
+        try (MongoDBIterator<Document> iterator = getMainCollection(entry.getResource()).iterator(query, options)) {
+            while (iterator.hasNext()) {
+                Document myDocument = iterator.next();
+                Set<String> effectivePermissions = new HashSet<>();
+                Set<String> manualPermissions = new HashSet<>();
+                Set<String> permissionRulesApplied = new HashSet<>();
 
-            List<String> currentAclList = (List) myDocument.get(QueryParams.ACL.key());
-            List<String> currentManualAclList = (List) myDocument.get(QueryParams.USER_DEFINED_ACLS.key());
-            List<String> currentPermissionRulesApplied = (List) myDocument.get(PERMISSION_RULES_APPLIED);
+                List<String> currentAclList = (List) myDocument.get(QueryParams.ACL.key());
+                List<String> currentManualAclList = (List) myDocument.get(QueryParams.USER_DEFINED_ACLS.key());
+                List<String> currentPermissionRulesApplied = (List) myDocument.get(PERMISSION_RULES_APPLIED);
 
-            // TODO: Control that if there are no more permissions set for a user or group, we should also remove the NONE permission
-            // Remove permissions from the permission rule
-            for (String permission : currentAclList) {
-                if (!permissionsToRemove.contains(permission)) {
-                    effectivePermissions.add(permission);
-                }
-            }
-
-            // Remove permissions from the permission rule from the internal manual permissions list
-            if (currentManualAclList != null) {
-                for (String permission : currentManualAclList) {
+                // TODO: Control that if there are no more permissions set for a user or group, we should also remove the NONE permission
+                // Remove permissions from the permission rule
+                for (String permission : currentAclList) {
                     if (!permissionsToRemove.contains(permission)) {
-                        manualPermissions.add(permission);
+                        effectivePermissions.add(permission);
                     }
                 }
-            }
 
-            for (String tmpPermissionRuleId : currentPermissionRulesApplied) {
-                // We apply the rest of permission rules except the one to be deleted
-                if (!tmpPermissionRuleId.equals(permissionRuleId)) {
-                    PermissionRule tmpPermissionRule = permissionRuleMap.get(tmpPermissionRuleId);
-                    List<String> tmpPermissionList = new ArrayList<>(tmpPermissionRule.getPermissions());
-                    tmpPermissionList.add("NONE");
-                    List<String> permissionArray = createPermissionArray(tmpPermissionRule.getMembers(), tmpPermissionList);
-
-                    effectivePermissions.addAll(permissionArray);
-                    permissionRulesApplied.add(tmpPermissionRuleId);
+                // Remove permissions from the permission rule from the internal manual permissions list
+                if (currentManualAclList != null) {
+                    for (String permission : currentManualAclList) {
+                        if (!permissionsToRemove.contains(permission)) {
+                            manualPermissions.add(permission);
+                        }
+                    }
                 }
-            }
 
-            Document tmpQuery = new Document()
-                    .append(PRIVATE_UID, myDocument.get(PRIVATE_UID))
-                    .append(PRIVATE_STUDY_UID, study.getUid());
+                for (String tmpPermissionRuleId : currentPermissionRulesApplied) {
+                    // We apply the rest of permission rules except the one to be deleted
+                    if (!tmpPermissionRuleId.equals(permissionRuleId)) {
+                        PermissionRule tmpPermissionRule = permissionRuleMap.get(tmpPermissionRuleId);
+                        List<String> tmpPermissionList = new ArrayList<>(tmpPermissionRule.getPermissions());
+                        tmpPermissionList.add("NONE");
+                        List<String> permissionArray = createPermissionArray(tmpPermissionRule.getMembers(), tmpPermissionList);
 
-            Document update = new Document("$set", new Document()
-                    .append(QueryParams.ACL.key(), effectivePermissions)
-                    .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissions)
-                    .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
+                        effectivePermissions.addAll(permissionArray);
+                        permissionRulesApplied.add(tmpPermissionRuleId);
+                    }
+                }
 
-            logger.debug("Remove permission rule id and permissions from {}: Query {}, Update {}", entry, tmpQuery.toBsonDocument(),
-                    update.toBsonDocument());
-            DataResult<?> result = update(null, tmpQuery, update, entry.getResource());
-            if (result.getNumUpdated() == 0) {
-                throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_UID));
+                Document tmpQuery = new Document()
+                        .append(PRIVATE_UID, myDocument.get(PRIVATE_UID))
+                        .append(PRIVATE_STUDY_UID, study.getUid());
+
+                Document update = new Document("$set", new Document()
+                        .append(QueryParams.ACL.key(), effectivePermissions)
+                        .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissions)
+                        .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
+
+                logger.debug("Remove permission rule id and permissions from {}: Query {}, Update {}", entry, tmpQuery.toBsonDocument(),
+                        update.toBsonDocument());
+                DataResult<?> result = update(null, tmpQuery, update, entry.getResource());
+                if (result.getNumUpdated() == 0) {
+                    throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_UID));
+                }
             }
         }
 
@@ -776,57 +972,58 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_UID));
-        MongoDBIterator<Document> iterator = dbCollectionMap.get(entry.getResource()).get(0).iterator(query, options);
-        while (iterator.hasNext()) {
-            Document myDocument = iterator.next();
-            Set<String> effectivePermissions = new HashSet<>();
-            Set<String> permissionRulesApplied = new HashSet<>();
+        try (MongoDBIterator<Document> iterator = getMainCollection(entry.getResource()).iterator(query, options)) {
+            while (iterator.hasNext()) {
+                Document myDocument = iterator.next();
+                Set<String> effectivePermissions = new HashSet<>();
+                Set<String> permissionRulesApplied = new HashSet<>();
 
-            List<String> currentAclList = (List) myDocument.get(QueryParams.ACL.key());
-            List<String> currentManualAclList = (List) myDocument.get(QueryParams.USER_DEFINED_ACLS.key());
-            List<String> currentPermissionRulesApplied = (List) myDocument.get(PERMISSION_RULES_APPLIED);
+                List<String> currentAclList = (List) myDocument.get(QueryParams.ACL.key());
+                List<String> currentManualAclList = (List) myDocument.get(QueryParams.USER_DEFINED_ACLS.key());
+                List<String> currentPermissionRulesApplied = (List) myDocument.get(PERMISSION_RULES_APPLIED);
 
-            // TODO: Control that if there are no more permissions set for a user or group, we should also remove the NONE permission
-            // Remove permissions from the permission rule
-            for (String permission : currentAclList) {
-                if (!permissionsToRemove.contains(permission)) {
-                    effectivePermissions.add(permission);
+                // TODO: Control that if there are no more permissions set for a user or group, we should also remove the NONE permission
+                // Remove permissions from the permission rule
+                for (String permission : currentAclList) {
+                    if (!permissionsToRemove.contains(permission)) {
+                        effectivePermissions.add(permission);
+                    }
                 }
-            }
 
-            // Restore manual permissions
-            if (currentManualAclList != null) {
-                for (String permission : currentManualAclList) {
-                    effectivePermissions.add(permission);
+                // Restore manual permissions
+                if (currentManualAclList != null) {
+                    for (String permission : currentManualAclList) {
+                        effectivePermissions.add(permission);
+                    }
                 }
-            }
 
-            for (String tmpPermissionRuleId : currentPermissionRulesApplied) {
-                // We apply the rest of permission rules except the one to be deleted
-                if (!tmpPermissionRuleId.equals(permissionRuleId)) {
-                    PermissionRule tmpPermissionRule = permissionRuleMap.get(tmpPermissionRuleId);
-                    List<String> tmpPermissionList = new ArrayList<>(tmpPermissionRule.getPermissions());
-                    tmpPermissionList.add("NONE");
-                    List<String> permissionArray = createPermissionArray(tmpPermissionRule.getMembers(), tmpPermissionList);
+                for (String tmpPermissionRuleId : currentPermissionRulesApplied) {
+                    // We apply the rest of permission rules except the one to be deleted
+                    if (!tmpPermissionRuleId.equals(permissionRuleId)) {
+                        PermissionRule tmpPermissionRule = permissionRuleMap.get(tmpPermissionRuleId);
+                        List<String> tmpPermissionList = new ArrayList<>(tmpPermissionRule.getPermissions());
+                        tmpPermissionList.add("NONE");
+                        List<String> permissionArray = createPermissionArray(tmpPermissionRule.getMembers(), tmpPermissionList);
 
-                    effectivePermissions.addAll(permissionArray);
-                    permissionRulesApplied.add(tmpPermissionRuleId);
+                        effectivePermissions.addAll(permissionArray);
+                        permissionRulesApplied.add(tmpPermissionRuleId);
+                    }
                 }
-            }
 
-            Document tmpQuery = new Document()
-                    .append(PRIVATE_UID, myDocument.get(PRIVATE_UID))
-                    .append(PRIVATE_STUDY_UID, study.getUid());
+                Document tmpQuery = new Document()
+                        .append(PRIVATE_UID, myDocument.get(PRIVATE_UID))
+                        .append(PRIVATE_STUDY_UID, study.getUid());
 
-            Document update = new Document("$set", new Document()
-                    .append(QueryParams.ACL.key(), effectivePermissions)
-                    .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
+                Document update = new Document("$set", new Document()
+                        .append(QueryParams.ACL.key(), effectivePermissions)
+                        .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
 
-            logger.debug("Remove permission rule id and restoring permissions from {}: Query {}, Update {}", entry,
-                    tmpQuery.toBsonDocument(), update.toBsonDocument());
-            DataResult<?> result = update(null, tmpQuery, update, entry.getResource());
-            if (result.getNumUpdated() == 0) {
-                throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_UID));
+                logger.debug("Remove permission rule id and restoring permissions from {}: Query {}, Update {}", entry,
+                        tmpQuery.toBsonDocument(), update.toBsonDocument());
+                DataResult<?> result = update(null, tmpQuery, update, entry.getResource());
+                if (result.getNumUpdated() == 0) {
+                    throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_UID));
+                }
             }
         }
 
@@ -909,7 +1106,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
     }
 
-    private void removePermissions(ClientSession clientSession, long studyId, List<String> users, Enums.Resource resource) {
+    private void removePermissions(ClientSession clientSession, long studyId, List<String> users, Enums.Resource resource)
+            throws CatalogDBException {
         List<String> permissions = getFullPermissions(resource);
         List<String> removePermissions = createPermissionArray(users, permissions);
 
@@ -956,14 +1154,59 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         return myPermissions;
     }
 
-    private DataResult<?> update(ClientSession clientSession, Bson query, Bson update, Enums.Resource resource) {
-        List<MongoDBCollection> collections = dbCollectionMap.get(resource);
+    private DataResult<?> update(ClientSession clientSession, Bson query, Bson update, Enums.Resource resource) throws CatalogDBException {
         QueryOptions options = new QueryOptions(MongoDBCollection.MULTI, true);
 
-        DataResult<?> result = collections.get(0).update(clientSession, query, update, options);
-        if (collections.size() == 2) {
-            collections.get(1).update(clientSession, query, update, options);
+        DataResult<?> result = getMainCollection(resource).update(clientSession, query, update, options);
+        if (hasArchiveCollection(resource)) {
+            getArchiveCollection(resource).update(clientSession, query, update, options);
         }
         return result;
+    }
+
+    private MongoDBCollection getMainCollection(Enums.Resource resource) throws CatalogDBException {
+        switch (resource) {
+            case STUDY:
+                return dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection();
+            case COHORT:
+                return dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection();
+            case INDIVIDUAL:
+                return dbAdaptorFactory.getCatalogIndividualDBAdaptor().getIndividualCollection();
+            case JOB:
+                return dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection();
+            case FILE:
+                return dbAdaptorFactory.getCatalogFileDBAdaptor().getCollection();
+            case SAMPLE:
+                return dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection();
+            case DISEASE_PANEL:
+                return dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection();
+            case FAMILY:
+                return dbAdaptorFactory.getCatalogFamilyDBAdaptor().getCollection();
+            case CLINICAL_ANALYSIS:
+            case CLINICAL:
+                return dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getCollection();
+            default:
+                throw new CatalogDBException("Unexpected resource '" + resource + "' parameter received.");
+        }
+    }
+
+    private MongoDBCollection getArchiveCollection(Enums.Resource resource) throws CatalogDBException {
+        switch (resource) {
+            case INDIVIDUAL:
+                return dbAdaptorFactory.getCatalogIndividualDBAdaptor().getIndividualArchiveCollection();
+            case SAMPLE:
+                return dbAdaptorFactory.getCatalogSampleDBAdaptor().getArchiveSampleCollection();
+            case DISEASE_PANEL:
+                return dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelArchiveCollection();
+            case FAMILY:
+                return dbAdaptorFactory.getCatalogFamilyDBAdaptor().getArchiveFamilyCollection();
+            default:
+                throw new CatalogDBException("Unexpected resource '" + resource + "' parameter received.");
+        }
+    }
+
+    private boolean hasArchiveCollection(Enums.Resource resource) {
+        return resource == Enums.Resource.INDIVIDUAL || resource == Enums.Resource.SAMPLE || resource == Enums.Resource.DISEASE_PANEL
+                || resource == Enums.Resource.FAMILY;
     }
 }

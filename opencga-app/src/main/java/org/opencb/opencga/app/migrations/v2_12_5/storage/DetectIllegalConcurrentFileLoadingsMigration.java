@@ -42,7 +42,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
 
     @Override
     protected void run() throws Exception {
-        for (String project : getVariantStorageProjects()) {
+        for (String project : getVariantStorageProjects(organizationId)) {
             VariantStorageEngine engine = getVariantStorageEngineByProject(project);
             if (!engine.getStorageEngineId().equals("hadoop")) {
                 continue;
@@ -267,7 +267,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                 .first();
         catalogManager.getFileManager().update(study, file.getId(),
                 new FileUpdateParams().setAttributes(new ObjectMap("TASK-6078", thisEvent)), QueryOptions.empty(), token);
-        catalogManager.getFileManager().updateFileInternalVariantIndex(file, new FileInternalVariantIndex()
+        catalogManager.getFileManager().updateFileInternalVariantIndex(study, file, new FileInternalVariantIndex()
                 .setStatus(new VariantIndexStatus(IndexStatus.INVALID, "Invalid status - TASK-6078 - affected_invalid_sample - "
                         + "File must be deleted and then indexed")), token);
     }

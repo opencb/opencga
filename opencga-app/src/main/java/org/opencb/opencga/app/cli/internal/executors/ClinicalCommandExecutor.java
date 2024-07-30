@@ -40,7 +40,7 @@ import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
+import org.opencb.opencga.core.models.clinical.*;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -97,6 +97,9 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
             case EXOMISER_INTERPRETATION_RUN_COMMAND:
                 exomiserInterpretation();
                 break;
+            case ClinicalCommandOptions.ImportClinicalAnalysesCommandOptions.IMPORT_COMMAND:
+                //importClinicalAnalyses();
+                break;
             case "tsv-load":
                 tsvLoad();
                 break;
@@ -112,7 +115,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         ObjectMap params = new RgaAnalysisParams(options.file)
                 .toObjectMap(options.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, options.study);
-        toolRunner.execute(RgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.commonOptions.token);
+        toolRunner.execute(RgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.jobOptions.dryRun, options.commonOptions.token);
     }
 
     private void auxRgaIndex() throws ToolException {
@@ -122,7 +125,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         ObjectMap params = new ObjectMap()
                 .appendAll(options.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, options.study);
-        toolRunner.execute(AuxiliarRgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.commonOptions.token);
+        toolRunner.execute(AuxiliarRgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.jobOptions.dryRun, options.commonOptions.token);
     }
 
     private void tiering() throws Exception {

@@ -23,7 +23,10 @@ import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -32,16 +35,13 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
-import org.opencb.opencga.catalog.utils.AnnotationUtils;
-import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
@@ -81,14 +81,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key()));
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
     private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;somatic";
-    private UserManager userManager;
     private StudyManager studyManager;
 
     SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
-
-        userManager = catalogManager.getUserManager();
         studyManager = catalogManager.getStudyManager();
     }
 
@@ -98,8 +95,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    InternalGetDataResult<Sample> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
-                                              String user, boolean ignoreException) throws CatalogException {
+    InternalGetDataResult<Sample> internalGet(String organizationId, long studyUid, List<String> entryList, @Nullable Query query,
+                                              QueryOptions options, String user, boolean ignoreException) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing sample entries.");
         }
@@ -122,7 +119,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+        OpenCGAResult<Sample> sampleDataResult = getSampleDBAdaptor(organizationId).get(studyUid, queryCopy, queryOptions, user);
 
         Function<Sample, String> sampleStringFunction = Sample::getId;
         if (idQueryParam.equals(SampleDBAdaptor.QueryParams.UUID)) {
@@ -133,7 +130,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             return keepOriginalOrder(uniqueList, sampleStringFunction, sampleDataResult, ignoreException, versioned);
         }
         // Query without adding the user check
-        OpenCGAResult<Sample> resultsNoCheck = sampleDBAdaptor.get(queryCopy, queryOptions);
+        OpenCGAResult<Sample> resultsNoCheck = getSampleDBAdaptor(organizationId).get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == sampleDataResult.getNumResults()) {
             throw CatalogException.notFound("samples", getMissingFields(uniqueList, sampleDataResult.getResults(), sampleStringFunction));
@@ -159,28 +156,29 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return idQueryParam;
     }
 
-    private OpenCGAResult<Sample> getSample(long studyUid, String sampleUuid, QueryOptions options) throws CatalogException {
+    private OpenCGAResult<Sample> getSample(String organizationId, long studyUid, String sampleUuid, QueryOptions options)
+            throws CatalogException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(SampleDBAdaptor.QueryParams.UUID.key(), sampleUuid);
-        return sampleDBAdaptor.get(query, options);
+        return getSampleDBAdaptor(organizationId).get(query, options);
     }
 
-    void validateNewSample(Study study, Sample sample, String userId) throws CatalogException {
+    void validateNewSample(String organizationId, Study study, Sample sample, String userId) throws CatalogException {
         ParamUtils.checkIdentifier(sample.getId(), "id");
 
         // Check the id is not in use
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                 .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId());
-        if (sampleDBAdaptor.count(query).getNumMatches() > 0) {
+        if (getSampleDBAdaptor(organizationId).count(query).getNumMatches() > 0) {
             throw new CatalogException("Sample '" + sample.getId() + "' already exists.");
         }
 
         if (StringUtils.isNotEmpty(sample.getIndividualId())) {
             // Check individual exists
-            OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
-                    sample.getIndividualId(), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
+            OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().internalGet(organizationId,
+                    study.getUid(), sample.getIndividualId(), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
             if (individualDataResult.getNumResults() == 0) {
                 throw new CatalogException("Individual '" + sample.getIndividualId() + "' not found.");
             }
@@ -226,117 +224,142 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     public OpenCGAResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("sample", sample)
                 .append("options", options)
                 .append("token", token);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        String studyId = studyFqn.getStudyId();
+        String studyUuid = studyFqn.getStudyUuid();
         try {
-            // 1. We check everything can be done
-            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_SAMPLES);
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
+            studyId = study.getId();
+            studyUuid = study.getUuid();
 
-            validateNewSample(study, sample, userId);
+            // 1. We check everything can be done
+            authorizationManager.checkStudyPermission(organizationId, study.getUid(), tokenPayload,
+                    StudyPermissions.Permissions.WRITE_SAMPLES);
+
+            validateNewSample(organizationId, study, sample, userId);
 
             // We create the sample
-            OpenCGAResult<Sample> insert = sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), options);
+            OpenCGAResult<Sample> insert = getSampleDBAdaptor(organizationId).insert(study.getUid(), sample, study.getVariableSets(),
+                    options);
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch created sample
-                OpenCGAResult<Sample> result = getSample(study.getUid(), sample.getUuid(), options);
+                OpenCGAResult<Sample> result = getSample(organizationId, study.getUid(), sample.getUuid(), options);
                 insert.setResults(result.getResults());
             }
-            auditManager.auditCreate(userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return insert;
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, Enums.Resource.SAMPLE, sample.getId(), "", study.getId(), study.getUuid(), auditParams,
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.SAMPLE, sample.getId(), "", studyId, studyUuid, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
 
     @Override
-    public DBIterator<Sample> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public DBIterator<Sample> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
 
         Query finalQuery = new Query(query);
-        fixQueryObject(study, finalQuery, userId);
+        fixQueryObject(organizationId, study, finalQuery, userId);
         AnnotationUtils.fixQueryOptionAnnotation(options);
         finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return sampleDBAdaptor.iterator(study.getUid(), finalQuery, options, userId);
+        return getSampleDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, options, userId);
     }
 
     @Override
-    public OpenCGAResult<Sample> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Sample> search(String studyStr, Query query, QueryOptions options, String token)
+            throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        String studyId = studyFqn.getStudyId();
+        String studyUuid = studyFqn.getStudyUuid();
 
         ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
+                .append("studyStr", studyStr)
                 .append("query", new Query(query))
                 .append("options", options)
                 .append("token", token);
         try {
-            fixQueryObject(study, query, userId);
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
+            studyId = study.getId();
+            studyUuid = study.getUuid();
+
+            fixQueryObject(organizationId, study, query, userId);
             AnnotationUtils.fixQueryOptionAnnotation(options);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            OpenCGAResult<Sample> queryResult = sampleDBAdaptor.get(study.getUid(), query, options, userId);
+            OpenCGAResult<Sample> queryResult = getSampleDBAdaptor(organizationId).get(study.getUid(), query, options, userId);
 
-            auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditSearch(organizationId, userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditSearch(organizationId, userId, Enums.Resource.SAMPLE, studyId, studyUuid, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyStr, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
+                .append("studyId", studyStr)
                 .append("fields", fields)
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            fixQueryObject(study, query, userId);
+            fixQueryObject(organizationId, study, query, userId);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = sampleDBAdaptor.distinct(study.getUid(), fields, query, userId);
+            OpenCGAResult<?> result = getSampleDBAdaptor(organizationId).distinct(study.getUid(), fields, query, userId);
 
-            auditManager.auditDistinct(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
         } catch (CatalogException e) {
-            auditManager.auditDistinct(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
 
-    void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
+    void fixQueryObject(String organizationId, Study study, Query query, String userId) throws CatalogException {
         changeQueryId(query, ParamConstants.SAMPLE_RGA_STATUS_PARAM, SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key());
         changeQueryId(query, ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_PARAM,
                 SampleDBAdaptor.QueryParams.PROCESSING_PREPARATION_METHOD.key());
@@ -353,7 +376,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         super.fixQueryObject(query);
 
         // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, query);
+        AnnotationUtils.fixQueryAnnotationSearch(organizationId, study, query);
 
         // The files introduced could be either ids, paths or uuids. As so, we should use the smart resolutor to do this.
         if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.FILE_IDS.key()))) {
@@ -370,7 +393,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             if (queryFileManager) {
                 // Obtain the corresponding fileIds
-                InternalGetDataResult<File> result = catalogManager.getFileManager().internalGet(study.getUid(),
+                InternalGetDataResult<File> result = catalogManager.getFileManager().internalGet(organizationId, study.getUid(),
                         query.getAsStringList(SampleDBAdaptor.QueryParams.FILE_IDS.key()),
                         FileManager.INCLUDE_FILE_IDS, userId, true);
                 if (result.getMissing() == null || result.getMissing().isEmpty()) {
@@ -398,7 +421,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
 
             if (queryIndividualManager) {
-                InternalGetDataResult<Individual> result = catalogManager.getIndividualManager().internalGet(study.getUid(),
+                InternalGetDataResult<Individual> result = catalogManager.getIndividualManager().internalGet(organizationId, study.getUid(),
                         query.getAsStringList(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()),
                         IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId, true);
                 if (result.getMissing() == null || result.getMissing().isEmpty()) {
@@ -416,37 +439,42 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public OpenCGAResult<Sample> count(String studyId, Query query, String token) throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+    public OpenCGAResult<Sample> count(String studyStr, Query query, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         query = new Query(ParamUtils.defaultObject(query, Query::new));
 
         ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
+                .append("studyId", studyStr)
                 .append("query", query)
                 .append("token", token);
         try {
-            fixQueryObject(study, query, userId);
+            fixQueryObject(organizationId, study, query, userId);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = sampleDBAdaptor.count(query, userId);
+            OpenCGAResult<Long> queryResultAux = getSampleDBAdaptor(organizationId).count(query, userId);
 
-            auditManager.auditCount(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditCount(organizationId, userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.getNumMatches());
         } catch (CatalogException e) {
-            auditManager.auditCount(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditCount(organizationId, userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> sampleIds, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult delete(String studyStr, List<String> sampleIds, QueryOptions options, String token)
+            throws CatalogException {
         return delete(studyStr, sampleIds, options, false, token);
     }
 
@@ -456,9 +484,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw new CatalogException("Missing list of sample ids");
         }
 
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -472,9 +503,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         boolean checkPermissions;
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            checkPermissions = !authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+            long studyId = study.getUid();
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationId, userId, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -485,7 +517,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             String sampleId = id;
             String sampleUuid = "";
             try {
-                OpenCGAResult<Sample> internalResult = internalGet(study.getUid(), id, INCLUDE_SAMPLE_IDS, userId);
+                OpenCGAResult<Sample> internalResult = internalGet(organizationId, study.getUid(), id, INCLUDE_SAMPLE_IDS, userId);
                 if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Sample '" + id + "' not found");
                 }
@@ -496,16 +528,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 sampleUuid = sample.getUuid();
 
                 if (checkPermissions) {
-                    authorizationManager.checkSamplePermission(study.getUid(), sample.getUid(), userId,
+                    authorizationManager.checkSamplePermission(organizationId, study.getUid(), sample.getUid(), userId,
                             SamplePermissions.DELETE);
                 }
 
                 // Check if the sample can be deleted
-                checkSampleCanBeDeleted(study.getUid(), sample, params.getBoolean(Constants.FORCE, false));
+                checkSampleCanBeDeleted(organizationId, study.getUid(), sample, params.getBoolean(Constants.FORCE, false));
 
-                result.append(sampleDBAdaptor.delete(sample));
+                result.append(getSampleDBAdaptor(organizationId).delete(sample));
 
-                auditManager.auditDelete(operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 String errorMsg = "Cannot delete sample " + sampleId + ": " + e.getMessage();
@@ -515,11 +547,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
-                auditManager.auditDelete(operationId, userId, Enums.Resource.SAMPLE, sampleId, sampleUuid,
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.SAMPLE, sampleId, sampleUuid,
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
-        auditManager.finishAuditBatch(operationId);
+        auditManager.finishAuditBatch(organizationId, operationId);
 
         return endResult(result, ignoreException);
     }
@@ -536,8 +568,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         OpenCGAResult result = OpenCGAResult.empty();
 
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -567,15 +602,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 //                params.put(Constants.EMPTY_FILES_ACTION, "NONE");
 //            }
 
-            fixQueryObject(study, finalQuery, userId);
+            fixQueryObject(organizationId, study, finalQuery, userId);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = sampleDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_SAMPLE_IDS, userId);
+            iterator = getSampleDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_SAMPLE_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            checkPermissions = !authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+            long studyId = study.getUid();
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationUuid, userId, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -586,16 +622,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             try {
                 if (checkPermissions) {
-                    authorizationManager.checkSamplePermission(study.getUid(), sample.getUid(), userId,
+                    authorizationManager.checkSamplePermission(organizationId, study.getUid(), sample.getUid(), userId,
                             SamplePermissions.DELETE);
                 }
 
                 // Check if the sample can be deleted
-                checkSampleCanBeDeleted(study.getUid(), sample, params.getBoolean(Constants.FORCE, false));
+                checkSampleCanBeDeleted(organizationId, study.getUid(), sample, params.getBoolean(Constants.FORCE, false));
 
-                result.append(sampleDBAdaptor.delete(sample));
+                result.append(getSampleDBAdaptor(organizationId).delete(sample));
 
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 String errorMsg = "Cannot delete sample " + sample.getId() + ": " + e.getMessage();
@@ -605,19 +641,22 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
-        auditManager.finishAuditBatch(operationUuid);
+        auditManager.finishAuditBatch(organizationId, operationUuid);
 
         return endResult(result, ignoreException);
     }
 
     // TODO: This method should be private. This should only be accessible internally.
     public OpenCGAResult<Sample> resetRgaIndexes(String studyStr, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -625,14 +664,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         OpenCGAResult<Sample> result;
         try {
-            authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
-            result = sampleDBAdaptor.setRgaIndexes(study.getUid(), new RgaIndex(RgaIndex.Status.NOT_INDEXED, TimeUtils.getTime()));
+            long studyId = study.getUid();
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
+            result = getSampleDBAdaptor(organizationId).setRgaIndexes(study.getUid(), new RgaIndex(RgaIndex.Status.NOT_INDEXED,
+                    TimeUtils.getTime()));
 
-            auditManager.audit(userId, Enums.Action.RESET_RGA_INDEXES, Enums.Resource.SAMPLE, "ALL", "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            auditManager.audit(organizationId, userId, Enums.Action.RESET_RGA_INDEXES, Enums.Resource.SAMPLE, "ALL", "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
-            auditManager.audit(userId, Enums.Action.RESET_RGA_INDEXES, Enums.Resource.SAMPLE, "ALL", "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            auditManager.audit(organizationId, userId, Enums.Action.RESET_RGA_INDEXES, Enums.Resource.SAMPLE, "ALL", "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw new CatalogException("Could not reset all sample RGA indexes", e);
         }
 
@@ -642,8 +683,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     // TODO: This method should be somehow private. This should only be accessible internally.
     public OpenCGAResult<Sample> updateRgaIndexes(String studyStr, List<String> samples, RgaIndex rgaIndex, String token)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -658,7 +702,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         try {
             auditManager.initAuditBatch(operationUuid);
 
-            authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+            long studyId = study.getUid();
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
 
             ParamUtils.checkNotEmptyArray(samples, "samples");
             ParamUtils.checkObj(rgaIndex, "RgaIndex");
@@ -666,8 +711,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             rgaIndex.setDate(TimeUtils.getTime());
 
-            sampleResult = internalGet(study.getUid(), samples, INCLUDE_SAMPLE_IDS, userId, false);
-            result = sampleDBAdaptor.setRgaIndexes(study.getUid(),
+            sampleResult = internalGet(organizationId, study.getUid(), samples, INCLUDE_SAMPLE_IDS, userId, false);
+            result = getSampleDBAdaptor(organizationId).setRgaIndexes(study.getUid(),
                     sampleResult.getResults().stream().map(Sample::getUid).collect(Collectors.toList()), rgaIndex);
 
             for (Sample sample : sampleResult.getResults()) {
@@ -688,54 +733,61 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
             throw new CatalogException("Could not reset all sample RGA indexes", e);
         } finally {
-            auditManager.finishAuditBatch(operationUuid);
+            auditManager.finishAuditBatch(organizationId, operationUuid);
         }
 
         return result;
     }
 
-    public OpenCGAResult<?> updateSampleInternalVariantIndex(Sample sample, SampleInternalVariantIndex index, String token)
-            throws CatalogException {
-        return updateSampleInternalVariant(sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX.key(), token);
+    public OpenCGAResult<?> updateSampleInternalVariantIndex(String studyFqn, Sample sample, SampleInternalVariantIndex index,
+                                                             String token) throws CatalogException {
+        return updateSampleInternalVariant(studyFqn, sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX.key(), token);
     }
 
-    public OpenCGAResult<?> updateSampleInternalVariantSecondarySampleIndex(
-            Sample sample, SampleInternalVariantSecondarySampleIndex index, String token)
+    public OpenCGAResult<?> updateSampleInternalVariantSecondarySampleIndex(String studyFqn, Sample sample,
+                                                                            SampleInternalVariantSecondarySampleIndex index, String token)
             throws CatalogException {
-        return updateSampleInternalVariant(sample, index, Arrays.asList(
+        return updateSampleInternalVariant(studyFqn, sample, index, Arrays.asList(
                 SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX.key(),
                 SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key()), token);
     }
 
     public OpenCGAResult<?> updateSampleInternalVariantAnnotationIndex(
-            Sample sample, SampleInternalVariantAnnotationIndex index, String token) throws CatalogException {
-        return updateSampleInternalVariant(sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), token);
+            String studyFqn, Sample sample, SampleInternalVariantAnnotationIndex index, String token) throws CatalogException {
+        return updateSampleInternalVariant(studyFqn, sample, index,
+                SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), token);
     }
 
-    public OpenCGAResult<?> updateSampleInternalVariantSecondaryAnnotationIndex(
-            Sample sample, SampleInternalVariantSecondaryAnnotationIndex index, String token) throws CatalogException {
-        return updateSampleInternalVariant(sample, index,
+    public OpenCGAResult<?> updateSampleInternalVariantSecondaryAnnotationIndex(String studyFqn, Sample sample,
+                                                                                SampleInternalVariantSecondaryAnnotationIndex index,
+                                                                                String token) throws CatalogException {
+        return updateSampleInternalVariant(studyFqn, sample, index,
                 SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(), token);
     }
 
-    private OpenCGAResult<?> updateSampleInternalVariant(Sample sample, Object value, String fieldKey, String token)
+    private OpenCGAResult<?> updateSampleInternalVariant(String studyFqn, Sample sample, Object value, String fieldKey, String token)
             throws CatalogException {
-        return updateSampleInternalVariant(sample, value, Collections.singletonList(fieldKey), token);
+        return updateSampleInternalVariant(studyFqn, sample, value, Collections.singletonList(fieldKey), token);
     }
 
-    private OpenCGAResult<?> updateSampleInternalVariant(Sample sample, Object value, List<String> fieldKeys, String token)
-            throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyDBAdaptor.get(sample.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
+    private OpenCGAResult<?> updateSampleInternalVariant(String studyFqn, Sample sample, Object value, List<String> fieldKeys,
+                                                         String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyFqn, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = getStudyDBAdaptor(organizationId).get(sample.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
 
         ObjectMap auditParams = new ObjectMap()
+                .append("studyFqn", studyFqn)
                 .append("sample", sample.getId())
                 .append("token", token);
         for (String fieldKey : fieldKeys) {
             auditParams.append(fieldKey, value);
         }
 
-        authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+        long studyId = study.getUid();
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
 
         ObjectMap params;
         try {
@@ -747,9 +799,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         } catch (JsonProcessingException e) {
             throw new CatalogException("Cannot parse SampleInternalVariant object: " + e.getMessage(), e);
         }
-        OpenCGAResult<?> update = sampleDBAdaptor.update(sample.getUid(), params, QueryOptions.empty());
-        auditManager.audit(userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
-                study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        OpenCGAResult<?> update = getSampleDBAdaptor(organizationId).update(sample.getUid(), params, QueryOptions.empty());
+        auditManager.audit(organizationId, userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
+                study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
         return new OpenCGAResult<>(update.getTime(), update.getEvents(), 1, Collections.emptyList(), 1);
     }
@@ -764,14 +816,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return update(studyStr, sampleStr, sampleUpdateParams, options, token);
     }
 
-    public OpenCGAResult<Sample> addAnnotationSet(String studyStr, String sampleStr, AnnotationSet annotationSet, QueryOptions options,
-                                                  String token) throws CatalogException {
+    public OpenCGAResult<Sample> addAnnotationSet(String studyStr, String sampleStr, AnnotationSet annotationSet,
+                                                  QueryOptions options, String token) throws CatalogException {
         return addAnnotationSets(studyStr, sampleStr, Collections.singletonList(annotationSet), options, token);
     }
 
     public OpenCGAResult<Sample> addAnnotationSets(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
                                                    QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
+        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options,
+                token);
     }
 
     public OpenCGAResult<Sample> removeAnnotationSet(String studyStr, String sampleStr, String annotationSetId, QueryOptions options,
@@ -785,7 +838,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
                 .collect(Collectors.toList());
-        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.REMOVE, options, token);
+        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.REMOVE, options,
+                token);
+    }
+
+    public OpenCGAResult<Sample> removeAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
+                                                   QueryOptions options, String token) throws CatalogException {
+        return updateAnnotations(studyStr, sampleStr, annotationSetId,
+                new ObjectMap("remove", StringUtils.join(annotations, ",")), ParamUtils.CompleteUpdateAction.REMOVE, options, token);
     }
 
     public OpenCGAResult<Sample> updateAnnotations(String studyStr, String sampleStr, String annotationSetId,
@@ -802,25 +862,19 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return update(studyStr, sampleStr, sampleUpdateParams, options, token);
     }
 
-    public OpenCGAResult<Sample> removeAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
-                                                   QueryOptions options, String token) throws CatalogException {
-        return updateAnnotations(studyStr, sampleStr, annotationSetId, new ObjectMap("remove", StringUtils.join(annotations, ",")),
-                ParamUtils.CompleteUpdateAction.REMOVE, options, token);
-    }
-
     public OpenCGAResult<Sample> resetAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
                                                   QueryOptions options, String token) throws CatalogException {
-        return updateAnnotations(studyStr, sampleStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
-                ParamUtils.CompleteUpdateAction.RESET, options, token);
+        return updateAnnotations(studyStr, sampleStr, annotationSetId,
+                new ObjectMap("reset", StringUtils.join(annotations, ",")), ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
 
-    private void checkSampleCanBeDeleted(long studyId, Sample sample, boolean force) throws CatalogException {
+    private void checkSampleCanBeDeleted(String organizationId, long studyId, Sample sample, boolean force) throws CatalogException {
         String msg = "Could not delete sample '" + sample.getId() + "'. ";
         // Look for files related with the sample
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sample.getId())
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        DBIterator<File> fileIterator = fileDBAdaptor.iterator(query, QueryOptions.empty());
+        DBIterator<File> fileIterator = getFileDBAdaptor(organizationId).iterator(query, QueryOptions.empty());
         List<String> errorFiles = new ArrayList<>();
         while (fileIterator.hasNext()) {
             File file = fileIterator.next();
@@ -845,7 +899,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         query = new Query()
                 .append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
                 .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        DBIterator<Cohort> cohortIterator = cohortDBAdaptor.iterator(query, QueryOptions.empty());
+        DBIterator<Cohort> cohortIterator = getCohortDBAdaptor(organizationId).iterator(query, QueryOptions.empty());
         List<String> errorCohorts = new ArrayList<>();
         boolean associatedToDefaultCohort = false;
         while (cohortIterator.hasNext()) {
@@ -882,8 +936,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
                     .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-            OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE,
-                    Arrays.asList(IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.ID.key())));
+            OpenCGAResult<Individual> individualDataResult = getIndividualDBAdaptor(organizationId).get(query,
+                    new QueryOptions(QueryOptions.INCLUDE,
+                            Arrays.asList(IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.ID.key())));
             if (individualDataResult.getNumResults() > 0) {
                 throw new CatalogException(msg + "Sample is associated with individual '" + individualDataResult.first().getId() + "'.");
             }
@@ -899,8 +954,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                                         QueryOptions options, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
 
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -921,13 +979,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         DBIterator<Sample> iterator;
         try {
-            fixQueryObject(study, finalQuery, userId);
+            fixQueryObject(organizationId, study, finalQuery, userId);
 
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = sampleDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_SAMPLE_IDS, userId);
+            iterator = getSampleDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_SAMPLE_IDS, userId);
         } catch (CatalogException e) {
-            auditManager.auditUpdate(operationId, userId, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(),
+            auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -937,30 +995,33 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         while (iterator.hasNext()) {
             Sample sample = iterator.next();
             try {
-                OpenCGAResult updateResult = update(study, sample, updateParams, options, userId);
+                OpenCGAResult updateResult = update(organizationId, study, sample, updateParams, options, userId);
                 result.append(updateResult);
 
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
-                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, sample.getId(), e.getMessage());
                 result.getEvents().add(event);
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update sample {}: {}", sample.getId(), e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
-                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
-        auditManager.finishAuditBatch(operationId);
+        auditManager.finishAuditBatch(organizationId, operationId);
 
         return endResult(result, ignoreException);
     }
 
     public OpenCGAResult<Sample> update(String studyStr, String sampleId, SampleUpdateParams updateParams, QueryOptions options,
                                         String token) throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -981,7 +1042,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         OpenCGAResult<Sample> result = OpenCGAResult.empty();
         String sampleUuid = "";
         try {
-            OpenCGAResult<Sample> internalResult = internalGet(study.getUid(), sampleId, INCLUDE_SAMPLE_IDS, userId);
+            OpenCGAResult<Sample> internalResult = internalGet(organizationId, study.getUid(), sampleId, INCLUDE_SAMPLE_IDS, userId);
             if (internalResult.getNumResults() == 0) {
                 throw new CatalogException("Sample '" + sampleId + "' not found");
             }
@@ -991,18 +1052,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             sampleId = sample.getId();
             sampleUuid = sample.getUuid();
 
-            OpenCGAResult updateResult = update(study, sample, updateParams, options, userId);
+            OpenCGAResult updateResult = update(organizationId, study, sample, updateParams, options, userId);
             result.append(updateResult);
 
-            auditManager.auditUpdate(operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, sampleId, e.getMessage());
             result.getEvents().add(event);
             result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
-            auditManager.auditUpdate(operationId, userId, Enums.Resource.SAMPLE, sampleId, sampleUuid, study.getId(),
+            auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.SAMPLE, sampleId, sampleUuid, study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1013,7 +1074,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     /**
      * Update Sample from catalog.
      *
-     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param studyStr     Study id in string format. Could be one of
+     *                     [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param sampleIds    List of Sample ids. Could be either the id or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
@@ -1027,10 +1089,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return update(studyStr, sampleIds, updateParams, false, options, token);
     }
 
-    public OpenCGAResult<Sample> update(String studyStr, List<String> sampleIds, SampleUpdateParams updateParams, boolean ignoreException,
-                                        QueryOptions options, String token) throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+    public OpenCGAResult<Sample> update(String studyStr, List<String> sampleIds, SampleUpdateParams updateParams,
+                                        boolean ignoreException, QueryOptions options, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -1056,7 +1121,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             String sampleUuid = "";
 
             try {
-                OpenCGAResult<Sample> internalResult = internalGet(study.getUid(), id, INCLUDE_SAMPLE_IDS, userId);
+                OpenCGAResult<Sample> internalResult = internalGet(organizationId, study.getUid(), id, INCLUDE_SAMPLE_IDS, userId);
                 if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Sample '" + id + "' not found");
                 }
@@ -1066,28 +1131,28 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 sampleId = sample.getId();
                 sampleUuid = sample.getUuid();
 
-                OpenCGAResult updateResult = update(study, sample, updateParams, options, userId);
+                OpenCGAResult updateResult = update(organizationId, study, sample, updateParams, options, userId);
                 result.append(updateResult);
 
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
-                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, sampleId, e.getMessage());
                 result.getEvents().add(event);
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.SAMPLE, sampleId, sampleUuid, study.getId(),
+                auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.SAMPLE, sampleId, sampleUuid, study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
-        auditManager.finishAuditBatch(operationId);
+        auditManager.finishAuditBatch(organizationId, operationId);
 
         return endResult(result, ignoreException);
     }
 
-    private OpenCGAResult update(Study study, Sample sample, SampleUpdateParams updateParams, QueryOptions options, String userId)
-            throws CatalogException {
+    private OpenCGAResult update(String organizationId, Study study, Sample sample, SampleUpdateParams updateParams, QueryOptions options,
+                                 String userId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         SampleUpdateParams updateParamsClone;
@@ -1132,13 +1197,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
         if (updateParamsClone != null && updateParamsClone.getAnnotationSets() != null) {
-            authorizationManager.checkSamplePermission(study.getUid(), sample.getUid(), userId,
+            authorizationManager.checkSamplePermission(organizationId, study.getUid(), sample.getUid(), userId,
                     SamplePermissions.WRITE_ANNOTATIONS);
         }
         // Only check update permissions if the user wants to update anything apart from the annotation sets
         if ((parameters.size() == 1 && !parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
-            authorizationManager.checkSamplePermission(study.getUid(), sample.getUid(), userId,
+            authorizationManager.checkSamplePermission(organizationId, study.getUid(), sample.getUid(), userId,
                     SamplePermissions.WRITE);
         }
 
@@ -1148,8 +1213,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         if (updateParamsClone != null && StringUtils.isNotEmpty(updateParamsClone.getIndividualId())) {
             // Check individual id exists
-            OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
-                    updateParamsClone.getIndividualId(), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
+            OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().internalGet(organizationId,
+                    study.getUid(), updateParamsClone.getIndividualId(), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
             if (individualDataResult.getNumResults() == 0) {
                 throw new CatalogException("Individual '" + updateParamsClone.getIndividualId() + "' not found.");
             }
@@ -1158,12 +1223,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualDataResult.first().getId());
         }
 
-        checkUpdateAnnotations(study, sample, parameters, options, VariableSet.AnnotableDataModels.SAMPLE, sampleDBAdaptor, userId);
+        checkUpdateAnnotations(organizationId, study, sample, parameters, options, VariableSet.AnnotableDataModels.SAMPLE,
+                getSampleDBAdaptor(organizationId), userId);
 
-        OpenCGAResult<Sample> update = sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Sample> update = getSampleDBAdaptor(organizationId).update(sample.getUid(), parameters, study.getVariableSets(),
+                options);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated sample
-            OpenCGAResult<Sample> queryResult = sampleDBAdaptor.get(study.getUid(),
+            OpenCGAResult<Sample> queryResult = getSampleDBAdaptor(organizationId).get(study.getUid(),
                     new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()), options, userId);
             update.setResults(queryResult.getResults());
         }
@@ -1171,19 +1238,22 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
+    public OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String token)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         ParamUtils.checkObj(field, "field");
-        ParamUtils.checkObj(sessionId, "sessionId");
+        ParamUtils.checkObj(token, "token");
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+        AnnotationUtils.fixQueryAnnotationSearch(organizationId, study, userId, query, authorizationManager);
 
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.VIEW_SAMPLES);
+        authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.VIEW_SAMPLES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -1191,14 +1261,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         OpenCGAResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
-            queryResult = sampleDBAdaptor.rank(query, field, numResults, asc);
+            queryResult = getSampleDBAdaptor(organizationId).rank(query, field, numResults, asc);
         }
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
 
     @Override
-    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String token)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -1206,38 +1276,42 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw new CatalogException("Empty fields parameter.");
         }
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+        AnnotationUtils.fixQueryAnnotationSearch(organizationId, study, userId, query, authorizationManager);
         AnnotationUtils.fixQueryOptionAnnotation(options);
 
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
+        OpenCGAResult queryResult = getSampleDBAdaptor(organizationId).groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
 
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<AclEntryList<SamplePermissions>> getAcls(String studyId, List<String> sampleList, String member,
-                                                                  boolean ignoreException, String token)
-            throws CatalogException {
-        return getAcls(studyId, sampleList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
-                ignoreException, token);
+                                                                  boolean ignoreException, String token) throws CatalogException {
+        return getAcls(studyId, sampleList,
+                StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(), ignoreException, token);
     }
 
-    public OpenCGAResult<AclEntryList<SamplePermissions>> getAcls(String studyId, List<String> sampleList,
-                                                                  List<String> members, boolean ignoreException,
-                                                                  String token) throws CatalogException {
-        String user = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyId, user);
+    public OpenCGAResult<AclEntryList<SamplePermissions>> getAcls(String studyStr, List<String> sampleList, List<String> members,
+                                                                  boolean ignoreException, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
+                .append("studyId", studyStr)
                 .append("sampleList", sampleList)
                 .append("members", members)
                 .append("ignoreException", ignoreException)
@@ -1247,7 +1321,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
         try {
             auditManager.initAuditBatch(operationId);
-            InternalGetDataResult<Sample> queryResult = internalGet(study.getUid(), sampleList, INCLUDE_SAMPLE_IDS, user, ignoreException);
+            InternalGetDataResult<Sample> queryResult = internalGet(organizationId, study.getUid(), sampleList, INCLUDE_SAMPLE_IDS, userId,
+                    ignoreException);
 
             if (queryResult.getMissing() != null) {
                 missingMap = queryResult.getMissing().stream()
@@ -1256,11 +1331,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             List<Long> sampleUids = queryResult.getResults().stream().map(Sample::getUid).collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(members)) {
-                sampleAcls = authorizationManager.getAcl(user, study.getUid(), sampleUids, members, Enums.Resource.SAMPLE,
-                        SamplePermissions.class);
+                sampleAcls = authorizationManager.getAcl(organizationId, study.getUid(), sampleUids, members, Enums.Resource.SAMPLE,
+                        SamplePermissions.class, userId);
             } else {
-                sampleAcls = authorizationManager.getAcl(user, study.getUid(), sampleUids, Enums.Resource.SAMPLE,
-                        SamplePermissions.class);
+                sampleAcls = authorizationManager.getAcl(organizationId, study.getUid(), sampleUids, Enums.Resource.SAMPLE,
+                        SamplePermissions.class, userId);
             }
 
             // Include non-existing samples to the result list
@@ -1271,14 +1346,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 if (!missingMap.containsKey(sampleId)) {
                     Sample sample = queryResult.getResults().get(counter);
                     resultList.add(sampleAcls.getResults().get(counter));
-                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.SAMPLE, sample.getId(),
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.SAMPLE, sample.getId(),
                             sample.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     counter++;
                 } else {
                     resultList.add(new AclEntryList<>());
                     eventList.add(new Event(Event.Type.ERROR, sampleId, missingMap.get(sampleId).getErrorMsg()));
-                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.SAMPLE, sampleId, "",
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.SAMPLE, sampleId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(sampleId).getErrorMsg())), new ObjectMap());
                 }
@@ -1290,7 +1365,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             sampleAcls.setEvents(eventList);
         } catch (CatalogException e) {
             for (String sampleId : sampleList) {
-                auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.SAMPLE, sampleId, "",
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.SAMPLE, sampleId, "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
@@ -1303,21 +1378,23 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 }
             }
         } finally {
-            auditManager.finishAuditBatch(operationId);
+            auditManager.finishAuditBatch(organizationId, operationId);
         }
 
         return sampleAcls;
     }
 
-    public OpenCGAResult<AclEntryList<SamplePermissions>> updateAcl(String studyId, List<String> sampleStringList,
-                                                                    String memberList, SampleAclParams sampleAclParams,
-                                                                    ParamUtils.AclAction action, String token)
-            throws CatalogException {
-        String user = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyId, user);
+    public OpenCGAResult<AclEntryList<SamplePermissions>> updateAcl(String studyStr, List<String> sampleStringList, String memberList,
+                                                                    SampleAclParams sampleAclParams, ParamUtils.AclAction action,
+                                                                    String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
+                .append("studyId", studyStr)
                 .append("sampleStringList", sampleStringList)
                 .append("memberList", memberList)
                 .append("sampleAclParams", sampleAclParams)
@@ -1358,7 +1435,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (StringUtils.isNotEmpty(sampleAclParams.getIndividual())) {
                 Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), sampleAclParams.getIndividual());
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key());
-                OpenCGAResult<Individual> indDataResult = catalogManager.getIndividualManager().search(studyId, query, options, token);
+                OpenCGAResult<Individual> indDataResult = catalogManager.getIndividualManager().search(studyStr, query,
+                        options, token);
 
                 Set<String> sampleSet = new HashSet<>();
                 for (Individual individual : indDataResult.getResults()) {
@@ -1369,7 +1447,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
 
             if (StringUtils.isNotEmpty(sampleAclParams.getFamily())) {
-                OpenCGAResult<Family> familyDataResult = catalogManager.getFamilyManager().get(studyId,
+                OpenCGAResult<Family> familyDataResult = catalogManager.getFamilyManager().get(studyStr,
                         Arrays.asList(sampleAclParams.getFamily().split(",")), FamilyManager.INCLUDE_FAMILY_MEMBERS, token);
 
                 Set<String> sampleSet = new HashSet<>();
@@ -1389,8 +1467,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (StringUtils.isNotEmpty(sampleAclParams.getFile())) {
 //            // Obtain the samples of the files
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key());
-                OpenCGAResult<File> fileDataResult = catalogManager.getFileManager().internalGet(study.getUid(),
-                        Arrays.asList(StringUtils.split(sampleAclParams.getFile(), ",")), options, user, false);
+                OpenCGAResult<File> fileDataResult = catalogManager.getFileManager().internalGet(organizationId, study.getUid(),
+                        Arrays.asList(StringUtils.split(sampleAclParams.getFile(), ",")), options, userId, false);
 
                 Set<String> sampleSet = new HashSet<>();
                 for (File file : fileDataResult.getResults()) {
@@ -1403,7 +1481,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (StringUtils.isNotEmpty(sampleAclParams.getCohort())) {
                 Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), sampleAclParams.getCohort());
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key());
-                OpenCGAResult<Cohort> cohortDataResult = catalogManager.getCohortManager().search(studyId, query, options, token);
+                OpenCGAResult<Cohort> cohortDataResult = catalogManager.getCohortManager().search(studyStr, query, options,
+                        token);
 
                 Set<String> sampleSet = new HashSet<>();
                 for (Cohort cohort : cohortDataResult.getResults()) {
@@ -1413,8 +1492,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 sampleStringList.addAll(sampleSet);
             }
 
-            sampleList = internalGet(study.getUid(), sampleStringList, INCLUDE_SAMPLE_IDS, user, false).getResults();
-            authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), user);
+            sampleList = internalGet(organizationId, study.getUid(), sampleStringList, INCLUDE_SAMPLE_IDS, userId, false).getResults();
+            authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), userId);
 
             // Validate that the members are actually valid members
             if (memberList != null && !memberList.isEmpty()) {
@@ -1422,17 +1501,17 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             } else {
                 members = Collections.emptyList();
             }
-            checkMembers(study.getUid(), members);
+            checkMembers(organizationId, study.getUid(), members);
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         } catch (CatalogException e) {
             if (sampleStringList != null) {
                 for (String sampleId : sampleStringList) {
-                    auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.SAMPLE, sampleId, "",
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.SAMPLE, sampleId, "",
                             study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
             }
-            auditManager.finishAuditBatch(operationId);
+            auditManager.finishAuditBatch(organizationId, operationId);
             throw e;
         }
 
@@ -1453,25 +1532,25 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             try {
                 switch (action) {
                     case SET:
-                        authorizationManager.setAcls(study.getUid(), members, aclParamsList);
+                        authorizationManager.setAcls(organizationId, study.getUid(), members, aclParamsList);
                         break;
                     case ADD:
-                        authorizationManager.addAcls(study.getUid(), members, aclParamsList);
+                        authorizationManager.addAcls(organizationId, study.getUid(), members, aclParamsList);
                         break;
                     case REMOVE:
-                        authorizationManager.removeAcls(members, aclParamsList);
+                        authorizationManager.removeAcls(organizationId, members, aclParamsList);
                         break;
                     case RESET:
                         for (AuthorizationManager.CatalogAclParams aclParam : aclParamsList) {
                             aclParam.setPermissions(null);
                         }
-                        authorizationManager.removeAcls(members, aclParamsList);
+                        authorizationManager.removeAcls(organizationId, members, aclParamsList);
                         break;
                     default:
                         throw new CatalogException("Unexpected error occurred. No valid action found.");
                 }
 
-                OpenCGAResult<AclEntryList<SamplePermissions>> queryResults = authorizationManager.getAcls(study.getUid(),
+                OpenCGAResult<AclEntryList<SamplePermissions>> queryResults = authorizationManager.getAcls(organizationId, study.getUid(),
                         sampleUids, members, Enums.Resource.SAMPLE, SamplePermissions.class);
 
                 for (int i = 0; i < queryResults.getResults().size(); i++) {
@@ -1480,14 +1559,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 aclResultList.append(queryResults);
 
                 for (Sample sample : batchSampleList) {
-                    auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.SAMPLE, sample.getId(),
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.SAMPLE, sample.getId(),
                             sample.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                 }
             } catch (CatalogException e) {
                 // Process current batch
                 for (Sample sample : batchSampleList) {
-                    auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.SAMPLE, sample.getId(),
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.SAMPLE, sample.getId(),
                             sample.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
@@ -1495,66 +1574,29 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 // Process remaining unprocessed batches
                 while (numProcessed < sampleList.size()) {
                     Sample sample = sampleList.get(numProcessed);
-                    auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.SAMPLE, sample.getId(),
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.SAMPLE, sample.getId(),
                             sample.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
 
-                auditManager.finishAuditBatch(operationId);
+                auditManager.finishAuditBatch(organizationId, operationId);
                 throw e;
             }
         } while (numProcessed < sampleList.size());
 
-        auditManager.finishAuditBatch(operationId);
+        auditManager.finishAuditBatch(organizationId, operationId);
         return aclResultList;
     }
 
-    public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
+    private List<Long> getIndividualsUidsFromSampleUids(String organizationId, long studyUid, List<Long> sampleUids)
             throws CatalogException {
-        String userId = userManager.getUserId(token);
-        // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
-
-        ParamUtils.defaultObject(query, Query::new);
-        ParamUtils.defaultObject(options, QueryOptions::new);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("query", new Query(query))
-                .append("options", options)
-                .append("defaultStats", defaultStats)
-                .append("token", token);
-
-        try {
-            if (defaultStats || StringUtils.isEmpty(options.getString(QueryOptions.FACET))) {
-                String facet = options.getString(QueryOptions.FACET);
-                options.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-            }
-            AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
-
-            try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
-                DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION, query,
-                        options, userId);
-
-                auditManager.auditFacet(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-                return result;
-            }
-        } catch (CatalogException e) {
-            auditManager.auditFacet(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));
-            throw e;
-        }
-    }
-
-    private List<Long> getIndividualsUidsFromSampleUids(long studyUid, List<Long> sampleUids) throws CatalogException {
         // Look for all the individuals owning the samples
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids);
 
-        OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(query, IndividualManager.INCLUDE_INDIVIDUAL_IDS);
+        OpenCGAResult<Individual> individualDataResult = getIndividualDBAdaptor(organizationId).get(query,
+                IndividualManager.INCLUDE_INDIVIDUAL_IDS);
 
         return individualDataResult.getResults().stream().map(Individual::getUid).collect(Collectors.toList());
     }

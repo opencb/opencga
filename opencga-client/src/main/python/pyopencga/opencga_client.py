@@ -2,11 +2,15 @@ import getpass
 import time
 import sys
 import re
+if sys.version_info >= (3, 8):
+    from importlib.metadata import version
+else:
+    from importlib_metadata import version
 
 from pyopencga.opencga_config import ClientConfiguration
 from pyopencga.rest_clients.admin_client import Admin
 from pyopencga.rest_clients.alignment_client import Alignment
-from pyopencga.rest_clients.clinical_client import Clinical
+from pyopencga.rest_clients.clinical_analysis_client import ClinicalAnalysis
 from pyopencga.rest_clients.cohort_client import Cohort
 from pyopencga.rest_clients.family_client import Family
 from pyopencga.rest_clients.file_client import File
@@ -21,6 +25,7 @@ from pyopencga.rest_clients.study_client import Study
 from pyopencga.rest_clients.variant_operation_client import VariantOperation
 from pyopencga.rest_clients.user_client import User
 from pyopencga.rest_clients.variant_client import Variant
+from pyopencga.rest_clients.organization_client import Organization
 
 
 class OpencgaClient(object):
@@ -50,8 +55,10 @@ class OpencgaClient(object):
         self.logout()
 
     def _check_versions(self):
+        # Getting client and server versions
+        client_version = version("pyopencga")
         server_version = self.meta.about().get_result(0)['Version'].split('-')[0]
-        client_version = re.findall(r'Client version: (.+)\n', str(self.meta.__doc__))[0]
+
         ansi_reset = "\033[0m"
         ansi_red = "\033[31m"
         ansi_yellow = "\033[33m"
@@ -60,10 +67,12 @@ class OpencgaClient(object):
                   ' Some client features may not be implemented in the server.\n'.format(client_version, server_version)
             sys.stdout.write('{}{}{}'.format(ansi_red, msg, ansi_reset))
         elif tuple(server_version.split('.')[:2]) > tuple(client_version.split('.')[:2]):
-            msg = '[INFO]: Client version ({}) is lower than server version ({}).\n'.format(client_version, server_version)
+            msg = '[INFO]: Client version ({}) is lower than server version ({}).' \
+                   ' Some client features may not work as intended.\n'.format(client_version, server_version)
             sys.stdout.write('{}{}{}'.format(ansi_yellow, msg, ansi_reset))
 
     def _create_clients(self):
+        self.organizations = Organization(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.users = User(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.projects = Project(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.studies = Study(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
@@ -76,7 +85,7 @@ class OpencgaClient(object):
         self.disease_panels = DiseasePanel(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.alignments = Alignment(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.variants = Variant(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.clinical = Clinical(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.clinical = ClinicalAnalysis(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.operations = VariantOperation(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.variant_operations = self.operations  # DEPRECATED: use 'self.operations'
         self.meta = Meta(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
@@ -84,7 +93,7 @@ class OpencgaClient(object):
         self.admin = Admin(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
 
         self.clients = [
-            self.users, self.projects, self.studies, self.files, self.jobs,
+            self.organizations, self.users, self.projects, self.studies, self.files, self.jobs,
             self.samples, self.individuals, self.families, self.cohorts,
             self.disease_panels, self.alignments, self.variants, self.clinical,
             self.variant_operations, self.meta, self.ga4gh, self.admin
@@ -93,7 +102,7 @@ class OpencgaClient(object):
         for client in self.clients:
             client.on_retry = self.on_retry
 
-    def _make_login_handler(self, user, password):
+    def _make_login_handler(self, user, password, organization):
         """
         Returns a closure that performs the log-in. This will be called on retries
         if the current session ever expires.
@@ -109,13 +118,15 @@ class OpencgaClient(object):
                 data = {'user': user, 'password': password}
             else:
                 data = {'user': user, 'password': password}
+            if organization:
+                data.update({'organization': organization})
             tokens = User(self.configuration).login(data=data).get_result(0)
             self.token = tokens['token']
             self.refresh_token = tokens['refreshToken']
             return self.token
         return login_handler
 
-    def login(self, user=None, password=None):
+    def login(self, user=None, password=None, organization=None):
         if user is not None:
             if password is None:
                 password = getpass.getpass()
@@ -125,7 +136,7 @@ class OpencgaClient(object):
         except AssertionError:
             raise ValueError("User and password required")
 
-        self._login_handler = self._make_login_handler(user, password)
+        self._login_handler = self._make_login_handler(user, password, organization)
         self._login_handler()
         for client in self.clients:
             client.token = self.token
@@ -174,15 +185,14 @@ class OpencgaClient(object):
 
             # Description and path
             class_docstring = client.__doc__
-            cls_desc = re.findall('(.+)\n +Client version', class_docstring)[0]
-            cls_desc = cls_desc.strip().replace('This class contains methods', 'Client')
+            cls_desc = re.findall('(This class contains methods .+)\n', class_docstring)[0]
             cls_path = re.findall('PATH: (.+)\n', class_docstring)[0]
 
             # Methods
             methods = []
             method_names = [method_name for method_name in dir(client)
                             if callable(getattr(client, method_name))
-                            and not method_name.startswith('_')]
+                            and not method_name.startswith('_') and method_name != 'login_handler']
             for method_name in method_names:
                 if client_name is None:
                     continue
@@ -250,6 +260,9 @@ class OpencgaClient(object):
                             param['desc']
                         )]
         sys.stdout.write('\n'.join(help_txt) + '\n')
+
+    def get_organization_client(self):
+        return self.organizations
 
     def get_user_client(self):
         return self.users

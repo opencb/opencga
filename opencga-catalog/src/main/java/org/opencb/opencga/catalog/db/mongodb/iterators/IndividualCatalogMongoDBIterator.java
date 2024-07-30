@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.IndividualMongoDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.SampleMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -51,7 +51,6 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
     private QueryOptions sampleQueryOptions;
 
     private IndividualMongoDBAdaptor individualDBAdaptor;
-
     private Queue<Document> individualListBuffer;
 
     private Logger logger;
@@ -60,13 +59,14 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
 
     public IndividualCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
                                             AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
-                                            MongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
+                                            OrganizationMongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
         this(mongoCursor, clientSession, converter, filter, dbAdaptorFactory, 0, null, options);
     }
 
     public IndividualCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
                                             AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
-                                            MongoDBAdaptorFactory dbAdaptorFactory, long studyUid, String user, QueryOptions options) {
+                                            OrganizationMongoDBAdaptorFactory dbAdaptorFactory, long studyUid, String user,
+                                            QueryOptions options) {
         super(mongoCursor, clientSession, converter, filter, options);
 
         this.user = user;

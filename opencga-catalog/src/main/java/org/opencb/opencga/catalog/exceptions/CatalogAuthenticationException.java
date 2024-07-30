@@ -61,8 +61,26 @@ public class CatalogAuthenticationException extends CatalogException {
         return new CatalogAuthenticationException(domain + ": Incorrect user or password.", e);
     }
 
+    public static CatalogAuthenticationException userIsBanned(String userId) {
+        return new CatalogAuthenticationException("Too many login attempts. The account for user '" + userId + "' is banned."
+                + " Please, talk to your organization owner/administrator.");
+    }
+
+    public static CatalogAuthenticationException userIsSuspended(String userId) {
+        return new CatalogAuthenticationException("The account for user '" + userId + "' is suspended. Please, talk to your organization"
+                + " owner/administrator.");
+    }
+
+    public static CatalogAuthenticationException accountIsExpired(String userId, String expirationDate) {
+        return new CatalogAuthenticationException("The account for user '" + userId + "' expired on " + expirationDate + ". Please,"
+                + " talk to your organization owner/administrator.");
+    }
+
     public static CatalogAuthenticationException userNotAllowed(String domain) {
         return new CatalogAuthenticationException(domain + ": User not allowed to access the system.");
     }
 
+    public static CatalogAuthenticationException userNotFound(String organizationId, String userId) {
+        return new CatalogAuthenticationException("User '" + userId + "' not found in organization '" + organizationId + "'.");
+    }
 }

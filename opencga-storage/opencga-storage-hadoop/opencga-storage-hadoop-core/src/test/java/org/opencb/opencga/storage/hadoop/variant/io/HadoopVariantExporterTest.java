@@ -2,10 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.io;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -21,6 +18,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -55,7 +53,6 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     @ClassRule
     public static HadoopExternalResource externalResource = new HadoopExternalResource();
 
-    @ClassRule
     public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
 
     private static HadoopVariantStorageEngine variantStorageEngine;
@@ -65,7 +62,12 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     @BeforeClass
     public static void beforeClass() throws Exception {
         variantStorageEngine = externalResource.getVariantStorageEngine();
-        solr.configure(variantStorageEngine);
+        if (HBaseCompat.getInstance().isSolrTestingAvailable()) {
+            solr.before();
+            solr.configure(variantStorageEngine);
+        } else {
+            System.out.println("Skip embedded solr tests");
+        }
 
 //        URI inputUri = VariantStorageBaseTest.getResourceUri("sample1.genome.vcf");
         URI inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
@@ -87,10 +89,19 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
-        variantStorageEngine.secondaryIndex();
+        if (HBaseCompat.getInstance().isSolrTestingAvailable()) {
+            variantStorageEngine.secondaryIndex();
+        }
 
         VariantHbaseTestUtils.printVariants(variantStorageEngine.getDBAdaptor(), newOutputUri());
 
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        if (HBaseCompat.getInstance().isSolrTestingAvailable()) {
+            solr.after();
+        }
     }
 
     @Before

@@ -118,26 +118,18 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         NAME("name", TEXT_ARRAY, ""),
         EMAIL("email", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
+        INTERNAL("internal", OBJECT, ""),
+        INTERNAL_FAILED_ATTEMPTS("internal.failedAttempts", INTEGER, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         ACCOUNT("account", TEXT_ARRAY, ""),
-        ACCOUNT_TYPE("account.type", TEXT, ""),
         ACCOUNT_AUTHENTICATION_ID("account.authentication.id", TEXT, ""),
         ACCOUNT_CREATION_DATE("account.creationDate", TEXT, ""),
-        SIZE("size", INTEGER_ARRAY, ""),
-        QUOTA("quota", INTEGER_ARRAY, ""),
+        ACCOUNT_EXPIRATION_DATE("account.expirationDate", TEXT, ""),
+        QUOTA("quota", OBJECT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         PROJECTS("projects", TEXT_ARRAY, ""),
-        PROJECTS_UID("projects.uid", INTEGER_ARRAY, ""),
-        PROJECTS_ID("projects.id", INTEGER_ARRAY, ""),
-        PROJECT_NAME("projects.name", TEXT_ARRAY, ""),
-        PROJECT_ORGANIZATION("projects.organization", TEXT_ARRAY, ""),
-        PROJECT_STATUS("projects.status", TEXT_ARRAY, ""),
-
-        SHARED_PROJECTS("sharedProjects", TEXT_ARRAY, ""),
 
         TOOL_ID("tools.id", INTEGER_ARRAY, ""),
         TOOL_NAME("tools.name", TEXT_ARRAY, ""),

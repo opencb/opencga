@@ -65,7 +65,7 @@ import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchM
 @Ignore
 public abstract class VariantStorageSearchIntersectTest extends VariantStorageBaseTest {
 
-    @ClassRule
+    @ClassRule(order = 10)
     public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
 
     protected VariantDBAdaptor dbAdaptor;
@@ -81,7 +81,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
         variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE);
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE_GRCH38);
         dbAdaptor = variantStorageEngine.getDBAdaptor();
         if (!loaded) {
             loadFile();

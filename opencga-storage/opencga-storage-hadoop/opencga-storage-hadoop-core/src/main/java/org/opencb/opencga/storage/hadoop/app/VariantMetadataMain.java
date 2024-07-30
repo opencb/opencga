@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.app;
 
 import com.google.common.collect.Iterators;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
@@ -27,12 +27,6 @@ import java.util.stream.Collectors;
 
 /**
  * Created on 12/03/18.
- *
- * java -classpath opencga-storage-hadoop-core-1.4.0-rc-dev-jar-with-dependencies.jar:conf/hadoop/
- *      org.opencb.opencga.storage.hadoop.app.AdminMain tables list
- *
- * java -classpath opencga-storage-hadoop-core-1.4.0-rc-dev-jar-with-dependencies.jar:conf/hadoop/
- *      org.opencb.opencga.storage.hadoop.app.AdminMain studies list
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */

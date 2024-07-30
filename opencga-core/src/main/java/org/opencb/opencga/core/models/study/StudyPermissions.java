@@ -138,6 +138,14 @@ public class StudyPermissions {
             return map.get(permission + "-" + type);
         }
 
+        public String getPermission() {
+            return permission;
+        }
+
+        public int getType() {
+            return type;
+        }
+
         public List<Permissions> getImplicitPermissions() {
             return implicitPermissions;
         }

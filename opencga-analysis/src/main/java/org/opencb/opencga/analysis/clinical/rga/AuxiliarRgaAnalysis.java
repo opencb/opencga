@@ -7,7 +7,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
 @Tool(id = AuxiliarRgaAnalysis.ID, resource = Enums.Resource.RGA, type = Tool.Type.OPERATION,
-        description = AuxiliarRgaAnalysis.DESCRIPTION)
+        description = AuxiliarRgaAnalysis.DESCRIPTION, priority = Enums.Priority.HIGH)
 public class AuxiliarRgaAnalysis extends OperationTool {
     public final static String ID = "rga-aux-index";
     public final static String DESCRIPTION = ParamConstants.INDEX_AUXILIAR_COLLECTION_DESCRIPTION;

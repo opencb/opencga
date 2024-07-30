@@ -28,7 +28,6 @@ import org.opencb.opencga.server.generator.writers.ParentClientRestApiWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -45,7 +44,6 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         StringBuilder sb = new StringBuilder();
         RestCategory restCategory = availableCategories.get(key);
         CategoryConfig categoryConfig = availableCategoryConfigs.get(key);
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         sb.append("package ").append(config.getOptions().getOptionsPackage()).append(";\n\n");
         sb.append("import com.beust.jcommander.JCommander;\n");
         sb.append("import com.beust.jcommander.Parameter;\n");

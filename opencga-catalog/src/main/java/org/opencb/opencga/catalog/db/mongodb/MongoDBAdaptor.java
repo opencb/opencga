@@ -28,10 +28,12 @@ import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 
@@ -56,7 +58,6 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_ID = PRIVATE_PROJECT + '.' + ID;
     static final String PRIVATE_PROJECT_UID = PRIVATE_PROJECT + '.' + PRIVATE_UID;
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
-    static final String PRIVATE_OWNER_ID = "_ownerId";
     public static final String PRIVATE_STUDY_UID = "studyUid";
     public static final String VERSION = "version";
 
@@ -81,7 +82,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
     // TEST PURPOSES ONLY
     public static final boolean MOCK_TRANSIENT_TRANSACTION_ERRORS = false;
 
-    protected MongoDBAdaptorFactory dbAdaptorFactory;
+    protected OrganizationMongoDBAdaptorFactory dbAdaptorFactory;
     protected Configuration configuration;
 
     protected static final QueryOptions EXCLUDE_MONGO_ID = new QueryOptions(QueryOptions.EXCLUDE, PRIVATE_MONGO_ID);
@@ -176,13 +177,11 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     protected long getNewUid() {
-//        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
-        return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
+        return dbAdaptorFactory.getCatalogOrganizationDBAdaptor().getNewAutoIncrementId();
     }
 
     protected long getNewUid(ClientSession clientSession) {
-//        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
-        return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId(clientSession);
+        return dbAdaptorFactory.getCatalogOrganizationDBAdaptor().getNewAutoIncrementId(clientSession);
     }
 
     @Deprecated
@@ -418,7 +417,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
      * @param keys    Keys that always need to be included in the response.
      * @return A new QueryOptions object containing the mandatory fields.
      */
-    public static QueryOptions filterQueryOptions(QueryOptions options, List<String> keys) {
+    public static QueryOptions filterQueryOptionsToIncludeKeys(QueryOptions options, List<String> keys) {
         if (options == null) {
             return null;
         }
@@ -433,6 +432,34 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
         if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
             Set<String> excludeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
             excludeList.removeAll(keys);
+            queryOptions.put(QueryOptions.EXCLUDE, new ArrayList<>(excludeList));
+        }
+
+        return queryOptions;
+    }
+
+    /**
+     * Filter QueryOptions object to ensure the keys provided are always included.
+     *
+     * @param options QueryOptions object.
+     * @param keys    Keys that always need to be included in the response.
+     * @return A new QueryOptions object containing the mandatory fields.
+     */
+    public static QueryOptions filterQueryOptionsToExcludeKeys(QueryOptions options, List<String> keys) {
+        if (options == null) {
+            return null;
+        }
+
+        QueryOptions queryOptions = new QueryOptions(options);
+
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            Set<String> includeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+            includeList.removeAll(keys);
+            queryOptions.put(QueryOptions.INCLUDE, new ArrayList<>(includeList));
+        }
+        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            Set<String> excludeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+            excludeList.addAll(keys);
             queryOptions.put(QueryOptions.EXCLUDE, new ArrayList<>(excludeList));
         }
 
@@ -676,6 +703,24 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
             throw new CatalogDBException("Study " + studyUid + " not found");
         }
         return dataResult.first();
+    }
+
+    /**
+     * Method to obtain whether permissions should be simplified or not.
+     *
+     * @return true if permissions should be simplified, false otherwise.
+     * @throws CatalogDBException if there is any error obtaining the organization configuration.
+     */
+    protected boolean simplifyPermissions() throws CatalogDBException {
+        Organization organization = dbAdaptorFactory.getCatalogOrganizationDBAdaptor()
+                .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
+        if (organization.getConfiguration().getOptimizations() != null) {
+            return organization.getConfiguration().getOptimizations().isSimplifyPermissions();
+        } else {
+            logger.warn("Organization '{}' configuration does not contain the 'optimizations.simplifyPermissions' field. Defaulting"
+                    + " to false", organization.getId());
+            return false;
+        }
     }
 
     public class NestedArrayUpdateDocument {

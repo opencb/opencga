@@ -18,6 +18,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -110,7 +111,7 @@ public class VariantPhoenixKeyFactoryTest {
                 VariantPhoenixSchema.VariantColumn.ALTERNATE
         ));
 
-        PTableImpl table;
+        PTable table;
         try {
             List<PColumn> columns = new ArrayList<>();
             for (PhoenixHelper.Column column : VariantPhoenixSchema.PRIMARY_KEY) {
@@ -121,8 +122,7 @@ public class VariantPhoenixKeyFactoryTest {
                         .setNullable(nullableColumn.contains(column))
                         .setSortOrder(SortOrder.ASC.getSystemValue()).build()));
             }
-
-            table = PTableImpl.makePTable(new PTableImpl(), columns);
+            table = HBaseCompat.getInstance().getPhoenixCompat().makePTable(columns);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

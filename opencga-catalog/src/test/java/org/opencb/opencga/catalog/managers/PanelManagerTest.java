@@ -17,10 +17,8 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.CancerPanel;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
@@ -28,8 +26,6 @@ import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -41,7 +37,6 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -53,46 +48,21 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 
 @Category(MediumTests.class)
-public class PanelManagerTest extends GenericTest {
-
-    private String studyFqn = "user@1000G:phase1";
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @Rule
-    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
-
-    protected CatalogManager catalogManager;
-    protected String sessionIdUser;
+public class PanelManagerTest extends AbstractManagerTest {
 
     private PanelManager panelManager;
-    private String opencgaToken;
-
-    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Before
-    public void setUp() throws IOException, CatalogException {
-        catalogManager = catalogManagerResource.getCatalogManager();
+    public void setUp() throws Exception {
+        super.setUp();
         panelManager = catalogManager.getPanelManager();
-        setUpCatalogManager(catalogManager);
-    }
-
-    private void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
-
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
-
-        String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
     @Test
     public void createTest() throws IOException, CatalogException {
         Panel panel = Panel.load(getClass().getResource("/disease_panels/panel1.json").openStream());
 
-        DataResult<Panel> diseasePanelDataResult = panelManager.create(studyFqn, panel, INCLUDE_RESULT, sessionIdUser);
+        DataResult<Panel> diseasePanelDataResult = panelManager.create(studyFqn, panel, INCLUDE_RESULT, ownerToken);
         assertEquals(1, diseasePanelDataResult.getNumResults());
         assertEquals(panel.getId(), diseasePanelDataResult.first().getId());
         assertEquals(panel.toString(), diseasePanelDataResult.first().toString());
@@ -100,10 +70,10 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void importFromSource() throws CatalogException {
-        OpenCGAResult<Panel> cancer = panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
+        OpenCGAResult<Panel> cancer = panelManager.importFromSource(studyFqn, "gene-census", null, ownerToken);
         assertEquals(1, cancer.getNumInserted());
 
-        OpenCGAResult<Panel> panelApp = panelManager.importFromSource(studyFqn, "panelapp", "Thoracic_aortic_aneurysm_and_dissection-PanelAppId-700,VACTERL-like_phenotypes-PanelAppId-101", sessionIdUser);
+        OpenCGAResult<Panel> panelApp = panelManager.importFromSource(studyFqn, "panelapp", "Thoracic_aortic_aneurysm_and_dissection-PanelAppId-700,VACTERL-like_phenotypes-PanelAppId-101", ownerToken);
         assertEquals(2, panelApp.getNumInserted());
     }
 
@@ -111,20 +81,20 @@ public class PanelManagerTest extends GenericTest {
     public void importFromSourceInvalidId() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Unknown panel");
-        panelManager.importFromSource(studyFqn, "gene-census", "ZSR222", sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", "ZSR222", ownerToken);
     }
 
     @Test
     public void importFromInvalidSource() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Unknown source");
-        panelManager.importFromSource(studyFqn, "gene-census-wrong", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census-wrong", null, ownerToken);
     }
 
     @Test
     public void updateTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
-        Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
+        panelManager.importFromSource(studyFqn, "gene-census", null, ownerToken);
+        Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), ownerToken).first();
         assertEquals(1, panel.getVersion());
         assertEquals((int) panel.getStats().get("numberOfRegions"), panel.getVariants().size());
         assertEquals((int) panel.getStats().get("numberOfVariants"), panel.getVariants().size());
@@ -146,10 +116,10 @@ public class PanelManagerTest extends GenericTest {
                 .setVariants(Collections.singletonList(variantPanel))
                 .setGenes(Collections.singletonList(genePanel));
 
-        DataResult<Panel> updateResult = panelManager.update(studyFqn, "gene-census", updateParams, null, sessionIdUser);
+        DataResult<Panel> updateResult = panelManager.update(studyFqn, "gene-census", updateParams, null, ownerToken);
         assertEquals(1, updateResult.getNumUpdated());
 
-        Panel updatedPanel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
+        Panel updatedPanel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), ownerToken).first();
         assertEquals(2, updatedPanel.getVersion());
         assertEquals("author", updatedPanel.getSource().getAuthor());
         assertEquals(1, updatedPanel.getRegions().size());
@@ -167,51 +137,51 @@ public class PanelManagerTest extends GenericTest {
 
         Query query = new Query()
                 .append(PanelDBAdaptor.QueryParams.VERSION.key(), 1);
-        panel = panelManager.get(studyFqn, Collections.singletonList("gene-census"), query, QueryOptions.empty(), false, sessionIdUser).first();
+        panel = panelManager.get(studyFqn, Collections.singletonList("gene-census"), query, QueryOptions.empty(), false, ownerToken).first();
         assertEquals("gene-census", panel.getId());
         assertEquals(1, panel.getVersion());
     }
 
     @Test
     public void deletePanelTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
-        Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
+        panelManager.importFromSource(studyFqn, "gene-census", null, ownerToken);
+        Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), ownerToken).first();
         assertEquals(1, panel.getVersion());
 
-        OpenCGAResult<?> result = panelManager.delete(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<?> result = panelManager.delete(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), ownerToken);
         assertEquals(1, result.getNumDeleted());
 
-        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), true, sessionIdUser);
+        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), true, ownerToken);
         assertEquals(0, result.getNumResults());
 
         Query query = new Query()
                 .append(ParamConstants.DELETED_PARAM, true);
-        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), query, QueryOptions.empty(), false, sessionIdUser);
+        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), query, QueryOptions.empty(), false, ownerToken);
         assertEquals(1, result.getNumResults());
     }
 
     @Test
     public void deletePanelWithVersionsTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
-        Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
+        panelManager.importFromSource(studyFqn, "gene-census", null, ownerToken);
+        Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), ownerToken).first();
         assertEquals(1, panel.getVersion());
 
         PanelUpdateParams updateParams = new PanelUpdateParams()
                 .setSource(new DiseasePanel.SourcePanel().setAuthor("author"))
                 .setDisorders(Collections.singletonList(new OntologyTerm().setId("ontologyTerm")));
-        DataResult<Panel> updateResult = panelManager.update(studyFqn, "gene-census", updateParams, null, sessionIdUser);
+        DataResult<Panel> updateResult = panelManager.update(studyFqn, "gene-census", updateParams, null, ownerToken);
         assertEquals(1, updateResult.getNumUpdated());
 
-        OpenCGAResult<?> result = panelManager.delete(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<?> result = panelManager.delete(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), ownerToken);
         assertEquals(1, result.getNumDeleted());
 
-        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), true, sessionIdUser);
+        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), true, ownerToken);
         assertEquals(0, result.getNumResults());
 
         Query query = new Query()
                 .append(Constants.ALL_VERSIONS, true)
                 .append(ParamConstants.DELETED_PARAM, true);
-        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), query, QueryOptions.empty(), false, sessionIdUser);
+        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), query, QueryOptions.empty(), false, ownerToken);
         assertEquals(2, result.getNumResults());
     }
 
@@ -249,65 +219,65 @@ public class PanelManagerTest extends GenericTest {
                 .setLocked(true);
         Interpretation interpretation9 = DummyModelUtils.getDummyInterpretation(Collections.singletonList(panel3));
 
-        catalogManager.getPanelManager().create(studyFqn, panel1, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getPanelManager().create(studyFqn, panel2, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getPanelManager().create(studyFqn, panel3, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getPanelManager().create(studyFqn, panel4, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getPanelManager().create(studyFqn, panel1, QueryOptions.empty(), ownerToken);
+        catalogManager.getPanelManager().create(studyFqn, panel2, QueryOptions.empty(), ownerToken);
+        catalogManager.getPanelManager().create(studyFqn, panel3, QueryOptions.empty(), ownerToken);
+        catalogManager.getPanelManager().create(studyFqn, panel4, QueryOptions.empty(), ownerToken);
 
-        catalogManager.getFamilyManager().create(studyFqn, family1, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getFamilyManager().create(studyFqn, family1, QueryOptions.empty(), ownerToken);
 
-        catalogManager.getClinicalAnalysisManager().create(studyFqn, case1, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().create(studyFqn, case2, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().create(studyFqn, case3, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().create(studyFqn, case4, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, case1, QueryOptions.empty(), ownerToken);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, case2, QueryOptions.empty(), ownerToken);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, case3, QueryOptions.empty(), ownerToken);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, case4, QueryOptions.empty(), ownerToken);
 
         // case1
         catalogManager.getInterpretationManager().create(studyFqn, case1.getId(), interpretation1,
-                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
+                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), ownerToken);
         catalogManager.getInterpretationManager().create(studyFqn, case1.getId(), interpretation2,
-                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
+                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), ownerToken);
         catalogManager.getInterpretationManager().create(studyFqn, case1.getId(), interpretation3,
-                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
+                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), ownerToken);
 
         // case 2
         catalogManager.getInterpretationManager().create(studyFqn, case2.getId(), interpretation4,
-                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
+                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), ownerToken);
         catalogManager.getInterpretationManager().create(studyFqn, case2.getId(), interpretation5,
-                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
+                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), ownerToken);
         catalogManager.getClinicalAnalysisManager().update(studyFqn, case2.getId(), new ClinicalAnalysisUpdateParams().setPanelLock(true),
-                QueryOptions.empty(), sessionIdUser);
+                QueryOptions.empty(), ownerToken);
 
         // case 3
         catalogManager.getInterpretationManager().create(studyFqn, case3.getId(), interpretation6,
-                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
+                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), ownerToken);
         catalogManager.getInterpretationManager().create(studyFqn, case3.getId(), interpretation7,
-                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
+                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), ownerToken);
         catalogManager.getClinicalAnalysisManager().update(studyFqn, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
-                QueryOptions.empty(), sessionIdUser);
+                QueryOptions.empty(), ownerToken);
 
         // case 4
         catalogManager.getInterpretationManager().create(studyFqn, case4.getId(), interpretation8,
-                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
+                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), ownerToken);
         catalogManager.getInterpretationManager().create(studyFqn, case4.getId(), interpretation9,
-                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
+                ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), ownerToken);
         catalogManager.getClinicalAnalysisManager().update(studyFqn, case4.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
-                QueryOptions.empty(), sessionIdUser);
+                QueryOptions.empty(), ownerToken);
 
         // Update panel1 ...
-        panelManager.update(studyFqn, panel1.getId(), new PanelUpdateParams().setName("name"), QueryOptions.empty(), sessionIdUser);
-        OpenCGAResult<Panel> resultPanel = panelManager.get(studyFqn, panel1.getId(), QueryOptions.empty(), sessionIdUser);
+        panelManager.update(studyFqn, panel1.getId(), new PanelUpdateParams().setName("name"), QueryOptions.empty(), ownerToken);
+        OpenCGAResult<Panel> resultPanel = panelManager.get(studyFqn, panel1.getId(), QueryOptions.empty(), ownerToken);
         assertEquals(2, resultPanel.first().getVersion());
         assertEquals("name", resultPanel.first().getName());
 
         Query query = new Query()
                 .append(PanelDBAdaptor.QueryParams.ID.key(), panel1.getId())
                 .append(PanelDBAdaptor.QueryParams.VERSION.key(), 1);
-        resultPanel = panelManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser);
+        resultPanel = panelManager.search(studyFqn, query, QueryOptions.empty(), ownerToken);
         assertEquals(1, resultPanel.first().getVersion());
         assertNotEquals("name", resultPanel.first().getName());
 
         OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().get(studyFqn,
-                Arrays.asList(case1.getId(), case2.getId(), case3.getId(), case4.getId()), QueryOptions.empty(), sessionIdUser);
+                Arrays.asList(case1.getId(), case2.getId(), case3.getId(), case4.getId()), QueryOptions.empty(), ownerToken);
         case1 = result.getResults().get(0);
         case2 = result.getResults().get(1);
         case3 = result.getResults().get(2);
@@ -381,34 +351,34 @@ public class PanelManagerTest extends GenericTest {
                 .setId("panel2")
                 .setGenes(Arrays.asList(createGenePanel("geneId1", "geneName1"), createGenePanel("geneId3", "geneName3")));
 
-        panelManager.create(studyFqn, panel1, QueryOptions.empty(), sessionIdUser);
-        panelManager.create(studyFqn, panel2, QueryOptions.empty(), sessionIdUser);
+        panelManager.create(studyFqn, panel1, QueryOptions.empty(), ownerToken);
+        panelManager.create(studyFqn, panel2, QueryOptions.empty(), ownerToken);
 
-        OpenCGAResult<Panel> result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName2"), QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<Panel> result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName2"), QueryOptions.empty(), ownerToken);
         assertEquals(1, result.getNumResults());
         assertEquals("panel1", result.first().getId());
 
-        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId2"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId2"), QueryOptions.empty(), ownerToken);
         assertEquals(1, result.getNumResults());
         assertEquals("panel1", result.first().getId());
 
-        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName1"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName1"), QueryOptions.empty(), ownerToken);
         assertEquals(2, result.getNumResults());
         assertTrue(result.getResults().stream().map(Panel::getId).collect(Collectors.toList()).containsAll(Arrays.asList("panel1", "panel2")));
 
-        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId1"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId1"), QueryOptions.empty(), ownerToken);
         assertEquals(2, result.getNumResults());
         assertTrue(result.getResults().stream().map(Panel::getId).collect(Collectors.toList()).containsAll(Arrays.asList("panel1", "panel2")));
 
-        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId3"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId3"), QueryOptions.empty(), ownerToken);
         assertEquals(1, result.getNumResults());
         assertEquals("panel2", result.first().getId());
 
-        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName3"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName3"), QueryOptions.empty(), ownerToken);
         assertEquals(1, result.getNumResults());
         assertEquals("panel2", result.first().getId());
 
-        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId4"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId4"), QueryOptions.empty(), ownerToken);
         assertEquals(0, result.getNumResults());
     }
 

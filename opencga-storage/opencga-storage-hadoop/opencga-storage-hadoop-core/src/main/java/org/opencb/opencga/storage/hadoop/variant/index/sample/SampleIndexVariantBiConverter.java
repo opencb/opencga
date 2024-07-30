@@ -488,6 +488,11 @@ public class SampleIndexVariantBiConverter {
         public Variant next() {
             throw new NoSuchElementException("Empty iterator");
         }
+
+        @Override
+        public Variant nextVariant() {
+            throw new NoSuchElementException("Empty iterator");
+        }
     }
 
     private static final class CountSampleIndexGtEntryIterator extends SampleIndexGtEntryIterator {
@@ -522,6 +527,11 @@ public class SampleIndexVariantBiConverter {
         @Override
         public Variant next() {
             skip();
+            return DUMMY_VARIANT;
+        }
+
+        @Override
+        public Variant nextVariant() {
             return DUMMY_VARIANT;
         }
 
@@ -575,13 +585,19 @@ public class SampleIndexVariantBiConverter {
         public Variant next() {
             nextAnnotationIndexEntry(); // ensure read annotation
             increaseCounters();
+            Variant variant = nextVariant();
+            movePointer();
+            return variant;
+        }
+
+        @Override
+        public Variant nextVariant() {
             Variant variant;
             if (encodedRefAlt) {
                 variant = toVariantEncodedAlleles(chromosome, batchStart, bytes, currentOffset);
             } else {
                 variant = toVariant(chromosome, batchStart, bytes, currentOffset, referenceLength, alternateLength);
             }
-            movePointer();
             return variant;
         }
 

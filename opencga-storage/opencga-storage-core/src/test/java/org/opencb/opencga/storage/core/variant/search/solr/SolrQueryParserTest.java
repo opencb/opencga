@@ -758,7 +758,7 @@ public class SolrQueryParserTest {
     @Test
     public void parseVariantScoreWithStudyFqn() {
         QueryOptions queryOptions = new QueryOptions();
-        String studyFqn = "user@project:platinum";
+        String studyFqn = "test@project:platinum";
         Query query = new Query();
         //query.put(STUDIES.key(), study);
         query.put(SCORE.key(), studyFqn + ":score2>=3.2;" + studyFqn + ":score3:pvalue<0.02");

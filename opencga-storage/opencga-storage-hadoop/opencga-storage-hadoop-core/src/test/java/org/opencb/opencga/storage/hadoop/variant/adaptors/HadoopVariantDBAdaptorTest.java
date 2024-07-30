@@ -121,12 +121,12 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         }
         variantStorageEngine.getOptions().append(VariantStorageOptions.ASSEMBLY.key(), "GRCH38");
         cellBaseUtils = variantStorageEngine.getCellBaseUtils();
-        expectedConnections = GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum();
+        expectedConnections = GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getValue();
     }
 
     @After
     public void after() throws IOException {
-        assertEquals(expectedConnections, GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum());
+        assertEquals(expectedConnections, GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getValue());
         super.after();
     }
 

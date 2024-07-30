@@ -1694,8 +1694,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 CohortMetadata secondaryIndexCohort = getCohortMetadata(studyId, id);
                 if (secondaryIndexCohort.getSamples().size() != sampleIds.size()
                         || !secondaryIndexCohort.getSamples().containsAll(sampleIds)) {
-                    System.out.println("secondaryIndexCohort = " + secondaryIndexCohort.getSamples());
-                    System.out.println("sampleIds = " + sampleIds);
                     throw new StorageEngineException("Must provide all the samples from the secondary index: "
                             + secondaryIndexCohort.getSamples()
                             .stream()

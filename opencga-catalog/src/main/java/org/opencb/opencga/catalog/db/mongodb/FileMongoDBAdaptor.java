@@ -105,7 +105,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
      * @param ioManagerFactory IOManagerFactory.
      */
     public FileMongoDBAdaptor(MongoDBCollection fileCollection, MongoDBCollection deletedFileCollection, Configuration configuration,
-                              MongoDBAdaptorFactory dbAdaptorFactory, IOManagerFactory ioManagerFactory) {
+                              OrganizationMongoDBAdaptorFactory dbAdaptorFactory, IOManagerFactory ioManagerFactory) {
         super(configuration, LoggerFactory.getLogger(FileMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;
@@ -247,7 +247,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         //new file uid
-        long fileUid = getNewUid();
+        long fileUid = getNewUid(clientSession);
         file.setUid(fileUid);
         file.setStudyUid(studyId);
         if (StringUtils.isEmpty(file.getUuid())) {
@@ -1253,7 +1253,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
 
         Document studyDocument = getStudyDocument(null, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_FILE_ANNOTATIONS.name(),
                 FilePermissions.VIEW_ANNOTATIONS.name());
 
@@ -1276,7 +1276,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
 
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_FILE_ANNOTATIONS.name(),
                 FilePermissions.VIEW_ANNOTATIONS.name());
 
@@ -1315,7 +1315,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         fixAclProjection(options);
 
         // type must always be there when relatedFiles is included
-        options = filterQueryOptions(options, Collections.singletonList(QueryParams.TYPE.key()));
+        options = filterQueryOptionsToIncludeKeys(options, Collections.singletonList(QueryParams.TYPE.key()));
 
         return options;
     }
@@ -1409,16 +1409,18 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+            boolean simplifyPermissions = simplifyPermissions();
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
-                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user, configuration));
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user,
+                        simplifyPermissions));
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FilePermissions.VIEW_ANNOTATIONS.name(),
-                            Enums.Resource.FILE, configuration));
+                            Enums.Resource.FILE, simplifyPermissions));
                 } else {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FilePermissions.VIEW.name(),
-                            Enums.Resource.FILE, configuration));
+                            Enums.Resource.FILE, simplifyPermissions));
                 }
             }
 

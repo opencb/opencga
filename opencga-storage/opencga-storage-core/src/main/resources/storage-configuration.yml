@@ -11,7 +11,7 @@ cellbase:
   ## URL host to annotate variants, for example: https://uk.ws.zettagenomics.com/cellbase/
   url: "${OPENCGA.CELLBASE.REST.HOST}"
   version: "${OPENCGA.CELLBASE.VERSION}"
-  dataRelease: "2"
+  dataRelease: "7"
 
 ## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
 ## is launched in the specified port.
@@ -171,6 +171,7 @@ variant:
        #storage.hadoop.mr.executor.ssh.key: "~/.ssh/id_rsa"   # Hadoop edge node ssh-key file
         storage.hadoop.mr.executor.ssh.password: ""           # Hadoop edge node password. Only if ssh-key is not present. Requires sshpass to run
         storage.hadoop.mr.executor.ssh.remoteOpenCgaHome:     # Remote opencga home location. Only if different than local location.
+        storage.hadoop.mr.executor.ssh.terminationGracePeriodSeconds:  120 # Termination grace period in seconds for the ssh executor.
 
         # Increase the ScannerTimeoutPeriod from 60000 (1min) to 300000 (5min) to avoid ScannerTimeoutExceptions
         # See opencb/opencga#352 for more info.

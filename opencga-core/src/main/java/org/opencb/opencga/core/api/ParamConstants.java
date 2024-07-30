@@ -38,6 +38,10 @@ public class ParamConstants {
     public static final String RELEASE_DESCRIPTION = "Release when it was created";
     public static final String INTERNAL_STATUS_PARAM = "internalStatus";
     public static final String INTERNAL_STATUS_DESCRIPTION = "Filter by internal status";
+    public static final String ENTRY_ID_LIST_DESCRIPTION = "Comma separated list of entry ids.";
+    public static final String ENTRY_ID_LIST = "entryIds";
+    public static final String PERMISSION_LIST_DESCRIPTION = "Comma separated list of permissions to be retrieved.";
+    public static final String PERMISSION_LIST = "permissions";
     private static final String REGEX_SUPPORT = ". Also admits basic regular expressions using the operator '~', "
             + "i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.";
     @Deprecated // Use INTERNAL_VARIANT_INDEX_STATUS_PARAM
@@ -73,11 +77,11 @@ public class ParamConstants {
     public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names" + REGEX_SUPPORT;
     public static final String BODY_PARAM = "body";
     public static final String OVERWRITE = "overwrite";
-
+    private static final String UP_TO_100 = " up to a maximum of 100";
 
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
-    public static final String CELLBASE_VERSION = "v5.2";
-    public static final String CELLBASE_DATA_RELEASE = "3";
+    public static final String CELLBASE_VERSION = "v5.8";
+    public static final String CELLBASE_DATA_RELEASE_GRCH38 = "7";
     public static final String CELLBASE_APIKEY = "";
 
     public static final String POP_FREQ_1000G_CB_V4 = "1kG_phase3";
@@ -88,6 +92,9 @@ public class ParamConstants {
     public static final String OPENCGA_TOKEN_CLI_PARAM = "--opencga-token";
 
     public static final String RESUME_DESCRIPTION = "Resume a previously failed index operation";
+
+    public static final String CATEGORY = "category";
+    public static final String CATEGORY_DESCRIPTION = "Category corresponding to the id's provided.";
 
     // ---------------------------------------------
     public static final String FORCE = "force";
@@ -116,14 +123,16 @@ public class ParamConstants {
      */
     public static final String FLATTEN_ANNOTATIONS = "flattenAnnotations";
     public static final String FLATTEN_ANNOTATION_DESCRIPTION = "Boolean indicating to flatten the annotations.";
-    public static final String USER_PROJECT_SEPARATOR = "@";
+    public static final String ORGANIZATION_PROJECT_SEPARATOR = "@";
     // ---------------------------------------------
     public static final String PROJECT_STUDY_SEPARATOR = ":";
     public static final String OPENCGA_USER_ID = "opencga";
+    public static final String ADMIN_ORGANIZATION = "opencga";
+    public static final String OPENCGA_USER_FQN = ADMIN_ORGANIZATION + ":" + OPENCGA_USER_ID;
     public static final String ADMIN_PROJECT = "admin";
     public static final String ADMIN_STUDY = "admin";
     public static final String ADMIN_STUDY_FQN =
-            OPENCGA_USER_ID + USER_PROJECT_SEPARATOR + ADMIN_PROJECT + PROJECT_STUDY_SEPARATOR + ADMIN_STUDY;
+            OPENCGA_USER_ID + ORGANIZATION_PROJECT_SEPARATOR + ADMIN_PROJECT + PROJECT_STUDY_SEPARATOR + ADMIN_STUDY;
     public static final String ANONYMOUS_USER_ID = "*";         // Any user, authenticated or not
     public static final String REGISTERED_USERS = "REGISTERED"; // Any authenticated user
     public static final String MEMBERS_GROUP = "@members";
@@ -145,19 +154,22 @@ public class ParamConstants {
     public static final String DATE_DESCRIPTION = "Date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
     public static final String USER = "user";
     // ---------------------------------------------
+    public static final String ORGANIZATION_DESCRIPTION = "Organization id";
+    public static final String ORGANIZATION = "organization";
+    // ---------------------------------------------
+    public static final String USER_ID_DESCRIPTION = "Comma separated list user IDs" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String USER_ID_PARAM = "id";
     public static final String USER_DESCRIPTION = "User ID";
     public static final String USERS_DESCRIPTION = "Comma separated list of user IDs";
-    public static final String USER_ACCOUNT_TYPE = "account";
-    public static final String USER_ACCOUNT_TYPE_DESCRIPTION = "Account type [GUEST, FULL, ADMINISTRATOR]";
     public static final String USER_AUTHENTICATION_ORIGIN = "authenticationId";
     public static final String USER_AUTHENTICATION_ORIGIN_DESCRIPTION = "Authentication origin ID";
     public static final String USER_CREATION_DATE = "creationDate";
     public static final String USER_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
     public static final String PROJECT_PARAM = "project";
     // ---------------------------------------------
-    public static final String PROJECT_DESCRIPTION = "Project [user@]project where project can be either the ID or the alias";
+    public static final String PROJECT_DESCRIPTION = "Project [organization@]project where project can be either the ID or the alias";
     public static final String STUDY_PARAM = "study";
-    public static final String STUDY_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the ID or UUID";
+    public static final String STUDY_DESCRIPTION = "Study [[organization@]project:]study where study and project can be either the ID or UUID";
     // ---------------------------------------------
     public static final String OTHER_STUDIES_FLAG = "otherStudies";
     public static final String OTHER_STUDIES_FLAG_DESCRIPTION = "Flag indicating the entries being queried can belong to any related " +
@@ -548,6 +560,7 @@ public class ParamConstants {
     public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";
+    public static final String SUBMIT_JOB_PRIORITY_PARAM = "jobPriority";
     public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";
     public static final String JOB_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
     public static final String JOB_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
@@ -558,6 +571,12 @@ public class ParamConstants {
     public static final String JOB_TAGS = "jobTags";
     public static final String JOB_TAGS_PARAM = "tags";
     public static final String JOB_TAGS_DESCRIPTION = "Job tags";
+    public static final String JOB_SCHEDULED_START_TIME_DESCRIPTION = FieldConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION;
+    public static final String JOB_SCHEDULED_START_TIME = FieldConstants.JOB_SCHEDULED_START_TIME;
+    public static final String JOB_DRY_RUN = "jobDryRun";
+    public static final String JOB_DRY_RUN_DESCRIPTION = "Flag indicating that the job will be executed in dry-run mode. In this mode,"
+            + " OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will"
+            + " not actually run.";
 
     // ---------------------------------------------
     public static final String JOB_INPUT_FILES_PARAM = "input";
@@ -1477,7 +1496,6 @@ public class ParamConstants {
     public static final String ADMIN_CATALOG_INSTALL_EMAIL = "The body web service email parameter";
     public static final String ADMIN_CATALOG_INSTALL_ORGANIZATION = "The body web service organization parameter";
     public static final String ADMIN_CATALOG_JWT_SECRETKEY = "The body web service secretKey parameter";
-    private static final String UP_TO_100 = " up to a maximum of 100";
     public static final String FILES_DESCRIPTION = "Comma separated list of file IDs or names" + UP_TO_100;
     public static final String FILES_ID_DESCRIPTION = "Comma separated list of file IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String FILES_UUID_DESCRIPTION = "Comma separated list file UUIDs" + UP_TO_100;
@@ -1509,9 +1527,9 @@ public class ParamConstants {
     public static final String JOB_IDS_DESCRIPTION = "Comma separated list of job IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String JOB_UUIDS_DESCRIPTION = "Comma separated list of job UUIDs" + UP_TO_100;
     // ---------------------------------------------
-    public static final String PROJECTS_DESCRIPTION = "Comma separated list of projects [user@]project" + UP_TO_100;
+    public static final String PROJECTS_DESCRIPTION = "Comma separated list of projects [organization@]project" + UP_TO_100;
     // ---------------------------------------------
-    public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[user@]project:]study where study and project can " +
-            "be either the ID or UUID" + UP_TO_100;
+    public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[organization@]project:]study where study "
+            + "and project can be either the ID or UUID" + UP_TO_100;
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel IDs" + UP_TO_100;
 }
