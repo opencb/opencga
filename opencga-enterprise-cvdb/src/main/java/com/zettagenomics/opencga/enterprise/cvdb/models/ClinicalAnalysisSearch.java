@@ -62,17 +62,8 @@ public class ClinicalAnalysisSearch {
     @Field("familyMemberIds")
     private List<String> familyMemberIds;
 
-    @Field("interpretationId")
-    private String interpretationId;
-
-    @Field("interpretationStats")
-    private List<String> interpretationStats;
-
-    @Field("panels")
-    private List<String> panels;
-
-    @Field("panelsStats")
-    private List<String> panelsStats;
+    @Field("panelIds")
+    private List<String> panelIds;
 
     @Field("report")
     private String report;
@@ -83,17 +74,21 @@ public class ClinicalAnalysisSearch {
     @Field("locked")
     private boolean locked;
 
-    @Field("json")
-    private String json;
+    @Field("minJson")
+    private String minJson;
+
+    @Field("mediumJson")
+    private String mediumJson;
+
+    @Field("maxJson")
+    private String maxJson;
 
     public ClinicalAnalysisSearch() {
         viewers = new ArrayList<>();
         fileNames = new ArrayList<>();
         familyPhenotypeNames = new ArrayList<>();
         familyMemberIds = new ArrayList<>();
-        interpretationStats = new ArrayList<>();
-        panels = new ArrayList<>();
-        panelsStats = new ArrayList<>();
+        panelIds = new ArrayList<>();
     }
 
     @Override
@@ -110,14 +105,13 @@ public class ClinicalAnalysisSearch {
         sb.append(", familyId='").append(familyId).append('\'');
         sb.append(", familyPhenotypeNames=").append(familyPhenotypeNames);
         sb.append(", familyMemberIds=").append(familyMemberIds);
-        sb.append(", interpretationId='").append(interpretationId).append('\'');
-        sb.append(", interpretationStats=").append(interpretationStats);
-        sb.append(", panels=").append(panels);
-        sb.append(", panelsStats=").append(panelsStats);
+        sb.append(", panelIds=").append(panelIds);
         sb.append(", report='").append(report).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", locked=").append(locked);
-        sb.append(", json='").append(json).append('\'');
+        sb.append(", minJson='").append(minJson).append('\'');
+        sb.append(", mediumJson='").append(mediumJson).append('\'');
+        sb.append(", maxJson='").append(maxJson).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -221,39 +215,12 @@ public class ClinicalAnalysisSearch {
         return this;
     }
 
-    public String getInterpretationId() {
-        return interpretationId;
+    public List<String> getPanelIds() {
+        return panelIds;
     }
 
-    public ClinicalAnalysisSearch setInterpretationId(String interpretationId) {
-        this.interpretationId = interpretationId;
-        return this;
-    }
-
-    public List<String> getInterpretationStats() {
-        return interpretationStats;
-    }
-
-    public ClinicalAnalysisSearch setInterpretationStats(List<String> interpretationStats) {
-        this.interpretationStats = interpretationStats;
-        return this;
-    }
-
-    public List<String> getPanels() {
-        return panels;
-    }
-
-    public ClinicalAnalysisSearch setPanels(List<String> panels) {
-        this.panels = panels;
-        return this;
-    }
-
-    public List<String> getPanelsStats() {
-        return panelsStats;
-    }
-
-    public ClinicalAnalysisSearch setPanelsStats(List<String> panelsStats) {
-        this.panelsStats = panelsStats;
+    public ClinicalAnalysisSearch setPanelIds(List<String> panelIds) {
+        this.panelIds = panelIds;
         return this;
     }
 
@@ -284,12 +251,30 @@ public class ClinicalAnalysisSearch {
         return this;
     }
 
-    public String getJson() {
-        return json;
+    public String getMinJson() {
+        return minJson;
     }
 
-    public ClinicalAnalysisSearch setJson(String json) {
-        this.json = json;
+    public ClinicalAnalysisSearch setMinJson(String minJson) {
+        this.minJson = minJson;
+        return this;
+    }
+
+    public String getMediumJson() {
+        return mediumJson;
+    }
+
+    public ClinicalAnalysisSearch setMediumJson(String mediumJson) {
+        this.mediumJson = mediumJson;
+        return this;
+    }
+
+    public String getMaxJson() {
+        return maxJson;
+    }
+
+    public ClinicalAnalysisSearch setMaxJson(String maxJson) {
+        this.maxJson = maxJson;
         return this;
     }
 }

@@ -79,9 +79,10 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
         join = "{!join from=cvId to=id fromIndex=" + getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX) + "}";
         addStringFilters(filters, join, solrQuery);
 
-        // Return Solr query
-        logger.info("Solr query: {}", solrQuery.toQueryString());
+        // Log queries
+        logQueries(query, queryOptions, solrQuery, "Clinical variant");
 
+        // Return Solr query
         return solrQuery;
     }
 

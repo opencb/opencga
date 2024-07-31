@@ -73,9 +73,10 @@ public class ClinicalVariantEvidenceQueryParser extends ClinicalQueryParser {
         addCommonFilters(query, filters);
         addStringFilters(filters, solrQuery);
 
-        // Return Solr query
-        logger.info("Solr query: {}", solrQuery.toQueryString());
+        // Log queries
+        logQueries(query, queryOptions, solrQuery, "Clinical variant evidence");
 
+        // Return Solr query
         return solrQuery;
     }
 }
