@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class WorkflowExecutorTest extends AbstractManagerTest {
 
     @Test
-    public void myTest() throws ToolException, CatalogException, IOException {
+    public void nextflowScriptTest() throws ToolException, CatalogException, IOException {
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
 
@@ -40,6 +40,28 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         nextFlowExecutorTest.start();
         System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
     }
+
+    @Test
+    public void nextflowDockerTest() throws ToolException, CatalogException, IOException {
+        InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
+        StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
+        Workflow workflow = new Workflow()
+                .setId("workflow")
+                .setCommandLine("run nextflow-io/rnaseq-nf -with-docker")
+                .setType(Workflow.Type.NEXTFLOW);
+        catalogManager.getWorkflowManager().create(workflow, QueryOptions.empty(), ownerToken);
+
+        Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
+        NextFlowRunParams runParams = new NextFlowRunParams(workflow.getId(), 1);
+        nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
+                StorageEngineFactory.get(storageConfiguration), runParams.toObjectMap(), outDir, "", false, ownerToken);
+        nextFlowExecutorTest.start();
+        System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
+    }
+
 
     private Workflow getDummyWorkflow() {
         String scriptContent = "params.str = 'Hello world!'\n" +

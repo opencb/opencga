@@ -43,7 +43,7 @@ public class NextFlowExecutor extends OpenCgaTool {
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
-    protected NextFlowRunParams toolParams = new NextFlowRunParams();
+    protected NextFlowRunParams nextflowParams = new NextFlowRunParams();
 
     private Workflow workflow;
 
@@ -56,18 +56,18 @@ public class NextFlowExecutor extends OpenCgaTool {
     protected void check() throws Exception {
         super.check();
 
-        if (toolParams.getId() == null) {
+        if (nextflowParams.getId() == null) {
             throw new IllegalArgumentException("Missing Nextflow ID");
         }
 
-        OpenCGAResult<Workflow> result = catalogManager.getWorkflowManager().get(toolParams.getId(), QueryOptions.empty(), token);
+        OpenCGAResult<Workflow> result = catalogManager.getWorkflowManager().get(nextflowParams.getId(), QueryOptions.empty(), token);
         if (result.getNumResults() == 0) {
-            throw new ToolException("Workflow '" + toolParams.getId() + "' not found");
+            throw new ToolException("Workflow '" + nextflowParams.getId() + "' not found");
         }
         workflow = result.first();
 
         if (workflow == null) {
-            throw new ToolException("Workflow '" + toolParams.getId() + "' is null");
+            throw new ToolException("Workflow '" + nextflowParams.getId() + "' is null");
         }
     }
 
@@ -92,8 +92,6 @@ public class NextFlowExecutor extends OpenCgaTool {
         StringBuilder stringBuilder = new StringBuilder()
                 .append("nextflow -c ").append(workingDirectory).append("/nextflow.config")
                 .append(" ").append(workflow.getCommandLine())
-//                .append(" run nextflow-io/rnaseq-nf -with-docker")
-//                .append(" run ").append(workingDirectory).append("/pipeline.nf")
                 .append(" -with-report ").append(workingDirectory).append("/report.html");
         List<String> cliArgs = Arrays.asList(StringUtils.split(stringBuilder.toString(), " "));
 

@@ -145,7 +145,7 @@ public class WorkflowManager extends AbstractManager {
         ParamUtils.checkIdentifier(workflow.getId(), WorkflowDBAdaptor.QueryParams.ID.key());
         ParamUtils.checkObj(workflow.getType(), WorkflowDBAdaptor.QueryParams.TYPE.key());
         ParamUtils.checkParameter(workflow.getCommandLine(), WorkflowDBAdaptor.QueryParams.COMMAND_LINE.key());
-        ParamUtils.checkNotEmptyArray(workflow.getScripts(), WorkflowDBAdaptor.QueryParams.SCRIPTS.key());
+        workflow.setScripts(workflow.getScripts() != null ? workflow.getScripts() : Collections.emptyList());
         for (Workflow.Script script : workflow.getScripts()) {
             ParamUtils.checkIdentifier(script.getId(), WorkflowDBAdaptor.QueryParams.SCRIPTS.key() + ".id");
             ParamUtils.checkParameter(script.getContent(), WorkflowDBAdaptor.QueryParams.SCRIPTS.key() + ".content");
