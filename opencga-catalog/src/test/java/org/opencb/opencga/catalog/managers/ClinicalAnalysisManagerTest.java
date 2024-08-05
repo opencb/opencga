@@ -586,6 +586,32 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void queryByVersionTest() throws CatalogException {
+        Individual individual = new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, ownerToken);
+
+        ClinicalComment comment = new ClinicalComment(orgOwnerUserId, "my comment", new ArrayList<>(), "");
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
+                .setDescription("My description").setType(ClinicalAnalysis.Type.SINGLE)
+                .setQualityControl(new ClinicalAnalysisQualityControl(ClinicalAnalysisQualityControl.QualityControlSummary.LOW,
+                        Collections.singletonList(comment), Collections.emptyList()))
+                .setProband(individual);
+
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, true, INCLUDE_RESULT, ownerToken).first();
+        catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams().setDescription("blabla"), null, ownerToken);
+
+        ClinicalAnalysis case1 = catalogManager.getClinicalAnalysisManager().get(studyFqn, clinicalAnalysis.getId(), null, ownerToken).first();
+        assertEquals(2, case1.getVersion());
+        assertEquals("blabla", case1.getDescription());
+
+        Query query = new Query(ParamConstants.CLINICAL_VERSION_PARAM, 1);
+        case1 = catalogManager.getClinicalAnalysisManager().get(studyFqn, Collections.singletonList(clinicalAnalysis.getId()), query, null, false, ownerToken).first();
+        assertEquals(1, case1.getVersion());
+        assertEquals(clinicalAnalysis.getDescription(), case1.getDescription());
+    }
+
+        @Test
     public void createAndUpdateClinicalAnalysisWithQualityControl() throws CatalogException, InterruptedException {
         Individual individual = new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2")));
         catalogManager.getIndividualManager().create(studyFqn, individual, null, ownerToken);
