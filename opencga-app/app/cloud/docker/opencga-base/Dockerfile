@@ -1,6 +1,6 @@
 ## Based on Ubuntu 22.04 (jammy)
 ## We are now using OpenJDK 8u372 to support "cgroup v2", see https://developers.redhat.com/articles/2023/04/19/openjdk-8u372-feature-cgroup-v2-support#
-FROM eclipse-temurin:8u372-b07-jre-jammy
+FROM eclipse-temurin:11.0.23_9-jre-jammy
 
 ARG BUILD_PATH="."
 
@@ -21,6 +21,10 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpa
     ## Install yq
     wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && \
     chmod +x /usr/local/bin/yq && \
+    ## Install Nextflow \
+    curl -s https://get.nextflow.io | bash && \
+    chmod +xr nextflow && \
+    mv nextflow /usr/local/bin/ && \
     ## Clean downloaded packages to make images smaller
     rm -rf /var/lib/apt/lists/* && \
     adduser --disabled-password --uid 1001 opencga
