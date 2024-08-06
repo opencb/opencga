@@ -234,7 +234,7 @@ public class NoteMongoDBAdaptor extends CatalogMongoDBAdaptor implements NoteDBA
                     filterStringListParams(parameters, document.getSet(), tagsParams);
                     break;
                 case REMOVE:
-                    filterStringListParams(parameters, document.getPull(), tagsParams);
+                    filterStringListParams(parameters, document.getPullAll(), tagsParams);
                     break;
                 case ADD:
                     filterStringListParams(parameters, document.getAddToSet(), tagsParams);
