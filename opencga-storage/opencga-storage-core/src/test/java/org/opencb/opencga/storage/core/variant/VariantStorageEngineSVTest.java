@@ -7,7 +7,6 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.Query;
@@ -60,8 +59,8 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
 
     protected void loadFiles() throws Exception {
         variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
-        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("3");
+        variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE);
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
         variantStorageEngine.reloadCellbaseConfiguration();
 
@@ -149,12 +148,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
             actualStudyEntry.getFiles().get(0).setFileId("");
             assertEquals(expectedStudyEntry.getFiles().get(0), actualStudyEntry.getFiles().get(0));
 
-
-            if (actual.getAlternate().equals("<DEL:ME:ALU>") || actual.getType().equals(VariantType.BREAKEND)) {
-                System.err.println("WARN: Variant " + actual + (actual.getAnnotation() == null ? " without annotation" : " with annotation"));
-            } else {
-                assertNotNull(actual.toString(), actual.getAnnotation());
-            }
+            assertNotNull(actual.toString(), actual.getAnnotation());
         }
     }
 

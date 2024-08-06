@@ -78,7 +78,7 @@ public class ParamConstants {
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
     public static final String CELLBASE_VERSION = "v5.8";
     public static final String CELLBASE_DATA_RELEASE = "7";
-    public static final String CELLBASE_APIKEY = "";
+    public static final String CELLBASE_APIKEY = null;
 
     public static final String POP_FREQ_1000G_CB_V4 = "1kG_phase3";
     public static final String POP_FREQ_1000G_CB_V5 = "1000G";
