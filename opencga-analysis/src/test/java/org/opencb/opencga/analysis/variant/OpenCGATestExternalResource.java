@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.StorageManager;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTest;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -261,11 +262,15 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
 
         // Exomiser analysis files
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser")).toAbsolutePath();
+        List<String> exomiserVersions = Arrays.asList("13.1", "14.0");
         List<String> exomiserFiles = Arrays.asList("application.properties", "exomiser-analysis.yml", "output.yml");
-        for (String exomiserFile : exomiserFiles) {
-            inputStream = new FileInputStream("../opencga-app/app/analysis/exomiser/" + exomiserFile);
-            Files.copy(inputStream, analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
+        for (String exomiserVersion : exomiserVersions) {
+            analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser").resolve(exomiserVersion).toAbsolutePath());
+            Path exomiserPath = Paths.get(ExomiserInterpretationAnalysisTest.class.getClassLoader().getResource("exomiser").getPath());
+            for (String exomiserFile : exomiserFiles) {
+                String resource = exomiserVersion + "/" + exomiserFile;
+                Files.copy(exomiserPath.resolve(resource).toAbsolutePath(), analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
+            }
         }
 
         return opencgaHome;

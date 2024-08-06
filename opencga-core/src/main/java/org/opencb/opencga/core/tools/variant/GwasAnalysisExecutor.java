@@ -33,7 +33,7 @@ public abstract class GwasAnalysisExecutor extends OpenCgaToolExecutor {
     private String cohort1;
     private String cohort2;
     private Path outputFile;
-    private GwasConfiguration configuration;
+    private GwasConfiguration gwasConfiguration;
 
     public GwasAnalysisExecutor() {
     }
@@ -49,7 +49,7 @@ public abstract class GwasAnalysisExecutor extends OpenCgaToolExecutor {
         columns.add("gene");
         columns.add("biotype");
         columns.add("consequence-types");
-        if (configuration.getMethod() == GwasConfiguration.Method.CHI_SQUARE_TEST) {
+        if (gwasConfiguration.getMethod() == GwasConfiguration.Method.CHI_SQUARE_TEST) {
             columns.add("chi-square");
         }
         columns.add("p-value");
@@ -70,7 +70,7 @@ public abstract class GwasAnalysisExecutor extends OpenCgaToolExecutor {
         sb.append(", phenotype2='").append(phenotype2).append('\'');
         sb.append(", cohort1='").append(cohort1).append('\'');
         sb.append(", cohort2='").append(cohort2).append('\'');
-        sb.append(", configuration=").append(configuration);
+        sb.append(", configuration=").append(gwasConfiguration);
         sb.append(", executorParams=").append(getExecutorParams());
         sb.append(", outDir=").append(getOutDir());
         sb.append('}');
@@ -149,12 +149,12 @@ public abstract class GwasAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public GwasConfiguration getConfiguration() {
-        return configuration;
+    public GwasConfiguration getGwasConfiguration() {
+        return gwasConfiguration;
     }
 
-    public GwasAnalysisExecutor setConfiguration(GwasConfiguration configuration) {
-        this.configuration = configuration;
+    public GwasAnalysisExecutor setGwasConfiguration(GwasConfiguration gwasConfiguration) {
+        this.gwasConfiguration = gwasConfiguration;
         return this;
     }
 }

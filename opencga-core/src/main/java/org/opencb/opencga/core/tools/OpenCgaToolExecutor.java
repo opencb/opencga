@@ -17,9 +17,10 @@
 package org.opencb.opencga.core.tools;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 
 import java.nio.file.Path;
@@ -31,6 +32,7 @@ public abstract class OpenCgaToolExecutor {
     private ObjectMap executorParams;
     private Path outDir;
     private ExecutionResultManager arm;
+    private Configuration configuration;
 
     protected OpenCgaToolExecutor() {
     }
@@ -51,10 +53,11 @@ public abstract class OpenCgaToolExecutor {
         return this.getClass().getAnnotation(ToolExecutor.class).source();
     }
 
-    public final void setUp(ExecutionResultManager arm, ObjectMap executorParams, Path outDir) {
+    public final void setUp(ExecutionResultManager arm, ObjectMap executorParams, Path outDir, Configuration configuration) {
         this.arm = arm;
         this.executorParams = executorParams;
         this.outDir = outDir;
+        this.configuration = configuration;
     }
 
     public final void execute() throws ToolException {
@@ -75,6 +78,10 @@ public abstract class OpenCgaToolExecutor {
 
     public final Path getOutDir() {
         return outDir;
+    }
+
+    public final Configuration getConfiguration() {
+        return configuration;
     }
 
     protected final String getToken() {
