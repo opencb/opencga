@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.models.nextflow;
+package org.opencb.opencga.core.models.workflow;
 
 import org.opencb.opencga.core.tools.ToolParams;
 

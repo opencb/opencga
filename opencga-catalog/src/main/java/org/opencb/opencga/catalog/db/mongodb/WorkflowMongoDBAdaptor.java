@@ -6,10 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -20,17 +17,20 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.nextflow.Workflow;
+import org.opencb.opencga.core.models.workflow.Workflow;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixAclProjection;
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements WorkflowDBAdaptor {
 
@@ -231,15 +231,121 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
-    public OpenCGAResult<Workflow> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+    public OpenCGAResult<Workflow> update(long uid, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+        Query query = new Query(QueryParams.UID.key(), uid);
+        return update(query, parameters, queryOptions);
     }
 
     @Override
     public OpenCGAResult<Workflow> update(Query query, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+        try {
+            return runTransaction(clientSession -> privateUpdate(clientSession, query, parameters, queryOptions));
+        } catch (CatalogDBException e) {
+            logger.error("Could not update workflows for query {}", query.toJson(), e);
+            throw new CatalogDBException("Could not update workflows based on query " + query.toJson(), e);
+        }
+    }
+
+    OpenCGAResult<Workflow> privateUpdate(ClientSession clientSession, Query query, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        long tmpStartTime = startQuery();
+        Bson bsonQuery = parseQuery(query);
+        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, (entrylist) -> {
+            String workflowIds = entrylist.stream().map(w -> w.getString(QueryParams.ID.key())).collect(Collectors.joining(", "));
+
+            UpdateDocument updateParams = parseAndValidateUpdateParams(parameters, queryOptions);
+            Document workflowUpdate = updateParams.toFinalUpdateDocument();
+
+            if (workflowUpdate.isEmpty()) {
+                if (!parameters.isEmpty()) {
+                    logger.error("Non-processed update parameters: {}", parameters.keySet());
+                }
+                throw new CatalogDBException("Nothing to be updated");
+            }
+
+            List<Event> events = new ArrayList<>();
+
+            logger.debug("Workflow update: query : {}, update: {}", bsonQuery.toBsonDocument(), workflowUpdate.toBsonDocument());
+            DataResult<?> result = workflowCollection.update(clientSession, bsonQuery, workflowUpdate,
+                    new QueryOptions(MongoDBCollection.MULTI, true));
+
+            if (result.getNumMatches() == 0) {
+                throw new CatalogDBException("Workflow(s) '" + workflowIds + "' not found");
+            }
+            if (result.getNumUpdated() == 0) {
+                events.add(new Event(Event.Type.WARNING, workflowIds, "Workflow(s) already updated"));
+            }
+            logger.debug("Workflow(s) '{}' successfully updated", workflowIds);
+
+
+            return endWrite(tmpStartTime, result.getNumMatches(), result.getNumUpdated(), events);
+        }, null, null);
+    }
+
+    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        if (parameters.containsKey(QueryParams.ID.key())) {
+            throw new CatalogDBException("It is not allowed to update the 'id' of a workflow");
+        }
+
+        UpdateDocument document = new UpdateDocument();
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
+        final String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key()};
+        filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
+
+        // Check if the tags exist.
+        if (parameters.containsKey(QueryParams.SCRIPTS.key())) {
+            List<Workflow.Script> scriptList = parameters.getAsList(QueryParams.SCRIPTS.key(), Workflow.Script.class);
+
+            if (!scriptList.isEmpty()) {
+                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+                ParamUtils.BasicUpdateAction operation =
+                        ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SCRIPTS.key(), ParamUtils.BasicUpdateAction.ADD);
+                switch (operation) {
+                    case SET:
+                        document.getSet().put(QueryParams.SCRIPTS.key(), scriptList);
+                        break;
+                    case REMOVE:
+                        document.getPullAll().put(QueryParams.SCRIPTS.key(), scriptList);
+                        break;
+                    case ADD:
+                        document.getAddToSet().put(QueryParams.SCRIPTS.key(), scriptList);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown update action " + operation);
+                }
+            }
+        }
+
+        if (!document.toFinalUpdateDocument().isEmpty()) {
+            String time = TimeUtils.getTime();
+            if (StringUtils.isEmpty(parameters.getString(QueryParams.MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
+        }
+
+        return document;
     }
 
     @Override
@@ -355,6 +461,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
                     case UUID:
                     case RELEASE:
                     case VERSION:
+                    case TYPE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

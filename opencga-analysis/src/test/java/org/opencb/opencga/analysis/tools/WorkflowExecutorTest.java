@@ -8,8 +8,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.nextflow.NextFlowRunParams;
-import org.opencb.opencga.core.models.nextflow.Workflow;
+import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
+import org.opencb.opencga.core.models.workflow.Workflow;
+import org.opencb.opencga.core.models.workflow.WorkflowCreateParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
 
-        Workflow workflow = getDummyWorkflow();
+        WorkflowCreateParams workflow = createDummyWorkflow();
         catalogManager.getWorkflowManager().create(workflow, QueryOptions.empty(), ownerToken);
 
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
@@ -45,10 +46,9 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
     public void nextflowDockerTest() throws ToolException, CatalogException, IOException {
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
-        Workflow workflow = new Workflow()
+        WorkflowCreateParams workflow = new WorkflowCreateParams()
                 .setId("workflow")
-                .setCommandLine("run nextflow-io/rnaseq-nf -with-docker")
-                .setType(Workflow.Type.NEXTFLOW);
+                .setCommandLine("run nextflow-io/rnaseq-nf -with-docker");
         catalogManager.getWorkflowManager().create(workflow, QueryOptions.empty(), ownerToken);
 
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
@@ -62,8 +62,7 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
     }
 
-
-    private Workflow getDummyWorkflow() {
+    private WorkflowCreateParams createDummyWorkflow() {
         String scriptContent = "params.str = 'Hello world!'\n" +
                 "\n" +
                 "process splitLetters {\n" +
@@ -99,10 +98,9 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
                 "workflow {\n" +
                 "    splitLetters | flatten | convertToUpper | view { it.trim() } | sleep\n" +
                 "}";
-        return new Workflow()
+        return new WorkflowCreateParams()
                 .setId("workflow")
                 .setCommandLine("run pipeline.nf")
-                .setType(Workflow.Type.NEXTFLOW)
                 .setScripts(Collections.singletonList(new Workflow.Script("pipeline.nf", scriptContent)));
     }
 }

@@ -1,6 +1,6 @@
 ## Based on Ubuntu 22.04 (jammy)
 ## We are now using OpenJDK 8u372 to support "cgroup v2", see https://developers.redhat.com/articles/2023/04/19/openjdk-8u372-feature-cgroup-v2-support#
-FROM eclipse-temurin:11.0.23_9-jre-jammy
+FROM eclipse-temurin:11.0.24_8-jre-noble
 
 ARG BUILD_PATH="."
 

@@ -218,6 +218,10 @@ public class SnapshotVersionedMongoDBAdaptor {
             }
         }
 
+        if (entryList.isEmpty()) {
+            throw new CatalogDBException("No documents could be found to be updated");
+        }
+
         // 2. Execute main update
         OpenCGAResult<E> executionResult = update.execute(entryList);
 

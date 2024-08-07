@@ -306,6 +306,19 @@ public class FieldConstants {
             + "STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, "
             + "VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.";
 
+    // Workflow
+    //Sample
+    public static final String WORKFLOW_ID_DESCRIPTION = "Workflow ID.";
+    public static final String WORKFLOW_TYPE_DESCRIPTION = "Workflow type. Valid values: NEXTFLOW.";
+    public static final String WORKFLOW_COMMAND_LINE_DESCRIPTION = "Workflow command line.";
+    public static final String WORKFLOW_SCRIPTS_DESCRIPTION = "List of scripts used by the Workflow.";
+    public static final String WORKFLOW_SOMATIC_DESCRIPTION = "Describes if the sample is somatic or not .";
+    public static final String WORKFLOW_INDIVIDUAL_ID_DESCRIPTION = "Individual id of the sample.";
+    public static final String WORKFLOW_FILE_IDS_DESCRIPTION = "File ids of the sample.";
+    public static final String WORKFLOW_COHORT_IDS_DESCRIPTION = "Cohort ids of the sample.";
+    public static final String WORKFLOW_INTERNAL_DESCRIPTION = "Sample internal information.";
+    public static final String WORKFLOW_EXTERNAL_SOURCE_DESCRIPTION = "The external source from where the example was imported.";
+
     //FileInternal
     public static final String FILE_INTERNAL_STATUS_DESCRIPTION = "File status can have the values READY, DELETED, "
             + "TRASHED, STAGE, MISSING, PENDING_DELETE, DELETING, REMOVED and MISSING_SAMPLES.";

@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -21,19 +22,24 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.nextflow.Workflow;
+import org.opencb.opencga.core.models.workflow.Workflow;
+import org.opencb.opencga.core.models.workflow.WorkflowCreateParams;
+import org.opencb.opencga.core.models.workflow.WorkflowUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+
 public class WorkflowManager extends AbstractManager {
+
+    public static final QueryOptions INCLUDE_WORKFLOW_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            WorkflowDBAdaptor.QueryParams.ID.key(), WorkflowDBAdaptor.QueryParams.UID.key(), WorkflowDBAdaptor.QueryParams.UUID.key(),
+            WorkflowDBAdaptor.QueryParams.VERSION.key()));
 
     private final CatalogIOManager catalogIOManager;
     private final IOManagerFactory ioManagerFactory;
@@ -104,17 +110,20 @@ public class WorkflowManager extends AbstractManager {
         return idQueryParam;
     }
 
-    public OpenCGAResult<Workflow> create(Workflow workflow, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Workflow> create(WorkflowCreateParams createParams, QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         ObjectMap auditParams = new ObjectMap()
-                .append("workflow", workflow)
+                .append("workflow", createParams)
                 .append("options", options)
                 .append("token", token);
 
         String organizationId = tokenPayload.getOrganization();
         String userId = tokenPayload.getUserId(organizationId);
+
+        // 0. Create the workflow object
+        Workflow workflow = createParams.toWorkflow();
         try {
             // 1. Check permissions
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
@@ -156,6 +165,59 @@ public class WorkflowManager extends AbstractManager {
                 WorkflowDBAdaptor.QueryParams.CREATION_DATE.key()));
         workflow.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(workflow.getModificationDate(),
                 WorkflowDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
+    }
+
+    public OpenCGAResult<Workflow> update(String workflowId, WorkflowUpdateParams updateParams, QueryOptions options, String token)
+            throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        ObjectMap updateMap = null;
+        try {
+            if (updateParams != null) {
+                updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));
+            }
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse WorkflowUpdateParams object: " + e.getMessage(), e);
+        }
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("workflowId", workflowId)
+                .append("updateParams", updateMap)
+                .append("options", options)
+                .append("token", token);
+
+        String organizationId = tokenPayload.getOrganization();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        String id = UuidUtils.isOpenCgaUuid(workflowId) ? "" : workflowId;
+        String uuid = UuidUtils.isOpenCgaUuid(workflowId) ? workflowId : "";
+        try {
+            // 1. Check permissions
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+
+            Workflow workflow = internalGet(organizationId, Collections.singletonList(workflowId), null, INCLUDE_WORKFLOW_IDS, userId,
+                    false).first();
+            id = workflow.getId();
+            uuid = workflow.getUuid();
+
+            // 2. Update workflow object
+            OpenCGAResult<Workflow> insert = getWorkflowDBAdaptor(organizationId).update(workflow.getUid(), updateMap, options);
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated workflow
+                Query query = new Query()
+                        .append(WorkflowDBAdaptor.QueryParams.UID.key(), workflow.getUid());
+                OpenCGAResult<Workflow> result = getWorkflowDBAdaptor(organizationId).get(query, options);
+                insert.setResults(result.getResults());
+            }
+            auditManager.auditUpdate(organizationId, userId, Enums.Resource.WORKFLOW, id, uuid, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return insert;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(organizationId, userId, Enums.Resource.WORKFLOW, id, uuid, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
     public OpenCGAResult<Workflow> get(String workflow, QueryOptions queryOptions, String token) throws CatalogException {

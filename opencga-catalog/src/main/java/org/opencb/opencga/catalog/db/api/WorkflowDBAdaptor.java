@@ -6,7 +6,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.core.models.nextflow.Workflow;
+import org.opencb.opencga.core.models.workflow.Workflow;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.Map;
@@ -22,6 +22,7 @@ public interface WorkflowDBAdaptor extends CoreDBAdaptor<Workflow> {
         ID("id", TEXT, ""),
         UID("uid", LONG, ""),
         UUID("uuid", TEXT, ""),
+        DESCRIPTION("description", TEXT, ""),
         TYPE("type", TEXT, ""),
         COMMAND_LINE("commandLine", TEXT, ""),
         SCRIPTS("scripts", OBJECT, ""),
@@ -30,6 +31,7 @@ public interface WorkflowDBAdaptor extends CoreDBAdaptor<Workflow> {
         VERSION("version", INTEGER, ""), // Version of the sample
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
+        ATTRIBUTES("attributes", OBJECT, ""),
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
 
