@@ -69,7 +69,7 @@ function install(){
   if [ -d "./$REPO" ]; then
     cd "$REPO" || exit 2
     echo "Branch name $BRANCH_NAME already exists."
-    mvn clean install -DskipTests
+    mvn clean install -DskipTests --no-transfer-progress
     if [ $? -eq 0 ]; then
       echo "$REPO Compilation Successful!!!"
     fi
@@ -93,4 +93,3 @@ CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -
 install "cellbase" $CELLBASE_DEPENDENCY_VERSION
 OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
 install "opencga" $OPENCGA_DEPENDENCY_VERSION
-
