@@ -448,6 +448,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("tagsAction", commandOptions.tagsAction);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
