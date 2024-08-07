@@ -47,15 +47,31 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
     private DBAdaptorVariantQueryExecutor dbQueryExecutor;
     private List<VariantQueryExecutor> variantQueryExecutors;
 
-    @ClassRule
-    public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
+    public static VariantSolrExternalResource solr = null;
+
+
+    public void initSolr() throws Exception {
+        if (solr != null) {
+            solr = new VariantSolrExternalResource();
+            solr.before();
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        if (solr != null) {
+            solr.after();
+        }
+    }
 
     @Before
     public void setUp() throws Exception {
-
+        initSolr();
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-        solr.configure(variantStorageEngine);
+        if (solr != null) {
+            solr.configure(variantStorageEngine);
+        }
         if (!fileIndexed) {
             studyMetadata = newStudyMetadata();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
@@ -96,9 +112,11 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
             variantStorageEngine.calculateStats(studyMetadata.getName(),
                     new ArrayList<>(cohorts.keySet()), options);
 
-            solr.configure(variantStorageEngine);
-            variantStorageEngine.secondaryIndex();
-            Assert.assertTrue(variantStorageEngine.secondaryAnnotationIndexActiveAndAlive());
+            if (solr != null) {
+                solr.configure(variantStorageEngine);
+                variantStorageEngine.secondaryIndex();
+                Assert.assertTrue(variantStorageEngine.secondaryAnnotationIndexActiveAndAlive());
+            }
 
             variantQueryExecutors = variantStorageEngine.getVariantQueryExecutors();
             dbQueryExecutor = null;
@@ -135,8 +153,8 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
                 with("ConsequenceType", VariantAnnotation::getConsequenceTypes, hasItem(
                         with("GeneName", ConsequenceType::getGeneName,
                                 is("TEX13B"))))));
-        matchers.put("COSV60260399", hasAnnotation(with("TraitAssociation", VariantAnnotation::getTraitAssociation, hasItem(
-                with("Cosmic", EvidenceEntry::getId, is("COSV60260399"))))));
+        matchers.put("RCV000155534", hasAnnotation(with("TraitAssociation", VariantAnnotation::getTraitAssociation, hasItem(
+                with("Clinvar", EvidenceEntry::getId, is("RCV000155534"))))));
         matchers.put("ENST00000341832.11(ENSG00000248333):c.356-1170A>G", hasAnnotation(with("HGVS", VariantAnnotation::getHgvs, hasItem(
                  is("ENST00000341832.11(ENSG00000248333):c.356-1170A>G")))));
         matchers.put("ENST00000341832.11:c.356-1170A>G", hasAnnotation(with("HGVS", VariantAnnotation::getHgvs, hasItem(
