@@ -43,6 +43,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         public DeleteCommandOptions deleteCommandOptions;
         public InfoCommandOptions infoCommandOptions;
         public UpdateCommandOptions updateCommandOptions;
+        public KillCommandOptions killCommandOptions;
         public HeadLogCommandOptions headLogCommandOptions;
         public TailLogCommandOptions tailLogCommandOptions;
 
@@ -60,6 +61,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
+        this.killCommandOptions = new KillCommandOptions();
         this.headLogCommandOptions = new HeadLogCommandOptions();
         this.tailLogCommandOptions = new TailLogCommandOptions();
     
@@ -257,6 +259,9 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -443,6 +448,26 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+    }
+
+    @Parameters(commandNames = {"kill"}, commandDescription ="Send a signal to kill a pending or running job")
+    public class KillCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--job"}, description = "Job ID or UUID", required = true, arity = 1)
+        public String job; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
     
     }
 

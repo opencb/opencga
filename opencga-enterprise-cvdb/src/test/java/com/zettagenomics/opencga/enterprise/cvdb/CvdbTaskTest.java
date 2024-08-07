@@ -6,9 +6,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParam
 import org.junit.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.tools.ToolRunner;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
@@ -20,15 +18,12 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -116,7 +111,7 @@ public class CvdbTaskTest {
         params.setOverwrite(true);
 
         toolRunner.execute(CvdbIndexTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study.getId()), indexOutDir, null,
-                sessionIdUser);
+                false, sessionIdUser);
 
         ExecutionResult result = JacksonUtils.getDefaultObjectMapper().readerFor(ExecutionResult.class)
                 .readValue(indexOutDir.resolve(CvdbIndexTask.ID + ".result.json").toFile());
@@ -133,7 +128,7 @@ public class CvdbTaskTest {
         params.setOverwrite(false);
 
         toolRunner.execute(CvdbIndexTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study.getId()), indexOutDir, null,
-                sessionIdUser);
+                false, sessionIdUser);
 
         result = JacksonUtils.getDefaultObjectMapper().readerFor(ExecutionResult.class)
                 .readValue(indexOutDir.resolve(CvdbIndexTask.ID + ".result.json").toFile());
@@ -159,7 +154,7 @@ public class CvdbTaskTest {
         params.setOverwrite(true);
 
         toolRunner.execute(CvdbIndexTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study.getId()), indexOutDir, null,
-                sessionIdUser);
+                false, sessionIdUser);
 
         ExecutionResult result = JacksonUtils.getDefaultObjectMapper().readerFor(ExecutionResult.class)
                 .readValue(indexOutDir.resolve(CvdbIndexTask.ID + ".result.json").toFile());
