@@ -303,7 +303,7 @@ public class NoteManager extends AbstractManager {
         updateMap.put(NoteDBAdaptor.QueryParams.USER_ID.key(), tokenPayload.getUserId());
 
         OpenCGAResult<Note> update = getCatalogDBAdaptorFactory().getCatalogNoteDBAdaptor(organizationId).update(noteUid, updateMap,
-                QueryOptions.empty());
+                options);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated note
             OpenCGAResult<Note> result = getCatalogDBAdaptorFactory().getCatalogNoteDBAdaptor(organizationId).get(noteUid, options);

@@ -327,9 +327,6 @@ public class OrganizationManager extends AbstractManager {
                     throw new CatalogException("Max CPU cannot be negative");
                 }
             }
-            if (updateParams.getAccount() != null && StringUtils.isNotEmpty(updateParams.getAccount().getExpirationDate())) {
-                ParamUtils.checkDateIsNotExpired(updateParams.getAccount().getExpirationDate(), "expirationDate");
-            }
 
             ObjectMap updateMap;
             try {
@@ -337,6 +334,12 @@ public class OrganizationManager extends AbstractManager {
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Could not parse OrganizationUserUpdateParams object: " + e.getMessage(), e);
             }
+
+            if (updateParams.getInternal() != null && updateParams.getInternal().getAccount() != null
+                    && StringUtils.isNotEmpty(updateParams.getInternal().getAccount().getExpirationDate())) {
+                ParamUtils.checkDateIsNotExpired(updateParams.getInternal().getAccount().getExpirationDate(), "expirationDate");
+            }
+
             OpenCGAResult<User> updateResult = getUserDBAdaptor(myOrganizationId).update(userId, updateMap);
             auditManager.auditUpdate(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, userId, "", "", "",
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

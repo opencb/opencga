@@ -22,10 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -75,7 +72,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     void authenticate(String userId, String password) throws CatalogDBException, CatalogAuthenticationException;
 
     OpenCGAResult insert(User user, String password, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+            throws CatalogException;
 
     OpenCGAResult<User> get(String userId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
@@ -97,9 +94,10 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult changePassword(String userId, String oldPassword, String newPassword)
-            throws CatalogDBException, CatalogAuthenticationException;
+            throws CatalogException;
 
-    OpenCGAResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
+    OpenCGAResult resetPassword(String userId, String email, String newCryptPass)
+            throws CatalogException;
 
     // Config operations
     OpenCGAResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException;

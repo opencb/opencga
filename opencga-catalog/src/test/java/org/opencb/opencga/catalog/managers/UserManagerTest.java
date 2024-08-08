@@ -438,7 +438,7 @@ public class UserManagerTest extends AbstractManagerTest {
         assertEquals(userPost.getEmail(), newEmail);
 
         catalogManager.getUserManager().login(organizationId, orgOwnerUserId, newPassword);
-        CatalogDBException exception = assertThrows(CatalogDBException.class,
+        CatalogAuthenticationException exception = assertThrows(CatalogAuthenticationException.class,
                 () -> catalogManager.getUserManager().changePassword(organizationId, orgOwnerUserId, newPassword, TestParamConstants.PASSWORD));
         assertTrue(exception.getMessage().contains("The new password has already been used"));
 
@@ -513,7 +513,7 @@ public class UserManagerTest extends AbstractManagerTest {
         catalogManager.getUserManager().changePassword(organizationId, normalUserId1, TestParamConstants.PASSWORD, newPassword);
         catalogManager.getUserManager().login(organizationId, normalUserId1, newPassword);
 
-        CatalogDBException exception = assertThrows(CatalogDBException.class,
+        CatalogAuthenticationException exception = assertThrows(CatalogAuthenticationException.class,
                 () -> catalogManager.getUserManager().changePassword(organizationId, normalUserId1, TestParamConstants.PASSWORD, newPassword));
         assertTrue(exception.getMessage().contains("verify that the current password is correct"));
 

@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
@@ -37,13 +38,12 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.project.Project;
@@ -73,8 +73,22 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
     private final MongoDBCollection deletedUserCollection;
     private UserConverter userConverter;
 
-    private static final String PRIVATE_PASSWORD = "_password";
-    private static final String ARCHIVE_PASSWORD = "_archivePasswords";
+    // --- Password constants ---
+    public static final String HASH = "hash";
+    public static final String SALT = "salt";
+
+    public static final String PRIVATE_PASSWORD = "_password";
+
+    public static final String CURRENT = "current";
+    private static final String PRIVATE_PASSWORD_CURRENT = "_password." + CURRENT;
+    private static final String PRIVATE_PASSWORD_CURRENT_HASH = PRIVATE_PASSWORD_CURRENT + "." + HASH;
+    private static final String PRIVATE_PASSWORD_CURRENT_SALT = PRIVATE_PASSWORD_CURRENT + "." + SALT;
+
+    public static final String ARCHIVE = "archive";
+    public static final String PRIVATE_PASSWORD_ARCHIVE = "_password." + ARCHIVE;
+    private static final String PRIVATE_PASSWORD_ARCHIVE_HASH = PRIVATE_PASSWORD_ARCHIVE + "." + HASH;
+    private static final String PRIVATE_PASSWORD_ARCHIVE_SALT = PRIVATE_PASSWORD_ARCHIVE + "." + SALT;
+    // --------------------------
 
     public UserMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection, Configuration configuration,
                               OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
@@ -96,8 +110,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
     }
 
     @Override
-    public OpenCGAResult insert(User user, String password, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult insert(User user, String password, QueryOptions options) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
 
@@ -120,8 +133,18 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
 
         Document userDocument = userConverter.convertToStorageType(user);
         userDocument.append(ID, user.getId());
-        userDocument.append(PRIVATE_PASSWORD, encryptPassword(password));
-        userDocument.append(ARCHIVE_PASSWORD, Collections.singletonList(encryptPassword(password)));
+
+        Document privatePassword = new Document();
+        if (StringUtils.isNotEmpty(password)) {
+            String salt = PasswordUtils.getStrongRandomPassword();
+            String hash = encryptPassword(password + salt);
+            Document passwordDoc = new Document()
+                    .append(HASH, hash)
+                    .append(SALT, salt);
+            privatePassword.put(CURRENT, passwordDoc);
+            privatePassword.put(ARCHIVE, Collections.singletonList(passwordDoc));
+        }
+        userDocument.put(PRIVATE_PASSWORD, privatePassword);
 
         userCollection.insert(clientSession, userDocument, null);
     }
@@ -134,78 +157,118 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
     }
 
     @Override
-    public OpenCGAResult changePassword(String userId, String oldPassword, String newPassword)
-            throws CatalogDBException, CatalogAuthenticationException {
+    public OpenCGAResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
         return setPassword(userId, oldPassword, newPassword);
     }
 
     @Override
-    public void authenticate(String userId, String password) throws CatalogAuthenticationException {
-        Document bson;
-        try {
-            bson = new Document()
-                    .append(ID, userId)
-                    .append(PRIVATE_PASSWORD, encryptPassword(password));
-        } catch (CatalogDBException e) {
-            throw new CatalogAuthenticationException("Could not encrypt password: " + e.getMessage(), e);
+    public void authenticate(String userId, String password) throws CatalogDBException, CatalogAuthenticationException {
+        Bson query = Filters.and(
+                Filters.eq(QueryParams.ID.key(), userId),
+                Filters.eq(INTERNAL_ACCOUNT_AUTHENTICATION_ID.key(), AuthenticationOrigin.AuthenticationType.OPENCGA)
+        );
+        Bson projection = Projections.include(PRIVATE_PASSWORD);
+        DataResult<Document> dataResult = userCollection.find(query, projection, QueryOptions.empty());
+        if (dataResult.getNumResults() == 0) {
+            throw new CatalogDBException("User " + userId + " not found");
         }
-        if (userCollection.count(bson).getNumMatches() == 0) {
-            throw CatalogAuthenticationException.incorrectUserOrPassword("Internal");
+        Document userDocument = dataResult.first();
+        Document rootPasswordDoc = userDocument.get(PRIVATE_PASSWORD, Document.class);
+        if (rootPasswordDoc == null) {
+            throw new CatalogDBException("Critical error. User '" + userId + "' does not have any password set. Please, contact"
+                    + " with the developers.");
+        }
+        Document passwordDoc = rootPasswordDoc.get(CURRENT, Document.class);
+        if (passwordDoc == null) {
+            throw new CatalogDBException("Critical error. User '" + userId + "' does not have any password set. Please, contact"
+                    + " with the developers.");
+        }
+
+        String salt = passwordDoc.getString(SALT);
+        String hash = encryptPassword(password + salt);
+        if (!hash.equals(passwordDoc.getString(HASH))) {
+            throw CatalogAuthenticationException.incorrectUserOrPassword(AuthenticationOrigin.AuthenticationType.OPENCGA.name());
         }
     }
 
     @Override
-    public OpenCGAResult resetPassword(String userId, String email, String newPassword) throws CatalogDBException {
+    public OpenCGAResult resetPassword(String userId, String email, String newPassword) throws CatalogException {
         return setPassword(userId, null, newPassword);
     }
 
-    public OpenCGAResult setPassword(String userId, @Nullable String oldPassword, String newPassword) throws CatalogDBException {
-        List<Bson> queryFilter = new ArrayList<>();
-        queryFilter.add(Filters.eq(QueryParams.ID.key(), userId));
-        queryFilter.add(Filters.ne(ARCHIVE_PASSWORD, encryptPassword(newPassword)));
-        if (StringUtils.isNotEmpty(oldPassword)) {
-            queryFilter.add(Filters.eq(PRIVATE_PASSWORD, encryptPassword(oldPassword)));
-        }
-        Bson query = Filters.and(queryFilter);
+    public OpenCGAResult setPassword(String userId, @Nullable String oldPassword, String newPassword) throws CatalogException {
+        String prefixErrorMsg = "Could not update the password. ";
+        return runTransaction(clientSession -> {
+            // 1. Obtain archived passwords
+            Bson query = Filters.eq(QueryParams.ID.key(), userId);
+            Bson projection = Projections.include(PRIVATE_PASSWORD);
+            DataResult<Document> userQueryResult = userCollection.find(clientSession, query, projection, QueryOptions.empty());
+            if (userQueryResult.getNumResults() == 0) {
+                throw new CatalogDBException(prefixErrorMsg + "User " + userId + " not found.");
+            }
+            Document userDoc = userQueryResult.first();
+            Document passwordDoc = userDoc.get(PRIVATE_PASSWORD, Document.class);
 
-        UpdateDocument updateDocument = new UpdateDocument();
-        String encryptedPassword = encryptPassword(newPassword);
-        updateDocument.getSet().put(PRIVATE_PASSWORD, encryptedPassword);
-        updateDocument.getPush().put(ARCHIVE_PASSWORD, encryptedPassword);
-        updateDocument.getSet().put(INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED.key(), TimeUtils.getTime());
-        if (configuration.getAccount().getPasswordExpirationDays() > 0) {
-            Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
-            String stringDate = TimeUtils.getTime(date);
-            updateDocument.getSet().put(INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE.key(), stringDate);
-        }
-        Document update = updateDocument.toFinalUpdateDocument();
-
-        logger.debug("Change password: query '{}'; update: '{}'", query.toBsonDocument(), update);
-        DataResult<?> result = userCollection.update(query, update, null);
-        if (result.getNumUpdated() == 0) {
-            if (result.getNumMatches() == 0) {
-                Query userQuery = new Query(QueryParams.ID.key(), userId);
-                OpenCGAResult<Document> queryResult = nativeGet(userQuery,
-                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_PASSWORD, ARCHIVE_PASSWORD)));
-                if (queryResult.getNumResults() == 0) {
-                    throw new CatalogDBException("Could not update the password. User not found.");
-                }
-                Document userDocument = queryResult.first();
-                if (StringUtils.isNotEmpty(oldPassword)) {
-                    String dbPassword = userDocument.getString(PRIVATE_PASSWORD);
-                    if (!encryptPassword(oldPassword).equals(dbPassword)) {
-                        throw new CatalogDBException("Could not update the password. Please, verify that the current password is correct.");
-                    }
-                }
-                List<String> archivePassword = userDocument.getList(ARCHIVE_PASSWORD, String.class);
-                if (archivePassword.contains(encryptedPassword)) {
-                    throw new CatalogDBException("Could not update the password. The new password has already been used. Please, use"
-                            + " a different one.");
+            // 1.1. Check oldPassword
+            if (StringUtils.isNotEmpty(oldPassword)) {
+                Document currentPasswordDoc = passwordDoc.get(CURRENT, Document.class);
+                String currentSalt = currentPasswordDoc.getString(SALT);
+                String currentHash = encryptPassword(oldPassword + currentSalt);
+                if (!currentHash.equals(currentPasswordDoc.getString(HASH))) {
+                    throw new CatalogAuthenticationException(prefixErrorMsg + "Please, verify that the current password is correct.");
                 }
             }
-            throw new CatalogDBException("Could not update the password. Please, verify that the current password is correct.");
-        }
-        return new OpenCGAResult(result);
+
+            // 2. Calculate all possible hashValues with new password
+            Set<String> hashValues = new HashSet<>();
+            List<String> saltValues = passwordDoc.getList(ARCHIVE, Document.class).stream()
+                    .map(document -> document.getString(SALT))
+                    .collect(Collectors.toList());
+            for (String saltValue : saltValues) {
+                hashValues.add(encryptPassword(newPassword + saltValue));
+            }
+
+            // 3. Check new password has not been used before
+            for (Document document : passwordDoc.getList(ARCHIVE, Document.class)) {
+                String hashValue = document.getString(HASH);
+                if (hashValues.contains(hashValue)) {
+                    throw new CatalogAuthenticationException(prefixErrorMsg + "The new password has already been used."
+                            + " Please, use a different one.");
+                }
+            }
+
+            // 4. Generate new salt for current password
+            String newSalt = PasswordUtils.getStrongRandomPassword();
+            String newHash = encryptPassword(newPassword + newSalt);
+
+            // 5. Generate update document
+            UpdateDocument updateDocument = new UpdateDocument();
+            // add to current
+            updateDocument.getSet().put(PRIVATE_PASSWORD_CURRENT_HASH, newHash);
+            updateDocument.getSet().put(PRIVATE_PASSWORD_CURRENT_SALT, newSalt);
+
+            // add to archive
+            Document document = new Document()
+                    .append(HASH, newHash)
+                    .append(SALT, newSalt);
+            updateDocument.getPush().put(PRIVATE_PASSWORD_ARCHIVE, document);
+
+            updateDocument.getSet().put(INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED.key(), TimeUtils.getTime());
+            if (configuration.getAccount().getPasswordExpirationDays() > 0) {
+                Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
+                String stringDate = TimeUtils.getTime(date);
+                updateDocument.getSet().put(INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE.key(), stringDate);
+            }
+            Document update = updateDocument.toFinalUpdateDocument();
+
+            logger.debug("Change password: query '{}'; update: '{}'", query.toBsonDocument(), update);
+            DataResult<?> result = userCollection.update(clientSession, query, update, null);
+            if (result.getNumUpdated() == 0) {
+                throw new CatalogAuthenticationException("Could not update the password. Please, verify that the current password is"
+                        + " correct.");
+            }
+            return new OpenCGAResult(result);
+        }, e -> logger.error("User {}: {}", userId, e.getMessage()));
     }
 
     @Override
