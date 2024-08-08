@@ -108,9 +108,14 @@ public class ClinicalInterpretationSearch {
     @Field("version")
     private int version;
 
-    // Interpreation stored in a JSON string
-    @Field("json")
-    private String json;
+    @Field("minJson")
+    private String minJson;
+
+    @Field("mediumJson")
+    private String mediumJson;
+
+    @Field("maxJson")
+    private String maxJson;
 
     public ClinicalInterpretationSearch() {
         viewers = new ArrayList<>();
@@ -147,7 +152,9 @@ public class ClinicalInterpretationSearch {
         sb.append(", creationDate=").append(creationDate);
         sb.append(", modificationDate=").append(modificationDate);
         sb.append(", version=").append(version);
-        sb.append(", json='").append(json).append('\'');
+        sb.append(", minJson='").append(minJson).append('\'');
+        sb.append(", mediumJson='").append(mediumJson).append('\'');
+        sb.append(", maxJson='").append(maxJson).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -377,12 +384,30 @@ public class ClinicalInterpretationSearch {
         return this;
     }
 
-    public String getJson() {
-        return json;
+    public String getMinJson() {
+        return minJson;
     }
 
-    public ClinicalInterpretationSearch setJson(String json) {
-        this.json = json;
+    public ClinicalInterpretationSearch setMinJson(String minJson) {
+        this.minJson = minJson;
+        return this;
+    }
+
+    public String getMediumJson() {
+        return mediumJson;
+    }
+
+    public ClinicalInterpretationSearch setMediumJson(String mediumJson) {
+        this.mediumJson = mediumJson;
+        return this;
+    }
+
+    public String getMaxJson() {
+        return maxJson;
+    }
+
+    public ClinicalInterpretationSearch setMaxJson(String maxJson) {
+        this.maxJson = maxJson;
         return this;
     }
 }

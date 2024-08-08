@@ -589,9 +589,9 @@
 	<dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
     <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
 
-    <field name="discussionAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="discussionAuthor" type="text_en" indexed="true" stored="true" multiValued="false"/>
     <field name="discussionDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
-    <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="discussionText" type="text_en" indexed="true" stored="true" multiValued="false"/>
 
     <field name="confidenceValue" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="confidenceAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
