@@ -309,8 +309,10 @@ public class FieldConstants {
     // Workflow
     //Sample
     public static final String WORKFLOW_ID_DESCRIPTION = "Workflow ID.";
+    public static final String WORKFLOW_NAME_DESCRIPTION = "Workflow name.";
     public static final String WORKFLOW_TYPE_DESCRIPTION = "Workflow type. Valid values: NEXTFLOW.";
-    public static final String WORKFLOW_COMMAND_LINE_DESCRIPTION = "Workflow command line.";
+    public static final String WORKFLOW_DOCKER_DESCRIPTION = "Workflow docker image to execute. If any, providing a list of scripts will"
+            + " not be mandatory.";
     public static final String WORKFLOW_SCRIPTS_DESCRIPTION = "List of scripts used by the Workflow.";
     public static final String WORKFLOW_SOMATIC_DESCRIPTION = "Describes if the sample is somatic or not .";
     public static final String WORKFLOW_INDIVIDUAL_ID_DESCRIPTION = "Individual id of the sample.";

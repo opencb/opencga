@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.tools;
+package org.opencb.opencga.analysis.workflow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,12 +7,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
 import org.opencb.opencga.core.models.workflow.Workflow;
+import org.opencb.opencga.core.models.workflow.WorkflowScript;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -37,7 +39,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 @Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.WORKFLOW, description = NextFlowExecutor.DESCRIPTION)
-public class NextFlowExecutor extends OpenCgaTool {
+public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
     public final static String ID = "nextflow-run";
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
@@ -60,7 +62,7 @@ public class NextFlowExecutor extends OpenCgaTool {
             throw new IllegalArgumentException("Missing Nextflow ID");
         }
 
-        OpenCGAResult<Workflow> result = catalogManager.getWorkflowManager().get(nextflowParams.getId(), QueryOptions.empty(), token);
+        OpenCGAResult<Workflow> result = catalogManager.getWorkflowManager().get(study, nextflowParams.getId(), QueryOptions.empty(), token);
         if (result.getNumResults() == 0) {
             throw new ToolException("Workflow '" + nextflowParams.getId() + "' not found");
         }
@@ -73,9 +75,9 @@ public class NextFlowExecutor extends OpenCgaTool {
 
     @Override
     protected void run() throws Exception {
-        for (Workflow.Script script : workflow.getScripts()) {
+        for (WorkflowScript script : workflow.getScripts()) {
             // Write script files
-            Files.write(getOutDir().resolve(script.getId()), script.getContent().getBytes());
+            Files.write(getOutDir().resolve(script.getFilename()), script.getContent().getBytes());
         }
 
         // Write nextflow.config file
@@ -91,8 +93,19 @@ public class NextFlowExecutor extends OpenCgaTool {
 
         StringBuilder stringBuilder = new StringBuilder()
                 .append("nextflow -c ").append(workingDirectory).append("/nextflow.config")
-                .append(" ").append(workflow.getCommandLine())
-                .append(" -with-report ").append(workingDirectory).append("/report.html");
+                .append(" run ");
+        if (workflow.getDocker() != null && StringUtils.isNotEmpty(workflow.getDocker().getImage())) {
+            stringBuilder.append(workflow.getDocker().getImage()).append(" -with-docker");
+        } else {
+            for (WorkflowScript script : workflow.getScripts()) {
+                if (script.isMain()) {
+                    stringBuilder.append(workingDirectory).append("/").append(script.getFilename());
+                    break;
+                }
+            }
+        }
+
+        stringBuilder.append(" -with-report ").append(workingDirectory).append("/report.html");
         List<String> cliArgs = Arrays.asList(StringUtils.split(stringBuilder.toString(), " "));
 
         startTraceFileMonitor();
@@ -125,8 +138,8 @@ public class NextFlowExecutor extends OpenCgaTool {
         logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
 
         // Delete input files
-        for (Workflow.Script script : workflow.getScripts()) {
-            Files.delete(getOutDir().resolve(script.getId()));
+        for (WorkflowScript script : workflow.getScripts()) {
+            Files.delete(getOutDir().resolve(script.getFilename()));
         }
         Files.delete(getOutDir().resolve("nextflow.config"));
 

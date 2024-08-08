@@ -257,6 +257,10 @@ public class UserManager extends AbstractManager {
     }
 
     public JwtPayload validateToken(String token) throws CatalogException {
+        if (StringUtils.isEmpty(token)) {
+            throw new CatalogException("Missing token parameter");
+        }
+
         JwtPayload jwtPayload = new JwtPayload(token);
         ParamUtils.checkParameter(jwtPayload.getUserId(), "jwt user");
         ParamUtils.checkParameter(jwtPayload.getOrganization(), "jwt organization");

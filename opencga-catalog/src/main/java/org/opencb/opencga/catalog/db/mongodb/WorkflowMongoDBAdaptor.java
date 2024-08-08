@@ -21,6 +21,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.workflow.Workflow;
+import org.opencb.opencga.core.models.workflow.WorkflowScript;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -53,13 +54,17 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         this.workflowConverter = new WorkflowConverter();
     }
 
-    Workflow insert(ClientSession clientSession, Workflow workflow) throws CatalogDBException {
+    Workflow insert(ClientSession clientSession, long studyUid, Workflow workflow) throws CatalogDBException {
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyUid);
         if (StringUtils.isEmpty(workflow.getId())) {
             throw new CatalogDBException("Missing workflow id");
         }
 
         // Check the workflow does not exist
-        Bson bson = Filters.eq(QueryParams.ID.key(), workflow.getId());
+        Bson bson = Filters.and(
+                Filters.eq(QueryParams.ID.key(), workflow.getId()),
+                Filters.eq(QueryParams.STUDY_UID.key(), studyUid)
+        );
         DataResult<Long> count = workflowCollection.count(clientSession, bson);
         if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Workflow { id: '" + workflow.getId() + "'} already exists.");
@@ -67,6 +72,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
 
         long uid = getNewUid(clientSession);
         workflow.setUid(uid);
+        workflow.setStudyUid(studyUid);
 
         Document workflowObject = workflowConverter.convertToStorageType(workflow);
 
@@ -83,13 +89,13 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
-    public OpenCGAResult<Workflow> insert(Workflow workflow, QueryOptions options)
+    public OpenCGAResult<Workflow> insert(long studyUid, Workflow workflow, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting workflow insert transaction for workflow id '{}'", workflow.getId());
 
-            insert(clientSession, workflow);
+            insert(clientSession, studyUid, workflow);
             return endWrite(tmpStartTime, 1, 1, 0, 0, null);
         }, e -> logger.error("Could not create workflow {}: {}", workflow.getId(), e.getMessage()));
     }
@@ -312,7 +318,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
 
         // Check if the tags exist.
         if (parameters.containsKey(QueryParams.SCRIPTS.key())) {
-            List<Workflow.Script> scriptList = parameters.getAsList(QueryParams.SCRIPTS.key(), Workflow.Script.class);
+            List<WorkflowScript> scriptList = parameters.getAsList(QueryParams.SCRIPTS.key(), WorkflowScript.class);
 
             if (!scriptList.isEmpty()) {
                 Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
@@ -435,14 +441,17 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
                     case UID:
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-//                    case SNAPSHOT:
-//                        addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
-//                        break;
+                    case SNAPSHOT:
+                        addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case STUDY_UID:
+                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
 //                    case STATUS:
 //                    case STATUS_ID:

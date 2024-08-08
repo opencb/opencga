@@ -46,6 +46,7 @@ import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.models.workflow.WorkflowPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -441,6 +442,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "ClinicalAnalysis", analysisId, null);
+    }
+
+    @Override
+    public void checkWorkflowPermission(String organizationId, long studyUid, long workflowUid, String userId,
+                                        WorkflowPermissions permission) throws CatalogException {
+        Query query = new Query()
+                .append(WorkflowDBAdaptor.QueryParams.UID.key(), workflowUid)
+                .append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
+
+        if (checkUserPermission(organizationId, userId, query, dbAdaptorFactory.getWorkflowDBAdaptor(organizationId))) {
+            return;
+        }
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Workflow", workflowUid, null);
     }
 
     @Override

@@ -8,14 +8,17 @@ import java.util.Map;
 
 public class WorkflowUpdateParams {
 
+    @DataField(id = "name", description = FieldConstants.WORKFLOW_NAME_DESCRIPTION)
+    private String name;
+
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-    @DataField(id = "commandLine", description = FieldConstants.WORKFLOW_COMMAND_LINE_DESCRIPTION)
-    private String commandLine;
+    @DataField(id = "docker", description = FieldConstants.WORKFLOW_DOCKER_DESCRIPTION)
+    private WorkflowRepository docker;
 
     @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
-    private List<Workflow.Script> scripts;
+    private List<WorkflowScript> scripts;
 
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
@@ -29,10 +32,11 @@ public class WorkflowUpdateParams {
     public WorkflowUpdateParams() {
     }
 
-    public WorkflowUpdateParams(String description, String commandLine, List<Workflow.Script> scripts,
-                                String creationDate, String modificationDate, Map<String, Object> attributes) {
+    public WorkflowUpdateParams(String name, String description, WorkflowRepository docker, List<WorkflowScript> scripts, String creationDate,
+                                String modificationDate, Map<String, Object> attributes) {
+        this.name = name;
         this.description = description;
-        this.commandLine = commandLine;
+        this.docker = docker;
         this.scripts = scripts;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
@@ -42,14 +46,24 @@ public class WorkflowUpdateParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("WorkflowUpdateParams{");
-        sb.append("description='").append(description).append('\'');
-        sb.append(", commandLine='").append(commandLine).append('\'');
+        sb.append("name='").append(name).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", docker=").append(docker);
         sb.append(", scripts=").append(scripts);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public WorkflowUpdateParams setName(String name) {
+        this.name = name;
+        return this;
     }
 
     public String getDescription() {
@@ -61,20 +75,20 @@ public class WorkflowUpdateParams {
         return this;
     }
 
-    public String getCommandLine() {
-        return commandLine;
+    public WorkflowRepository getDocker() {
+        return docker;
     }
 
-    public WorkflowUpdateParams setCommandLine(String commandLine) {
-        this.commandLine = commandLine;
+    public WorkflowUpdateParams setDocker(WorkflowRepository docker) {
+        this.docker = docker;
         return this;
     }
 
-    public List<Workflow.Script> getScripts() {
+    public List<WorkflowScript> getScripts() {
         return scripts;
     }
 
-    public WorkflowUpdateParams setScripts(List<Workflow.Script> scripts) {
+    public WorkflowUpdateParams setScripts(List<WorkflowScript> scripts) {
         this.scripts = scripts;
         return this;
     }

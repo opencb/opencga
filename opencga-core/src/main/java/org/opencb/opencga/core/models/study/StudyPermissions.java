@@ -9,6 +9,7 @@ import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.job.JobPermissions;
 import org.opencb.opencga.core.models.panel.PanelPermissions;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
+import org.opencb.opencga.core.models.workflow.WorkflowPermissions;
 
 import java.util.*;
 
@@ -21,6 +22,7 @@ public class StudyPermissions {
     public static final int DISEASE_PANEL = 7;
     public static final int FAMILY = 8;
     public static final int CLINICAL_ANALYSIS = 9;
+    public static final int WORKFLOW = 10;
 
     // Study Permissions
     public enum Permissions {
@@ -109,7 +111,12 @@ public class StudyPermissions {
         WRITE_CLINICAL_ANNOTATIONS(Arrays.asList(VIEW_CLINICAL_ANALYSIS, VIEW_CLINICAL_ANNOTATIONS),
                 ClinicalAnalysisPermissions.WRITE_ANNOTATIONS.name(), CLINICAL_ANALYSIS),
         DELETE_CLINICAL_ANNOTATIONS(Arrays.asList(VIEW_CLINICAL_ANALYSIS, VIEW_CLINICAL_ANNOTATIONS, WRITE_CLINICAL_ANNOTATIONS),
-                ClinicalAnalysisPermissions.DELETE_ANNOTATIONS.name(), CLINICAL_ANALYSIS);
+                ClinicalAnalysisPermissions.DELETE_ANNOTATIONS.name(), CLINICAL_ANALYSIS),
+
+        // WORKFLOWS
+        VIEW_WORKFLOWS(Collections.emptyList(), WorkflowPermissions.VIEW.name(), WORKFLOW),
+        WRITE_WORKFLOWS(Collections.singletonList(VIEW_WORKFLOWS), WorkflowPermissions.WRITE.name(), WORKFLOW),
+        DELETE_WORKFLOWS(Arrays.asList(VIEW_WORKFLOWS, WRITE_WORKFLOWS), WorkflowPermissions.DELETE.name(), WORKFLOW);
 
         private final static Map<String, Permissions> map;
 

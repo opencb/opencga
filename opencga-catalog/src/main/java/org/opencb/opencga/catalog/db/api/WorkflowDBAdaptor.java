@@ -15,7 +15,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 public interface WorkflowDBAdaptor extends CoreDBAdaptor<Workflow> {
 
-    OpenCGAResult<Workflow> insert(Workflow workflow, QueryOptions options)
+    OpenCGAResult<Workflow> insert(long studyUid, Workflow workflow, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     enum QueryParams implements QueryParam {

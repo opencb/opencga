@@ -1,16 +1,21 @@
 package org.opencb.opencga.analysis.tools;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.StorageManager;
+import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
-import org.opencb.opencga.core.models.workflow.Workflow;
 import org.opencb.opencga.core.models.workflow.WorkflowCreateParams;
+import org.opencb.opencga.core.models.workflow.WorkflowRepository;
+import org.opencb.opencga.core.models.workflow.WorkflowScript;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
@@ -28,15 +33,17 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
 
         WorkflowCreateParams workflow = createDummyWorkflow();
-        catalogManager.getWorkflowManager().create(workflow, QueryOptions.empty(), ownerToken);
+        catalogManager.getWorkflowManager().create(studyFqn, workflow.toWorkflow(), QueryOptions.empty(), ownerToken);
 
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
 
         StopWatch stopWatch = StopWatch.createStarted();
         NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
         NextFlowRunParams runParams = new NextFlowRunParams(workflow.getId(), 1);
+        ObjectMap params = runParams.toObjectMap();
+        params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
-                StorageEngineFactory.get(storageConfiguration), runParams.toObjectMap(), outDir, "", false, ownerToken);
+                StorageEngineFactory.get(storageConfiguration), params, outDir, "", false, ownerToken);
 //        nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), runParams.toObjectMap(), outDir, ownerToken);
         nextFlowExecutorTest.start();
         System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
@@ -48,59 +55,28 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
         WorkflowCreateParams workflow = new WorkflowCreateParams()
                 .setId("workflow")
-                .setCommandLine("run nextflow-io/rnaseq-nf -with-docker");
-        catalogManager.getWorkflowManager().create(workflow, QueryOptions.empty(), ownerToken);
+//                .setCommandLine("run nextflow-io/rnaseq-nf -with-docker");
+                .setDocker(new WorkflowRepository("nextflow-io/rnaseq-nf"));
+        catalogManager.getWorkflowManager().create(studyFqn, workflow.toWorkflow(), QueryOptions.empty(), ownerToken);
 
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
 
         StopWatch stopWatch = StopWatch.createStarted();
         NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
         NextFlowRunParams runParams = new NextFlowRunParams(workflow.getId(), 1);
+        ObjectMap params = runParams.toObjectMap();
+        params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
-                StorageEngineFactory.get(storageConfiguration), runParams.toObjectMap(), outDir, "", false, ownerToken);
+                StorageEngineFactory.get(storageConfiguration), params, outDir, "", false, ownerToken);
         nextFlowExecutorTest.start();
         System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
     }
 
-    private WorkflowCreateParams createDummyWorkflow() {
-        String scriptContent = "params.str = 'Hello world!'\n" +
-                "\n" +
-                "process splitLetters {\n" +
-                "    output:\n" +
-                "    path 'chunk_*'\n" +
-                "\n" +
-                "    \"\"\"\n" +
-                "    printf '${params.str}' | split -b 6 - chunk_\n" +
-                "    \"\"\"\n" +
-                "}\n" +
-                "\n" +
-                "process convertToUpper {\n" +
-                "    input:\n" +
-                "    path x\n" +
-                "\n" +
-                "    output:\n" +
-                "    stdout\n" +
-                "\n" +
-                "    \"\"\"\n" +
-                "    cat $x | tr '[a-z]' '[A-Z]'\n" +
-                "    \"\"\"\n" +
-                "}\n" +
-                "\n" +
-                "process sleep {\n" +
-                "    input:\n" +
-                "    val x\n" +
-                "\n" +
-                "    \"\"\"\n" +
-                "    sleep 6\n" +
-                "    \"\"\"\n" +
-                "}\n" +
-                "\n" +
-                "workflow {\n" +
-                "    splitLetters | flatten | convertToUpper | view { it.trim() } | sleep\n" +
-                "}";
+    private WorkflowCreateParams createDummyWorkflow() throws IOException {
+        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("nextflow/pipeline.nf");
+        String content = IOUtils.toString(inputStream, "UTF-8");
         return new WorkflowCreateParams()
                 .setId("workflow")
-                .setCommandLine("run pipeline.nf")
-                .setScripts(Collections.singletonList(new Workflow.Script("pipeline.nf", scriptContent)));
+                .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", content, true)));
     }
 }

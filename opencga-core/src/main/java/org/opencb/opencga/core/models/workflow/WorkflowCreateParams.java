@@ -12,17 +12,20 @@ public class WorkflowCreateParams {
             description = FieldConstants.WORKFLOW_ID_DESCRIPTION)
     private String id;
 
+    @DataField(id = "name", description = FieldConstants.WORKFLOW_NAME_DESCRIPTION)
+    private String name;
+
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
 //    @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
 //    private Workflow.Type type;
 
-    @DataField(id = "commandLine", description = FieldConstants.WORKFLOW_COMMAND_LINE_DESCRIPTION)
-    private String commandLine;
+    @DataField(id = "docker", description = FieldConstants.WORKFLOW_DOCKER_DESCRIPTION)
+    private WorkflowRepository docker;
 
     @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
-    private List<Workflow.Script> scripts;
+    private List<WorkflowScript> scripts;
 
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
@@ -36,11 +39,12 @@ public class WorkflowCreateParams {
     public WorkflowCreateParams() {
     }
 
-    public WorkflowCreateParams(String id, String description, String commandLine, List<Workflow.Script> scripts,
+    public WorkflowCreateParams(String id, String name, String description, WorkflowRepository docker, List<WorkflowScript> scripts,
                                 String creationDate, String modificationDate, Map<String, Object> attributes) {
         this.id = id;
+        this.name = name;
         this.description = description;
-        this.commandLine = commandLine;
+        this.docker = docker;
         this.scripts = scripts;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
@@ -51,8 +55,9 @@ public class WorkflowCreateParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("WorkflowCreateParams{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", commandLine='").append(commandLine).append('\'');
+        sb.append(", docker=").append(docker);
         sb.append(", scripts=").append(scripts);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -62,7 +67,7 @@ public class WorkflowCreateParams {
     }
 
     public Workflow toWorkflow() {
-        return new Workflow(id, description, 0, Workflow.Type.NEXTFLOW, commandLine, scripts, creationDate, modificationDate, attributes);
+        return new Workflow(id, name, description, Workflow.Type.NEXTFLOW, docker, scripts, creationDate, modificationDate, attributes);
     }
 
     public String getId() {
@@ -71,6 +76,15 @@ public class WorkflowCreateParams {
 
     public WorkflowCreateParams setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public WorkflowCreateParams setName(String name) {
+        this.name = name;
         return this;
     }
 
@@ -83,20 +97,20 @@ public class WorkflowCreateParams {
         return this;
     }
 
-    public String getCommandLine() {
-        return commandLine;
+    public WorkflowRepository getDocker() {
+        return docker;
     }
 
-    public WorkflowCreateParams setCommandLine(String commandLine) {
-        this.commandLine = commandLine;
+    public WorkflowCreateParams setDocker(WorkflowRepository docker) {
+        this.docker = docker;
         return this;
     }
 
-    public List<Workflow.Script> getScripts() {
+    public List<WorkflowScript> getScripts() {
         return scripts;
     }
 
-    public WorkflowCreateParams setScripts(List<Workflow.Script> scripts) {
+    public WorkflowCreateParams setScripts(List<WorkflowScript> scripts) {
         this.scripts = scripts;
         return this;
     }
