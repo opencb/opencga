@@ -433,7 +433,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
         String[] booleanParams = {LOCKED.key()};
         filterBooleanParams(parameters, document.getSet(), booleanParams);
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
@@ -1136,6 +1136,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
                         break;
                     // Other parameter that can be queried.
                     case ID:
+                    case NAME:
                     case UUID:
                     case PANELS_UID:
                     case RELEASE:

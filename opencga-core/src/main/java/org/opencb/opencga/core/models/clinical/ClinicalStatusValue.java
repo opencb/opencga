@@ -2,15 +2,15 @@ package org.opencb.opencga.core.models.clinical;
 
 public class ClinicalStatusValue {
 
-    private String id;
-    private String description;
-    private ClinicalStatusType type;
+    protected String id;
+    protected String description;
+    protected ClinicalStatusType type;
 
     public enum ClinicalStatusType {
         NOT_STARTED,
-        IN_PROGRESS,
-        CLOSED,
-        UNKNOWN
+        ACTIVE,
+        DONE,
+        CLOSED
     }
 
     public ClinicalStatusValue() {

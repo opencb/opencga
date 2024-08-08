@@ -2,6 +2,7 @@ package org.opencb.opencga.core.models.common;
 
 import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.ClinicalStatus;
 
 public class StatusParam {
 
@@ -18,8 +19,16 @@ public class StatusParam {
         return status != null ? new StatusParam(status.getId()) : null;
     }
 
+    public static StatusParam of(ClinicalStatus status) {
+        return status != null ? new StatusParam(status.getId()) : null;
+    }
+
     public Status toStatus() {
         return new Status(id, "", "", TimeUtils.getTime());
+    }
+
+    public ClinicalStatus toClinicalStatus() {
+        return new ClinicalStatus(id, "", null, "", "", "", "");
     }
 
     @Override
