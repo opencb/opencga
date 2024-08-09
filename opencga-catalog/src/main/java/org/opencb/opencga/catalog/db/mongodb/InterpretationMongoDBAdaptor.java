@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.InterpretationConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.InterpretationCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -120,8 +121,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public OpenCGAResult insert(long studyId, Interpretation interpretation, ParamUtils.SaveInterpretationAs action,
-                                List<ClinicalAudit> clinicalAuditList)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+                                List<ClinicalAudit> clinicalAuditList) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting interpretation insert transaction for interpretation id '{}'", interpretation.getId());
@@ -635,7 +635,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
         try {
             return runTransaction(clientSession -> update(clientSession, interpretation.first(), parameters, clinicalAuditList, action,
                     queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update interpretation {}: {}", interpretationId, e.getMessage(), e);
             throw new CatalogDBException("Could not update interpretation " + interpretationId + ": " + e.getMessage(), e.getCause());
         }
@@ -654,7 +654,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
 
                 return OpenCGAResult.empty(Interpretation.class).setNumUpdated(1);
             });
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not revert version of interpretation {}: {}", id, e.getMessage(), e);
             CatalogDBException exception = new CatalogDBException("Could not revert version of interpretation");
             exception.addSuppressed(e);
@@ -818,7 +818,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
 
                 return delete(clientSession, interpretation, clinicalAuditList, clinicalResult.first());
             });
-        } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete interpretation {}: {}", interpretationId, e.getMessage(), e);
             throw new CatalogDBException("Could not delete interpretation " + interpretation.getId() + ": " + e.getMessage(), e.getCause());
         }
@@ -852,7 +852,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
 
                     return delete(clientSession, interpretation, clinicalAuditList, clinicalResult.first());
                 }));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete interpretation {}: {}", interpretationId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, interpretationId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);

@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -135,8 +136,7 @@ public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
     OpenCGAResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException;
 
     OpenCGAResult insert(long studyId, Interpretation interpretation, ParamUtils.SaveInterpretationAs action,
-                         List<ClinicalAudit> clinicalAuditList)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+                         List<ClinicalAudit> clinicalAuditList) throws CatalogException;
 
     OpenCGAResult update(long uid, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, ParamUtils.SaveInterpretationAs action,
                          QueryOptions queryOptions) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

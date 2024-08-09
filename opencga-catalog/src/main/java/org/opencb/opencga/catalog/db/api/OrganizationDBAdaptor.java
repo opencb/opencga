@@ -5,6 +5,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -98,8 +99,7 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
 //
 //    OpenCGAResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 //
-    OpenCGAResult<Organization> insert(Organization organization, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Organization> insert(Organization organization, QueryOptions options) throws CatalogException;
 
     OpenCGAResult<Organization> get(String userId, QueryOptions options) throws CatalogDBException;
 

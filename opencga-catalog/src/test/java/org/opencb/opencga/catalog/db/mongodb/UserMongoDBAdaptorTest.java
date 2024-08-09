@@ -100,7 +100,7 @@ public class UserMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     }
 
     @Test
-    public void changePasswordTest() throws CatalogDBException, CatalogAuthenticationException {
+    public void changePasswordTest() throws CatalogException {
         DataResult result = catalogUserDBAdaptor.changePassword(normalUserId1, TestParamConstants.PASSWORD, "1234");
         assertEquals(1, result.getNumUpdated());
 

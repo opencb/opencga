@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v2_12_5.storage;
+package org.opencb.opencga.app.migrations.v2.v2_12_5.storage;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;

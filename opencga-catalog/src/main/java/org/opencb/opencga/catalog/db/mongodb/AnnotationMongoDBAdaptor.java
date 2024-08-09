@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotationConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -687,8 +688,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends CatalogMongoDBAdaptor 
         return annotationList;
     }
 
-    public OpenCGAResult addVariableToAnnotations(long studyUid, long variableSetId, Variable variable)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult addVariableToAnnotations(long studyUid, long variableSetId, Variable variable) throws CatalogException {
         long startTime = startQuery();
 
         // We generate the generic document that should be inserted
@@ -764,12 +764,9 @@ public abstract class AnnotationMongoDBAdaptor<T> extends CatalogMongoDBAdaptor 
      * @param variableSetId Variable set id.
      * @param fieldId       Field id corresponds with the variable name whose annotations have to be removed.
      * @return A OpenCGAResult object.
-     * @throws CatalogDBException if there is any unexpected error.
-     * @throws CatalogParameterException if there is any unexpected parameter.
-     * @throws CatalogAuthorizationException if the operation is not authorized.
+     * @throws CatalogException if there is any unexpected error or parameter, or if the operation is not authorized.
      */
-    public OpenCGAResult removeAnnotationField(long studyUid, long variableSetId, String fieldId)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult removeAnnotationField(long studyUid, long variableSetId, String fieldId) throws CatalogException {
         long startTime = startQuery();
 
         UpdateDocument updateDocument = new UpdateDocument();

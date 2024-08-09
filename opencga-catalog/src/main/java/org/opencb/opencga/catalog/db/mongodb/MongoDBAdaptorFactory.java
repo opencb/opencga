@@ -27,10 +27,8 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.managers.NoteManager;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -261,7 +259,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     @Override
     public OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options, String userId)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+            throws CatalogException {
         OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organization.getId(), false);
         if (orgFactory != null && orgFactory.isCatalogDBReady()) {
             throw new CatalogDBException("Organization '" + organization.getId() + "' already exists.");

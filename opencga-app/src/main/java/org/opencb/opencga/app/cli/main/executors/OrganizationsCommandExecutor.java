@@ -301,7 +301,6 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "quota.cpuUsage", commandOptions.quotaCpuUsage, true);
             putNestedIfNotNull(beanParams, "quota.maxDisk", commandOptions.quotaMaxDisk, true);
             putNestedIfNotNull(beanParams, "quota.maxCpu", commandOptions.quotaMaxCpu, true);
-            putNestedIfNotEmpty(beanParams, "account.expirationDate", commandOptions.accountExpirationDate, true);
             putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             organizationUserUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()

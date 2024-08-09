@@ -26,9 +26,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
@@ -187,7 +186,7 @@ public class IndividualMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     }
 
     @Test
-    public void testAvoidDuplicatedSamples() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public void testAvoidDuplicatedSamples() throws CatalogException {
         dbAdaptorFactory.getCatalogSampleDBAdaptor(organizationId).insert(studyUid, new Sample().setId("sample1").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample1 = getSample(studyUid, "sample1");

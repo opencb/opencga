@@ -256,7 +256,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         try {
             return runTransaction(clientSession -> transactionalUpdate(clientSession, result.first(), parameters, variableSetList,
                     clinicalAuditList, queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage(), e);
             throw new CatalogDBException("Could not update clinical analysis " + clinicalAnalysisId + ": " + e.getMessage(), e.getCause());
         }
@@ -684,7 +684,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> privateDelete(clientSession, clinicalAnalysis, clinicalAuditList));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete Clinical Analysis {}: {}", clinicalAnalysis.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete Clinical Analysis " + clinicalAnalysis.getId() + ": " + e.getMessage(),
                     e.getCause());
@@ -702,7 +702,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, clinicalAnalysis, clinicalAuditList)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete Clinical Analysis {}: {}", clinicalAnalysis.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, clinicalAnalysis.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -1048,8 +1048,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
     @Override
     public OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList,
-                                List<ClinicalAudit> clinicalAuditList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+                                List<ClinicalAudit> clinicalAuditList, QueryOptions options) throws CatalogException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();

@@ -67,7 +67,7 @@ public class AdminManager extends AbstractManager {
             query.remove(ParamConstants.USER);
         }
         if (query.containsKey(ParamConstants.USER_CREATION_DATE)) {
-            query.put(UserDBAdaptor.QueryParams.ACCOUNT_CREATION_DATE.key(), query.get(ParamConstants.USER_CREATION_DATE));
+            query.put(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_CREATION_DATE.key(), query.get(ParamConstants.USER_CREATION_DATE));
             query.remove(ParamConstants.USER_CREATION_DATE);
         }
 
@@ -134,7 +134,7 @@ public class AdminManager extends AbstractManager {
         JwtPayload payload = catalogManager.getUserManager().validateToken(token);
         try {
             authorizationManager.checkIsOpencgaAdministrator(payload);
-            List<String> organizationIds = catalogDBAdaptorFactory.getOrganizationIds();
+            List<String> organizationIds = getCatalogDBAdaptorFactory().getOrganizationIds();
 
             auditManager.audit(ParamConstants.ADMIN_ORGANIZATION, payload.getUserId(), Enums.Action.FETCH_ORGANIZATION_IDS,
                     Enums.Resource.STUDY, "", "", "", "", new ObjectMap(), new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

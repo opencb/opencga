@@ -54,8 +54,7 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
 
     OpenCGAResult nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Job job, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult insert(long studyId, Job job, QueryOptions options) throws CatalogException;
 
     default OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));

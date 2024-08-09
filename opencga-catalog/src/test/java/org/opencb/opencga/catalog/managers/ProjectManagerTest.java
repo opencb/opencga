@@ -38,7 +38,6 @@ import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -89,7 +88,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
     public void searchProjects() throws CatalogException {
         String org2 = "otherOrg";
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(org2), QueryOptions.empty(), opencgaToken);
-        catalogManager.getUserManager().create(new User().setId("userFromOrg2").setName("name").setAccount(new Account()).setOrganization(org2),
+        catalogManager.getUserManager().create(new User().setId("userFromOrg2").setName("name").setOrganization(org2),
                 TestParamConstants.PASSWORD, opencgaToken);
         catalogManager.getOrganizationManager().update(org2, new OrganizationUpdateParams().setOwner("userFromOrg2"), null, opencgaToken);
         String owner2Token = catalogManager.getUserManager().login(org2, "userFromOrg2", TestParamConstants.PASSWORD).getToken();

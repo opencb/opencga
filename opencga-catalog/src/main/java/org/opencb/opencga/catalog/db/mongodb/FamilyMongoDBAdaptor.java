@@ -115,8 +115,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     @Override
     public OpenCGAResult<Family> insert(long studyId, Family family, List<Individual> members, List<VariableSet> variableSetList,
-                                        QueryOptions options) throws CatalogDBException, CatalogParameterException,
-            CatalogAuthorizationException {
+                                        QueryOptions options) throws CatalogException {
         try {
             AtomicReference<Family> familyCopy = new AtomicReference<>();
             OpenCGAResult<Family> result = runTransaction(clientSession -> {
@@ -333,7 +332,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         try {
             return runTransaction(clientSession
                     -> transactionalUpdate(clientSession, familyDataResult.first(), parameters, variableSetList, queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update family {}: {}", familyDataResult.first().getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not update family " + familyDataResult.first().getId() + ": " + e.getMessage(),
                     e.getCause());
@@ -368,7 +367,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             try {
                 result.append(runTransaction(clientSession ->
                         transactionalUpdate(clientSession, family, parameters, variableSetList, queryOptions)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update family {}: {}", family.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, family.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -784,7 +783,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 throw new CatalogDBException("Could not find family " + family.getId() + " with uid " + family.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete family {}: {}", family.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete family " + family.getId() + ": " + e.getMessage(), e.getCause());
         }
@@ -801,7 +800,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             String familyId = family.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, family)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete family {}: {}", familyId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, familyId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);

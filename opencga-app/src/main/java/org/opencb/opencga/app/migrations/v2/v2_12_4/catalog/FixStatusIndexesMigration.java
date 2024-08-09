@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v2_12_4.catalog;
+package org.opencb.opencga.app.migrations.v2.v2_12_4.catalog;
 
 import org.bson.Document;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;

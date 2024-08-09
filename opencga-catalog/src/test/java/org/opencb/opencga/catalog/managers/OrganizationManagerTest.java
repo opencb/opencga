@@ -287,7 +287,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         User user = catalogManager.getOrganizationManager().updateUser(orgId, normalUserId1, userUpdateParams, INCLUDE_RESULT, token).first();
         assertEquals(userUpdateParams.getName(), user.getName());
         assertEquals(userUpdateParams.getEmail(), user.getEmail());
-        assertEquals(userUpdateParams.getAccount().getExpirationDate(), user.getAccount().getExpirationDate());
+        assertEquals(userUpdateParams.getAccount().getExpirationDate(), user.getInternal().getAccount().getExpirationDate());
         assertEquals(userUpdateParams.getQuota().getCpuUsage(), user.getQuota().getCpuUsage());
         assertEquals(userUpdateParams.getQuota().getDiskUsage(), user.getQuota().getDiskUsage());
         assertEquals(userUpdateParams.getQuota().getMaxCpu(), user.getQuota().getMaxCpu());
