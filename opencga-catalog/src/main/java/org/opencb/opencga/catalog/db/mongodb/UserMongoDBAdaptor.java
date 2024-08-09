@@ -138,7 +138,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
         Document privatePassword = new Document();
         if (StringUtils.isNotEmpty(password)) {
             String salt = PasswordUtils.getStrongRandomSalt();
-            String hash = encryptPassword(password + salt);
+            String hash = encryptPassword(password, salt);
             Document passwordDoc = new Document()
                     .append(HASH, hash)
                     .append(SALT, salt);
@@ -184,7 +184,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
         if (rootPasswordObject instanceof String) {
             if (ParamConstants.OPENCGA_USER_ID.equals(userId)) {
                 logger.warn("User {} is using the deprecated password format. Please, migrate your code as soon as possible.", userId);
-                if (!encryptPassword(password).equals(rootPasswordObject)) {
+                if (!encryptPassword(password, "").equals(rootPasswordObject)) {
                     throw CatalogAuthenticationException.incorrectUserOrPassword(AuthenticationOrigin.AuthenticationType.OPENCGA.name());
                 }
                 return;
@@ -208,7 +208,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
         }
 
         String salt = passwordDoc.getString(SALT);
-        String hash = encryptPassword(password + salt);
+        String hash = encryptPassword(password, salt);
         if (!hash.equals(passwordDoc.getString(HASH))) {
             throw CatalogAuthenticationException.incorrectUserOrPassword(AuthenticationOrigin.AuthenticationType.OPENCGA.name());
         }
@@ -236,7 +236,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
             if (StringUtils.isNotEmpty(oldPassword)) {
                 Document currentPasswordDoc = passwordDoc.get(CURRENT, Document.class);
                 String currentSalt = currentPasswordDoc.getString(SALT);
-                String currentHash = encryptPassword(oldPassword + currentSalt);
+                String currentHash = encryptPassword(oldPassword, currentSalt);
                 if (!currentHash.equals(currentPasswordDoc.getString(HASH))) {
                     throw new CatalogAuthenticationException(prefixErrorMsg + "Please, verify that the current password is correct.");
                 }
@@ -248,7 +248,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
                     .map(document -> document.getString(SALT))
                     .collect(Collectors.toList());
             for (String saltValue : saltValues) {
-                hashValues.add(encryptPassword(newPassword + saltValue));
+                hashValues.add(encryptPassword(newPassword, saltValue));
             }
 
             // 3. Check new password has not been used before
@@ -262,7 +262,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
 
             // 4. Generate new salt for current password
             String newSalt = PasswordUtils.getStrongRandomSalt();
-            String newHash = encryptPassword(newPassword + newSalt);
+            String newHash = encryptPassword(newPassword, newSalt);
 
             // 5. Generate update document
             UpdateDocument updateDocument = new UpdateDocument();
@@ -739,18 +739,10 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
         }
     }
 
-    public static void main(String[] args) throws CatalogDBException {
-        System.out.println(encryptPassword("admin"));
-    }
-
-    private static String encryptPassword(String password) throws CatalogDBException {
+    private static String encryptPassword(String password, String salt) throws CatalogDBException {
         if (StringUtils.isNotEmpty(password)) {
-            if (password.matches("^[a-fA-F0-9]{40}$")) {
-                // Password already cyphered
-                return password;
-            }
             try {
-                return CryptoUtils.sha1(password);
+                return CryptoUtils.sha1(password + salt);
             } catch (NoSuchAlgorithmException e) {
                 throw new CatalogDBException("Could not encrypt password", e);
             }
