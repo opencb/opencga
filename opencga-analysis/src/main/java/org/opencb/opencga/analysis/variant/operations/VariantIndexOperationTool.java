@@ -77,7 +77,9 @@ public class VariantIndexOperationTool extends OperationTool {
         params.putIfNotEmpty(VariantStorageOptions.INCLUDE_GENOTYPE.key(), indexParams.getIncludeGenotypes());
         params.put(VariantStorageOptions.STATS_AGGREGATION.key(), indexParams.getAggregated());
         params.putIfNotEmpty(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), indexParams.getAggregationMappingFile());
-        params.put(VariantStorageOptions.GVCF.key(), indexParams.isGvcf());
+        if (indexParams.isGvcf()) {
+            params.put(VariantStorageOptions.GVCF.key(), indexParams.isGvcf());
+        }
 
 //        queryOptions.putIfNotNull(VariantFileIndexerStorageOperation.TRANSFORMED_FILES, indexParams.transformedPaths);
 
@@ -92,7 +94,9 @@ public class VariantIndexOperationTool extends OperationTool {
         params.put(VariantStorageOptions.FAMILY.key(), indexParams.isFamily());
         params.put(VariantStorageOptions.SOMATIC.key(), indexParams.isSomatic());
         params.putIfNotEmpty(VariantStorageOptions.LOAD_SPLIT_DATA.key(), indexParams.getLoadSplitData());
-        params.put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), indexParams.isLoadMultiFileData());
+        if (indexParams.isLoadMultiFileData()) {
+            params.put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), indexParams.isLoadMultiFileData());
+        }
         params.putIfNotEmpty(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), indexParams.getLoadSampleIndex());
         params.putIfNotEmpty(VariantStorageOptions.LOAD_ARCHIVE.key(), indexParams.getLoadArchive());
         params.putIfNotEmpty(VariantStorageOptions.LOAD_HOM_REF.key(), indexParams.getLoadHomRef());

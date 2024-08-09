@@ -17,12 +17,15 @@
 package org.opencb.opencga.analysis.variant.manager;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOperationManagerTest;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.file.File;
@@ -63,6 +66,18 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
         variantManager.configureProject(projectId, expectedConfiguration, sessionId);
         variantManager.configureStudy(studyFqn, expectedStudyConfiguration1, sessionId);
         variantManager.configureStudy(studyId2, expectedStudyConfiguration2, sessionId);
+
+
+        try {
+            Study study = catalogManager.getStudyManager().create(projectId, "s_no_setup", "s_no_setup", "s_no_setup",
+                            "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
+                    .first();
+            // Variant setup mandatory for configuring study
+            variantManager.configureStudy(study.getFqn(), expectedStudyConfiguration1, sessionId);
+            fail("Expect exception. Study not setup");
+        } catch (Exception e) {
+            MatcherAssert.assertThat(e.getMessage(), CoreMatchers.containsString("The variant storage has not been setup for study"));
+        }
 
         ObjectMap configuration = variantManager.getDataStoreByProjectId(projectId, sessionId).getOptions();
         assertEquals(expectedConfiguration, configuration);

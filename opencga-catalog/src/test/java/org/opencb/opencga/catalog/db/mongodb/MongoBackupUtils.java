@@ -19,18 +19,17 @@ import org.opencb.opencga.core.models.file.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Contains two methods mainly for testing purposes. One to create a dump of the current testing OpenCGA installation and a second one to
@@ -38,6 +37,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class MongoBackupUtils {
 
+    private static final String TEMPORAL_FOLDER_HERE = "TEMPORAL_FOLDER_HERE";
     private static Logger logger = LoggerFactory.getLogger(MongoBackupUtils.class);
 
     public static void dump(CatalogManager catalogManager, Path opencgaHome) throws CatalogDBException {
@@ -89,12 +89,12 @@ public class MongoBackupUtils {
     }
 
     public static void restore(CatalogManager catalogManager, Path opencgaHome)
-            throws CatalogDBException, IOException, CatalogIOException, URISyntaxException {
-        StopWatch stopWatch = StopWatch.createStarted();
+            throws Exception {
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(),
                 catalogManager.getIoManagerFactory())) {
             MongoClient mongoClient = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION)
                     .getMongoDataStore().getMongoClient();
+
             MongoDatabase dumpDatabase = mongoClient.getDatabase("test_dump");
             Map<String, String> databaseNames = new HashMap<>();
             try (MongoCursor<Document> mongoIterator = dumpDatabase.getCollection("summary")
@@ -107,25 +107,67 @@ public class MongoBackupUtils {
                 }
             }
 
-            List<String> organizationIds = dbAdaptorFactory.getOrganizationIds();
-            for (String organizationId : organizationIds) {
+            restore(catalogManager, opencgaHome, dumpDatabase, databaseNames.keySet());
+        }
+    }
+
+    public static void restore(CatalogManager catalogManager, Path opencgaHome, URL restoreFolder)
+            throws Exception {
+        /*
+            dataset=v3.0.0
+            mongo test_dump --eval 'db.getCollectionNames()' --quiet | jq .[] -r | grep -v summary | while read i ; do
+              org=$(echo $i | cut -d "_" -f 1) ;
+              collection=$(echo $i | cut -d "_" -f 3) ;
+              mkdir -p opencga-app/src/test/resources/datasets/catalog/$dataset/mongodb/$org ;
+              mongo test_dump --quiet --eval "db.getCollection(\"$i\").find().forEach(function(d){  print(tojsononeline(d)); })" | gzip > opencga-app/src/test/resources/datasets/opencga/$dataset/mongodb/$org/$collection.json.gz ;
+            done
+         */
+        if (restoreFolder.getProtocol().equals("file")) {
+            restore(catalogManager, opencgaHome, Paths.get(restoreFolder.toURI()));
+        } else if (restoreFolder.getProtocol().equals("jar")) {
+            throw new UnsupportedOperationException("Cannot restore from a jar file");
+        }
+    }
+
+    public static void restore(CatalogManager catalogManager, Path opencgaHome, Path restoreFolder)
+            throws Exception {
+
+        List<String> organizationIds = new ArrayList<>();
+        try (Stream<Path> stream = Files.list(restoreFolder)) {
+            stream.forEach(file -> organizationIds.add(file.getFileName().toString()));
+        }
+        if (organizationIds.isEmpty()) {
+            throw new CatalogDBException("No organization found in the restore folder '" + restoreFolder + "'");
+        }
+        restore(catalogManager, opencgaHome, restoreFolder, organizationIds);
+    }
+
+    private static void restore(CatalogManager catalogManager, Path opencgaHome, Object source, Collection<String> organizationIds)
+            throws Exception {
+        logger.info("Restore opencga from source " + source + " for organizations " + organizationIds);
+        StopWatch stopWatch = StopWatch.createStarted();
+        try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(),
+                catalogManager.getIoManagerFactory())) {
+
+            for (String existingOrganizationId : dbAdaptorFactory.getOrganizationIds()) {
                 // We need to completely remove databases that were not backed up so tests that attempt to create them again don't fail
-                if (!databaseNames.containsKey(organizationId)) {
-                    logger.info("Completely removing database for organization '{}'", organizationId);
-                    dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(organizationId).deleteCatalogDB();
+                if (!organizationIds.contains(existingOrganizationId)) {
+                    logger.info("Completely removing database for organization '{}'", existingOrganizationId);
+                    dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(existingOrganizationId).deleteCatalogDB();
                 }
             }
 
             // First restore the main admin database
             String adminDBName = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION)
                     .getMongoDataStore().getDatabaseName();
-            restoreDatabase(catalogManager, opencgaHome, ParamConstants.ADMIN_ORGANIZATION, adminDBName, dbAdaptorFactory);
+            logger.info("Restoring database for organization '{}'", ParamConstants.ADMIN_ORGANIZATION);
+            restoreDatabase(catalogManager, opencgaHome, ParamConstants.ADMIN_ORGANIZATION, adminDBName, dbAdaptorFactory, source);
 
-            for (Map.Entry<String, String> entry : databaseNames.entrySet()) {
-                String organizationId = entry.getKey();
+            for (String organizationId : organizationIds) {
                 if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
-                    String databaseName = entry.getValue();
-                    restoreDatabase(catalogManager, opencgaHome, organizationId, databaseName, dbAdaptorFactory);
+                    logger.info("Restoring database for organization '{}'", organizationId);
+                    String databaseName = catalogManager.getCatalogDatabase(organizationId);
+                    restoreDatabase(catalogManager, opencgaHome, organizationId, databaseName, dbAdaptorFactory, source);
                 }
             }
         }
@@ -133,10 +175,9 @@ public class MongoBackupUtils {
     }
 
     private static void restoreDatabase(CatalogManager catalogManager, Path opencgaHome, String organizationId, String databaseName,
-                                        MongoDBAdaptorFactory dbAdaptorFactory)
-            throws IOException, CatalogIOException, CatalogDBException, URISyntaxException {
+                                        MongoDBAdaptorFactory dbAdaptorFactory, Object source)
+            throws Exception {
         MongoClient mongoClient = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION).getMongoDataStore().getMongoClient();
-        MongoDatabase dumpDatabase = mongoClient.getDatabase("test_dump");
         Bson emptyBsonQuery = new Document();
 
         MongoDatabase database = mongoClient.getDatabase(databaseName);
@@ -152,10 +193,9 @@ public class MongoBackupUtils {
 
         for (String collection : OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST) {
             MongoCollection<Document> dbCollection = database.getCollection(collection);
-            MongoCollection<Document> dumpCollection = dumpDatabase.getCollection(organizationId + "__" + collection);
 
             dbCollection.deleteMany(emptyBsonQuery);
-            try (MongoCursor<Document> iterator = dumpCollection.find(emptyBsonQuery).noCursorTimeout(true).iterator()) {
+            try (CloseableIterator<Document> iterator = documentIterator(source, organizationId, collection)) {
                 List<Document> documentList = new LinkedList<>();
                 while (iterator.hasNext()) {
                     Document document = iterator.next();
@@ -171,8 +211,8 @@ public class MongoBackupUtils {
 
                         // Write actual temporal folder in database
                         String uri = document.getString("uri");
-                        String temporalFolder = opencgaHome.getFileName().toString();
-                        String replacedUri = uri.replace("TEMPORAL_FOLDER_HERE", temporalFolder);
+                        String uriPath = uri.substring(uri.indexOf(TEMPORAL_FOLDER_HERE) + TEMPORAL_FOLDER_HERE.length() + 1);
+                        String replacedUri = opencgaHome.resolve(uriPath).toUri().toString();
                         document.put("uri", replacedUri);
 
                         if (OrganizationMongoDBAdaptorFactory.FILE_COLLECTION.equals(collection)) {
@@ -195,6 +235,72 @@ public class MongoBackupUtils {
             logger.info("Database for organization '{}' was wiped. Restoring all indexes again.", organizationId);
             OrganizationMongoDBAdaptorFactory orgFactory = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(organizationId);
             orgFactory.createIndexes();
+        }
+    }
+
+    private static CloseableIterator<Document> documentIterator(Object source, String organizationId, String collection)
+            throws IOException {
+        if (source instanceof MongoDatabase) {
+            MongoDatabase dumpDatabase = (MongoDatabase) source;
+
+            MongoCollection<Document> dumpCollection = dumpDatabase.getCollection(organizationId + "__" + collection);
+            logger.info("Restoring {}:{} from database - {}", organizationId, collection, dumpCollection.getNamespace().getFullName());
+            return new CloseableIterator<>(dumpCollection.find(new Document()).noCursorTimeout(true).iterator());
+        } else if (source instanceof Path) {
+            Path dir = (Path) source;
+            java.io.File file = dir.resolve(organizationId).resolve(collection + ".json.gz").toFile();
+            if (!file.exists()) {
+//                logger.info("File {} not found", file);
+                return new CloseableIterator<>(null, Collections.emptyIterator());
+            }
+            logger.info("Restoring {}:{} from file - {}", organizationId, collection, file);
+            // Read file lines
+            Stream<String> stream = new BufferedReader(
+                    new InputStreamReader(
+                            new GZIPInputStream(
+                                    Files.newInputStream(file.toPath())))).lines();
+
+            Iterator<Document> iterator = stream
+                    .filter(s -> !s.isEmpty())
+//                    .peek(System.out::println)
+                    .map(Document::parse)
+                    .iterator();
+            return new CloseableIterator<>(stream, iterator);
+        } else {
+            throw new IllegalArgumentException("Unknown restore source type " + source.getClass());
+        }
+    }
+
+    private static class CloseableIterator<T> implements Iterator<T>, AutoCloseable {
+
+        private final AutoCloseable closeable;
+        private final Iterator<T> iterator;
+
+        public CloseableIterator(AutoCloseable closeable, Iterator<T> iterator) {
+            this.closeable = closeable;
+            this.iterator = iterator;
+        }
+
+        public <CI extends Iterator<T> & Closeable> CloseableIterator(CI c) {
+            this.closeable = c;
+            this.iterator = c;
+        }
+
+        @Override
+        public void close() throws Exception {
+            if (closeable != null) {
+                closeable.close();
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public T next() {
+            return iterator.next();
         }
     }
 

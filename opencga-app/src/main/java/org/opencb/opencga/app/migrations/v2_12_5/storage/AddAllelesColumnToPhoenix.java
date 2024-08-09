@@ -11,7 +11,7 @@ public class AddAllelesColumnToPhoenix extends StorageMigrationTool {
 
     @Override
     protected void run() throws Exception {
-        for (String project : getVariantStorageProjects(organizationId)) {
+        for (String project : getVariantStorageProjects()) {
             VariantStorageEngine engine = getVariantStorageEngineByProject(project);
             if (engine.getStorageEngineId().equals("hadoop")) {
                 logger.info("Adding missing columns (if any) for project " + project);
