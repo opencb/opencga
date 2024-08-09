@@ -137,7 +137,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
 
         Document privatePassword = new Document();
         if (StringUtils.isNotEmpty(password)) {
-            String salt = PasswordUtils.getStrongRandomPassword();
+            String salt = PasswordUtils.getStrongRandomSalt();
             String hash = encryptPassword(password + salt);
             Document passwordDoc = new Document()
                     .append(HASH, hash)
@@ -261,7 +261,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
             }
 
             // 4. Generate new salt for current password
-            String newSalt = PasswordUtils.getStrongRandomPassword();
+            String newSalt = PasswordUtils.getStrongRandomSalt();
             String newHash = encryptPassword(newPassword + newSalt);
 
             // 5. Generate update document

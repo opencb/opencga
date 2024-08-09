@@ -29,6 +29,10 @@ public class PasswordUtils {
         return getStrongRandomPassword(DEFAULT_PASSWORD_LENGTH);
     }
 
+    public static String getStrongRandomSalt() {
+        return getStrongRandomPassword(32);
+    }
+
     public static String getStrongRandomPassword(int length) {
         CharacterRule upper = new CharacterRule(EnglishCharacterData.UpperCase);
         CharacterRule lower = new CharacterRule(EnglishCharacterData.LowerCase);
