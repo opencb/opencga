@@ -137,11 +137,11 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .readValue(new java.io.File(commandOptions.jsonFile), UserCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "email", commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "password", commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "organization", commandOptions.organization, true);
 
             userCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -179,11 +179,11 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .readValue(new java.io.File(commandOptions.jsonFile), PasswordChangeParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "organizationId",commandOptions.organizationId, true);
-            putNestedIfNotEmpty(beanParams, "user",commandOptions.user, true);
-            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-            putNestedIfNotEmpty(beanParams, "newPassword",commandOptions.newPassword, true);
-            putNestedIfNotEmpty(beanParams, "reset",commandOptions.reset, true);
+            putNestedIfNotEmpty(beanParams, "organizationId", commandOptions.organizationId, true);
+            putNestedIfNotEmpty(beanParams, "user", commandOptions.user, true);
+            putNestedIfNotEmpty(beanParams, "password", commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "newPassword", commandOptions.newPassword, true);
+            putNestedIfNotEmpty(beanParams, "reset", commandOptions.reset, true);
 
             passwordChangeParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -254,8 +254,8 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .readValue(new java.io.File(commandOptions.jsonFile), ConfigUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotNull(beanParams, "configuration",commandOptions.configuration, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedMapIfNotEmpty(beanParams, "configuration", commandOptions.configuration, true);
 
             configUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -304,8 +304,8 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .readValue(new java.io.File(commandOptions.jsonFile), UserUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "email", commandOptions.email, true);
 
             userUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

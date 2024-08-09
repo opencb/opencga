@@ -214,6 +214,9 @@ public class OrganizationsCommandOptions {
         @Parameter(names = {"--id"}, description = "Note unique identifier.", required = true, arity = 1)
         public String id; 
     
+        @Parameter(names = {"--tags-action"}, description = "Action to be performed if the array of tags is being updated.", required = false, arity = 1)
+        public String tagsAction = "ADD"; 
+    
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     

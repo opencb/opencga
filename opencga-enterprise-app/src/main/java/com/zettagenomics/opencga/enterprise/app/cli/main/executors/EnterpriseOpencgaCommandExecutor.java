@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zettagenomics.opencga.enterprise.client.rest.EnterpriseOpenCGAClient;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -407,4 +408,12 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
         }
         return currentDate.before(expirationDate) || ArrayUtils.contains(args, "login") || ArrayUtils.contains(args, "logout") || "anonymous".equals(sessionManager.getSession().getUser());
     }
+
+
+    public void putNestedMapIfNotEmpty(ObjectMap map, String key, Map<String, ?> value, boolean parents) {
+        if (MapUtils.isNotEmpty(value)) {
+            map.putNested(key, value, parents);
+        }
+    }
+
 }
