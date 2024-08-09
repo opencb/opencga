@@ -279,14 +279,5 @@ public abstract class AbstractHBaseDBAdaptor {
         }
     }
 
-    protected void unLock(byte[] rowKey, byte[] lockName, long token) {
-        try {
-            this.lock.unlock(rowKey, lockName, token);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-
 
 }

@@ -68,7 +68,7 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
                     return PhoenixHelper.toBytes(studyIds, PIntegerArray.INSTANCE);
                 });
 
-                byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(new Variant(document.getFieldValue("id").toString()));
+                byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(new Variant(document.getFieldValue("attr_id").toString()));
                 variantRows.add(row);
                 mutations.add(new Put(row)
                         .addColumn(family, VariantPhoenixSchema.VariantColumn.INDEX_STUDIES.bytes(), bytes));

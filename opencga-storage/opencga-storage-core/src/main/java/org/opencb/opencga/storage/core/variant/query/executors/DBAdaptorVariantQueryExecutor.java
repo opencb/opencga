@@ -52,9 +52,9 @@ public class DBAdaptorVariantQueryExecutor extends VariantQueryExecutor {
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) {
         for (QueryParam unsupportedParam : UNSUPPORTED_PARAMS) {
-            if (VariantQueryUtils.isValidParam(query, unsupportedParam)) {
+            if (VariantQueryUtils.isValidParam(variantQuery.getQuery(), unsupportedParam)) {
                 logger.warn("Unsupported variant query param {} in {}",
                         unsupportedParam.key(),
                         DBAdaptorVariantQueryExecutor.class.getSimpleName());

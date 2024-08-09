@@ -78,8 +78,7 @@ public class SampleIndexSchemaFactory {
 
     private Collection<Integer> getSampleIndexConfigurationVersions(int studyId, Object sample, boolean withAnnotation,
                                                                    boolean withFamilyIndex) {
-        int sampleId = metadataManager.getSampleIdOrFail(studyId, sample);
-        SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+        SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sample);
         Collection<Integer> versions = sampleMetadata.getSampleIndexVersions();
         if (withAnnotation) {
             versions = CollectionUtils.intersection(

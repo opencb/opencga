@@ -4,12 +4,14 @@ import com.google.common.collect.Iterators;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -103,4 +105,36 @@ public abstract class VariantStorageMetadataManagerTest extends VariantStorageBa
                 .map(TaskMetadata::getName)
                 .collect(Collectors.toList());
     }
+
+    @Test
+    public void testAddSampleToCohort() throws Exception {
+        StudyMetadata study = metadataManager.createStudy("study");
+
+        metadataManager.registerCohort(study.getName(), "cohort1", Collections.emptyList());
+
+        int numSamples = 100;
+        List<Integer> sampleIds = new ArrayList<>(numSamples);
+        for (int i = 0; i < numSamples; i++) {
+            sampleIds.add(metadataManager.registerSample(study.getId(), null, "sample_" + i));
+        }
+
+        metadataManager.addSamplesToCohort(study.getId(), "cohort1", sampleIds.subList(0, 10));
+        VariantStorageMetadataManager metadataManager = Mockito.spy(this.metadataManager);
+        metadataManager.addSamplesToCohort(study.getId(), "cohort1", sampleIds.subList(0, 11));
+        Mockito.verify(metadataManager, Mockito.times(1)).updateSampleMetadata(Mockito.anyInt(), Mockito.anyInt(), Mockito.any());
+
+        Mockito.reset(metadataManager);
+        metadataManager.addSamplesToCohort(study.getId(), "cohort1", sampleIds.subList(0, 11));
+        Mockito.verify(metadataManager, Mockito.never()).updateSampleMetadata(Mockito.anyInt(), Mockito.anyInt(), Mockito.any());
+        metadataManager.setSamplesToCohort(study.getId(), "cohort1", sampleIds.subList(0, 11));
+        Mockito.verify(metadataManager, Mockito.never()).updateSampleMetadata(Mockito.anyInt(), Mockito.anyInt(), Mockito.any());
+
+        metadataManager.setSamplesToCohort(study.getId(), "cohort1", sampleIds.subList(0, 12));
+        Mockito.verify(metadataManager, Mockito.times(1)).updateSampleMetadata(Mockito.anyInt(), Mockito.anyInt(), Mockito.any());
+
+        Mockito.reset(metadataManager);
+        metadataManager.setSamplesToCohort(study.getId(), "cohort1", sampleIds.subList(0, 6));
+        Mockito.verify(metadataManager, Mockito.times(6)).updateSampleMetadata(Mockito.anyInt(), Mockito.anyInt(), Mockito.any());
+    }
+
 }

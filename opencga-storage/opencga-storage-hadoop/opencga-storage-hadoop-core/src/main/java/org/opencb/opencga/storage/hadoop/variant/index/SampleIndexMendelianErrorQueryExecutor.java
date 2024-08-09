@@ -9,7 +9,6 @@ import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.tools.pedigree.MendelianError;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
@@ -33,10 +32,10 @@ public class SampleIndexMendelianErrorQueryExecutor extends SampleIndexVariantQu
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) {
-        if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)
-                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO)
-                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO_STRICT)) {
+    public boolean canUseThisExecutor(ParsedVariantQuery query, QueryOptions options) {
+        if (VariantQueryUtils.isValidParam(query.getQuery(), VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)
+                || VariantQueryUtils.isValidParam(query.getQuery(), VariantQueryUtils.SAMPLE_DE_NOVO)
+                || VariantQueryUtils.isValidParam(query.getQuery(), VariantQueryUtils.SAMPLE_DE_NOVO_STRICT)) {
             return super.canUseThisExecutor(query, options);
         } else {
             return false;

@@ -63,13 +63,13 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Before
     public void before() throws Exception {
+        HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
+        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("3");
+        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
+        variantStorageEngine.reloadCellbaseConfiguration();
         if (!loaded) {
-            HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-            variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
-            variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
-            variantStorageEngine.getConfiguration().getCellbase().setDataRelease("3");
-            variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
-            variantStorageEngine.reloadCellbaseConfiguration();
             URI outputUri = newOutputUri();
 
             ObjectMap params = new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
@@ -91,7 +91,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
             variantStorageEngine.annotate(outputUri, new ObjectMap());
 
-            VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+            VariantHbaseTestUtils.printVariants(variantStorageEngine.getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
 
             mendelianErrorVariants = new HashSet<>();
             deNovoVariants = new HashSet<>();

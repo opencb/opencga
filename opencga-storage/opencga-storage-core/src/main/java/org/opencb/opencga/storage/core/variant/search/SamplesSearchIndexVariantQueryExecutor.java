@@ -7,6 +7,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -28,7 +29,8 @@ public class SamplesSearchIndexVariantQueryExecutor extends AbstractSearchIndexV
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException {
+        VariantQuery query = variantQuery.getQuery();
         String samplesCollection = inferSpecificSearchIndexSamplesCollection(query, options, getMetadataManager(), dbName);
         return samplesCollection != null && searchActiveAndAlive(samplesCollection);
     }

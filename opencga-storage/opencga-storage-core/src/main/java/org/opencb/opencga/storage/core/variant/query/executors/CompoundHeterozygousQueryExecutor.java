@@ -64,14 +64,14 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException {
-        return isValidParam(query, VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS);
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException {
+        return isValidParam(variantQuery.getQuery(), VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS);
     }
 
     @Override
     protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) {
         Trio trio = getCompHetTrio(variantQuery.getQuery());
-        String study = variantQuery.getStudyQuery().getStudyOrFail();
+        String study = variantQuery.getStudyQuery().getDefaultStudyOrFail().getName();
         return getOrIterator(study, trio.getChild(), trio.getFather(), trio.getMother(),
                 variantQuery, iterator);
     }

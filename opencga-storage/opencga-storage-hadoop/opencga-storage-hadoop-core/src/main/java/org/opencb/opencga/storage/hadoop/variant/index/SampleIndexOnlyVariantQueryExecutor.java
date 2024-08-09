@@ -86,7 +86,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) {
+        VariantQuery query = variantQuery.getQuery();
         if (SampleIndexQueryParser.validSampleIndexQuery(query)) {
 
             if (isFullyCoveredQuery(query, options)) {
@@ -182,7 +183,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
 //        ParsedVariantQuery parsedVariantQuery = variantQueryProjectionParser.parseQuery(query, options, true);
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
 
-        return isQueryCovered(query) && isIncludeCovered(sampleIndexQuery, inputQuery, options);
+        return isQueryCovered(sampleIndexQuery.getUncoveredQuery())
+                && isIncludeCovered(sampleIndexQuery, inputQuery, options);
     }
 
     private boolean isQueryCovered(Query query) {

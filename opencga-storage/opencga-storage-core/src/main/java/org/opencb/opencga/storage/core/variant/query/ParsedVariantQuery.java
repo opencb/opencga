@@ -267,14 +267,6 @@ public class ParsedVariantQuery {
             return this;
         }
 
-        public String getStudyOrFail() {
-            if (studies == null || studies.size() != 1) {
-                throw new VariantQueryException("Require exactly one study");
-            } else {
-                return studies.get(0);
-            }
-        }
-
         public ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> getGenotypes() {
             return genotypes;
         }
@@ -311,6 +303,19 @@ public class ParsedVariantQuery {
         public StudyMetadata getDefaultStudy() {
             return defaultStudy;
         }
+
+        public StudyMetadata getDefaultStudyOrFail() {
+            if (defaultStudy == null) {
+                if (studies.size() != 1) {
+                    throw new VariantQueryException("Only one study is allowed. Found " + studies.size() + " studies");
+                } else {
+                    throw new VariantQueryException("One study required. None provided");
+                }
+            } else {
+                return defaultStudy;
+            }
+        }
+
     }
 
     public static class VariantQueryXref {

@@ -49,20 +49,14 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
 
     @Override
     public Lock lockProject(long lockDuration, long timeout, String lockName)
-            throws InterruptedException, TimeoutException, StorageEngineException {
+            throws StorageEngineException {
         try {
             ensureTableExists();
             return lock.lock(getProjectRowKey(), getLockColumn(lockName), lockDuration, timeout);
-        } catch (IOException e) {
-            throw new StorageEngineException("Error locking project in HBase", e);
-        }
-    }
-
-    @Override
-    public void unLockProject(long lockId) throws StorageEngineException {
-        try {
-            lock.unlock(getProjectRowKey(), getLockColumn(), lockId);
-        } catch (IOException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("Unable to lock the Project", e);
+        } catch (IOException | TimeoutException e) {
             throw new StorageEngineException("Error locking project in HBase", e);
         }
     }

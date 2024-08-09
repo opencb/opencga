@@ -112,10 +112,9 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                 } else {
                     trioList.add(metadataManager.getSampleIdOrFail(getStudyId(), trio.getMother()));
                 }
-                int childId = metadataManager.getSampleIdOrFail(getStudyId(), trio.getChild());
-                trioList.add(childId);
 
-                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), childId);
+                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), trio.getChild());
+                trioList.add(sampleMetadata.getId());
                 if (!overwrite && sampleMetadata.getFamilyIndexStatus(sampleIndexVersion) == TaskMetadata.Status.READY) {
                     LOGGER.info("Skip sample " + sampleMetadata.getName() + ". Already precomputed!");
                 } else {

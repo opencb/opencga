@@ -7,6 +7,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
@@ -43,8 +44,8 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) {
-
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) {
+        VariantQuery query = variantQuery.getQuery();
         if (!options.getBoolean(HBASE_COLUMN_INTERSECT, ACTIVE_BY_DEFAULT)) {
             // HBase column intersect not active
             return false;
