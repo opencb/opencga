@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
@@ -165,7 +166,11 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
     public void authenticate(String userId, String password) throws CatalogDBException, CatalogAuthenticationException {
         Bson query = Filters.and(
                 Filters.eq(QueryParams.ID.key(), userId),
-                Filters.eq(INTERNAL_ACCOUNT_AUTHENTICATION_ID.key(), AuthenticationOrigin.AuthenticationType.OPENCGA)
+                // TODO: Deprecated. Remove Filters.or using the deprecated account authentication id
+                Filters.or(
+                        Filters.eq(DEPRECATED_ACCOUNT_AUTHENTICATION_ID.key(), AuthenticationOrigin.AuthenticationType.OPENCGA),
+                        Filters.eq(INTERNAL_ACCOUNT_AUTHENTICATION_ID.key(), AuthenticationOrigin.AuthenticationType.OPENCGA)
+                )
         );
         Bson projection = Projections.include(PRIVATE_PASSWORD);
         DataResult<Document> dataResult = userCollection.find(query, projection, QueryOptions.empty());
@@ -173,7 +178,25 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
             throw new CatalogDBException("User " + userId + " not found");
         }
         Document userDocument = dataResult.first();
-        Document rootPasswordDoc = userDocument.get(PRIVATE_PASSWORD, Document.class);
+        Object rootPasswordObject = userDocument.get(PRIVATE_PASSWORD);
+        Document rootPasswordDoc;
+        // TODO: Remove this block of code in the future when all users have been migrated
+        if (rootPasswordObject instanceof String) {
+            if (ParamConstants.OPENCGA_USER_ID.equals(userId)) {
+                logger.warn("User {} is using the deprecated password format. Please, migrate your code as soon as possible.", userId);
+                if (!encryptPassword(password).equals(rootPasswordObject)) {
+                    throw CatalogAuthenticationException.incorrectUserOrPassword(AuthenticationOrigin.AuthenticationType.OPENCGA.name());
+                }
+                return;
+            } else {
+                throw new CatalogDBException("User '" + userId + "' is using the deprecated password format. Please, ask your"
+                        + " administrator to run the pending migrations to fix this issue.");
+            }
+        } else {
+            rootPasswordDoc = (Document) rootPasswordObject;
+        }
+        // TODO: End of block of code to remove (and replace using commented code below)
+//        Document rootPasswordDoc = userDocument.get(PRIVATE_PASSWORD, Document.class);
         if (rootPasswordDoc == null) {
             throw new CatalogDBException("Critical error. User '" + userId + "' does not have any password set. Please, contact"
                     + " with the developers.");

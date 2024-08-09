@@ -119,6 +119,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
         DEPRECATED_ACCOUNT("account", OBJECT, ""), // Deprecated since 3.2.1 #TASK-6494 TODO: Remove in future releases
+        DEPRECATED_ACCOUNT_AUTHENTICATION_ID("account.authentication.id", TEXT, ""), // Deprecated since 3.2.1 #TASK-6494
         INTERNAL("internal", OBJECT, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
