@@ -496,7 +496,7 @@ public class SolrQueryParser {
         // Consequence types (cts)
         String ctLogicalOperator = " OR ";
         if (StringUtils.isNotEmpty(query.getString(ANNOT_CONSEQUENCE_TYPE.key(), ""))) {
-            consequenceTypes = Arrays.asList(query.getString(ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
+            consequenceTypes = parseConsequenceTypes(Arrays.asList(query.getString(ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]")));
             if (query.getString(ANNOT_CONSEQUENCE_TYPE.key()).contains(";")) {
                 ctLogicalOperator = " AND ";
                 // TODO This must be removed as soon as we have the Query procesing in use
