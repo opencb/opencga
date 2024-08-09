@@ -65,7 +65,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
         }
         variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
         variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE);
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE_GRCH38);
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
         variantStorageEngine.reloadCellbaseConfiguration();
         solr.configure(variantStorageEngine);
