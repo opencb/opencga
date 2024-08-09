@@ -53,6 +53,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import org.apache.commons.collections4.MapUtils;
 
 /**
  * Created on 27/05/16.
@@ -407,4 +408,12 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
         }
         return currentDate.before(expirationDate) || ArrayUtils.contains(args, "login") || ArrayUtils.contains(args, "logout") || "anonymous".equals(sessionManager.getSession().getUser());
     }
+
+
+    public void putNestedMapIfNotEmpty(ObjectMap map, String key, Map<String, ?> value, boolean parents) {
+        if (MapUtils.isNotEmpty(value)) {
+            map.putNested(key, value, parents);
+        }
+    }
+
 }
