@@ -10,6 +10,7 @@ public class PasswordUtils {
 
     public static final int MIN_STRONG_PASSWORD_LENGTH = 8;
     public static final int DEFAULT_PASSWORD_LENGTH = 10;
+    public static final int DEFAULT_SALT_LENGTH = 32;
     public static final String PASSWORD_REQUIREMENT = "Password must contain at least " + MIN_STRONG_PASSWORD_LENGTH
             + " characters, including at least one uppercase letter, one lowercase letter, one digit and one special character.";
 
@@ -30,7 +31,7 @@ public class PasswordUtils {
     }
 
     public static String getStrongRandomSalt() {
-        return getStrongRandomPassword(32);
+        return getStrongRandomPassword(DEFAULT_SALT_LENGTH);
     }
 
     public static String getStrongRandomPassword(int length) {
