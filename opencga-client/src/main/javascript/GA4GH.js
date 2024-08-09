@@ -39,7 +39,7 @@ export default class GA4GH extends OpenCGAParentClass {
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     searchReads() {
-        return this._post("ga4gh", null, "reads", null, "search");
+        return this._post("ga4gh", null, "reads", null, "search", null);
     }
 
     /** Fetch alignment files using HTSget protocol
@@ -78,7 +78,7 @@ export default class GA4GH extends OpenCGAParentClass {
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     searchVariants() {
-        return this._post("ga4gh", null, "variants", null, "search");
+        return this._post("ga4gh", null, "variants", null, "search", null);
     }
 
 }

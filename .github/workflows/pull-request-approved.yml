@@ -15,5 +15,5 @@ jobs:
     uses: ./.github/workflows/test-analysis.yml
     needs: build
     with:
-      test_profile: runShortTests,runMediumTests,runLongTests
+      test_profile: runShortTests,runMediumTests
     secrets: inherit

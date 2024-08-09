@@ -85,7 +85,7 @@ export default class Project extends OpenCGAParentClass {
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     incRelease(project) {
-        return this._post("projects", project, null, null, "incRelease");
+        return this._post("projects", project, null, null, "incRelease", null);
     }
 
     /** Fetch all the studies contained in the project

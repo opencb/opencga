@@ -116,7 +116,7 @@ class JavaScriptClientGenerator(RestClientGenerator):
             f'"{self.get_endpoint_subcategory()}"' if self.subcategory else "null",
             self.get_endpoint_id2() if self.get_endpoint_id2() else "null",
             f'"{self.get_endpoint_action()}"' if self.get_endpoint_action() else "null",
-            "data" if self.has_body() else False,
+            "data" if self.has_body() else ("null" if self.get_endpoint_method(endpoint).lower() == "post" else False),
             query_string_params
         ] if s)
         return (f' {self.get_method_doc(endpoint)}'

@@ -281,7 +281,7 @@ export default class Study extends OpenCGAParentClass {
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     uploadTemplates(study, params) {
-        return this._post("studies", study, "templates", null, "upload", params);
+        return this._post("studies", study, "templates", null, "upload", null, params);
     }
 
     /** Delete template

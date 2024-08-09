@@ -39,7 +39,7 @@ export default class User extends OpenCGAParentClass {
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     anonymous(organization) {
-        return this._post("users", null, null, null, "anonymous", organization);
+        return this._post("users", null, null, null, "anonymous", null, organization);
     }
 
     /** Create a new user
