@@ -271,18 +271,19 @@ function build_opencga() {
       fi
   elif [ "$COMMAND" == "test" ];then
       local pwd=$(pwd -P)
-#      echo "${pwd} opencga" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-#      mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
-#      if [[ "$?" -ne 0 ]] ; then
-#        log_summary "[ERROR] $COMMAND opencga test FAILED!!!!!"
-#        print_log_summary
-#        exit 1
-#      else
-#        local BRANCH="$(git branch --show-current)"
-#        local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
-#        log_version_summary "opencga,$VERSION,$BRANCH"
-#        log_summary "$COMMAND opencga test Success!"
-#      fi
+      echo "${pwd} opencga" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
+      #mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
+      mvn clean install -P "$STORAGE_HADOOP_DEPS" -Dcheckstyle.skip --no-transfer-progress
+      if [[ "$?" -ne 0 ]] ; then
+        log_summary "[ERROR] $COMMAND opencga test FAILED!!!!!"
+        print_log_summary
+        exit 1
+      else
+        local BRANCH="$(git branch --show-current)"
+        local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+        log_version_summary "opencga,$VERSION,$BRANCH"
+        log_summary "$COMMAND opencga test Success!"
+      fi
   fi
 }
 
