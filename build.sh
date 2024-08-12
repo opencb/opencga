@@ -329,6 +329,17 @@ function publish_reports() {
   if [ "$SAVE_REPORTS" == "true" ];then
     ## Move to opencga-enterprise to build or test
 
+    local BRANCH="$(git branch --show-current)"
+    local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+    FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/test"
+    DESTINATION_PATH="/var/www/html/reports/xetabase"
+    if [[ $BRANCH == TASK* ]]; then
+      DESTINATION_PATH="$DESTINATION_PATH/$BRANCH/$VERSION/"
+    else
+      DESTINATION_PATH="$DESTINATION_PATH/$VERSION/"
+    fi
+    log_summary "Uploading test reports to $DESTINATION_PATH"
+    sshpass -p "$PASS" scp -P "$PORT" "$FILE_TO_SEND" "$USER@$HOST:$DESTINATION_PATH"
 #    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 #    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
 #    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
@@ -339,6 +350,7 @@ function publish_reports() {
 #    else
 #      log_summary "Test reports uploaded correctly to /$VERSION_FOLDER/"
 #    fi
+
     log_summary "AZ_COPY upload test reports disabled."
   fi
 
@@ -606,6 +618,12 @@ COMMAND="build"
 SAVE_REPORTS="false"
 VERSION_SUMMARY=""
 PARAM_SUMMARY=""
+
+#########################
+HOST=$SSH_HOST
+PORT=$SSH_PORT
+USER=$SSH_USER
+PASS=$SSH_PASS
 
 ## 2. Read and parse CLI options
 while [[ $# -gt 0 ]]; do
