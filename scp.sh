@@ -21,9 +21,18 @@ function publish_reports() {
     else
       DESTINATION_PATH="$DESTINATION_PATH/$VERSION/"
     fi
-    echo "Uploading test reports to $DESTINATION_PATH"
+    # Asegurarse de que el directorio de destino existe en el servidor
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
+    echo "Directory created"
+
     sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$FILE_TO_SEND" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
-    echo "File uploaded"
+    if [ $? -eq 0 ]; then
+      echo "Uploaded file to $SSH_HOST"
+    else
+      echo "Error transfering file to $SSH_HOST"
+      exit 1
+    fi
+    echo "END!"
   fi
 
 }
