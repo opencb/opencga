@@ -341,7 +341,7 @@ function publish_reports() {
       DESTINATION_PATH="$DESTINATION_PATH/$VERSION/"
     fi
     echo "Uploading test reports to $DESTINATION_PATH"
-    sshpass -p "$PASS" scp -P "$PORT" "$FILE_TO_SEND" "$USER@$HOST:$DESTINATION_PATH"
+    sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$FILE_TO_SEND" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
 #    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 #    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
 #    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
@@ -621,11 +621,7 @@ SAVE_REPORTS="false"
 VERSION_SUMMARY=""
 PARAM_SUMMARY=""
 
-#########################
-HOST=$SSH_HOST
-PORT=$SSH_PORT
-USER=$SSH_USER
-PASS=$SSH_PASS
+###################################
 
 ## 2. Read and parse CLI options
 while [[ $# -gt 0 ]]; do
