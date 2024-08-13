@@ -4,6 +4,7 @@ set -x
 
 # Function to upload the opencga and opencga-enterprise test reports to the Zettagenomics test report server
 #It is do it with azure and AZ_COPY command
+cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
 SAVE_REPORTS=true
 function publish_reports() {
