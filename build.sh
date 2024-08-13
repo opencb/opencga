@@ -272,8 +272,7 @@ function build_opencga() {
   elif [ "$COMMAND" == "test" ];then
       local pwd=$(pwd -P)
       echo "${pwd} opencga" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      #mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
-      mvn clean install -P "$STORAGE_HADOOP_DEPS" -Dcheckstyle.skip --no-transfer-progress
+      mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga test FAILED!!!!!"
         print_log_summary
@@ -340,8 +339,14 @@ function publish_reports() {
     else
       DESTINATION_PATH="$DESTINATION_PATH/$VERSION/"
     fi
-    echo "Uploading test reports to $DESTINATION_PATH"
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
     sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$FILE_TO_SEND" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
+    if [ $? -eq 0 ]; then
+      echo "Uploaded test report to $DESTINATION_PATH"
+    else
+      echo "Error transfering file to $SSH_HOST"
+      exit 1
+    fi
 #    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 #    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
 #    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"

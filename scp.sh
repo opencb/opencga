@@ -23,7 +23,6 @@ function publish_reports() {
     fi
     echo "Destination path: $DESTINATION_PATH"
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
-
     echo "Uploading file to $DESTINATION_PATH"
     sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$FILE_TO_SEND" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
     if [ $? -eq 0 ]; then
@@ -34,7 +33,6 @@ function publish_reports() {
     fi
     echo "END!"
   fi
-
 }
 
 publish_reports
