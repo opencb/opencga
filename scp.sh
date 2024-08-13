@@ -15,7 +15,7 @@ function publish_reports() {
     local BRANCH="$(git branch --show-current)"
     local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
     FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/pom.xml"
-    DESTINATION_PATH="/var/www/html/reports/xetabase/TMP/"
+    DESTINATION_PATH="/var/www/html/reports/xetabase/TMP"
     if [[ $BRANCH == TASK* ]]; then
       DESTINATION_PATH="$DESTINATION_PATH/$BRANCH/$VERSION/"
     else
