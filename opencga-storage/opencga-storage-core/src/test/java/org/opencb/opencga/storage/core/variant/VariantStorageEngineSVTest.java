@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.variant;
 
+import org.junit.Assume;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -25,7 +25,6 @@ import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -55,9 +54,6 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
     protected static URI input2;
     protected static URI input3;
 
-    @ClassRule
-    public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
-
     @Before
     public void before() throws Exception {
         if (!loaded) {
@@ -68,7 +64,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
         variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE_GRCH38);
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
         variantStorageEngine.reloadCellbaseConfiguration();
-        solr.configure(variantStorageEngine);
+
         if (!loaded) {
             loadFiles();
             loaded = true;
@@ -97,7 +93,6 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "grch38"));
 
-        variantStorageEngine.secondaryIndex();
     }
 
     @Test
@@ -120,6 +115,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
 
     @Test
     public void checkSecondaryAnnotationIndex() throws Exception {
+        Assume.assumeTrue(variantStorageEngine.secondaryAnnotationIndexActiveAndAlive());
         VariantQueryExecutor variantQueryExecutor = variantStorageEngine.getVariantQueryExecutor(SearchIndexVariantQueryExecutor.class);
         for (Variant variant : variantStorageEngine) {
             ParsedVariantQuery query = variantStorageEngine
