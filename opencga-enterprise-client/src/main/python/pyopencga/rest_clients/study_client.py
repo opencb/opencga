@@ -270,6 +270,8 @@ class Study(_ParentRestClient):
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
             must be provided.
+        :param str tags_action: Action to be performed if the array of tags is
+            being updated. Allowed values: ['ADD SET REMOVE']
         :param bool include_result: Flag indicating to include the created or
             updated document result in the response.
         """
