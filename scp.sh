@@ -21,10 +21,7 @@ function publish_reports() {
     else
       DESTINATION_PATH="$DESTINATION_PATH/$VERSION/"
     fi
-    # Asegurarse de que el directorio de destino existe en el servidor
-    sshpass -p "$SSH_PASS" ssh -P "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
-    echo "Directory created"
-
+    echo "Uploading file to $DESTINATION_PATH"
     sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$FILE_TO_SEND" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
     if [ $? -eq 0 ]; then
       echo "Uploaded file to $SSH_HOST"
