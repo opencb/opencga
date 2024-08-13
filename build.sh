@@ -330,16 +330,20 @@ function publish_reports() {
     ## Move to opencga-enterprise to build or test
     echo "Move to opencga-enterprise to build or test"
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-    local BRANCH="$(git branch --show-current)"
+    echo "Preparing destination path"
     local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+    echo "Xetabase tested is $VERSION"
     FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/test"
+    echo "The reports are in $FILE_TO_SEND"
     DESTINATION_PATH="/var/www/html/reports/xetabase"
-    if [[ $BRANCH == TASK* ]]; then
+    if [[ $TASK_REFERENCE == TASK* ]]; then
       DESTINATION_PATH="$DESTINATION_PATH/$BRANCH/$VERSION/"
     else
       DESTINATION_PATH="$DESTINATION_PATH/$VERSION/"
     fi
+    echo "Destination path: $DESTINATION_PATH"
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
+    echo "Created remote path: $DESTINATION_PATH"
     sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$FILE_TO_SEND" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
     if [ $? -eq 0 ]; then
       echo "Uploaded test report to $DESTINATION_PATH"
@@ -347,18 +351,6 @@ function publish_reports() {
       echo "Error transfering file to $SSH_HOST"
       exit 1
     fi
-#    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-#    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
-#    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
-#    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/reports/opencga-enterprise/$VERSION_FOLDER/ --recursive
-#    azcopy copy "$LOG_FILE" https://zettatest.blob.core.windows.net/reports/opencga-enterprise/$VERSION_FOLDER/ --recursive
-#    if [[ "$?" -ne 0 ]] ; then
-#      log_summary "[ERROR] AZ_COPY FAILED!!!!!"
-#    else
-#      log_summary "Test reports uploaded correctly to /$VERSION_FOLDER/"
-#    fi
-
-    log_summary "AZ_COPY upload test reports disabled."
   fi
 
 }
