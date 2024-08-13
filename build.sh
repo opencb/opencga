@@ -337,7 +337,7 @@ function publish_reports() {
     echo "The reports are in $FILE_TO_SEND"
     DESTINATION_PATH="/var/www/html/reports/xetabase"
     if [[ $TASK_REFERENCE == TASK* ]]; then
-      DESTINATION_PATH="$DESTINATION_PATH/$BRANCH/$VERSION/"
+      DESTINATION_PATH="$DESTINATION_PATH/$TASK_REFERENCE/$VERSION/"
     else
       DESTINATION_PATH="$DESTINATION_PATH/$VERSION/"
     fi
