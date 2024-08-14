@@ -57,7 +57,6 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
@@ -393,8 +392,6 @@ public class VariantHbaseTestUtils {
 
     public static void printVariants(Collection<StudyMetadata> studies, VariantHadoopDBAdaptor dbAdaptor, Path outDir)
             throws Exception {
-        boolean old = HBaseToVariantConverter.isFailOnWrongVariants();
-        HBaseToVariantConverter.setFailOnWrongVariants(false);
         printMetaTable(dbAdaptor, outDir);
         for (StudyMetadata studyMetadata : studies) {
             printVariantsFromArchiveTable(dbAdaptor, studyMetadata, outDir);
@@ -406,7 +403,6 @@ public class VariantHbaseTestUtils {
         printSampleIndexTable(dbAdaptor, outDir);
         printVariantsFromVariantsTable(dbAdaptor, outDir);
         printVariantsFromDBAdaptor(dbAdaptor, outDir);
-        HBaseToVariantConverter.setFailOnWrongVariants(old);
     }
 
     private static void printVcf(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {

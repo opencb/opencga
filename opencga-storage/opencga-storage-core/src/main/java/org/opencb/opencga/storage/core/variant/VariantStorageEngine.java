@@ -732,15 +732,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         if (partialLoad) {
-            logger.info("Partial secondary annotation index. Do not update {} timestamp", SEARCH_INDEX_LAST_TIMESTAMP.key());
+            logger.info("Partial secondary annotation index. Do not update operation timestamp");
         } else {
             logger.info("Update secondary annotation index status for {} new files and {} new samples",
                     filesToBeUpdated.values().stream().mapToInt(Collection::size).sum(),
                     samplesToBeUpdated.values().stream().mapToInt(Collection::size).sum());
-            mm.updateProjectMetadata(projectMetadata -> {
-                projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), newTimestamp);
-                return projectMetadata;
-            });
+            mm.updateSecondaryAnnotationIndexTimestamp(newTimestamp);
 
             for (Map.Entry<Integer, Set<Integer>> entry : filesToBeUpdated.entrySet()) {
                 Integer study = entry.getKey();
