@@ -333,13 +333,14 @@ function publish_reports() {
     echo "Preparing destination path"
     local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
     echo "Xetabase tested is $VERSION"
-    FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/test"
+    mv "$OPENCGA_ENTERPRISE_HOME_DIR/reports/test" "$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION"
+    FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION"
     echo "The reports are in $FILE_TO_SEND"
     DESTINATION_PATH="/var/www/html/reports/xetabase"
     if [[ $TASK_REFERENCE == TASK* ]]; then
-      DESTINATION_PATH="$DESTINATION_PATH/$TASK_REFERENCE/$VERSION/"
+      DESTINATION_PATH="$DESTINATION_PATH/$TASK_REFERENCE/"
     else
-      DESTINATION_PATH="$DESTINATION_PATH/$VERSION/"
+      DESTINATION_PATH="$DESTINATION_PATH/"
     fi
     echo "Destination path: $DESTINATION_PATH"
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
