@@ -16,8 +16,8 @@ else
   GIT_BRANCH="$(git branch --show-current)"
 fi
 
-## Check if this branch exists on opencga. If so, use that branch
-if [ "$(git ls-remote https://github.com/opencb/opencga.git "$GIT_BRANCH" )" ] ; then
+## Check if this branch exists on opencga and its name starts with TASK-. If so, use that branch
+if [[ "$(git ls-remote https://github.com/opencb/opencga.git "$GIT_BRANCH" )" && "$GIT_BRANCH" == TASK-* ]]; then
   echo "$GIT_BRANCH";
   exit 0;
 fi
