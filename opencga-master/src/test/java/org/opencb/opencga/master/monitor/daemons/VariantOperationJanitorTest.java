@@ -5,10 +5,8 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.config.OperationExecutionConfig;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
@@ -50,7 +48,7 @@ public class VariantOperationJanitorTest extends AbstractManagerTest {
     }
 
     @Test
-    public void checkPendingVariantOperations() throws CatalogException, ToolException {
+    public void checkPendingVariantOperations() throws Exception {
         janitor.checkPendingVariantOperations();
         Job lastJobExecution = janitor.findLastJobExecution(studyFqn, VariantAnnotationIndexOperationTool.ID);
         assertNotNull(lastJobExecution);

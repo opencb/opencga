@@ -29,6 +29,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
+import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,7 @@ public class VariantOperationJanitor {
     private final CatalogManager catalogManager;
     private final OperationConfig operationConfig;
     private final String token;
+    private final List<OperationChore> chores;
 
     static final String ATTEMPT = "attempt";
     static final String FAILED_ATTEMPT_JOB_IDS = "failedAttemptJobIds";
@@ -58,20 +61,25 @@ public class VariantOperationJanitor {
             this.operationConfig = catalogManager.getConfiguration().getAnalysis().getOperations();
         }
         this.token = token;
+
+        chores = Arrays.asList(
+                new VariantAnnotationIndexOperationChore(operationConfig),
+                new VariantSecondaryAnnotationIndexOperationChore(operationConfig),
+                new VariantSecondarySampleIndexOperationChore(operationConfig));
     }
 
     public void checkPendingVariantOperations() throws CatalogException, ToolException {
-        checkPendingVariantOperations(operationConfig.getVariantAnnotationIndex(), new VariantAnnotationIndexOperationChore());
-        checkPendingVariantOperations(operationConfig.getVariantSecondaryAnnotationIndex(),
-                new VariantSecondaryAnnotationIndexOperationChore());
-        checkPendingVariantOperations(operationConfig.getVariantSecondarySampleIndex(), new VariantSecondarySampleIndexOperationChore());
+        for (OperationChore chore : chores) {
+            checkPendingVariantOperations(chore);
+        }
     }
 
-    private void checkPendingVariantOperations(OperationExecutionConfig config, OperationChore operationChore)
+    private void checkPendingVariantOperations(OperationChore operationChore)
             throws CatalogException, ToolException {
+        OperationExecutionConfig config = operationChore.getConfig();
         String toolId = operationChore.getToolId();
         if (config.getPolicy() == OperationExecutionConfig.Policy.NEVER) {
-            logger.info("Automatic operation '{}' is disabled. Nothing to do.", toolId);
+            logger.info("Automatic operation chore '{}' is disabled. Nothing to do.", toolId);
             return;
         }
 
@@ -184,9 +192,17 @@ public class VariantOperationJanitor {
 
         List<String> dependantTools();
 
+        OperationExecutionConfig getConfig();
+
     }
 
     private static class VariantSecondarySampleIndexOperationChore implements OperationChore {
+
+        private final OperationExecutionConfig operationConfig;
+
+        VariantSecondarySampleIndexOperationChore(OperationConfig operationConfig) {
+            this.operationConfig = operationConfig.getVariantSecondarySampleIndex();
+        }
 
         @Override
         public String getToolId() {
@@ -203,9 +219,20 @@ public class VariantOperationJanitor {
             return Collections.unmodifiableList(Arrays.asList(VariantIndexOperationTool.ID, VariantAnnotationIndexOperationTool.ID,
                     VariantSecondaryAnnotationIndexOperationTool.ID));
         }
+
+        @Override
+        public OperationExecutionConfig getConfig() {
+            return operationConfig;
+        }
     }
 
     private static class VariantSecondaryAnnotationIndexOperationChore implements OperationChore {
+
+        private final OperationExecutionConfig operationConfig;
+
+        VariantSecondaryAnnotationIndexOperationChore(OperationConfig operationConfig) {
+            this.operationConfig = operationConfig.getVariantSecondaryAnnotationIndex();
+        }
 
         @Override
         public String getToolId() {
@@ -222,9 +249,20 @@ public class VariantOperationJanitor {
         public List<String> dependantTools() {
             return Collections.unmodifiableList(Arrays.asList(VariantIndexOperationTool.ID, VariantAnnotationIndexOperationTool.ID));
         }
+
+        @Override
+        public OperationExecutionConfig getConfig() {
+            return operationConfig;
+        }
     }
 
     private static class VariantAnnotationIndexOperationChore implements OperationChore {
+
+        private final OperationExecutionConfig operationConfig;
+
+        VariantAnnotationIndexOperationChore(OperationConfig operationConfig) {
+            this.operationConfig = operationConfig.getVariantAnnotationIndex();
+        }
 
         @Override
         public String getToolId() {
@@ -240,13 +278,19 @@ public class VariantOperationJanitor {
         public List<String> dependantTools() {
             return Collections.unmodifiableList(Collections.singletonList(VariantIndexOperationTool.ID));
         }
+
+        @Override
+        public OperationExecutionConfig getConfig() {
+            return operationConfig;
+        }
     }
 
     private static boolean isNightTime() {
         boolean isNightTime = false;
-        Calendar calendar = Calendar.getInstance();
-        int hour = calendar.get(Calendar.HOUR_OF_DAY);
         // Check date time is between 00:00 and 05:00
+        //TODO: Define night time in configuration
+        Instant now = Instant.now();
+        int hour = now.get(ChronoField.HOUR_OF_DAY);
         if (hour < 5) {
             isNightTime = true;
         }

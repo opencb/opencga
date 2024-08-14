@@ -223,7 +223,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             Query inputQuery = new Query();
             inputQuery.putIfNotEmpty(VariantQueryParam.REGION.key(), region);
             VariantSearchLoadResult result = engine.secondaryIndex(inputQuery, new QueryOptions(params), overwrite);
-            getSynchronizer(engine).synchronizeCatalogFromStorage(token);
+            getSynchronizer(engine).synchronizeCatalogFromStorage(project, token);
             return result;
         });
     }
@@ -282,8 +282,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public void saveAnnotation(String project, String annotationName, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         secureOperationByProject(VariantAnnotationSaveOperationTool.ID, project, params, token, engine -> {
-            CatalogStorageMetadataSynchronizer
-                    .updateProjectMetadata(catalogManager, engine.getMetadataManager(), project, token);
+            getSynchronizer(engine).synchronizeProjectMetadataFromCatalog(project, token);
             engine.saveAnnotation(annotationName, params);
             return null;
         });
@@ -292,8 +291,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public void deleteAnnotation(String project, String annotationName, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         secureOperationByProject(VariantAnnotationDeleteOperationTool.ID, project, params, token, engine -> {
-            CatalogStorageMetadataSynchronizer
-                    .updateProjectMetadata(catalogManager, engine.getMetadataManager(), project, token);
+            getSynchronizer(engine).synchronizeProjectMetadataFromCatalog(project, token);
             engine.deleteAnnotation(annotationName, params);
             return null;
         });

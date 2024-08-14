@@ -27,8 +27,6 @@ import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchr
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -96,7 +94,7 @@ public class VariantAnnotationOperationManager extends OperationManager {
         if (StringUtils.isEmpty(loadFileStr)) {
             variantStorageEngine.annotate(outdir.toUri(), annotationQuery, annotationOptions);
             new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager())
-                    .synchronizeCatalogFromStorage(token);
+                    .synchronizeCatalogFromStorage(projectStr, token);
         } else {
             Path loadFilePath = Paths.get(loadFileStr);
             boolean fileExists = Files.exists(loadFilePath);
@@ -123,11 +121,8 @@ public class VariantAnnotationOperationManager extends OperationManager {
     }
 
     private void synchronizeProjectMetadata(String projectStr, String token) throws CatalogException, StorageEngineException {
-        Project project = catalogManager.getProjectManager().get(projectStr, QueryOptions.empty(), token).first();
-        ProjectOrganism organism = project.getOrganism();
-        int currentRelease = project.getCurrentRelease();
-        CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), organism, currentRelease,
-                project.getCellbase());
+        new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager())
+                .synchronizeProjectMetadataFromCatalog(projectStr, token);
     }
 
     private String buildOutputFileName(String alias, String region) {

@@ -48,6 +48,8 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.variant.InternalVariantOperationIndex;
+import org.opencb.opencga.core.models.variant.OperationIndexStatus;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -111,23 +113,21 @@ public class CatalogStorageMetadataSynchronizer {
         this.metadataManager = metadataManager;
     }
 
-    public static void updateProjectMetadata(CatalogManager catalog, VariantStorageMetadataManager scm, String project, String sessionId)
+    public void synchronizeProjectMetadataFromCatalog(String projectFqn, String token)
             throws CatalogException, StorageEngineException {
-        final Project p = catalog.getProjectManager().get(project,
+        final Project project = catalogManager.getProjectManager().get(projectFqn,
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                 ProjectDBAdaptor.QueryParams.ORGANISM.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key(),
                                 ProjectDBAdaptor.QueryParams.CELLBASE.key())),
-                        sessionId)
+                        token)
                 .first();
 
-        updateProjectMetadata(scm, p.getOrganism(), p.getCurrentRelease(), p.getCellbase());
-    }
-
-    public static void updateProjectMetadata(VariantStorageMetadataManager scm, ProjectOrganism organism, int release, CellBaseConfiguration cellbase)
-            throws StorageEngineException {
+        int release = project.getCurrentRelease();
+        CellBaseConfiguration cellbase = project.getCellbase();
+        ProjectOrganism organism = project.getOrganism();
         String scientificName = CellBaseUtils.toCellBaseSpeciesName(organism.getScientificName());
 
-        scm.updateProjectMetadata(projectMetadata -> {
+        metadataManager.updateProjectMetadata(projectMetadata -> {
             if (projectMetadata == null) {
                 projectMetadata = new ProjectMetadata();
             }
@@ -139,8 +139,84 @@ public class CatalogStorageMetadataSynchronizer {
         });
     }
 
-    public StudyMetadata getStudyMetadata(String study) throws CatalogException {
-        return metadataManager.getStudyMetadata(study);
+    private void synchronizeCatalogProjectFromStorageByStudy(String studyFqn, String token)
+            throws CatalogException {
+        String projectFqn = catalogManager.getStudyManager().getProjectFqn(studyFqn);
+        synchronizeCatalogProjectFromStorage(projectFqn, token);
+    }
+
+    private void synchronizeCatalogProjectFromStorage(String projectFqn, String token)
+            throws CatalogException {
+
+        if (!metadataManager.exists()) {
+            return;
+        }
+        logger.info("Synchronize project '{}' from Storage", projectFqn);
+        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
+
+        Project project = catalogManager.getProjectManager().get(projectFqn,
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        ProjectDBAdaptor.QueryParams.FQN.key(),
+                        ProjectDBAdaptor.QueryParams.ORGANISM.key(),
+                        ProjectDBAdaptor.QueryParams.INTERNAL.key(),
+                        ProjectDBAdaptor.QueryParams.CELLBASE.key())),
+                token)
+                .first();
+        projectFqn = project.getFqn();
+
+        String annotationIndexStatus = secureGet(() -> project.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null);
+        TaskMetadata.Status storageAnnotationIndexStatus = projectMetadata.getAnnotationIndexStatus();
+        if (!storageAnnotationIndexStatus.name().equals(annotationIndexStatus)) {
+            logger.info("Update project '{}' annotation index status to {}",
+                    projectFqn, storageAnnotationIndexStatus);
+
+            OperationIndexStatus operationIndexStatus;
+            switch (storageAnnotationIndexStatus) {
+                case NONE:
+                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
+                            "Variant annotation index operation pending. "
+                                    + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
+                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastTimestamp()
+                    );
+                    break;
+                case READY:
+                    operationIndexStatus = new OperationIndexStatus(storageAnnotationIndexStatus.name(), "");
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + storageAnnotationIndexStatus);
+            }
+            catalogManager.getProjectManager().setProjectInternalVariantAnnotationIndex(projectFqn,
+                    new InternalVariantOperationIndex(operationIndexStatus),
+                    new QueryOptions(), token);
+        }
+
+        String secondaryAnnotationIndexStatus = secureGet(() -> project.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId(), null);
+        TaskMetadata.Status storageSecondaryAnnotationIndexStatus = projectMetadata.getSecondaryAnnotationIndexStatus();
+        if (!storageSecondaryAnnotationIndexStatus.name().equals(secondaryAnnotationIndexStatus)) {
+            logger.info("Update project '{}' secondary annotation index status to {}",
+                    projectFqn, storageSecondaryAnnotationIndexStatus);
+
+            OperationIndexStatus operationIndexStatus;
+            switch (storageSecondaryAnnotationIndexStatus) {
+                case NONE:
+                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
+                            "Variant secondary annotation index operation pending. "
+                                    + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
+                                    + ", variantSecondaryAnnotationIndexTs = " + projectMetadata.getSecondaryAnnotationIndexLastTimestamp()
+                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastTimestamp()
+                                    + ", variantIndexStatsTs = " + projectMetadata.getStatsLastTimestamp()
+                    );
+                    break;
+                case READY:
+                    operationIndexStatus = new OperationIndexStatus(storageAnnotationIndexStatus.name(), "");
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + storageSecondaryAnnotationIndexStatus);
+            }
+            catalogManager.getProjectManager().setProjectInternalVariantSecondaryAnnotationIndex(projectFqn,
+                    new InternalVariantOperationIndex(operationIndexStatus),
+                    new QueryOptions(), token);
+        }
     }
 
     /**
@@ -177,6 +253,8 @@ public class CatalogStorageMetadataSynchronizer {
      */
     public boolean synchronizeCatalogFilesFromStorage(String studyFqn, List<File> files, String sessionId)
             throws CatalogException {
+        synchronizeCatalogProjectFromStorageByStudy(studyFqn, sessionId);
+
         StudyMetadata study = metadataManager.getStudyMetadata(studyFqn);
         if (study == null) {
             return false;
@@ -206,6 +284,8 @@ public class CatalogStorageMetadataSynchronizer {
         if (study == null) {
             return false;
         }
+        synchronizeCatalogProjectFromStorageByStudy(studyFqn, sessionId);
+
         logger.info("Synchronizing samples from study " + study.getName());
 
         List<Integer> sampleIds;
@@ -232,10 +312,12 @@ public class CatalogStorageMetadataSynchronizer {
      * @return if anything was modified
      * @throws CatalogException on error
      */
-    public boolean synchronizeCatalogFromStorage(String token) throws CatalogException {
+    public boolean synchronizeCatalogFromStorage(String project, String token) throws CatalogException {
         boolean modified = false;
+        synchronizeCatalogProjectFromStorage(project, token);
         for (String study : metadataManager.getStudyNames()) {
-            modified |= synchronizeCatalogStudyFromStorage(study, token);
+            StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+            modified |= synchronizeCatalogStudyFromStorage(studyMetadata, token);
         }
         return modified;
     }
@@ -244,6 +326,7 @@ public class CatalogStorageMetadataSynchronizer {
             throws CatalogException {
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         if (studyMetadata != null) {
+            synchronizeCatalogProjectFromStorageByStudy(studyMetadata.getName(), sessionId);
             // Update Catalog file and cohort status.
             return synchronizeCatalogStudyFromStorage(studyMetadata, sessionId);
         } else {
@@ -263,7 +346,7 @@ public class CatalogStorageMetadataSynchronizer {
      * @return if there were modifications in catalog
      * @throws CatalogException if there is an error with catalog
      */
-    public boolean synchronizeCatalogStudyFromStorage(StudyMetadata study, String sessionId)
+    private boolean synchronizeCatalogStudyFromStorage(StudyMetadata study, String sessionId)
             throws CatalogException {
         logger.info("Synchronizing study " + study.getName());
 
@@ -275,10 +358,11 @@ public class CatalogStorageMetadataSynchronizer {
     }
 
     public boolean synchronizeCohorts(String study, String sessionId) throws CatalogException {
-        StudyMetadata studyMetadata = getStudyMetadata(study);
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         if (studyMetadata == null) {
             return false;
         } else {
+            synchronizeCatalogProjectFromStorageByStudy(studyMetadata.getName(), sessionId);
             return synchronizeCohorts(studyMetadata, sessionId);
         }
     }

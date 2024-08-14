@@ -119,7 +119,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         updateProject(studyFqn, token);
 
         List<URI> fileUris = findFilesToIndex(params, token);
-        if (fileUris.size() == 0) {
+        if (fileUris.isEmpty()) {
             logger.warn("Nothing to do.");
             return Collections.emptyList();
         }
@@ -130,6 +130,14 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private void check(String study, ObjectMap params, String token) throws Exception {
         studyFqn = getStudyFqn(study, token);
+        String projectFqn = catalogManager.getStudyManager().getProjectFqn(studyFqn);
+
+        Project project = catalogManager
+                .getProjectManager()
+                .get(projectFqn,
+                        new QueryOptions(QueryOptions.INCLUDE, Collections.singletonList(CURRENT_RELEASE.key())),
+                        token).first();
+        release = project.getCurrentRelease();
 
         JwtPayload jwtPayload = new JwtPayload(token);
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyFqn, jwtPayload);
@@ -169,16 +177,9 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private void updateProject(String studyFqn, String token) throws CatalogException, StorageEngineException {
         String projectFqn = catalogManager.getStudyManager().getProjectFqn(studyFqn);
-        Project project = catalogManager
-                .getProjectManager()
-                .get(projectFqn,
-                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(CURRENT_RELEASE.key(), ORGANISM.key(), CELLBASE.key())),
-                        token).first();
-        release = project.getCurrentRelease();
 
         // Add species, assembly and release
-        CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), project.getOrganism(), release,
-                project.getCellbase());
+        synchronizer.synchronizeProjectMetadataFromCatalog(projectFqn, token);
     }
 
     /**
