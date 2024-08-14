@@ -3,11 +3,14 @@ package org.opencb.opencga.analysis.wrappers.fastqc;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+
+import static org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis.FASTQC_DOCKER_CLI_KEY;
 
 @ToolExecutor(id = FastqcWrapperAnalysisExecutor.ID,
         tool = FastqcWrapperAnalysis.ID,
@@ -15,15 +18,16 @@ import java.util.*;
         framework = ToolExecutor.Framework.LOCAL)
 public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
 
-    public final static String ID = FastqcWrapperAnalysis.ID + "-local";
+    public  static final String ID = FastqcWrapperAnalysis.ID + "-local";
 
-    private String study;
     private String inputFile;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
     protected void run() throws Exception {
+        addStepParams();
+
         StringBuilder sb = initCommandLine();
 
         // Append mounts
@@ -46,17 +50,13 @@ public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: {}", sb);
+        addAttribute(FASTQC_DOCKER_CLI_KEY, sb);
         runCommandLine(sb.toString());
     }
 
-    public String getStudy() {
-        return study;
-    }
-
-    public FastqcWrapperAnalysisExecutor setStudy(String study) {
-        this.study = study;
-        return this;
+    private void addStepParams() throws ToolException {
+        addAttribute("INPUT_FILE", inputFile);
     }
 
     public String getInputFile() {

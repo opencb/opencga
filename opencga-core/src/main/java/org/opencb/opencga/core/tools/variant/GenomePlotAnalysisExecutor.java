@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.io.File;
@@ -31,6 +32,11 @@ public abstract class GenomePlotAnalysisExecutor extends OpenCgaToolExecutor {
     public GenomePlotAnalysisExecutor(String study, File configFile) {
         this.study = study;
         this.configFile = configFile;
+    }
+
+    protected void addStepParams() throws ToolException {
+        addAttribute("STUDY", study);
+        addAttribute("CONFIG_FILE", configFile);
     }
 
     @Override

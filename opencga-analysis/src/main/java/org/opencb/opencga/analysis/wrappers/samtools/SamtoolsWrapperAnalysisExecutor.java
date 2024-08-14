@@ -4,13 +4,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+
+import static org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis.SAMTOOlS_DOCKER_CLI_KEY;
 
 @ToolExecutor(id = SamtoolsWrapperAnalysisExecutor.ID,
         tool = SamtoolsWrapperAnalysis.ID,
@@ -20,7 +21,6 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     public final static String ID = SamtoolsWrapperAnalysis.ID + "-local";
 
-    private String study;
     private String command;
     private String inputFile;
 
@@ -28,6 +28,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     @Override
     public void run() throws ToolException {
+        addStepParams();
+
         switch (command) {
             case "depth":
                 runDepth();
@@ -82,7 +84,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: {}", sb);
+        addAttribute(SAMTOOlS_DOCKER_CLI_KEY, sb);
         runCommandLine(sb.toString());
     }
 
@@ -120,7 +123,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: {}", sb);
+        addAttribute(SAMTOOlS_DOCKER_CLI_KEY, sb);
         runCommandLine(sb.toString());
     }
 
@@ -155,7 +159,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: {}", sb);
+        addAttribute(SAMTOOlS_DOCKER_CLI_KEY, sb);
         runCommandLine(sb.toString());
     }
 
@@ -179,7 +184,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOtherParams(null, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: {}", sb);
+        addAttribute(SAMTOOlS_DOCKER_CLI_KEY, sb);
         runCommandLine(sb.toString());
     }
 
@@ -215,7 +221,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: {}", sb);
+        addAttribute(SAMTOOlS_DOCKER_CLI_KEY, sb);
         runCommandLine(sb.toString());
     }
 
@@ -238,7 +245,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOtherParams(null, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: {}", sb);
+        addAttribute(SAMTOOlS_DOCKER_CLI_KEY, sb);
         runCommandLine(sb.toString());
     }
 
@@ -261,7 +269,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOtherParams(null, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: {}", sb);
+        addAttribute(SAMTOOlS_DOCKER_CLI_KEY, sb);
         runCommandLine(sb.toString());
     }
 
@@ -290,7 +299,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: " + sb);
+        addAttribute(SAMTOOlS_DOCKER_CLI_KEY, sb);
         runCommandLine(sb.toString());
     }
 
@@ -315,17 +325,14 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: {}", sb);
+        addAttribute(SAMTOOlS_DOCKER_CLI_KEY, sb);
         runCommandLine(sb.toString());
     }
 
-    public String getStudy() {
-        return study;
-    }
-
-    public SamtoolsWrapperAnalysisExecutor setStudy(String study) {
-        this.study = study;
-        return this;
+    private void addStepParams() throws ToolException {
+        addAttribute("COMMAND", command);
+        addAttribute("INPUT_FILE", inputFile);
     }
 
     public String getCommand() {
