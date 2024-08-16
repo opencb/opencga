@@ -189,7 +189,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         assertNotNull(nonIndexedFile);
         metadataManager.addIndexedFiles(sm.getId(), Collections.singletonList(metadataManager.getFileId(sm.getId(), nonIndexedFile.getName())));
 
-        synchronizer.synchronizeCatalogStudyFromStorage(sm.getName(), sessionId);
+        synchronizer.synchronizeCatalogFromStorage(sm.getName(), sessionId);
 
         nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
         assertEquals(VariantIndexStatus.READY, nonIndexedFile.getInternal().getVariant().getIndex().getStatus().getId());
@@ -199,7 +199,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         assertNotNull(nonIndexedFile);
         metadataManager.addRunningTask(sm.getId(), "LOAD", Collections.singletonList(metadataManager.getFileId(sm.getId(), nonIndexedFile.getName())), false, TaskMetadata.Type.LOAD);
 
-        synchronizer.synchronizeCatalogStudyFromStorage(sm.getName(), sessionId);
+        synchronizer.synchronizeCatalogFromStorage(sm.getName(), sessionId);
 
         nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
         assertEquals(VariantIndexStatus.INDEXING, nonIndexedFile.getInternal().getVariant().getIndex().getStatus().getId());
@@ -215,7 +215,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         Sample sample;
 
         //--------------
-        synchronizer.synchronizeCatalogStudyFromStorage(sm.getName(), sessionId);
+        synchronizer.synchronizeCatalogFromStorage(sm.getName(), sessionId);
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
 
         assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getIndex().getStatus().getId(), null));
@@ -225,7 +225,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         //--------------
         metadataManager.updateSampleMetadata(sm.getId(), metadataManager.getSampleId(sm.getId(), sampleName), s -> s.setAnnotationStatus(TaskMetadata.Status.READY));
-        synchronizer.synchronizeCatalogStudyFromStorage(sm.getName(), sessionId);
+        synchronizer.synchronizeCatalogFromStorage(sm.getName(), sessionId);
 
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
         assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getIndex().getStatus().getId(), null));
@@ -235,7 +235,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         //--------------
         metadataManager.updateSampleMetadata(sm.getId(), metadataManager.getSampleId(sm.getId(), sampleName), s -> s.setSampleIndexStatus(TaskMetadata.Status.READY, version));
-        synchronizer.synchronizeCatalogStudyFromStorage(sm.getName(), sessionId);
+        synchronizer.synchronizeCatalogFromStorage(sm.getName(), sessionId);
 
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
         assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getIndex().getStatus().getId(), null));
@@ -246,7 +246,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         //--------------
         metadataManager.updateSampleMetadata(sm.getId(), metadataManager.getSampleId(sm.getId(), sampleName), s -> s.setSampleIndexAnnotationStatus(TaskMetadata.Status.READY, version));
-        synchronizer.synchronizeCatalogStudyFromStorage(sm.getName(), sessionId);
+        synchronizer.synchronizeCatalogFromStorage(sm.getName(), sessionId);
 
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
         assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getIndex().getStatus().getId(), null));
@@ -256,7 +256,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         //--------------
         metadataManager.updateSampleMetadata(sm.getId(), metadataManager.getSampleId(sm.getId(), sampleName), s -> s.setFamilyIndexStatus(TaskMetadata.Status.READY, version));
-        synchronizer.synchronizeCatalogStudyFromStorage(sm.getName(), sessionId);
+        synchronizer.synchronizeCatalogFromStorage(sm.getName(), sessionId);
 
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
         assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getIndex().getStatus().getId(), null));
@@ -271,7 +271,7 @@ public class CatalogStorageMetadataSynchronizerTest {
             s.setSampleIndexConfigurations(Collections.singletonList(c));
             return s;
         });
-        synchronizer.synchronizeCatalogStudyFromStorage(sm.getName(), sessionId);
+        synchronizer.synchronizeCatalogFromStorage(sm.getName(), sessionId);
 
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
         assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getIndex().getStatus().getId(), null));
@@ -298,7 +298,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         // --------------------
         metadataManager.updateFileMetadata(sm.getId(), metadataManager.getFileId(sm.getId(), fileName),
                 fm -> fm.setAnnotationStatus(TaskMetadata.Status.READY));
-        synchronizer.synchronizeCatalogStudyFromStorage(sm.getName(), sessionId);
+        synchronizer.synchronizeCatalogFromStorage(sm.getName(), sessionId);
 
         file = catalogManager.getFileManager().get(studyId, fileName, null, sessionId).first();
         assertEquals(IndexStatus.READY, file.getInternal().getVariant().getIndex().getStatus().getId());
@@ -308,7 +308,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         // --------------------
         metadataManager.updateFileMetadata(sm.getId(), metadataManager.getFileId(sm.getId(), fileName),
                 fm -> fm.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.READY));
-        synchronizer.synchronizeCatalogStudyFromStorage(sm.getName(), sessionId);
+        synchronizer.synchronizeCatalogFromStorage(sm.getName(), sessionId);
 
         file = catalogManager.getFileManager().get(studyId, fileName, null, sessionId).first();
         assertEquals(IndexStatus.READY, file.getInternal().getVariant().getIndex().getStatus().getId());
@@ -318,7 +318,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         // --------------------
         metadataManager.updateFileMetadata(sm.getId(), metadataManager.getFileId(sm.getId(), fileName),
                 fm -> fm.setAnnotationStatus(TaskMetadata.Status.NONE));
-        synchronizer.synchronizeCatalogStudyFromStorage(sm.getName(), sessionId);
+        synchronizer.synchronizeCatalogFromStorage(sm.getName(), sessionId);
 
         file = catalogManager.getFileManager().get(studyId, fileName, null, sessionId).first();
         assertEquals(IndexStatus.READY, file.getInternal().getVariant().getIndex().getStatus().getId());
@@ -338,7 +338,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         assertEquals(0, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
 
-        synchronizer.synchronizeCatalogStudyFromStorage(studyId, sessionId);
+        synchronizer.synchronizeCatalogFromStorage(studyId, sessionId);
 
         assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
     }
@@ -357,7 +357,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
         assertEquals(wrongSampleId, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().get(0));
 
-        synchronizer.synchronizeCatalogStudyFromStorage(studyId, sessionId);
+        synchronizer.synchronizeCatalogFromStorage(studyId, sessionId);
 
         assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
         assertEquals(correctSampleId, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().get(0));

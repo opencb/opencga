@@ -101,7 +101,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     private URI outDirUri;
     private int release;
     private List<File> filesToIndex;
-    private CatalogStorageMetadataSynchronizer synchronizer;
+    private CatalogStorageMetadataSynchronizer _synchronizer;
     private boolean fullSynchronize = false;
     private boolean force;
 
@@ -179,7 +179,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         String projectFqn = catalogManager.getStudyManager().getProjectFqn(studyFqn);
 
         // Add species, assembly and release
-        synchronizer.synchronizeProjectMetadataFromCatalog(projectFqn, token);
+        getSynchronizer().synchronizeProjectMetadataFromCatalog(projectFqn, token);
     }
 
     /**
@@ -193,8 +193,6 @@ public class VariantFileIndexerOperationManager extends OperationManager {
      * @throws StorageEngineException
      */
     private List<URI> findFilesToIndex(ObjectMap params, String token) throws CatalogException, URISyntaxException, StorageEngineException {
-        synchronizer = new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
-
         List<File> inputFiles = new ArrayList<>();
         for (String file : files) {
             File inputFile = catalogManager.getFileManager().get(studyFqn, file, FILE_GET_QUERY_OPTIONS, token).first();
@@ -224,7 +222,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         }
 
         // Update Catalog from the storage metadata. This may change the index status of the inputFiles .
-        synchronizer.synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, token, FILE_GET_QUERY_OPTIONS);
+        getSynchronizer().synchronizeCatalogFromStorage(studyFqn, inputFiles, token, FILE_GET_QUERY_OPTIONS);
 
         logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
@@ -335,13 +333,12 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                     updateDefaultCohortStatus(studyFqn, prevDefaultCohortStatus, token);
                 }
                 if (fullSynchronize) {
-                    synchronizer.synchronizeCatalogStudyFromStorage(studyFqn, token);
+                    getSynchronizer().synchronizeCatalogFromStorage(studyFqn, token);
                 } else {
                     List<File> inputFiles = catalogManager.getFileManager().search(studyFqn,
                             new Query(FileDBAdaptor.QueryParams.URI.key(), fileUris),
                             new QueryOptions(QueryOptions.INCLUDE, "id,name,path,uri"), token).getResults();
-                    synchronizer.synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, token);
-                    synchronizer.synchronizeCohorts(studyFqn, token);
+                    getSynchronizer().synchronizeCatalogFromStorage(studyFqn, inputFiles, true, token);
                 }
             }
             variantStorageEngine.close();
@@ -809,6 +806,14 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             throw new CatalogException("Internal error. No transformed file could be found for file " + file.getUid());
         }
         return transformedFileId;
+    }
+
+    private CatalogStorageMetadataSynchronizer getSynchronizer() throws StorageEngineException {
+        if (_synchronizer == null) {
+            _synchronizer = new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
+
+        }
+        return _synchronizer;
     }
 
     private enum Type {

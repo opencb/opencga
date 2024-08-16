@@ -61,7 +61,7 @@ public abstract class OperationManager {
             }
         } else {
             // Update Catalog file and cohort status.
-            metadataSynchronizer.synchronizeCatalogStudyFromStorage(study, token);
+            metadataSynchronizer.synchronizeCatalogFromStorage(study, token);
         }
         return metadataManager.getStudyMetadata(study);
     }

@@ -480,14 +480,18 @@ public class ProjectManager extends AbstractManager {
                                                                            QueryOptions options,
                                                                            String token)
             throws CatalogException {
-        return setProjectInternalVariant(projectStr, new ProjectInternalVariant().setAnnotationIndex(status), options, token);
+        return setProjectInternalVariant(projectStr, new ProjectInternalVariant()
+                .setSecondaryAnnotationIndex(null)
+                .setAnnotationIndex(status), options, token);
     }
 
     public OpenCGAResult<Project> setProjectInternalVariantSecondaryAnnotationIndex(String projectStr, InternalVariantOperationIndex status,
                                                                                     QueryOptions options,
                                                             String token)
             throws CatalogException {
-        return setProjectInternalVariant(projectStr, new ProjectInternalVariant().setSecondaryAnnotationIndex(status), options, token);
+        return setProjectInternalVariant(projectStr, new ProjectInternalVariant()
+                .setSecondaryAnnotationIndex(status)
+                .setAnnotationIndex(null), options, token);
     }
 
     public OpenCGAResult<Project> setProjectInternalVariant(String projectStr, ProjectInternalVariant variant, QueryOptions options,

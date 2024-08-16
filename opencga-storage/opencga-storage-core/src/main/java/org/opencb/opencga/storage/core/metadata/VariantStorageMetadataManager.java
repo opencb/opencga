@@ -599,6 +599,21 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     /**
+     * Update the timestamp of the last variant index operation.
+     * @throws StorageEngineException if there is a problem updating the metadata
+     */
+    public void invalidateCurrentVariantAnnotationIndex() throws StorageEngineException {
+        updateProjectMetadata(pm -> {
+            pm.setAnnotationIndexLastTimestamp(0);
+            pm.setSecondaryAnnotationIndexLastTimestamp(0);
+
+            pm.setAnnotationIndexStatus(TaskMetadata.Status.NONE);
+            pm.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
+            return pm;
+        });
+    }
+
+    /**
      * Update the timestamp with the last time that a variant annotation index was executed successfully.
      * This must register the starting time of the operation, not the end time.
      * This includes partial annotations.

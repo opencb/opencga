@@ -94,7 +94,7 @@ public class VariantAnnotationOperationManager extends OperationManager {
         if (StringUtils.isEmpty(loadFileStr)) {
             variantStorageEngine.annotate(outdir.toUri(), annotationQuery, annotationOptions);
             new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager())
-                    .synchronizeCatalogFromStorage(projectStr, token);
+                    .synchronizeCatalogFromStorage(projectStr, null, token);
         } else {
             Path loadFilePath = Paths.get(loadFileStr);
             boolean fileExists = Files.exists(loadFilePath);

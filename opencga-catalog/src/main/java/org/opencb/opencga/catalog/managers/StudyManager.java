@@ -67,6 +67,7 @@ import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.variant.InternalVariantOperationIndex;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
@@ -1818,6 +1819,11 @@ public class StudyManager extends AbstractManager {
 
         ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(), configuration);
         getStudyDBAdaptor(organizationId).update(study.getUid(), parameters, QueryOptions.empty());
+    }
+
+    public OpenCGAResult<Study> setStudyInternalVariantSecondarySampleIndex(
+            String studyStr, InternalVariantOperationIndex variant, QueryOptions options, String token) throws CatalogException {
+        return setStudyInternalVariant(studyStr, new StudyInternalVariant().setSecondarySampleIndex(variant), options, token);
     }
 
     public OpenCGAResult<Study> setStudyInternalVariant(String studyStr, StudyInternalVariant variant, QueryOptions options,
