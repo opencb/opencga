@@ -16,16 +16,9 @@
 
 package org.opencb.opencga.master.monitor.daemons;
 
-import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.master.monitor.executors.BatchExecutor;
-import org.opencb.opencga.master.monitor.executors.ExecutorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.file.Path;
 
 /**
  * Created by imedina on 16/06/16.
@@ -34,25 +27,18 @@ public abstract class MonitorParentDaemon implements Runnable {
 
     protected int interval;
     protected CatalogManager catalogManager;
-    // FIXME: This should not be used directly! All the queries MUST go through the CatalogManager
-    @Deprecated
-    protected DBAdaptorFactory dbAdaptorFactory;
-    protected BatchExecutor batchExecutor;
 
-    protected boolean exit = false;
+    protected volatile boolean exit = false;
 
     protected String token;
 
     protected Logger logger;
 
-    public MonitorParentDaemon(int interval, String token, CatalogManager catalogManager) throws CatalogDBException {
+    public MonitorParentDaemon(int interval, String token, CatalogManager catalogManager) {
         this.interval = interval;
         this.catalogManager = catalogManager;
         this.token = token;
         logger = LoggerFactory.getLogger(this.getClass());
-        dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(), catalogManager.getIoManagerFactory());
-        ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
-        this.batchExecutor = executorFactory.getExecutor();
     }
 
     public boolean isExit() {
@@ -63,16 +49,24 @@ public abstract class MonitorParentDaemon implements Runnable {
         this.exit = exit;
     }
 
-    static Path getJobTemporaryFolder(long jobId, Path tempJobFolder) {
-        return tempJobFolder.resolve(getJobTemporaryFolderName(jobId));
+    @Override
+    public void run() {
+        while (!exit) {
+            try {
+                apply();
+            } catch (InterruptedException e) {
+                break;
+            } catch (Exception e) {
+                logger.error("Catch exception " + e.getMessage(), e);
+            }
+
+            try {
+                Thread.sleep(interval);
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
     }
 
-    static String getJobTemporaryFolderName(long jobId) {
-        return "J_" + jobId;
-    }
-
-    public MonitorParentDaemon setBatchExecutor(BatchExecutor batchExecutor) {
-        this.batchExecutor = batchExecutor;
-        return this;
-    }
+    protected abstract void apply() throws Exception;
 }

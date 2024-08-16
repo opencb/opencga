@@ -29,12 +29,11 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
-import java.time.temporal.ChronoField;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class VariantOperationJanitor {
+public class VariantOperationJanitor extends MonitorParentDaemon {
 
     public static final String TAG = "VariantOperationJanitor";
     private final CatalogManager catalogManager;
@@ -54,6 +53,7 @@ public class VariantOperationJanitor {
      * @param token          Valid administrator token.
      */
     public VariantOperationJanitor(CatalogManager catalogManager, String token) {
+        super(5000, token, catalogManager);
         this.catalogManager = catalogManager;
         if (catalogManager.getConfiguration().getAnalysis().getOperations() == null) {
             this.operationConfig = new OperationConfig();
@@ -68,9 +68,22 @@ public class VariantOperationJanitor {
                 new VariantSecondarySampleIndexOperationChore(operationConfig));
     }
 
+    @Override
+    public void apply() {
+        try {
+            checkPendingVariantOperations();
+        } catch (Exception e) {
+            logger.error("Error checking pending variant operations", e);
+        }
+    }
+
     public void checkPendingVariantOperations() throws CatalogException, ToolException {
         for (OperationChore chore : chores) {
-            checkPendingVariantOperations(chore);
+            try {
+                checkPendingVariantOperations(chore);
+            } catch (Exception e) {
+                logger.error("Error checking variant operation chore '{}'", chore.getToolId(), e);
+            }
         }
     }
 
@@ -99,76 +112,101 @@ public class VariantOperationJanitor {
                 }
 
                 Tool tool = new ToolFactory().getTool(toolId);
-                if (tool.scope() == Tool.Scope.PROJECT) {
-                    List<String> studyFqns = project.getStudies().stream().map(Study::getFqn).collect(Collectors.toList());
-                    // 1. Check if operation is pending
-                    operationChore.isOperationRequired(project, null);
-
-                    // 2. Check if the operation is already created on any study of the project
-                    if (pendingJobs(studyFqns, toolId)) {
-                        logger.info("There's already a pending job for tool '{}' in project '{}'. Skipping.", toolId, project.getFqn());
-                        continue;
-                    }
-
-                    // 3. Check general rules
-                    if (noPendingJobs(studyFqns, operationChore.dependantTools())) {
-                        // Get last execution of this job
-                        Job lastJobExecution = findLastJobExecution(studyFqns.get(0), toolId);
-                        ObjectMap attributes = getNewAttributes(lastJobExecution);
-                        if (attributes.getInt(ATTEMPT) > config.getMaxAttempts()) {
-                            logger.info("Max attempts reached for tool '{}' in project '{}'. Skipping.", toolId, project.getFqn());
-                            continue;
+                switch (tool.scope()) {
+                    case PROJECT:
+                        try {
+                            checkPendingChore(operationChore, project);
+                        } catch (Exception e) {
+                            logger.error("Error checking pending chore '{}' in project '{}'. Ignore exception.",
+                                    toolId, project.getFqn(), e);
                         }
-
-                        Map<String, Object> paramsMap;
-                        if (config.getJobParams() == null) {
-                            paramsMap = new HashMap<>(config.getJobParams());
-                        } else {
-                            paramsMap = new HashMap<>();
-                        }
-                        paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
-                        catalogManager.getJobManager().submit(studyFqns.get(0), toolId, Enums.Priority.HIGH, paramsMap, null,
-                                generateJobDescription(config, operationChore, attributes), null,
-                                Collections.singletonList(TAG), attributes, token);
-                    }
-                } else if (tool.scope() == Tool.Scope.STUDY) {
-                    for (Study study : project.getStudies()) {
-                        // 1. Check if operation is pending
-                        operationChore.isOperationRequired(project, study);
-
-                        // 2. Check if the operation is already created
-                        if (pendingJobs(study.getFqn(), toolId)) {
-                            // Pending jobs of its own type. Skip study
-                            logger.info("There's already a pending job for tool '{}' in study '{}'. Skipping.", toolId, study.getFqn());
-                            continue;
-                        }
-
-                        // 3. Check general rules
-                        if (noPendingJobs(study.getFqn(), operationChore.dependantTools())) {
-                            // Get last execution of this job
-                            Job lastJobExecution = findLastJobExecution(study.getFqn(), toolId);
-                            ObjectMap attributes = getNewAttributes(lastJobExecution);
-                            if (attributes.getInt(ATTEMPT) > config.getMaxAttempts()) {
-                                logger.info("Max attempts reached for tool '{}' in study '{}'. Skipping.", toolId, study.getFqn());
-                                continue;
+                        break;
+                    case STUDY:
+                        for (Study study : project.getStudies()) {
+                            try {
+                                checkPendingChore(operationChore, project, study);
+                            } catch (Exception e) {
+                                logger.error("Error checking pending chore '{}' in study '{}'. Ignore exception.",
+                                        toolId, study.getFqn(), e);
                             }
-
-                            Map<String, Object> paramsMap;
-                            if (config.getJobParams() == null) {
-                                paramsMap = new HashMap<>(config.getJobParams());
-                            } else {
-                                paramsMap = new HashMap<>();
-                            }
-                            paramsMap.put(ParamConstants.STUDY_PARAM, study.getFqn());
-                            catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.HIGH, paramsMap, null,
-                                    generateJobDescription(config, operationChore, attributes), null,
-                                    Collections.singletonList(TAG), attributes, token);
                         }
-                    }
-                } else {
-                    throw new IllegalArgumentException("Unexpected tools with scope " + tool.scope() + " for tool id '" + toolId + "'");
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unexpected tools with scope " + tool.scope() + " for tool id '" + toolId + "'");
                 }
             }
+        }
+    }
+
+    private void checkPendingChore(OperationChore operationChore, Project project) throws CatalogException {
+        OperationExecutionConfig config = operationChore.getConfig();
+        String toolId = operationChore.getToolId();
+        List<String> studyFqns = project.getStudies().stream().map(Study::getFqn).collect(Collectors.toList());
+        // 1. Check if operation is pending
+        operationChore.isOperationRequired(project, null);
+
+        // 2. Check if the operation is already created on any study of the project
+        if (pendingJobs(studyFqns, toolId)) {
+            logger.info("There's already a pending job for tool '{}' in project '{}'. Skipping.", toolId, project.getFqn());
+            return;
+        }
+
+        // 3. Check general rules
+        if (noPendingJobs(studyFqns, operationChore.dependantTools())) {
+            // Get last execution of this job
+            Job lastJobExecution = findLastJobExecution(studyFqns.get(0), toolId);
+            ObjectMap attributes = getNewAttributes(lastJobExecution);
+            if (attributes.getInt(ATTEMPT) > config.getMaxAttempts()) {
+                logger.info("Max attempts reached for tool '{}' in project '{}'. Skipping.", toolId, project.getFqn());
+                return;
+            }
+
+            Map<String, Object> paramsMap;
+            if (config.getJobParams() == null) {
+                paramsMap = new HashMap<>(config.getJobParams());
+            } else {
+                paramsMap = new HashMap<>();
+            }
+            paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
+            catalogManager.getJobManager().submit(studyFqns.get(0), toolId, Enums.Priority.HIGH, paramsMap, null,
+                    generateJobDescription(config, operationChore, attributes), null,
+                    Collections.singletonList(TAG), attributes, token);
+        }
+    }
+
+    private void checkPendingChore(OperationChore operationChore, Project project, Study study) throws CatalogException {
+        OperationExecutionConfig config = operationChore.getConfig();
+        String toolId = operationChore.getToolId();
+        // 1. Check if operation is pending
+        operationChore.isOperationRequired(project, study);
+
+        // 2. Check if the operation is already created
+        if (pendingJobs(study.getFqn(), toolId)) {
+            // Pending jobs of its own type. Skip study
+            logger.info("There's already a pending job for tool '{}' in study '{}'. Skipping.", toolId, study.getFqn());
+            return;
+        }
+
+        // 3. Check general rules
+        if (noPendingJobs(study.getFqn(), operationChore.dependantTools())) {
+            // Get last execution of this job
+            Job lastJobExecution = findLastJobExecution(study.getFqn(), toolId);
+            ObjectMap attributes = getNewAttributes(lastJobExecution);
+            if (attributes.getInt(ATTEMPT) > config.getMaxAttempts()) {
+                logger.info("Max attempts reached for tool '{}' in study '{}'. Skipping.", toolId, study.getFqn());
+                return;
+            }
+
+            Map<String, Object> paramsMap;
+            if (config.getJobParams() == null) {
+                paramsMap = new HashMap<>(config.getJobParams());
+            } else {
+                paramsMap = new HashMap<>();
+            }
+            paramsMap.put(ParamConstants.STUDY_PARAM, study.getFqn());
+            catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.HIGH, paramsMap, null,
+                    generateJobDescription(config, operationChore, attributes), null,
+                    Collections.singletonList(TAG), attributes, token);
         }
     }
 
@@ -211,7 +249,32 @@ public class VariantOperationJanitor {
 
         @Override
         public boolean isOperationRequired(Project project, Study study) {
-            return study.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId().equals(OperationIndexStatus.PENDING);
+            if (study.getInternal()
+                    .getVariant()
+                    .getSecondarySampleIndex()
+                    .getStatus().getId().equals(OperationIndexStatus.PENDING)) {
+                return true;
+            }
+//            try (DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(study.getFqn(), new Query(),
+//                    new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.MEMBERS), token)) {
+//                while (iterator.hasNext()) {
+//                    Family family = iterator.next();
+//                    List<Trio> trios = variantStorageManager.getTriosFromFamily(study.getFqn(), family, true, token);
+//                    for (Trio trio : trios) {
+//                        String childSample = trio.getChild();
+//                        Sample sample = catalogManager.getSampleManager().get(study.getFqn(), childSample,
+//                                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT), token).first();
+//                        if (!sample.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId()
+//                                .equals(IndexStatus.READY)) {
+//                            return true;
+//                        }
+//                    }
+//                }
+//            } catch (Exception e) {
+//                logger.error("Error checking if secondary sample index is required", e);
+//            }
+
+            return false;
         }
 
         @Override
@@ -289,8 +352,8 @@ public class VariantOperationJanitor {
         boolean isNightTime = false;
         // Check date time is between 00:00 and 05:00
         //TODO: Define night time in configuration
-        Instant now = Instant.now();
-        int hour = now.get(ChronoField.HOUR_OF_DAY);
+        LocalTime now = LocalTime.now();
+        int hour = now.getHour();
         if (hour < 5) {
             isNightTime = true;
         }

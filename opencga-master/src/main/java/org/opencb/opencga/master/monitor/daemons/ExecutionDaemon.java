@@ -104,6 +104,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.Status;
+import org.opencb.opencga.master.monitor.executors.BatchExecutor;
+import org.opencb.opencga.master.monitor.executors.ExecutorFactory;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 
 import javax.ws.rs.ProcessingException;
@@ -140,12 +142,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_SECONDS = (int) TimeUnit.MINUTES.toSeconds(10);
     public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
     private final StorageConfiguration storageConfiguration;
-    private final VariantOperationJanitor voj;
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
     private final Map<String, Long> jobsCountByType = new HashMap<>();
     private final Map<String, Long> retainedLogsTime = new HashMap<>();
+    protected BatchExecutor batchExecutor;
 
     private List<String> packages;
 
@@ -253,11 +255,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                            String appHome, List<String> packages) throws CatalogDBException {
         super(interval, token, catalogManager);
 
+        ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
+        this.batchExecutor = executorFactory.getExecutor();
+
         this.jobManager = catalogManager.getJobManager();
         this.fileManager = catalogManager.getFileManager();
         this.storageConfiguration = storageConfiguration;
         this.internalCli = appHome + "/bin/opencga-internal.sh";
-        this.voj = new VariantOperationJanitor(catalogManager, token);
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
 
@@ -278,29 +282,19 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("Packages where to find tools/analyses: " + StringUtils.join(this.packages, ", "));
     }
 
+    public MonitorParentDaemon setBatchExecutor(BatchExecutor batchExecutor) {
+        this.batchExecutor = batchExecutor;
+        return this;
+    }
+
+    @Override
+    protected void apply() throws Exception {
+        checkJobs();
+    }
+
     @Override
     public void run() {
-        while (!exit) {
-            try {
-                Thread.sleep(interval);
-            } catch (InterruptedException e) {
-                if (!exit) {
-                    e.printStackTrace();
-                }
-            }
-
-            try {
-                voj.checkPendingVariantOperations();
-            } catch (Exception e) {
-                logger.error("Catch exception " + e.getMessage(), e);
-            }
-
-            try {
-                checkJobs();
-            } catch (Exception e) {
-                logger.error("Catch exception " + e.getMessage(), e);
-            }
-        }
+        super.run();
 
         try {
             logger.info("Attempt to shutdown webhook executor");
