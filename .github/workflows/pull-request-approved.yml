@@ -9,7 +9,7 @@ jobs:
     name: Execute JUnit and Jacoco tests
     runs-on: ubuntu-22.04
     steps:
-      - name: Clone OpenCGA Enterprise branch '${{ github.event.inputs.branch }}'
+      - name: Clone OpenCGA Enterprise branch '${{ github.event.pull_request.head.ref }}'
         uses: actions/checkout@v4
         with:
           repository: zetta-genomics/opencga-enterprise

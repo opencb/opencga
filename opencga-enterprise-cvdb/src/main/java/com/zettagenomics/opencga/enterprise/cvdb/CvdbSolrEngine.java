@@ -23,7 +23,6 @@ import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretati
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantEvidenceConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIncludeHandler;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.*;
 import com.zettagenomics.opencga.enterprise.cvdb.models.mappings.*;
@@ -339,12 +338,31 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        List<String> includeList = getIncludeList(queryOptions, ClinicalIncludeHandler.caFields);
+        if (queryOptions.containsKey(INCLUDE)) {
+            List<String> includeList = new ArrayList<>();
+            for (String include : queryOptions.getAsStringList(INCLUDE, ",")) {
+                String[] split = include.split("\\.");
+                if (split.length > 2 && (split[1].equals("primaryFindings") || split[1].equals("secondaryFindings"))) {
+                    if (isImplClinicalVariantField(split[2])) {
+                        StringBuilder sb = new StringBuilder(split[0]).append(".").append(split[1]).append(".impl");
+                        for (int i = 2; i < split.length; i++) {
+                            sb.append(".").append(split[i]);
+                        }
+                        includeList.add(sb.toString());
+                    } else {
+                        includeList.add(include);
+                    }
+                } else {
+                    includeList.add(include);
+                }
+            }
+            queryOptions.put(INCLUDE, StringUtils.join(includeList, ","));
+        }
 
         // Execute query
         try {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_ANALYSES_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList, ClinicalAnalysisSearch.class,
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions, ClinicalAnalysisSearch.class,
                     ClinicalAnalysisConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
                 | IllegalAccessException e) {
@@ -409,12 +427,31 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        List<String> includeList = getIncludeList(queryOptions, ClinicalIncludeHandler.ciFields);
+        if (queryOptions.containsKey(INCLUDE)) {
+            List<String> includeList = new ArrayList<>();
+            for (String include : queryOptions.getAsStringList(INCLUDE, ",")) {
+                String[] split = include.split("\\.");
+                if (split.length > 1 && (split[0].equals("primaryFindings") || split[0].equals("secondaryFindings"))) {
+                    if (isImplClinicalVariantField(split[1])) {
+                        StringBuilder sb = new StringBuilder(split[0]).append(".impl");
+                        for (int i = 1; i < split.length; i++) {
+                            sb.append(".").append(split[i]);
+                        }
+                        includeList.add(sb.toString());
+                    } else {
+                        includeList.add(include);
+                    }
+                } else {
+                    includeList.add(include);
+                }
+            }
+            queryOptions.put(INCLUDE, StringUtils.join(includeList, ","));
+        }
 
         // Execute query
         try {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), INTERPRETATIONS_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList, ClinicalInterpretationSearch.class,
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions, ClinicalInterpretationSearch.class,
                     ClinicalInterpretationConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
                 | IllegalAccessException e) {
@@ -479,31 +516,23 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        List<String> includeList = new ArrayList<>();
         if (queryOptions.containsKey(INCLUDE)) {
+            List<String> includeList = new ArrayList<>();
             for (String include : queryOptions.getAsStringList(INCLUDE, ",")) {
-                switch (include) {
-                    case "evidences":
-                    case "comments":
-                    case "filters":
-                    case "discussion":
-                    case "confidence":
-                    case "tags":
-                    case "status":
-                    case "attributes":
-                        includeList.add(include);
-                        break;
-                    default:
-                        includeList.add("impl." + include);
-                        break;
+                String[] split = include.split("\\.");
+                if (isImplClinicalVariantField(split[0])) {
+                    includeList.add("impl." + include);
+                } else {
+                    includeList.add(include);
                 }
             }
+            queryOptions.put(INCLUDE, StringUtils.join(includeList, ","));
         }
 
         // Execute query
         try {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANTS_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList, ClinicalVariantSearch.class,
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions, ClinicalVariantSearch.class,
                     ClinicalVariantConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
                 | IllegalAccessException e) {
@@ -568,12 +597,11 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        List<String> includeList = getIncludeList(queryOptions, ClinicalIncludeHandler.cveFields);
 
         // Execute query
         try {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList,
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions,
                     ClinicalVariantEvidenceSearch.class, ClinicalVariantEvidenceConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
                 | IllegalAccessException e) {
@@ -786,7 +814,7 @@ public class CvdbSolrEngine {
 
             if (!exists) {
                 // Clinical analysis
-                ClinicalAnalysisSearch cas = caConverter.toClinicalAnalysisSearch(clinicalAnalysis, studyId, viewers);
+                ClinicalAnalysisSearch cas = caConverter.toClinicalAnalysisSearch(clinicalAnalysis, FqnUtils.getStudy(studyId), viewers);
 
                 // Index
                 updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX), cas);
@@ -826,7 +854,8 @@ public class CvdbSolrEngine {
             UpdateResponse updateResponse;
 
             // Interpretation
-            ClinicalInterpretationSearch cis = ciConverter.toInterpretationSearch(interpretation, isPrimary, studyId, viewers);
+            ClinicalInterpretationSearch cis = ciConverter.toInterpretationSearch(interpretation, isPrimary, FqnUtils.getStudy(studyId),
+                    viewers);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), cis);
             if (updateResponse.getStatus() != 0) {
@@ -857,7 +886,7 @@ public class CvdbSolrEngine {
             clinicalVariant.getAttributes().put(CA_ID_NAME, clinicalAnalysisId);
             clinicalVariant.getAttributes().put(CI_ID_NAME, interpretationId);
             ClinicalVariantSearch cvs = cvConverter.toClinicalVariantSearch(clinicalVariant, primary, interpretationId,
-                    clinicalAnalysisId, studyId, viewers);
+                    clinicalAnalysisId, FqnUtils.getStudy(studyId), viewers);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX), cvs);
             if (updateResponse.getStatus() != 0) {
@@ -886,7 +915,7 @@ public class CvdbSolrEngine {
             clinicalVariantEvidence.getAttributes().put(CI_ID_NAME, interpretationId);
             clinicalVariantEvidence.getAttributes().put(CV_ID_NAME, variantId);
             ClinicalVariantEvidenceSearch cves = cveConverter.toClinicalVariantEvidenceSearch(clinicalVariantEvidence, variantId,
-                    interpretationId, clinicalAnalysisId, studyId, viewers);
+                    interpretationId, clinicalAnalysisId, FqnUtils.getStudy(studyId), viewers);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX), cves);
             if (updateResponse.getStatus() != 0) {
@@ -953,6 +982,25 @@ public class CvdbSolrEngine {
     }
 
     //----------------------------------------------------------------------
+    private boolean isImplClinicalVariantField(String field) {
+        switch (field) {
+            case "evidences":
+            case "comments":
+            case "filters":
+            case "discussion":
+            case "confidence":
+            case "tags":
+            case "status":
+            case "attributes": {
+                return false;
+            }
+            default: {
+                return true;
+            }
+        }
+    }
+
+    //----------------------------------------------------------------------
 
     private void postProcessing(DataResult<FacetField> dataResult, FieldMapping fieldMapping) {
         for (FacetField facetField : dataResult.getResults()) {
@@ -990,20 +1038,6 @@ public class CvdbSolrEngine {
         } catch (CatalogException e) {
             throw new CvdbException("Checking user query permissions", e);
         }
-    }
-
-    private List<String> getIncludeList(QueryOptions queryOptions, List<String> allFields) {
-        List<String> includeList = new ArrayList<>();
-        if (queryOptions.containsKey(INCLUDE)) {
-            includeList.addAll(queryOptions.getAsStringList(INCLUDE, ","));
-        } else if (queryOptions.containsKey(EXCLUDE)) {
-            List<String> excludeFields = queryOptions.getAsStringList(EXCLUDE, ",").stream().map(field -> field.split("\\.")[0])
-                    .collect(Collectors.toList());
-            includeList = allFields.stream()
-                    .filter(field -> !excludeFields.contains(field))
-                    .collect(Collectors.toList());
-        }
-        return  includeList;
     }
 
     //----------------------------------------------------------------------
