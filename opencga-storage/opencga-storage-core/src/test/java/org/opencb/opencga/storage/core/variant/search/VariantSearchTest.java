@@ -187,15 +187,16 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         List<Variant> variants = getVariants(limit);
         List<Variant> annotatedVariants = annotatedVariants(variants);
 
-        String studyId = "abyu12";
-        String fileId = "a.vcf";
+        String study = "abyu12";
+        String file = "a.vcf";
 
-        variants.get(0).getStudies().get(0).getFiles().get(0).setFileId(fileId);
+        variants.get(0).getStudies().get(0).getFiles().get(0).setFileId(file);
         System.out.println(variants.get(0).getStudies().get(0).getFiles().get(0).getFileId());
         //System.exit(-1);
 
-        scm.createStudy(studyId);
-
+        int studyId = scm.createStudy(study).getId();
+        int fileId = scm.registerFile(studyId, file, Arrays.asList("A-A", "B", "C", "D"));
+        scm.addIndexedFiles(studyId, Collections.singletonList(fileId));
         String collection = solr.coreName;
         variantSearchManager.create(collection);
 
@@ -204,13 +205,13 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         samplePosition.put("B", 1);
         samplePosition.put("C", 2);
         samplePosition.put("D", 3);
-        annotatedVariants.get(0).getStudies().get(0).setStudyId(studyId).setSortedSamplesPosition(samplePosition);
+        annotatedVariants.get(0).getStudies().get(0).setStudyId(study).setSortedSamplesPosition(samplePosition);
         variantSearchManager.insert(collection, annotatedVariants);
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDY.key(), studyId);
+        query.put(VariantQueryParam.STUDY.key(), study);
 //        query.put(VariantQueryParam.SAMPLE.key(), samplePosition.keySet().toArray()[0]);
-        query.put(VariantQueryParam.FILE.key(), fileId);
+        query.put(VariantQueryParam.FILE.key(), file);
         query.put(VariantQueryParam.FILTER.key(), "PASS");
         query.put(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign");
         VariantQueryResult<Variant> results = variantSearchManager.query(collection, variantStorageEngine.parseQuery(query,

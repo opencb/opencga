@@ -189,10 +189,10 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), CellBaseConfiguration.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "url",commandOptions.url, true);
-            putNestedIfNotEmpty(beanParams, "version",commandOptions.version, true);
-            putNestedIfNotEmpty(beanParams, "dataRelease",commandOptions.dataRelease, true);
-            putNestedIfNotEmpty(beanParams, "apiKey",commandOptions.apiKey, true);
+            putNestedIfNotEmpty(beanParams, "url", commandOptions.url, true);
+            putNestedIfNotEmpty(beanParams, "version", commandOptions.version, true);
+            putNestedIfNotEmpty(beanParams, "dataRelease", commandOptions.dataRelease, true);
+            putNestedIfNotEmpty(beanParams, "apiKey", commandOptions.apiKey, true);
 
             cellBaseConfiguration = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -211,6 +211,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -228,8 +231,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantAggregateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
-            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
+            putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);
 
             variantAggregateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -248,6 +251,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("annotationId", commandOptions.annotationId);
 
@@ -264,6 +270,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -282,15 +291,15 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantAnnotationIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-            putNestedIfNotEmpty(beanParams, "outputFileName",commandOptions.outputFileName, true);
-            putNestedIfNotEmpty(beanParams, "annotator",commandOptions.annotator, true);
-            putNestedIfNotNull(beanParams, "overwriteAnnotations",commandOptions.overwriteAnnotations, true);
-            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-            putNestedIfNotNull(beanParams, "create",commandOptions.create, true);
-            putNestedIfNotEmpty(beanParams, "load",commandOptions.load, true);
-            putNestedIfNotEmpty(beanParams, "customName",commandOptions.customName, true);
-            putNestedIfNotNull(beanParams, "sampleIndexAnnotation",commandOptions.sampleIndexAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+            putNestedIfNotEmpty(beanParams, "outputFileName", commandOptions.outputFileName, true);
+            putNestedIfNotEmpty(beanParams, "annotator", commandOptions.annotator, true);
+            putNestedIfNotNull(beanParams, "overwriteAnnotations", commandOptions.overwriteAnnotations, true);
+            putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
+            putNestedIfNotNull(beanParams, "create", commandOptions.create, true);
+            putNestedIfNotEmpty(beanParams, "load", commandOptions.load, true);
+            putNestedIfNotEmpty(beanParams, "customName", commandOptions.customName, true);
+            putNestedIfNotNull(beanParams, "sampleIndexAnnotation", commandOptions.sampleIndexAnnotation, true);
 
             variantAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -309,6 +318,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
 
 
@@ -323,7 +335,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantAnnotationSaveParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "annotationId",commandOptions.annotationId, true);
+            putNestedIfNotEmpty(beanParams, "annotationId", commandOptions.annotationId, true);
 
             variantAnnotationSaveParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -356,7 +368,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantConfigureParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "configuration",commandOptions.configuration, true);
+            putNestedMapIfNotEmpty(beanParams, "configuration", commandOptions.configuration, true);
 
             variantConfigureParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -375,6 +387,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -392,9 +407,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantFileDeleteParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "file",commandOptions.file, true);
-            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
-            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
+            putNestedIfNotNull(beanParams, "file", commandOptions.file, true);
+            putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);
+            putNestedIfNotNull(beanParams, "force", commandOptions.force, true);
 
             variantFileDeleteParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -413,6 +428,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -430,9 +448,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantAggregateFamilyParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "samples",commandOptions.samples, true);
-            putNestedIfNotEmpty(beanParams, "gapsGenotype",commandOptions.gapsGenotype, true);
-            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+            putNestedIfNotNull(beanParams, "samples", commandOptions.samples, true);
+            putNestedIfNotEmpty(beanParams, "gapsGenotype", commandOptions.gapsGenotype, true);
+            putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);
 
             variantAggregateFamilyParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -451,6 +469,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -468,10 +489,10 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantFamilyIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "family",commandOptions.family, true);
-            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
-            putNestedIfNotNull(beanParams, "updateIndex",commandOptions.updateIndex, true);
-            putNestedIfNotNull(beanParams, "skipIncompleteFamilies",commandOptions.skipIncompleteFamilies, true);
+            putNestedIfNotNull(beanParams, "family", commandOptions.family, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
+            putNestedIfNotNull(beanParams, "updateIndex", commandOptions.updateIndex, true);
+            putNestedIfNotNull(beanParams, "skipIncompleteFamilies", commandOptions.skipIncompleteFamilies, true);
 
             variantFamilyIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -490,6 +511,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -507,36 +531,36 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
-            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-            putNestedIfNotNull(beanParams, "transform",commandOptions.transform, true);
-            putNestedIfNotNull(beanParams, "gvcf",commandOptions.gvcf, true);
-            putNestedIfNotNull(beanParams, "normalizationSkip",commandOptions.normalizationSkip, true);
-            putNestedIfNotEmpty(beanParams, "referenceGenome",commandOptions.referenceGenome, true);
-            putNestedIfNotEmpty(beanParams, "failOnMalformedLines",commandOptions.failOnMalformedLines, true);
-            putNestedIfNotNull(beanParams, "family",commandOptions.family, true);
-            putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
-            putNestedIfNotNull(beanParams, "load",commandOptions.load, true);
-            putNestedIfNotNull(beanParams, "forceReload",commandOptions.forceReload, true);
-            putNestedIfNotEmpty(beanParams, "loadSplitData",commandOptions.loadSplitData, true);
-            putNestedIfNotNull(beanParams, "loadMultiFileData",commandOptions.loadMultiFileData, true);
-            putNestedIfNotEmpty(beanParams, "loadSampleIndex",commandOptions.loadSampleIndex, true);
-            putNestedIfNotEmpty(beanParams, "loadArchive",commandOptions.loadArchive, true);
-            putNestedIfNotEmpty(beanParams, "loadHomRef",commandOptions.loadHomRef, true);
-            putNestedIfNotEmpty(beanParams, "postLoadCheck",commandOptions.postLoadCheck, true);
-            putNestedIfNotEmpty(beanParams, "includeGenotypes",commandOptions.includeGenotypes, true);
-            putNestedIfNotEmpty(beanParams, "includeSampleData",commandOptions.includeSampleData, true);
-            putNestedIfNotEmpty(beanParams, "merge",commandOptions.merge, true);
-            putNestedIfNotEmpty(beanParams, "deduplicationPolicy",commandOptions.deduplicationPolicy, true);
-            putNestedIfNotNull(beanParams, "calculateStats",commandOptions.calculateStats, true);
-            putNestedIfNotNull(beanParams, "aggregated",commandOptions.aggregated, true);
-            putNestedIfNotEmpty(beanParams, "aggregationMappingFile",commandOptions.aggregationMappingFile, true);
-            putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
-            putNestedIfNotEmpty(beanParams, "annotator",commandOptions.annotator, true);
-            putNestedIfNotNull(beanParams, "overwriteAnnotations",commandOptions.overwriteAnnotations, true);
-            putNestedIfNotNull(beanParams, "indexSearch",commandOptions.indexSearch, true);
-            putNestedIfNotNull(beanParams, "skipIndexedFiles",commandOptions.skipIndexedFiles, true);
+            putNestedIfNotEmpty(beanParams, "file", commandOptions.file, true);
+            putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "transform", commandOptions.transform, true);
+            putNestedIfNotNull(beanParams, "gvcf", commandOptions.gvcf, true);
+            putNestedIfNotNull(beanParams, "normalizationSkip", commandOptions.normalizationSkip, true);
+            putNestedIfNotEmpty(beanParams, "referenceGenome", commandOptions.referenceGenome, true);
+            putNestedIfNotEmpty(beanParams, "failOnMalformedLines", commandOptions.failOnMalformedLines, true);
+            putNestedIfNotNull(beanParams, "family", commandOptions.family, true);
+            putNestedIfNotNull(beanParams, "somatic", commandOptions.somatic, true);
+            putNestedIfNotNull(beanParams, "load", commandOptions.load, true);
+            putNestedIfNotNull(beanParams, "forceReload", commandOptions.forceReload, true);
+            putNestedIfNotEmpty(beanParams, "loadSplitData", commandOptions.loadSplitData, true);
+            putNestedIfNotNull(beanParams, "loadMultiFileData", commandOptions.loadMultiFileData, true);
+            putNestedIfNotEmpty(beanParams, "loadSampleIndex", commandOptions.loadSampleIndex, true);
+            putNestedIfNotEmpty(beanParams, "loadArchive", commandOptions.loadArchive, true);
+            putNestedIfNotEmpty(beanParams, "loadHomRef", commandOptions.loadHomRef, true);
+            putNestedIfNotEmpty(beanParams, "postLoadCheck", commandOptions.postLoadCheck, true);
+            putNestedIfNotEmpty(beanParams, "includeGenotypes", commandOptions.includeGenotypes, true);
+            putNestedIfNotEmpty(beanParams, "includeSampleData", commandOptions.includeSampleData, true);
+            putNestedIfNotEmpty(beanParams, "merge", commandOptions.merge, true);
+            putNestedIfNotEmpty(beanParams, "deduplicationPolicy", commandOptions.deduplicationPolicy, true);
+            putNestedIfNotNull(beanParams, "calculateStats", commandOptions.calculateStats, true);
+            putNestedIfNotNull(beanParams, "aggregated", commandOptions.aggregated, true);
+            putNestedIfNotEmpty(beanParams, "aggregationMappingFile", commandOptions.aggregationMappingFile, true);
+            putNestedIfNotNull(beanParams, "annotate", commandOptions.annotate, true);
+            putNestedIfNotEmpty(beanParams, "annotator", commandOptions.annotator, true);
+            putNestedIfNotNull(beanParams, "overwriteAnnotations", commandOptions.overwriteAnnotations, true);
+            putNestedIfNotNull(beanParams, "indexSearch", commandOptions.indexSearch, true);
+            putNestedIfNotNull(beanParams, "skipIndexedFiles", commandOptions.skipIndexedFiles, true);
 
             variantIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -555,6 +579,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -572,41 +599,41 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantFileIndexJobLauncherParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "directory",commandOptions.directory, true);
-            putNestedIfNotNull(beanParams, "resumeFailed",commandOptions.resumeFailed, true);
-            putNestedIfNotNull(beanParams, "ignoreFailed",commandOptions.ignoreFailed, true);
-            putNestedIfNotNull(beanParams, "maxJobs",commandOptions.maxJobs, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.file",commandOptions.indexParamsFile, true);
-            putNestedIfNotNull(beanParams, "indexParams.resume",commandOptions.indexParamsResume, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.outdir",commandOptions.indexParamsOutdir, true);
-            putNestedIfNotNull(beanParams, "indexParams.transform",commandOptions.indexParamsTransform, true);
-            putNestedIfNotNull(beanParams, "indexParams.gvcf",commandOptions.indexParamsGvcf, true);
-            putNestedIfNotNull(beanParams, "indexParams.normalizationSkip",commandOptions.indexParamsNormalizationSkip, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.referenceGenome",commandOptions.indexParamsReferenceGenome, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.failOnMalformedLines",commandOptions.indexParamsFailOnMalformedLines, true);
-            putNestedIfNotNull(beanParams, "indexParams.family",commandOptions.indexParamsFamily, true);
-            putNestedIfNotNull(beanParams, "indexParams.somatic",commandOptions.indexParamsSomatic, true);
-            putNestedIfNotNull(beanParams, "indexParams.load",commandOptions.indexParamsLoad, true);
-            putNestedIfNotNull(beanParams, "indexParams.forceReload",commandOptions.indexParamsForceReload, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.loadSplitData",commandOptions.indexParamsLoadSplitData, true);
-            putNestedIfNotNull(beanParams, "indexParams.loadMultiFileData",commandOptions.indexParamsLoadMultiFileData, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.loadSampleIndex",commandOptions.indexParamsLoadSampleIndex, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.loadArchive",commandOptions.indexParamsLoadArchive, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.loadHomRef",commandOptions.indexParamsLoadHomRef, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.postLoadCheck",commandOptions.indexParamsPostLoadCheck, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.includeGenotypes",commandOptions.indexParamsIncludeGenotypes, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.includeSampleData",commandOptions.indexParamsIncludeSampleData, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.merge",commandOptions.indexParamsMerge, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.deduplicationPolicy",commandOptions.indexParamsDeduplicationPolicy, true);
-            putNestedIfNotNull(beanParams, "indexParams.calculateStats",commandOptions.indexParamsCalculateStats, true);
-            putNestedIfNotNull(beanParams, "indexParams.aggregated",commandOptions.indexParamsAggregated, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.aggregationMappingFile",commandOptions.indexParamsAggregationMappingFile, true);
-            putNestedIfNotNull(beanParams, "indexParams.annotate",commandOptions.indexParamsAnnotate, true);
-            putNestedIfNotEmpty(beanParams, "indexParams.annotator",commandOptions.indexParamsAnnotator, true);
-            putNestedIfNotNull(beanParams, "indexParams.overwriteAnnotations",commandOptions.indexParamsOverwriteAnnotations, true);
-            putNestedIfNotNull(beanParams, "indexParams.indexSearch",commandOptions.indexParamsIndexSearch, true);
-            putNestedIfNotNull(beanParams, "indexParams.skipIndexedFiles",commandOptions.indexParamsSkipIndexedFiles, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "directory", commandOptions.directory, true);
+            putNestedIfNotNull(beanParams, "resumeFailed", commandOptions.resumeFailed, true);
+            putNestedIfNotNull(beanParams, "ignoreFailed", commandOptions.ignoreFailed, true);
+            putNestedIfNotNull(beanParams, "maxJobs", commandOptions.maxJobs, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.file", commandOptions.indexParamsFile, true);
+            putNestedIfNotNull(beanParams, "indexParams.resume", commandOptions.indexParamsResume, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.outdir", commandOptions.indexParamsOutdir, true);
+            putNestedIfNotNull(beanParams, "indexParams.transform", commandOptions.indexParamsTransform, true);
+            putNestedIfNotNull(beanParams, "indexParams.gvcf", commandOptions.indexParamsGvcf, true);
+            putNestedIfNotNull(beanParams, "indexParams.normalizationSkip", commandOptions.indexParamsNormalizationSkip, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.referenceGenome", commandOptions.indexParamsReferenceGenome, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.failOnMalformedLines", commandOptions.indexParamsFailOnMalformedLines, true);
+            putNestedIfNotNull(beanParams, "indexParams.family", commandOptions.indexParamsFamily, true);
+            putNestedIfNotNull(beanParams, "indexParams.somatic", commandOptions.indexParamsSomatic, true);
+            putNestedIfNotNull(beanParams, "indexParams.load", commandOptions.indexParamsLoad, true);
+            putNestedIfNotNull(beanParams, "indexParams.forceReload", commandOptions.indexParamsForceReload, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.loadSplitData", commandOptions.indexParamsLoadSplitData, true);
+            putNestedIfNotNull(beanParams, "indexParams.loadMultiFileData", commandOptions.indexParamsLoadMultiFileData, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.loadSampleIndex", commandOptions.indexParamsLoadSampleIndex, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.loadArchive", commandOptions.indexParamsLoadArchive, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.loadHomRef", commandOptions.indexParamsLoadHomRef, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.postLoadCheck", commandOptions.indexParamsPostLoadCheck, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.includeGenotypes", commandOptions.indexParamsIncludeGenotypes, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.includeSampleData", commandOptions.indexParamsIncludeSampleData, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.merge", commandOptions.indexParamsMerge, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.deduplicationPolicy", commandOptions.indexParamsDeduplicationPolicy, true);
+            putNestedIfNotNull(beanParams, "indexParams.calculateStats", commandOptions.indexParamsCalculateStats, true);
+            putNestedIfNotNull(beanParams, "indexParams.aggregated", commandOptions.indexParamsAggregated, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.aggregationMappingFile", commandOptions.indexParamsAggregationMappingFile, true);
+            putNestedIfNotNull(beanParams, "indexParams.annotate", commandOptions.indexParamsAnnotate, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.annotator", commandOptions.indexParamsAnnotator, true);
+            putNestedIfNotNull(beanParams, "indexParams.overwriteAnnotations", commandOptions.indexParamsOverwriteAnnotations, true);
+            putNestedIfNotNull(beanParams, "indexParams.indexSearch", commandOptions.indexParamsIndexSearch, true);
+            putNestedIfNotNull(beanParams, "indexParams.skipIndexedFiles", commandOptions.indexParamsSkipIndexedFiles, true);
 
             variantFileIndexJobLauncherParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -625,6 +652,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
 
 
@@ -639,9 +669,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), JulieParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "cohorts",commandOptions.cohorts, true);
-            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+            putNestedIfNotNull(beanParams, "cohorts", commandOptions.cohorts, true);
+            putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             julieParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -660,6 +690,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
 
 
         VariantStorageMetadataRepairToolParams variantStorageMetadataRepairToolParams = null;
@@ -673,8 +706,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantStorageMetadataRepairToolParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "studies",commandOptions.studies, true);
-            putNestedIfNotNull(beanParams, "samplesBatchSize",commandOptions.samplesBatchSize, true);
+            putNestedIfNotNull(beanParams, "studies", commandOptions.studies, true);
+            putNestedIfNotNull(beanParams, "samplesBatchSize", commandOptions.samplesBatchSize, true);
 
             variantStorageMetadataRepairToolParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -693,6 +726,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -710,8 +746,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantStorageMetadataSynchronizeParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "study",commandOptions.bodyStudy, true);
-            putNestedIfNotNull(beanParams, "files",commandOptions.files, true);
+            putNestedIfNotEmpty(beanParams, "study", commandOptions.bodyStudy, true);
+            putNestedIfNotNull(beanParams, "files", commandOptions.files, true);
 
             variantStorageMetadataSynchronizeParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -730,6 +766,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
 
 
         VariantPruneParams variantPruneParams = null;
@@ -743,9 +782,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantPruneParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "project",commandOptions.project, true);
-            putNestedIfNotNull(beanParams, "dryRun",commandOptions.dryRun, true);
-            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+            putNestedIfNotEmpty(beanParams, "project", commandOptions.project, true);
+            putNestedIfNotNull(beanParams, "dryRun", commandOptions.dryRun, true);
+            putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);
 
             variantPruneParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -764,6 +803,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -781,9 +823,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantSampleDeleteParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
-            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+            putNestedIfNotNull(beanParams, "sample", commandOptions.sample, true);
+            putNestedIfNotNull(beanParams, "force", commandOptions.force, true);
+            putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);
 
             variantSampleDeleteParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -802,6 +844,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -819,11 +864,11 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantSecondarySampleIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-            putNestedIfNotNull(beanParams, "buildIndex",commandOptions.buildIndex, true);
-            putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
-            putNestedIfNotNull(beanParams, "familyIndex",commandOptions.familyIndex, true);
-            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+            putNestedIfNotNull(beanParams, "sample", commandOptions.sample, true);
+            putNestedIfNotNull(beanParams, "buildIndex", commandOptions.buildIndex, true);
+            putNestedIfNotNull(beanParams, "annotate", commandOptions.annotate, true);
+            putNestedIfNotNull(beanParams, "familyIndex", commandOptions.familyIndex, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             variantSecondarySampleIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -868,6 +913,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("name", commandOptions.name);
         queryParams.putIfNotNull("resume", commandOptions.resume);
@@ -889,6 +937,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -906,12 +957,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantScoreIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "scoreName",commandOptions.scoreName, true);
-            putNestedIfNotEmpty(beanParams, "cohort1",commandOptions.cohort1, true);
-            putNestedIfNotEmpty(beanParams, "cohort2",commandOptions.cohort2, true);
-            putNestedIfNotEmpty(beanParams, "input",commandOptions.input, true);
-            putNestedIfNotEmpty(beanParams, "inputColumns",commandOptions.inputColumns, true);
-            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+            putNestedIfNotEmpty(beanParams, "scoreName", commandOptions.scoreName, true);
+            putNestedIfNotEmpty(beanParams, "cohort1", commandOptions.cohort1, true);
+            putNestedIfNotEmpty(beanParams, "cohort2", commandOptions.cohort2, true);
+            putNestedIfNotEmpty(beanParams, "input", commandOptions.input, true);
+            putNestedIfNotEmpty(beanParams, "inputColumns", commandOptions.inputColumns, true);
+            putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);
 
             variantScoreIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -930,6 +981,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -948,9 +1002,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantSecondaryAnnotationIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-            putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+            putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
+            putNestedIfNotNull(beanParams, "sample", commandOptions.sample, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -969,6 +1023,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -986,11 +1043,11 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantSecondarySampleIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-            putNestedIfNotNull(beanParams, "buildIndex",commandOptions.buildIndex, true);
-            putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
-            putNestedIfNotNull(beanParams, "familyIndex",commandOptions.familyIndex, true);
-            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+            putNestedIfNotNull(beanParams, "sample", commandOptions.sample, true);
+            putNestedIfNotNull(beanParams, "buildIndex", commandOptions.buildIndex, true);
+            putNestedIfNotNull(beanParams, "annotate", commandOptions.annotate, true);
+            putNestedIfNotNull(beanParams, "familyIndex", commandOptions.familyIndex, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             variantSecondarySampleIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -1035,6 +1092,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -1053,9 +1113,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantSecondaryAnnotationIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-            putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+            putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
+            putNestedIfNotNull(beanParams, "sample", commandOptions.sample, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -1074,6 +1134,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("samples", commandOptions.samples);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -1094,6 +1157,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -1110,8 +1176,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantStatsDeleteParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "cohort",commandOptions.cohort, true);
-            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
+            putNestedIfNotNull(beanParams, "cohort", commandOptions.cohort, true);
+            putNestedIfNotNull(beanParams, "force", commandOptions.force, true);
 
             variantStatsDeleteParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -1131,6 +1197,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -1147,12 +1216,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantStatsIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "cohort",commandOptions.cohort, true);
-            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-            putNestedIfNotNull(beanParams, "overwriteStats",commandOptions.overwriteStats, true);
-            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
-            putNestedIfNotNull(beanParams, "aggregated",commandOptions.aggregated, true);
-            putNestedIfNotEmpty(beanParams, "aggregationMappingFile",commandOptions.aggregationMappingFile, true);
+            putNestedIfNotNull(beanParams, "cohort", commandOptions.cohort, true);
+            putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
+            putNestedIfNotNull(beanParams, "overwriteStats", commandOptions.overwriteStats, true);
+            putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);
+            putNestedIfNotNull(beanParams, "aggregated", commandOptions.aggregated, true);
+            putNestedIfNotEmpty(beanParams, "aggregationMappingFile", commandOptions.aggregationMappingFile, true);
 
             variantStatsIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -1171,6 +1240,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -1188,7 +1260,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantStudyDeleteParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+            putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);
 
             variantStudyDeleteParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

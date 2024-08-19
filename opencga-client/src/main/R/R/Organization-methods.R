@@ -23,7 +23,9 @@
 #' | createNotes | /{apiVersion}/organizations/notes/create | include, exclude, includeResult, body[*] |
 #' | searchNotes | /{apiVersion}/organizations/notes/search | include, exclude, creationDate, modificationDate, id, scope, visibility, uuid, userId, tags, version |
 #' | deleteNotes | /{apiVersion}/organizations/notes/{id}/delete | id[*], includeResult |
-#' | updateNotes | /{apiVersion}/organizations/notes/{id}/update | include, exclude, id[*], includeResult, body[*] |
+#' | updateNotes | /{apiVersion}/organizations/notes/{id}/update | include, exclude, id[*], tagsAction, includeResult, body[*] |
+#' | userUpdateStatus | /{apiVersion}/organizations/user/{user}/status/update | include, exclude, user[*], organization, includeResult, body[*] |
+#' | updateUser | /{apiVersion}/organizations/user/{user}/update | include, exclude, user[*], organization, includeResult, body[*] |
 #' | updateConfiguration | /{apiVersion}/organizations/{organization}/configuration/update | include, exclude, organization[*], includeResult, authenticationOriginsAction, body[*] |
 #' | info | /{apiVersion}/organizations/{organization}/info | include, exclude, organization[*] |
 #' | update | /{apiVersion}/organizations/{organization}/update | include, exclude, organization[*], includeResult, adminsAction, body[*] |
@@ -34,7 +36,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("organizationClient", "OpencgaR", function(OpencgaR, id, organization, endpointName, params=NULL, ...) {
+setMethod("organizationClient", "OpencgaR", function(OpencgaR, id, organization, user, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/organizations/create:
@@ -83,10 +85,34 @@ setMethod("organizationClient", "OpencgaR", function(OpencgaR, id, organization,
         #' @param include Fields included in the response, whole JSON path must be provided.
         #' @param exclude Fields excluded in the response, whole JSON path must be provided.
         #' @param id Note unique identifier.
+        #' @param tagsAction Action to be performed if the array of tags is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
         #' @param data JSON containing the Note fields to be updated.
         updateNotes=fetchOpenCGA(object=OpencgaR, category="organizations", categoryId=NULL, subcategory="notes",
                 subcategoryId=id, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/organizations/user/{user}/status/update:
+        #' Update the user status.
+        #' @param include Fields included in the response, whole JSON path must be provided.
+        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
+        #' @param user User ID.
+        #' @param organization Organization id.
+        #' @param includeResult Flag indicating to include the created or updated document result in the response.
+        #' @param data JSON containing the User fields to be updated.
+        userUpdateStatus=fetchOpenCGA(object=OpencgaR, category="organizations/user", categoryId=user,
+                subcategory="status", subcategoryId=NULL, action="update", params=params, httpMethod="POST",
+                as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/organizations/user/{user}/update:
+        #' Update the user information.
+        #' @param include Fields included in the response, whole JSON path must be provided.
+        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
+        #' @param user User ID.
+        #' @param organization Organization id.
+        #' @param includeResult Flag indicating to include the created or updated document result in the response.
+        #' @param data JSON containing the User fields to be updated.
+        updateUser=fetchOpenCGA(object=OpencgaR, category="organizations", categoryId=NULL, subcategory="user",
+                subcategoryId=user, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/organizations/{organization}/configuration/update:
         #' Update the Organization configuration attributes.

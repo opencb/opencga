@@ -4,33 +4,27 @@ PyOpenCGA
 ==========
 
 This Python client package makes use of the comprehensive RESTful web services API implemented for the `OpenCGA`_ platform.
-OpenCGA is an open-source project that implements a high-performance, scalable and secure platform for Genomic data analysis and visualisation
+OpenCGA is an open-source project that implements a high-performance, scalable and secure platform for Genomic data analysis and visualisation.
 
 OpenCGA implements a secure and high performance platform for Big Data analysis and visualisation in current genomics.
-OpenCGA uses the most modern and advanced technologies to scale to petabytes of data. OpenCGA is designed and implemented to work with
-few million genomes. It is built on top of three main components: Catalog, Variant and Alignment Storage and Analysis.
+OpenCGA uses the most modern and advanced technologies to scale to petabytes of data. OpenCGA is designed and implemented to work with few million genomes. It is built on top of three main components: Catalog, Variant and Alignment Storage and Analysis.
 
-More info about this project in the `OpenCGA Docs`_
+More info about this project in `OpenCGA Docs`_
 
 Installation
 ------------
 
-Cloning
-```````
-PyOpenCGA can be cloned in your local machine by executing in your terminal::
+PyOpenCGA can be installed from the Pypi repository. Make sure you have pip available in your machine. You can check this by running::
 
-   $ git clone https://github.com/opencb/opencga.git
+   $ python3 -m pip --version
 
-Once you have downloaded the project you can install the library. We recommend to install it inside a `virtual environment`_::
 
-   $ cd opencga/tree/develop/opencga-client/src/main/python/pyOpenCGA
-   $ python setup.py install
+If you don't have Python or pip, please refer to https://packaging.python.org/en/latest/tutorials/installing-packages/
 
-Pip install
-```````````
-Run the following command in the shell::
+To install PyOpencga, run the following command in the shell::
 
    $ pip install pyopencga
+
 
 Usage
 -----
@@ -48,14 +42,14 @@ The first step is to import the ClientConfiguration and OpenCGAClient from pyOpe
 Setting up server host configuration
 ````````````````````````````````````
 
-The second step is to generate a ClientConfiguration instance by passing a configuration dictionary containing the host to point to or a client-configuration.yml file:
+The second step is to generate a ClientConfiguration instance by passing a configuration dictionary containing the opencga host OR a client-configuration.yml file with that information:
 
 .. code-block:: python
 
     >>> config = ClientConfiguration('/opt/opencga/conf/client-configuration.yml')
     >>> config = ClientConfiguration({
             "rest": {
-                    "host": "http://bioinfo.hpc.cam.ac.uk/opencga-demo"
+                    "host": "https://demo.app.zettagenomics.com/opencga"
             }
         })
 
@@ -67,33 +61,22 @@ With this configuration you can initialize the OpenCGAClient, and log in:
 .. code-block:: python
 
     >>> oc = OpenCGAClient(config)
-    >>> oc.login('user')
-
-For scripting or using Jupyter Notebooks is preferable to load user credentials from an external JSON file.
-
-Once you are logged in, it is mandatory to use the token of the session to propagate the access of the clients to the host server:
-
-.. code-block:: python
-
-    >>> token = oc.token
-    >>> print(token)
-    eyJhbGciOi...
-
-    >>> oc = OpenCGAClient(configuration=config_dict, token=token)
+    >>> oc.login(user='user', password='pass', organization='organization')
 
 Examples
 ````````
 
-The next step is to get an instance of the clients we may want to use:
+The first step is to get an instance of the clients we may want to use:
 
 .. code-block:: python
 
-    >>> projects = oc.projects # Project client
-    >>> studies = oc.studies   # Study client
-    >>> samples = oc.samples # Sample client
-    >>> cohorts = oc.cohorts # Cohort client
+    >>> projects = oc.projects  # Project client
+    >>> studies = oc.studies  # Study client
+    >>> samples = oc.samples  # Sample client
+    >>> individuals = oc.individuals  # Individual client
+    >>> cohorts = oc.cohorts  # Cohort client
 
-Now you can start asking to the OpenCGA RESTful service with pyOpenCGA:
+Now you can start querying with pyOpenCGA:
 
 .. code-block:: python
 
@@ -103,41 +86,38 @@ Now you can start asking to the OpenCGA RESTful service with pyOpenCGA:
     project2
     [...]
 
-There are two different ways to access to the query response data:
+There are two different ways to access query response data:
 
 .. code-block:: python
 
-    >>> foo_client.method().get_results() # Iterates over all the results of all the QueryResults
-    >>> foo_client.method().get_responses() # Iterates over all the responses
+    >>> foo_client.method().get_responses()  # Iterates over all the responses
+    >>> foo_client.method().get_results()  # Iterates over all the results of the first response
 
-Data can be accessed specifying comma-separated IDs or a list of IDs:
+Data can be accessed specifying comma-separated IDs or a list of IDs.
+
+e.g. Retrieving individual karyotypic sex for a list of individuals:
 
 .. code-block:: python
 
-    >>> samples = 'NA12877,NA12878,NA12879'
-    >>> samples_list = ['NA12877','NA12878','NA12879']
-    >>> sc = oc.samples
+    >>> for result in oc.samples.info(samples='NA12877,NA12878,NA12889', study='platinum').get_results():
+    ...     print(result['id'], result['karyotypicSex'])
+    NA12877 XY
+    NA12878 XX
+    NA12889 XY
 
-    >>> for result in sc.info(query_id=samples, study='user@project1:study1').get_results():
-    ...     print(result['id'], result['attributes']['OPENCGA_INDIVIDUAL']['disorders'])
-    NA12877 [{'id': 'OMIM6500', 'name': "Chron's Disease"}]
-    NA12878 []
-    NA12879 [{'id': 'OMIM6500', 'name': "Chron's Disease"}]
-
-    >>> for result in sc.info(query_id=samples_list, study='user@project1:study1').get_results():
-    ...     print(result['id'], result['attributes']['OPENCGA_INDIVIDUAL']['disorders'])
-    NA12877 [{'id': 'OMIM6500', 'name': "Chron's Disease"}]
-    NA12878 []
-    NA12879 [{'id': 'OMIM6500', 'name': "Chron's Disease"}]
+    >>> for result in oc.samples.info(samples=['NA12877', 'NA12878', 'NA12889'], study='platinum').get_results():
+    ...     print(result['id'], result['karyotypicSex'])
+    NA12877 XY
+    NA12878 XX
+    NA12889 XY
 
 Optional filters and extra options can be added as key-value parameters (where the values can be a comma-separated string or a list).
 
 What can I ask for?
 ```````````````````
-The best way to know which data can be retrieved for each client check `OpenCGA web services`_ swagger.
-
+The best way to know which data can be retrieved for each client, log into `OpenCGA Demo`_ and check the **OpenCGA REST API** in the **About** section (at the top right corner of the screen).
 
 .. _OpenCGA: https://github.com/opencb/opencga
 .. _OpenCGA Docs: http://docs.opencb.org/display/opencga
-.. _virtual environment: https://help.dreamhost.com/hc/en-us/articles/115000695551-Installing-and-using-virtualenv-with-Python-3 
-.. _OpenCGA web services: http://bioinfodev.hpc.cam.ac.uk/opencga/webservices/
+.. _OpenCGA REST API: https://demo.app.zettagenomics.com/
+.. _OpenCGA Demo: https://demo.app.zettagenomics.com/

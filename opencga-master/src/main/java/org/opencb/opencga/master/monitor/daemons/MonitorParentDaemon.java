@@ -20,19 +20,20 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
+
 /**
  * Created by imedina on 16/06/16.
  */
-public abstract class MonitorParentDaemon implements Runnable {
+public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
     protected int interval;
     protected CatalogManager catalogManager;
 
     protected volatile boolean exit = false;
 
-    protected String token;
-
-    protected Logger logger;
+    protected final String token;
+    protected final Logger logger;
 
     public MonitorParentDaemon(int interval, String token, CatalogManager catalogManager) {
         this.interval = interval;

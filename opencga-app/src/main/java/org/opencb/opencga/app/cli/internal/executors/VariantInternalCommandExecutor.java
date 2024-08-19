@@ -129,6 +129,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
     //    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
     private VariantCommandOptions variantCommandOptions;
     private String jobId;
+    private boolean dryRun;
 
     public VariantInternalCommandExecutor(VariantCommandOptions variantCommandOptions) {
         super(variantCommandOptions.commonCommandOptions);
@@ -144,6 +145,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         configure();
 
         jobId = variantCommandOptions.internalJobOptions.jobId;
+        dryRun = variantCommandOptions.internalJobOptions.dryRun;
 
         switch (subCommandString) {
             case VARIANT_DELETE_COMMAND:
@@ -344,7 +346,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                     cliOptions.outputFileName,
                     cliOptions.outputFileFormat,
                     cliOptions.variantsFile);
-            toolRunner.execute(VariantExportTool.class, toolParams, queryOptions, Paths.get(outdir), jobId, token);
+            toolRunner.execute(VariantExportTool.class, toolParams, queryOptions, Paths.get(outdir), jobId, dryRun, token);
         }
     }
 
@@ -363,7 +365,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantDeleteOptions.resume);
         toolRunner.execute(VariantFileDeleteOperationTool.class,
                 params.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study),
-                Paths.get(cliOptions.outdir), jobId, token);
+                Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void index() throws ToolException {
@@ -405,7 +407,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .append(VariantStorageOptions.STDIN.key(), cliOptions.stdin)
                 .append(VariantStorageOptions.STDOUT.key(), cliOptions.stdout);
 
-        toolRunner.execute(VariantIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(VariantIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void secondaryIndex() throws ToolException {
@@ -420,9 +422,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project);
 
         if (CollectionUtils.isEmpty(cliOptions.sample)) {
-            toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
+            toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
         } else {
-            toolRunner.execute(VariantSecondaryIndexSamplesOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
+            toolRunner.execute(VariantSecondaryIndexSamplesOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
         }
     }
 
@@ -455,7 +457,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(VariantStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(VariantStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
 //    private void statsIndex() throws ToolException {
@@ -486,7 +488,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(VariantScoreIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(VariantScoreIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void scoreRemove() throws ToolException {
@@ -499,7 +501,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(VariantScoreDeleteOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(VariantScoreDeleteOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void sampleIndex()
@@ -517,7 +519,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(VariantSecondarySampleIndexOperationTool.class,
                 params.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study),
                 Paths.get(cliOptions.outdir),
-                jobId, token);
+                jobId, dryRun, token);
     }
 
     private void familyIndex()
@@ -533,7 +535,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(VariantFamilyIndexOperationTool.class,
                 params.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study),
                 Paths.get(cliOptions.outdir),
-                jobId, token);
+                jobId, dryRun, token);
     }
 
     private void annotate() throws ToolException {
@@ -558,7 +560,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                         .append(ParamConstants.PROJECT_PARAM, cliOptions.project)
                         .append(ParamConstants.STUDY_PARAM, cliOptions.study),
                 Paths.get(cliOptions.outdir),
-                jobId, token);
+                jobId, dryRun, token);
     }
 
     private void annotationSave() throws ToolException {
@@ -568,7 +570,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project);
 
-        toolRunner.execute(VariantAnnotationSaveOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(VariantAnnotationSaveOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void annotationDelete() throws ToolException {
@@ -578,7 +580,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project);
 
-        toolRunner.execute(VariantAnnotationDeleteOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(VariantAnnotationDeleteOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void annotationQuery() throws CatalogException, IOException, StorageEngineException {
@@ -646,7 +648,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(VariantAggregateFamilyOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(VariantAggregateFamilyOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void aggregate() throws ToolException {
@@ -658,7 +660,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(VariantAggregateOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(VariantAggregateOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void sampleRun() throws Exception {
@@ -668,7 +670,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(SampleVariantFilterAnalysis.class,
                 cliOptions.toolParams.toObjectMap(cliOptions.commonOptions.params)
                         .append(ParamConstants.STUDY_PARAM, cliOptions.study),
-                Paths.get(cliOptions.outdir), jobId, token);
+                Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void gwas() throws Exception {
@@ -690,7 +692,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         }
         GwasAnalysis gwasAnalysis = new GwasAnalysis();
         gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
+                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         gwasAnalysis.setStudy(cliOptions.study)
                 .setPhenotype(cliOptions.phenotype)
                 .setIndex(cliOptions.index)
@@ -724,7 +726,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(KnockoutAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(KnockoutAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void sampleEligibility() throws Exception {
@@ -737,7 +739,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(SampleEligibilityAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(SampleEligibilityAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void sampleStats() throws Exception {
@@ -756,7 +758,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.batchSize,
                 variantQuery
         );
-        toolRunner.execute(SampleVariantStatsAnalysis.class, toolParams, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(SampleVariantStatsAnalysis.class, toolParams, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void cohortStats() throws Exception {
@@ -775,7 +777,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         CohortVariantStatsAnalysis cohortVariantStatsAnalysis = new CohortVariantStatsAnalysis();
         cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
+                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         cohortVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setCohortName(cliOptions.cohort)
                 .setIndex(cliOptions.index)
@@ -796,7 +798,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         Path outdir = Paths.get(cliOptions.outdir);
 
-        toolRunner.execute(JulieTool.class, toolParams, params, outdir, jobId, token);
+        toolRunner.execute(JulieTool.class, toolParams, params, outdir, jobId, dryRun, token);
     }
 
     private void mutationalSignature() throws Exception {
@@ -824,7 +826,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(MutationalSignatureAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(MutationalSignatureAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void hrDetect() throws Exception {
@@ -846,7 +848,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(HRDetectAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(HRDetectAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void genomePlot() throws Exception {
@@ -860,7 +862,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(GenomePlotAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(GenomePlotAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void mendelianError() throws Exception {
@@ -870,7 +872,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         MendelianErrorAnalysis mendelianErrorAnalysis = new MendelianErrorAnalysis();
         mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
+                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         mendelianErrorAnalysis.setStudy(cliOptions.study)
                 .setFamilyId(cliOptions.family)
                 .setIndividualId(cliOptions.individual)
@@ -885,7 +887,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         InferredSexAnalysis inferredSexAnalysis = new InferredSexAnalysis();
         inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
+                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         inferredSexAnalysis.setStudyId(cliOptions.study)
                 .setIndividualId(cliOptions.individual)
                 .setSampleId(cliOptions.sample)
@@ -899,7 +901,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         RelatednessAnalysis relatednessAnalysis = new RelatednessAnalysis();
         relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
+                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         relatednessAnalysis.setStudyId(cliOptions.study)
                 .setIndividualIds(cliOptions.individuals)
                 .setSampleIds(cliOptions.samples)
@@ -915,7 +917,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         FamilyQcAnalysis familyQcAnalysis = new FamilyQcAnalysis();
         familyQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
+                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         familyQcAnalysis.setStudyId(cliOptions.study)
                 .setFamilyId(cliOptions.family)
                 .setRelatednessMethod(cliOptions.relatednessMethod)
@@ -930,7 +932,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         IndividualQcAnalysis individualQcAnalysis = new IndividualQcAnalysis();
         individualQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
+                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         individualQcAnalysis.setStudyId(cliOptions.study)
                 .setIndividualId(cliOptions.individual)
                 .setSampleId(cliOptions.sample)
@@ -973,7 +975,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(SampleQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(SampleQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     // Wrappers
@@ -986,7 +988,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.plinkParams)
                 .toObjectMap(cliOptions.basicOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(PlinkWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(PlinkWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void rvtests() throws Exception {
@@ -998,7 +1000,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.rvtestsParams)
                 .toObjectMap(cliOptions.basicOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(RvtestsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(RvtestsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void gatk() throws Exception {
@@ -1010,7 +1012,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.gatkParams)
                 .toObjectMap(cliOptions.basicOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(GatkWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(GatkWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void exomiser() throws Exception {
@@ -1022,7 +1024,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(ExomiserWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(ExomiserWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void checkSignatureVersion(String sigVersion) throws ClientException {

@@ -29,6 +29,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -170,7 +171,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
             paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
             catalogManager.getJobManager().submit(studyFqns.get(0), toolId, Enums.Priority.HIGH, paramsMap, null,
                     generateJobDescription(config, operationChore, attributes), null,
-                    Collections.singletonList(TAG), attributes, token);
+                    Collections.singletonList(TAG), null, null, false, attributes, token);
         }
     }
 
@@ -206,7 +207,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
             paramsMap.put(ParamConstants.STUDY_PARAM, study.getFqn());
             catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.HIGH, paramsMap, null,
                     generateJobDescription(config, operationChore, attributes), null,
-                    Collections.singletonList(TAG), attributes, token);
+                    Collections.singletonList(TAG), null, null, false, attributes, token);
         }
     }
 
@@ -220,6 +221,11 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
         String jobIds = StringUtils.join(attributes.getAsStringList(FAILED_ATTEMPT_JOB_IDS), ", ");
         stringBuilder.append("Job ids from previous attempts: ").append(jobIds).append(".");
         return stringBuilder.toString();
+    }
+
+    @Override
+    public void close() throws IOException {
+
     }
 
     private interface OperationChore {
