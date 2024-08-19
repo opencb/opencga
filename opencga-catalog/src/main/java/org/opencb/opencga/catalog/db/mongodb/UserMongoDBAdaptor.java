@@ -242,29 +242,22 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
                 }
             }
 
-            // 2. Calculate all possible hashValues with new password
-            Set<String> hashValues = new HashSet<>();
-            List<String> saltValues = passwordDoc.getList(ARCHIVE, Document.class).stream()
-                    .map(document -> document.getString(SALT))
-                    .collect(Collectors.toList());
-            for (String saltValue : saltValues) {
-                hashValues.add(encryptPassword(newPassword, saltValue));
-            }
-
-            // 3. Check new password has not been used before
+            // 2. Check new password has not been used before
             for (Document document : passwordDoc.getList(ARCHIVE, Document.class)) {
                 String hashValue = document.getString(HASH);
-                if (hashValues.contains(hashValue)) {
+                String saltValue = document.getString(SALT);
+                String encryptedPassword = encryptPassword(newPassword, saltValue);
+                if (encryptedPassword.equals(hashValue)) {
                     throw new CatalogAuthenticationException(prefixErrorMsg + "The new password has already been used."
                             + " Please, use a different one.");
                 }
             }
 
-            // 4. Generate new salt for current password
+            // 3. Generate new salt for current password
             String newSalt = PasswordUtils.getStrongRandomSalt();
             String newHash = encryptPassword(newPassword, newSalt);
 
-            // 5. Generate update document
+            // 4. Generate update document
             UpdateDocument updateDocument = new UpdateDocument();
             // add to current
             updateDocument.getSet().put(PRIVATE_PASSWORD_CURRENT_HASH, newHash);
