@@ -213,7 +213,7 @@ export default class Job extends OpenCGAParentClass {
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     kill(job, params) {
-        return this._post("jobs", job, null, null, "kill", params);
+        return this._post("jobs", job, null, null, "kill", null, params);
     }
 
     /** Show the first lines of a log file (up to a limit)
