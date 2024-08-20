@@ -1,0 +1,11 @@
+---
+outputContributingVariantsOnly: true
+#numGenes options: 0 = all or specify a limit e.g. 500 for the first 500 results
+numGenes: 20
+minExomiserGeneScore: 0.0
+# Path to the desired output directory. Will default to the 'results' subdirectory of the exomiser install directory
+outputDirectory: /jobdir/
+# Filename for the output files. Will default to {input-vcf-filename}-exomiser
+outputFileName: exomiser_output
+#out-format options: HTML, JSON, TSV_GENE, TSV_VARIANT, VCF (default: HTML)
+outputFormats: [TSV_VARIANT, JSON, HTML]
