@@ -83,8 +83,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.
 
-    METADATA_LOCK_DURATION("metadata.lock.duration", 5000),
-    METADATA_LOCK_TIMEOUT("metadata.lock.timeout", 60000),
+    METADATA_LOCK_DURATION("metadata.lock.duration", 60000),
+    METADATA_LOCK_TIMEOUT("metadata.lock.timeout", 600000),
     METADATA_LOAD_BATCH_SIZE("metadata.load.batchSize", 10),
     METADATA_LOAD_THREADS("metadata.load.numThreads", 4),
 
