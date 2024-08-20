@@ -12,15 +12,18 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.StudyAclParams;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -56,25 +59,6 @@ public class InterpretationManagerTest extends AbstractManagerTest {
 
         return catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, !createDefaultInterpretation,
                 INCLUDE_RESULT, ownerToken);
-    }
-
-    private List<File> registerDummyFiles() throws CatalogException {
-        List<File> files = new LinkedList<>();
-
-        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        files.add(catalogManager.getFileManager().link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null,
-                null), false, ownerToken).first());
-        vcfFile = getClass().getResource("/biofiles/family.vcf").getFile();
-        files.add(catalogManager.getFileManager().link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null,
-                null), false, ownerToken).first());
-        String bamFile = getClass().getResource("/biofiles/HG00096.chrom20.small.bam").getFile();
-        files.add(catalogManager.getFileManager().link(studyFqn, new FileLinkParams(bamFile, "", "", "", null, null, null, null,
-                null), false, ownerToken).first());
-        bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        files.add(catalogManager.getFileManager().link(studyFqn, new FileLinkParams(bamFile, "", "", "", null, null, null, null,
-                null), false, ownerToken).first());
-
-        return files;
     }
 
     @Test
@@ -149,14 +133,33 @@ public class InterpretationManagerTest extends AbstractManagerTest {
             assertFalse(secondaryInterpretation.isLocked());
         }
 
+        // Add ADMIN permissions to the user2
+        catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId2,
+                new StudyAclParams(StudyPermissions.Permissions.ADMIN_CLINICAL_ANALYSIS.name(), null), ParamUtils.AclAction.SET, ownerToken);
+
         // Try to update interpretation 1
         try {
             catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getInterpretation().getId(),
-                    new InterpretationUpdateParams().setDescription("blabla"), null, QueryOptions.empty(), ownerToken);
+                    new InterpretationUpdateParams().setDescription("blabla"), null, QueryOptions.empty(), normalToken1);
             fail("Interpretation is locked so it should not allow this");
         } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("locked"));
+            assertTrue(e.getMessage().contains(ClinicalAnalysisPermissions.ADMIN.name()));
         }
+
+        // Try to update interpretation 1
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getInterpretation().getId(),
+                new InterpretationUpdateParams().setDescription("blabla"), null, QueryOptions.empty(), normalToken2);
+        Interpretation interpretation = catalogManager.getInterpretationManager().get(studyFqn, ca.getInterpretation().getId(),
+                QueryOptions.empty(), ownerToken).first();
+        assertEquals("blabla", interpretation.getDescription());
+        assertTrue(interpretation.isLocked());
+
+        // Try to update interpretation 1
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getInterpretation().getId(),
+                new InterpretationUpdateParams().setDescription("blabla2"), null, QueryOptions.empty(), ownerToken);
+        interpretation = catalogManager.getInterpretationManager().get(studyFqn, ca.getInterpretation().getId(), QueryOptions.empty(), ownerToken).first();
+        assertEquals("blabla2", interpretation.getDescription());
+        assertTrue(interpretation.isLocked());
 
         // Update interpretation 2
         catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
@@ -172,15 +175,6 @@ public class InterpretationManagerTest extends AbstractManagerTest {
                 ca.getSecondaryInterpretations().get(0).getId(), QueryOptions.empty(), ownerToken).first();
         assertEquals("bloblo", interpretation2.getDescription());
         assertTrue(interpretation2.isLocked());
-
-        // Try to lock again and update interpretation 2
-        try {
-            catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
-                    new InterpretationUpdateParams().setDescription("blabla").setLocked(true), null, QueryOptions.empty(), ownerToken);
-            fail("Interpretation was already locked so it should not allow this");
-        } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("locked"));
-        }
 
         // Unlock and update interpretation 2
         catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
@@ -207,6 +201,29 @@ public class InterpretationManagerTest extends AbstractManagerTest {
         for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
             assertTrue(secondaryInterpretation.isLocked());
         }
+
+        // Try to update the interpretation 1
+        try {
+            catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getInterpretation().getId(),
+                    new InterpretationUpdateParams().setDescription("new description"), null, QueryOptions.empty(), normalToken1);
+            fail("Case and Interpretation are locked so it should not allow this");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains(ClinicalAnalysisPermissions.ADMIN.name()) && e.getMessage().toLowerCase().contains("permission denied"));
+        }
+
+        // Try to update the interpretation 1 (ADMIN permission)
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getInterpretation().getId(),
+                new InterpretationUpdateParams().setDescription("new description"), null, QueryOptions.empty(), normalToken2);
+        interpretation = catalogManager.getInterpretationManager().get(studyFqn, ca.getInterpretation().getId(), QueryOptions.empty(), ownerToken).first();
+        assertEquals("new description", interpretation.getDescription());
+        assertTrue(interpretation.isLocked());
+
+        // Try to update the interpretation 1 (owner user)
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getInterpretation().getId(),
+                new InterpretationUpdateParams().setDescription("new description2"), null, QueryOptions.empty(), ownerToken);
+        interpretation = catalogManager.getInterpretationManager().get(studyFqn, ca.getInterpretation().getId(), QueryOptions.empty(), ownerToken).first();
+        assertEquals("new description2", interpretation.getDescription());
+        assertTrue(interpretation.isLocked());
 
         // Try to unlock interpretation 1
         try {
