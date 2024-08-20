@@ -1979,7 +1979,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     clearInterpretation(clinicalAnalysis, interpretations, params) {
-        return this._post("analysis/clinical", clinicalAnalysis, "interpretation", interpretations, "clear", null, params);
+        return this._post("analysis/clinical", clinicalAnalysis, "interpretation", interpretations, "clear", params);
     }
 
     /** Delete interpretation
@@ -2004,7 +2004,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     revertInterpretation(clinicalAnalysis, interpretation, version, params) {
-        return this._post("analysis/clinical", clinicalAnalysis, "interpretation", interpretation, "revert", null, {version, ...params});
+        return this._post("analysis/clinical", clinicalAnalysis, "interpretation", interpretation, "revert", {version, ...params});
     }
 
     /** Update interpretation fields

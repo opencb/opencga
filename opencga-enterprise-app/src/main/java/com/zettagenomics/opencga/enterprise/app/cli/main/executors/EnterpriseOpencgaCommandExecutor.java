@@ -54,6 +54,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import org.apache.commons.collections4.MapUtils;
 
 import org.apache.commons.collections4.MapUtils;
 /**
@@ -385,12 +386,6 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
             map.putNested(key, value, parents);
         }
         return null;
-    }
-
-    public void putNestedMapIfNotEmpty(ObjectMap map, String key, Map<String, ?> value, boolean parents) {
-        if (MapUtils.isNotEmpty(value)) {
-            map.putNested(key, value, parents);
-        }
     }
 
     public boolean checkExpiredSession(String[] args) {

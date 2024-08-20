@@ -1,5 +1,7 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
+import com.zettagenomics.opencga.enterprise.core.GitUtils;
+
 import com.zettagenomics.opencga.enterprise.core.configuration.CvdbConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -11,7 +13,6 @@ import org.apache.solr.core.NodeConfig;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.solr.SolrManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.SearchConfiguration;
 
@@ -48,15 +49,10 @@ public class CvdbSolrExtenalResource extends ExternalResource {
         super.before();
 
 //        Path rootDir = getTmpRootDir();
-        String caConfigSet = "opencga-ca-configset-"
-                + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
-        String ciConfigSet = "opencga-ci-configset-"
-                + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
-        String cvConfigSet = "opencga-cv-configset-"
-                + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
-        String cveConfigSet = "opencga-cve-configset-"
-                + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
-        copyConfigSetConfiguration(caConfigSet, "ca-managed-schema");
+
+        String ciConfigSet = "opencga-ci-configset-" + GitUtils.getEnterprise().getBuildVersion();
+        String cvConfigSet = "opencga-cv-configset-" + GitUtils.getEnterprise().getBuildVersion();
+        String cveConfigSet = "opencga-cve-configset-" + GitUtils.getEnterprise().getBuildVersion();
         copyConfigSetConfiguration(ciConfigSet, "ci-managed-schema");
         copyConfigSetConfiguration(cvConfigSet, "cv-managed-schema");
         copyConfigSetConfiguration(cveConfigSet, "cve-managed-schema");

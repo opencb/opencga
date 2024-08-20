@@ -44,10 +44,6 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     }
 
     @Override
-    public void unLockProject(long lockId) {
-    }
-
-    @Override
     public synchronized DataResult<ProjectMetadata> getProjectMetadata() {
         final DataResult<ProjectMetadata> result = new DataResult<>();
         if (projectMetadata == null) {
