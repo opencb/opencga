@@ -388,12 +388,6 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
         return null;
     }
 
-    public void putNestedMapIfNotEmpty(ObjectMap map, String key, Map<String, ?> value, boolean parents) {
-        if (MapUtils.isNotEmpty(value)) {
-            map.putNested(key, value, parents);
-        }
-    }
-
     public boolean checkExpiredSession(String[] args) {
         ObjectMap claimsMap;
         try {
