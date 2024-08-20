@@ -13,11 +13,13 @@ if [ -n "$IS_RELEASE" ]; then
   exit 0
 fi
 
-## Check if this branch exists on opencga. If so, use that branch
+## Check if this is a TASK branch, and exists on opencga. If so, use that branch
 GIT_BRANCH="$(git branch --show-current)"
-if [ "$(git ls-remote https://github.com/opencb/opencga.git "$GIT_BRANCH" )" ] ; then
-  echo "$GIT_BRANCH";
-  exit 0;
+if [[ "$GIT_BRANCH" == TASK-* ]]; then
+  if [ "$(git ls-remote https://github.com/opencb/opencga.git "$GIT_BRANCH" )" ] ; then
+    echo "$GIT_BRANCH";
+    exit 0;
+  fi
 fi
 
 ## We remove the -SNAPSHOT if it exists
