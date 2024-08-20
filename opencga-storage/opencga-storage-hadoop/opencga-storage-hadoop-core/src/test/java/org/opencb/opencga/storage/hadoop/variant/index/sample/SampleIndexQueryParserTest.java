@@ -1387,7 +1387,6 @@ public class SampleIndexQueryParserTest {
         checkIntergenic(null, new Query(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.REGULATORY_REGION_VARIANT));
         checkIntergenic(false, new Query(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.REGULATORY_REGION_VARIANT)
                 .append(ANNOT_BIOTYPE.key(), "protein_coding"));
-
         // Nonsense combination
         checkIntergenic(false, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant").append(ANNOT_BIOTYPE.key(), "protein_coding"));
     }
