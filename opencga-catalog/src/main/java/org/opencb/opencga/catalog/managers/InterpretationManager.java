@@ -69,18 +69,16 @@ import java.util.stream.Collectors;
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
     public static final QueryOptions INCLUDE_CLINICAL_ANALYSIS = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
-            Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key()));
+            Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key(),
+                    ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key()));
     public static final QueryOptions INCLUDE_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.UID.key(),
             InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
-            InterpretationDBAdaptor.QueryParams.LOCKED.key(),
+            InterpretationDBAdaptor.QueryParams.LOCKED.key(), InterpretationDBAdaptor.QueryParams.STATUS.key(),
             InterpretationDBAdaptor.QueryParams.VERSION.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key()));
-    public static final QueryOptions INCLUDE_INTERPRETATION_FINDING_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-            InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.UID.key(),
-            InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
-            InterpretationDBAdaptor.QueryParams.VERSION.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
-            InterpretationDBAdaptor.QueryParams.LOCKED.key(), InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
-            InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS_ID.key()));
+    public static final QueryOptions INCLUDE_INTERPRETATION_FINDING_IDS = keepFieldsInQueryOptions(INCLUDE_INTERPRETATION_IDS,
+            Arrays.asList(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
+                    InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS_ID.key()));
     protected static Logger logger = LoggerFactory.getLogger(InterpretationManager.class);
     private UserManager userManager;
     private StudyManager studyManager;
@@ -931,11 +929,51 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 //            throw new CatalogException("Could not update the Interpretation. Case is locked so no further modifications can be made to"
 //                    + " the Interpretation.");
 //        }
+        if (clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+            throw new CatalogException("Cannot update the Interpretation. Case status is " + ClinicalStatusValue.ClinicalStatusType.CLOSED);
+        }
 
-        if (interpretation.isLocked() || updateParams.getLocked() != null) {
+        InterpretationStudyConfiguration interpretationStudyConfiguration = study.getInternal().getConfiguration().getClinical()
+                .getInterpretation();
+        // Get the interpretation status that are CLOSED and DONE
+        Set<String> closedStatus = new HashSet<>();
+        Set<String> doneStatus = new HashSet<>();
+        for (ClinicalStatusValue clinicalStatusValue : interpretationStudyConfiguration.getStatus()) {
+            if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.CLOSED)) {
+                closedStatus.add(clinicalStatusValue.getId());
+            } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.DONE)) {
+                doneStatus.add(clinicalStatusValue.getId());
+            }
+        }
+
+        // If the current interpretation:
+        // - is locked
+        // - the user wants to update the locked status
+        // - the user wants to update the status to/from a done|closed status
+        boolean adminPermissionsChecked = false;
+        if (interpretation.isLocked()
+                || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
+                || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.DONE
+                || updateParams.getLocked() != null
+                || (updateParams.getStatus() != null && (closedStatus.contains(updateParams.getStatus().getId())
+                || doneStatus.contains(updateParams.getStatus().getId())))) {
             authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
                     ClinicalAnalysisPermissions.ADMIN);
-        } else {
+
+            // Current status is of type CLOSED
+            if (interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+                // The only allowed action is to remove the CLOSED status
+                if (updateParams.getStatus() == null || closedStatus.contains(updateParams.getStatus().getId())) {
+                    throw new CatalogException("Cannot update a Interpretation with a " + ClinicalStatusValue.ClinicalStatusType.CLOSED
+                            + " status. You need to remove the " + ClinicalStatusValue.ClinicalStatusType.CLOSED + " status to be able "
+                            + "to perform further updates on the Interpretation.");
+                }
+            }
+
+            adminPermissionsChecked = true;
+        }
+
+        if (!adminPermissionsChecked) {
             authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
                     ClinicalAnalysisPermissions.WRITE);
         }
@@ -1012,7 +1050,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             // Validate and get panels
             List<String> panelIds = updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList());
             Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
-            OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+            OpenCGAResult<Panel> panelResult =
                     getPanelDBAdaptor(organizationId).get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
             if (panelResult.getNumResults() < panelIds.size()) {
                 throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
