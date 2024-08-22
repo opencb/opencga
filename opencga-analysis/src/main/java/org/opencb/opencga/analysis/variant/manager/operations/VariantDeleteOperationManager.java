@@ -63,7 +63,8 @@ public class VariantDeleteOperationManager extends OperationManager {
                 String catalogIndexStatus = file.getInternal().getVariant().getIndex().getStatus().getId();
                 if (!catalogIndexStatus.equals(VariantIndexStatus.READY)) {
                     // Might be partially loaded in VariantStorage. Check FileMetadata
-                    FileMetadata fileMetadata = variantStorageEngine.getMetadataManager().getFileMetadata(studyMetadata.getId(), fileStr);
+                    FileMetadata fileMetadata = variantStorageEngine.getMetadataManager()
+                            .getFileMetadata(studyMetadata.getId(), file.getName());
                     boolean canBeRemoved;
                     if (force) {
                         // When forcing remove, just require the file to be registered in the storage
@@ -81,9 +82,9 @@ public class VariantDeleteOperationManager extends OperationManager {
 //                        filePaths.add(file.getPath());
             }
 
-            if (fileNames.isEmpty()) {
-                throw new CatalogException("Nothing to do!");
-            }
+        }
+        if (fileNames.isEmpty()) {
+            throw new CatalogException("Nothing to do!");
         }
 
         variantStorageEngine.removeFiles(study, fileNames, outdir);

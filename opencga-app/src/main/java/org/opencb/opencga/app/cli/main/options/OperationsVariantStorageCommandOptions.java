@@ -380,13 +380,13 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
+        @Parameter(names = {"--file"}, description = "List of file ids to delete. Use 'all' to remove the whole study", required = false, arity = 1)
         public String file;
     
-        @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--resume"}, description = "Resume failed delete operation.", required = false, help = true, arity = 0)
         public boolean resume = false;
     
-        @Parameter(names = {"--force"}, description = "The body web service force parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--force"}, description = "Force delete operation. This would allow deleting partially loaded files.", required = false, help = true, arity = 0)
         public boolean force = false;
     
     }
