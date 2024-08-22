@@ -583,6 +583,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "clinicalAnalysis", commandOptions.clinicalAnalysis, true);
+            putNestedIfNotEmpty(beanParams, "exomiserVersion", commandOptions.exomiserVersion, true);
 
             exomiserInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

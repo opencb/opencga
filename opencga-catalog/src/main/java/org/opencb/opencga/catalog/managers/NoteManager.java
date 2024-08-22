@@ -54,7 +54,7 @@ public class NoteManager extends AbstractManager {
         } else {
             query.put(NoteDBAdaptor.QueryParams.ID.key(), noteId);
         }
-        OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(query, QueryOptions.empty());
+        OpenCGAResult<Note> result = getCatalogDBAdaptorFactory().getCatalogNoteDBAdaptor(organizationId).get(query, QueryOptions.empty());
         if (result.getNumResults() == 0) {
             throw CatalogException.notFound("note", Collections.singletonList(noteId));
         }
@@ -88,7 +88,7 @@ public class NoteManager extends AbstractManager {
                 queryCopy.put(NoteDBAdaptor.QueryParams.VISIBILITY.key(), Note.Visibility.PUBLIC);
             }
 
-            OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(queryCopy, optionsCopy);
+            OpenCGAResult<Note> result = getCatalogDBAdaptorFactory().getCatalogNoteDBAdaptor(organizationId).get(queryCopy, optionsCopy);
             auditManager.auditSearch(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
@@ -131,7 +131,7 @@ public class NoteManager extends AbstractManager {
                 queryCopy.put(NoteDBAdaptor.QueryParams.VISIBILITY.key(), Note.Visibility.PUBLIC);
             }
 
-            OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(queryCopy, optionsCopy);
+            OpenCGAResult<Note> result = getCatalogDBAdaptorFactory().getCatalogNoteDBAdaptor(organizationId).get(queryCopy, optionsCopy);
             auditManager.auditSearch(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, studyId, studyUuid, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
@@ -209,11 +209,11 @@ public class NoteManager extends AbstractManager {
     private OpenCGAResult<Note> create(Note note, QueryOptions options, JwtPayload tokenPayload) throws CatalogException {
         String organizationId = tokenPayload.getOrganization();
         validateNewNote(note, tokenPayload.getUserId());
-        OpenCGAResult<Note> insert = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).insert(note);
+        OpenCGAResult<Note> insert = getCatalogDBAdaptorFactory().getCatalogNoteDBAdaptor(organizationId).insert(note);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch created note
             Query query = new Query(NoteDBAdaptor.QueryParams.UID.key(), note.getUid());
-            OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(query, options);
+            OpenCGAResult<Note> result = getCatalogDBAdaptorFactory().getCatalogNoteDBAdaptor(organizationId).get(query, options);
             insert.setResults(result.getResults());
         }
         return insert;
@@ -302,10 +302,11 @@ public class NoteManager extends AbstractManager {
         // Write who's performing the update
         updateMap.put(NoteDBAdaptor.QueryParams.USER_ID.key(), tokenPayload.getUserId());
 
-        OpenCGAResult<Note> update = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).update(noteUid, updateMap, options);
+        OpenCGAResult<Note> update = getCatalogDBAdaptorFactory().getCatalogNoteDBAdaptor(organizationId).update(noteUid, updateMap,
+                options);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated note
-            OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(noteUid, options);
+            OpenCGAResult<Note> result = getCatalogDBAdaptorFactory().getCatalogNoteDBAdaptor(organizationId).get(noteUid, options);
             update.setResults(result.getResults());
         }
         return update;
@@ -378,7 +379,7 @@ public class NoteManager extends AbstractManager {
     }
 
     private OpenCGAResult<Note> delete(Note note, QueryOptions options, JwtPayload jwtPayload) throws CatalogException {
-        OpenCGAResult<Note> delete = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(jwtPayload.getOrganization()).delete(note);
+        OpenCGAResult<Note> delete = getCatalogDBAdaptorFactory().getCatalogNoteDBAdaptor(jwtPayload.getOrganization()).delete(note);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             delete.setResults(Collections.singletonList(note));
         }

@@ -679,8 +679,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID.", required = false, arity = 1)
         public String clinicalAnalysis;
+    
+        @Parameter(names = {"--exomiser-version"}, description = "Exomiser version in the format X.Y where X is the major version and Y the minor version, e.g.: 14.0. If the version is not specified, the default version will be used. Refer to the configuration file to view all installed Exomiser versions and identify the default version.", required = false, arity = 1)
+        public String exomiserVersion;
     
     }
 

@@ -253,8 +253,8 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
     public void updateClinicalAnalystsTest() throws CatalogException {
         ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
 
-        catalogManager.getUserManager().create(new User().setId("u1").setName("u1").setOrganization(organizationId).setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(new User().setId("u2").setName("u2").setOrganization(organizationId).setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("u1").setName("u1").setOrganization(organizationId), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("u2").setName("u2").setOrganization(organizationId), TestParamConstants.PASSWORD, opencgaToken);
 
         // Add analysts
         OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(studyFqn, case1.getId(),
@@ -306,7 +306,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
         assertTrue(StringUtils.isEmpty(case1.getRequest().getId()));
 
-        catalogManager.getUserManager().create(new User().setId("u1").setName("u1").setOrganization(organizationId).setEmail("mail@mail.com").setAccount(new Account()),
+        catalogManager.getUserManager().create(new User().setId("u1").setName("u1").setOrganization(organizationId).setEmail("mail@mail.com"),
                 TestParamConstants.PASSWORD, opencgaToken);
 
         ClinicalRequest request = new ClinicalRequest("requestId", "bla", null, new ClinicalResponsible().setId("u1"), new HashMap<>());
@@ -344,8 +344,8 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals(orgOwnerUserId, case1.getResponsible().getId());
 
         catalogManager.getUserManager().create(new User().setId("u1").setName("u1").setEmail("mail@mail.com")
-                        .setOrganization(organizationId)
-                        .setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+                        .setOrganization(organizationId),
+                TestParamConstants.PASSWORD, opencgaToken);
 
         ClinicalResponsible responsible = new ClinicalResponsible().setId("u1");
 
