@@ -562,7 +562,7 @@ public class ProjectManager extends AbstractManager {
         }
 
         OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(owner, new QueryOptions(QueryOptions.INCLUDE,
-                Collections.singletonList(UserDBAdaptor.QueryParams.ACCOUNT.key())));
+                Collections.singletonList(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT.key())));
         if (userDataResult.getNumResults() == 0) {
             throw new CatalogException("User " + owner + " not found");
         }
