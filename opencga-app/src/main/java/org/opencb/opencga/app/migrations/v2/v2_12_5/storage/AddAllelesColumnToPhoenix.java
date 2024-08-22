@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v2_12_5.storage;
+package org.opencb.opencga.app.migrations.v2.v2_12_5.storage;
 
 import org.opencb.opencga.app.migrations.StorageMigrationTool;
 import org.opencb.opencga.catalog.migration.Migration;

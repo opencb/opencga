@@ -280,7 +280,7 @@ class ClinicalAnalysis(_ParentRestClient):
         Run exomiser interpretation analysis.
         PATH: /{apiVersion}/analysis/clinical/interpreter/exomiser/run
 
-        :param dict data: Exomizer interpretation analysis params. (REQUIRED)
+        :param dict data: Exomiser interpretation analysis params. (REQUIRED)
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param str job_id: Job ID. It must be a unique string within the

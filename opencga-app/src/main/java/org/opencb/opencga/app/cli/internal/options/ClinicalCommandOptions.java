@@ -23,6 +23,8 @@ import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
+import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION;
+import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_VERSION_DESCRIPTION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
@@ -335,8 +337,12 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
-        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION,
+                required = true, arity = 1)
         public String clinicalAnalysis;
+
+        @Parameter(names = {"--exomiser-version"}, description = EXOMISER_VERSION_DESCRIPTION)
+        public String exomiserVersion;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         public String outdir;
