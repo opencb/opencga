@@ -134,7 +134,6 @@ public class VariantStorageMetadataRepairTool extends OperationTool {
             for (Map.Entry<Integer, List<Integer>> entry : batch.entrySet()) {
                 Integer sampleId = entry.getKey();
                 List<Integer> fileIds = entry.getValue();
-
                 List<Integer> actualFiles = metadataManager.getSampleMetadata(studyId, sampleId).getFiles();
                 if (actualFiles.size() != fileIds.size() || !actualFiles.containsAll(fileIds)) {
                     fixedSamples++;

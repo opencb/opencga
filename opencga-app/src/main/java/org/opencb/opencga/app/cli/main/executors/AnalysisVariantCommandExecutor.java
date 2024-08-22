@@ -433,6 +433,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "sample", commandOptions.sample, true);
+            putNestedIfNotEmpty(beanParams, "exomiserVersion", commandOptions.exomiserVersion, true);
             putNestedIfNotEmpty(beanParams, "clinicalAnalysisType", commandOptions.clinicalAnalysisType, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 

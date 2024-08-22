@@ -295,7 +295,7 @@ public class GwasAnalysis extends OpenCgaTool {
         step("gwas", () -> {
             GwasAnalysisExecutor gwasExecutor = getToolExecutor(GwasAnalysisExecutor.class);
 
-            gwasExecutor.setConfiguration(gwasConfiguration)
+            gwasExecutor.setGwasConfiguration(gwasConfiguration)
                     .setStudy(study)
                     .setSampleList1(caseCohortSamples)
                     .setSampleList2(controlCohortSamples)
