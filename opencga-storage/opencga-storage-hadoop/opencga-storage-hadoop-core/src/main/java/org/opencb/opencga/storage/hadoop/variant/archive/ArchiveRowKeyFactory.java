@@ -147,6 +147,13 @@ public class ArchiveRowKeyFactory {
         return generateBlockIdFromSliceAndBatch(getFileBatch(fileId), chrom, slice);
     }
 
+    public String generateBlockIdFromBatch(int fileBatch) {
+        StringBuilder sb = new StringBuilder(FILE_BATCH_PAD + 1);
+        sb.append(StringUtils.leftPad(String.valueOf(fileBatch), FILE_BATCH_PAD, '0'));
+        sb.append(getSeparator());
+        return sb.toString();
+    }
+
     public String generateBlockIdFromSliceAndBatch(int fileBatch, String chrom, long slice) {
         String chromosome = Region.normalizeChromosome(chrom);
         StringBuilder sb = new StringBuilder(FILE_BATCH_PAD + 1 + chromosome.length() + 1 + POSITION_PAD);
