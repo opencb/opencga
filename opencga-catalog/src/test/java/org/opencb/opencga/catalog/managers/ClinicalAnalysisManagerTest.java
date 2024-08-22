@@ -1396,6 +1396,41 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void updateStatusTest() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        Interpretation interpretation = catalogManager.getInterpretationManager().create(studyFqn, ca.getId(), new Interpretation(),
+                ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, ownerToken).first();
+
+        // Create 2 allowed statuses of type CLOSED
+        ClinicalAnalysisStudyConfiguration studyConfiguration = ClinicalAnalysisStudyConfiguration.defaultConfiguration();
+        List<ClinicalStatusValue> statusValueList = new ArrayList<>();
+        for (ClinicalStatusValue status : studyConfiguration.getStatus()) {
+            if (!status.getType().equals(ClinicalStatusValue.ClinicalStatusType.CLOSED)) {
+                statusValueList.add(status);
+            }
+        }
+        // Add two statuses of type CLOSED
+        statusValueList.add(new ClinicalStatusValue("closed1", "my desc", ClinicalStatusValue.ClinicalStatusType.CLOSED));
+        statusValueList.add(new ClinicalStatusValue("closed2", "my desc", ClinicalStatusValue.ClinicalStatusType.CLOSED));
+        studyConfiguration.setStatus(statusValueList);
+        catalogManager.getClinicalAnalysisManager().configureStudy(studyFqn, studyConfiguration, studyAdminToken1);
+
+        // Update status to one of the new statuses
+        catalogManager.getClinicalAnalysisManager().update(studyFqn, ca.getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("closed1")), QueryOptions.empty(), studyAdminToken1);
+        ca = catalogManager.getClinicalAnalysisManager().get(studyFqn, ca.getId(), QueryOptions.empty(), studyAdminToken1).first();
+        assertEquals("closed1", ca.getStatus().getId());
+        assertEquals(ClinicalStatusValue.ClinicalStatusType.CLOSED, ca.getStatus().getType());
+
+        // Update status to the other new CLOSED status
+        catalogManager.getClinicalAnalysisManager().update(studyFqn, ca.getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("closed2")), QueryOptions.empty(), studyAdminToken1);
+        assertEquals("closed1", ca.getStatus().getId());
+        assertEquals(ClinicalStatusValue.ClinicalStatusType.CLOSED, ca.getStatus().getType());
+    }
+
+    @Test
     public void updateInterpretationComments() throws CatalogException {
         Individual individual = new Individual()
                 .setId("proband")

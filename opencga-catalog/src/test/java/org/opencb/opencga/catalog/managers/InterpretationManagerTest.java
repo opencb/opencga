@@ -18,6 +18,7 @@ import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.StudyAclParams;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.util.ArrayList;
@@ -243,6 +244,43 @@ public class InterpretationManagerTest extends AbstractManagerTest {
         for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
             assertTrue(secondaryInterpretation.isLocked());
         }
+    }
+
+    @Test
+    public void interpretationStatusTest() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        Interpretation interpretation = catalogManager.getInterpretationManager().create(studyFqn, ca.getId(), new Interpretation(),
+                ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, ownerToken).first();
+
+        // Create 2 allowed statuses of type CLOSED
+        ClinicalAnalysisStudyConfiguration studyConfiguration = ClinicalAnalysisStudyConfiguration.defaultConfiguration();
+        List<ClinicalStatusValue> statusValueList = new ArrayList<>();
+        for (ClinicalStatusValue status : studyConfiguration.getInterpretation().getStatus()) {
+            if (!status.getType().equals(ClinicalStatusValue.ClinicalStatusType.CLOSED)) {
+                statusValueList.add(status);
+            }
+        }
+        // Add two statuses of type CLOSED
+        statusValueList.add(new ClinicalStatusValue("closed1", "my desc", ClinicalStatusValue.ClinicalStatusType.CLOSED));
+        statusValueList.add(new ClinicalStatusValue("closed2", "my desc", ClinicalStatusValue.ClinicalStatusType.CLOSED));
+        studyConfiguration.getInterpretation().setStatus(statusValueList);
+        catalogManager.getClinicalAnalysisManager().configureStudy(studyFqn, studyConfiguration, studyAdminToken1);
+
+        // Update status to one of the new statuses
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), interpretation.getId(),
+                new InterpretationUpdateParams().setStatus(new StatusParam("closed1")), null, QueryOptions.empty(), studyAdminToken1);
+        interpretation = catalogManager.getInterpretationManager().get(studyFqn, interpretation.getId(), QueryOptions.empty(), studyAdminToken1).first();
+        assertEquals("closed1", interpretation.getStatus().getId());
+        assertEquals(ClinicalStatusValue.ClinicalStatusType.CLOSED, interpretation.getStatus().getType());
+        assertTrue(interpretation.isLocked());
+
+        // Update status to the other new CLOSED status
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), interpretation.getId(),
+                new InterpretationUpdateParams().setStatus(new StatusParam("closed2")), null, QueryOptions.empty(), studyAdminToken1);
+        assertEquals("closed1", interpretation.getStatus().getId());
+        assertEquals(ClinicalStatusValue.ClinicalStatusType.CLOSED, interpretation.getStatus().getType());
+        assertTrue(interpretation.isLocked());
     }
 
     @Test

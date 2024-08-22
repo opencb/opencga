@@ -920,6 +920,17 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         InterpretationStudyConfiguration interpretationConfiguration =
                 study.getInternal().getConfiguration().getClinical().getInterpretation();
 
+        ObjectMap parameters = new ObjectMap();
+        if (updateParams != null) {
+            try {
+                parameters = updateParams.getUpdateMap();
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse InterpretationUpdateParams object: " + e.getMessage(), e);
+            }
+        } else {
+            throw new CatalogException("Missing interpretation update parameters");
+        }
+
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS);
 
         // Check if user has permissions to write clinical analysis
@@ -963,10 +974,21 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             // Current status is of type CLOSED
             if (interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
                 // The only allowed action is to remove the CLOSED status
-                if (updateParams.getStatus() == null || closedStatus.contains(updateParams.getStatus().getId())) {
+                if (updateParams.getStatus() == null || StringUtils.isEmpty(updateParams.getStatus().getId())) {
                     throw new CatalogException("Cannot update a Interpretation with a " + ClinicalStatusValue.ClinicalStatusType.CLOSED
                             + " status. You need to remove the " + ClinicalStatusValue.ClinicalStatusType.CLOSED + " status to be able "
                             + "to perform further updates on the Interpretation.");
+                } else if (closedStatus.contains(updateParams.getStatus().getId())) {
+                    // Users should be able to change from one CLOSED status to a different one but we should still control that no further
+                    // modifications are made
+                    if (parameters.size() > 1) {
+                        throw new CatalogException("Cannot update a Interpretation with a " + ClinicalStatusValue.ClinicalStatusType.CLOSED
+                                + " status. You need to remove the " + ClinicalStatusValue.ClinicalStatusType.CLOSED + " status to be able "
+                                + "to perform further updates on the Interpretation.");
+                    } else if (interpretation.getStatus().getId().equals(updateParams.getStatus().getId())) {
+                        throw new CatalogException("Interpretation already have the status '" + interpretation.getStatus().getId()
+                                + "' of type " + ClinicalStatusValue.ClinicalStatusType.CLOSED);
+                    }
                 }
             }
 
@@ -990,15 +1012,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getModificationDate())) {
             ParamUtils.checkDateFormat(updateParams.getModificationDate(), InterpretationDBAdaptor.QueryParams.MODIFICATION_DATE.key());
-        }
-
-        ObjectMap parameters = new ObjectMap();
-        if (updateParams != null) {
-            try {
-                parameters = updateParams.getUpdateMap();
-            } catch (JsonProcessingException e) {
-                throw new CatalogException("Could not parse InterpretationUpdateParams object: " + e.getMessage(), e);
-            }
         }
 
 //        if (!parameters.isEmpty() && interpretation.isLocked()

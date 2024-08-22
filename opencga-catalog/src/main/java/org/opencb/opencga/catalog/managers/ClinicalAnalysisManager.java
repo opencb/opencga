@@ -1432,10 +1432,22 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             // Current status is of type CLOSED
             if (clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
                 // The only allowed action is to remove the CLOSED status
-                if (updateParams.getStatus() == null || closedStatus.contains(updateParams.getStatus().getId())) {
+                if (updateParams.getStatus() == null || StringUtils.isEmpty(updateParams.getStatus().getId())) {
                     throw new CatalogException("Cannot update a ClinicalAnalysis with a " + ClinicalStatusValue.ClinicalStatusType.CLOSED
                             + " status. You need to remove the " + ClinicalStatusValue.ClinicalStatusType.CLOSED + " status to be able "
                             + "to perform further updates on the ClinicalAnalysis.");
+                } else if (closedStatus.contains(updateParams.getStatus().getId())) {
+                    // Users should be able to change from one CLOSED status to a different one but we should still control that no further
+                    // modifications are made
+                    if (parameters.size() > 1) {
+                        throw new CatalogException("Cannot update a ClinicalAnalysis with a "
+                                + ClinicalStatusValue.ClinicalStatusType.CLOSED + " status. You need to remove the "
+                                + ClinicalStatusValue.ClinicalStatusType.CLOSED + " status to be able to perform further updates on "
+                                + "the ClinicalAnalysis.");
+                    } else if (clinicalAnalysis.getStatus().getId().equals(updateParams.getStatus().getId())) {
+                        throw new CatalogException("ClinicalAnalysis already have the status '" + clinicalAnalysis.getStatus().getId()
+                                + "' of type " + ClinicalStatusValue.ClinicalStatusType.CLOSED);
+                    }
                 }
             }
 
