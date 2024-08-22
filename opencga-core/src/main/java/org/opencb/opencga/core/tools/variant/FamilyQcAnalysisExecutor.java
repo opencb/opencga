@@ -31,8 +31,8 @@ public abstract class FamilyQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     protected String studyId;
     protected Family family;
-    protected String relatednessMethod;
     protected String relatednessMaf;
+    protected String haploidCallMode;
     protected Map<String, Map<String, Float>> relatednessThresholds;
     protected Path relatednessResourcePath;
 
@@ -61,21 +61,21 @@ public abstract class FamilyQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public String getRelatednessMethod() {
-        return relatednessMethod;
-    }
-
-    public FamilyQcAnalysisExecutor setRelatednessMethod(String relatednessMethod) {
-        this.relatednessMethod = relatednessMethod;
-        return this;
-    }
-
     public String getRelatednessMaf() {
         return relatednessMaf;
     }
 
     public FamilyQcAnalysisExecutor setRelatednessMaf(String relatednessMaf) {
         this.relatednessMaf = relatednessMaf;
+        return this;
+    }
+
+    public String getHaploidCallMode() {
+        return haploidCallMode;
+    }
+
+    public FamilyQcAnalysisExecutor setHaploidCallMode(String haploidCallMode) {
+        this.haploidCallMode = haploidCallMode;
         return this;
     }
 

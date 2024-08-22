@@ -812,16 +812,16 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--family"}, description = "The body web service family parameter", required = false, arity = 1)
+        @Parameter(names = {"--family"}, description = "Family is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.", required = false, arity = 1)
         public String family;
     
-        @Parameter(names = {"--relatedness-method"}, description = "The body web service relatednessMethod parameter", required = false, arity = 1)
-        public String relatednessMethod;
-    
-        @Parameter(names = {"--relatedness-maf"}, description = "The body web service relatednessMaf parameter", required = false, arity = 1)
+        @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35, cohort:ALL>0.05", required = false, arity = 1)
         public String relatednessMaf;
     
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
+        @Parameter(names = {"--haploid-call-mode"}, description = "Haploid call mode, equivalent to the PLINK/IBD parameter vcf-half-call, accepts the following values: haploid, missing and reference", required = false, arity = 1)
+        public String haploidCallMode;
+    
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
     
     }
@@ -2000,19 +2000,19 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--individuals"}, description = "The body web service individuals parameter", required = false, arity = 1)
+        @Parameter(names = {"--individuals"}, description = "List of individuals (separated by commas)", required = false, arity = 1)
         public String individuals;
     
-        @Parameter(names = {"--samples"}, description = "The body web service samples parameter", required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = "List of samples (separated by commas) to identify the individuals", required = false, arity = 1)
         public String samples;
     
-        @Parameter(names = {"--minor-allele-freq"}, description = "The body web service minorAlleleFreq parameter", required = false, arity = 1)
+        @Parameter(names = {"--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35, cohort:ALL>0.05", required = false, arity = 1)
         public String minorAlleleFreq;
     
-        @Parameter(names = {"--method"}, description = "The body web service method parameter", required = false, arity = 1)
-        public String method;
+        @Parameter(names = {"--haploid-call-mode"}, description = "Haploid call mode, equivalent to the PLINK/IBD parameter vcf-half-call, accepts the following values: haploid, missing and reference", required = false, arity = 1)
+        public String haploidCallMode;
     
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
     
     }
