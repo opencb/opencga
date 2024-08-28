@@ -20,7 +20,6 @@ import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
-import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
@@ -54,35 +53,56 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
             description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.GENERIC_STATUS_DESCRIPTION)
+    private ClinicalStatus status;
+
     public Interpretation() {
         super();
     }
 
-    public Interpretation(String id, String description, String clinicalAnalysisId, ClinicalAnalyst analyst,
+    public Interpretation(String id, String name, String description, String clinicalAnalysisId, ClinicalAnalyst analyst,
                           InterpretationMethod method, String creationDate, String modificationDate, boolean locked,
                           List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings, List<Panel> panels,
-                          List<ClinicalComment> comments, Status status, Map<String, Object> attributes) {
-        super(id, "", description, clinicalAnalysisId, analyst, method, primaryFindings, secondaryFindings, comments, null, status,
-                creationDate, modificationDate, locked, 0, attributes);
-
+                          List<ClinicalComment> comments, ClinicalStatus status, Map<String, Object> attributes) {
+        super(id, "", name, description, clinicalAnalysisId, analyst, method, primaryFindings, secondaryFindings, comments, null, locked,
+                creationDate, modificationDate, 0, attributes);
+        this.status = status;
         this.panels = panels;
     }
 
     public Interpretation(org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation) {
-        this(interpretation.getId(), interpretation.getDescription(), interpretation.getClinicalAnalysisId(), interpretation.getAnalyst(),
-                interpretation.getMethod(), interpretation.getCreationDate(), interpretation.getModificationDate(),
-                interpretation.isLocked(), interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(),
-                Collections.emptyList(), interpretation.getComments(), interpretation.getStatus(), interpretation.getAttributes());
+        this(interpretation.getId(), interpretation.getName(), interpretation.getDescription(), interpretation.getClinicalAnalysisId(),
+                interpretation.getAnalyst(), interpretation.getMethod(), interpretation.getCreationDate(),
+                interpretation.getModificationDate(), interpretation.isLocked(), interpretation.getPrimaryFindings(),
+                interpretation.getSecondaryFindings(), Collections.emptyList(), interpretation.getComments(), null,
+                interpretation.getAttributes());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Interpretation{");
-        sb.append("studyUid=").append(studyUid);
+        sb.append("id='").append(id).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", studyUid=").append(studyUid);
         sb.append(", uid=").append(uid);
         sb.append(", panels=").append(panels);
         sb.append(", internal=").append(internal);
         sb.append(", release=").append(release);
+        sb.append(", status=").append(status);
+        sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
+        sb.append(", analyst=").append(analyst);
+        sb.append(", method=").append(method);
+        sb.append(", primaryFindings=").append(primaryFindings);
+        sb.append(", secondaryFindings=").append(secondaryFindings);
+        sb.append(", comments=").append(comments);
+        sb.append(", stats=").append(stats);
+        sb.append(", locked=").append(locked);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", version=").append(version);
         sb.append('}');
         return sb.toString();
     }
@@ -185,14 +205,17 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     }
 
     @Override
-    public Interpretation setStatus(Status status) {
-        super.setStatus(status);
+    public Interpretation setLocked(boolean locked) {
+        super.setLocked(locked);
         return this;
     }
 
-    @Override
-    public Interpretation setLocked(boolean locked) {
-        super.setLocked(locked);
+    public ClinicalStatus getStatus() {
+        return status;
+    }
+
+    public Interpretation setStatus(ClinicalStatus status) {
+        this.status = status;
         return this;
     }
 }

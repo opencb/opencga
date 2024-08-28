@@ -78,8 +78,10 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         RESPONSIBLE("responsible", OBJECT, ""),
         FLAGS("flags", OBJECT, ""),
         FLAGS_ID("flags.id", TEXT, ""),
+        VERSION("version", INTEGER, ""),
         RELEASE("release", INTEGER, ""),
-        PANEL_LOCK("panelLock", BOOLEAN, ""),
+        SNAPSHOT("snapshot", INTEGER, ""),
+        PANEL_LOCKED("panelLocked", BOOLEAN, ""),
         LOCKED("locked", BOOLEAN, ""),
 
         SAMPLE("sample", TEXT_ARRAY, ""), // Alias to search for samples within proband.samples or family.members.samples
