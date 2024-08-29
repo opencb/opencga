@@ -31,7 +31,7 @@
 #' | createNotes | /{apiVersion}/studies/{study}/notes/create | include, exclude, study[*], includeResult, body[*] |
 #' | searchNotes | /{apiVersion}/studies/{study}/notes/search | include, exclude, study[*], creationDate, modificationDate, id, uuid, userId, tags, visibility, version |
 #' | deleteNotes | /{apiVersion}/studies/{study}/notes/{id}/delete | study[*], id[*], includeResult |
-#' | updateNotes | /{apiVersion}/studies/{study}/notes/{id}/update | include, exclude, study[*], id[*], includeResult, body[*] |
+#' | updateNotes | /{apiVersion}/studies/{study}/notes/{id}/update | include, exclude, study[*], id[*], tagsAction, includeResult, body[*] |
 #' | permissionRules | /{apiVersion}/studies/{study}/permissionRules | study[*], entity[*] |
 #' | updatePermissionRules | /{apiVersion}/studies/{study}/permissionRules/update | study[*], entity[*], action, body[*] |
 #' | runTemplates | /{apiVersion}/studies/{study}/templates/run | study[*], jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
@@ -191,6 +191,7 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, group, id, members, stud
         #' @param exclude Fields excluded in the response, whole JSON path must be provided.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param id Note unique identifier.
+        #' @param tagsAction Action to be performed if the array of tags is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
         #' @param data JSON containing the Note fields to be updated.
         updateNotes=fetchOpenCGA(object=OpencgaR, category="studies", categoryId=study, subcategory="notes",

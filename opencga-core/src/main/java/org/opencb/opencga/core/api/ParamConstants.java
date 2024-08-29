@@ -437,6 +437,9 @@ public class ParamConstants {
     public static final String CLINICAL_RELEASE_PARAM = RELEASE_PARAM;
     public static final String CLINICAL_STATUS_PARAM = STATUS_PARAM;
     public static final String CLINICAL_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
+    public static final String CLINICAL_VERSION_PARAM = "version";
+    public static final String CLINICAL_VERSION_DESCRIPTION = "Comma separated list of clinical versions. 'all' to get all the clinical"
+            + " versions. Not supported if multiple clinical ids are provided";
     public static final String CLINICAL_TYPE_DESCRIPTION = "Clinical Analysis type";
     public static final String CLINICAL_DISORDER_DESCRIPTION = "Clinical Analysis disorder" + REGEX_SUPPORT;
     public static final String CLINICAL_FILES_DESCRIPTION = "Clinical Analysis files";
@@ -467,6 +470,7 @@ public class ParamConstants {
             + "Interpretation object is passed.";
     public static final String INTERPRETATION_ID_PARAM = "id";
     public static final String INTERPRETATION_UUID_PARAM = "uuid";
+    public static final String INTERPRETATION_NAME_PARAM = "name";
     public static final String INTERPRETATION_CLINICAL_ANALYSIS_ID_PARAM = "clinicalAnalysisId";
     public static final String INTERPRETATION_ANALYST_ID_PARAM = "analystId";
     public static final String INTERPRETATION_METHOD_NAME_PARAM = "methodName";
@@ -1519,6 +1523,7 @@ public class ParamConstants {
     public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
     public static final String INTERPRETATION_ID_DESCRIPTION = "Comma separated list of Interpretation IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String INTERPRETATION_UUID_DESCRIPTION = "Comma separated list of Interpretation UUIDs" + UP_TO_100;
+    public static final String INTERPRETATION_NAME_DESCRIPTION = "Comma separated list of Interpretation names" + UP_TO_100;
     public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of clinical interpretation IDs " + UP_TO_100;
     public static final String PANEL_ID_DESCRIPTION = "Comma separated list of panel IDs " + UP_TO_100 + REGEX_SUPPORT;
     public static final String PANEL_UUID_DESCRIPTION = "Comma separated list of panel UUIDs " + UP_TO_100;

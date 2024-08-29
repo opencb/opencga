@@ -52,15 +52,6 @@ public class ClinicalAnalysisUtilsTest {
         clinicalTest.catalogManagerResource = opencga.getCatalogManagerExternalResource();
         clinicalTest.setUp();
 
-        // Exomiser analysis
-        Path exomiserDataPath = opencga.getOpencgaHome().resolve("analysis/exomiser");
-        Files.createDirectories(exomiserDataPath);
-        Path parent = Paths.get(ClinicalAnalysisUtilsTest.class.getClassLoader().getResource("pheno").getPath()).getParent();
-        Files.copy(parent.resolve("exomiser/application.properties"), exomiserDataPath.resolve("application.properties"),
-                StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(parent.resolve("exomiser/output.yml"), exomiserDataPath.resolve("output.yml"),
-                StandardCopyOption.REPLACE_EXISTING);
-
         // Storage
         ObjectMap storageOptions = new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)

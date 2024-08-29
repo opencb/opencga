@@ -11,16 +11,16 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 public class OrganizationUserUpdateParams extends UserUpdateParams {
 
     private UserQuota quota;
-    private Account account;
+    private Internal internal;
     private Map<String, Object> attributes;
 
     public OrganizationUserUpdateParams() {
     }
 
-    public OrganizationUserUpdateParams(String name, String email, UserQuota quota, Account account, Map<String, Object> attributes) {
+    public OrganizationUserUpdateParams(String name, String email, UserQuota quota, Internal internal, Map<String, Object> attributes) {
         super(name, email);
         this.quota = quota;
-        this.account = account;
+        this.internal = internal;
         this.attributes = attributes;
     }
 
@@ -33,7 +33,7 @@ public class OrganizationUserUpdateParams extends UserUpdateParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("OrganizationUserUpdateParams{");
         sb.append("quota=").append(quota);
-        sb.append(", account=").append(account);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -48,12 +48,27 @@ public class OrganizationUserUpdateParams extends UserUpdateParams {
         return this;
     }
 
+    @Deprecated
+    @JsonIgnore
     public Account getAccount() {
-        return account;
+        return getInternal().getAccount();
     }
 
+    @Deprecated
     public OrganizationUserUpdateParams setAccount(Account account) {
-        this.account = account;
+        if (internal == null) {
+            internal = new Internal();
+        }
+        internal.setAccount(account);
+        return this;
+    }
+
+    public Internal getInternal() {
+        return internal;
+    }
+
+    public OrganizationUserUpdateParams setInternal(Internal internal) {
+        this.internal = internal;
         return this;
     }
 
@@ -76,6 +91,30 @@ public class OrganizationUserUpdateParams extends UserUpdateParams {
     public OrganizationUserUpdateParams setEmail(String email) {
         super.setEmail(email);
         return this;
+    }
+
+    public static class Internal {
+        private Account account;
+
+        public Internal() {
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Internal{");
+            sb.append("account=").append(account);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public Account getAccount() {
+            return account;
+        }
+
+        public Internal setAccount(Account account) {
+            this.account = account;
+            return this;
+        }
     }
 
     public static class Account {

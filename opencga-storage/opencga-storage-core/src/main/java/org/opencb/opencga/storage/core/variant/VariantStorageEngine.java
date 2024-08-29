@@ -1356,7 +1356,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantQueryExecutor getVariantQueryExecutor(ParsedVariantQuery variantQuery) {
         try {
             for (VariantQueryExecutor executor : getVariantQueryExecutors()) {
-                if (executor.canUseThisExecutor(variantQuery.getQuery(), variantQuery.getInputOptions())) {
+                if (executor.canUseThisExecutor(variantQuery, variantQuery.getInputOptions())) {
                     logger.info("Using VariantQueryExecutor : " + executor.getClass().getName());
                     logger.info("  Query : " + VariantQueryUtils.printQuery(variantQuery.getInputQuery()));
                     logger.info("  Options : " + variantQuery.getInputOptions().toJson());
@@ -1368,6 +1368,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
         // This should never happen, as the DBAdaptorVariantQueryExecutor can always run the query
         throw new VariantQueryException("No VariantQueryExecutor found to run the query!");
+    }
+
+    public final VariantQueryExecutor getVariantQueryExecutor(Class<? extends VariantQueryExecutor> clazz)
+            throws StorageEngineException {
+        Optional<VariantQueryExecutor> first = getVariantQueryExecutors()
+                .stream()
+                .filter(e -> e instanceof SearchIndexVariantQueryExecutor)
+                .findFirst();
+        if (first.isPresent()) {
+            return first.get();
+        } else {
+            throw new StorageEngineException("VariantQueryExecutor " + clazz + " not found");
+        }
     }
 
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {

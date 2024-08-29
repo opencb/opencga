@@ -27,10 +27,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -175,7 +173,7 @@ public class SampleMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 //    }
 
     @Test
-    public void searchByOntology() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public void searchByOntology() throws CatalogException {
         List<Phenotype> ontologyList = Arrays.asList(
                 new Phenotype("hpo:123", "One hpo term", "hpo", Phenotype.Status.UNKNOWN),
                 new Phenotype("hpo:456", "Another hpo term", "hpo", Phenotype.Status.UNKNOWN),
@@ -387,7 +385,7 @@ public class SampleMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 
     // Test if we can search for samples of an individual
     @Test
-    public void getSampleWithIndividual() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public void getSampleWithIndividual() throws CatalogException {
         QueryOptions queryOptions = new QueryOptions();
 
         // We create a new sample with the individual

@@ -48,6 +48,8 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
         variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
         variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
         variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE_GRCH38);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
+
         if (!loaded) {
             clearDB(DB_NAME);
             loadFiles();
@@ -59,6 +61,7 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
         variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
         variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
         variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE_GRCH38);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
         studyMetadata = new StudyMetadata(1, "s1");
 //        variantStorageEngine.getOptions().append(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key(), "expression,clinical");
         input1 = getResourceUri("variant-test-bnd.vcf");
