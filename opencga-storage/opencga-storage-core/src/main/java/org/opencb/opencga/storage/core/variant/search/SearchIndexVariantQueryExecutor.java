@@ -262,6 +262,10 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             intersect = true;
         } else {
             if (options.getBoolean(QueryOptions.COUNT)) {
+                // The SearchIndex is better than anyone in terms of counting
+                intersect = true;
+            } else if (options.getInt(QueryOptions.SKIP, 0) > 500) {
+                // Large "skip" queries should use SearchIndex when possible
                 intersect = true;
             } else {
                 // TODO: Improve this heuristic
