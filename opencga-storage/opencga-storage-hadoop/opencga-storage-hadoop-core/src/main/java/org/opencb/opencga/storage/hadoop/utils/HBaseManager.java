@@ -420,7 +420,8 @@ public class HBaseManager implements AutoCloseable {
                         regionInfo = getRegionInfo(admin, tableName, expectedSplit);
                         getRegionInfoAttempts--;
                         if (getRegionInfoAttempts == 0) {
-                            throw new IOException("Split point not found after creation");
+                            throw new DoNotRetryRegionException(
+                                    "Split point " + Bytes.toStringBinary(expectedSplit) + " not found after creation");
                         }
                     }
                 } else if (count == 1) {
@@ -434,8 +435,13 @@ public class HBaseManager implements AutoCloseable {
                 return true;
             } catch (IOException | RuntimeException e) {
                 if (ignoreExceptions) {
-                    LOGGER.warn("Error splitting table {} at {}. Retry {}/{}", tableName,
-                            Bytes.toStringBinary(expectedSplit), count, retries, e);
+                    if (e instanceof DoNotRetryRegionException) {
+                        LOGGER.warn("Error splitting table {} at {}. Retry {}/{} : {}", tableName,
+                                Bytes.toStringBinary(expectedSplit), count, retries, e.getMessage());
+                    } else {
+                        LOGGER.warn("Error splitting table {} at {}. Retry {}/{}", tableName,
+                                Bytes.toStringBinary(expectedSplit), count, retries, e);
+                    }
                 } else {
                     throw e;
                 }
