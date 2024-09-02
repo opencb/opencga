@@ -754,6 +754,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                 .collect(Collectors.toSet())
                         );
                         break;
+                    case WORKFLOW:
+                        allPermissions.addAll(aclParam.getPermissions()
+                                .stream()
+                                .map(WorkflowPermissions::valueOf)
+                                .map(WorkflowPermissions::getDependentPermissions)
+                                .flatMap(List::stream)
+                                .collect(Collectors.toSet())
+                                .stream().map(Enum::name)
+                                .collect(Collectors.toSet())
+                        );
+                        break;
                     default:
                         throw new CatalogAuthorizationException("Unexpected resource '" + aclParam.getResource() + "'");
                 }
@@ -868,6 +879,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                             .collect(Collectors.toSet())
                     );
                     break;
+                case WORKFLOW:
+                    allPermissions.addAll(aclParam.getPermissions()
+                            .stream()
+                            .map(WorkflowPermissions::valueOf)
+                            .map(WorkflowPermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                    break;
                 default:
                     throw new CatalogAuthorizationException("Unexpected resource '" + aclParam.getResource() + "'");
             }
@@ -974,6 +996,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                         .stream()
                         .map(ClinicalAnalysisPermissions::valueOf)
                         .map(ClinicalAnalysisPermissions::getImplicitPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case WORKFLOW:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(WorkflowPermissions::valueOf)
+                        .map(WorkflowPermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)

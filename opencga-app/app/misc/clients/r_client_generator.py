@@ -17,6 +17,7 @@ class RClientGenerator(RestClientGenerator):
             'Studies': 'Study',
             'Files': 'File',
             'Jobs': 'Job',
+            'Workflows': 'Workflow',
             'Samples': 'Sample',
             'Individuals': 'Individual',
             'Families': 'Family',

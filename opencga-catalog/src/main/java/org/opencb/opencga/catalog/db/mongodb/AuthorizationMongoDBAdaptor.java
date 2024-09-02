@@ -135,6 +135,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case FAMILY:
             case CLINICAL_ANALYSIS:
             case CLINICAL:
+            case WORKFLOW:
                 return;
             default:
                 throw new CatalogDBException("Unexpected parameter received. " + entry + " has been received.");
@@ -785,6 +786,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             removePermissions(clientSession, studyId, members, Enums.Resource.DISEASE_PANEL);
             removePermissions(clientSession, studyId, members, Enums.Resource.FAMILY);
             removePermissions(clientSession, studyId, members, Enums.Resource.CLINICAL_ANALYSIS);
+            removePermissions(clientSession, studyId, members, Enums.Resource.WORKFLOW);
             removeFromMembers(clientSession, Collections.singletonList(studyId), members, null, Enums.Resource.STUDY);
 
             return endWrite(tmpStartTime, -1, -1, null);
@@ -1101,6 +1103,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case CLINICAL_ANALYSIS:
             case CLINICAL:
                 return dbAdaptorFactory.getClinicalAnalysisDBAdaptor().parseQuery(query, rawQuery);
+            case WORKFLOW:
+                return dbAdaptorFactory.getWorkflowDBAdaptor().parseQuery(query, rawQuery);
             default:
                 throw new CatalogException("Unexpected parameter received. " + entry + " has been received.");
         }
@@ -1185,6 +1189,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case CLINICAL_ANALYSIS:
             case CLINICAL:
                 return dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getCollection();
+            case WORKFLOW:
+                return dbAdaptorFactory.getWorkflowDBAdaptor().getCollection();
             default:
                 throw new CatalogDBException("Unexpected resource '" + resource + "' parameter received.");
         }
@@ -1200,6 +1206,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 return dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelArchiveCollection();
             case FAMILY:
                 return dbAdaptorFactory.getCatalogFamilyDBAdaptor().getArchiveFamilyCollection();
+            case WORKFLOW:
+                return dbAdaptorFactory.getWorkflowDBAdaptor().getArchiveCollection();
             default:
                 throw new CatalogDBException("Unexpected resource '" + resource + "' parameter received.");
         }
@@ -1207,6 +1215,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     private boolean hasArchiveCollection(Enums.Resource resource) {
         return resource == Enums.Resource.INDIVIDUAL || resource == Enums.Resource.SAMPLE || resource == Enums.Resource.DISEASE_PANEL
-                || resource == Enums.Resource.FAMILY;
+                || resource == Enums.Resource.FAMILY || resource == Enums.Resource.CLINICAL || resource == Enums.Resource.CLINICAL_ANALYSIS
+                || resource == Enums.Resource.WORKFLOW;
     }
 }

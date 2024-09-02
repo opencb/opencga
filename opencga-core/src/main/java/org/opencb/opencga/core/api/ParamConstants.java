@@ -579,6 +579,20 @@ public class ParamConstants {
             + " not actually run.";
 
     // ---------------------------------------------
+    // WORKFLOWS
+    public static final String WORKFLOW_VERSION_PARAM = "version";
+    public static final String WORKFLOW_VERSION_DESCRIPTION = "Comma separated list of workflow versions. 'all' to get all the workflow "
+            + "versions. Not supported if multiple workflow ids are provided";
+    public static final String WORKFLOWS_ID_PARAM = "id";
+    public static final String WORKFLOWS_ID_DESCRIPTION = "Comma separated list workflow IDs" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String WORKFLOWS_UUID_DESCRIPTION = "Comma separated list workflow UUIDs" + UP_TO_100;
+    public static final String WORKFLOWS_UUID_PARAM = "uuid";
+    public static final String WORKFLOWS_TYPE_DESCRIPTION = "Workflow type. Allowed types: [NEXTFLOW]";
+    public static final String WORKFLOWS_TYPE_PARAM = "type";
+    public static final String WORKFLOW_SCRIPTS_ACTION_DESCRIPTION = "Action to be performed if the array of scripts is being updated "
+            + "[SET, ADD, REMOVE]";
+    public static final String WORKFLOW_SCRIPTS_ACTION_PARAM = "scriptsAction";
+    // ---------------------------------------------
     public static final String JOB_INPUT_FILES_PARAM = "input";
     public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as input.";
     public static final String JOB_OUTPUT_FILES_PARAM = "output";
@@ -1526,6 +1540,8 @@ public class ParamConstants {
     public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
     public static final String JOB_IDS_DESCRIPTION = "Comma separated list of job IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String JOB_UUIDS_DESCRIPTION = "Comma separated list of job UUIDs" + UP_TO_100;
+    public static final String WORKFLOWS_DESCRIPTION = "Comma separated list workflow IDs or UUIDs" + UP_TO_100;
+    public static final String WORKFLOW_DESCRIPTION = "Workflow ID or UUID";
     // ---------------------------------------------
     public static final String PROJECTS_DESCRIPTION = "Comma separated list of projects [organization@]project" + UP_TO_100;
     // ---------------------------------------------

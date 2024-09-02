@@ -17,11 +17,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.workflow.Workflow;
-import org.opencb.opencga.core.models.workflow.WorkflowScript;
+import org.opencb.opencga.core.models.workflow.WorkflowPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements WorkflowDBAdaptor {
@@ -52,6 +54,14 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(workflowCollection, archiveWorkflowCollection,
                 deleteWorkflowCollection);
         this.workflowConverter = new WorkflowConverter();
+    }
+
+    public MongoDBCollection getCollection() {
+        return workflowCollection;
+    }
+
+    public MongoDBCollection getArchiveCollection() {
+        return archiveWorkflowCollection;
     }
 
     Workflow insert(ClientSession clientSession, long studyUid, Workflow workflow) throws CatalogDBException {
@@ -316,29 +326,32 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        // Check if the tags exist.
-        if (parameters.containsKey(QueryParams.SCRIPTS.key())) {
-            List<WorkflowScript> scriptList = parameters.getAsList(QueryParams.SCRIPTS.key(), WorkflowScript.class);
+        final String[] acceptedListParams = {QueryParams.SCRIPTS.key()};
+        filterObjectParams(parameters, document.getSet(), acceptedListParams);
 
-            if (!scriptList.isEmpty()) {
-                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-                ParamUtils.BasicUpdateAction operation =
-                        ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SCRIPTS.key(), ParamUtils.BasicUpdateAction.ADD);
-                switch (operation) {
-                    case SET:
-                        document.getSet().put(QueryParams.SCRIPTS.key(), scriptList);
-                        break;
-                    case REMOVE:
-                        document.getPullAll().put(QueryParams.SCRIPTS.key(), scriptList);
-                        break;
-                    case ADD:
-                        document.getAddToSet().put(QueryParams.SCRIPTS.key(), scriptList);
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unknown update action " + operation);
-                }
-            }
-        }
+//        // Check if the scripts exist.
+//        if (parameters.containsKey(QueryParams.SCRIPTS.key())) {
+//            List<WorkflowScript> scriptList = parameters.getAsList(QueryParams.SCRIPTS.key(), WorkflowScript.class);
+//
+//            if (!scriptList.isEmpty()) {
+//                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+//                ParamUtils.BasicUpdateAction operation =
+//                        ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SCRIPTS.key(), ParamUtils.BasicUpdateAction.ADD);
+//                switch (operation) {
+//                    case SET:
+//                        document.getSet().put(QueryParams.SCRIPTS.key(), scriptList);
+//                        break;
+//                    case REMOVE:
+//                        document.getPullAll().put(QueryParams.SCRIPTS.key(), scriptList);
+//                        break;
+//                    case ADD:
+//                        document.getAddToSet().put(QueryParams.SCRIPTS.key(), scriptList);
+//                        break;
+//                    default:
+//                        throw new IllegalArgumentException("Unknown update action " + operation);
+//                }
+//            }
+//        }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
             String time = TimeUtils.getTime();
@@ -408,11 +421,37 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
 
 
     private Bson parseQuery(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return parseQuery(query, null);
+        return parseQuery(query, null, null);
     }
 
     private Bson parseQuery(Query query, String user) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return parseQuery(query, null, user);
+    }
+
+    protected Bson parseQuery(Query query, Document extraQuery)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return parseQuery(query, extraQuery, null);
+    }
+
+    protected Bson parseQuery(Query query, Document extraQuery, String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         List<Bson> andBsonList = new ArrayList<>();
+
+        if (query.containsKey(QueryParams.STUDY_UID.key())
+                && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
+            Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+            boolean simplifyPermissions = simplifyPermissions();
+
+            if (query.containsKey(ParamConstants.ACL_PARAM)) {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.WORKFLOW, user,
+                        simplifyPermissions));
+            } else {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, WorkflowPermissions.VIEW.name(),
+                            Enums.Resource.WORKFLOW, simplifyPermissions));
+            }
+
+            query.remove(ParamConstants.ACL_PARAM);
+        }
 
         Query queryCopy = new Query(query);
 //        queryCopy.remove(WorkflowDBAdaptor.QueryParams.DELETED.key());

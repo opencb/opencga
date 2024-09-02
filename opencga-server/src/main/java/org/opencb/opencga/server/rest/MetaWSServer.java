@@ -127,6 +127,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         classMap.put("studies", StudyWSServer.class);
         classMap.put("files", FileWSServer.class);
         classMap.put("jobs", JobWSServer.class);
+        classMap.put("workflows", WorkflowWSServer.class);
         classMap.put("samples", SampleWSServer.class);
         classMap.put("individuals", IndividualWSServer.class);
         classMap.put("families", FamilyWSServer.class);

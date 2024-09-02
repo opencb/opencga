@@ -3,9 +3,11 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -23,25 +25,24 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclEntryList;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
-import org.opencb.opencga.core.models.workflow.Workflow;
-import org.opencb.opencga.core.models.workflow.WorkflowRepository;
-import org.opencb.opencga.core.models.workflow.WorkflowScript;
-import org.opencb.opencga.core.models.workflow.WorkflowUpdateParams;
+import org.opencb.opencga.core.models.workflow.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
@@ -314,6 +315,229 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         workflow.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(workflow.getCreationDate(), CREATION_DATE.key()));
         workflow.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(workflow.getModificationDate(), MODIFICATION_DATE.key()));
         workflow.setAttributes(ParamUtils.defaultObject(workflow.getAttributes(), Collections.emptyMap()));
+    }
+
+    // **************************   ACLs  ******************************** //
+    public OpenCGAResult<AclEntryList<WorkflowPermissions>> getAcls(String studyId, List<String> workflowList, String member,
+                                                                    boolean ignoreException, String token) throws CatalogException {
+        return getAcls(studyId, workflowList,
+                StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(), ignoreException, token);
+    }
+
+    public OpenCGAResult<AclEntryList<WorkflowPermissions>> getAcls(String studyStr, List<String> workflowList, List<String> members,
+                                                                  boolean ignoreException, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
+
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyStr)
+                .append("workflowList", workflowList)
+                .append("members", members)
+                .append("ignoreException", ignoreException)
+                .append("token", token);
+
+        OpenCGAResult<AclEntryList<WorkflowPermissions>> workflowAcls = OpenCGAResult.empty();
+        Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
+        try {
+            auditManager.initAuditBatch(operationId);
+            InternalGetDataResult<Workflow> queryResult = internalGet(organizationId, study.getUid(), workflowList, INCLUDE_WORKFLOW_IDS,
+                    userId, ignoreException);
+
+            if (queryResult.getMissing() != null) {
+                missingMap = queryResult.getMissing().stream()
+                        .collect(Collectors.toMap(InternalGetDataResult.Missing::getId, Function.identity()));
+            }
+
+            List<Long> workflowUids = queryResult.getResults().stream().map(Workflow::getUid).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(members)) {
+                workflowAcls = authorizationManager.getAcl(organizationId, study.getUid(), workflowUids, members, Enums.Resource.WORKFLOW,
+                        WorkflowPermissions.class, userId);
+            } else {
+                workflowAcls = authorizationManager.getAcl(organizationId, study.getUid(), workflowUids, Enums.Resource.WORKFLOW,
+                        WorkflowPermissions.class, userId);
+            }
+
+            // Include non-existing samples to the result list
+            List<AclEntryList<WorkflowPermissions>> resultList = new ArrayList<>(workflowList.size());
+            List<Event> eventList = new ArrayList<>(missingMap.size());
+            int counter = 0;
+            for (String workflowId : workflowList) {
+                if (!missingMap.containsKey(workflowId)) {
+                    Workflow workflow = queryResult.getResults().get(counter);
+                    resultList.add(workflowAcls.getResults().get(counter));
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.WORKFLOW,
+                            workflow.getId(), workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
+                    counter++;
+                } else {
+                    resultList.add(new AclEntryList<>());
+                    eventList.add(new Event(Event.Type.ERROR, workflowId, missingMap.get(workflowId).getErrorMsg()));
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.WORKFLOW, workflowId,
+                            "", study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                    new Error(0, "", missingMap.get(workflowId).getErrorMsg())), new ObjectMap());
+                }
+            }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                workflowAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
+            workflowAcls.setResults(resultList);
+            workflowAcls.setEvents(eventList);
+        } catch (CatalogException e) {
+            for (String workflowId : workflowList) {
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.WORKFLOW, workflowId, "",
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
+                        new ObjectMap());
+            }
+            if (!ignoreException) {
+                throw e;
+            } else {
+                for (String workflowId : workflowList) {
+                    Event event = new Event(Event.Type.ERROR, workflowId, e.getMessage());
+                    workflowAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                }
+            }
+        } finally {
+            auditManager.finishAuditBatch(organizationId, operationId);
+        }
+
+        return workflowAcls;
+    }
+
+    public OpenCGAResult<AclEntryList<WorkflowPermissions>> updateAcl(String studyStr, List<String> workflowStringList, String memberList,
+                                                                      AclParams aclParams, ParamUtils.AclAction action, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyStr)
+                .append("workflowStringList", workflowStringList)
+                .append("memberList", memberList)
+                .append("aclParams", aclParams)
+                .append("action", action)
+                .append("token", token);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+
+        List<String> members;
+        List<Workflow> workflowList;
+        List<String> permissions = Collections.emptyList();
+        try {
+            auditManager.initAuditBatch(operationId);
+
+            if (CollectionUtils.isEmpty(workflowStringList)) {
+                throw new CatalogException("Update ACL: No workflows provided to be updated.");
+            }
+            if (action == null) {
+                throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+            }
+
+            if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+                permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+                checkPermissions(permissions, WorkflowPermissions::valueOf);
+            }
+
+            workflowList = internalGet(organizationId, study.getUid(), workflowStringList, INCLUDE_WORKFLOW_IDS, userId, false)
+                    .getResults();
+            authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), userId);
+
+            // Validate that the members are actually valid members
+            if (memberList != null && !memberList.isEmpty()) {
+                members = Arrays.asList(memberList.split(","));
+            } else {
+                members = Collections.emptyList();
+            }
+            checkMembers(organizationId, study.getUid(), members);
+            authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
+        } catch (CatalogException e) {
+            if (workflowStringList != null) {
+                for (String workflowId : workflowStringList) {
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW, workflowId,
+                            "", study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
+                }
+            }
+            auditManager.finishAuditBatch(organizationId, operationId);
+            throw e;
+        }
+
+        OpenCGAResult<AclEntryList<WorkflowPermissions>> aclResultList = OpenCGAResult.empty();
+        int numProcessed = 0;
+        do {
+            List<Workflow> batchWorkflowList = new ArrayList<>();
+            while (numProcessed < Math.min(numProcessed + BATCH_OPERATION_SIZE, workflowList.size())) {
+                batchWorkflowList.add(workflowList.get(numProcessed));
+                numProcessed += 1;
+            }
+
+            List<Long> workflowUids = batchWorkflowList.stream().map(Workflow::getUid).collect(Collectors.toList());
+            List<String> workflowIds = batchWorkflowList.stream().map(Workflow::getId).collect(Collectors.toList());
+            List<AuthorizationManager.CatalogAclParams> aclParamsList = new ArrayList<>();
+            AuthorizationManager.CatalogAclParams.addToList(workflowUids, permissions, Enums.Resource.WORKFLOW, aclParamsList);
+
+            try {
+                switch (action) {
+                    case SET:
+                        authorizationManager.setAcls(organizationId, study.getUid(), members, aclParamsList);
+                        break;
+                    case ADD:
+                        authorizationManager.addAcls(organizationId, study.getUid(), members, aclParamsList);
+                        break;
+                    case REMOVE:
+                        authorizationManager.removeAcls(organizationId, members, aclParamsList);
+                        break;
+                    case RESET:
+                        for (AuthorizationManager.CatalogAclParams aclParam : aclParamsList) {
+                            aclParam.setPermissions(null);
+                        }
+                        authorizationManager.removeAcls(organizationId, members, aclParamsList);
+                        break;
+                    default:
+                        throw new CatalogException("Unexpected error occurred. No valid action found.");
+                }
+
+                OpenCGAResult<AclEntryList<WorkflowPermissions>> queryResults = authorizationManager.getAcls(organizationId, study.getUid(),
+                        workflowUids, members, Enums.Resource.WORKFLOW, WorkflowPermissions.class);
+
+                for (int i = 0; i < queryResults.getResults().size(); i++) {
+                    queryResults.getResults().get(i).setId(workflowIds.get(i));
+                }
+                aclResultList.append(queryResults);
+
+                for (Workflow workflow : batchWorkflowList) {
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW,
+                            workflow.getId(), workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
+                }
+            } catch (CatalogException e) {
+                // Process current batch
+                for (Workflow workflow : batchWorkflowList) {
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW,
+                            workflow.getId(), workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
+                }
+
+                // Process remaining unprocessed batches
+                while (numProcessed < workflowList.size()) {
+                    Workflow workflow = workflowList.get(numProcessed);
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW,
+                            workflow.getId(), workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
+                }
+
+                auditManager.finishAuditBatch(organizationId, operationId);
+                throw e;
+            }
+        } while (numProcessed < workflowList.size());
+
+        auditManager.finishAuditBatch(organizationId, operationId);
+        return aclResultList;
     }
 
 }
