@@ -205,7 +205,6 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             put(RvtestsWrapperAnalysis.ID, "variant " + RvtestsWrapperAnalysis.ID + "-run");
             put(GatkWrapperAnalysis.ID, "variant " + GatkWrapperAnalysis.ID + "-run");
             put(ExomiserWrapperAnalysis.ID, "variant " + ExomiserWrapperAnalysis.ID + "-run");
-            put(VariantFileDeleteOperationTool.ID, "variant file-delete");
             put(VariantSecondaryAnnotationIndexOperationTool.ID, "variant secondary-index");
             put(VariantSecondaryIndexSamplesDeleteOperationTool.ID, "variant secondary-index-delete");
             put(VariantScoreDeleteOperationTool.ID, "variant score-delete");

@@ -202,7 +202,11 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     }
 
     protected File create(String resourceName) throws IOException, CatalogException {
-        return create(studyId, getResourceUri(resourceName));
+        return create(resourceName, "data/vcfs/");
+    }
+
+    protected File create(String resourceName, String path) throws IOException, CatalogException {
+        return create(studyId, getResourceUri(resourceName), path);
     }
 
     protected File create(String studyId, URI uri) throws IOException, CatalogException {

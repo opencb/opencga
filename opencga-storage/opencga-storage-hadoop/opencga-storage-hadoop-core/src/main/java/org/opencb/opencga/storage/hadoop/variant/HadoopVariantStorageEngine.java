@@ -79,6 +79,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.sample.HBaseVariantSampleDataManager;
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDeleteHBaseColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutorFactory;
@@ -828,7 +829,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                         archiveColumns.add(family + ':' + ArchiveTableHelper.getRefColumnName(fileId));
                         archiveColumns.add(family + ':' + ArchiveTableHelper.getNonRefColumnName(fileId));
                     }
-                    String[] deleteFromArchiveArgs = DeleteHBaseColumnDriver.buildArgs(archiveTable, archiveColumns, options);
+                    ObjectMap thisOptions = new ObjectMap(options);
+                    ArchiveDeleteHBaseColumnTask.configureTask(thisOptions, fileIds);
+
+                    String[] deleteFromArchiveArgs = DeleteHBaseColumnDriver.buildArgs(archiveTable, archiveColumns, thisOptions);
                     getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromArchiveArgs, "Delete from archive table");
                     return stopWatch.now(TimeUnit.MILLISECONDS);
                 });
