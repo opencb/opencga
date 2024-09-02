@@ -1174,14 +1174,14 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantSetupParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "expectedSamples",commandOptions.expectedSamples, true);
-            putNestedIfNotNull(beanParams, "expectedFiles",commandOptions.expectedFiles, true);
-            putNestedIfNotNull(beanParams, "fileType",commandOptions.fileType, true);
-            putNestedIfNotEmpty(beanParams, "averageFileSize",commandOptions.averageFileSize, true);
-            putNestedIfNotNull(beanParams, "variantsPerSample",commandOptions.variantsPerSample, true);
-            putNestedIfNotNull(beanParams, "averageSamplesPerFile",commandOptions.averageSamplesPerFile, true);
-            putNestedIfNotNull(beanParams, "dataDistribution",commandOptions.dataDistribution, true);
-            putNestedIfNotNull(beanParams, "normalizeExtensions",commandOptions.normalizeExtensions, true);
+            putNestedIfNotNull(beanParams, "expectedSamples", commandOptions.expectedSamples, true);
+            putNestedIfNotNull(beanParams, "expectedFiles", commandOptions.expectedFiles, true);
+            putNestedIfNotNull(beanParams, "fileType", commandOptions.fileType, true);
+            putNestedIfNotEmpty(beanParams, "averageFileSize", commandOptions.averageFileSize, true);
+            putNestedIfNotNull(beanParams, "variantsPerSample", commandOptions.variantsPerSample, true);
+            putNestedIfNotNull(beanParams, "averageSamplesPerFile", commandOptions.averageSamplesPerFile, true);
+            putNestedIfNotNull(beanParams, "dataDistribution", commandOptions.dataDistribution, true);
+            putNestedIfNotNull(beanParams, "normalizeExtensions", commandOptions.normalizeExtensions, true);
 
             variantSetupParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
