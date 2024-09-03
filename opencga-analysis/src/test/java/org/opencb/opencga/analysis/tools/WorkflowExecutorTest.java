@@ -12,6 +12,8 @@ import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
 import org.opencb.opencga.core.models.workflow.WorkflowCreateParams;
 import org.opencb.opencga.core.models.workflow.WorkflowRepository;
@@ -56,7 +58,9 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
 
-        WorkflowCreateParams workflow = createDummyWorkflow();
+        catalogManager.getFileManager().create(studyFqn, new FileCreateParams().setPath("myfile.txt").setContent("hello world").setType(File.Type.FILE), false, ownerToken);
+
+        WorkflowCreateParams workflow = createDummyWorkflow("pipeline_cat_file.nf");
         catalogManager.getWorkflowManager().create(studyFqn, workflow.toWorkflow(), QueryOptions.empty(), ownerToken);
 
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
@@ -64,7 +68,7 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         StopWatch stopWatch = StopWatch.createStarted();
         NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
         Map<String, String> workflowParams = new HashMap<>();
-        workflowParams.put("file", "ocga://myfile.txt");
+        workflowParams.put("in", "ocga://myfile.txt");
         NextFlowRunParams runParams = new NextFlowRunParams(workflow.getId(), 1, workflowParams);
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
@@ -99,7 +103,11 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
     }
 
     private WorkflowCreateParams createDummyWorkflow() throws IOException {
-        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("nextflow/pipeline.nf");
+        return createDummyWorkflow("pipeline.nf");
+    }
+
+    private WorkflowCreateParams createDummyWorkflow(String pipelineId) throws IOException {
+        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("nextflow/" + pipelineId);
         String content = IOUtils.toString(inputStream, "UTF-8");
         return new WorkflowCreateParams()
                 .setId("workflow")
