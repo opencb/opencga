@@ -1,0 +1,53 @@
+name: Pull request approve workflow
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  test:
+    name: Execute JUnit and Jacoco tests
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Clone OpenCGA Enterprise branch '${{ github.event.pull_request.head.ref }}'
+        uses: actions/checkout@v4
+        with:
+          repository: zetta-genomics/opencga-enterprise
+          token: ${{ secrets.GH_PRIVATE_TOKEN }}
+          fetch-depth: "10"
+      - id: get_opencga_branch
+        name: Get current branch for opencga from 'pom.xml' property
+        run: |
+          pwd
+          chmod +x ./.github/workflows/scripts/xetabase-branch.sh
+          opencga_branch=$(./.github/workflows/scripts/xetabase-branch.sh  ${{ github.event.pull_request.head.ref }})
+          echo "__OpenCGA ref:__ \"${opencga_branch}\"" | tee -a ${GITHUB_STEP_SUMMARY}
+          echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        with:
+          repository: opencb/opencga
+          ref: ${{ steps.get_opencga_branch.outputs.opencga_branch }}
+          path: opencga-home
+          fetch-depth: '10'
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'maven'
+      - name: Install Samtools
+        run: sudo apt-get install samtools python3-deeptools
+      - name: Start MongoDB v6.0
+        uses: supercharge/mongodb-github-action@1.8.0
+        with:
+          mongodb-version: 6.0
+          mongodb-replica-set: rs-test
+      - name: K8s Tunnel MongoDB
+        run: |
+          wget https://dl.k8s.io/release/v1.28.2/bin/linux/amd64/kubectl
+          chmod +x ./kubectl
+          echo "${{ secrets.AZURE_KUBE_CONFIG }}" > admin.conf
+          ./kubectl -n cellbase-db port-forward services/cellbase-rs0-svc 27018:27017 --kubeconfig ./admin.conf &
+      - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, cellbase, opencga and opencga-enterprise
+        run: |
+         ./build.sh -t -l runShortTests,runMediumTests,runLongTests -T ${{ github.event.pull_request.head.ref }} -c localhost:27018

@@ -1,17 +1,12 @@
 package com.zettagenomics.opencga.enterprise.core.configuration;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.logging.log4j.core.util.FileUtils;
 import org.junit.Test;
+import org.opencb.opencga.core.common.TimeUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import static org.junit.Assert.assertEquals;
 
 
 public class EnterpriseConfigurationTest {
@@ -25,15 +20,37 @@ public class EnterpriseConfigurationTest {
 
     @Test
     public void testLoadingConfigFile() throws IOException {
-        URL url = EnterpriseConfigurationTest.class.getClassLoader().getResource("enterprise-configuration.yml");
-        Path resourcePath = Paths.get(url.getPath());
-        Path opencgaHome = resourcePath.getParent().resolve(RandomStringUtils.randomAlphabetic(10));
+        Path opencgaHome;
+        int c = 0;
+        do {
+            opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + TimeUtils.getTimeMillis() + (c > 0 ? "_" + c : ""));
+            c++;
+        } while (opencgaHome.toFile().exists());
+        Files.createDirectories(opencgaHome);
+        System.out.println("OpenCGA home = " + opencgaHome.toAbsolutePath());
         Path configPath = opencgaHome.resolve("conf");
-        Path enterprisePath = configPath.resolve(resourcePath.getFileName());
-        FileUtils.makeParentDirs(enterprisePath.toFile());
-        Files.copy(resourcePath, enterprisePath);
-        assertEquals(Boolean.TRUE, enterprisePath.toFile().exists());
-        System.out.println(enterprisePath.toAbsolutePath());
+
+        // Create a File object for the destination file
+        InputStream is = EnterpriseConfigurationTest.class.getClassLoader().getResourceAsStream("enterprise-configuration.yml");
+
+        // Create the destination directory if it doesn't exist
+        if (!Files.exists(configPath)) {
+            Files.createDirectories(configPath);
+        }
+
+        // Create the destination file path
+        Path destinationFilePath = configPath.resolve("enterprise-configuration.yml");
+
+        // Copy the content of the resource file to the destination file
+        try (InputStreamReader inputStreamReader = new InputStreamReader(is);
+             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+             BufferedWriter bufferedWriter = Files.newBufferedWriter(destinationFilePath)) {
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                bufferedWriter.write(line);
+                bufferedWriter.newLine();
+            }
+        }
 
         EnterpriseConfiguration config = EnterpriseConfiguration.load(opencgaHome);
         System.out.println(config);
