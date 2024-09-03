@@ -1,20 +1,21 @@
 package org.opencb.opencga.storage.hadoop.app;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.SnapshotDescription;
-import org.apache.hadoop.hbase.client.TableState;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.exceptions.IllegalArgumentIOException;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -78,9 +79,15 @@ public class HBaseMain extends AbstractMain {
             case MOVE_TABLE_REGIONS:
                 moveTableRegions(args);
                 break;
-            case BALANCE_TABLE_REGIONS:
-                balanceTableRegions(getArg(args, 1), getArgsMap(args, 2, "maxMoves"));
+            case BALANCE_TABLE_REGIONS: {
+                ObjectMap argsMap = getArgsMap(args, 2, "maxMoves", "dryRun", "ignoreExceptions", "maxRetries");
+                balanceTableRegions(getArg(args, 1),
+                        argsMap.getInt("maxMoves", 50000),
+                        argsMap.getBoolean("dryRun", false),
+                        argsMap.getBoolean("ignoreExceptions", false),
+                        argsMap.getInt("maxRetries", 1));
                 break;
+            }
             case "tables":
             case LIST_TABLES:
                 print(listTables(getArg(args, 1, "")).stream().map(TableName::getNameWithNamespaceInclAsString).iterator());
@@ -197,8 +204,10 @@ public class HBaseMain extends AbstractMain {
                 System.out.println("        (see " + CHECK_TABLES_WITH_REGIONS_ON_DEAD_SERVERS + ") by creating a temporary snapshot");
                 System.out.println("  " + MOVE_TABLE_REGIONS + " <table-name-regex>");
                 System.out.println("      Move all regions from selected tables to new random nodes.");
-//                System.out.println("  " + BALANCE_TABLE_REGIONS + " <table-name> [--maxMoves N]"); // FIXME
-//                System.out.println("  " + REGIONS_PER_TABLE + " <table-name>"); // FIXME
+                System.out.println("  " + BALANCE_TABLE_REGIONS + " <table-name> [--maxMoves N]"
+                                        + " [--maxRetries 1] [--ignoreExceptions]"
+                                        + " [--dryRun]");
+                System.out.println("  " + REGIONS_PER_TABLE + " <table-name>"); // FIXME
                 System.out.println("  " + CLONE_TABLES + " <table-name-prefix> <new-table-name-prefix> "
                                         + "[--keepSnapshots] [--dryRun] [--snapshotSuffix <snapshotNameSuffix>]");
                 System.out.println("      Clone all selected tables by creating an intermediate snapshot.");
@@ -207,8 +216,8 @@ public class HBaseMain extends AbstractMain {
                                         + "[--skipTablesWithSnapshot]");
                 System.out.println("  " + SNAPSHOT_TABLE  + " <table-name> [--dryRun] [--snapshotSuffix <snapshotNameSuffix>] "
                                         + "[--skipTablesWithSnapshot]");
-                System.out.println("  " + DELETE_SNAPSHOTS + " <snapshots-list> [--dryRun] [--skipMissing]");
                 System.out.println("      Create a snapshot for all selected tables.");
+                System.out.println("  " + DELETE_SNAPSHOTS + " <snapshots-list> [--dryRun] [--skipMissing]");
                 System.out.println("  " + CLONE_SNAPSHOTS + " <snapshot-name-regex> [--dryRun] "
                                         + "[--tablePrefixChange <oldPrefix>:<newPrefix>] "
                                         + "[--onExistingTables [fail|skip|drop] ]");
@@ -258,9 +267,9 @@ public class HBaseMain extends AbstractMain {
         engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "");
 
         MRExecutor mrExecutor = engine.getMRExecutor();
-        int exitError = mrExecutor.run(tool, args.toArray(new String[0]));
-        if (exitError != 0) {
-            throw new Exception("Exec failed with exit number '" + exitError + "'");
+        MRExecutor.Result result = mrExecutor.run(tool, args.toArray(new String[0]));
+        if (result.getExitValue() != 0) {
+            throw new Exception("Exec failed with exit number '" + result.getExitValue() + "'");
         }
     }
 
@@ -318,7 +327,7 @@ public class HBaseMain extends AbstractMain {
             engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "");
 
             MRExecutor mrExecutor = engine.getMRExecutor();
-            int exitError = mrExecutor.run("hbase", args.toArray(new String[0]));
+            int exitError = mrExecutor.run("hbase", args.toArray(new String[0])).getExitValue();
             if (exitError != 0) {
                 throw new Exception("ExportSnapshot failed with exit number '" + exitError + "'");
             }
@@ -326,47 +335,38 @@ public class HBaseMain extends AbstractMain {
     }
 
     private void regionsPerTable(String tableNameStr) throws Exception {
-//        TableName tableName = getTable(tableNameStr);
-//        hBaseManager.act(tableName.getNameAsString(), (table, admin) -> {
-//            List<ServerName> servers = new ArrayList<>(admin.getClusterStatus().getServers());
-//            Map<String, Integer> regionsPerServer = new HashMap<>();
-//
-//            List<Pair<RegionInfo, ServerName>> tableRegionsAndLocations = getTableRegionsAndLocations(tableName, admin);
-//
-//            System.out.println("#REGION\tSERVER\tSTART_KEY\tEND_KEY");
-//            for (Pair<RegionInfo, ServerName> pair : tableRegionsAndLocations) {
-//                RegionInfo region = pair.getFirst();
-//                ServerName server = pair.getSecond();
-//                regionsPerServer.merge(server.getServerName(), 1, Integer::sum);
-//
-//                System.out.println(region.getEncodedName()
-//                        + "\t" + server.getServerName()
-//                        + "\t" + Bytes.toStringBinary(region.getStartKey())
-//                        + "\t" + Bytes.toStringBinary(region.getEndKey()));
-//            }
-//
-//            System.out.println("");
-//            System.out.println("#SERVER\tREGIONS");
-//            for (ServerName server : servers) {
-//                System.out.println(server.getServerName() + "\t" + regionsPerServer.getOrDefault(server.getServerName(), 0));
-//            }
-//
-//
-//
-//            return null;
-//        });
+        TableName tableName = getTable(tableNameStr);
+        hBaseManager.act(tableName.getNameAsString(), (table, admin) -> {
+            List<ServerName> servers = new ArrayList<>(admin.getClusterStatus().getServers());
+            Map<String, Integer> regionsPerServer = new HashMap<>();
+
+            List<Pair<RegionInfo, ServerName>> tableRegionsAndLocations = getTableRegionsAndLocations(tableName, admin);
+
+            System.out.println("#REGION\tSERVER\tSTART_KEY\tEND_KEY");
+            for (Pair<RegionInfo, ServerName> pair : tableRegionsAndLocations) {
+                RegionInfo region = pair.getFirst();
+                ServerName server = pair.getSecond();
+                regionsPerServer.merge(server.getServerName(), 1, Integer::sum);
+
+                System.out.println(region.getEncodedName()
+                        + "\t" + server.getServerName()
+                        + "\t" + Bytes.toStringBinary(region.getStartKey())
+                        + "\t" + Bytes.toStringBinary(region.getEndKey()));
+            }
+
+            System.out.println("");
+            System.out.println("#SERVER\tREGIONS");
+            for (ServerName server : servers) {
+                System.out.println(server.getServerName() + "\t" + regionsPerServer.getOrDefault(server.getServerName(), 0));
+            }
+
+            return null;
+        });
     }
 
-//    private List<Pair<RegionInfo, ServerName>> getTableRegionsAndLocations(TableName tableName, Admin admin) throws IOException {
-//        List<Pair<RegionInfo, ServerName>> tableRegionsAndLocations;
-////        try (ZooKeeperWatcher zkw = new ZooKeeperWatcher(admin.getConfiguration(), "hbase-main", null)) {
-////            tableRegionsAndLocations = MetaTableAccessor
-////                    .getTableRegionsAndLocations(zkw, admin.getConnection(), tableName);
-////        }
-//        tableRegionsAndLocations = MetaTableAccessor
-//                .getTableRegionsAndLocations(admin.getConnection(), tableName);
-//        return tableRegionsAndLocations;
-//    }
+    private List<Pair<RegionInfo, ServerName>> getTableRegionsAndLocations(TableName tableName, Admin admin) throws IOException {
+        return MetaTableAccessor.getTableRegionsAndLocations(admin.getConnection(), tableName);
+    }
 
     private void reassignTablesWithRegionsOnDeadServers(String[] args) throws Exception {
         String tableNameFilter = getArg(args, 1);
@@ -415,47 +415,81 @@ public class HBaseMain extends AbstractMain {
         });
     }
 
-    private void balanceTableRegions(String tableNameStr, ObjectMap options) throws Exception {
-//        TableName tableName = getTable(tableNameStr);
-//
-//        int regionCount = hBaseManager.act(tableName.getNameAsString(), (table, admin) -> {
-//            int maxMoves = options.getInt("maxMoves", 50000);
-//            List<ServerName> servers = new ArrayList<>(admin.getClusterStatus().getServers());
-//            List<Pair<RegionInfo, ServerName>> tableRegionsAndLocations = getTableRegionsAndLocations(tableName, admin);
-//            int expectedRegionsPerServer = (tableRegionsAndLocations.size() / servers.size()) + 1;
-//            Map<String, Integer> regionsPerServer = new HashMap<>();
-//            servers.forEach(s -> regionsPerServer.put(s.getServerName(), 0));
-//            for (Pair<RegionInfo, ServerName> pair : tableRegionsAndLocations) {
-//                regionsPerServer.merge(pair.getSecond().getServerName(), 1, Integer::sum);
-//            }
-//
-//            for (Pair<RegionInfo, ServerName> pair : tableRegionsAndLocations) {
-//                if (maxMoves < 0) {
-//                    System.out.println("Reached max moves!");
-//                    break;
-//                }
-//
-//                String sourceHost = pair.getSecond().getServerName();
-//                if (regionsPerServer.get(sourceHost) > expectedRegionsPerServer) {
-//                    Collections.shuffle(servers);
-//                    Optional<ServerName> targetOptional = servers.stream()
-//                            .filter(s -> regionsPerServer.get(s.getServerName()) < expectedRegionsPerServer).findAny();
-//                    if (!targetOptional.isPresent()) {
-//                        break;
-//                    }
-//                    String testHost = targetOptional.get().getServerName();
-//                    regionsPerServer.merge(sourceHost, -1, Integer::sum);
-//                    regionsPerServer.merge(testHost, 1, Integer::sum);
-//                    System.out.println("Move region '" + pair.getFirst().getEncodedName() + "' from " + sourceHost + " to " + testHost);
-//                    StopWatch stopWatch = StopWatch.createStarted();
-//                    admin.move(pair.getFirst().getEncodedNameAsBytes(), Bytes.toBytes(testHost));
-//                    System.out.println("Moved in "+TimeUtils.durationToString(stopWatch));
-//
-//                    maxMoves--;
-//                }
-//            }
-//            return tableRegionsAndLocations.size();
-//        });
+    private void balanceTableRegions(String tableNameStr, int maxMoves, boolean dryRun, boolean ignoreExceptions, int maxRetries)
+            throws Exception {
+        TableName tableName = getTable(tableNameStr);
+
+        LOGGER.info("Balancing table " + tableName.getNameAsString() + " with maxMoves=" + maxMoves + ", dryRun=" + dryRun
+                + ", ignoreExceptions=" + ignoreExceptions + ", maxRetries=" + maxRetries);
+        int regionCount = hBaseManager.act(tableName.getNameAsString(), (table, admin) -> {
+            List<ServerName> servers = HBaseCompat.getInstance().getServerList(admin);
+            List<Pair<RegionInfo, ServerName>> tableRegionsAndLocations = getTableRegionsAndLocations(tableName, admin);
+            int expectedRegionsPerServer = (tableRegionsAndLocations.size() / servers.size()) + 1;
+
+            Map<String, Integer> regionsPerServer = new HashMap<>();
+            servers.forEach(s -> regionsPerServer.put(s.getServerName(), 0));
+            for (Pair<RegionInfo, ServerName> pair : tableRegionsAndLocations) {
+                regionsPerServer.merge(pair.getSecond().getServerName(), 1, Integer::sum);
+            }
+
+            // Shuffle the regions to avoid hotspots
+            Collections.shuffle(tableRegionsAndLocations);
+
+            int moves = 0;
+            for (Pair<RegionInfo, ServerName> pair : tableRegionsAndLocations) {
+                if (moves > maxMoves) {
+                    LOGGER.info("Reached max moves!");
+                    break;
+                }
+
+                ServerName sourceHost = pair.getSecond();
+                // If the source host has more regions than expected, move one to another server
+                if (regionsPerServer.get(sourceHost.getServerName()) > expectedRegionsPerServer) {
+                    // Iterate over the servers in a random order
+                    Collections.shuffle(servers);
+                    Optional<ServerName> targetOptional = servers.stream()
+                            .filter(s -> !s.equals(sourceHost))
+                            .filter(s -> regionsPerServer.get(s.getServerName()) < expectedRegionsPerServer)
+                            .findAny();
+                    if (!targetOptional.isPresent()) {
+                        break;
+                    }
+                    ServerName targetHost = targetOptional.get();
+                    LOGGER.info("Move region '" + pair.getFirst().getEncodedName() + "' from " + sourceHost + " to " + targetHost);
+                    StopWatch stopWatch = StopWatch.createStarted();
+                    int attempts = 0;
+                    while (attempts < maxRetries) {
+                        try {
+                            if (dryRun) {
+                                LOGGER.info("[DRY-RUN]: admin.move('" + pair.getFirst().getEncodedName() + "," + targetHost + ")");
+                            } else {
+                                admin.move(pair.getFirst().getEncodedNameAsBytes(), Bytes.toBytes(targetHost.getServerName()));
+                            }
+                            break;
+                        } catch (Exception e) {
+                            LOGGER.info("Error moving region: " + e.getMessage());
+                            attempts++;
+                            if (attempts < maxRetries) {
+                                LOGGER.info("Retrying... " + attempts + "/" + maxRetries);
+                            } else if (!ignoreExceptions) {
+                                throw e;
+                            } else {
+                                LOGGER.info("Ignoring exception. Unable to move region after " + attempts + " attempts.");
+                                break;
+                            }
+                        }
+                    }
+                    LOGGER.info("Moved in " + TimeUtils.durationToString(stopWatch));
+
+                    regionsPerServer.merge(sourceHost.getServerName(), -1, Integer::sum);
+                    regionsPerServer.merge(targetHost.getServerName(), 1, Integer::sum);
+
+                    moves++;
+                }
+            }
+            return tableRegionsAndLocations.size();
+        });
+        System.out.println("#Balanced regions for table '" + tableNameStr + "' . Total regions: " + regionCount);
     }
 
 

@@ -942,7 +942,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(SAMPLE.key(), "NA12877")
                 .append(ANNOT_CONSEQUENCE_TYPE.key(), ct);
         assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "consequenceType")));
-
         AtomicInteger count = new AtomicInteger(0);
         sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions()).forEachRemaining(v -> count.incrementAndGet());
         FacetField facet = executor.aggregation(new Query(query), new QueryOptions(QueryOptions.FACET, "consequenceType")).first();

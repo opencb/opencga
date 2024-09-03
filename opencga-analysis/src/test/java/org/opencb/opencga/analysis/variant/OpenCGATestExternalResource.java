@@ -22,14 +22,17 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.StorageManager;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTest;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -39,20 +42,20 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadata
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
+import org.reflections.Reflections;
+import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created on 26/08/15
@@ -61,7 +64,7 @@ import java.util.Map;
  */
 public class OpenCGATestExternalResource extends ExternalResource {
 
-    private CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
+    private final CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
     private Path opencgaHome;
     private String storageEngine;
     private boolean initiated = false;
@@ -72,7 +75,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
     private ToolRunner toolRunner;
 
 
-    public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
+    public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource
+            = new HadoopVariantStorageTest.HadoopExternalResource();
 
     public OpenCGATestExternalResource() {
         this(false);
@@ -214,8 +218,6 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.createDirectories(conf);
         Files.createDirectories(userHome);
 
-        catalogManagerExternalResource.getConfiguration().getAdmin().setSecretKey(null);
-        catalogManagerExternalResource.getConfiguration().getAdmin().setAlgorithm(null);
         catalogManagerExternalResource.getConfiguration().serialize(
                 new FileOutputStream(conf.resolve("configuration.yml").toFile()));
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
@@ -236,6 +238,9 @@ public class OpenCGATestExternalResource extends ExternalResource {
         StorageEngineFactory.configure(storageConfiguration);
         storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 
+        if (storageEngine.equals(DummyVariantStorageEngine.STORAGE_ENGINE_ID)) {
+            DummyVariantStorageEngine.configure(getStorageEngineFactory(), true);
+        }
 //        inputStream = StorageEngine.class.getClassLoader().getResourceAsStream("client-configuration-test.yml");
 //        Files.copy(inputStream, conf.resolve("client-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
@@ -263,11 +268,15 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
 
         // Exomiser analysis files
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser")).toAbsolutePath();
+        List<String> exomiserVersions = Arrays.asList("13.1", "14.0");
         List<String> exomiserFiles = Arrays.asList("application.properties", "exomiser-analysis.yml", "output.yml");
-        for (String exomiserFile : exomiserFiles) {
-            inputStream = new FileInputStream("../opencga-app/app/analysis/exomiser/" + exomiserFile);
-            Files.copy(inputStream, analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
+        for (String exomiserVersion : exomiserVersions) {
+            analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser").resolve(exomiserVersion).toAbsolutePath());
+            Path exomiserPath = Paths.get(ExomiserInterpretationAnalysisTest.class.getClassLoader().getResource("exomiser").getPath());
+            for (String exomiserFile : exomiserFiles) {
+                String resource = exomiserVersion + "/" + exomiserFile;
+                Files.copy(exomiserPath.resolve(resource).toAbsolutePath(), analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
+            }
         }
 
         return opencgaHome;
@@ -358,6 +367,34 @@ public class OpenCGATestExternalResource extends ExternalResource {
         return tmpOutDir.toString();
 //        return getCatalogManager().getJobManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
     }
+
+    public void restore(URL resource) throws Exception {
+        if (resource.getProtocol().equals("jar")) {
+            Reflections reflections = new Reflections(resource.getPath().replace('/','.'), new ResourcesScanner());
+            Set<String> resources = reflections.getResources(x -> true);
+            for (String file : resources) {
+                catalogManagerExternalResource.getResourceUri(file.replace('.', '/'));
+            }
+            MongoBackupUtils.restore(getCatalogManager(), opencgaHome, opencgaHome
+                    .resolve("resources")
+                    .resolve(resource.getPath())
+                    .resolve("mongodb"));
+        } else {
+            MongoBackupUtils.restore(getCatalogManager(), opencgaHome, Paths.get(resource.toURI()).resolve("mongodb"));
+        }
+        catalogManagerExternalResource.resetCatalogManager();
+    }
+
+    public final VariantStorageEngine getVariantStorageEngineByProject(String projectFqn) throws Exception {
+        DataStore dataStore = getVariantStorageManager().getDataStoreByProjectId(projectFqn, getAdminToken());
+        VariantStorageEngine variantStorageEngine = storageEngineFactory
+                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        if (dataStore.getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
+        }
+        return variantStorageEngine;
+    }
+
 
 //    private class StorageLocalExecutorManager extends LocalExecutorManager {
 //

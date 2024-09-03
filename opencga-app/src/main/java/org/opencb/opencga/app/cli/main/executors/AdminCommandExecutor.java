@@ -14,17 +14,17 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.admin.GroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
 import org.opencb.opencga.core.models.admin.JWTParams;
-import org.opencb.opencga.core.models.admin.UserCreateParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.common.Enums.Resource;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserCreateParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -65,9 +65,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
             case "audit-group-by":
                 queryResponse = groupByAudit();
                 break;
-            case "catalog-index-stats":
-                queryResponse = indexStatsCatalog();
-                break;
             case "catalog-install":
                 queryResponse = installCatalog();
                 break;
@@ -79,6 +76,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "users-import":
                 queryResponse = importUsers();
+                break;
+            case "users-permissions":
+                queryResponse = permissionsUsers();
                 break;
             case "users-search":
                 queryResponse = searchUsers();
@@ -114,17 +114,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getAdminClient().groupByAudit(commandOptions.fields, commandOptions.entity, queryParams);
     }
 
-    private RestResponse<Boolean> indexStatsCatalog() throws Exception {
-        logger.debug("Executing indexStatsCatalog in Admin command line");
-
-        AdminCommandOptions.IndexStatsCatalogCommandOptions commandOptions = adminCommandOptions.indexStatsCatalogCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("collection", commandOptions.collection);
-
-        return openCGAClient.getAdminClient().indexStatsCatalog(queryParams);
-    }
-
     private RestResponse<ObjectMap> installCatalog() throws Exception {
         logger.debug("Executing installCatalog in Admin command line");
 
@@ -141,10 +130,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), InstallationParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "secretKey",commandOptions.secretKey, true);
-            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
+            putNestedIfNotEmpty(beanParams, "secretKey", commandOptions.secretKey, true);
+            putNestedIfNotEmpty(beanParams, "password", commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "email", commandOptions.email, true);
 
             installationParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -158,6 +146,10 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         AdminCommandOptions.JwtCatalogCommandOptions commandOptions = adminCommandOptions.jwtCatalogCommandOptions;
 
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
+
+
         JWTParams jWTParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<ObjectMap> res = new RestResponse<>();
@@ -169,13 +161,13 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), JWTParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "secretKey",commandOptions.secretKey, true);
+            putNestedIfNotEmpty(beanParams, "secretKey", commandOptions.secretKey, true);
 
             jWTParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JWTParams.class);
         }
-        return openCGAClient.getAdminClient().jwtCatalog(jWTParams);
+        return openCGAClient.getAdminClient().jwtCatalog(jWTParams, queryParams);
     }
 
     private RestResponse<User> createUsers() throws Exception {
@@ -194,12 +186,11 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), UserCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
-            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "email", commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "password", commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "organization", commandOptions.organization, true);
 
             userCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -213,6 +204,10 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         AdminCommandOptions.ImportUsersCommandOptions commandOptions = adminCommandOptions.importUsersCommandOptions;
 
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
+
+
         UserImportParams userImportParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<User> res = new RestResponse<>();
@@ -224,17 +219,34 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), UserImportParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "authenticationOriginId",commandOptions.authenticationOriginId, true);
-            putNestedIfNotNull(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotNull(beanParams, "resourceType",commandOptions.resourceType, true);
-            putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
-            putNestedIfNotEmpty(beanParams, "studyGroup",commandOptions.studyGroup, true);
+            putNestedIfNotEmpty(beanParams, "authenticationOriginId", commandOptions.authenticationOriginId, true);
+            putNestedIfNotNull(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "resourceType", commandOptions.resourceType, true);
+            putNestedIfNotEmpty(beanParams, "study", commandOptions.study, true);
+            putNestedIfNotEmpty(beanParams, "studyGroup", commandOptions.studyGroup, true);
 
             userImportParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserImportParams.class);
         }
-        return openCGAClient.getAdminClient().importUsers(userImportParams);
+        return openCGAClient.getAdminClient().importUsers(userImportParams, queryParams);
+    }
+
+    private RestResponse<Acl> permissionsUsers() throws Exception {
+        logger.debug("Executing permissionsUsers in Admin command line");
+
+        AdminCommandOptions.PermissionsUsersCommandOptions commandOptions = adminCommandOptions.permissionsUsersCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("entryIds", commandOptions.entryIds);
+        queryParams.putIfNotEmpty("permissions", commandOptions.permissions);
+        queryParams.putIfNotEmpty("category", commandOptions.category);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getAdminClient().permissionsUsers(queryParams);
     }
 
     private RestResponse<Sample> searchUsers() throws Exception {
@@ -248,8 +260,8 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotNull("count", commandOptions.count);
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotEmpty("user", commandOptions.user);
-        queryParams.putIfNotEmpty("account", commandOptions.account);
         queryParams.putIfNotEmpty("authenticationId", commandOptions.authenticationId);
 
         return openCGAClient.getAdminClient().searchUsers(queryParams);
@@ -259,6 +271,10 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing syncUsers in Admin command line");
 
         AdminCommandOptions.SyncUsersCommandOptions commandOptions = adminCommandOptions.syncUsersCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
+
 
         GroupSyncParams groupSyncParams = null;
         if (commandOptions.jsonDataModel) {
@@ -271,19 +287,18 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), GroupSyncParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "authenticationOriginId",commandOptions.authenticationOriginId, true);
-            putNestedIfNotEmpty(beanParams, "from",commandOptions.from, true);
-            putNestedIfNotEmpty(beanParams, "to",commandOptions.to, true);
-            putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
-            putNestedIfNotNull(beanParams, "syncAll",commandOptions.syncAll, true);
-            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
+            putNestedIfNotEmpty(beanParams, "authenticationOriginId", commandOptions.authenticationOriginId, true);
+            putNestedIfNotEmpty(beanParams, "from", commandOptions.from, true);
+            putNestedIfNotEmpty(beanParams, "to", commandOptions.to, true);
+            putNestedIfNotEmpty(beanParams, "study", commandOptions.study, true);
+            putNestedIfNotNull(beanParams, "syncAll", commandOptions.syncAll, true);
+            putNestedIfNotNull(beanParams, "force", commandOptions.force, true);
 
             groupSyncParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GroupSyncParams.class);
         }
-        return openCGAClient.getAdminClient().syncUsers(groupSyncParams);
+        return openCGAClient.getAdminClient().syncUsers(groupSyncParams, queryParams);
     }
 
     private RestResponse<Group> usersUpdateGroups() throws Exception {
@@ -292,6 +307,7 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         AdminCommandOptions.UsersUpdateGroupsCommandOptions commandOptions = adminCommandOptions.usersUpdateGroupsCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
@@ -306,8 +322,8 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), UserUpdateGroup.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "studyIds",commandOptions.studyIds, true);
-            putNestedIfNotNull(beanParams, "groupIds",commandOptions.groupIds, true);
+            putNestedIfNotNull(beanParams, "studyIds", commandOptions.studyIds, true);
+            putNestedIfNotNull(beanParams, "groupIds", commandOptions.groupIds, true);
 
             userUpdateGroup = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

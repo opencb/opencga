@@ -24,8 +24,9 @@ import java.util.List;
 public class UserStatus extends InternalStatus {
 
     public static final String BANNED = "BANNED";
+    public static final String SUSPENDED = "SUSPENDED";
 
-    public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, BANNED);
+    public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, BANNED, SUSPENDED);
 
     public UserStatus(String status, String message) {
         if (isValid(status)) {
@@ -47,7 +48,7 @@ public class UserStatus extends InternalStatus {
         if (InternalStatus.isValid(status)) {
             return true;
         }
-        if (status != null && (status.equals(BANNED))) {
+        if (status != null && (status.equals(BANNED) || status.equals(SUSPENDED))) {
             return true;
         }
         return false;

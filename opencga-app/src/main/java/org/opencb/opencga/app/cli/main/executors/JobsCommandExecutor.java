@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -71,9 +70,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             case "acl-update":
                 queryResponse = updateAcl();
                 break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
-                break;
             case "create":
                 queryResponse = create();
                 break;
@@ -100,6 +96,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "update":
                 queryResponse = update();
+                break;
+            case "kill":
+                queryResponse = kill();
                 break;
             case "log-head":
                 queryResponse = headLog();
@@ -138,45 +137,14 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), JobAclUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-            putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
+            putNestedIfNotEmpty(beanParams, "permissions", commandOptions.permissions, true);
+            putNestedIfNotEmpty(beanParams, "job", commandOptions.job, true);
 
             jobAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobAclUpdateParams.class);
         }
         return openCGAClient.getJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
-    }
-
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Jobs command line");
-
-        JobsCommandOptions.AggregationStatsCommandOptions commandOptions = jobsCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
-        queryParams.putIfNotEmpty("toolScope", commandOptions.toolScope);
-        queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
-        queryParams.putIfNotEmpty("toolResource", commandOptions.toolResource);
-        queryParams.putIfNotEmpty("userId", commandOptions.userId);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotEmpty("tags", commandOptions.tags);
-        queryParams.putIfNotEmpty("executorId", commandOptions.executorId);
-        queryParams.putIfNotEmpty("executorFramework", commandOptions.executorFramework);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getJobClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> create() throws Exception {
@@ -202,25 +170,25 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), JobCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotEmpty(beanParams, "tool.id",commandOptions.toolId, true);
-            putNestedIfNotEmpty(beanParams, "tool.description",commandOptions.toolDescription, true);
-            putNestedIfNotNull(beanParams, "tool.scope",commandOptions.toolScope, true);
-            putNestedIfNotNull(beanParams, "tool.type",commandOptions.toolType, true);
-            putNestedIfNotNull(beanParams, "tool.resource",commandOptions.toolResource, true);
-            putNestedIfNotNull(beanParams, "priority",commandOptions.priority, true);
-            putNestedIfNotEmpty(beanParams, "commandLine",commandOptions.commandLine, true);
-            putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotEmpty(beanParams, "outDir.path",commandOptions.outDirPath, true);
-            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-            putNestedIfNotEmpty(beanParams, "result.id",commandOptions.resultId, true);
-            putNestedIfNotNull(beanParams, "result.attributes",commandOptions.resultAttributes, true);
-            putNestedIfNotEmpty(beanParams, "stdout.path",commandOptions.stdoutPath, true);
-            putNestedIfNotEmpty(beanParams, "stderr.path",commandOptions.stderrPath, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "tool.id", commandOptions.toolId, true);
+            putNestedIfNotEmpty(beanParams, "tool.description", commandOptions.toolDescription, true);
+            putNestedIfNotNull(beanParams, "tool.scope", commandOptions.toolScope, true);
+            putNestedIfNotNull(beanParams, "tool.type", commandOptions.toolType, true);
+            putNestedIfNotNull(beanParams, "tool.resource", commandOptions.toolResource, true);
+            putNestedIfNotNull(beanParams, "priority", commandOptions.priority, true);
+            putNestedIfNotEmpty(beanParams, "commandLine", commandOptions.commandLine, true);
+            putNestedMapIfNotEmpty(beanParams, "params", commandOptions.params, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "outDir.path", commandOptions.outDirPath, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotEmpty(beanParams, "result.id", commandOptions.resultId, true);
+            putNestedMapIfNotEmpty(beanParams, "result.attributes", commandOptions.resultAttributes, true);
+            putNestedIfNotEmpty(beanParams, "stdout.path", commandOptions.stdoutPath, true);
+            putNestedIfNotEmpty(beanParams, "stderr.path", commandOptions.stderrPath, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             jobCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -271,6 +239,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -288,9 +257,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), JobRetryParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
-            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
-            putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
+            putNestedIfNotEmpty(beanParams, "job", commandOptions.job, true);
+            putNestedIfNotNull(beanParams, "force", commandOptions.force, true);
+            putNestedMapIfNotEmpty(beanParams, "params", commandOptions.params, true);
 
             jobRetryParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -423,16 +392,30 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), JobUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-            putNestedIfNotNull(beanParams, "visited",commandOptions.visited, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visited", commandOptions.visited, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             jobUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobUpdateParams.class);
         }
         return openCGAClient.getJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
+    }
+
+    private RestResponse<Job> kill() throws Exception {
+        logger.debug("Executing kill in Jobs command line");
+
+        JobsCommandOptions.KillCommandOptions commandOptions = jobsCommandOptions.killCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getJobClient().kill(commandOptions.job, queryParams);
     }
 
     private RestResponse<FileContent> headLog() throws Exception {

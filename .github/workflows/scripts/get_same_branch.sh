@@ -1,12 +1,12 @@
 #!/bin/bash
 
 BRANCH_NAME=$1
+HADOOP=${2:-hdp3.1}
 
-if [[ -z $BRANCH_NAME  ]]; then
+if [[ -z "$BRANCH_NAME"  ]]; then
   echo "The first parameter is mandatory and must be a valid branch name."
   exit 1
 fi
-
 
 function install(){
   local REPO=$1
@@ -15,7 +15,11 @@ function install(){
   if [ -d "./$REPO" ]; then
     cd "$REPO" || exit 2
     echo "Branch name $BRANCH_NAME already exists."
-    mvn clean install -DskipTests
+    if [[ "$REPO" == "opencga-hadoop-thirdparty" ]]; then
+      ./dev/build.sh "$HADOOP"
+    else
+      mvn clean install -DskipTests
+    fi
   else
     echo "$CURRENT Branch is NOT EQUALS $BRANCH_NAME "
   fi
@@ -24,3 +28,4 @@ function install(){
 install "java-common-libs"
 install "biodata"
 install "cellbase"
+install "opencga-hadoop-thirdparty"

@@ -18,28 +18,20 @@ package org.opencb.opencga.catalog.utils;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
-import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.*;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,15 +45,16 @@ import static org.junit.Assert.*;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_METADATA;
 
 @Category(MediumTests.class)
-public class FileMetadataReaderTest {
+public class FileMetadataReaderTest extends AbstractManagerTest {
 
-    @Rule
-    public CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
-
-    private CatalogManager catalogManager;
-    private String sessionIdUser;
-    private Project project;
-    private Study study;
+//    @Rule
+//    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+//
+//    private CatalogManager catalogManager;
+//    protected String organizationId = "zetta";
+//    private String ownerToken;
+//    private Project project;
+//    private Study study;
     private File folder;
     private URI vcfFileUri;
     public static final String VCF_FILE_NAME = "variant-test-file.vcf.gz";
@@ -69,27 +62,28 @@ public class FileMetadataReaderTest {
     private URI bamFileUri;
     private final List<String> expectedSampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
 
-    protected static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+//    protected static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Before
-    public void setUp() throws IOException, CatalogException, URISyntaxException {
-        catalogManager = catalogManagerExternalResource.getCatalogManager();
+    public void setUp() throws Exception {
+        super.setUp();
+//        catalogManager = catalogManagerResource.getCatalogManager();
+//
+//        String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+//
+//        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+//        ownerToken = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
+//        project = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
+//                null, "GRCh38", INCLUDE_RESULT, ownerToken).first();
+//        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, ownerToken).first();
+        folder = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/vcf/").toString(), true,
+                null, QueryOptions.empty(), ownerToken).first();
 
-        String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
-
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
-        project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
-        folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/vcf/").toString(), true,
-                null, QueryOptions.empty(), sessionIdUser).first();
-
-        Path vcfPath = catalogManagerExternalResource.getOpencgaHome().resolve(VCF_FILE_NAME);
+        Path vcfPath = catalogManagerResource.getOpencgaHome().resolve(VCF_FILE_NAME);
         Files.copy(this.getClass().getClassLoader().getResourceAsStream("biofiles/" + VCF_FILE_NAME), vcfPath, StandardCopyOption.REPLACE_EXISTING);
         vcfFileUri = vcfPath.toUri();
 
-        Path bamPath = catalogManagerExternalResource.getOpencgaHome().resolve(BAM_FILE_NAME);
+        Path bamPath = catalogManagerResource.getOpencgaHome().resolve(BAM_FILE_NAME);
         Files.copy(this.getClass().getClassLoader().getResourceAsStream("biofiles/" + BAM_FILE_NAME), bamPath, StandardCopyOption.REPLACE_EXISTING);
         bamFileUri = bamPath.toUri();
 
@@ -97,16 +91,16 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testGetBasicMetadata() throws CatalogException, IOException {
-        File file = catalogManager.getFileManager().create(study.getFqn(),
+        File file = catalogManager.getFileManager().create(studyFqn,
                 new FileCreateParams()
                         .setContent(RandomStringUtils.randomAlphanumeric(1000))
                         .setType(File.Type.FILE)
                         .setPath(folder.getPath() + "test.txt"),
-                false, sessionIdUser).first();
+                false, ownerToken).first();
 
         assertEquals(1000, file.getSize());
 
-        URI fileUri = catalogManager.getFileManager().getUri(file);
+        URI fileUri = catalogManager.getFileManager().getUri(organizationId, file);
 
         try {
             Thread.sleep(1000); //Sleep 1 second to see changes on the "modificationDate"
@@ -119,7 +113,7 @@ public class FileMetadataReaderTest {
         outputStream.close();
 
 
-        FileMetadataReader.get(catalogManager).addMetadataInformation(study.getFqn(), file);
+        FileMetadataReader.get(catalogManager).addMetadataInformation(studyFqn, file);
 
         assertEquals(1000 + bytes2.length, file.getSize());
     }
@@ -128,13 +122,13 @@ public class FileMetadataReaderTest {
     public void testGetMetadataFromVcf() throws CatalogException, IOException {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcfFileUri)))) {
-            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
-                    new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, sessionIdUser).first();
+            file = catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, ownerToken).first();
         }
 
         assertTrue(file.getSize() > 0);
 
-        FileMetadataReader.get(catalogManager).addMetadataInformation(study.getFqn(), file);
+        FileMetadataReader.get(catalogManager).addMetadataInformation(studyFqn, file);
 
         assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
         assertEquals(File.Format.VCF, file.getFormat());
@@ -142,8 +136,8 @@ public class FileMetadataReaderTest {
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
         assertEquals(4, file.getSampleIds().size());
         assertEquals(expectedSampleNames, ((Map<String, Object>) file.getAttributes().get(VARIANT_FILE_METADATA)).get("sampleIds"));
-//        catalogManager.getSampleManager().search(study.getFqn(), new Query(SampleDBAdaptor.QueryParams.ID.key(),
-//                file.getSamples().stream().map(Sample::getId).collect(Collectors.toList())), new QueryOptions(), sessionIdUser).getResults();
+//        catalogManager.getSampleManager().search(studyFqn, new Query(SampleDBAdaptor.QueryParams.ID.key(),
+//                file.getSamples().stream().map(Sample::getId).collect(Collectors.toList())), new QueryOptions(), ownerToken).getResults();
 //
 //        assertTrue(expectedSampleNames.containsAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())));
     }
@@ -153,7 +147,7 @@ public class FileMetadataReaderTest {
     public void testGetMetadataFromVcfWithAlreadyExistingSamples() throws CatalogException, IOException {
         //Create the samples in the same order than in the file
         for (String sampleName : expectedSampleNames) {
-            catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(sampleName), new QueryOptions(), sessionIdUser);
+            catalogManager.getSampleManager().create(studyFqn, new Sample().setId(sampleName), new QueryOptions(), ownerToken);
         }
         testGetMetadataFromVcf();
     }
@@ -161,21 +155,21 @@ public class FileMetadataReaderTest {
     @Test
     public void testGetMetadataFromVcfWithAlreadyExistingSamplesUnsorted() throws CatalogException, IOException {
         //Create samples in a different order than the file order
-        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(), ownerToken);
 
-        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(3)), new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(1)), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(), ownerToken);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId(expectedSampleNames.get(3)), new QueryOptions(), ownerToken);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId(expectedSampleNames.get(1)), new QueryOptions(), ownerToken);
 
         testGetMetadataFromVcf();
     }
 
     @Test
     public void testGetMetadataFromVcfWithSomeExistingSamples() throws CatalogException, IOException {
-        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(),
-                sessionIdUser);
-        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(),
-                sessionIdUser);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(),
+                ownerToken);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(),
+                ownerToken);
 
         testGetMetadataFromVcf();
     }
@@ -184,8 +178,8 @@ public class FileMetadataReaderTest {
     public void testDoNotOverwriteSampleIds() throws CatalogException, IOException {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcfFileUri)))) {
-            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
-                    new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, sessionIdUser).first();
+            file = catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, ownerToken).first();
         }
         assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
         assertEquals(File.Format.VCF, file.getFormat());
@@ -194,12 +188,12 @@ public class FileMetadataReaderTest {
         assertEquals(4, file.getSampleIds().size());
 
         //Add a sampleId
-        String sampleId = catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId("Bad_Sample"), INCLUDE_RESULT, sessionIdUser)
+        String sampleId = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("Bad_Sample"), INCLUDE_RESULT, ownerToken)
                 .first().getId();
-        catalogManager.getFileManager().update(study.getFqn(), file.getPath(),
-                new FileUpdateParams().setSampleIds(Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
+        catalogManager.getFileManager().update(studyFqn, file.getPath(),
+                new FileUpdateParams().setSampleIds(Collections.singletonList(sampleId)), new QueryOptions(), ownerToken);
 
-        file = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
+        file = catalogManager.getFileManager().get(studyFqn, file.getPath(), null, ownerToken).first();
         assertEquals(5, file.getSampleIds().size());
         assertEquals(sampleId, file.getSampleIds().get(4));
     }
@@ -208,21 +202,21 @@ public class FileMetadataReaderTest {
     public void testGetMetadataFromBam() throws CatalogException, IOException {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(bamFileUri)))) {
-            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
-                    new File().setPath(folder.getPath() + BAM_FILE_NAME), false, false, false, sessionIdUser).first();
+            file = catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(folder.getPath() + BAM_FILE_NAME), false, false, false, ownerToken).first();
         }
 
         assertTrue(file.getSize() > 0);
 
-        FileMetadataReader.get(catalogManager).addMetadataInformation(study.getFqn(), file);
+        FileMetadataReader.get(catalogManager).addMetadataInformation(studyFqn, file);
 
         assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
 //        assertEquals(File.Format.GZIP, file.getFormat());
         assertEquals(File.Bioformat.ALIGNMENT, file.getBioformat());
         assertNotNull(file.getAttributes().get("alignmentHeader"));
         assertEquals(1, file.getSampleIds().size());
-//        assertEquals("HG00096", catalogManager.getSampleManager().get(study.getFqn(), file.getSamples().get(0).getId(), null,
-//                sessionIdUser).first().getId());
+//        assertEquals("HG00096", catalogManager.getSampleManager().get(studyFqn, file.getSamples().get(0).getId(), null,
+//                ownerToken).first().getId());
     }
 
 

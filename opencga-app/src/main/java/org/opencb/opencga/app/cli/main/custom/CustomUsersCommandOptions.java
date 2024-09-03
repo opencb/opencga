@@ -54,6 +54,9 @@ public class CustomUsersCommandOptions {
         @Parameter(names = {"-p", "--password"}, description = "User password", arity = 0, required = true, password = true)
         public String password;
 
+        @Parameter(names = {"-o", "--organization"}, description = "Organization id", arity = 1)
+        public String organization;
+
         @Parameter(names = {"--refresh-token"}, description = "The body web service refreshToken parameter", arity = 1)
         public String refreshToken;
     }

@@ -67,7 +67,8 @@ public final class VariantQueryParam implements QueryParam {
 
 
     public static final String STUDY_DESCR
-            = "Filter variants from the given studies, these can be either the numeric ID or the alias with the format user@project:study";
+            = "Filter variants from the given studies, these can be either the numeric ID or the alias with the format "
+            + "organization@project:study";
     public static final VariantQueryParam STUDY = new VariantQueryParam("study", TEXT_ARRAY, STUDY_DESCR);
 
     public static final String INCLUDE_STUDY_DESCR

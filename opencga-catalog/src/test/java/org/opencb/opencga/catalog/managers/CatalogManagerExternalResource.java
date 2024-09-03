@@ -16,13 +16,10 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.bson.Document;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -43,8 +40,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
-
 /**
  * Created on 05/05/16
  *
@@ -52,11 +47,11 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  */
 public class CatalogManagerExternalResource extends ExternalResource {
 
-    private static CatalogManager catalogManager;
+    private CatalogManager catalogManager;
     private Configuration configuration;
     private Path opencgaHome;
     private String adminToken;
-
+    public boolean initialized = false;
 
     public CatalogManagerExternalResource() {
         Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
@@ -65,9 +60,30 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     @Override
     public void before() throws Exception {
+        initialized = true;
+        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("Initializing CatalogManagerExternalResource");
+        System.out.println("-------------------------------------------------------------------------------");
+        if (catalogManager != null) {
+            catalogManager.close();
+            catalogManager = null;
+        }
+        clearOpenCGAHome("static");
+
+        //Catalog database might be already installed. Need to delete it before installing it again.
+        clearCatalog(configuration);
+
+        catalogManager = new CatalogManager(configuration);
+        String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
+        catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
+
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+    }
+
+    public Path clearOpenCGAHome(String testName) throws IOException {
         int c = 0;
         do {
-            opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + TimeUtils.getTimeMillis() + (c > 0 ? "_" + c : ""));
+            opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + testName + "_" + TimeUtils.getTimeMillis() + (c > 0 ? "_" + c : ""));
             c++;
         } while (opencgaHome.toFile().exists());
         Files.createDirectories(opencgaHome);
@@ -79,21 +95,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         Path analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
         FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
-
-        clearCatalog(configuration);
-        if (!opencgaHome.toFile().exists()) {
-            deleteFolderTree(opencgaHome.toFile());
-            Files.createDirectory(opencgaHome);
-        }
-        configuration.getAdmin().setSecretKey(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH));
-        catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "",
-                true, true);
-        catalogManager.close();
-        // FIXME!! Should not need to create again the catalogManager
-        //  Have to create again the CatalogManager, as it has a random "secretKey" inside
-        catalogManager = new CatalogManager(configuration);
-        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        return opencgaHome;
     }
 
     @Override
@@ -103,10 +105,12 @@ public class CatalogManagerExternalResource extends ExternalResource {
             if (catalogManager != null) {
                 catalogManager.close();
             }
-            adminToken = null;
         } catch (CatalogException e) {
             throw new RuntimeException(e);
         }
+        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("Shutting down CatalogManagerExternalResource");
+        System.out.println("-------------------------------------------------------------------------------");
     }
 
     public Configuration getConfiguration() {
@@ -114,6 +118,13 @@ public class CatalogManagerExternalResource extends ExternalResource {
     }
 
     public CatalogManager getCatalogManager() {
+        return catalogManager;
+    }
+
+    public CatalogManager resetCatalogManager() throws CatalogException {
+        catalogManager.close();
+        catalogManager = new CatalogManager(configuration);
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
         return catalogManager;
     }
 
@@ -125,41 +136,10 @@ public class CatalogManagerExternalResource extends ExternalResource {
         return opencgaHome;
     }
 
-    public ObjectMapper generateNewObjectMapper() {
-        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
-//        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-//        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        return jsonObjectMapper;
-    }
-
     public static void clearCatalog(Configuration configuration) throws CatalogException, URISyntaxException {
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory())) {
-            for (String collection : MongoDBAdaptorFactory.COLLECTIONS_LIST) {
-                dbAdaptorFactory.getMongoDataStore().getCollection(collection).remove(new Document(), QueryOptions.empty());
-            }
+            dbAdaptorFactory.deleteCatalogDB();
         }
-
-//        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-//        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
-//            if (hostPort.contains(":")) {
-//                String[] split = hostPort.split(":");
-//                Integer port = Integer.valueOf(split[1]);
-//                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-//            } else {
-//                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-//            }
-//        }
-//        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-//
-////        if (catalogManager == null) {
-////            catalogManager = new CatalogManager(configuration);
-////        }
-//
-////        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
-//        MongoDataStore db = mongoManager.get(configuration.getDatabasePrefix() + "_catalog");
-//        db.getDb().drop();
-////        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
-//        mongoManager.close(configuration.getDatabasePrefix() + "_catalog");
 
         Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getWorkspace()));
         deleteFolderTree(rootdir.toFile());

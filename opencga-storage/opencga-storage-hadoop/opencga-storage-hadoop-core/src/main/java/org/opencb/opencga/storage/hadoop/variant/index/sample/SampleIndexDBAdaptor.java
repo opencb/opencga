@@ -2,10 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import com.google.common.collect.Iterators;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
@@ -634,6 +631,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
         logger.info("---------");
         logger.info("Sample = \"" + query.getSample() + "\" , schema version = " + query.getSchema().getVersion());
+        logger.info("Table = " + getSampleIndexTableName(query));
         printScan(scan);
         printQuery(locusQuery);
         printQuery(query);
@@ -795,8 +793,11 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         int preSplitSize = options.getInt(
                 HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(),
                 HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.defaultValue());
+        int sampleIndexExtraSplits = options.getInt(
+                HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_EXTRA_SPLITS.key(),
+                HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_EXTRA_SPLITS.defaultValue());
 
-        int splits = samples / preSplitSize;
+        int splits = (samples / preSplitSize) + sampleIndexExtraSplits;
         ArrayList<byte[]> preSplits = new ArrayList<>(splits);
         for (int i = 0; i < splits; i++) {
             preSplits.add(SampleIndexSchema.toRowKey(i * preSplitSize));
@@ -809,6 +810,32 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
         try {
             return hBaseManager.createTableIfNeeded(sampleIndexTable, GenomeHelper.COLUMN_FAMILY_BYTES, preSplits, compression);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void expandTableIfNeeded(int studyId, int version, List<Integer> sampleIds, ObjectMap options) {
+        String sampleIndexTable = getSampleIndexTableName(studyId, version);
+        int preSplitSize = options.getInt(
+                HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(),
+                HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.defaultValue());
+        int sampleIndexExtraBatches = options.getInt(
+                HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_EXTRA_SPLITS.key(),
+                HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_EXTRA_SPLITS.defaultValue());
+        Set<Integer> batches = new HashSet<>();
+        for (Integer sampleId : sampleIds) {
+            batches.add((sampleId) / preSplitSize);
+        }
+
+        try {
+            int newRegions = hBaseManager.expandTableIfNeeded(sampleIndexTable, batches,
+                    batch -> Collections.singletonList(SampleIndexSchema.toRowKey(batch * preSplitSize)),
+                    sampleIndexExtraBatches, batch -> SampleIndexSchema.toRowKey(batch * preSplitSize));
+            if (newRegions != 0) {
+                // Log number of new regions
+                logger.info("Sample index table '" + sampleIndexTable + "' expanded with " + newRegions + " new regions");
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

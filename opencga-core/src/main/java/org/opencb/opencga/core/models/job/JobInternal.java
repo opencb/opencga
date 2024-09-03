@@ -42,23 +42,34 @@ public class JobInternal extends Internal implements Cloneable {
             description = FieldConstants.JOB_INTERNAL_EVENTS_DESCRIPTION)
     private List<Event> events;
 
+    @DataField(id = "killJobRequested", indexed = false, since = "3.2.0",
+            description = FieldConstants.JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION)
+    private boolean killJobRequested;
+
     public JobInternal() {
     }
 
     public JobInternal(Enums.ExecutionStatus status) {
-        this(null, null, status, null, null);
+        this(null, null, status, null, null, false);
+    }
+
+    @Deprecated
+    public JobInternal(String registrationDate, String modificationDate, Enums.ExecutionStatus status, JobInternalWebhook webhook,
+                       List<Event> events) {
+        this(registrationDate, modificationDate, status, webhook, events, false);
     }
 
     public JobInternal(String registrationDate, String modificationDate, Enums.ExecutionStatus status, JobInternalWebhook webhook,
-                       List<Event> events) {
+                       List<Event> events, boolean killJobRequested) {
         super(null, registrationDate, modificationDate);
         this.status = status;
         this.webhook = webhook;
         this.events = events;
+        this.killJobRequested = killJobRequested;
     }
 
     public static JobInternal init() {
-        return new JobInternal(TimeUtils.getTime(), TimeUtils.getTime(), new Enums.ExecutionStatus(), null, new ArrayList<>());
+        return new JobInternal(TimeUtils.getTime(), TimeUtils.getTime(), new Enums.ExecutionStatus(), null, new ArrayList<>(), false);
     }
 
     @Override
@@ -69,13 +80,14 @@ public class JobInternal extends Internal implements Cloneable {
         sb.append(", status=").append(status);
         sb.append(", webhook=").append(webhook);
         sb.append(", events=").append(events);
+        sb.append(", killJobRequested=").append(killJobRequested);
         sb.append('}');
         return sb.toString();
     }
 
     @Override
     public JobInternal clone() throws CloneNotSupportedException {
-        return new JobInternal(registrationDate, lastModified, status, webhook.clone(), new LinkedList<>(events));
+        return new JobInternal(registrationDate, lastModified, status, webhook.clone(), new LinkedList<>(events), killJobRequested);
     }
 
     public Enums.ExecutionStatus getStatus() {
@@ -120,6 +132,15 @@ public class JobInternal extends Internal implements Cloneable {
 
     public JobInternal setLastModified(String lastModified) {
         this.lastModified = lastModified;
+        return this;
+    }
+
+    public boolean isKillJobRequested() {
+        return killJobRequested;
+    }
+
+    public JobInternal setKillJobRequested(boolean killJobRequested) {
+        this.killJobRequested = killJobRequested;
         return this;
     }
 }

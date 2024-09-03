@@ -10,6 +10,11 @@ on:
         description: "The tag for the new docker."
         type: string
         required: true
+      hadoop:
+        type: string
+        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
+        required: false
+        default: "hdp3.1"
 
 jobs:
   build:
@@ -32,7 +37,7 @@ jobs:
         run: |
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
           fi
       - name: Maven Build (skip tests)
         run: mvn -T 2 clean install -DskipTests
@@ -41,11 +46,9 @@ jobs:
           name: build-folder
           path: build
 
-
   deploy-docker-ext-tools:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ inputs.tag }}
     secrets: inherit
-

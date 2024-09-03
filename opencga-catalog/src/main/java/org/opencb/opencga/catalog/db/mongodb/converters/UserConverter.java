@@ -18,13 +18,19 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.apache.avro.generic.GenericRecord;
 import org.bson.Document;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserInternal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by pfurio on 19/01/16.
  */
 public class UserConverter extends OpenCgaMongoConverter<User> {
+
+    protected static Logger logger = LoggerFactory.getLogger(UserConverter.class);
 
     public UserConverter() {
         super(User.class);
@@ -32,22 +38,57 @@ public class UserConverter extends OpenCgaMongoConverter<User> {
     }
 
     @Override
+    public Document convertToStorageType(User object) {
+        Document userDocument = super.convertToStorageType(object);
+        removeDeprecatedAccountObject(userDocument);
+        return userDocument;
+    }
+
+    @Override
     public User convertToDataModelType(Document document) {
-        // TODO: Remove this piece of code once we are sure User contains the migrated new account type from 1.4.2
-        Document account = (Document) document.get("account");
-        if (account != null && account.get("authentication") == null) {
-            // We make sure type is in upper case because we are now storing the enum names
-            String type = account.getString("type");
-            account.put("type", type.toUpperCase());
+        User user = super.convertToDataModelType(document);
 
-            String authOrigin = account.getString("authOrigin");
-            Document authentication = new Document()
-                    .append("id", authOrigin)
-                    .append("application", false);
-            account.put("authentication", authentication);
+        restoreFromDeprecatedAccountObject(user);
+        addToDeprecatedAccountObject(user);
+
+        return user;
+    }
+
+    /**
+     * Remove 'account' object from the User document so it is no longer stored in the database.
+     * Remove after a few releases.
+     *
+     * @param userDocument User document.
+     */
+    @Deprecated
+    private void removeDeprecatedAccountObject(Document userDocument) {
+        userDocument.remove(UserDBAdaptor.QueryParams.DEPRECATED_ACCOUNT.key());
+    }
+
+    /**
+     * Restores information from the account object to the corresponding internal.account object.
+     * Added to maintain backwards compatibility with the deprecated account object in TASK-6494 (v3.2.1)
+     * Remove after a few releases.
+     *
+     * @param user User object.
+     */
+    @Deprecated
+    private void restoreFromDeprecatedAccountObject(User user) {
+        if (user.getAccount() != null) {
+            if (user.getInternal() == null) {
+                user.setInternal(new UserInternal());
+            }
+            user.getInternal().setAccount(user.getAccount());
+            logger.warn("Restoring user account information from deprecated account object to internal.account object. "
+                    + "Please, run 'opencga-admin.sh migration run'.");
         }
+    }
 
-        return super.convertToDataModelType(document);
+    private void addToDeprecatedAccountObject(User user) {
+        // Add account to deprecated place
+        if (user.getInternal() != null && user.getInternal().getAccount() != null && user.getAccount() == null) {
+            user.setAccount(user.getInternal().getAccount());
+        }
     }
 
 }
