@@ -54,8 +54,6 @@ import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -186,7 +184,7 @@ public class  AbstractManagerTest extends GenericTest {
         setUpCatalogManager(catalogManager);
     }
 
-    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException, URISyntaxException {
+    public void setUpCatalogManager(CatalogManager catalogManager) throws Exception {
         if (!firstExecutionFinished) {
             createDummyData(catalogManager);
             MongoBackupUtils.dump(catalogManager, catalogManagerResource.getOpencgaHome());

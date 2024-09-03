@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -1572,4 +1573,22 @@ public class UserManager extends AbstractManager {
         }
     }
 
+    public String getUserId(String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        return tokenPayload.getUserId();
+    }
+
+    public String getUserIdContextProject(String projectStr, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        return tokenPayload.getUserId(organizationId);
+    }
+
+    public String getUserIdContextStudy(String studyStr, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        return tokenPayload.getUserId(organizationId);
+    }
 }

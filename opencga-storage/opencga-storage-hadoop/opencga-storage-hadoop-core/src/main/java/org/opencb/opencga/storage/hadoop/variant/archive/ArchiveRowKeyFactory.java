@@ -143,15 +143,29 @@ public class ArchiveRowKeyFactory {
         return sb.toString();
     }
 
-    public String generateBlockIdFromSlice(int fileId, String chrom, long slice) {
-        return generateBlockIdFromSliceAndBatch(getFileBatch(fileId), chrom, slice);
-    }
-
+    /**
+     * Generates a Row key based on Chromosome and position adjusted for the
+     * Chunk size. <br>
+     * <ul>
+     * <li>Using {@link Region#normalizeChromosome(String)} to get standard chromosome
+     * name
+     * <li>Using {@link #getSliceId(long)} to return slice position
+     * </ul>
+     * e.g. using chunk size 100, separator _ with chr2 and 1234 would result in
+     * 2_12
+     *
+     * @param fileBatch File batch
+     * @return {@link String} Row key string
+     */
     public String generateBlockIdFromBatch(int fileBatch) {
         StringBuilder sb = new StringBuilder(FILE_BATCH_PAD + 1);
         sb.append(StringUtils.leftPad(String.valueOf(fileBatch), FILE_BATCH_PAD, '0'));
         sb.append(getSeparator());
         return sb.toString();
+    }
+
+    public String generateBlockIdFromSlice(int fileId, String chrom, long slice) {
+        return generateBlockIdFromSliceAndBatch(getFileBatch(fileId), chrom, slice);
     }
 
     public String generateBlockIdFromSliceAndBatch(int fileBatch, String chrom, long slice) {

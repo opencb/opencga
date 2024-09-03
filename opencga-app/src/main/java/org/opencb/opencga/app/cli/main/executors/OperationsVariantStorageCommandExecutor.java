@@ -37,6 +37,8 @@ import org.opencb.opencga.core.models.operations.variant.VariantStatsIndexParams
 import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStudyDeleteParams;
+import org.opencb.opencga.core.models.study.VariantSetupResult;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -148,6 +150,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                 break;
             case "variant-secondary-index-delete":
                 queryResponse = deleteVariantSecondaryIndex();
+                break;
+            case "variant-setup":
+                queryResponse = setupVariant();
                 break;
             case "variant-stats-delete":
                 queryResponse = deleteVariantStats();
@@ -1144,6 +1149,45 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
         return openCGAClient.getVariantOperationClient().deleteVariantSecondaryIndex(queryParams);
+    }
+
+    private RestResponse<VariantSetupResult> setupVariant() throws Exception {
+        logger.debug("Executing setupVariant in Operations - Variant Storage command line");
+
+        OperationsVariantStorageCommandOptions.SetupVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.setupVariantCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        VariantSetupParams variantSetupParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<VariantSetupResult> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/setup"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            variantSetupParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantSetupParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "expectedSamples", commandOptions.expectedSamples, true);
+            putNestedIfNotNull(beanParams, "expectedFiles", commandOptions.expectedFiles, true);
+            putNestedIfNotNull(beanParams, "fileType", commandOptions.fileType, true);
+            putNestedIfNotEmpty(beanParams, "averageFileSize", commandOptions.averageFileSize, true);
+            putNestedIfNotNull(beanParams, "variantsPerSample", commandOptions.variantsPerSample, true);
+            putNestedIfNotNull(beanParams, "averageSamplesPerFile", commandOptions.averageSamplesPerFile, true);
+            putNestedIfNotNull(beanParams, "dataDistribution", commandOptions.dataDistribution, true);
+            putNestedIfNotNull(beanParams, "normalizeExtensions", commandOptions.normalizeExtensions, true);
+
+            variantSetupParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), VariantSetupParams.class);
+        }
+        return openCGAClient.getVariantOperationClient().setupVariant(variantSetupParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantStats() throws Exception {
