@@ -1,0 +1,41 @@
+{
+   "xx.xmin": 0.58,
+   "xx.xmax": 1.25,
+   "xx.ymin": 0.0,
+   "xx.ymax": 0.05,
+
+   "xy.xmin": 0.38,
+   "xy.xmax": 0.68,
+   "xy.ymin": 0.07,
+   "xy.ymax": 0.54,
+
+   "xo_clearcut.xmin": 0.38,
+   "xo_clearcut.xmax": 0.54,
+   "xo_clearcut.ymin": 0.0,
+   "xo_clearcut.ymax": 0.05,
+
+   "xyy.xmin": 0.38,
+   "xyy.xmax": 0.68,
+   "xyy.ymin": 0.66,
+   "xyy.ymax": 0.97,
+
+   "xxy.xmin": 0.75,
+   "xxy.xmax": 1.25,
+   "xxy.ymin": 0.07,
+   "xxy.ymax": 0.54,
+
+   "xxx.xmin": 1.35,
+   "xxx.xmax": 1.7,
+   "xxx.ymin": 0.0,
+   "xxx.ymax": 0.05,
+
+   "xxxy.xmin": 1.35,
+   "xxxy.xmax": 1.7,
+   "xxxy.ymin": 0.07,
+   "xxxy.ymax": 0.54,
+   
+   "xyyy.xmin": 0.38,
+   "xyyy.xmax": 0.68,
+   "xyyy.ymin": 1.1,
+   "xyyy.ymax": 1.5
+}
