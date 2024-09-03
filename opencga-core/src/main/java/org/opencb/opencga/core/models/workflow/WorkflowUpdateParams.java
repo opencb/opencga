@@ -2,6 +2,7 @@ package org.opencb.opencga.core.models.workflow;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.study.Variable;
 
 import java.util.List;
 import java.util.Map;
@@ -14,11 +15,17 @@ public class WorkflowUpdateParams {
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-    @DataField(id = "docker", description = FieldConstants.WORKFLOW_DOCKER_DESCRIPTION)
-    private WorkflowRepository docker;
+    @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
+    private boolean draft;
+
+    @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
+    private WorkflowRepository repository;
 
     @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
     private List<WorkflowScript> scripts;
+
+    @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
+    private List<Variable> variables;
 
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
@@ -32,12 +39,14 @@ public class WorkflowUpdateParams {
     public WorkflowUpdateParams() {
     }
 
-    public WorkflowUpdateParams(String name, String description, WorkflowRepository docker, List<WorkflowScript> scripts, String creationDate,
-                                String modificationDate, Map<String, Object> attributes) {
+    public WorkflowUpdateParams(String name, String description, boolean draft, WorkflowRepository repository, List<WorkflowScript> scripts,
+                                List<Variable> variables, String creationDate, String modificationDate, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
-        this.docker = docker;
+        this.draft = draft;
+        this.repository = repository;
         this.scripts = scripts;
+        this.variables = variables;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.attributes = attributes;
@@ -48,8 +57,10 @@ public class WorkflowUpdateParams {
         final StringBuilder sb = new StringBuilder("WorkflowUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", docker=").append(docker);
+        sb.append(", draft=").append(draft);
+        sb.append(", repository=").append(repository);
         sb.append(", scripts=").append(scripts);
+        sb.append(", variables=").append(variables);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", attributes=").append(attributes);
@@ -75,12 +86,21 @@ public class WorkflowUpdateParams {
         return this;
     }
 
-    public WorkflowRepository getDocker() {
-        return docker;
+    public boolean isDraft() {
+        return draft;
     }
 
-    public WorkflowUpdateParams setDocker(WorkflowRepository docker) {
-        this.docker = docker;
+    public WorkflowUpdateParams setDraft(boolean draft) {
+        this.draft = draft;
+        return this;
+    }
+
+    public WorkflowRepository getRepository() {
+        return repository;
+    }
+
+    public WorkflowUpdateParams setRepository(WorkflowRepository repository) {
+        this.repository = repository;
         return this;
     }
 
@@ -90,6 +110,15 @@ public class WorkflowUpdateParams {
 
     public WorkflowUpdateParams setScripts(List<WorkflowScript> scripts) {
         this.scripts = scripts;
+        return this;
+    }
+
+    public List<Variable> getVariables() {
+        return variables;
+    }
+
+    public WorkflowUpdateParams setVariables(List<Variable> variables) {
+        this.variables = variables;
         return this;
     }
 

@@ -75,7 +75,7 @@ class Workflow(_ParentRestClient):
         Execute a Nextflow analysis.
         PATH: /{apiVersion}/workflows/run
 
-        :param dict data: HRDetect analysis parameters. (REQUIRED)
+        :param dict data: NextFlow run parameters. (REQUIRED)
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param str job_id: Job ID. It must be a unique string within the

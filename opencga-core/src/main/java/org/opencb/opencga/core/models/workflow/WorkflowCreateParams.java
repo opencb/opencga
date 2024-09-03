@@ -2,6 +2,7 @@ package org.opencb.opencga.core.models.workflow;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.study.Variable;
 
 import java.util.List;
 import java.util.Map;
@@ -21,8 +22,14 @@ public class WorkflowCreateParams {
 //    @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
 //    private Workflow.Type type;
 
-    @DataField(id = "docker", description = FieldConstants.WORKFLOW_DOCKER_DESCRIPTION)
-    private WorkflowRepository docker;
+    @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
+    private boolean draft;
+
+    @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
+    private WorkflowRepository repository;
+
+    @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
+    private List<Variable> variables;
 
     @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
     private List<WorkflowScript> scripts;
@@ -39,12 +46,15 @@ public class WorkflowCreateParams {
     public WorkflowCreateParams() {
     }
 
-    public WorkflowCreateParams(String id, String name, String description, WorkflowRepository docker, List<WorkflowScript> scripts,
-                                String creationDate, String modificationDate, Map<String, Object> attributes) {
+    public WorkflowCreateParams(String id, String name, String description, boolean draft, WorkflowRepository repository,
+                                List<Variable> variables, List<WorkflowScript> scripts, String creationDate, String modificationDate,
+                                Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.docker = docker;
+        this.draft = draft;
+        this.repository = repository;
+        this.variables = variables;
         this.scripts = scripts;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
@@ -57,7 +67,9 @@ public class WorkflowCreateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", docker=").append(docker);
+        sb.append(", draft=").append(draft);
+        sb.append(", repository=").append(repository);
+        sb.append(", variables=").append(variables);
         sb.append(", scripts=").append(scripts);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -67,7 +79,8 @@ public class WorkflowCreateParams {
     }
 
     public Workflow toWorkflow() {
-        return new Workflow(id, name, description, Workflow.Type.NEXTFLOW, docker, scripts, creationDate, modificationDate, attributes);
+        return new Workflow(id, name, description, draft, Workflow.Type.NEXTFLOW, repository, scripts, variables, creationDate,
+                modificationDate, attributes);
     }
 
     public String getId() {
@@ -97,12 +110,30 @@ public class WorkflowCreateParams {
         return this;
     }
 
-    public WorkflowRepository getDocker() {
-        return docker;
+    public boolean isDraft() {
+        return draft;
     }
 
-    public WorkflowCreateParams setDocker(WorkflowRepository docker) {
-        this.docker = docker;
+    public WorkflowCreateParams setDraft(boolean draft) {
+        this.draft = draft;
+        return this;
+    }
+
+    public WorkflowRepository getRepository() {
+        return repository;
+    }
+
+    public WorkflowCreateParams setRepository(WorkflowRepository repository) {
+        this.repository = repository;
+        return this;
+    }
+
+    public List<Variable> getVariables() {
+        return variables;
+    }
+
+    public WorkflowCreateParams setVariables(List<Variable> variables) {
+        this.variables = variables;
         return this;
     }
 

@@ -3,15 +3,18 @@ package org.opencb.opencga.analysis.workflow;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.utils.InputFileUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
 import org.opencb.opencga.core.models.workflow.Workflow;
 import org.opencb.opencga.core.models.workflow.WorkflowScript;
@@ -32,10 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 @Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.WORKFLOW, description = NextFlowExecutor.DESCRIPTION)
@@ -48,6 +48,9 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
     protected NextFlowRunParams nextflowParams = new NextFlowRunParams();
 
     private Workflow workflow;
+    private String cliParams;
+    // Build list of inputfiles in case we need to specifically mount them in read only mode
+    private List<String> inputFileUris;
 
     private Thread thread;
     private final int monitorThreadPeriod = 5000;
@@ -70,6 +73,31 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
         if (workflow == null) {
             throw new ToolException("Workflow '" + nextflowParams.getId() + "' is null");
+        }
+
+        if (MapUtils.isNotEmpty(nextflowParams.getParams())) {
+            this.inputFileUris = new LinkedList<>();
+            InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
+
+            StringBuilder cliParamsBuilder = new StringBuilder();
+            for (Map.Entry<String, String> entry : nextflowParams.getParams().entrySet()) {
+                if (entry.getKey().startsWith("--")) {
+                    cliParamsBuilder.append(entry.getKey()).append(" ");
+                } else {
+                    cliParamsBuilder.append("--").append(entry.getKey()).append(" ");
+                }
+                if (inputFileUtils.isValidOpenCGAFile(entry.getValue())) {
+                    File file = inputFileUtils.getOpenCGAFile(study, entry.getValue(), token);
+                    cliParamsBuilder.append(file.getUri().getPath()).append(" ");
+                    inputFileUris.add(file.getUri().getPath());
+                } else {
+                    cliParamsBuilder.append(entry.getValue()).append(" ");
+                }
+            }
+            this.cliParams = cliParamsBuilder.toString();
+        } else {
+            this.cliParams = "";
+            this.inputFileUris = Collections.emptyList();
         }
     }
 
@@ -94,8 +122,8 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         StringBuilder stringBuilder = new StringBuilder()
                 .append("nextflow -c ").append(workingDirectory).append("/nextflow.config")
                 .append(" run ");
-        if (workflow.getDocker() != null && StringUtils.isNotEmpty(workflow.getDocker().getImage())) {
-            stringBuilder.append(workflow.getDocker().getImage()).append(" -with-docker");
+        if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getImage())) {
+            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
         } else {
             for (WorkflowScript script : workflow.getScripts()) {
                 if (script.isMain()) {
@@ -104,7 +132,9 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
                 }
             }
         }
-
+        if (StringUtils.isNotEmpty(cliParams)) {
+            stringBuilder.append(" ").append(cliParams);
+        }
         stringBuilder.append(" -with-report ").append(workingDirectory).append("/report.html");
         List<String> cliArgs = Arrays.asList(StringUtils.split(stringBuilder.toString(), " "));
 

@@ -320,13 +320,16 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
             document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
+        final String[] acceptedBooleanParams = {QueryParams.DRAFT.key()};
+        filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
+
         final String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedListParams = {QueryParams.SCRIPTS.key()};
+        final String[] acceptedListParams = {QueryParams.SCRIPTS.key(), QueryParams.VARIABLES.key()};
         filterObjectParams(parameters, document.getSet(), acceptedListParams);
 
 //        // Check if the scripts exist.

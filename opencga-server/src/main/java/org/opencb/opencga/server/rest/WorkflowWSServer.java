@@ -3,18 +3,13 @@ package org.opencb.opencga.server.rest;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
 import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
 import org.opencb.opencga.catalog.managers.WorkflowManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.variant.HRDetectAnalysisParams;
-import org.opencb.opencga.core.models.workflow.Workflow;
-import org.opencb.opencga.core.models.workflow.WorkflowAclEntryList;
-import org.opencb.opencga.core.models.workflow.WorkflowCreateParams;
-import org.opencb.opencga.core.models.workflow.WorkflowUpdateParams;
+import org.opencb.opencga.core.models.workflow.*;
 import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -100,8 +95,8 @@ public class WorkflowWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = HRDetectAnalysisParams.DESCRIPTION, required = true) HRDetectAnalysisParams params) {
-        return submitJob(HRDetectAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            @ApiParam(value = NextFlowRunParams.DESCRIPTION, required = true) NextFlowRunParams params) {
+        return submitJob(NextFlowExecutor.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET

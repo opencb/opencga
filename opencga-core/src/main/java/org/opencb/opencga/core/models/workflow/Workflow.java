@@ -3,6 +3,7 @@ package org.opencb.opencga.core.models.workflow;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.study.Variable;
 
 import java.util.List;
 import java.util.Map;
@@ -23,18 +24,23 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-    @DataField(id = "version", managed = true, indexed = true,
-            description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
+    @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
+    private boolean draft;
+
+    @DataField(id = "version", managed = true, indexed = true, description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
     private int version;
 
     @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
     private Type type;
 
-    @DataField(id = "docker", description = FieldConstants.WORKFLOW_DOCKER_DESCRIPTION)
-    private WorkflowRepository docker;
+    @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
+    private WorkflowRepository repository;
 
     @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
     private List<WorkflowScript> scripts;
+
+    @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
+    private List<Variable> variables;
 
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
@@ -52,14 +58,17 @@ public class Workflow extends PrivateStudyUid {
     public Workflow() {
     }
 
-    public Workflow(String id, String name, String description, Type type, WorkflowRepository docker, List<WorkflowScript> scripts,
-                    String creationDate, String modificationDate, Map<String, Object> attributes) {
+    public Workflow(String id, String name, String description, boolean draft, Type type, WorkflowRepository repository,
+                    List<WorkflowScript> scripts, List<Variable> variables, String creationDate, String modificationDate,
+                    Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.draft = draft;
         this.type = type;
-        this.docker = docker;
+        this.repository = repository;
         this.scripts = scripts;
+        this.variables = variables;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.attributes = attributes;
@@ -72,10 +81,12 @@ public class Workflow extends PrivateStudyUid {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", draft=").append(draft);
         sb.append(", version=").append(version);
         sb.append(", type=").append(type);
-        sb.append(", docker='").append(docker).append('\'');
+        sb.append(", repository=").append(repository);
         sb.append(", scripts=").append(scripts);
+        sb.append(", variables=").append(variables);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", attributes=").append(attributes);
@@ -137,12 +148,30 @@ public class Workflow extends PrivateStudyUid {
         return this;
     }
 
-    public WorkflowRepository getDocker() {
-        return docker;
+    public boolean isDraft() {
+        return draft;
     }
 
-    public Workflow setDocker(WorkflowRepository docker) {
-        this.docker = docker;
+    public Workflow setDraft(boolean draft) {
+        this.draft = draft;
+        return this;
+    }
+
+    public WorkflowRepository getRepository() {
+        return repository;
+    }
+
+    public Workflow setRepository(WorkflowRepository repository) {
+        this.repository = repository;
+        return this;
+    }
+
+    public List<Variable> getVariables() {
+        return variables;
+    }
+
+    public Workflow setVariables(List<Variable> variables) {
+        this.variables = variables;
         return this;
     }
 

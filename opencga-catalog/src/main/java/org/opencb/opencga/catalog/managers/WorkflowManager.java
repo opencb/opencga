@@ -228,32 +228,293 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
     @Override
     public DBIterator<Workflow> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
-        return null;
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Query finalQuery = new Query(query);
+        fixQueryObject(finalQuery);
+        finalQuery.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return getWorkflowDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, options, userId);
     }
 
     @Override
-    public OpenCGAResult<Workflow> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
-        return null;
+    public OpenCGAResult<Workflow> search(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        String studyId = studyFqn.getStudyId();
+        String studyUuid = studyFqn.getStudyUuid();
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyStr", studyStr)
+                .append("query", new Query(query))
+                .append("options", options)
+                .append("token", token);
+        try {
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
+            studyId = study.getId();
+            studyUuid = study.getUuid();
+
+            fixQueryObject(query);
+            query.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            OpenCGAResult<Workflow> queryResult = getWorkflowDBAdaptor(organizationId).get(study.getUid(), query, options, userId);
+
+            auditManager.auditSearch(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return queryResult;
+        } catch (CatalogException e) {
+            auditManager.auditSearch(organizationId, userId, Enums.Resource.WORKFLOW, studyId, studyUuid, auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
-        return null;
+    public OpenCGAResult<?> distinct(String studyStr, List<String> fields, Query query, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyStr)
+                .append("fields", fields)
+                .append("query", new Query(query))
+                .append("token", token);
+        try {
+            fixQueryObject(query);
+
+            query.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            OpenCGAResult<?> result = getWorkflowDBAdaptor(organizationId).distinct(study.getUid(), fields, query, userId);
+
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
     @Override
-    public OpenCGAResult<Workflow> count(String studyId, Query query, String token) throws CatalogException {
-        return null;
+    public OpenCGAResult<Workflow> count(String studyStr, Query query, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
+
+        query = new Query(ParamUtils.defaultObject(query, Query::new));
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyStr)
+                .append("query", query)
+                .append("token", token);
+        try {
+            fixQueryObject(query);
+
+            query.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            OpenCGAResult<Long> queryResultAux = getWorkflowDBAdaptor(organizationId).count(query, userId);
+
+            auditManager.auditCount(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
+                    queryResultAux.getNumMatches());
+        } catch (CatalogException e) {
+            auditManager.auditCount(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
     @Override
     public OpenCGAResult delete(String studyStr, List<String> ids, QueryOptions options, String token) throws CatalogException {
-        return null;
+        return delete(studyStr, ids, options, false, token);
+    }
+
+    public OpenCGAResult delete(String studyStr, List<String> ids, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
+        if (ids == null || ListUtils.isEmpty(ids)) {
+            throw new CatalogException("Missing list of workflow ids");
+        }
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
+
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("workflowIds", ids)
+                .append("params", params)
+                .append("ignoreException", ignoreException)
+                .append("token", token);
+
+        boolean checkPermissions;
+        try {
+            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+            long studyId = study.getUid();
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
+        } catch (CatalogException e) {
+            auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.WORKFLOW, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+        auditManager.initAuditBatch(operationId);
+        OpenCGAResult result = OpenCGAResult.empty();
+        for (String id : ids) {
+            String workflowId = id;
+            String workflowUuid = "";
+            try {
+                OpenCGAResult<Workflow> internalResult = internalGet(organizationId, study.getUid(), id, INCLUDE_WORKFLOW_IDS, userId);
+                if (internalResult.getNumResults() == 0) {
+                    throw new CatalogException("Workflow '" + id + "' not found");
+                }
+                Workflow workflow = internalResult.first();
+
+                // We set the proper values for the audit
+                workflowId = workflow.getId();
+                workflowUuid = workflow.getUuid();
+
+                if (checkPermissions) {
+                    authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), workflow.getUid(), userId,
+                            WorkflowPermissions.DELETE);
+                }
+
+                // Check if the workflow can be deleted
+                checkWorkflowCanBeDeleted(organizationId, study.getUid(), workflow, params.getBoolean(Constants.FORCE, false));
+
+                result.append(getWorkflowDBAdaptor(organizationId).delete(workflow));
+
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.WORKFLOW, workflow.getId(), workflow.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                String errorMsg = "Cannot delete workflow " + workflowId + ": " + e.getMessage();
+
+                Event event = new Event(Event.Type.ERROR, workflowId, e.getMessage());
+                result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
+
+                logger.error(errorMsg);
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.WORKFLOW, workflowId, workflowUuid,
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+        auditManager.finishAuditBatch(organizationId, operationId);
+
+        return endResult(result, ignoreException);
+    }
+
+    private void checkWorkflowCanBeDeleted(String organizationId, long uid, Workflow workflow, boolean force) {
+        return;
     }
 
     @Override
     public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
-        return null;
+        return delete(studyStr, query, options, false, token);
+    }
+
+    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
+        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+        params = ParamUtils.defaultObject(params, ObjectMap::new);
+
+        OpenCGAResult result = OpenCGAResult.empty();
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
+
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("query", new Query(query))
+                .append("params", params)
+                .append("ignoreException", ignoreException)
+                .append("token", token);
+
+        // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+        boolean checkPermissions;
+
+        // We try to get an iterator containing all the workflows to be deleted
+        DBIterator<Workflow> iterator;
+        try {
+            fixQueryObject(finalQuery);
+            finalQuery.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            iterator = getWorkflowDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_WORKFLOW_IDS, userId);
+
+            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+            long studyId = study.getUid();
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
+        } catch (CatalogException e) {
+            auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.WORKFLOW, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+        auditManager.initAuditBatch(operationUuid);
+        while (iterator.hasNext()) {
+            Workflow workflow = iterator.next();
+
+            try {
+                if (checkPermissions) {
+                    authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), workflow.getUid(), userId,
+                            WorkflowPermissions.DELETE);
+                }
+
+                // Check if the workflow can be deleted
+                checkWorkflowCanBeDeleted(organizationId, study.getUid(), workflow, params.getBoolean(Constants.FORCE, false));
+
+                result.append(getWorkflowDBAdaptor(organizationId).delete(workflow));
+
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.WORKFLOW, workflow.getId(),
+                        workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                String errorMsg = "Cannot delete workflow " + workflow.getId() + ": " + e.getMessage();
+
+                Event event = new Event(Event.Type.ERROR, workflow.getId(), e.getMessage());
+                result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
+
+                logger.error(errorMsg);
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.WORKFLOW, workflow.getId(),
+                        workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+        auditManager.finishAuditBatch(organizationId, operationUuid);
+
+        return endResult(result, ignoreException);
     }
 
     @Override
@@ -303,8 +564,8 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         if (CollectionUtils.isNotEmpty(workflow.getScripts()) && !main) {
             throw new CatalogParameterException("No main script found.");
         }
-        workflow.setDocker(workflow.getDocker() != null ? workflow.getDocker() : new WorkflowRepository(""));
-        if (StringUtils.isEmpty(workflow.getDocker().getImage()) && CollectionUtils.isEmpty(workflow.getScripts())) {
+        workflow.setRepository(workflow.getRepository() != null ? workflow.getRepository() : new WorkflowRepository(""));
+        if (StringUtils.isEmpty(workflow.getRepository().getImage()) && CollectionUtils.isEmpty(workflow.getScripts())) {
             throw new CatalogParameterException("No docker image or scripts found.");
         }
 
