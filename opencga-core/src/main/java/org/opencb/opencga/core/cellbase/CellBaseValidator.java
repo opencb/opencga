@@ -119,11 +119,11 @@ public class CellBaseValidator {
                 } else if (drs.size() > 1) {
                     throw new IllegalArgumentException("More than one default active data releases found on cellbase " + this);
                 }
-            } else {
-                dataRelease = dataReleases
-                        .stream()
-                        .filter(DataRelease::isActive)
-                        .max(Comparator.comparing(DataRelease::getDate)).orElse(null);
+//            } else {
+//                dataRelease = dataReleases
+//                        .stream()
+//                        .filter(DataRelease::isActive)
+//                        .max(Comparator.comparing(DataRelease::getDate)).orElse(null);
             }
             if (dataRelease == null) {
                 throw new IllegalArgumentException("No active data releases found on cellbase " + this);
