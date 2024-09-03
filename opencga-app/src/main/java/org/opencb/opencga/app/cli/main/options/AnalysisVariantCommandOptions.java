@@ -809,16 +809,22 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--family"}, description = "The body web service family parameter", required = false, arity = 1)
+        @Parameter(names = {"--family"}, description = "Family ID", required = false, arity = 1)
         public String family;
     
         @Parameter(names = {"--relatedness-method"}, description = "The body web service relatednessMethod parameter", required = false, arity = 1)
         public String relatednessMethod;
     
-        @Parameter(names = {"--relatedness-maf"}, description = "The body web service relatednessMaf parameter", required = false, arity = 1)
+        @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequence (MAF) is used to filter variants before computing relatedness, e.g.: 1000G:CEU>0.35 or cohort:ALL>0.05", required = false, arity = 1)
         public String relatednessMaf;
     
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
+        @Parameter(names = {"--skip-index"}, description = "Do not save the computed quality control in catalog", required = false, arity = 1)
+        public Boolean skipIndex;
+    
+        @Parameter(names = {"--overwrite"}, description = "Overwrite quality control in catalog", required = false, arity = 1)
+        public Boolean overwrite;
+    
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
     
     }

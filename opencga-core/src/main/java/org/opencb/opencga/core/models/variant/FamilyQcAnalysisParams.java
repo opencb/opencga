@@ -16,26 +16,50 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import java.util.List;
+
 public class FamilyQcAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Family QC analysis params. Family ID. Relatedness method, by default 'PLINK/IBD'. Minor "
-            + " allele frequence (MAF) is used to filter variants before computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G
-            + ":CEU>0.35 or cohort:ALL>0.05";
+    public static final String DESCRIPTION = "Family QC analysis params.";
+
+    @DataField(id = "family", description = FieldConstants.FAMILY_QC_FAMILY_ID_DESCRIPTION)
     private String family;
+
+    @Deprecated
     private String relatednessMethod;
+
+    @DataField(id = "relatednessMaf", description = FieldConstants.FAMILY_QC_RELATEDNESS_MAF_DESCRIPTION)
     private String relatednessMaf;
 
+    @DataField(id = "skipIndex", description = FieldConstants.QC_SKIP_INDEX_DESCRIPTION)
+    private Boolean skipIndex;
+
+    @DataField(id = "overwrite", description = FieldConstants.QC_OVERWRITE_DESCRIPTION)
+    private Boolean overwrite;
+
+    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
     public FamilyQcAnalysisParams() {
     }
 
+    @Deprecated
     public FamilyQcAnalysisParams(String family, String relatednessMethod, String relatednessMaf, String outdir) {
         this.family = family;
         this.relatednessMethod = relatednessMethod;
         this.relatednessMaf = relatednessMaf;
+        this.outdir = outdir;
+    }
+
+    public FamilyQcAnalysisParams(String family, String relatednessMaf, Boolean skipIndex, Boolean overwrite, String outdir) {
+        this.family = family;
+        this.relatednessMaf = relatednessMaf;
+        this.skipIndex = skipIndex;
+        this.overwrite = overwrite;
         this.outdir = outdir;
     }
 
@@ -45,6 +69,8 @@ public class FamilyQcAnalysisParams extends ToolParams {
         sb.append("family='").append(family).append('\'');
         sb.append(", relatednessMethod='").append(relatednessMethod).append('\'');
         sb.append(", relatednessMaf='").append(relatednessMaf).append('\'');
+        sb.append(", skipIndex=").append(skipIndex);
+        sb.append(", overwrite=").append(overwrite);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -59,10 +85,12 @@ public class FamilyQcAnalysisParams extends ToolParams {
         return this;
     }
 
+    @Deprecated
     public String getRelatednessMethod() {
         return relatednessMethod;
     }
 
+    @Deprecated
     public FamilyQcAnalysisParams setRelatednessMethod(String relatednessMethod) {
         this.relatednessMethod = relatednessMethod;
         return this;
@@ -74,6 +102,24 @@ public class FamilyQcAnalysisParams extends ToolParams {
 
     public FamilyQcAnalysisParams setRelatednessMaf(String relatednessMaf) {
         this.relatednessMaf = relatednessMaf;
+        return this;
+    }
+
+    public Boolean getSkipIndex() {
+        return skipIndex;
+    }
+
+    public FamilyQcAnalysisParams setSkipIndex(Boolean skipIndex) {
+        this.skipIndex = skipIndex;
+        return this;
+    }
+
+    public Boolean getOverwrite() {
+        return overwrite;
+    }
+
+    public FamilyQcAnalysisParams setOverwrite(Boolean overwrite) {
+        this.overwrite = overwrite;
         return this;
     }
 

@@ -21,6 +21,8 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
+import java.util.List;
+
 public class IndividualQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Individual QC analysis params";
 
@@ -30,9 +32,19 @@ public class IndividualQcAnalysisParams extends ToolParams {
     @DataField(id = "sample", description = FieldConstants.INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION)
     private String sample;
 
+    @Deprecated
     @DataField(id = "inferredSexMethod", description = FieldConstants.INFERRED_SEX_METHOD_DESCRIPTION,
-            defaultValue = IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD)
+            defaultValue = IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD, deprecated = true)
     private String inferredSexMethod;
+
+    @DataField(id = "skip", description = FieldConstants.INDIVIDUAL_QC_SKIP_DESCRIPTION)
+    private List<String> skip;
+
+    @DataField(id = "skipIndex", description = FieldConstants.QC_SKIP_INDEX_DESCRIPTION)
+    private Boolean skipIndex;
+
+    @DataField(id = "overwrite", description = FieldConstants.QC_OVERWRITE_DESCRIPTION)
+    private Boolean overwrite;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
@@ -40,10 +52,21 @@ public class IndividualQcAnalysisParams extends ToolParams {
     public IndividualQcAnalysisParams() {
     }
 
+    @Deprecated
     public IndividualQcAnalysisParams(String individual, String sample, String inferredSexMethod, String outdir) {
         this.individual = individual;
         this.sample = sample;
         this.inferredSexMethod = inferredSexMethod;
+        this.outdir = outdir;
+    }
+
+    public IndividualQcAnalysisParams(String individual, String sample, List<String> skip, Boolean skipIndex, Boolean overwrite,
+                                      String outdir) {
+        this.individual = individual;
+        this.sample = sample;
+        this.skip = skip;
+        this.skipIndex = skipIndex;
+        this.overwrite = overwrite;
         this.outdir = outdir;
     }
 
@@ -53,6 +76,9 @@ public class IndividualQcAnalysisParams extends ToolParams {
         sb.append("individual='").append(individual).append('\'');
         sb.append(", sample='").append(sample).append('\'');
         sb.append(", inferredSexMethod='").append(inferredSexMethod).append('\'');
+        sb.append(", skip=").append(skip);
+        sb.append(", skipIndex=").append(skipIndex);
+        sb.append(", overwrite=").append(overwrite);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -76,10 +102,12 @@ public class IndividualQcAnalysisParams extends ToolParams {
         return this;
     }
 
+    @Deprecated
     public String getInferredSexMethod() {
         return inferredSexMethod;
     }
 
+    @Deprecated
     public IndividualQcAnalysisParams setInferredSexMethod(String inferredSexMethod) {
         this.inferredSexMethod = inferredSexMethod;
         return this;

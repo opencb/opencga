@@ -4,6 +4,7 @@ import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
+import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 
 public class FieldConstants {
 
@@ -45,7 +46,7 @@ public class FieldConstants {
     public static final String ORGANIZATION_ADMINS_DESCRIPTION = "Administrative users of the organization.";
     public static final String ORGANIZATION_PROJECTS_DESCRIPTION = "Projects the organization holds.";
     public static final String ORGANIZATION_NOTES_DESCRIPTION = "Notes of organization scope.";
-//    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
+    //    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
 //            + "contains all the configuration necessary to be able to communicate with the external authentication origins.";
     public static final String ORGANIZATION_CONFIGURATION_DESCRIPTION = "Organization configuration information.";
     public static final String ORGANIZATION_INTERNAL_DESCRIPTION = "Organization internal information.";
@@ -98,6 +99,7 @@ public class FieldConstants {
     public static final String SAMPLE_COLLECTION_METHOD_DESCRIPTION = "Describes which method was used to collect the sample.";
     public static final String SAMPLE_COLLECTION_FROM_DESCRIPTION = "OntologyTermAnnotation list.";
     public static final String SAMPLE_COLLECTION_TYPE_DESCRIPTION = "Type of the sample collection.";
+
     //SampleQualityControl
     public static final String SAMPLE_QUALITY_CONTROL_FILES_DESCRIPTION = "Files used for the quality control of the sample.";
     public static final String SAMPLE_QUALITY_CONTROL_COMMENTS_DESCRIPTION = "Comments for the quality control of the sample.";
@@ -180,23 +182,32 @@ public class FieldConstants {
 
     public static final String DISORDER_ID = "Disorder ID.";
 
-    //FamilyQualityControl
+    // Quality control
+    public static final String QC_SKIP_INDEX_DESCRIPTION = "Do not save the computed quality control in catalog";
+    public static final String QC_OVERWRITE_DESCRIPTION = "Overwrite quality control in catalog";
+
+    // Family quality control
+    public static final String FAMILY_QC_FAMILY_ID_DESCRIPTION = "Family ID";
+    public static final String FAMILY_QC_RELATEDNESS_MAF_DESCRIPTION = "Minor allele frequence (MAF) is used to filter variants before"
+            + " computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G + ":CEU>0.35 or cohort:ALL>0.05";
     public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION = "Reports of family relationship.";
 
-
     // Individual quality control
+    public static final String INFERRED_SEX_ID = "inferred-sex";
+    public static final String MENDELIAN_ERRORS_ID = "mendelian-errors";
     public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION = "Individual ID";
     public static final String INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION = "Sample ID (required when the individual has multiple samples)";
     public static final String INFERRED_SEX_METHOD_DESCRIPTION = "Inferred sex method. Valid values: "
             + IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
+    public static final String INDIVIDUAL_QC_SKIP_DESCRIPTION = "Individual QC analysis to skip. Valid values are: " + INFERRED_SEX_ID
+            + ", " + MENDELIAN_ERRORS_ID;
     public static final String INDIVIDUAL_QUALITY_CONTROL_INFERRED_SEX_REPORT_DESCRIPTION = "List of inferred sex reports, it depends on"
             + " the method (currently by coverage ratio).";
     public static final String INDIVIDUAL_QUALITY_CONTROL_SAMPLE_RELATEDNESS_REPORT_DESCRIPTION = "Reports of samples relatedness.";
     public static final String INDIVIDUAL_QUALITY_CONTROL_MENDELIAN_ERRORS_DESCRIPTION = "Mendelian errors.";
 
-
     //Status
-    public static final String STATUS_DATE_DESCRIPTION = "Date has setted the status.";
+    public static final String STATUS_DATE_DESCRIPTION = "Date has set the status.";
     public static final String STATUS_MESSAGE_DESCRIPTION = "Deprecated: Message describing the status.";
 
 
@@ -504,7 +515,7 @@ public class FieldConstants {
     public static final String HRDETECT_CNV_QUERY_DESCRIPTION = "CNV query";
     public static final String HRDETECT_INDEL_QUERY_DESCRIPTION = "INDEL query";
     public static final String HRDETECT_SNV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV3 input for"
-        + " HRDetect.";
+            + " HRDetect.";
     public static final String HRDETECT_SNV8_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV8 input for"
             + " HRDetect.";
     public static final String HRDETECT_SV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SV3 input for"
@@ -531,7 +542,7 @@ public class FieldConstants {
     public static final String COVERAGE_INDEX_BAM_FILE_ID_DESCRIPTION = "BAM file ID.";
     public static final String COVERAGE_INDEX_BAI_FILE_ID_DESCRIPTION = "BAI file ID.";
     public static final String COVERAGE_INDEX_OVERWRITE_DESCRIPTION = "Window size (i.e., the size of the bins, in bases, for the output"
-        + " of the BIGWIG file).";
+            + " of the BIGWIG file).";
 
     // Alignment QC analysis (asample-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
