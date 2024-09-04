@@ -28,6 +28,7 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalReport;
+import org.opencb.opencga.core.models.clinical.ClinicalStatus;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -240,7 +241,7 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
                 ca.setReport(new ClinicalReport().setDiscussion(new ClinicalDiscussion().setText(cas.getReport())));
             }
             if (StringUtils.isNotEmpty(cas.getStatus())) {
-                ca.setStatus(new Status().setId(cas.getStatus()));
+                ca.setStatus(new ClinicalStatus().setId(cas.getStatus()));
             }
             ca.setLocked(cas.isLocked());
         }

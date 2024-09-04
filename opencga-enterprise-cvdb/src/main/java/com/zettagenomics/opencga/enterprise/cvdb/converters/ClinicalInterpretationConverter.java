@@ -25,6 +25,7 @@ import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.opencga.core.models.clinical.ClinicalStatus;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.slf4j.Logger;
@@ -120,7 +121,7 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
 
             // Status
             if (interpretation.getStatus() != null) {
-                Status status = interpretation.getStatus();
+                ClinicalStatus status = interpretation.getStatus();
                 cis.setStatusId(status.getId())
                         .setStatusName(status.getName())
                         .setStatusDescription(status.getDescription());
@@ -270,7 +271,7 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
             ci.setLocked(cis.isLocked());
 
             // Status
-            Status status = new Status()
+            ClinicalStatus status = new ClinicalStatus()
                     .setId(cis.getStatusId())
                     .setName(cis.getStatusName())
                     .setDescription(cis.getStatusDescription());
