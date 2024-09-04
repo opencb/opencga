@@ -24,22 +24,18 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.common.Status;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalReport;
-import org.opencb.opencga.core.models.clinical.ClinicalStatus;
-import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis, ClinicalAnalysisSearch> {
@@ -241,7 +237,9 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
                 ca.setReport(new ClinicalReport().setDiscussion(new ClinicalDiscussion().setText(cas.getReport())));
             }
             if (StringUtils.isNotEmpty(cas.getStatus())) {
-                ca.setStatus(new ClinicalStatus().setId(cas.getStatus()));
+                ClinicalStatus clinicalStatus = new ClinicalStatus();
+                clinicalStatus.setType(ClinicalStatusValue.ClinicalStatusType.valueOf(cas.getStatus()));
+                ca.setStatus(clinicalStatus);
             }
             ca.setLocked(cas.isLocked());
         }
