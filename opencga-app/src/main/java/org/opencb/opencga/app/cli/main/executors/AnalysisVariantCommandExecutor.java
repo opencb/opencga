@@ -619,6 +619,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), FamilyQcAnalysisParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "families",commandOptions.families, true);
             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
             putNestedIfNotEmpty(beanParams, "relatednessMethod",commandOptions.relatednessMethod, true);
             putNestedIfNotEmpty(beanParams, "relatednessMaf",commandOptions.relatednessMaf, true);

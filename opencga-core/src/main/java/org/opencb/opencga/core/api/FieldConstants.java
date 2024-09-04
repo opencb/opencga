@@ -187,7 +187,10 @@ public class FieldConstants {
     public static final String QC_OVERWRITE_DESCRIPTION = "Overwrite quality control in catalog";
 
     // Family quality control
+    public static final String FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION = "List of family IDs";
+    @Deprecated
     public static final String FAMILY_QC_FAMILY_ID_DESCRIPTION = "Family ID";
+    @Deprecated
     public static final String FAMILY_QC_RELATEDNESS_MAF_DESCRIPTION = "Minor allele frequence (MAF) is used to filter variants before"
             + " computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G + ":CEU>0.35 or cohort:ALL>0.05";
     public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION = "Reports of family relationship.";

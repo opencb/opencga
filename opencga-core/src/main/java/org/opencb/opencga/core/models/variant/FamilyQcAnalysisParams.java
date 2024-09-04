@@ -18,7 +18,6 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -26,13 +25,18 @@ import java.util.List;
 public class FamilyQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Family QC analysis params.";
 
-    @DataField(id = "family", description = FieldConstants.FAMILY_QC_FAMILY_ID_DESCRIPTION)
+    @DataField(id = "families", description = FieldConstants.FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION)
+    private List<String> families;
+
+    @Deprecated
+    @DataField(id = "family", description = FieldConstants.FAMILY_QC_FAMILY_ID_DESCRIPTION, deprecated = true)
     private String family;
 
     @Deprecated
     private String relatednessMethod;
 
-    @DataField(id = "relatednessMaf", description = FieldConstants.FAMILY_QC_RELATEDNESS_MAF_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "relatednessMaf", description = FieldConstants.FAMILY_QC_RELATEDNESS_MAF_DESCRIPTION, deprecated = true)
     private String relatednessMaf;
 
     @DataField(id = "skipIndex", description = FieldConstants.QC_SKIP_INDEX_DESCRIPTION)
@@ -55,9 +59,19 @@ public class FamilyQcAnalysisParams extends ToolParams {
         this.outdir = outdir;
     }
 
-    public FamilyQcAnalysisParams(String family, String relatednessMaf, Boolean skipIndex, Boolean overwrite, String outdir) {
+    public FamilyQcAnalysisParams(List<String> families, String family, String relatednessMethod, String relatednessMaf, Boolean skipIndex,
+                                  Boolean overwrite, String outdir) {
+        this.families = families;
         this.family = family;
+        this.relatednessMethod = relatednessMethod;
         this.relatednessMaf = relatednessMaf;
+        this.skipIndex = skipIndex;
+        this.overwrite = overwrite;
+        this.outdir = outdir;
+    }
+
+    public FamilyQcAnalysisParams(List<String> families, Boolean skipIndex, Boolean overwrite, String outdir) {
+        this.families = families;
         this.skipIndex = skipIndex;
         this.overwrite = overwrite;
         this.outdir = outdir;
@@ -66,7 +80,8 @@ public class FamilyQcAnalysisParams extends ToolParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyQcAnalysisParams{");
-        sb.append("family='").append(family).append('\'');
+        sb.append("families='").append(families).append('\'');
+        sb.append(", family='").append(family).append('\'');
         sb.append(", relatednessMethod='").append(relatednessMethod).append('\'');
         sb.append(", relatednessMaf='").append(relatednessMaf).append('\'');
         sb.append(", skipIndex=").append(skipIndex);
@@ -76,10 +91,21 @@ public class FamilyQcAnalysisParams extends ToolParams {
         return sb.toString();
     }
 
+    public List<String> getFamilies() {
+        return families;
+    }
+
+    public FamilyQcAnalysisParams setFamilies(List<String> families) {
+        this.families = families;
+        return this;
+    }
+
+    @Deprecated
     public String getFamily() {
         return family;
     }
 
+    @Deprecated
     public FamilyQcAnalysisParams setFamily(String family) {
         this.family = family;
         return this;
@@ -96,10 +122,12 @@ public class FamilyQcAnalysisParams extends ToolParams {
         return this;
     }
 
+    @Deprecated
     public String getRelatednessMaf() {
         return relatednessMaf;
     }
 
+    @Deprecated
     public FamilyQcAnalysisParams setRelatednessMaf(String relatednessMaf) {
         this.relatednessMaf = relatednessMaf;
         return this;

@@ -24,6 +24,8 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
@@ -52,26 +54,28 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
+    @Override
+    protected void run() throws Exception {
+    }
+
     public static void checkParameters(ToolParams params, String study, CatalogManager catalogManager, String token) throws Exception {
         if (StringUtils.isEmpty(study)) {
             throw new ToolException("Missing study");
         }
+    }
 
-        // Check permissions
+    protected static void checkPermissions(StudyPermissions.Permissions permissions, String studyId, CatalogManager catalogManager,
+                                           String token) throws ToolException {
         try {
             JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
-            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(study, jwtPayload);
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
             String organizationId = studyFqn.getOrganizationId();
             String userId = jwtPayload.getUserId(organizationId);
 
-            long studyUid = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getUid();
-            catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, studyUid, userId, WRITE_SAMPLES);
+            Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
+            catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, study.getUid(), userId, permissions);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
-    }
-
-    @Override
-    protected void run() throws Exception {
     }
 }

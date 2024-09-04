@@ -11,7 +11,6 @@ import java.util.List;
 
 public class FamilyQualityControl implements Serializable {
 
-
     @DataField(id = "relatedness",
             description = FieldConstants.FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION)
     private List<RelatednessReport> relatedness;
