@@ -28,8 +28,11 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
+import org.opencb.opencga.analysis.family.qc.FamilyVariantQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualVariantQcAnalysis;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
+import org.opencb.opencga.analysis.sample.qc.SampleVariantQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
 import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
@@ -1153,7 +1156,14 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = FamilyQcAnalysisParams.DESCRIPTION, required = true) FamilyQcAnalysisParams params) {
-        return submitJob(FamilyQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return run(() -> {
+            // Check before submitting the job
+            FamilyVariantQcAnalysis.checkParameters(params, study, catalogManager, token);
+
+            // Submit the family QC analysis
+            return submitJobRaw(FamilyVariantQcAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags,
+                    scheduledStartTime, jobPriority, dryRun);
+        });
     }
 
     @POST
@@ -1171,11 +1181,11 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = IndividualQcAnalysisParams.DESCRIPTION, required = true) IndividualQcAnalysisParams params) {
         return run(() -> {
             // Check before submitting the job
-            IndividualQcAnalysis.checkParameters(params.getIndividual(), params.getSample(), params.getInferredSexMethod(), study,
-                    catalogManager, token);
+            IndividualVariantQcAnalysis.checkParameters(params, study, catalogManager, token);
 
             // Submit the individual QC analysis
-            return submitJobRaw(IndividualQcAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            return submitJobRaw(IndividualVariantQcAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags,
+                    scheduledStartTime, jobPriority, dryRun);
         });
     }
 
@@ -1192,8 +1202,14 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = SampleQcAnalysisParams.DESCRIPTION, required = true) SampleQcAnalysisParams params) {
+        return run(() -> {
+            // Check before submitting the job
+            SampleVariantQcAnalysis.checkParameters(params, study, catalogManager, token);
 
-        return submitJob(SampleQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            // Submit the sample QC analysis
+            return submitJobRaw(SampleVariantQcAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags,
+                    scheduledStartTime, jobPriority, dryRun);
+        });
     }
 
     @POST

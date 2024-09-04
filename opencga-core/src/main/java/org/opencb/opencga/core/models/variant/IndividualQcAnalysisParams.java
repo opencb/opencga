@@ -26,10 +26,13 @@ import java.util.List;
 public class IndividualQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Individual QC analysis params";
 
-    @DataField(id = "individual", description = FieldConstants.INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION)
+    @DataField(id = "individuals", description = FieldConstants.INDIVIDUAL_QC_INDIVIDUAL_ID_LIST_DESCRIPTION, deprecated = true)
+    private List<String> individuals;
+
+    @DataField(id = "individual", description = FieldConstants.INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION, deprecated = true)
     private String individual;
 
-    @DataField(id = "sample", description = FieldConstants.INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION)
+    @DataField(id = "sample", description = FieldConstants.INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION, deprecated = true)
     private String sample;
 
     @Deprecated

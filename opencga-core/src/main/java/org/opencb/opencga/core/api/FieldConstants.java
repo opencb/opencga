@@ -195,8 +195,12 @@ public class FieldConstants {
     // Individual quality control
     public static final String INFERRED_SEX_ID = "inferred-sex";
     public static final String MENDELIAN_ERRORS_ID = "mendelian-errors";
+    public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_LIST_DESCRIPTION = "List of individual IDs";
+    @Deprecated
     public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION = "Individual ID";
+    @Deprecated
     public static final String INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION = "Sample ID (required when the individual has multiple samples)";
+    @Deprecated
     public static final String INFERRED_SEX_METHOD_DESCRIPTION = "Inferred sex method. Valid values: "
             + IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
     public static final String INDIVIDUAL_QC_SKIP_DESCRIPTION = "Individual QC analysis to skip. Valid values are: " + INFERRED_SEX_ID

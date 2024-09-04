@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.family.qc;
 
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
@@ -40,5 +41,9 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
     @Override
     protected void run() throws ToolException {
+    }
+
+    public static void checkParameters(FamilyQcAnalysisParams params, String study, CatalogManager catalogManager, String token) {
+        checkParameters(params, study, catalogManager, token);
     }
 }
