@@ -18,21 +18,26 @@ package org.opencb.opencga.core.models.family;
 
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 
 public class FamilyInternal extends Internal {
 
     private FamilyStatus status;
+    private QualityControlStatus qualityControlStatus;
 
     public FamilyInternal() {
     }
 
-    public FamilyInternal(String registrationDate, String modificationDate, FamilyStatus status) {
+    public FamilyInternal(String registrationDate, String modificationDate, FamilyStatus status,
+                          QualityControlStatus qualityControlStatus) {
         super(null, registrationDate, modificationDate);
         this.status = status;
+        this.qualityControlStatus = qualityControlStatus;
     }
 
     public static FamilyInternal init() {
-        return new FamilyInternal(TimeUtils.getTime(), TimeUtils.getTime(), new FamilyStatus());
+        String time = TimeUtils.getTime();
+        return new FamilyInternal(time, time, new FamilyStatus(), QualityControlStatus.init());
     }
 
     @Override
@@ -69,6 +74,15 @@ public class FamilyInternal extends Internal {
 
     public FamilyInternal setLastModified(String lastModified) {
         this.lastModified = lastModified;
+        return this;
+    }
+
+    public QualityControlStatus getQualityControlStatus() {
+        return qualityControlStatus;
+    }
+
+    public FamilyInternal setQualityControlStatus(QualityControlStatus qualityControlStatus) {
+        this.qualityControlStatus = qualityControlStatus;
         return this;
     }
 }

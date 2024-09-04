@@ -19,18 +19,24 @@ package org.opencb.opencga.core.models.individual;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 
 public class IndividualInternal extends Internal {
+
+    private QualityControlStatus qualityControlStatus;
 
     public IndividualInternal() {
     }
 
-    public IndividualInternal(InternalStatus status, String registrationDate, String modificationDate) {
+    public IndividualInternal(InternalStatus status, String registrationDate, String modificationDate,
+                              QualityControlStatus qualityControlStatus) {
         super(status, registrationDate, modificationDate);
+        this.qualityControlStatus = qualityControlStatus;
     }
 
     public static IndividualInternal init() {
-        return new IndividualInternal(new InternalStatus(InternalStatus.READY), TimeUtils.getTime(), TimeUtils.getTime());
+        String time = TimeUtils.getTime();
+        return new IndividualInternal(new InternalStatus(InternalStatus.READY), time, time, QualityControlStatus.init());
     }
 
     @Override
@@ -38,7 +44,8 @@ public class IndividualInternal extends Internal {
         final StringBuilder sb = new StringBuilder("IndividualInternal{");
         sb.append("status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(lastModified).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
+        sb.append(", qualityControlStatus=").append(qualityControlStatus);
         sb.append('}');
         return sb.toString();
     }
@@ -70,4 +77,12 @@ public class IndividualInternal extends Internal {
         return this;
     }
 
+    public QualityControlStatus getQualityControlStatus() {
+        return qualityControlStatus;
+    }
+
+    public IndividualInternal setQualityControlStatus(QualityControlStatus qualityControlStatus) {
+        this.qualityControlStatus = qualityControlStatus;
+        return this;
+    }
 }
