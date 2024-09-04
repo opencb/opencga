@@ -27,7 +27,7 @@ jobs:
   test:
     name: "Run all tests before merging"
     needs: calculate-xetabase-branch
-    uses: opencb/java-common-libs/.github/workflows/test-xetabase-workflow.yml@TASK-6399
+    uses: opencb/java-common-libs/.github/workflows/test-xetabase-workflow.yml@develop
     with:
       branch: ${{ needs.calculate-xetabase-branch.outputs.xetabase_branch }}
       task: ${{ github.event.pull_request.head.ref }}
