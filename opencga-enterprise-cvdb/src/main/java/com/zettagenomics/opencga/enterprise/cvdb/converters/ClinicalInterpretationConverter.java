@@ -24,7 +24,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.biodata.models.common.Status;
+import org.opencb.opencga.core.models.clinical.ClinicalStatus;
+import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.slf4j.Logger;
@@ -120,10 +121,12 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
 
             // Status
             if (interpretation.getStatus() != null) {
-                Status status = interpretation.getStatus();
+                ClinicalStatus status = interpretation.getStatus();
                 cis.setStatusId(status.getId())
-                        .setStatusName(status.getName())
                         .setStatusDescription(status.getDescription());
+                if (status.getType() != null) {
+                    cis.setStatusType(status.getType().name());
+                }
                 if (StringUtils.isNotEmpty(status.getDate())) {
                     try {
                         String solrDate = solrDateFormat.format(simpleDateFormat.parse(status.getDate()));
@@ -270,10 +273,12 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
             ci.setLocked(cis.isLocked());
 
             // Status
-            Status status = new Status()
-                    .setId(cis.getStatusId())
-                    .setName(cis.getStatusName())
-                    .setDescription(cis.getStatusDescription());
+            ClinicalStatus status = new ClinicalStatus()
+                    .setId(cis.getStatusId());
+            status.setDescription(cis.getStatusDescription());
+            if (StringUtils.isNotEmpty(cis.getStatusType())) {
+                status.setType(ClinicalStatusValue.ClinicalStatusType.valueOf(cis.getStatusType()));
+            }
             if (cis.getStatusDate() != null) {
                 status.setDate(simpleDateFormat.format(cis.getStatusDate()));
             }
