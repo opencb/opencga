@@ -70,6 +70,16 @@ public class VarcharDataField extends VariableWidthDataField<String> {
     }
 
     @Override
+    public boolean isDefault(ByteBuffer buffer) {
+        return buffer.get(buffer.position() + 1) == FIELD_SEPARATOR;
+    }
+
+    @Override
+    public String getDefault() {
+        return "";
+    }
+
+    @Override
     public ByteBuffer encode(String value) {
         if (value == null) {
             return ByteBuffer.allocate(0);

@@ -96,6 +96,16 @@ public class VarIntDataField extends VariableWidthDataField<Integer> {
     }
 
     @Override
+    public boolean isDefault(ByteBuffer buffer) {
+        return buffer.get(buffer.position() + 1) == 0;
+    }
+
+    @Override
+    public Integer getDefault() {
+        return 0;
+    }
+
+    @Override
     public ByteBuffer encode(Integer value) {
         ByteBuffer buffer = ByteBuffer.allocate(getByteLength(value));
         write(value, buffer);

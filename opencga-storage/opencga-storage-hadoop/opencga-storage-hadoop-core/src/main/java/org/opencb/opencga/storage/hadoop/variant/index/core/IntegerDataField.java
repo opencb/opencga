@@ -53,6 +53,11 @@ public class IntegerDataField extends DataField<Integer> {
     }
 
     @Override
+    public Integer getDefault() {
+        return 0;
+    }
+
+    @Override
     public ByteBuffer encode(Integer value) {
         return ByteBuffer.allocate(4).putInt(value);
     }

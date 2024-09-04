@@ -4,6 +4,7 @@ import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -65,11 +66,26 @@ public abstract class DataField<T> {
 
     public abstract void write(T value, ByteArrayOutputStream stream);
 
+    public boolean isDefault(ByteBuffer buffer) {
+        return isDefault(decode(buffer));
+    }
+
+    public boolean isDefault(T value) {
+        return Objects.equals(value, getDefault());
+    }
+
+    public abstract T getDefault();
+
+    public ByteBuffer getDefaultEncoded() {
+        return encode(getDefault());
+    }
+
     public abstract ByteBuffer encode(T value);
 
     public abstract T decode(ByteBuffer code);
 
     public <R> DataField<R> from(Function<R, T> converter, Function<T, R> deconverter) {
+        R defaultValue = deconverter.apply(DataField.this.getDefault());
         return new DataField<R>(configuration) {
 
             @Override
@@ -95,6 +111,11 @@ public abstract class DataField<T> {
             @Override
             public void write(R value, ByteArrayOutputStream stream) {
                 DataField.this.write(converter.apply(value), stream);
+            }
+
+            @Override
+            public R getDefault() {
+                return defaultValue;
             }
 
             @Override

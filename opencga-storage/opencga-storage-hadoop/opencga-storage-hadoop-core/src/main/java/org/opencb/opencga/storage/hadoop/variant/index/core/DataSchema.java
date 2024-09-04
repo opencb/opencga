@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.storage.core.io.bit.ExposedByteArrayOutputStream;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -29,17 +30,28 @@ public abstract class DataSchema {
 
     private final List<DataField<?>> fields;
     protected final DataField<Integer> entryLengthField;
+    private ByteBuffer defaultEntry;
 
 //    private boolean sparse = false;
 
     public DataSchema() {
         fields = new ArrayList<>();
         entryLengthField = new VarIntDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "ENTRY_LENGTH", null));
-        fields.add(entryLengthField);
+        defaultEntry = ByteBuffer.allocate(0);
     }
 
     protected void addField(DataField<?> field) {
         fields.add(field);
+        ExposedByteArrayOutputStream defaultEntryStream = new ExposedByteArrayOutputStream();
+        for (DataField<?> dataField : fields) {
+            writeDefaultValue(dataField, defaultEntryStream);
+        }
+        defaultEntry = defaultEntryStream.toByteByffer().asReadOnlyBuffer();
+    }
+
+    private static <T> void writeDefaultValue(DataField<T> dataField, ByteArrayOutputStream defaultEntry) {
+        T defaultValue = dataField.getDefault();
+        dataField.write(defaultValue, defaultEntry);
     }
 
 //    public boolean isSparse() {
@@ -55,15 +67,33 @@ public abstract class DataSchema {
     }
 
     public void writeEntry(ByteBuffer buffer, ByteBuffer entryBuffer) {
+        entryBuffer.rewind();
+        if (isDefaultEntry(entryBuffer)) {
+            // This is the default entry
+            entryLengthField.write(0, buffer);
+            return;
+        }
         int entryLength = entryBuffer.limit();
         entryLengthField.write(entryLength, buffer);
         buffer.put(entryBuffer.array(), buffer.arrayOffset(), entryLength);
     }
 
+
     public void writeEntry(ByteArrayOutputStream stream, ByteBuffer entryBuffer) {
+        entryBuffer.rewind();
+        if (isDefaultEntry(entryBuffer)) {
+            // This is the default entry
+            entryLengthField.write(0, stream);
+            return;
+        }
         int entryLength = entryBuffer.limit();
         entryLengthField.write(entryLength, stream);
         stream.write(entryBuffer.array(), entryBuffer.arrayOffset(), entryLength);
+    }
+
+    private boolean isDefaultEntry(ByteBuffer entryBuffer) {
+        return defaultEntry.limit() == entryBuffer.limit()
+                && defaultEntry.compareTo(entryBuffer) == 0;
     }
 
     public ByteBuffer readEntry(ByteBuffer buffer, int entryPosition) {
@@ -87,9 +117,12 @@ public abstract class DataSchema {
             if (!buffer.hasRemaining()) {
                 return ByteBuffer.allocate(0);
             }
-            int elementSize = entryLengthField.readAndDecode(buffer);
-            ByteBuffer elementBuffer = ByteBuffer.allocate(elementSize);
-            buffer.get(elementBuffer.array(), elementBuffer.arrayOffset(), elementSize);
+            int entryLength = entryLengthField.readAndDecode(buffer);
+            if (entryLength == 0) {
+                return defaultEntry;
+            }
+            ByteBuffer elementBuffer = ByteBuffer.allocate(entryLength);
+            buffer.get(elementBuffer.array(), elementBuffer.arrayOffset(), entryLength);
             elementBuffer.rewind();
             return elementBuffer;
         } catch (Exception e) {

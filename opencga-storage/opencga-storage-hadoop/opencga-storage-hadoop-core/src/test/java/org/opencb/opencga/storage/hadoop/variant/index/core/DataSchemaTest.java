@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.storage.core.io.bit.ExposedByteArrayOutputStream;
 
 import java.nio.ByteBuffer;
 
@@ -30,6 +31,20 @@ public class DataSchemaTest {
                 addField(key4);
             }
         };
+    }
+
+    @Test
+    public void readWriteDefault() {
+        ExposedByteArrayOutputStream stream = new ExposedByteArrayOutputStream();
+        for (DataField field : dataSchema.getFields()) {
+            field.write(field.getDefault(), stream);
+        }
+        ByteBuffer byteByffer = stream.toByteByffer();
+
+        ExposedByteArrayOutputStream stream2 = new ExposedByteArrayOutputStream();
+        dataSchema.writeEntry(stream2, byteByffer);
+        Assert.assertEquals(1, stream2.toByteByffer().limit());
+        Assert.assertEquals(0, stream2.toByteByffer().get());
     }
 
     @Test
