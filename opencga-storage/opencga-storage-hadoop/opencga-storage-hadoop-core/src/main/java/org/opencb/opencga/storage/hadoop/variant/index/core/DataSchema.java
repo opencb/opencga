@@ -27,19 +27,18 @@ import java.util.List;
  */
 public abstract class DataSchema {
 
-    private List<DataField<?>> fields;
+    private final List<DataField<?>> fields;
     protected final DataField<Integer> entryLengthField;
 
 //    private boolean sparse = false;
 
     public DataSchema() {
         fields = new ArrayList<>();
-        entryLengthField = new IntegerDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "ENTRY_LENGTH", null));
+        entryLengthField = new VarIntDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "ENTRY_LENGTH", null));
         fields.add(entryLengthField);
     }
 
     protected void addField(DataField<?> field) {
-        field.setFieldPosition(fields.size());
         fields.add(field);
     }
 
@@ -96,21 +95,6 @@ public abstract class DataSchema {
         } catch (Exception e) {
             throw e;
         }
-    }
-
-    public ByteBuffer readField(ByteBuffer buffer, int fieldPosition) {
-        buffer.rewind();
-        for (DataField<?> field : fields) {
-            if (field == entryLengthField) {
-                // Skip entry length field
-                continue;
-            } else if (field.getFieldPosition() == fieldPosition) {
-                return field.read(buffer);
-            } else {
-                field.move(buffer);
-            }
-        }
-        throw new IllegalArgumentException("Unknown field position " + fieldPosition);
     }
 
     public <T> T readField(ByteBuffer buffer, DataField<T> field) {

@@ -18,19 +18,9 @@ import java.util.function.Function;
 public abstract class DataField<T> {
 
     private final IndexFieldConfiguration configuration;
-    private int fieldPosition;
 
     public DataField(IndexFieldConfiguration configuration) {
-        this(configuration, -1);
-    }
-
-    public DataField(IndexFieldConfiguration configuration, int fieldPosition) {
         this.configuration = configuration;
-        this.fieldPosition = fieldPosition;
-    }
-
-    void setFieldPosition(int fieldPosition) {
-        this.fieldPosition = fieldPosition;
     }
 
     public String getId() {
@@ -51,10 +41,6 @@ public abstract class DataField<T> {
 
     public IndexFieldConfiguration.Type getType() {
         return configuration.getType();
-    }
-
-    public int getFieldPosition() {
-        return fieldPosition;
     }
 
     public void move(ByteBuffer bb) {
@@ -84,7 +70,7 @@ public abstract class DataField<T> {
     public abstract T decode(ByteBuffer code);
 
     public <R> DataField<R> from(Function<R, T> converter, Function<T, R> deconverter) {
-        return new DataField<R>(configuration, fieldPosition) {
+        return new DataField<R>(configuration) {
 
             @Override
             public void move(ByteBuffer bb) {
@@ -125,9 +111,8 @@ public abstract class DataField<T> {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("IndexField{");
+        final StringBuilder sb = new StringBuilder("DataField{");
         sb.append("configuration=").append(configuration);
-        sb.append(", valuePosition=").append(fieldPosition);
         sb.append('}');
         return sb.toString();
     }

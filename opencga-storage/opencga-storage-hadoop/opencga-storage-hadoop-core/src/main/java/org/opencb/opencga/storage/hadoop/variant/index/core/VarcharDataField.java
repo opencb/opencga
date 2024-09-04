@@ -12,10 +12,12 @@ import java.nio.charset.StandardCharsets;
  * Varchar data field.
  * Read until the FIELD_SEPARATOR.
  */
-public class VarcharDataField extends DynamicDataField<String> {
+public class VarcharDataField extends VariableWidthDataField<String> {
+
+    protected static final byte FIELD_SEPARATOR = (byte) 0;
 
     public VarcharDataField(IndexFieldConfiguration configuration) {
-        super(configuration, -1);
+        super(configuration);
     }
 
     @Override
