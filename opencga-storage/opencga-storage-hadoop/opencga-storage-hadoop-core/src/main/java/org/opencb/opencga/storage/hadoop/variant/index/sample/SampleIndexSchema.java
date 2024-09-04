@@ -89,6 +89,8 @@ public final class SampleIndexSchema {
     static final byte[] PARENTS_PREFIX_BYTES = Bytes.toBytes(PARENTS_PREFIX);
     static final String FILE_PREFIX = META_PREFIX + "F_";
     static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
+    static final String FILE_DATA_PREFIX = META_PREFIX + "FD_";
+    static final byte[] FILE_DATA_PREFIX_BYTES = Bytes.toBytes(FILE_DATA_PREFIX);
     static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
     static final byte[] GENOTYPE_COUNT_PREFIX_BYTES = Bytes.toBytes(GENOTYPE_COUNT_PREFIX);
     static final String GENOTYPE_DISCREPANCY_COUNT = META_PREFIX + "DC";
@@ -129,6 +131,7 @@ public final class SampleIndexSchema {
     private final int version;
     private final SampleIndexConfiguration configuration;
     private final FileIndexSchema fileIndex;
+    private final FileDataIndexSchema fileData;
     private final PopulationFrequencyIndexSchema popFreqIndex;
     private final ConsequenceTypeIndexSchema ctIndex;
     private final BiotypeIndexSchema biotypeIndex;
@@ -141,6 +144,7 @@ public final class SampleIndexSchema {
         this.version = version;
         this.configuration = configuration;
         fileIndex = new FileIndexSchema(configuration.getFileIndexConfiguration());
+        fileData = new FileDataIndexSchema(configuration.getFileIndexConfiguration());
 //        annotationSummaryIndexSchema = new AnnotationSummaryIndexSchema();
         ctIndex = new ConsequenceTypeIndexSchema(configuration.getAnnotationIndexConfiguration().getConsequenceType());
         biotypeIndex = new BiotypeIndexSchema(configuration.getAnnotationIndexConfiguration().getBiotype());
@@ -202,6 +206,10 @@ public final class SampleIndexSchema {
 
     public FileIndexSchema getFileIndex() {
         return fileIndex;
+    }
+
+    public FileDataIndexSchema getFileData() {
+        return fileData;
     }
 
     @Override
@@ -362,6 +370,10 @@ public final class SampleIndexSchema {
 
     public static byte[] toFileIndexColumn(String genotype) {
         return Bytes.toBytes(FILE_PREFIX + genotype);
+    }
+
+    public static byte[] toFileDataColumn(String genotype) {
+        return Bytes.toBytes(FILE_DATA_PREFIX + genotype);
     }
 
     public static String getGt(Cell cell, byte[] prefix) {

@@ -5,8 +5,10 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.io.bit.BitOutputStream;
+import org.opencb.opencga.storage.core.io.bit.ExposedByteArrayOutputStream;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
@@ -22,7 +24,8 @@ public class SampleIndexEntryPutBuilder {
     private final SampleIndexVariantBiConverter variantConverter;
     private static final byte[] COLUMN_FAMILY = GenomeHelper.COLUMN_FAMILY_BYTES;
     private final SampleIndexSchema schema;
-    private final FileIndexSchema fileIndex;
+    private final FileIndexSchema fileIndexSchema;
+    private final FileDataIndexSchema fileDataIndexSchema;
     private final SampleVariantIndexEntry.SampleVariantIndexEntryComparator comparator;
     private final boolean orderedInput;
     private final boolean multiFileSample;
@@ -54,7 +57,8 @@ public class SampleIndexEntryPutBuilder {
         gts = new HashMap<>();
         variantConverter = new SampleIndexVariantBiConverter(schema);
         this.schema = schema;
-        fileIndex = this.schema.getFileIndex();
+        fileIndexSchema = this.schema.getFileIndex();
+        fileDataIndexSchema = this.schema.getFileData();
         comparator = new SampleVariantIndexEntry.SampleVariantIndexEntryComparator(schema);
     }
 
@@ -147,7 +151,11 @@ public class SampleIndexEntryPutBuilder {
         public void build(Put put) {
             Collection<SampleVariantIndexEntry> gtEntries = getEntries();
 
-            BitBuffer fileIndexBuffer = new BitBuffer(fileIndex.getBitsLength() * gtEntries.size());
+            BitBuffer fileIndexBuffer = new BitBuffer(fileIndexSchema.getBitsLength() * gtEntries.size());
+            ByteBuffer fileDataIndexBuffer = ByteBuffer.allocate(gtEntries.stream()
+                    .mapToInt(SampleVariantIndexEntry::getFileDataIndexBytes)
+                    .map(i -> i + 4)
+                    .sum());
             int offset = 0;
 
             SampleVariantIndexEntry prev = null;
@@ -158,10 +166,12 @@ public class SampleIndexEntryPutBuilder {
                     variants.add(variant);
                 } else {
                     // Mark previous variant as MultiFile
-                    fileIndex.setMultiFile(fileIndexBuffer, offset - fileIndex.getBitsLength());
+                    fileIndexSchema.setMultiFile(fileIndexBuffer, offset - fileIndexSchema.getBitsLength());
                 }
-                fileIndexBuffer.setBitBuffer(gtEntry.getFileIndex(), offset);
-                offset += fileIndex.getBitsLength();
+                offset = fileIndexBuffer.setBitBuffer(gtEntry.getFileIndex(), offset);
+                if (!gtEntry.getFileData().isEmpty()) {
+                    fileDataIndexSchema.writeEntry(fileDataIndexBuffer, gtEntry.getFileData().get(0));
+                }
                 prev = gtEntry;
             }
 
@@ -170,6 +180,11 @@ public class SampleIndexEntryPutBuilder {
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toGenotypeColumn(gt), variantsBytes);
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toFileIndexColumn(gt), fileIndexBuffer.getBuffer());
+            int position = fileDataIndexBuffer.position();
+            fileDataIndexBuffer.rewind();
+            fileDataIndexBuffer.limit(position);
+            put.addColumn(COLUMN_FAMILY, ByteBuffer.wrap(SampleIndexSchema.toFileDataColumn(gt)), put.getTimestamp(),
+                    fileDataIndexBuffer);
         }
     }
 
@@ -290,6 +305,7 @@ public class SampleIndexEntryPutBuilder {
         private final ArrayList<Variant> variants = new ArrayList<>(0);
         // This is the real issue. This might produce the "too many objects" problem. Need to run "partial builds" from time to time.
         private final BitOutputStream fileIndexBuffer = new BitOutputStream();
+        private final ExposedByteArrayOutputStream fileDataBuffer = new ExposedByteArrayOutputStream();
 
         SampleIndexGtEntryBuilderWithPartialBuilds(String gt) {
             this(gt, 10, 100);
@@ -357,7 +373,7 @@ public class SampleIndexEntryPutBuilder {
 
         private void partialBuild(boolean flush) {
             int entriesToProcess = flush ? entries.size() : entries.size() - lowerThreshold;
-            BitBuffer fileIndexBuffer = new BitBuffer(fileIndex.getBitsLength() * entries.size());
+            BitBuffer fileIndexBuffer = new BitBuffer(fileIndexSchema.getBitsLength() * entries.size());
             int offset = 0;
 
             variants.ensureCapacity(variants.size() + entries.size());
@@ -383,15 +399,16 @@ public class SampleIndexEntryPutBuilder {
                     variants.add(variant);
                 } else {
                     // Mark previous variant as MultiFile
-                    fileIndex.setMultiFile(fileIndexBuffer, offset - fileIndex.getBitsLength());
+                    fileIndexSchema.setMultiFile(fileIndexBuffer, offset - fileIndexSchema.getBitsLength());
                 }
-                fileIndexBuffer.setBitBuffer(gtEntry.getFileIndex(), offset);
-                offset += fileIndex.getBitsLength();
+                fileIndexBuffer.setBitBuffer(gtEntry.getFilesIndex().get(0), offset);
+                offset += fileIndexSchema.getBitsLength();
                 prev = gtEntry;
+                fileDataIndexSchema.writeEntry(fileDataBuffer, gtEntry.getFileData().get(0));
             }
 
             // Do not write the whole buffer, but only the corresponding to the processed entries.
-            this.fileIndexBuffer.write(fileIndexBuffer.getBitBuffer(0, fileIndex.getBitsLength() * processedEntries));
+            this.fileIndexBuffer.write(fileIndexBuffer.getBitBuffer(0, fileIndexSchema.getBitsLength() * processedEntries));
         }
 
         @Override
@@ -405,6 +422,8 @@ public class SampleIndexEntryPutBuilder {
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toGenotypeColumn(gt), variantsBuffer);
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variantsCount));
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toFileIndexColumn(gt), fileIndexBuffer.toByteArray());
+            put.addColumn(COLUMN_FAMILY, ByteBuffer.wrap(SampleIndexSchema.toFileDataColumn(gt)),
+                    put.getTimestamp(), fileDataBuffer.toByteByffer());
         }
     }
 

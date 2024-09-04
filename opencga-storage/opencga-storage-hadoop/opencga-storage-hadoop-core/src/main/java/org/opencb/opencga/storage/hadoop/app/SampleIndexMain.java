@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndex
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -204,6 +205,7 @@ public class SampleIndexMain extends AbstractMain {
                     addLength(gt, counts, countsByGt, "variants", new BitInputStream(
                             gtEntry.getVariants(), gtEntry.getVariantsOffset(), gtEntry.getVariantsLength()));
                     addLength(gt, counts, countsByGt, "fileIndex", gtEntry.getFileIndexStream());
+                    addLength(gt, counts, countsByGt, "fileDataIndex", gtEntry.getFileDataIndexBuffer());
                     addLength(gt, counts, countsByGt, "populationFrequencyIndex", gtEntry.getPopulationFrequencyIndexStream());
                     addLength(gt, counts, countsByGt, "ctBtTfIndex", gtEntry.getCtBtTfIndexStream());
                     addLength(gt, counts, countsByGt, "biotypeIndex", gtEntry.getBiotypeIndexStream());
@@ -230,13 +232,24 @@ public class SampleIndexMain extends AbstractMain {
     private void addLength(String gt, Map<String, Integer> counts, Map<String, Map<String, Integer>> countsByGt,
                            String key, BitInputStream stream) {
         if (stream != null) {
-            counts.merge(key + "_bytes", stream.getByteLength(), Integer::sum);
-            counts.merge(key + "_bytes_max", stream.getByteLength(), Math::max);
-            counts.merge(key + "_count", 1, Integer::sum);
-            Map<String, Integer> gtCounts = countsByGt.computeIfAbsent(gt, k -> new TreeMap<>());
-            gtCounts.merge(gt + "_" + key + "_bytes", stream.getByteLength(), Integer::sum);
-            gtCounts.merge(gt + "_" + key + "_count", 1, Integer::sum);
+            addLength(gt, counts, countsByGt, key, stream.getByteLength());
         }
+    }
+    private void addLength(String gt, Map<String, Integer> counts, Map<String, Map<String, Integer>> countsByGt,
+                           String key, ByteBuffer bb) {
+        if (bb != null) {
+            addLength(gt, counts, countsByGt, key, bb.limit());
+        }
+    }
+
+    private void addLength(String gt, Map<String, Integer> counts, Map<String, Map<String, Integer>> countsByGt,
+                           String key, int byteLength) {
+        counts.merge(key + "_bytes", byteLength, Integer::sum);
+        counts.merge(key + "_bytes_max", byteLength, Math::max);
+        counts.merge(key + "_count", 1, Integer::sum);
+        Map<String, Integer> gtCounts = countsByGt.computeIfAbsent(gt, k -> new TreeMap<>());
+        gtCounts.merge(gt + "_" + key + "_bytes", byteLength, Integer::sum);
+        gtCounts.merge(gt + "_" + key + "_count", 1, Integer::sum);
     }
 
 }

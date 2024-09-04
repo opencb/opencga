@@ -341,7 +341,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         private static final String HAS_GENOTYPE = "SampleIndexerMapper.hasGenotype";
         public static final int SAMPLES_TO_COUNT = 2;
         private Set<Integer> samplesToCount;
-        private VariantFileIndexConverter fileIndexConverter;
+        private SampleVariantIndexEntryConverter sampleVariantIndexEntryConverter;
         private Map<String, Integer> fixedAttributesPositions;
         private Map<String, Integer> sampleDataKeyPositions;
         private final Map<Integer, SampleMetadata> samples = new HashMap<>();
@@ -361,7 +361,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
             schema = VariantMapReduceUtil.getSampleIndexSchema(context.getConfiguration());
             studyId = context.getConfiguration().getInt(STUDY_ID, -1);
-            fileIndexConverter = new VariantFileIndexConverter(schema);
+            sampleVariantIndexEntryConverter = new SampleVariantIndexEntryConverter(schema);
             progressLogger = new ProgressLogger("Processing variants").setBatchSize(10000);
 
             int[] sampleIds = context.getConfiguration().getInts(SAMPLES);
@@ -421,7 +421,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             progressLogger.increment(1, () -> "up to variant " + variant);
 
             // Get fileIndex for each file
-            Map<Integer, BitBuffer> fileIndexMap = new HashMap<>();
+            Map<Integer, SampleVariantIndexEntry> sampleIndexentryMap = new HashMap<>();
 
             variantRow.forEachFile(fileColumn -> {
                 if ((partialScan && !this.files.contains(fileColumn.getFileId())) || fileColumn.getStudyId() != studyId) {
@@ -432,7 +432,10 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 //                Map<String, String> fileAttributes = HBaseToStudyEntryConverter.convertFileAttributes(fileColumn.raw(),
 //                        fixedAttributes, includeAttributes);
 
-                BitBuffer fileIndexValue = fileIndexConverter.createFileIndexValue(variant.getType(), 0,
+                SampleVariantIndexEntry indexEntry = sampleVariantIndexEntryConverter.createSampleVariantIndexEntry(0,
+                        variant,
+                        fileColumn.getCall(),
+                        fileColumn.getSecondaryAlternates(),
                         (k) -> {
                             if (k.equals(StudyEntry.QUAL)) {
                                 return fileColumn.getQualString();
@@ -449,7 +452,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                         },
                         (k) -> null);
 
-                fileIndexMap.put(fileColumn.getFileId(), fileIndexValue);
+                sampleIndexentryMap.put(fileColumn.getFileId(), indexEntry);
             });
 
             variantRow.forEachSample(sampleColumn -> {
@@ -497,17 +500,17 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                     // Add fileIndex value for this genotype
                     boolean fileFound = false;
                     for (Integer fileId : files) {
-                        BitBuffer fileIndex = fileIndexMap.get(fileId);
-                        if (fileIndex != null) {
+                        SampleVariantIndexEntry indexEntry = sampleIndexentryMap.get(fileId);
+                        if (indexEntry != null) {
                             fileFound = true;
                             // Copy bit buffer
-                            BitBuffer sampleFileIndex = new BitBuffer(fileIndex);
-                            fileIndexConverter.addSampleDataIndexValues(sampleFileIndex, sampleDataKeyPositions,
+                            BitBuffer sampleFileIndex = new BitBuffer(indexEntry.getFilesIndex().get(0));
+                            sampleVariantIndexEntryConverter.addSampleDataIndexValues(sampleFileIndex, sampleDataKeyPositions,
                                     sampleColumn::getSampleData);
                             if (filePosition >= 0) {
                                 schema.getFileIndex().getFilePositionIndex().write(filePosition, sampleFileIndex);
                             }
-                            builder.add(gt, new SampleVariantIndexEntry(variant, sampleFileIndex));
+                            builder.add(gt, new SampleVariantIndexEntry(variant, sampleFileIndex, indexEntry.getFileData().get(0)));
                             countSampleGt(context, sampleId, gt);
                         }
                     }

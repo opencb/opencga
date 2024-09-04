@@ -9,7 +9,6 @@ import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.YesNoAuto;
-import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.SplitData;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -43,7 +42,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     private final byte[] family;
     private final ObjectMap options;
     private final SampleIndexDBAdaptor dbAdaptor;
-    private final VariantFileIndexConverter variantFileIndexConverter;;
+    private final SampleVariantIndexEntryConverter sampleVariantIndexEntryConverter;
     private final boolean includeGenotype;
     private final SampleIndexSchema schema;
 
@@ -88,7 +87,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
         includeGenotype = YesNoAuto.parse(options, INCLUDE_GENOTYPE.key()).yesOrAuto();
         this.dbAdaptor = dbAdaptor;
         this.schema = schema;
-        variantFileIndexConverter = new VariantFileIndexConverter(this.schema);
+        sampleVariantIndexEntryConverter = new SampleVariantIndexEntryConverter(this.schema);
     }
 
     private class Chunk implements Iterable<SampleIndexEntryPutBuilder> {
@@ -204,8 +203,8 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                 if (validVariant(variant) && validGenotype(gt)) {
                     genotypes.add(gt);
                     Chunk chunk = buffer.computeIfAbsent(indexChunk, Chunk::new);
-                    BitBuffer fileIndexValue = variantFileIndexConverter.createFileIndexValue(sampleIdx, fileIdxMap[sampleIdx], variant);
-                    SampleVariantIndexEntry indexEntry = new SampleVariantIndexEntry(variant, fileIndexValue);
+                    SampleVariantIndexEntry indexEntry = sampleVariantIndexEntryConverter
+                            .createSampleVariantIndexEntry(sampleIdx, fileIdxMap[sampleIdx], variant);
                     chunk.addVariant(sampleIdx, gt, indexEntry);
                 }
                 sampleIdx++;

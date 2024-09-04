@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSamp
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.isGenotypeColumn;
@@ -211,6 +212,7 @@ public class SampleIndexVariantBiConverter {
         private int nonIntergenicCount;
         private int clinicalCount;
         private BitInputStream fileIndex;
+        private ByteBuffer fileDataIndex;
         private int fileIndexCount; // Number of fileIndex elements visited
         private int fileIndexIdx;   // Index over file index array. Index of last visited fileIndex
 
@@ -239,6 +241,7 @@ public class SampleIndexVariantBiConverter {
             this.popFreq = gtEntry.getPopulationFrequencyIndexStream();
             this.clinicalIndex = gtEntry.getClinicalIndexStream();
             this.fileIndex = gtEntry.getFileIndexStream();
+            this.fileDataIndex = gtEntry.getFileDataIndexBuffer();
         }
 
         @Override
@@ -249,6 +252,11 @@ public class SampleIndexVariantBiConverter {
         @Override
         public boolean hasFileIndex() {
             return gtEntry.getFileIndex() != null;
+        }
+
+        @Override
+        public boolean hasFileDataIndex() {
+            return gtEntry.getFileData() != null;
         }
 
         @Override
@@ -279,6 +287,11 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
+        public ByteBuffer getFileDataEntry() {
+            return getFileDataIndex(fileIndexIdx);
+        }
+
+        @Override
         public BitBuffer nextMultiFileIndexEntry() {
             if (isMultiFileIndex()) {
                 fileIndexIdx++;
@@ -289,7 +302,11 @@ public class SampleIndexVariantBiConverter {
         }
 
         private BitBuffer getFileIndex(int i) {
-            return schema.getFileIndex().read(fileIndex, i);
+            return schema.getFileIndex().readEntry(fileIndex, i);
+        }
+
+        private ByteBuffer getFileDataIndex(int i) {
+            return schema.getFileData().readEntry(fileDataIndex, i);
         }
 
         @Override
@@ -357,7 +374,7 @@ public class SampleIndexVariantBiConverter {
                 if (clinical) {
                     int nextClinical = nextClinicalIndex();
                     // TODO: Reuse BitBuffer
-                    annotationIndexEntry.setClinicalIndex(schema.getClinicalIndexSchema().read(clinicalIndex, nextClinical));
+                    annotationIndexEntry.setClinicalIndex(schema.getClinicalIndexSchema().readEntry(clinicalIndex, nextClinical));
                 }
             }
 
@@ -455,7 +472,17 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
+        public boolean hasFileDataIndex() {
+            return false;
+        }
+
+        @Override
         public BitBuffer nextFileIndexEntry() {
+            throw new NoSuchElementException("Empty iterator");
+        }
+
+        @Override
+        public ByteBuffer getFileDataEntry() {
             throw new NoSuchElementException("Empty iterator");
         }
 

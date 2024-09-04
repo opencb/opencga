@@ -6,6 +6,7 @@ import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariantBiConverter.split;
@@ -53,8 +54,19 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     }
 
     @Override
+    public boolean hasFileDataIndex() {
+        SampleIndexEntryIterator it = getGtIterator();
+        return it != null && it.hasFileDataIndex();
+    }
+
+    @Override
     public BitBuffer nextFileIndexEntry() {
         return getGtIterator().nextFileIndexEntry();
+    }
+
+    @Override
+    public ByteBuffer getFileDataEntry() {
+        return getGtIterator().getFileDataEntry();
     }
 
     @Override
@@ -132,10 +144,17 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     public SampleVariantIndexEntry nextSampleVariantIndexEntry() {
         AnnotationIndexEntry annotationIndexEntry = nextAnnotationIndexEntry();
         List<BitBuffer> filesIndex = new ArrayList<>();
+        List<ByteBuffer> filesDataIndex = new ArrayList<>();
         if (hasFileIndex()) {
             filesIndex.add(nextFileIndexEntry());
+            if (hasFileDataIndex()) {
+                filesDataIndex.add(getFileDataEntry());
+            }
             while (isMultiFileIndex()) {
                 filesIndex.add(nextMultiFileIndexEntry());
+                if (hasFileDataIndex()) {
+                    filesDataIndex.add(getFileDataEntry());
+                }
             }
         }
         String genotype = nextGenotype();
@@ -145,7 +164,7 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
             parentsCode = nextParentsIndexEntry();
         }
         Variant variant = next();
-        return new SampleVariantIndexEntry(variant, filesIndex, genotype, annotationIndexEntry, parentsCode, meCode);
+        return new SampleVariantIndexEntry(variant, filesIndex, filesDataIndex, genotype, annotationIndexEntry, parentsCode, meCode);
     }
 
     @Override

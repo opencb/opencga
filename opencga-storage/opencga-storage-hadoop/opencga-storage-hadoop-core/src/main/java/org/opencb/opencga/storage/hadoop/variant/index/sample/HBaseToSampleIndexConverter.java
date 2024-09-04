@@ -11,6 +11,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConve
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
@@ -26,12 +27,14 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
 
     private final SampleIndexVariantBiConverter converter;
     private final SampleIndexSchema schema;
-    private final FileIndexSchema fileIndex;
+    private final FileIndexSchema fileIndexSchema;
+    private final FileDataIndexSchema fileDataSchema;
 
     public HBaseToSampleIndexConverter(SampleIndexSchema schema) {
         this.schema = schema;
         converter = new SampleIndexVariantBiConverter(schema);
-        fileIndex = schema.getFileIndex();
+        fileIndexSchema = schema.getFileIndex();
+        fileDataSchema = schema.getFileData();
     }
 
     @Override
@@ -59,6 +62,9 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                 } else if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, FILE_PREFIX_BYTES))
                             .setFileIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                } else if (columnStartsWith(cell, FILE_DATA_PREFIX_BYTES)) {
+                    entry.getGtEntry(getGt(cell, FILE_DATA_PREFIX_BYTES))
+                            .setFileDataIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 } else if (columnStartsWith(cell, PARENTS_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, PARENTS_PREFIX_BYTES))
                             .setParentsIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
@@ -82,6 +88,9 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                             .setClinicalIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 } else if (columnStartsWith(cell, GENOTYPE_DISCREPANCY_COUNT_BYTES)) {
                     entry.setDiscrepancies(Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
+                } else {
+                    throw new IllegalArgumentException("Unknown column '" + Bytes.toString(cell.getQualifierArray(),
+                            cell.getQualifierOffset(), cell.getQualifierLength()) + "'");
                 }
             } else {
                 if (columnStartsWith(cell, MENDELIAN_ERROR_COLUMN_BYTES)) {
@@ -125,22 +134,40 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         Map<String, TreeSet<SampleVariantIndexEntry>> mapVariantFileIndex = new HashMap<>();
         SampleVariantIndexEntry.SampleVariantIndexEntryComparator comparator
                 = new SampleVariantIndexEntry.SampleVariantIndexEntryComparator(schema);
+        Map<String, BitInputStream> fileIndexMap = new HashMap<>();
+        Map<String, ByteBuffer> fileDataMap = new HashMap<>();
         for (Cell cell : result.rawCells()) {
             if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
                 String gt = SampleIndexSchema.getGt(cell, FILE_PREFIX_BYTES);
-                TreeSet<SampleVariantIndexEntry> values = new TreeSet<>(comparator);
-                mapVariantFileIndex.put(gt, values);
                 BitInputStream bis = new BitInputStream(
                         cell.getValueArray(),
                         cell.getValueOffset(),
                         cell.getValueLength());
-                for (Variant variant : map.get(gt)) {
-                    BitBuffer fileIndex;
-                    do {
-                        fileIndex = bis.readBitBuffer(this.fileIndex.getBitsLength());
-                        values.add(new SampleVariantIndexEntry(variant, fileIndex));
-                    } while (this.fileIndex.isMultiFile(fileIndex));
-                }
+                fileIndexMap.put(gt, bis);
+            } else if (columnStartsWith(cell, FILE_DATA_PREFIX_BYTES)) {
+                String gt = SampleIndexSchema.getGt(cell, FILE_DATA_PREFIX_BYTES);
+                // Slice the buffer.
+                // The wrap buffer contains the whole array, where the position is the offset.
+                // The position might be set to 0 by `.reset()` method, which would allow reading data before offset.
+                ByteBuffer byteBuffer = ByteBuffer.wrap(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()).slice();
+                fileDataMap.put(gt, byteBuffer);
+            }
+        }
+        for (Map.Entry<String, BitInputStream> entry : fileIndexMap.entrySet()) {
+            String gt = entry.getKey();
+            TreeSet<SampleVariantIndexEntry> values = new TreeSet<>(comparator);
+            mapVariantFileIndex.put(gt, values);
+
+            BitInputStream fileIndexStream = entry.getValue();
+            ByteBuffer fileDataBuffer = fileDataMap.get(gt);
+
+            for (Variant variant : map.get(gt)) {
+                BitBuffer fileIndexEntry;
+                do {
+                    fileIndexEntry = fileIndexSchema.readEntry(fileIndexStream);
+                    ByteBuffer fileDataEntry = fileDataSchema.readNextEntry(fileDataBuffer);
+                    values.add(new SampleVariantIndexEntry(variant, fileIndexEntry, fileDataEntry));
+                } while (this.fileIndexSchema.isMultiFile(fileIndexEntry));
             }
         }
         return mapVariantFileIndex;
