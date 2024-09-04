@@ -603,8 +603,8 @@
     <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
     <field name="statusId" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="statusName" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="statusDescription" type="text_en" indexed="true" stored="true" multiValued="false"/>
+    <field name="statusType" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="statusDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
 
 	<field name="creationDate" type="pdate" indexed="true" stored="true" multiValued="false"/>

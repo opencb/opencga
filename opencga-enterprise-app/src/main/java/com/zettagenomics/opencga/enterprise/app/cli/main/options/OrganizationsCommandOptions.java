@@ -305,9 +305,6 @@ public class OrganizationsCommandOptions {
         @Parameter(names = {"--quota-max-cpu"}, description = "The body web service maxCpu parameter", required = false, arity = 1)
         public Integer quotaMaxCpu;
     
-        @Parameter(names = {"--account-expiration-date"}, description = "The body web service expirationDate parameter", required = false, arity = 1)
-        public String accountExpirationDate;
-    
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
