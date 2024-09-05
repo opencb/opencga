@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.analysis.family.qc;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -31,25 +34,32 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyQualityControl;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
+import org.opencb.opencga.core.tools.variant.FamilyVariantQcAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.models.common.IndexStatus.INDEXING;
+import static org.opencb.opencga.core.models.common.InternalStatus.READY;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.JSON;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF_GZ;
 
-@Tool(id = FamilyVariantQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = FamilyVariantQcAnalysis.DESCRIPTION)
+@Tool(id = FamilyVariantQcAnalysis.ID, resource = Enums.Resource.FAMILY, description = FamilyVariantQcAnalysis.DESCRIPTION)
 public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
     public static final String ID = "family-variant-qc";
@@ -67,13 +77,26 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
     @Override
     protected void run() throws ToolException {
+        setUpStorageEngineExecutor(study);
+
+        List<Family> families = new ArrayList<>();
+        LinkedList<Path> familyVcfPaths = new LinkedList<>();
+        LinkedList<Path> familyJsonPaths = new LinkedList<>();
+
         try {
             ObjectWriter objectWriter = JacksonUtils.getDefaultObjectMapper().writerFor(Family.class);
-
             for (String familyId : analysisParams.getFamilies()) {
                 // Get family
                 OpenCGAResult<Family> familyResult = catalogManager.getFamilyManager().get(study, familyId, QueryOptions.empty(), token);
                 Family family = familyResult.first();
+
+                // Decide if quality control has to be performed
+                //   - by checking the quality control status, if it is READY means it has been computed previously, and
+                //   - by checking the flag overwrite
+                if (!performQualityControl(family, analysisParams.getOverwrite())) {
+                    // Quality control does not have to be performed for this family
+                    continue;
+                }
 
                 // Create directory to save variants and family
                 Path famOutPath = Files.createDirectories(getOutDir().resolve(familyId));
@@ -95,21 +118,50 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                 // Create query options
                 QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, "id,studies.samples");
 
-                getVariantStorageManager().exportData(famOutPath.resolve(familyId).toAbsolutePath().toString(), VCF_GZ, null, query,
-                        queryOptions, token);
+                // Export to VCF.GZ format
+                String basename = famOutPath.resolve(familyId).toAbsolutePath().toString();
+                getVariantStorageManager().exportData(basename, VCF_GZ, null, query, queryOptions, token);
+
+                // Check VCF file
+                Path familyVcfPath = Paths.get(basename + "." + VCF_GZ.getExtension());
+                if (!Files.exists(familyVcfPath)) {
+                    throw new ToolException("Something wrong happened when exporting VCF file for family ID " + familyId + ". VCF file "
+                            + familyVcfPath + " was not created. Export query = " + query.toJson() + "; export query options = "
+                            + queryOptions.toJson());
+                }
+                familyVcfPaths.add(familyVcfPath);
 
                 // Export family (JSON format)
-                objectWriter.writeValue(famOutPath.resolve(familyId + ".json").toFile(), family);
+                Path familyJsonPath = Paths.get(basename + "." + JSON.getExtension());
+                objectWriter.writeValue(familyJsonPath.toFile(), family);
+
+                // Check VCF file
+                if (!Files.exists(familyJsonPath)) {
+                    throw new ToolException("Something wrong happened when saving JSON file for family ID " + familyId + ". JSON file "
+                            + familyJsonPath + " was not created.");
+                }
+                familyJsonPaths.add(familyJsonPath);
+
+                // Add family to the list
+                families.add(family);
             }
         } catch (CatalogException | IOException | StorageEngineException e) {
             throw new ToolException(e);
         }
 
-        // Execute Python script to compute family QC analyses
+        // Get executor to execute Python script that computes the family QC
+        FamilyVariantQcAnalysisExecutor executor = getToolExecutor(FamilyVariantQcAnalysisExecutor.class);
+        executor.setVcfPaths(familyVcfPaths)
+                .setJsonPaths(familyJsonPaths)
+                .setQcParams(analysisParams);
 
+        // Step by step
+        step(executor::execute);
 
         // Parse Python script results
-
+        if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
+            updateFamilyQualityControl(families);
+        }
     }
 
     public static void checkParameters(FamilyQcAnalysisParams params, String studyId, CatalogManager catalogManager, String token)
@@ -178,5 +230,52 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
             }
         }
         return sampleIds;
+    }
+
+    private boolean performQualityControl(Family family, Boolean overwrite) {
+        boolean performQc;
+        if (Boolean.TRUE.equals(overwrite)) {
+            performQc = true;
+        } else if (family.getInternal() != null && family.getInternal().getQualityControlStatus() != null) {
+            String statusId = family.getInternal().getQualityControlStatus().getId();
+            performQc = (statusId.equals(INDEXING) || statusId.equals(READY)) ? false : true;
+        } else {
+            performQc = true;
+        }
+
+        if (performQc) {
+            // Second, set status to INDEXING
+        }
+
+        return performQc;
+    }
+
+    private void updateFamilyQualityControl(List<Family> families) {
+        final String extension = ".qc.json";
+        ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        ObjectReader objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(FamilyQualityControl.class);
+
+        for (Family family : families) {
+            // Check output file
+            Path qcPath = getOutDir().resolve(family.getId()).resolve(family.getId() + extension);
+            if (!Files.exists(qcPath)) {
+                logger.warn("Could not update quality control in OpenCGA catalog for family " + family.getId() + " : file " + qcPath
+                        + " not found");
+                continue;
+            }
+
+            // Update catalog
+            try {
+                // First, update the family quality control computed
+                FamilyQualityControl familyQc = objectReader.readValue(qcPath.toFile());
+                FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControl(familyQc);
+                catalogManager.getFamilyManager().update(getStudy(), family.getId(), updateParams, null, token);
+
+                // Second, set status to READY
+            } catch (CatalogException | IOException e) {
+                logger.warn("Could not update quality control in OpenCGA catalog for family " + family.getId() + ": " + e.getMessage());
+            }
+        }
     }
 }

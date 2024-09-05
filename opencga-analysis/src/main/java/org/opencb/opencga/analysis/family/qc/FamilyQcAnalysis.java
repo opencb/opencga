@@ -42,6 +42,7 @@ import java.util.Map;
 
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
 
+@Deprecated
 @Tool(id = FamilyQcAnalysis.ID, resource = Enums.Resource.FAMILY, description = FamilyQcAnalysis.DESCRIPTION)
 public class FamilyQcAnalysis extends OpenCgaTool {
 

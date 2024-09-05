@@ -1086,7 +1086,7 @@ public class VariantAnalysisTest {
         FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControl(qc);
         catalogManager.getFamilyManager().update(STUDY, family, updateParams, null, token);
 
-        // SNV fitting
+        // Family QC analysis
         FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
         params.setFamilies(Arrays.asList(family));
 

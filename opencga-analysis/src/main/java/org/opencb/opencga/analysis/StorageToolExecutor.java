@@ -27,6 +27,9 @@ import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Helper interface to be used by opencga local analysis executors.
@@ -65,4 +68,14 @@ public interface StorageToolExecutor {
         }
     }
 
+    default Path getOpencgaHome() throws ToolExecutorException {
+        if (!getExecutorParams().containsKey("opencgaHome")) {
+            throw new ToolExecutorException("Missing OpenCGA parameter in executor");
+        }
+        Path opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
+        if (!Files.exists(opencgaHome)) {
+            throw new ToolExecutorException("OpenCGA home " + opencgaHome + " does not exist");
+        }
+        return opencgaHome;
+    }
 }

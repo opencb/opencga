@@ -16,55 +16,24 @@
 
 package org.opencb.opencga.core.models.common;
 
-import org.opencb.opencga.core.common.TimeUtils;
-
-public class QualityControlStatus extends Internal {
+public class QualityControlStatus extends IndexStatus {
 
     public QualityControlStatus() {
-    }
-
-    public QualityControlStatus(InternalStatus status, String registrationDate, String modificationDate) {
-        super(status, registrationDate, modificationDate);
+        super();
     }
 
     public static QualityControlStatus init() {
-        return new QualityControlStatus(null, TimeUtils.getTime(), TimeUtils.getTime());
+        return new QualityControlStatus();
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("QualityControlStatus{");
-        sb.append("status=").append(status);
-        sb.append(", registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(lastModified).append('\'');
+        sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", date='").append(date).append('\'');
         sb.append('}');
         return sb.toString();
-    }
-
-    public InternalStatus getStatus() {
-        return status;
-    }
-
-    public QualityControlStatus setStatus(InternalStatus status) {
-        this.status = status;
-        return this;
-    }
-
-    public String getRegistrationDate() {
-        return registrationDate;
-    }
-
-    public QualityControlStatus setRegistrationDate(String registrationDate) {
-        this.registrationDate = registrationDate;
-        return this;
-    }
-
-    public String getLastModified() {
-        return lastModified;
-    }
-
-    public QualityControlStatus setLastModified(String lastModified) {
-        this.lastModified = lastModified;
-        return this;
     }
 }
