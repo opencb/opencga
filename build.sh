@@ -343,6 +343,12 @@ function publish_reports() {
       DESTINATION_PATH="$DESTINATION_PATH/"
     fi
     echo "Destination path: $DESTINATION_PATH"
+
+    echo "SSH_PASS $SSH_PASS"
+    echo "SSH_PORT $SSH_PORT"
+    echo "SSH_USER $SSH_USER"
+    echo "SSH_HOST $SSH_HOST"
+
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
     echo "Created remote path: $DESTINATION_PATH"
     sshpass -p "$SSH_PASS" scp -r -P "$SSH_PORT" "$FILE_TO_SEND" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
