@@ -50,4 +50,5 @@ jobs:
           ./kubectl -n cellbase-db port-forward services/cellbase-rs0-svc 27018:27017 --kubeconfig ./admin.conf &
       - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, cellbase, opencga and opencga-enterprise
         run: |
-         ./build.sh -t -l runShortTests -T ${{ github.event.pull_request.head.ref }} -c localhost:27018
+         ./build.sh -t -l runShortTests -b -s -f -T ${{ github.event.pull_request.head.ref }} -c localhost:27018 -H hdp3.1
+         
