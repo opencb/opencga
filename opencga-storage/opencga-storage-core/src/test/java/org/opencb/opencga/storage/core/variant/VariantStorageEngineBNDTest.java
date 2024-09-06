@@ -61,6 +61,7 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
         variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
         variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
         variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE_GRCH38);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.NORMALIZATION_EXTENSIONS.key(), ParamConstants.NONE);
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
 
         studyMetadata = new StudyMetadata(1, "s1");

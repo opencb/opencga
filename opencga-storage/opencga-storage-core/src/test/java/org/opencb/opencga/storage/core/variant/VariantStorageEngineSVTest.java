@@ -62,6 +62,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
         variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
         variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE_GRCH38);
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
+        variantStorageEngine.getOptions().put(VariantStorageOptions.NORMALIZATION_EXTENSIONS.key(), ParamConstants.NONE);
         variantStorageEngine.reloadCellbaseConfiguration();
 
         if (!loaded) {
@@ -74,7 +75,6 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
 
         input1 = getResourceUri("variant-test-sv.vcf");
         studyMetadata = new StudyMetadata(1, "s1");
-        variantStorageEngine.getOptions().append(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key(), "expression,clinical");
         pipelineResult1 = runDefaultETL(input1, variantStorageEngine, studyMetadata, new QueryOptions()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
