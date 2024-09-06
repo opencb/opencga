@@ -37,7 +37,7 @@ public class FamilyInternal extends Internal {
 
     public static FamilyInternal init() {
         String time = TimeUtils.getTime();
-        return new FamilyInternal(time, time, new FamilyStatus(), QualityControlStatus.init());
+        return new FamilyInternal(time, time, new FamilyStatus(), new QualityControlStatus());
     }
 
     @Override

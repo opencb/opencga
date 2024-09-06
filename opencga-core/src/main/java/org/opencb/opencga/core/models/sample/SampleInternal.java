@@ -52,7 +52,7 @@ public class SampleInternal extends Internal {
     public static SampleInternal init() {
         String time = TimeUtils.getTime();
         return new SampleInternal(time, time, new InternalStatus(InternalStatus.READY), RgaIndex.init(), SampleInternalVariant.init(),
-                QualityControlStatus.init());
+                new QualityControlStatus());
     }
 
     @Override

@@ -36,7 +36,7 @@ public class IndividualInternal extends Internal {
 
     public static IndividualInternal init() {
         String time = TimeUtils.getTime();
-        return new IndividualInternal(new InternalStatus(InternalStatus.READY), time, time, QualityControlStatus.init());
+        return new IndividualInternal(new InternalStatus(InternalStatus.READY), time, time, new QualityControlStatus());
     }
 
     @Override

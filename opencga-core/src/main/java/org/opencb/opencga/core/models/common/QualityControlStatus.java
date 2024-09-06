@@ -16,24 +16,59 @@
 
 package org.opencb.opencga.core.models.common;
 
-public class QualityControlStatus extends IndexStatus {
+import java.util.Arrays;
+import java.util.List;
 
-    public QualityControlStatus() {
-        super();
+public class QualityControlStatus extends InternalStatus {
+
+    /*
+     * States
+     *
+     * NONE --> COMPUTING --> READY
+     *                    --> INCOMPLETE
+     */
+    public static final String NONE = "NONE";
+    public static final String COMPUTING = "COMPUTING";
+    public static final String INCOMPLETE = "INCOMPLETE";
+
+    public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, COMPUTING, INCOMPLETE);
+
+    public QualityControlStatus(String status, String message) {
+        if (isValid(status)) {
+            init(status, status, message);
+        } else {
+            throw new IllegalArgumentException("Unknown status " + status);
+        }
     }
 
-    public static QualityControlStatus init() {
-        return new QualityControlStatus();
+    public QualityControlStatus(String status) {
+        this(status, "");
+    }
+
+    public QualityControlStatus() {
+        this(NONE, "");
     }
 
     @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("QualityControlStatus{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", date='").append(date).append('\'');
-        sb.append('}');
-        return sb.toString();
+    public String getId() {
+        return super.getId();
+    }
+
+    @Override
+    public String getName() {
+        return super.getName();
+    }
+
+    public static IndexStatus init() {
+        return new IndexStatus();
+    }
+
+    public static boolean isValid(String status) {
+        return status != null
+                && (status.equals(READY)
+                || status.equals(DELETED)
+                || status.equals(INCOMPLETE)
+                || status.equals(NONE)
+                || status.equals(COMPUTING));
     }
 }
