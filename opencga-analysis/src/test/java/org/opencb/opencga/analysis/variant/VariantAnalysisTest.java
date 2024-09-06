@@ -1093,7 +1093,8 @@ public class VariantAnalysisTest {
         toolRunner.execute(FamilyVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY),
                 outDir, null, false, token);
 
-//        Family fam = catalogManager.getFamilyManager().get(STUDY, family, QueryOptions.empty(), token).first();
+        Family fam = catalogManager.getFamilyManager().get(STUDY, family, QueryOptions.empty(), token).first();
+        System.out.println("fam.getInternal().getQualityControlStatus() = " + fam.getInternal().getQualityControlStatus());
 
         System.out.println("outDir = " + outDir);
     }

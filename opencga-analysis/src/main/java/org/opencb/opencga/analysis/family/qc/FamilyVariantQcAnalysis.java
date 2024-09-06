@@ -56,6 +56,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.models.common.InternalStatus.READY;
 import static org.opencb.opencga.core.models.common.QualityControlStatus.COMPUTING;
+import static org.opencb.opencga.core.models.common.QualityControlStatus.NONE;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.JSON;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF_GZ;
@@ -96,6 +97,12 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                 //   - by checking the flag overwrite
                 if (!performQualityControl(family, analysisParams.getOverwrite())) {
                     // Quality control does not have to be performed for this family
+                    continue;
+                }
+
+                // Set quality control status to COMPUTING to prevent multiple family QCs from running simultaneously
+                // for the same family
+                if (!setComputingStatus(family)) {
                     continue;
                 }
 
@@ -163,6 +170,21 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
         if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
             updateFamilyQualityControl(families);
         }
+    }
+
+    private boolean setComputingStatus(Family family) throws ToolException {
+        try {
+            QualityControlStatus qcStatus = new QualityControlStatus(COMPUTING, "Performing family QC");
+            FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControlStatus(qcStatus);
+            catalogManager.getFamilyManager().update(getStudy(), family.getId(), updateParams, null, token);
+        } catch (CatalogException e) {
+            String msg = "Could not set status to COMPUTING before performing the QC for the family " + family.getId() + ": "
+                    + e.getMessage();
+            logger.error(msg);
+            addError(new ToolException(msg, e));
+            return false;
+        }
+        return true;
     }
 
     public static void checkParameters(FamilyQcAnalysisParams params, String studyId, CatalogManager catalogManager, String token)
@@ -265,33 +287,33 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
             String msg;
             Path qcPath = getOutDir().resolve(family.getId()).resolve(family.getId() + extension);
             if (!Files.exists(qcPath)) {
-                msg = "Quality control error for family " + family.getId() + " : file " + qcPath + " not found";
+                msg = "Quality control error for family " + family.getId() + ": file " + qcPath.getFileName() + " not found";
                 familyQc = new FamilyQualityControl();
-                qcStatus = new QualityControlStatus(QualityControlStatus.NONE, msg);
+                qcStatus = new QualityControlStatus(NONE, msg);
+                addError(new ToolException(msg));
+                logger.error(msg);
             } else {
                 try {
                     msg = "Computed successfully for family " + family.getId();
                     familyQc = objectReader.readValue(qcPath.toFile());
                     qcStatus = new QualityControlStatus(READY, msg);
+                    logger.info(msg);
                 } catch (IOException e) {
-                    msg = "Quality control error for family " + family.getId() + " : error parsing JSON file " + qcPath;
+                    msg = "Quality control error for family " + family.getId() + ": error parsing JSON file " + qcPath.getFileName();
                     familyQc = new FamilyQualityControl();
-                    qcStatus = new QualityControlStatus(QualityControlStatus.NONE, msg);
+                    qcStatus = new QualityControlStatus(NONE, msg);
+                    addError(e);
+                    logger.error(msg);
                 }
             }
-            logger.info(msg);
-            addInfo(msg);
 
-            // Update catalog: quality control and status
             try {
-                // First, update the family quality control computed
-                FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControl(familyQc);
+                // Update catalog: quality control and status
+                FamilyUpdateParams updateParams = new FamilyUpdateParams()
+                        .setQualityControl(familyQc)
+                        .setQualityControlStatus(qcStatus);
                 catalogManager.getFamilyManager().update(getStudy(), family.getId(), updateParams, null, token);
-
-                // Second, set status to READY
-                logger.info("Updating quality control status to {}", qcStatus);
             } catch (CatalogException e) {
-                // What to do here?
                 logger.error("Could not update quality control in OpenCGA catalog for family {}: {}", family.getId(), e.getMessage());
                 addError(e);
             }

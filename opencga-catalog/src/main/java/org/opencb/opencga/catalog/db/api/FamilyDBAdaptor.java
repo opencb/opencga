@@ -79,6 +79,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
 
         QUALITY_CONTROL("qualityControl", TEXT_ARRAY, ""),
+        QUALITY_CONTROL_STATUS("internal.qualityControlStatus", TEXT_ARRAY, ""),
 
         ROLES("roles", TEXT_ARRAY, ""),
         PEDIGREE_GRAPH("pedigreeGraph", OBJECT, ""),

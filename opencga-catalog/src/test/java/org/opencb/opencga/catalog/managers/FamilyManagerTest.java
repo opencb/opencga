@@ -39,6 +39,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyAclParams;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
@@ -58,6 +59,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.opencb.opencga.core.models.common.InternalStatus.READY;
 
 /**
  * Created by pfurio on 11/05/17.
@@ -1220,6 +1222,9 @@ public class FamilyManagerTest extends AbstractManagerTest {
                 Collections.singletonList(new ClinicalComment("author", "message", Collections.singletonList("tag"), "date")));
 
         FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControl(qualityControl);
+        String qcStatusId = READY;
+        String qcStatusMsg = "Successfully computed";
+        updateParams.setQualityControlStatus(new QualityControlStatus(qcStatusId, qcStatusMsg));
 
         DataResult<Family> updatedFamily = familyManager.update(studyFqn, originalFamily.first().getId(),
                 updateParams, QueryOptions.empty(), ownerToken);
@@ -1232,6 +1237,8 @@ public class FamilyManagerTest extends AbstractManagerTest {
         assertEquals("message", updatedFamily.first().getQualityControl().getComments().get(0).getMessage());
         assertEquals("tag", updatedFamily.first().getQualityControl().getComments().get(0).getTags().get(0));
         assertEquals("date", updatedFamily.first().getQualityControl().getComments().get(0).getDate());
+        assertEquals(qcStatusId, updatedFamily.first().getInternal().getQualityControlStatus().getId());
+        assertEquals(qcStatusMsg, updatedFamily.first().getInternal().getQualityControlStatus().getDescription());
     }
 
     // Test versioning

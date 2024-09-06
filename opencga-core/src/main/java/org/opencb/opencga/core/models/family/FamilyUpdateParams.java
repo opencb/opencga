@@ -20,11 +20,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,6 +42,7 @@ public class FamilyUpdateParams {
     private List<IndividualReferenceParam> members;
     private Integer expectedSize;
     private FamilyQualityControl qualityControl;
+    private QualityControlStatus qualityControlStatus;
     private StatusParams status;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
@@ -49,7 +52,8 @@ public class FamilyUpdateParams {
 
     public FamilyUpdateParams(String id, String name, String description, String creationDate, String modificationDate,
                               List<IndividualReferenceParam> members, Integer expectedSize, StatusParams status,
-                              FamilyQualityControl qualityControl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                              FamilyQualityControl qualityControl, QualityControlStatus qualityControlStatus,
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -59,6 +63,7 @@ public class FamilyUpdateParams {
         this.expectedSize = expectedSize;
         this.status = status;
         this.qualityControl = qualityControl;
+        this.qualityControlStatus = qualityControlStatus;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
@@ -69,6 +74,10 @@ public class FamilyUpdateParams {
         this.annotationSets = null;
 
         ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));
+        if (params.containsKey("qualityControlStatus")) {
+            params.put("internal.qualityControlStatus", params.get("qualityControlStatus"));
+            params.remove("qualityControlStatus");
+        }
 
         this.annotationSets = annotationSetList;
         if (this.annotationSets != null) {
@@ -99,6 +108,7 @@ public class FamilyUpdateParams {
         sb.append(", members=").append(members);
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", qualityControl=").append(qualityControl);
+        sb.append(", qualityControlStatus=").append(qualityControlStatus);
         sb.append(", status=").append(status);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
@@ -184,6 +194,15 @@ public class FamilyUpdateParams {
 
     public FamilyUpdateParams setQualityControl(FamilyQualityControl qualityControl) {
         this.qualityControl = qualityControl;
+        return this;
+    }
+
+    public QualityControlStatus getQualityControlStatus() {
+        return qualityControlStatus;
+    }
+
+    public FamilyUpdateParams setQualityControlStatus(QualityControlStatus qualityControlStatus) {
+        this.qualityControlStatus = qualityControlStatus;
         return this;
     }
 
