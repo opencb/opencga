@@ -90,8 +90,8 @@ public class ClinicalInterpretationSearch {
     @Field("statusId")
     private String statusId;
 
-    @Field("statusName")
-    private String statusName;
+    @Field("statusType")
+    private String statusType;
 
     @Field("statusDescription")
     private String statusDescription;
@@ -146,7 +146,7 @@ public class ClinicalInterpretationSearch {
         sb.append(", comments=").append(comments);
         sb.append(", locked=").append(locked);
         sb.append(", statusId='").append(statusId).append('\'');
-        sb.append(", statusName='").append(statusName).append('\'');
+        sb.append(", statusType='").append(statusType).append('\'');
         sb.append(", statusDescription='").append(statusDescription).append('\'');
         sb.append(", statusDate=").append(statusDate);
         sb.append(", creationDate=").append(creationDate);
@@ -330,12 +330,12 @@ public class ClinicalInterpretationSearch {
         return this;
     }
 
-    public String getStatusName() {
-        return statusName;
+    public String getStatusType() {
+        return statusType;
     }
 
-    public ClinicalInterpretationSearch setStatusName(String statusName) {
-        this.statusName = statusName;
+    public ClinicalInterpretationSearch setStatusType(String statusType) {
+        this.statusType = statusType;
         return this;
     }
 
