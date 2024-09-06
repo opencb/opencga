@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.StorageManager;
-import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTest;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
@@ -220,9 +219,9 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         catalogManagerExternalResource.getConfiguration().serialize(
                 new FileOutputStream(conf.resolve("configuration.yml").toFile()));
-        InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
-
-        storageConfiguration = StorageConfiguration.load(inputStream, "yml");
+        try (InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
+            storageConfiguration = StorageConfiguration.load(inputStream, "yml");
+        }
 
         storageConfiguration.getVariant().setDefaultEngine(storageEngine);
         if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
@@ -259,20 +258,22 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         // Mutational signatue analysis
         Path analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/mutational-signature")).toAbsolutePath();
-        inputStream = new FileInputStream("../opencga-app/app/analysis/mutational-signature/sv_clustering.R");
-        Files.copy(inputStream, analysisPath.resolve("sv_clustering.R"), StandardCopyOption.REPLACE_EXISTING);
+        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/mutational-signature/sv_clustering.R")) {
+            Files.copy(inputStream, analysisPath.resolve("sv_clustering.R"), StandardCopyOption.REPLACE_EXISTING);
+        }
 
         // Pedigree graph analysis
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
-        inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
-        Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
+        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R")) {
+            Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
+        }
 
         // Exomiser analysis files
         List<String> exomiserVersions = Arrays.asList("13.1", "14.0");
         List<String> exomiserFiles = Arrays.asList("application.properties", "exomiser-analysis.yml", "output.yml");
         for (String exomiserVersion : exomiserVersions) {
             analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser").resolve(exomiserVersion).toAbsolutePath());
-            Path exomiserPath = Paths.get(ExomiserInterpretationAnalysisTest.class.getClassLoader().getResource("exomiser").getPath());
+            Path exomiserPath = Paths.get("../opencga-app/app/analysis/exomiser");
             for (String exomiserFile : exomiserFiles) {
                 String resource = exomiserVersion + "/" + exomiserFile;
                 Files.copy(exomiserPath.resolve(resource).toAbsolutePath(), analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
