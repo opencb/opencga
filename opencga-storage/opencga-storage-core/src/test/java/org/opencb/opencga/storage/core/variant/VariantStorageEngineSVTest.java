@@ -8,7 +8,6 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.Query;
@@ -63,6 +62,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
         variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
         variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE_GRCH38);
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
+        variantStorageEngine.getOptions().put(VariantStorageOptions.NORMALIZATION_EXTENSIONS.key(), ParamConstants.NONE);
         variantStorageEngine.reloadCellbaseConfiguration();
 
         if (!loaded) {
@@ -72,9 +72,9 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
     }
 
     protected void loadFiles() throws Exception {
+
         input1 = getResourceUri("variant-test-sv.vcf");
         studyMetadata = new StudyMetadata(1, "s1");
-        variantStorageEngine.getOptions().append(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key(), "expression,clinical");
         pipelineResult1 = runDefaultETL(input1, variantStorageEngine, studyMetadata, new QueryOptions()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
@@ -169,12 +169,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
             actualStudyEntry.getFiles().get(0).setFileId("");
             assertEquals(expectedStudyEntry.getFiles().get(0), actualStudyEntry.getFiles().get(0));
 
-
-            if (actual.getAlternate().equals("<DEL:ME:ALU>") || actual.getType().equals(VariantType.BREAKEND)) {
-                System.err.println("WARN: Variant " + actual + (actual.getAnnotation() == null ? " without annotation" : " with annotation"));
-            } else {
-                assertNotNull(actual.toString(), actual.getAnnotation());
-            }
+            assertNotNull(actual.toString(), actual.getAnnotation());
         }
     }
 

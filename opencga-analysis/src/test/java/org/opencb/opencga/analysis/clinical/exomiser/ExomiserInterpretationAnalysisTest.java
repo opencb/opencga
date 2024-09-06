@@ -81,6 +81,7 @@ public class ExomiserInterpretationAnalysisTest  {
 //        String resourceVersion = "2109";
         String exomiserVersion = "14.0";
         String resourceVersion = "2402";
+        assertTrue(opencga.getOpencgaHome().resolve("analysis").resolve("exomiser").resolve(exomiserVersion).toFile().exists());
         assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + resourceVersion).toFile().exists());
 
         prepareExomiserData();
@@ -131,6 +132,7 @@ public class ExomiserInterpretationAnalysisTest  {
 //        String resourceVersion = "2109";
         String exomiserVersion = "14.0";
         String resourceVersion = "2402";
+        assertTrue(opencga.getOpencgaHome().resolve("analysis").resolve("exomiser").resolve(exomiserVersion).toFile().exists());
         assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + resourceVersion).toFile().exists());
 
         prepareExomiserData();
@@ -180,6 +182,7 @@ public class ExomiserInterpretationAnalysisTest  {
 //        String resourceVersion = "2109";
         String exomiserVersion = "14.0";
         String resourceVersion = "2402";
+        assertTrue(opencga.getOpencgaHome().resolve("analysis").resolve("exomiser").resolve(exomiserVersion).toFile().exists());
         assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + resourceVersion).toFile().exists());
 
         prepareExomiserData();

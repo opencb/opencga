@@ -8,7 +8,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
-import org.opencb.opencga.app.migrations.v3_2_0.VariantSetupMigration;
+import org.opencb.opencga.app.migrations.v3.v3_2_0.VariantSetupMigration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
@@ -32,6 +32,7 @@ public class MigrationsTest {
         String studyName = "test@1000G:phase1";
 
         VariantStorageMetadataManager metadataManager = opencga.getVariantStorageEngineByProject("test@1000G").getMetadataManager();
+        metadataManager.getAndUpdateProjectMetadata(new ObjectMap());
         StudyMetadata studyMetadata = metadataManager.createStudy(studyName);
         int fileId = metadataManager.registerFile(studyMetadata.getId(), "folder/file.vcf", Arrays.asList("s1", "s2"));
         metadataManager.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(fileId));

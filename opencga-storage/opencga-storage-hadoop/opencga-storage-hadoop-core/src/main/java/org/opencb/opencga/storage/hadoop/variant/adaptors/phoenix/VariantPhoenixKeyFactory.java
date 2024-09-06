@@ -146,7 +146,7 @@ public class VariantPhoenixKeyFactory {
      */
     public static byte[] generateVariantRowKey(String chrom, int start, Integer end, String ref, String alt, StructuralVariation sv) {
         chrom = Region.normalizeChromosome(chrom);
-        alt = buildSymbolicAlternate(ref, alt, end, sv);
+        alt = buildSymbolicAlternate(ref, alt, start, end, sv);
         int size = getSize(chrom, ref, alt);
 
         if (size > HConstants.MAX_ROW_LENGTH) {
@@ -201,11 +201,11 @@ public class VariantPhoenixKeyFactory {
     }
 
     public static String buildSymbolicAlternate(Variant v) {
-        return buildSymbolicAlternate(v.getReference(), v.getAlternate(), v.getEnd(), v.getSv());
+        return buildSymbolicAlternate(v.getReference(), v.getAlternate(), v.getStart(), v.getEnd(), v.getSv());
     }
 
     // visible for test
-    public static String buildSymbolicAlternate(String reference, String alternate, Integer end, StructuralVariation sv) {
+    public static String buildSymbolicAlternate(String reference, String alternate, int start, Integer end, StructuralVariation sv) {
         if (sv != null) {
             byte[] alternateBytes = alternate.getBytes();
             if (!Allele.wouldBeSymbolicAllele(alternateBytes) && emptyCiStartEnd(sv)) {
@@ -216,14 +216,16 @@ public class VariantPhoenixKeyFactory {
             if (StructuralVariantType.TANDEM_DUPLICATION.equals(sv.getType())) {
                 alternate = VariantBuilder.DUP_TANDEM_ALT;
             }
-            boolean bnd = Allele.wouldBeBreakpoint(alternateBytes);
+            // Ignore CIEND on variants without an actual END. This includes Breakends and INSERTIONS
+            // These variants are not expected to have CIEND. This is a redundant check, as the CIEND should be empty after normalization.
+            boolean ignoreCiend = Allele.wouldBeBreakpoint(alternateBytes) || end < start;
 
             alternate = alternate
                     + SV_ALTERNATE_SEPARATOR + end
                     + SV_ALTERNATE_SEPARATOR + (sv.getCiStartLeft() == null ? 0 : sv.getCiStartLeft())
                     + SV_ALTERNATE_SEPARATOR + (sv.getCiStartRight() == null ? 0 : sv.getCiStartRight())
-                    + SV_ALTERNATE_SEPARATOR + (bnd | sv.getCiEndLeft() == null ? 0 : sv.getCiEndLeft())
-                    + SV_ALTERNATE_SEPARATOR + (bnd | sv.getCiEndRight() == null ? 0 : sv.getCiEndRight());
+                    + SV_ALTERNATE_SEPARATOR + ((ignoreCiend || sv.getCiEndLeft() == null) ? 0 : sv.getCiEndLeft())
+                    + SV_ALTERNATE_SEPARATOR + ((ignoreCiend || sv.getCiEndRight() == null) ? 0 : sv.getCiEndRight());
 
             if (StringUtils.isNotEmpty(sv.getLeftSvInsSeq()) || StringUtils.isNotEmpty(sv.getRightSvInsSeq())) {
                 alternate = alternate

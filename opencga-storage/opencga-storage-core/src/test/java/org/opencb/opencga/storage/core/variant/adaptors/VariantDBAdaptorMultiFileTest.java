@@ -10,6 +10,7 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -78,6 +79,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         VariantStorageEngine storageEngine = getVariantStorageEngine();
         ObjectMap options = getOptions();
         options.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
+        options.put(VariantStorageOptions.NORMALIZATION_EXTENSIONS.key(), ParamConstants.NONE);
 
         int maxStudies = 2;
         int studyId = 1;
