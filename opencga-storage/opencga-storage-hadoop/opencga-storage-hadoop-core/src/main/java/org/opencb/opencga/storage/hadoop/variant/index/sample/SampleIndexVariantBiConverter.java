@@ -688,7 +688,7 @@ public class SampleIndexVariantBiConverter {
     }
 
     protected String getAlternate(Variant v) {
-        return VariantPhoenixKeyFactory.buildSymbolicAlternate(v.getReference(), v.getAlternate(), v.getEnd(), v.getSv());
+        return VariantPhoenixKeyFactory.buildSymbolicAlternate(v);
     }
 
     /**
