@@ -11,7 +11,7 @@ from utils import create_output_dir
 LOGGER = logging.getLogger('variant_qc_logger')
 
 class IndividualQCExecutor:
-    def __init__(self, vcf_file, info_file, bam_file, config, output_parent_dir, sample_ids, id_):
+    def __init__(self, vcf_file, info_file, bam_file, config, output_parent_dir, job_id, sample_ids, id_):
         """Create output dir
 
         :param str vcf_file: VCF input file path
@@ -20,6 +20,7 @@ class IndividualQCExecutor:
         :param str config: Configuration file path
         :param str output_parent_dir: Output directory path for the id_ (e.g. /path/to/outdir/id1)
         :param list sample_ids: Sample IDs from the VCF file
+        :param str job_id: ID from the executed job
         :param str id_: ID from the info JSON file
         """
         self.vcf_file = vcf_file
@@ -27,6 +28,7 @@ class IndividualQCExecutor:
         self.bam_file = bam_file
         self.config = config
         self.output_parent_dir = output_parent_dir
+        self.job_id = job_id
         self.sample_ids = sample_ids
         self.id_ = id_
 
