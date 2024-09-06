@@ -19,7 +19,6 @@
     </modules>
 
     <properties>
-
         <opencga.version>3.2.1-SNAPSHOT</opencga.version>
         <pyopencga.version>2.2.1_dev</pyopencga.version>
         <opencgar.version>2.2.1_dev</opencgar.version>
