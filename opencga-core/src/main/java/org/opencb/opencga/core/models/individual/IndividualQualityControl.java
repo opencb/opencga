@@ -50,13 +50,13 @@ public class IndividualQualityControl {
      * File IDs related to the quality control
      */
     @DataField(id = "files", indexed = true,
-            description = FieldConstants.QUALITY_CONTROL_FILES_DESCRIPTION)
+            description = FieldConstants.QC_FILES_DESCRIPTION)
     private List<String> files;
     /**
      * Comments related to the quality control
      */
     @DataField(id = "author", indexed = true,
-            description = FieldConstants.QUALITY_CONTROL_COMMENTS_DESCRIPTION)
+            description = FieldConstants.QC_COMMENTS_DESCRIPTION)
     private List<ClinicalComment> comments;
 
     public IndividualQualityControl() {

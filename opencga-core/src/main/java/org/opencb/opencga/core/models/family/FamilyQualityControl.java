@@ -12,15 +12,15 @@ import java.util.List;
 public class FamilyQualityControl implements Serializable {
 
     @DataField(id = "relatedness",
-            description = FieldConstants.FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION)
+            description = FieldConstants.FAMILY_QUALITY_CONTROL_RELATEDNESS_REPORT_DESCRIPTION)
     private List<RelatednessReport> relatedness;
 
     @DataField(id = "files",
-            description = FieldConstants.QUALITY_CONTROL_FILES_DESCRIPTION)
+            description = FieldConstants.QC_FILES_DESCRIPTION)
     private List<String> files;
 
     @DataField(id = "comments",
-            description = FieldConstants.QUALITY_CONTROL_COMMENTS_DESCRIPTION)
+            description = FieldConstants.QC_COMMENTS_DESCRIPTION)
     private List<ClinicalComment> comments;
 
     public FamilyQualityControl() {

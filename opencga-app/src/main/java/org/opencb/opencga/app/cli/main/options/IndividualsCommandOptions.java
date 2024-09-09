@@ -659,7 +659,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
-        @Parameter(names = {"--quality-control-files"}, description = "File IDs related to the quality control.", required = false, arity = 1)
+        @Parameter(names = {"--quality-control-files"}, description = "File IDs related to the quality control", required = false, arity = 1)
         public String qualityControlFiles;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)

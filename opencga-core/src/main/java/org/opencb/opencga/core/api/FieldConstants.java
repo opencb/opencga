@@ -4,7 +4,6 @@ import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
-import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 
 public class FieldConstants {
 
@@ -34,9 +33,6 @@ public class FieldConstants {
             + " changed at the moment.";
     public static final String GENERIC_STATUS_DESCRIPTION = "Object status.";
     public static final String GENERIC_STATS = "Stats of the object.";
-    //QualityControl
-    public static final String QUALITY_CONTROL_FILES_DESCRIPTION = "File IDs related to the quality control.";
-    public static final String QUALITY_CONTROL_COMMENTS_DESCRIPTION = "Comments related to the quality control.";
 
     // Organization
     public static final String ORGANIZATION_ID_DESCRIPTION = "Organization unique identifier.";
@@ -185,6 +181,8 @@ public class FieldConstants {
     // Quality control
     public static final String QC_SKIP_INDEX_DESCRIPTION = "Do not save the computed quality control in catalog";
     public static final String QC_OVERWRITE_DESCRIPTION = "Overwrite quality control in catalog";
+    public static final String QC_FILES_DESCRIPTION = "File IDs related to the quality control";
+    public static final String QC_COMMENTS_DESCRIPTION = "Comments related to the quality control";
 
     // Family quality control
     public static final String FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION = "List of family IDs";
@@ -193,7 +191,12 @@ public class FieldConstants {
     @Deprecated
     public static final String FAMILY_QC_RELATEDNESS_MAF_DESCRIPTION = "Minor allele frequence (MAF) is used to filter variants before"
             + " computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G + ":CEU>0.35 or cohort:ALL>0.05";
-    public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION = "Reports of family relationship.";
+    public static final String FAMILY_QC_RELATEDNESS_DESCRIPTION = "Parameters for relatedness analysis";
+    public static final String FAMILY_QC_RELATEDNESS_POP_FREQ_FILE_DESCRIPTION = "Population frequencies file ID for relatedness analysis";
+    public static final String FAMILY_QC_RELATEDNESS_POP_EXCLUDE_VAR_FILE_DESCRIPTION = "Population exclude variants file ID for"
+    + " relatedness analysis";
+    public static final String FAMILY_QC_RELATEDNESS_THRESHOLD_FILE_DESCRIPTION = "Threshold file ID for relatedness analysis";
+    public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_REPORT_DESCRIPTION = "Relatedness report for family QC";
 
     // Individual quality control
     public static final String INFERRED_SEX_ID = "inferred-sex";

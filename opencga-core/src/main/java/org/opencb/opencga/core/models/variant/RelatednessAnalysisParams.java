@@ -20,6 +20,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+@Deprecated
 public class RelatednessAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Relatedness analysis params";
     private List<String> individuals;

@@ -821,6 +821,15 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequence (MAF) is used to filter variants before computing relatedness, e.g.: 1000G:CEU>0.35 or cohort:ALL>0.05", required = false, arity = 1)
         public String relatednessMaf;
     
+        @Parameter(names = {"--relatedness-params-population-frequency-file"}, description = "Population frequencies file ID for relatedness analysis", required = false, arity = 1)
+        public String relatednessParamsPopulationFrequencyFile;
+    
+        @Parameter(names = {"--relatedness-params-population-exclude-variants-file"}, description = "Population exclude variants file ID for relatedness analysis", required = false, arity = 1)
+        public String relatednessParamsPopulationExcludeVariantsFile;
+    
+        @Parameter(names = {"--relatedness-params-thresholds-file"}, description = "Threshold file ID for relatedness analysis", required = false, arity = 1)
+        public String relatednessParamsThresholdsFile;
+    
         @Parameter(names = {"--skip-index"}, description = "Do not save the computed quality control in catalog", required = false, arity = 1)
         public Boolean skipIndex;
     

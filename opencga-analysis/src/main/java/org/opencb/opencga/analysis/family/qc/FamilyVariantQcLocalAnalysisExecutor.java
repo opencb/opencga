@@ -89,7 +89,7 @@ public class FamilyVariantQcLocalAnalysisExecutor extends FamilyVariantQcAnalysi
             // Execute Pythong script in docker
             String dockerImage = "opencb/opencga-ext-tools:" + GitRepositoryState.getInstance().getBuildVersion();
 
-            //DockerUtils.run(dockerImage, inputBindings, outputBinding, params, null);
+            DockerUtils.run(dockerImage, inputBindings, outputBinding, params, null);
         } catch (IOException e) {
             throw new ToolExecutorException(e);
         }

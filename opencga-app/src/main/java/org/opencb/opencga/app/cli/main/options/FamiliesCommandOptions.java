@@ -450,7 +450,7 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--expected-size"}, description = "The body web service expectedSize parameter", required = false, arity = 1)
         public Integer expectedSize;
     
-        @Parameter(names = {"--quality-control-files"}, description = "File IDs related to the quality control.", required = false, arity = 1)
+        @Parameter(names = {"--quality-control-files"}, description = "File IDs related to the quality control", required = false, arity = 1)
         public String qualityControlFiles;
     
         @Parameter(names = {"--quality-control-status-id"}, description = "The body web service id parameter", required = false, arity = 1)

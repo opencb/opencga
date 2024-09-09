@@ -34,6 +34,7 @@ import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
 import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
+import org.opencb.opencga.core.models.variant.FamilyQcRelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.GatkWrapperParams;
 import org.opencb.opencga.core.models.variant.GenomePlotAnalysisParams;
 import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
@@ -623,6 +624,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
             putNestedIfNotEmpty(beanParams, "relatednessMethod",commandOptions.relatednessMethod, true);
             putNestedIfNotEmpty(beanParams, "relatednessMaf",commandOptions.relatednessMaf, true);
+            putNestedIfNotEmpty(beanParams, "relatednessParams.populationFrequencyFile",commandOptions.relatednessParamsPopulationFrequencyFile, true);
+            putNestedIfNotEmpty(beanParams, "relatednessParams.populationExcludeVariantsFile",commandOptions.relatednessParamsPopulationExcludeVariantsFile, true);
+            putNestedIfNotEmpty(beanParams, "relatednessParams.thresholdsFile",commandOptions.relatednessParamsThresholdsFile, true);
             putNestedIfNotNull(beanParams, "skipIndex",commandOptions.skipIndex, true);
             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);

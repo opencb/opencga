@@ -4,8 +4,6 @@ import os
 import logging
 import gzip
 import json
-import subprocess
-#import pandas
 
 from utils import create_output_dir, execute_bash_command
 
@@ -184,12 +182,12 @@ class FamilyQCExecutor:
         # Return relatedness json data model with method info filled in.
         return relatedness_json
 
-    def relatedness_plink(self,filtered_vcf_fpath,pop_freq_fpath,pop_exclude_var_fpath,outdir_fpath,method="PLINK/IBD"):
+    def relatedness_plink(self,filtered_vcf_fpath,pop_freq_fpath,pop_exclude_var_fpath,outdir_fpath,plink_path,method="PLINK/IBD"):
         LOGGER.info('Method: {}'.format(method))
         plink_outdir_fpath = create_output_dir(path_elements=[str(outdir_fpath),'plink_IBD'])
         sex_info_fpath, parent_offspring_fpath = self.generate_files_for_plink_fam_file(outdir_fpath=plink_outdir_fpath)
-
-        plink_path = "path/to/plink"
+        # Preparing PLINK commands
+        plink_path = str(plink_path)
         files_prefix = self.id_ + "_plink_relatedness_results"
         plink_output_folder_files_prefix = os.path.join(plink_outdir_fpath,files_prefix)
         cmd_plink_files = ' '.join([plink_path,
@@ -248,8 +246,18 @@ class FamilyQCExecutor:
     def relatedness_inference(self,relatedness_thresholds_fpath,method,plink_genome_fpath):
         # Reading relatedness thresholds file (.tsv)
         LOGGER.debug('Getting relatedness thresholds from file: "{}"'.format(relatedness_thresholds_fpath))
-        relatedness_thresholds_fhand = pandas.read_csv(str(relatedness_thresholds_fpath),header=0,sep='\t').set_index('relationship')
-        relationship_groups_thresholds_dict = relatedness_thresholds_fhand.to_dict("index")
+        relatedness_thresholds_fhand = open(str(relatedness_thresholds_fpath))
+        relationship_groups_thresholds_dict = {}
+        for index,line in enumerate(relatedness_thresholds_fhand):
+            relatedness_thresholds_row_values = line.strip().split()
+            if index == 0:
+                relatedness_thresholds_file_header = relatedness_thresholds_row_values
+                continue
+            for column,value in enumerate(relatedness_thresholds_row_values):
+                if relatedness_thresholds_file_header[column] == 'relationship':
+                    relationship_groups_thresholds_dict[value] == {}
+                else:
+                    relationship_groups_thresholds_dict[relatedness_thresholds_file_header[column]] == value
 
         # Reading plink genome file (.genome)
         LOGGER.debug('Getting PLINK results from file: "{}"'.format(plink_genome_fpath))
@@ -260,7 +268,6 @@ class FamilyQCExecutor:
         for index,line in enumerate(input_genome_file_fhand):
             genome_file_row_values = line.strip().split()
             if index == 0:
-                genome_file_header = genome_file_row_values
                 continue
             # Getting values from PLINK .genome file block
             score = relatedness_results["scores"][0]
