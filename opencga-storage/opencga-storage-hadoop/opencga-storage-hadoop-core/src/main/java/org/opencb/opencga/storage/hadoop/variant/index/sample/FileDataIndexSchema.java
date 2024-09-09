@@ -21,11 +21,11 @@ public class FileDataIndexSchema extends DataSchema {
 
     private final DataFieldWithContext<Variant, OriginalCall> originalCallField;
     private final DataFieldWithContext<Variant, List<AlternateCoordinate>> secondaryAlternatesField;
-    private boolean includeOriginalCall = true;
-    private boolean includeSecondaryAlternates = true;
+    private final SampleIndexConfiguration.FileDataConfiguration fileDataConfiguration;
 
-    public FileDataIndexSchema(SampleIndexConfiguration.FileIndexConfiguration fileIndexConfiguration) {
-        if (includeOriginalCall) {
+    public FileDataIndexSchema(SampleIndexConfiguration.FileDataConfiguration fileDataConfiguration) {
+        this.fileDataConfiguration = fileDataConfiguration;
+        if (fileDataConfiguration.isIncludeOriginalCall()) {
             originalCallField = new VarBinaryDataField(
                     new IndexFieldConfiguration(IndexFieldConfiguration.Source.FILE, "ORIGINAL_CALL", null))
                     .fromWithContext(new VariantOriginalCallToBytesConverter());
@@ -33,7 +33,7 @@ public class FileDataIndexSchema extends DataSchema {
         } else {
             originalCallField = null;
         }
-        if (includeSecondaryAlternates) {
+        if (fileDataConfiguration.isIncludeOriginalCall()) {
             secondaryAlternatesField = new VarBinaryDataField(
                     new IndexFieldConfiguration(IndexFieldConfiguration.Source.STUDY, "SECONDARY_ALTERNATES", null))
                     .fromWithContext(new AlternateCoordinateToBytesConverter());
@@ -44,7 +44,7 @@ public class FileDataIndexSchema extends DataSchema {
     }
 
     public boolean isIncludeOriginalCall() {
-        return includeOriginalCall;
+        return fileDataConfiguration.isIncludeOriginalCall();
     }
 
     public DataFieldWithContext<Variant, OriginalCall> getOriginalCallField() {
@@ -52,15 +52,11 @@ public class FileDataIndexSchema extends DataSchema {
     }
 
     public boolean isIncludeSecondaryAlternates() {
-        return includeSecondaryAlternates;
+        return fileDataConfiguration.isIncludeSecondaryAlternates();
     }
 
     public DataFieldWithContext<Variant, List<AlternateCoordinate>> getSecondaryAlternatesField() {
         return secondaryAlternatesField;
-    }
-
-    public void writeOriginalCall(Variant variant, OriginalCall call, ByteBuffer bb) {
-        getOriginalCallField().write(variant, call, bb);
     }
 
     public OriginalCall readOriginalCall(ByteBuffer fileDataByteBuffer, Variant variant) {

@@ -144,7 +144,7 @@ public final class SampleIndexSchema {
         this.version = version;
         this.configuration = configuration;
         fileIndex = new FileIndexSchema(configuration.getFileIndexConfiguration());
-        fileData = new FileDataIndexSchema(configuration.getFileIndexConfiguration());
+        fileData = new FileDataIndexSchema(configuration.getFileDataConfiguration());
 //        annotationSummaryIndexSchema = new AnnotationSummaryIndexSchema();
         ctIndex = new ConsequenceTypeIndexSchema(configuration.getAnnotationIndexConfiguration().getConsequenceType());
         biotypeIndex = new BiotypeIndexSchema(configuration.getAnnotationIndexConfiguration().getBiotype());
@@ -218,6 +218,7 @@ public final class SampleIndexSchema {
         sb.append("version=").append(version);
         sb.append(", configuration=").append(configuration);
         sb.append(", fileIndex=").append(fileIndex);
+        sb.append(", fileData=").append(fileData);
         sb.append(", popFreqIndex=").append(popFreqIndex);
         sb.append(", ctIndex=").append(ctIndex);
         sb.append(", biotypeIndex=").append(biotypeIndex);

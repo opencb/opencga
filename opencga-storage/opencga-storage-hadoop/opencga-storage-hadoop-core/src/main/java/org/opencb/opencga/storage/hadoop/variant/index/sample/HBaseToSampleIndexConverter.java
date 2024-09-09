@@ -165,7 +165,12 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                 BitBuffer fileIndexEntry;
                 do {
                     fileIndexEntry = fileIndexSchema.readEntry(fileIndexStream);
-                    ByteBuffer fileDataEntry = fileDataSchema.readNextEntry(fileDataBuffer);
+                    ByteBuffer fileDataEntry;
+                    if (fileDataBuffer == null) {
+                        fileDataEntry = null;
+                    } else {
+                        fileDataEntry = fileDataSchema.readNextEntry(fileDataBuffer);
+                    }
                     values.add(new SampleVariantIndexEntry(variant, fileIndexEntry, fileDataEntry));
                 } while (this.fileIndexSchema.isMultiFile(fileIndexEntry));
             }

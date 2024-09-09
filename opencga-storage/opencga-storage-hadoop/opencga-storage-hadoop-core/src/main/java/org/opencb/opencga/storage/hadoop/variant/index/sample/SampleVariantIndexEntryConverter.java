@@ -140,9 +140,12 @@ public class SampleVariantIndexEntryConverter {
         if (fileDataSchema.isIncludeSecondaryAlternates()) {
             fileDataSize += fileDataSchema.getSecondaryAlternatesField().getByteLength(variant, secondaryAlternates);
         }
+        if (fileDataSize == 0) {
+            return null;
+        }
         ByteBuffer bb = ByteBuffer.allocate(fileDataSize);
         if (fileDataSchema.isIncludeOriginalCall()) {
-            fileDataSchema.writeOriginalCall(variant, call, bb);
+            fileDataSchema.getOriginalCallField().write(variant, call, bb);
         }
         if (fileDataSchema.isIncludeSecondaryAlternates()) {
             fileDataSchema.getSecondaryAlternatesField().write(variant, secondaryAlternates, bb);

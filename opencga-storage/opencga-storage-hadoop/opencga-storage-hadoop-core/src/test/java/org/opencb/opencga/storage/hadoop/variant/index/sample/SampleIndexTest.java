@@ -158,8 +158,12 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
 
-        versioned = metadataManager.addSampleIndexConfiguration(STUDY_NAME_2, SampleIndexConfiguration.defaultConfiguration()
-                .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.SAMPLE, "DS", new double[]{0, 1, 2})), true);
+        SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration()
+                .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.SAMPLE, "DS", new double[]{0, 1, 2}));
+        configuration.getFileDataConfiguration()
+                .setIncludeOriginalCall(null)
+                .setIncludeSecondaryAlternates(null);
+        versioned = metadataManager.addSampleIndexConfiguration(STUDY_NAME_2, configuration, true);
         assertEquals(2, versioned.getVersion());
         assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
 
@@ -227,7 +231,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         // Study 1 - extra sample index configuration, not staging, only one sample in that configuration
 
-        SampleIndexConfiguration configuration = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest().getConfiguration();
+        configuration = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest().getConfiguration();
         // Don't modify the configuration.
         versioned = engine.getMetadataManager().addSampleIndexConfiguration(STUDY_NAME, configuration, true);
         assertEquals(2, versioned.getVersion());
@@ -250,11 +254,17 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         versioned = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest(false);
         assertEquals(2, versioned.getVersion());
         assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE, versioned.getStatus());
+        // No fileData fields should be null
+        assertNotNull(versioned.getConfiguration().getFileDataConfiguration().getIncludeOriginalCall());
+        assertNotNull(versioned.getConfiguration().getFileDataConfiguration().getIncludeSecondaryAlternates());
 
         // Study 2 - Latest should be active
         versioned = metadataManager.getStudyMetadata(STUDY_NAME_2).getSampleIndexConfiguration(versioned.getVersion());
         assertEquals(2, versioned.getVersion());
         assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE, versioned.getStatus());
+        // Both fileData fields should be null
+        assertNull(versioned.getConfiguration().getFileDataConfiguration().getIncludeOriginalCall());
+        assertNull(versioned.getConfiguration().getFileDataConfiguration().getIncludeSecondaryAlternates());
 
         // Study 3 - Latest should be active
         versioned = metadataManager.getStudyMetadata(STUDY_NAME_3).getSampleIndexConfiguration(versioned.getVersion());

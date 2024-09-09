@@ -181,10 +181,12 @@ public class SampleIndexEntryPutBuilder {
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toFileIndexColumn(gt), fileIndexBuffer.getBuffer());
             int position = fileDataIndexBuffer.position();
-            fileDataIndexBuffer.rewind();
-            fileDataIndexBuffer.limit(position);
-            put.addColumn(COLUMN_FAMILY, ByteBuffer.wrap(SampleIndexSchema.toFileDataColumn(gt)), put.getTimestamp(),
-                    fileDataIndexBuffer);
+            if (position > 0) {
+                fileDataIndexBuffer.rewind();
+                fileDataIndexBuffer.limit(position);
+                put.addColumn(COLUMN_FAMILY, ByteBuffer.wrap(SampleIndexSchema.toFileDataColumn(gt)), put.getTimestamp(),
+                        fileDataIndexBuffer);
+            }
         }
     }
 
@@ -404,7 +406,9 @@ public class SampleIndexEntryPutBuilder {
                 fileIndexBuffer.setBitBuffer(gtEntry.getFilesIndex().get(0), offset);
                 offset += fileIndexSchema.getBitsLength();
                 prev = gtEntry;
-                fileDataIndexSchema.writeEntry(fileDataBuffer, gtEntry.getFileData().get(0));
+                if (!gtEntry.getFileData().isEmpty()) {
+                    fileDataIndexSchema.writeEntry(fileDataBuffer, gtEntry.getFileData().get(0));
+                }
             }
 
             // Do not write the whole buffer, but only the corresponding to the processed entries.
@@ -422,8 +426,10 @@ public class SampleIndexEntryPutBuilder {
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toGenotypeColumn(gt), variantsBuffer);
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variantsCount));
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toFileIndexColumn(gt), fileIndexBuffer.toByteArray());
-            put.addColumn(COLUMN_FAMILY, ByteBuffer.wrap(SampleIndexSchema.toFileDataColumn(gt)),
-                    put.getTimestamp(), fileDataBuffer.toByteByffer());
+            if (fileDataBuffer.size() > 0) {
+                put.addColumn(COLUMN_FAMILY, ByteBuffer.wrap(SampleIndexSchema.toFileDataColumn(gt)),
+                        put.getTimestamp(), fileDataBuffer.toByteByffer());
+            }
         }
     }
 

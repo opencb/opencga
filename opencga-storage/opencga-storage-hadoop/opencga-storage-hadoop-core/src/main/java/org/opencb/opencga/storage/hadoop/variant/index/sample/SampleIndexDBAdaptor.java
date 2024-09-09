@@ -636,6 +636,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         scan.setCaching(hBaseManager.getConf().getInt("hbase.client.scanner.caching", 100));
 
         logger.info("---------");
+        logger.info("Study = \"" + query.getStudy() + "\" (id=" + studyId + ")");
         logger.info("Sample = \"" + query.getSample() + "\" (id=" + sampleId + ") , schema version = " + query.getSchema().getVersion());
         logger.info("Table = " + getSampleIndexTableName(query));
         printScan(scan);
