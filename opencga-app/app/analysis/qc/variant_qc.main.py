@@ -39,8 +39,6 @@ def get_parser():
                         help='configuration file path')
     parser.add_argument('-o', '--output-dir', dest='output_dir',
                         help='output directory path')
-    parser.add_argument('--job-id', dest='job_id',
-                        help='job ID')
 
     parser.add_argument('-l', '--log-level', dest='log_level',
                         default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
@@ -196,7 +194,6 @@ def main():
     qc_type = args.qc_type
     config = args.config
     output_dir = os.path.realpath(os.path.expanduser(args.output_dir))
-    job_id = args.job_id
 
     # Setting up logger
     logger = create_logger(args.log_level, output_dir)
@@ -228,7 +225,6 @@ def main():
             bam_file=bam_files[i],
             config=config,
             output_parent_dir=qc_outdir_fpath,
-            job_id=job_id,
             sample_ids=sample_ids,
             id_=id_
         ).run()

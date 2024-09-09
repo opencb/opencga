@@ -19,7 +19,6 @@ class SampleQCExecutor:
         :param str config: Configuration file path
         :param str output_parent_dir: Output directory path for the id_ (e.g. /path/to/outdir/id1)
         :param list sample_ids: Sample IDs from the VCF file
-        :param str job_id: ID from the executed job
         :param str id_: ID from the info JSON file
         """
         self.vcf_file = vcf_file
@@ -27,7 +26,6 @@ class SampleQCExecutor:
         self.bam_file = bam_file
         self.config = config
         self.output_parent_dir = output_parent_dir
-        self.job_id = job_id
         self.sample_ids = sample_ids
         self.id_ = id_
 
@@ -81,9 +79,8 @@ if __name__ == '__main__':
     bam_file = ""
     config = ""
     output_parent_dir = "/tmp/qc_tests/"
-    job_id = ""
     sample_ids = []
     id_ = ""
     se = SampleQCExecutor(vcf_file=vcf_file, info_file=info_file, bam_file=bam_file, config=config,
-                          output_parent_dir=output_parent_dir, job_id=job_id, sample_ids=sample_ids, id_=id_)
+                          output_parent_dir=output_parent_dir, sample_ids=sample_ids, id_=id_)
     sys.exit(se.run())
