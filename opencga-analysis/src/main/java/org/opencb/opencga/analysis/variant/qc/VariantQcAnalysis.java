@@ -16,29 +16,52 @@
 
 package org.opencb.opencga.analysis.variant.qc;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.models.variant.QcRelatednessAnalysisParams;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.models.common.InternalStatus.READY;
+import static org.opencb.opencga.core.models.common.QualityControlStatus.COMPUTING;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 
 public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
+
+    protected static final String RELATEDNESS_POP_FREQ_FILENAME = "autosomes_1000G_QC_prune_in.frq";
+    protected static final String RELATEDNESS_POP_EXCLUDE_VAR_FILENAME = "autosomes_1000G_QC.prune.out";
+    protected static final String RELATEDNESS_THRESHOLDS_FILENAME = "relatedness_thresholds.tsv";
+
+    protected static final String RELATEDNESS_POP_FREQ_FILE_MSG = "Population frequency file";
+    protected static final String RELATEDNESS_POP_EXCLUDE_VAR_FILE_MSG = "Population exclude variant file";
+    protected static final String RELATEDNESS_THRESHOLDS_FILE_MSG = "Thresholds file";
 
     @Override
     protected void check() throws Exception {
@@ -96,6 +119,53 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
+    protected static void checkRelatednessParameters(QcRelatednessAnalysisParams relatednessParams, String studyId,
+                                                     CatalogManager catalogManager, String token) throws ToolException {
+        if (StringUtils.isNotEmpty(relatednessParams.getPopulationFrequencyFile())) {
+            checkFileParameter(relatednessParams.getPopulationFrequencyFile(), RELATEDNESS_POP_FREQ_FILE_MSG, studyId, catalogManager,
+                    token);
+        }
+        if (StringUtils.isNotEmpty(relatednessParams.getPopulationExcludeVariantsFile())) {
+            checkFileParameter(relatednessParams.getPopulationExcludeVariantsFile(), RELATEDNESS_POP_EXCLUDE_VAR_FILE_MSG, studyId,
+                    catalogManager, token);
+        }
+        if (StringUtils.isNotEmpty(relatednessParams.getThresholdsFile())) {
+            checkFileParameter(relatednessParams.getThresholdsFile(), RELATEDNESS_THRESHOLDS_FILE_MSG, studyId, catalogManager, token);
+        }
+    }
+
+    protected void updateRelatednessFilePaths(QcRelatednessAnalysisParams relatednessParams) throws ToolException {
+        // Get relatedness population frequency
+        if (relatednessParams != null && StringUtils.isNotEmpty(relatednessParams.getPopulationFrequencyFile())) {
+            Path path = checkFileParameter(relatednessParams.getPopulationFrequencyFile(), RELATEDNESS_POP_FREQ_FILE_MSG, getStudy(),
+                    catalogManager, getToken());
+            relatednessParams.setPopulationFrequencyFile(path.toAbsolutePath().toString());
+        } else {
+            Path path = getExternalFilePath(RelatednessAnalysis.ID, RELATEDNESS_POP_FREQ_FILENAME);
+            relatednessParams.setPopulationFrequencyFile(path.toAbsolutePath().toString());
+        }
+
+        // Get relatedness population exclude variant
+        if (relatednessParams != null && StringUtils.isNotEmpty(relatednessParams.getPopulationExcludeVariantsFile())) {
+            Path path = checkFileParameter(relatednessParams.getPopulationExcludeVariantsFile(), RELATEDNESS_POP_EXCLUDE_VAR_FILE_MSG,
+                    getStudy(), catalogManager, getToken());
+            relatednessParams.setPopulationExcludeVariantsFile(path.toAbsolutePath().toString());
+        } else {
+            Path path = getExternalFilePath(RelatednessAnalysis.ID, RELATEDNESS_POP_EXCLUDE_VAR_FILENAME);
+            relatednessParams.setPopulationExcludeVariantsFile(path.toAbsolutePath().toString());
+        }
+
+        // Get relatedness thresholds
+        if (relatednessParams != null && StringUtils.isNotEmpty(relatednessParams.getPopulationFrequencyFile())) {
+            Path path = checkFileParameter(relatednessParams.getThresholdsFile(), RELATEDNESS_THRESHOLDS_FILE_MSG, getStudy(),
+                    catalogManager, getToken());
+            relatednessParams.setThresholdsFile(path.toAbsolutePath().toString());
+        } else {
+            Path path = getExternalFilePath(RelatednessAnalysis.ID, RELATEDNESS_THRESHOLDS_FILENAME);
+            relatednessParams.setThresholdsFile(path.toAbsolutePath().toString());
+        }
+    }
+
     protected static Path checkFileParameter(String fileId, String msg, String studyId, CatalogManager catalogManager, String token)
             throws ToolException {
         if (StringUtils.isEmpty(fileId)) {
@@ -112,6 +182,38 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolExecutorException(msg + " '" + path + "' does not exist (file ID: " + fileId + ")");
         }
         return path;
+    }
+
+    protected static List<String> getNoSomaticSampleIds(Family family, String studyId, CatalogManager catalogManager, String token)
+            throws CatalogException {
+        // Get list of individual IDs
+        List<String> individualIds = family.getMembers().stream().map(m -> m.getId()).collect(Collectors.toList());
+
+        Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualIds);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "samples");
+
+        List<String> sampleIds = new ArrayList<>();
+        OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(studyId, query, queryOptions, token);
+        for (Individual individual : individualResult.getResults()) {
+            if (CollectionUtils.isNotEmpty(individual.getSamples())) {
+                sampleIds.addAll(getNoSomaticSampleIds(individual));
+            }
+        }
+        return sampleIds;
+    }
+
+    protected static List<String> getNoSomaticSampleIds(Individual individual) {
+        List<String> sampleIds = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(individual.getSamples())) {
+            for (Sample sample : individual.getSamples()) {
+                if (!sample.isSomatic()) {
+                    // We take the first no somatic sample for each individual
+                    sampleIds.add(sample.getId());
+                    break;
+                }
+            }
+        }
+        return sampleIds;
     }
 
     protected Path getExternalFilePath(String analysisId, String resourceName) throws ToolException {
@@ -155,5 +257,18 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
             }
         }
         return resourcePath.resolve(resourceName);
+    }
+
+    protected boolean performQualityControl(QualityControlStatus qcStatus, Boolean overwrite) {
+        boolean performQc;
+        if (Boolean.TRUE.equals(overwrite)) {
+            performQc = true;
+        } else if (qcStatus != null) {
+            String statusId = qcStatus.getId();
+            performQc = !(statusId.equals(COMPUTING) || statusId.equals(READY));
+        } else {
+            performQc = true;
+        }
+        return performQc;
     }
 }

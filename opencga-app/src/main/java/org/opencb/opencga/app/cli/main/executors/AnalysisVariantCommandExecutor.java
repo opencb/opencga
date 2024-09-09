@@ -34,7 +34,6 @@ import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
 import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.FamilyQcRelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.GatkWrapperParams;
 import org.opencb.opencga.core.models.variant.GenomePlotAnalysisParams;
 import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
@@ -45,6 +44,7 @@ import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
+import org.opencb.opencga.core.models.variant.QcRelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.RvtestsWrapperParams;
 import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
@@ -944,9 +944,16 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), IndividualQcAnalysisParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "individuals",commandOptions.individuals, true);
             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotEmpty(beanParams, "relatednessParams.populationFrequencyFile",commandOptions.relatednessParamsPopulationFrequencyFile, true);
+            putNestedIfNotEmpty(beanParams, "relatednessParams.populationExcludeVariantsFile",commandOptions.relatednessParamsPopulationExcludeVariantsFile, true);
+            putNestedIfNotEmpty(beanParams, "relatednessParams.thresholdsFile",commandOptions.relatednessParamsThresholdsFile, true);
             putNestedIfNotEmpty(beanParams, "inferredSexMethod",commandOptions.inferredSexMethod, true);
+            putNestedIfNotNull(beanParams, "skip",commandOptions.skip, true);
+            putNestedIfNotNull(beanParams, "skipIndex",commandOptions.skipIndex, true);
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
             individualQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()

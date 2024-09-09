@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
+import org.opencb.opencga.analysis.utils.VariantQcAnalysisExecutorUtils;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -50,48 +51,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.analysis.utils.VariantQcAnalysisExecutorUtils.CONFIG_FILENAME;
+
 @ToolExecutor(id="opencga-local", tool = FamilyVariantQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
 public class FamilyVariantQcLocalAnalysisExecutor extends FamilyVariantQcAnalysisExecutor implements StorageToolExecutor {
 
     @Override
     public void run() throws ToolExecutorException {
-        // Run the Python script responsible for performing the family QC analyses
-        //    variant_qc.main.py --vcf-file xxx --info-json xxx --bam-file xxx --qc-type xxx --config xxx --output-dir xxx
-
-        // Build command line to run Python script via docker image
-        Path opencgaHome = getOpencgaHome();
-
+        Path configPath = getOutDir().resolve(CONFIG_FILENAME);
+        ObjectWriter objectWriter = JacksonUtils.getDefaultObjectMapper().writerFor(FamilyQcAnalysisParams.class);
         try {
-            // Input binding
-            List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-            inputBindings.add(new AbstractMap.SimpleEntry<>(opencgaHome.resolve("analysis/variant-qc").toAbsolutePath().toString(),
-                    "/script"));
-
-            // Output binding
-            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
-                    "/jobdir");
-
-            String configFilename = "config.json";
-            ObjectWriter objectWriter = JacksonUtils.getDefaultObjectMapper().writerFor(FamilyQcAnalysisParams.class);
-            objectWriter.writeValue(getOutDir().resolve(configFilename).toFile(), getQcParams());
-
-            String params = "python3 /script/variant_qc.main.py"
-                    + " --vcf-file " + StringUtils.join(getVcfPaths().stream().map(p -> p.toAbsolutePath().toString().replace(
-                    getOutDir().toAbsolutePath().toString(), "/jobdir")).collect(Collectors.toList()), ",")
-                    + " --info-json " + StringUtils.join(getJsonPaths().stream().map(p -> p.toAbsolutePath().toString().replace(
-                    getOutDir().toAbsolutePath().toString(), "/jobdir")).collect(Collectors.toList()), ",")
-                    + " --qc-type family"
-                    + " --config /jobdir/" + configFilename
-                    + " --output-dir /jobdir";
-
-
-            // Execute Pythong script in docker
-            String dockerImage = "opencb/opencga-ext-tools:" + GitRepositoryState.getInstance().getBuildVersion();
-
-            DockerUtils.run(dockerImage, inputBindings, outputBinding, params, null);
+            objectWriter.writeValue(configPath.toFile(), getQcParams());
         } catch (IOException e) {
             throw new ToolExecutorException(e);
         }
+
+        VariantQcAnalysisExecutorUtils.run(getVcfPaths(), getJsonPaths(), configPath, getOutDir(), getOpencgaHome());
     }
 }

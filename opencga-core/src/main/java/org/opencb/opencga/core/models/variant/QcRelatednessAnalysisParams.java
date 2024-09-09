@@ -19,7 +19,7 @@ package org.opencb.opencga.core.models.variant;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
-public class FamilyQcRelatednessAnalysisParams {
+public class QcRelatednessAnalysisParams {
 
     @DataField(id = "populationFrequencyFile", description = FieldConstants.FAMILY_QC_RELATEDNESS_POP_FREQ_FILE_DESCRIPTION)
     private String populationFrequencyFile;
@@ -30,10 +30,10 @@ public class FamilyQcRelatednessAnalysisParams {
     @DataField(id = "thresholdsFile", description = FieldConstants.FAMILY_QC_RELATEDNESS_THRESHOLD_FILE_DESCRIPTION)
     private String thresholdsFile;
 
-    public FamilyQcRelatednessAnalysisParams() {
+    public QcRelatednessAnalysisParams() {
     }
 
-    public FamilyQcRelatednessAnalysisParams(String populationFrequencyFile, String populationExcludeVariantsFile, String thresholdsFile) {
+    public QcRelatednessAnalysisParams(String populationFrequencyFile, String populationExcludeVariantsFile, String thresholdsFile) {
         this.populationFrequencyFile = populationFrequencyFile;
         this.populationExcludeVariantsFile = populationExcludeVariantsFile;
         this.thresholdsFile = thresholdsFile;
@@ -53,7 +53,7 @@ public class FamilyQcRelatednessAnalysisParams {
         return populationFrequencyFile;
     }
 
-    public FamilyQcRelatednessAnalysisParams setPopulationFrequencyFile(String populationFrequencyFile) {
+    public QcRelatednessAnalysisParams setPopulationFrequencyFile(String populationFrequencyFile) {
         this.populationFrequencyFile = populationFrequencyFile;
         return this;
     }
@@ -62,7 +62,7 @@ public class FamilyQcRelatednessAnalysisParams {
         return populationExcludeVariantsFile;
     }
 
-    public FamilyQcRelatednessAnalysisParams setPopulationExcludeVariantsFile(String populationExcludeVariantsFile) {
+    public QcRelatednessAnalysisParams setPopulationExcludeVariantsFile(String populationExcludeVariantsFile) {
         this.populationExcludeVariantsFile = populationExcludeVariantsFile;
         return this;
     }
@@ -71,7 +71,7 @@ public class FamilyQcRelatednessAnalysisParams {
         return thresholdsFile;
     }
 
-    public FamilyQcRelatednessAnalysisParams setThresholdsFile(String thresholdsFile) {
+    public QcRelatednessAnalysisParams setThresholdsFile(String thresholdsFile) {
         this.thresholdsFile = thresholdsFile;
         return this;
     }

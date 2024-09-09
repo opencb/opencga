@@ -28,7 +28,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -38,10 +37,8 @@ import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.FamilyQcRelatednessAnalysisParams;
+import org.opencb.opencga.core.models.variant.QcRelatednessAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -70,14 +67,6 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
     public static final String DESCRIPTION = "Run quality control (QC) for a given family. It computes the relatedness scores among the"
             + " family members";
 
-    public static final String RELATEDNESS_POP_FREQ_FILENAME = "autosomes_1000G_QC_prune_in.frq";
-    public static final String RELATEDNESS_POP_EXCLUDE_VAR_FILENAME = "autosomes_1000G_QC.prune.out";
-    public static final String RELATEDNESS_THRESHOLDS_FILENAME = "relatedness_thresholds.tsv";
-
-    private static final String RELATEDNESS_POP_FREQ_FILE_MSG = "Population frequency file";
-    private static final String RELATEDNESS_POP_EXCLUDE_VAR_FILE_MSG = "Population exclude variant file";
-    private static final String RELATEDNESS_THRESHOLDS_FILE_MSG = "Thresholds file";
-
     @ToolParams
     protected final FamilyQcAnalysisParams analysisParams = new FamilyQcAnalysisParams();
 
@@ -86,38 +75,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
         super.check();
         checkParameters(analysisParams, getStudy(), catalogManager, token);
 
-        // Get paths from external files
-        FamilyQcRelatednessAnalysisParams relatednessParams = analysisParams.getRelatednessParams();
-
-        // Get relatedness population frequency
-        if (relatednessParams != null && StringUtils.isNotEmpty(relatednessParams.getPopulationFrequencyFile())) {
-            Path path = checkFileParameter(relatednessParams.getPopulationFrequencyFile(), RELATEDNESS_POP_FREQ_FILE_MSG, getStudy(),
-                    catalogManager, getToken());
-            analysisParams.getRelatednessParams().setPopulationFrequencyFile(path.toAbsolutePath().toString());
-        } else {
-            Path path = getExternalFilePath(RelatednessAnalysis.ID, RELATEDNESS_POP_FREQ_FILENAME);
-            analysisParams.getRelatednessParams().setPopulationFrequencyFile(path.toAbsolutePath().toString());
-        }
-
-        // Get relatedness population exclude variant
-        if (relatednessParams != null && StringUtils.isNotEmpty(relatednessParams.getPopulationExcludeVariantsFile())) {
-            Path path = checkFileParameter(relatednessParams.getPopulationExcludeVariantsFile(), RELATEDNESS_POP_EXCLUDE_VAR_FILE_MSG,
-                    getStudy(), catalogManager, getToken());
-            analysisParams.getRelatednessParams().setPopulationExcludeVariantsFile(path.toAbsolutePath().toString());
-        } else {
-            Path path = getExternalFilePath(RelatednessAnalysis.ID, RELATEDNESS_POP_EXCLUDE_VAR_FILENAME);
-            analysisParams.getRelatednessParams().setPopulationExcludeVariantsFile(path.toAbsolutePath().toString());
-        }
-
-        // Get relatedness thresholds
-        if (relatednessParams != null && StringUtils.isNotEmpty(relatednessParams.getPopulationFrequencyFile())) {
-            Path path = checkFileParameter(relatednessParams.getThresholdsFile(), RELATEDNESS_THRESHOLDS_FILE_MSG, getStudy(),
-                    catalogManager, getToken());
-            analysisParams.getRelatednessParams().setThresholdsFile(path.toAbsolutePath().toString());
-        } else {
-            Path path = getExternalFilePath(RelatednessAnalysis.ID, RELATEDNESS_THRESHOLDS_FILENAME);
-            analysisParams.getRelatednessParams().setThresholdsFile(path.toAbsolutePath().toString());
-        }
+        // Update paths from relatedness external files
+        updateRelatednessFilePaths(analysisParams.getRelatednessParams());
     }
 
     @Override
@@ -138,7 +97,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                 // Decide if quality control has to be performed
                 //   - by checking the quality control status, if it is READY means it has been computed previously, and
                 //   - by checking the flag overwrite
-                if (!performQualityControl(family, analysisParams.getOverwrite())) {
+                if (family.getInternal() != null
+                        && !performQualityControl(family.getInternal().getQualityControlStatus(), analysisParams.getOverwrite())) {
                     // Quality control does not have to be performed for this family
                     continue;
                 }
@@ -157,7 +117,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
                 // Export family variants (VCF format)
                 // Create variant query
-                String gt = getSampleIds(family, study, catalogManager, token).stream().map(s -> s + ":0/0,0/1,1/1")
+                String gt = getNoSomaticSampleIds(family, study, catalogManager, token).stream().map(s -> s + ":0/0,0/1,1/1")
                         .collect(Collectors.joining(";"));
                 Query query = new Query()
                         .append(VariantQueryParam.STUDY.key(), study)
@@ -259,7 +219,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                     family = familyResult.first();
 
                     // Check number of samples
-                    List<String> sampleIds = getSampleIds(family, studyId, catalogManager, token);
+                    List<String> sampleIds = getNoSomaticSampleIds(family, studyId, catalogManager, token);
                     if (sampleIds.size() < 2) {
                         errors.put(familyId, "Too few samples found (" + sampleIds.size() + ") for that family members; minimum is 2 member"
                                 + " samples");
@@ -276,63 +236,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                     e -> "Family ID " + e.getKey() + ": " + e.getValue()).collect(Collectors.toList()), ","));
         }
 
-        // Check external files: pop. freq. file, pop. exclude var. file and threadshold file
-        if (params.getRelatednessParams() != null) {
-            FamilyQcRelatednessAnalysisParams relatednessParams = params.getRelatednessParams();
-            if (StringUtils.isNotEmpty(relatednessParams.getPopulationFrequencyFile())) {
-                checkFileParameter(relatednessParams.getPopulationFrequencyFile(), RELATEDNESS_POP_FREQ_FILE_MSG, studyId, catalogManager,
-                        token);
-            }
-            if (StringUtils.isNotEmpty(relatednessParams.getPopulationExcludeVariantsFile())) {
-                checkFileParameter(relatednessParams.getPopulationExcludeVariantsFile(), RELATEDNESS_POP_EXCLUDE_VAR_FILE_MSG, studyId,
-                        catalogManager, token);
-            }
-            if (StringUtils.isNotEmpty(relatednessParams.getThresholdsFile())) {
-                checkFileParameter(relatednessParams.getThresholdsFile(), RELATEDNESS_THRESHOLDS_FILE_MSG, studyId, catalogManager, token);
-            }
-        }
-    }
-
-    private static List<String> getSampleIds(Family family, String studyId, CatalogManager catalogManager, String token)
-            throws CatalogException {
-        // Get list of individual IDs
-        List<String> individualIds = family.getMembers().stream().map(m -> m.getId()).collect(Collectors.toList());
-
-        Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualIds);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "samples");
-
-        List<String> sampleIds = new ArrayList<>();
-        OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(studyId, query, queryOptions, token);
-        for (Individual individual : individualResult.getResults()) {
-            if (CollectionUtils.isNotEmpty(individual.getSamples())) {
-                for (Sample sample : individual.getSamples()) {
-                    if (!sample.isSomatic()) {
-                        // We take the first no somatic sample for each individual
-                        sampleIds.add(sample.getId());
-                        break;
-                    }
-                }
-            }
-        }
-        return sampleIds;
-    }
-
-    private boolean performQualityControl(Family family, Boolean overwrite) {
-        boolean performQc;
-        if (Boolean.TRUE.equals(overwrite)) {
-            performQc = true;
-        } else if (family.getInternal() != null && family.getInternal().getQualityControlStatus() != null) {
-            String statusId = family.getInternal().getQualityControlStatus().getId();
-            performQc = !(statusId.equals(COMPUTING) || statusId.equals(READY));
-        } else {
-            performQc = true;
-        }
-
-        if (performQc) {
-            // Second, set status to COMPUTING
-        }
-
-        return performQc;
+        // Check relatedness files: pop. freq. file, pop. exclude var. file and threshold file
+        checkRelatednessParameters(params.getRelatednessParams(), studyId, catalogManager, token);
     }
 
     private void updateFamilyQualityControl(List<Family> families) throws ToolException {

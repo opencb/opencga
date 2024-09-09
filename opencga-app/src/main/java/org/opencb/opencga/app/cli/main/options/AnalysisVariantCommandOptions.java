@@ -1294,14 +1294,35 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
+        @Parameter(names = {"--individuals"}, description = "List of individual IDs", required = false, arity = 1)
+        public String individuals;
+    
         @Parameter(names = {"--individual"}, description = "Individual ID", required = false, arity = 1)
         public String individual;
     
         @Parameter(names = {"--sample"}, description = "Sample ID (required when the individual has multiple samples)", required = false, arity = 1)
         public String sample;
     
+        @Parameter(names = {"--relatedness-params-population-frequency-file"}, description = "Population frequencies file ID for relatedness analysis", required = false, arity = 1)
+        public String relatednessParamsPopulationFrequencyFile;
+    
+        @Parameter(names = {"--relatedness-params-population-exclude-variants-file"}, description = "Population exclude variants file ID for relatedness analysis", required = false, arity = 1)
+        public String relatednessParamsPopulationExcludeVariantsFile;
+    
+        @Parameter(names = {"--relatedness-params-thresholds-file"}, description = "Threshold file ID for relatedness analysis", required = false, arity = 1)
+        public String relatednessParamsThresholdsFile;
+    
         @Parameter(names = {"--inferred-sex-method"}, description = "Inferred sex method. Valid values: CoverageRatio", required = false, arity = 1)
         public String inferredSexMethod = "CoverageRatio";
+    
+        @Parameter(names = {"--skip"}, description = "Individual QC analysis to skip. Valid values are: inferred-sex, mendelian-errors", required = false, arity = 1)
+        public String skip;
+    
+        @Parameter(names = {"--skip-index"}, description = "Do not save the computed quality control in catalog", required = false, arity = 1)
+        public Boolean skipIndex;
+    
+        @Parameter(names = {"--overwrite"}, description = "Overwrite quality control in catalog", required = false, arity = 1)
+        public Boolean overwrite;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;

@@ -94,7 +94,8 @@ public class FamilyUpdateParams {
                         ? members.stream().map(m -> new Individual().setId(m.getId()).setUuid(m.getUuid())).collect(Collectors.toList())
                         : null,
                 creationDate, modificationDate, description, members != null ? members.size() : 0, 1, 1, annotationSets,
-                status != null ? status.toStatus() : null, new FamilyInternal(), Collections.emptyMap(), null, attributes);
+                status != null ? status.toStatus() : null, new FamilyInternal().setQualityControlStatus(qualityControlStatus),
+                Collections.emptyMap(), null, attributes);
     }
 
     @Override
