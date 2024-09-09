@@ -10,7 +10,7 @@ from utils import create_output_dir, execute_bash_command
 LOGGER = logging.getLogger('variant_qc_logger')
 
 class SampleQCExecutor:
-    def __init__(self, vcf_file, info_file, bam_file, config, output_parent_dir, job_id, sample_ids, id_):
+    def __init__(self, vcf_file, info_file, bam_file, config, output_parent_dir, sample_ids, id_):
         """Create output dir
 
         :param str vcf_file: VCF input file path
