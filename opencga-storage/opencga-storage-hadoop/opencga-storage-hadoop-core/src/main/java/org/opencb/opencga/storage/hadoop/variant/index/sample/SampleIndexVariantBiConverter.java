@@ -118,17 +118,15 @@ public class SampleIndexVariantBiConverter {
     }
 
     public Variant toVariant(String chromosome, int batchStart, byte[] bytes) {
-        return toVariant(chromosome, batchStart, bytes, 0, bytes.length);
+        return toVariant(chromosome, batchStart, bytes, 0);
     }
 
-    public Variant toVariant(String chromosome, int batchStart, byte[] bytes, int offset, int length) {
+    public Variant toVariant(String chromosome, int batchStart, byte[] bytes, int offset) {
         if (hasEncodedAlleles(bytes, offset)) {
             return toVariantEncodedAlleles(chromosome, batchStart, bytes, offset);
         } else {
-            int currentOffset = INT24_LENGTH;
-            int referenceLength = readNextSeparator(bytes, offset + currentOffset, length - currentOffset);
-            currentOffset += referenceLength + SEPARATOR_LENGTH;
-            int alternateLength = readNextSeparator(bytes, offset + currentOffset, length - currentOffset);
+            int referenceLength = readNextSeparator(bytes, offset + INT24_LENGTH);
+            int alternateLength = readNextSeparator(bytes, offset + INT24_LENGTH + referenceLength + SEPARATOR_LENGTH);
             return toVariant(chromosome, batchStart, bytes, offset, referenceLength, alternateLength);
         }
     }
@@ -704,16 +702,12 @@ public class SampleIndexVariantBiConverter {
     }
 
     private int readNextSeparator(byte[] bytes, int offset) {
-        return readNextSeparator(bytes, offset, bytes.length - offset);
-    }
-
-    private int readNextSeparator(byte[] bytes, int offset, int length) {
-        for (int i = offset; i < (offset + length); i++) {
+        for (int i = offset; i < bytes.length; i++) {
             if (bytes[i] == 0) {
                 return i - offset;
             }
         }
-        return length - offset;
+        return bytes.length - offset;
     }
 
     protected int getRelativeStart(Variant variant) {
