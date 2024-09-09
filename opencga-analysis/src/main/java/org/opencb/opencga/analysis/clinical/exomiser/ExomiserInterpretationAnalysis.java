@@ -44,10 +44,10 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -71,6 +71,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     private ClinicalAnalysis.Type clinicalAnalysisType;
 
     private ClinicalAnalysis clinicalAnalysis;
+
+    private ExomiserWrapperAnalysisExecutor exomiserExecutor;
 
     @Override
     protected InterpretationMethod getInterpretationMethod() {
@@ -132,14 +134,16 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     @Override
     protected void run() throws ToolException {
         step(() -> {
-
             executorParams.put(EXECUTOR_ID, ExomiserWrapperAnalysisExecutor.ID);
-            getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
+
+            // Execute using the ExomiserWrapperAnalysisExecutor
+            exomiserExecutor = getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
                     .setStudyId(studyId)
                     .setSampleId(sampleId)
-                    .setClinicalAnalysisType(clinicalAnalysisType)
-                    .execute();
+                    .setClinicalAnalysisType(clinicalAnalysisType);
+            exomiserExecutor.execute();
 
+            // Save interpretation
             saveInterpretation(studyId, clinicalAnalysis);
         });
     }
@@ -147,15 +151,22 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis) throws ToolException, StorageEngineException,
             CatalogException, IOException {
         // Interpretation method
+        Map<String, String> softwareParams = new HashMap<>();
+        softwareParams.put("cli", exomiserExecutor.getExomiserCommandLine());
         InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.getInstance().getBuildVersion(),
                 GitRepositoryState.getInstance().getCommitId(), Collections.singletonList(
                 new Software()
                         .setName("Exomiser")
                         .setRepository("Docker: " + ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_NAME)
-                        .setVersion(ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_VERSION)));
+                        .setVersion(ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_VERSION)
+                        .setParams(softwareParams)));
 
         // Analyst
         ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(studyId, token);
+
+        // Attributes
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("OPENCGA_JOB_ID", getJobId());
 
         List<ClinicalVariant> primaryFindings = getPrimaryFindings();
 
@@ -165,7 +176,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 .setAnalyst(analyst)
                 .setClinicalAnalysisId(clinicalAnalysis.getId())
                 .setCreationDate(TimeUtils.getTime())
-                .setMethod(method);
+                .setMethod(method)
+                .setAttributes(attributes);
 
         // Store interpretation analysis in DB
         try {

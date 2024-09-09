@@ -53,6 +53,8 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private String sampleId;
     private ClinicalAnalysis.Type clinicalAnalysisType;
 
+    private String exomiserCommandLine;
+
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
@@ -199,6 +201,8 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         String msg = DOCKER_CLI_MSG + sb;
         logger.info(msg);
         addWarning(msg);
+
+        exomiserCommandLine = sb.toString();
         runCommandLine(sb.toString());
     }
 
@@ -496,6 +500,15 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     public ExomiserWrapperAnalysisExecutor setClinicalAnalysisType(ClinicalAnalysis.Type clinicalAnalysisType) {
         this.clinicalAnalysisType = clinicalAnalysisType;
+        return this;
+    }
+
+    public String getExomiserCommandLine() {
+        return exomiserCommandLine;
+    }
+
+    public ExomiserWrapperAnalysisExecutor setExomiserCommandLine(String exomiserCommandLine) {
+        this.exomiserCommandLine = exomiserCommandLine;
         return this;
     }
 }
