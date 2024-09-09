@@ -219,7 +219,15 @@ def main():
         shutil.copy(info_jsons[i], qc_outdir_fpath)
 
         # Execute QC
-        qc_executor(vcf_files[i], info_jsons[i], bam_files[i], config, qc_outdir_fpath, sample_ids, id_).run()
+        qc_executor(
+            vcf_file=vcf_files[i],
+            info_file=info_jsons[i],
+            bam_file=bam_files[i],
+            config=config,
+            output_parent_dir=qc_outdir_fpath,
+            sample_ids=sample_ids,
+            id_=id_
+        ).run()
 
 if __name__ == '__main__':
     sys.exit(main())

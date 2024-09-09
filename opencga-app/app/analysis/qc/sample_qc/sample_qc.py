@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import subprocess
+
 import sys
 import os
 import logging
@@ -30,79 +30,57 @@ class SampleQCExecutor:
         self.id_ = id_
 
     def run(self):
-        # Checking data
-        # self.checking_data()  # TODO check input data
+        # check_data()
+        # relatedness()
+        # inferred_sex()
+        # if info_file.somatic == True && config.mutational_signature.skip == False:
+        #     mutational_signature()
+        # mendelian_errors()
+        # return ;
 
-        # Running sample QC steps
-        # self.step1()  # TODO run all encessary steps for this QC (e.g. relatedness)
+        self.bcftools_stats(vcf_file=self.vcf_file)
+
+        # missingness()
+        # heterozygosity ()
+        # roh()
+        # upd()
 
         # Return results
         # ...  # TODO return results
         pass
 
-    def step1(self):
-        # Create output dir for this step
-        output_dir = create_output_dir([self.output_parent_dir, 'step1'])
 
-        # Run step1
-        # ...  # TODO execute this step commands
-        pass
+    def bcftools_stats(self, vcf_file):
+        """
+        Calculates VCF stats using BCFTools
+        :param str vcf_file: VCF file to get stats from
+        :return:
+        """
+        # Creating output dir for bcftools
+        output_dir = create_output_dir([self.output_parent_dir, 'bcftools'])
 
-vcf_file = "/home/mbleda/Downloads/KFSHRC/CGMQ2022-02850.vcf.gz"
-output_dir = "/tmp/qc_tests/"
-sample_ids = ""
-info_file = ""
-config = ""
+        # Running bcftools
+        cmd_bcftools = 'bcftools stats -v ' + vcf_file + ' > ' + os.path.join(output_dir, 'bcftools_stats.txt')
+        execute_bash_command(cmd=cmd_bcftools)
+        LOGGER.info("BCFTools stats calculated successfully for {file}".format(file=vcf_file))
 
-def run(vcf_file, sample_ids, info_file, config, output_dir):
-    # check_data()
-    # relatedness()
-    # inferred_sex()
-    # if info_file.somatic == True && config.mutational_signature.skip == False:
-    #     mutational_signature()
-    # mendelian_errors()
-    # return ;
-    bcftools_stats(vcf_file=vcf_file, output_dir=output_dir)
-    # missingness()
-    # heterozygosity ()
-    # roh()
-    # upd()
-
-
-def bcftools_stats(vcf_file, output_dir):
-    """
-    Calculates VCF stats using BCFTools
-    :param vcf_file: VCF file to get stats from
-    :param output_dir: Output directory
-    :return:
-    """
-    bcftools_stats_output = exec_bash_command(cmd_line='bcftools stats -v ' + vcf_file + ' > ' + output_dir + '/bcftools_stats.txt')
-    if bcftools_stats_output[0] == 0:
-        print("BCFTools stats calculated successfully for {file}".format(file=vcf_file))
         # Plot stats using plot-vcfstats
-        exec_bash_command(cmd_line='plot-vcfstats -p ' + output_dir + '/bcftools_stats_plots ' + output_dir + '/bcftools_stats.txt')
+        cmd_vcfstats = 'plot-vcfstats -p ' + output_dir + '/bcftools_stats_plots ' + output_dir + '/bcftools_stats.txt'
+        execute_bash_command(cmd=cmd_vcfstats)
+        LOGGER.info("Plot stats using plot-vcfstats executed successfully for {file}".format(file=vcf_file))
+
         # TODO: Future implementation for vcf stats plots
         #plot_bcftools_stats(file=output_dir + '/bcftools_stats.txt', prefix="stats", output=output_dir)
 
-def exec_bash_command(cmd_line):
-    """
-    Run a bash command (e.g. bcftools), and return output
-    """
-    po = subprocess.Popen(cmd_line,
-                        shell=True,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE)
-
-    stdout, stderr = po.communicate()
-    po.wait()
-    return_code = po.returncode
-
-    if return_code != 0:
-        raise Exception(
-            "Command line {} got return code {}.\nSTDOUT: {}\nSTDERR: {}".format(cmd_line, return_code, stdout,
-                                                                                stderr))
-
-    return po.returncode, stdout
 
 if __name__ == '__main__':
-    sys.exit(run(vcf_file=vcf_file, sample_ids=sample_ids, info_file=info_file, config=config, output_dir=output_dir))
+    vcf_file = "/home/mbleda/Downloads/KFSHRC/CGMQ2022-02850.vcf.gz"
+    info_file = ""
+    bam_file = ""
+    config = ""
+    output_parent_dir = "/tmp/qc_tests/"
+    sample_ids = []
+    id_ = ""
+    se = SampleQCExecutor(vcf_file=vcf_file, info_file=info_file, bam_file=bam_file, config=config,
+                          output_parent_dir=output_parent_dir, sample_ids=sample_ids, id_=id_)
+    sys.exit(se.run())
