@@ -29,7 +29,6 @@ import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
-import org.opencb.opencga.core.tools.ToolParams;
 
 import java.io.IOException;
 import java.net.URL;
@@ -65,16 +64,25 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
 
     @Override
     protected void run() throws Exception {
+        // Nothing to do
     }
 
-    public static void checkParameters(ToolParams params, String study, CatalogManager catalogManager, String token) throws Exception {
-        if (StringUtils.isEmpty(study)) {
+    protected static void checkStudy(String studyId, CatalogManager catalogManager, String token) throws ToolException {
+        if (StringUtils.isEmpty(studyId)) {
             throw new ToolException("Missing study");
+        }
+
+        try {
+            catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
+        } catch (CatalogException e) {
+            throw new ToolException("Error accessing study ID '" + studyId + "'", e);
         }
     }
 
     protected static void checkPermissions(StudyPermissions.Permissions permissions, String studyId, CatalogManager catalogManager,
                                            String token) throws ToolException {
+        checkStudy(studyId, catalogManager, token);
+
         try {
             JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
             CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);

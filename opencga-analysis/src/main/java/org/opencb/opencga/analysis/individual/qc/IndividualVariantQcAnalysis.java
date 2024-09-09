@@ -16,12 +16,18 @@
 
 package org.opencb.opencga.analysis.individual.qc;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
+
+import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
+import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_INDIVIDUALS;
 
 @Tool(id = IndividualVariantQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = IndividualVariantQcAnalysis.DESCRIPTION)
 public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
@@ -48,5 +54,14 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
         //    variant_qc.main.py --vcf-file xxx --info-json xxx --bam-file xxx --qc-type xxx --config xxx --output-dir xxx
 
         // Parse results
+    }
+
+    public static void checkParameters(IndividualQcAnalysisParams params, String studyId, CatalogManager catalogManager, String token)
+            throws ToolException {
+        // Check study
+        checkStudy(studyId, catalogManager, token);
+
+        // Check permissions
+        checkPermissions(WRITE_INDIVIDUALS, studyId, catalogManager, token);
     }
 }

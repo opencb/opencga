@@ -17,11 +17,14 @@
 package org.opencb.opencga.analysis.sample.qc;
 
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
+
+import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 
 @Tool(id = SampleVariantQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleVariantQcAnalysis.DESCRIPTION)
 public class SampleVariantQcAnalysis extends VariantQcAnalysis {
@@ -41,4 +44,12 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
     @Override
     protected void run() throws ToolException {
     }
-}
+
+    public static void checkParameters(SampleQcAnalysisParams params, String studyId, CatalogManager catalogManager, String token)
+            throws ToolException {
+        // Check study
+        checkStudy(studyId, catalogManager, token);
+
+        // Check permissions
+        checkPermissions(WRITE_SAMPLES, studyId, catalogManager, token);
+    }}

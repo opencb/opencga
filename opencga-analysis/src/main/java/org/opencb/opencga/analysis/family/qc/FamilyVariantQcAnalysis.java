@@ -232,6 +232,9 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
     public static void checkParameters(FamilyQcAnalysisParams params, String studyId, CatalogManager catalogManager, String token)
             throws ToolException {
+        // Check study
+        checkStudy(studyId, catalogManager, token);
+
         // Check permissions
         checkPermissions(WRITE_FAMILIES, studyId, catalogManager, token);
 
