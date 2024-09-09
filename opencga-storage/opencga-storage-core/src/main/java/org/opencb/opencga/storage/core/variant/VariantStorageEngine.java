@@ -1348,7 +1348,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantQueryExecutor getVariantQueryExecutor(ParsedVariantQuery variantQuery) {
         try {
             for (VariantQueryExecutor executor : getVariantQueryExecutors()) {
-                if (executor.canUseThisExecutor(variantQuery.getQuery(), variantQuery.getInputOptions())) {
+                if (executor.canUseThisExecutor(variantQuery)) {
                     logger.info("Using VariantQueryExecutor : " + executor.getClass().getName());
                     logger.info("  Query : " + VariantQueryUtils.printQuery(variantQuery.getInputQuery()));
                     logger.info("  Options : " + variantQuery.getInputOptions().toJson());

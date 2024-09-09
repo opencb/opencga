@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -10,6 +9,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQuerySource;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.QUERY_DEFAULT_TIMEOUT;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.QUERY_MAX_TIMEOUT;
@@ -63,14 +63,27 @@ public abstract class VariantQueryExecutor {
         queryOptions.put(QueryOptions.TIMEOUT, timeout);
     }
 
+    public final boolean canUseThisExecutor(ParsedVariantQuery variantQuery) throws StorageEngineException {
+        boolean canUseThisExecutor = canUseThisExecutor(variantQuery, variantQuery.getInputOptions());
+        if (canUseThisExecutor) {
+            if (variantQuery.getSource().isSecondary()) {
+                // Querying for a secondary index source. This executor can only be used if the source is the same
+                if (getSource() != variantQuery.getSource()) {
+                    canUseThisExecutor = false;
+                }
+            }
+        }
+        return canUseThisExecutor;
+    }
+
     /**
      * Determine if this VariantQueryExecutor can run the given query.
-     * @param query    Query to execute
+     * @param variantQuery    Query to execute
      * @param options  Options for the query
      * @return         True if this variant query executor is valid for the query
      * @throws StorageEngineException if there is an error
      */
-    public abstract boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException;
+    protected abstract boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException;
 
     protected abstract Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) throws StorageEngineException;
 
@@ -80,6 +93,10 @@ public abstract class VariantQueryExecutor {
 
     protected String getStorageEngineId() {
         return storageEngineId;
+    }
+
+    protected VariantQuerySource getSource() {
+        return VariantQuerySource.VARIANT_INDEX;
     }
 
     protected ObjectMap getOptions() {

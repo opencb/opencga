@@ -52,7 +52,6 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
@@ -60,7 +59,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
@@ -71,6 +69,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.core.api.ParamConstants.*;
+import static org.opencb.opencga.core.models.variant.VariantQueryParams.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
@@ -86,8 +85,6 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CLINICAL_DESCR;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -266,7 +263,7 @@ public class VariantCommandOptions {
         @Parameter(names = {"-p", "--project"}, description = "Project to index.", arity = 1)
         public String project;
 
-        @Parameter(names = {"-r", "--region"}, description = VariantQueryParam.REGION_DESCR)
+        @Parameter(names = {"-r", "--region"}, description = REGION_DESCR)
         public String region;
 
         @Parameter(names = {"--sample"}, description = "Samples to index."
@@ -876,25 +873,25 @@ public class VariantCommandOptions {
             return super.setMaxVariants(maxVariants);
         }
 
-        @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR)
+        @Parameter(names = {"--id"}, description = ID_DESCR)
         @Override
         public AnnotationVariantQueryParams setId(String id) {
             return super.setId(id);
         }
 
-        @Parameter(names = {"--region"}, description = VariantQueryParam.REGION_DESCR)
+        @Parameter(names = {"--region"}, description = REGION_DESCR)
         @Override
         public AnnotationVariantQueryParams setRegion(String region) {
             return super.setRegion(region);
         }
 
-        @Parameter(names = {"--gene"}, description = VariantQueryParam.GENE_DESCR)
+        @Parameter(names = {"--gene"}, description = GENE_DESCR)
         @Override
         public AnnotationVariantQueryParams setGene(String gene) {
             return super.setGene(gene);
         }
 
-        @Parameter(names = {"--type"}, description = VariantQueryParam.TYPE_DESCR)
+        @Parameter(names = {"--type"}, description = TYPE_DESCR)
         @Override
         public AnnotationVariantQueryParams setType(String type) {
             return super.setType(type);
@@ -924,79 +921,79 @@ public class VariantCommandOptions {
             return super.setPanelRoleInCancer(panelRoleInCancer);
         }
 
-        @Parameter(names = {"--cohort-stats-ref"}, description = VariantQueryParam.STATS_REF_DESCR)
+        @Parameter(names = {"--cohort-stats-ref"}, description = STATS_REF_DESCR)
         @Override
         public AnnotationVariantQueryParams setCohortStatsRef(String cohortStatsRef) {
             return super.setCohortStatsRef(cohortStatsRef);
         }
 
-        @Parameter(names = {"--cohort-stats-alt"}, description = VariantQueryParam.STATS_ALT_DESCR)
+        @Parameter(names = {"--cohort-stats-alt"}, description = STATS_ALT_DESCR)
         @Override
         public AnnotationVariantQueryParams setCohortStatsAlt(String cohortStatsAlt) {
             return super.setCohortStatsAlt(cohortStatsAlt);
         }
 
-        @Parameter(names = {"--cohort-stats-maf"}, description = VariantQueryParam.STATS_MAF_DESCR)
+        @Parameter(names = {"--cohort-stats-maf"}, description = STATS_MAF_DESCR)
         @Override
         public AnnotationVariantQueryParams setCohortStatsMaf(String cohortStatsMaf) {
             return super.setCohortStatsMaf(cohortStatsMaf);
         }
 
-        @Parameter(names = {"--ct", "--consequence-type"}, description = VariantQueryParam.ANNOT_CONSEQUENCE_TYPE_DESCR)
+        @Parameter(names = {"--ct", "--consequence-type"}, description = ANNOT_CONSEQUENCE_TYPE_DESCR)
         @Override
         public AnnotationVariantQueryParams setCt(String ct) {
             return super.setCt(ct);
         }
 
-        @Parameter(names = {"--xref"}, description = VariantQueryParam.ANNOT_XREF_DESCR)
+        @Parameter(names = {"--xref"}, description = ANNOT_XREF_DESCR)
         @Override
         public AnnotationVariantQueryParams setXref(String xref) {
             return super.setXref(xref);
         }
 
-        @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR)
+        @Parameter(names = {"--biotype"}, description = ANNOT_BIOTYPE_DESCR)
         @Override
         public AnnotationVariantQueryParams setBiotype(String biotype) {
             return super.setBiotype(biotype);
         }
 
-        @Parameter(names = {"--protein-substitution"}, description = VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION_DESCR)
+        @Parameter(names = {"--protein-substitution"}, description = ANNOT_PROTEIN_SUBSTITUTION_DESCR)
         @Override
         public AnnotationVariantQueryParams setProteinSubstitution(String proteinSubstitution) {
             return super.setProteinSubstitution(proteinSubstitution);
         }
 
-        @Parameter(names = {"--conservation"}, description = VariantQueryParam.ANNOT_CONSERVATION_DESCR)
+        @Parameter(names = {"--conservation"}, description = ANNOT_CONSERVATION_DESCR)
         @Override
         public AnnotationVariantQueryParams setConservation(String conservation) {
             return super.setConservation(conservation);
         }
 
-        @Parameter(names = {"--population-frequency-maf"}, description = VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR)
+        @Parameter(names = {"--population-frequency-maf"}, description = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR)
         @Override
         public AnnotationVariantQueryParams setPopulationFrequencyMaf(String populationFrequencyMaf) {
             return super.setPopulationFrequencyMaf(populationFrequencyMaf);
         }
 
-        @Parameter(names = {"--population-frequency-alt"}, description = VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR)
+        @Parameter(names = {"--population-frequency-alt"}, description = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR)
         @Override
         public AnnotationVariantQueryParams setPopulationFrequencyAlt(String populationFrequencyAlt) {
             return super.setPopulationFrequencyAlt(populationFrequencyAlt);
         }
 
-        @Parameter(names = {"--population-frequency-ref"}, description = VariantQueryParam.ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR)
+        @Parameter(names = {"--population-frequency-ref"}, description = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR)
         @Override
         public AnnotationVariantQueryParams setPopulationFrequencyRef(String populationFrequencyRef) {
             return super.setPopulationFrequencyRef(populationFrequencyRef);
         }
 
-        @Parameter(names = {"--transcript-flag"}, description = VariantQueryParam.ANNOT_TRANSCRIPT_FLAG_DESCR)
+        @Parameter(names = {"--transcript-flag"}, description = ANNOT_TRANSCRIPT_FLAG_DESCR)
         @Override
         public AnnotationVariantQueryParams setTranscriptFlag(String transcriptFlag) {
             return super.setTranscriptFlag(transcriptFlag);
         }
 
-        @Parameter(names = {"--functional-score"}, description = VariantQueryParam.ANNOT_FUNCTIONAL_SCORE_DESCR)
+        @Parameter(names = {"--functional-score"}, description = ANNOT_FUNCTIONAL_SCORE_DESCR)
         @Override
         public AnnotationVariantQueryParams setFunctionalScore(String functionalScore) {
             return super.setFunctionalScore(functionalScore);
@@ -1266,10 +1263,10 @@ public class VariantCommandOptions {
                 + "By default filters by loss of function + missense_variant consequence types.")
         public String consequenceType;
 
-        @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR)
+        @Parameter(names = {"--filter"}, description = FILTER_DESCR)
         public String filter;
 
-        @Parameter(names = {"--qual"}, description = VariantQueryParam.QUAL_DESCR)
+        @Parameter(names = {"--qual"}, description = QUAL_DESCR)
         public String qual;
 
         @Parameter(names = {"--skip-genes-file"}, description = "Do not generate the results file by gene")

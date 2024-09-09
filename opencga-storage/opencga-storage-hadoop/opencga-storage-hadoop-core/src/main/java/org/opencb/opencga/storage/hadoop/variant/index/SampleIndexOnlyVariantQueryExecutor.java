@@ -11,6 +11,7 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.tools.commons.Converter;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -27,6 +28,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQuerySource;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
@@ -89,9 +91,16 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) {
+        VariantQuery query = variantQuery.getQuery();
+        if (variantQuery.getSource() == VariantQuerySource.SECONDARY_SAMPLE_INDEX) {
+            if (SampleIndexQueryParser.validSampleIndexQuery(query) && isQueryCovered(query)) {
+                return true;
+            } else {
+                throw new VariantQueryException("Unable to apply given filter using only the secondary sample index.");
+            }
+        }
         if (SampleIndexQueryParser.validSampleIndexQuery(query)) {
-
             if (isFullyCoveredQuery(query, options)) {
                 return true;
             }
@@ -113,6 +122,10 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
 
         logger.info("HBase SampleIndex, skip variants table");
+        if (variantQuery.getSource() == VariantQuerySource.SECONDARY_SAMPLE_INDEX) {
+            variantQuery.getEvents().add(new Event(Event.Type.INFO, "Using only the secondary sample index. Skip main variants index." +
+                    " Results might be partial."));
+        }
 
         boolean count;
         Future<Long> asyncCountFuture;
@@ -148,6 +161,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         }
     }
 
+    @Override
+    protected VariantQuerySource getSource() {
+        return VariantQuerySource.SECONDARY_SAMPLE_INDEX;
+    }
+
     private VariantDBIterator getVariantDBIterator(SampleIndexQuery sampleIndexQuery, ParsedVariantQuery parsedQuery) {
         QueryOptions options = parsedQuery.getInputOptions();
         VariantDBIterator variantIterator;
@@ -163,7 +181,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             } catch (IOException e) {
                 throw VariantQueryException.internalException(e).setQuery(parsedQuery.getInputQuery());
             }
-            boolean includeAll = parsedQuery.getInputQuery().getBoolean("includeAllFromSampleIndex", false);
+            boolean includeAll = parsedQuery.getSource() == VariantQuerySource.SECONDARY_SAMPLE_INDEX
+                    || parsedQuery.getInputQuery().getBoolean("includeAllFromSampleIndex", false);
             SampleVariantIndexEntryToVariantConverter converter = new SampleVariantIndexEntryToVariantConverter(
                     parsedQuery, sampleIndexQuery, dbAdaptor.getMetadataManager(), includeAll);
             variantIterator = VariantDBIterator.wrapper(Iterators.transform(rawIterator, converter::convert));
@@ -182,13 +201,21 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     private boolean isFullyCoveredQuery(Query inputQuery, QueryOptions options) {
         Query query = new Query(inputQuery);
 
-//        ParsedVariantQuery parsedVariantQuery = variantQueryProjectionParser.parseQuery(query, options, true);
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
-
-        return isQueryCovered(query) && isIncludeCovered(sampleIndexQuery, inputQuery, options);
+        return isQueryCovered(sampleIndexQuery)
+                && isIncludeCovered(sampleIndexQuery, inputQuery, options);
     }
 
-    private boolean isQueryCovered(Query query) {
+    private boolean isQueryCovered(Query inputQuery) {
+        Query query = new Query(inputQuery);
+
+        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
+
+        return isQueryCovered(sampleIndexQuery);
+    }
+
+    private boolean isQueryCovered(SampleIndexQuery sampleIndexQuery) {
+        Query query = sampleIndexQuery.getUncoveredQuery();
         if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)
                 || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO)
                 || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO_STRICT)) {

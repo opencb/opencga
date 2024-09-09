@@ -646,8 +646,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from "file" filter. e.g. AN>200 or
     *     file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP.
     * @param {String} [params.sample] - Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not
-    *     provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,)
-    *     operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g.
+    *     provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ','
+    *     operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g.
     *     HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice
     *     versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with
     *     genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g.
@@ -719,6 +719,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     variant ].
     * @param {Boolean} [params.panelIntersection] - Intersect panel genes and regions with given genes and regions from que input query.
     *     This will prevent returning variants from regions out of the panel.
+    * @param {String} [params.source] - Select the variant data source from where to fetch the data. Accepted values are 'variant_index'
+    *     (default), 'secondary_annotation_index' and 'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved
+    *     exclusively from that secondary index, and the 'include/exclude' parameters will be ignored. Some data might be missing or be partial.
     * @param {String} [params.trait] - List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */

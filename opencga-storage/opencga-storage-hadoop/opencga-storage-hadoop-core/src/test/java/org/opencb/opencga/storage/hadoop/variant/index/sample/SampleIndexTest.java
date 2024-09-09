@@ -26,7 +26,6 @@ import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -38,9 +37,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
-import org.opencb.opencga.storage.core.variant.query.Values;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -1202,6 +1199,30 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     }
                     return v;
                 });
+
+        testSampleIndexOnlyVariantQueryExecutor(
+                new VariantQuery()
+                        .study(STUDY_NAME_6)
+                        .sample("NA19600")
+                        .includeGenotype(true)
+                        .source(VariantQuerySource.SECONDARY_SAMPLE_INDEX),
+                new QueryOptions(),
+                SampleIndexOnlyVariantQueryExecutor.class,
+                av -> {
+                    assertEquals(av.toString(), 1, av.getStudies().get(0).getFiles().size());
+                    for (FileEntry fe : av.getStudies().get(0).getFiles()) {
+                        assertNotNull(fe.getData().get(StudyEntry.FILTER));
+                        fe.setData(Collections.emptyMap());
+                    }
+                    return av;
+                },
+                ev -> {
+                    for (FileEntry fe : ev.getStudies().get(0).getFiles()) {
+                        fe.setData(Collections.emptyMap());
+                    }
+                    ev.setAnnotation(null);
+                   return ev;
+                });
     }
 
     private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected) {
@@ -1209,7 +1230,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected,
-                                                         Function<Variant, Variant> mapper) {
+                                                         Function<Variant, Variant> expectedVariantMapper) {
+        testSampleIndexOnlyVariantQueryExecutor(query, options, expected, expectedVariantMapper, v -> v);
+    }
+
+    private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected,
+                                                         Function<Variant, Variant> actualVariantMapper,
+                                                         Function<Variant, Variant> expectedVariantMapper) {
         ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
 
         VariantQueryExecutor variantQueryExecutor = variantStorageEngine.getVariantQueryExecutor(variantQuery);
@@ -1243,7 +1270,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         for (int i = 0; i < actualVariants.size(); i++) {
             Variant av = actualVariants.get(i);
             Variant ev = expectedVariants.get(i);
-            mapper.apply(av);
+            actualVariantMapper.apply(av);
+            expectedVariantMapper.apply(ev);
             if (!ev.getStudies().isEmpty()) {
                 if (av.getLengthAlternate() == 0 || av.getLengthReference() == 0) {
 //                    System.out.println("-------" + av + "----------");
@@ -1259,8 +1287,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 assertEquals(ev, av);
             } catch (AssertionError error) {
                 System.out.println("-------" + av + "----------");
-                System.out.println("DBAdaptor " + ev.toJson());
-                System.out.println("Actual    " + av.toJson());
+                System.out.println("Expected (DBAdaptor) " + ev.toJson());
+                System.out.println("Actual               " + av.toJson());
                 throw error;
             }
         }
