@@ -12,11 +12,11 @@ import java.nio.charset.StandardCharsets;
  * Varchar data field.
  * Read until the FIELD_SEPARATOR.
  */
-public class VarcharDataField extends VariableWidthDataField<String> {
+public class VarCharDataField extends VariableWidthDataField<String> {
 
     protected static final byte FIELD_SEPARATOR = (byte) 0;
 
-    public VarcharDataField(IndexFieldConfiguration configuration) {
+    public VarCharDataField(IndexFieldConfiguration configuration) {
         super(configuration);
     }
 
@@ -37,7 +37,10 @@ public class VarcharDataField extends VariableWidthDataField<String> {
         bb.reset();
         ByteBuffer read = (ByteBuffer) bb.slice().limit(length);
         // move buffer
-        bb.position(bb.position() + length + 1); // move one extra to skip separator
+        bb.position(bb.position() + length);
+        if (bb.hasRemaining()) {
+            bb.get(); // skip separator
+        }
         return read;
     }
 
@@ -69,7 +72,6 @@ public class VarcharDataField extends VariableWidthDataField<String> {
         }
     }
 
-    @Override
     public boolean isDefault(ByteBuffer buffer) {
         return buffer.get(buffer.position() + 1) == FIELD_SEPARATOR;
     }
@@ -89,6 +91,13 @@ public class VarcharDataField extends VariableWidthDataField<String> {
 
     @Override
     public String decode(ByteBuffer code) {
-        return new String(code.array(), code.arrayOffset(), code.limit(), StandardCharsets.UTF_8);
+        if (code.isReadOnly()) {
+            int limit = code.limit();
+            byte[] bytes = new byte[limit];
+            code.get(bytes);
+            return new String(bytes, StandardCharsets.UTF_8);
+        } else {
+            return new String(code.array(), code.arrayOffset(), code.limit(), StandardCharsets.UTF_8);
+        }
     }
 }

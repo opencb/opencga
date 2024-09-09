@@ -28,7 +28,7 @@ import java.util.List;
  */
 public abstract class DataSchema {
 
-    private final List<DataField<?>> fields;
+    private final List<DataFieldBase<?>> fields;
     protected final DataField<Integer> entryLengthField;
     private ByteBuffer defaultEntry;
 
@@ -40,29 +40,25 @@ public abstract class DataSchema {
         defaultEntry = ByteBuffer.allocate(0);
     }
 
-    protected void addField(DataField<?> field) {
+    protected void addField(DataFieldBase<?> field) {
         fields.add(field);
         ExposedByteArrayOutputStream defaultEntryStream = new ExposedByteArrayOutputStream();
-        for (DataField<?> dataField : fields) {
+        for (DataFieldBase<?> dataField : fields) {
             writeDefaultValue(dataField, defaultEntryStream);
         }
         defaultEntry = defaultEntryStream.toByteByffer().asReadOnlyBuffer();
     }
 
-    private static <T> void writeDefaultValue(DataField<T> dataField, ByteArrayOutputStream defaultEntry) {
+    private static <T> void writeDefaultValue(DataFieldBase<T> dataField, ByteArrayOutputStream defaultEntry) {
         T defaultValue = dataField.getDefault();
         dataField.write(defaultValue, defaultEntry);
     }
 
-//    public boolean isSparse() {
-//        return sparse;
-//    }
-
-    public DataField<?> getField(IndexFieldConfiguration.Source source, String key) {
+    public DataFieldBase<?> getField(IndexFieldConfiguration.Source source, String key) {
         return fields.stream().filter(i -> i.getSource() == source && i.getKey().equals(key)).findFirst().orElse(null);
     }
 
-    public List<DataField<?>> getFields() {
+    public List<DataFieldBase<?>> getFields() {
         return fields;
     }
 
@@ -130,14 +126,44 @@ public abstract class DataSchema {
         }
     }
 
-    public <T> T readField(ByteBuffer buffer, DataField<T> field) {
+    public <T> T readFieldAndDecode(ByteBuffer buffer, DataField<T> field) {
         buffer.rewind();
-        for (DataField<?> thisField : fields) {
+        for (DataFieldBase<?> thisField : fields) {
             if (thisField == entryLengthField) {
                 // Skip entry length field
                 continue;
             } else if (thisField == field) {
                 return field.readAndDecode(buffer);
+            } else {
+                thisField.move(buffer);
+            }
+        }
+        throw new IllegalArgumentException("Unknown field " + field);
+    }
+
+    public <C, T> T readFieldAndDecode(ByteBuffer buffer, DataFieldWithContext<C, T> field, C context) {
+        buffer.rewind();
+        for (DataFieldBase<?> thisField : fields) {
+            if (thisField == entryLengthField) {
+                // Skip entry length field
+                continue;
+            } else if (thisField == field) {
+                return field.readAndDecode(context, buffer);
+            } else {
+                thisField.move(buffer);
+            }
+        }
+        throw new IllegalArgumentException("Unknown field " + field);
+    }
+
+    public ByteBuffer readField(ByteBuffer buffer, DataFieldBase<?> field) {
+        buffer.rewind();
+        for (DataFieldBase<?> thisField : fields) {
+            if (thisField == entryLengthField) {
+                // Skip entry length field
+                continue;
+            } else if (thisField == field) {
+                return field.read(buffer);
             } else {
                 thisField.move(buffer);
             }

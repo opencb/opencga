@@ -3,9 +3,12 @@ package org.opencb.opencga.storage.hadoop.variant.index.core;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.nio.ByteBuffer;
 
+@Category(ShortTests.class)
 public class VarIntDataFieldTest {
 
     private VarIntDataField field;

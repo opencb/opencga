@@ -35,7 +35,7 @@ public class SampleVariantIndexEntryConverter {
 
         BitBuffer fileIndexValue =  createFileIndexValue(variant.getType(), filePosition, file.getData(),
                 study.getSampleDataKeyPositions(), study.getSampleData(sampleIdx));
-        ByteBuffer fileDataIndexValue = createFileDataIndexValue(filePosition, file.getCall(),
+        ByteBuffer fileDataIndexValue = createFileDataIndexValue(variant, filePosition, file.getCall(),
                 study.getSecondaryAlternates());
 
         return new SampleVariantIndexEntry(variant, fileIndexValue, fileDataIndexValue);
@@ -45,7 +45,7 @@ public class SampleVariantIndexEntryConverter {
             int filePosition, Variant variant, OriginalCall call, List<AlternateCoordinate> alts,
             Function<String, String> fileAttributes, Function<String, String> sampleData) {
         BitBuffer fileIndexValue =  createFileIndexValue(variant.getType(), filePosition, fileAttributes, sampleData);
-        ByteBuffer fileDataIndexValue = createFileDataIndexValue(filePosition, call,
+        ByteBuffer fileDataIndexValue = createFileDataIndexValue(variant, filePosition, call,
                 alts);
 
         return new SampleVariantIndexEntry(variant, fileIndexValue, fileDataIndexValue);
@@ -129,23 +129,23 @@ public class SampleVariantIndexEntryConverter {
      * @param secondaryAlternates Secondary alternates
      * @return BitBuffer of file index.
      */
-    private ByteBuffer createFileDataIndexValue(int filePosition, OriginalCall call,
+    private ByteBuffer createFileDataIndexValue(Variant variant, int filePosition, OriginalCall call,
                                                 List<AlternateCoordinate> secondaryAlternates) {
 //        if (fileDataIndex.isSparse()) {
 //        }
         int fileDataSize = 0;
         if (fileDataSchema.isIncludeOriginalCall()) {
-            fileDataSize += fileDataSchema.getOriginalCallField().getByteLength(call);
+            fileDataSize += fileDataSchema.getOriginalCallField().getByteLength(variant, call);
         }
         if (fileDataSchema.isIncludeSecondaryAlternates()) {
-            fileDataSize += fileDataSchema.getSecondaryAlternatesField().getByteLength(secondaryAlternates);
+            fileDataSize += fileDataSchema.getSecondaryAlternatesField().getByteLength(variant, secondaryAlternates);
         }
         ByteBuffer bb = ByteBuffer.allocate(fileDataSize);
         if (fileDataSchema.isIncludeOriginalCall()) {
-            fileDataSchema.getOriginalCallField().write(call, bb);
+            fileDataSchema.writeOriginalCall(variant, call, bb);
         }
         if (fileDataSchema.isIncludeSecondaryAlternates()) {
-            fileDataSchema.getSecondaryAlternatesField().write(secondaryAlternates, bb);
+            fileDataSchema.getSecondaryAlternatesField().write(variant, secondaryAlternates, bb);
         }
         return bb;
     }

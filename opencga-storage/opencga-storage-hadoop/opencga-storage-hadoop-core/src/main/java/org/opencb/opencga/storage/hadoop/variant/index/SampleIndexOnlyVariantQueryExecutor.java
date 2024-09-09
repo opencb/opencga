@@ -426,7 +426,12 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 HashMap<String, String> fileAttributes = new HashMap<>();
                 Iterator<ByteBuffer> fileDataIterator = entry.getFileData().iterator();
                 for (BitBuffer fileIndexBitBuffer : entry.getFilesIndex()) {
-                    ByteBuffer fileDataBitBuffer = fileDataIterator.next();
+                    ByteBuffer fileDataBitBuffer;
+                    if (fileDataIterator.hasNext()) {
+                        fileDataBitBuffer = fileDataIterator.next();
+                    } else {
+                        fileDataBitBuffer = null;
+                    }
 
                     if (includeFiles) {
                         if (includeAll) {
@@ -442,11 +447,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                             fileAttributes.put(StudyEntry.QUAL, qual);
                         }
                         OriginalCall call = null;
-                        if (schema.getFileData().isIncludeOriginalCall()) {
-                            call = schema.getFileData().readOriginalCall(fileDataBitBuffer);
+                        if (fileDataBitBuffer != null && schema.getFileData().isIncludeOriginalCall()) {
+                            call = schema.getFileData().readOriginalCall(fileDataBitBuffer, v);
                         }
-                        if (schema.getFileData().isIncludeSecondaryAlternates()) {
-                            allAlternateCoordinates.add(schema.getFileData().readSecondaryAlternates(fileDataBitBuffer));
+                        if (fileDataBitBuffer != null && schema.getFileData().isIncludeSecondaryAlternates()) {
+                            allAlternateCoordinates.add(schema.getFileData().readSecondaryAlternates(fileDataBitBuffer, v));
                         }
                         Integer idx = schema.getFileIndex().getFilePositionIndex().readAndDecode(fileIndexBitBuffer);
                         String fileName = sampleFiles.get(idx);

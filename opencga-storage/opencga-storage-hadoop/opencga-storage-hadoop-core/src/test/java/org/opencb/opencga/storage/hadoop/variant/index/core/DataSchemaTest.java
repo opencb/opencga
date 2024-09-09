@@ -12,17 +12,17 @@ public class DataSchemaTest {
 
 
     private DataSchema dataSchema;
-    private VarcharDataField key1;
-    private VarcharDataField key2;
+    private VarCharDataField key1;
+    private VarCharDataField key2;
     private IntegerDataField key3;
-    private VarcharDataField key4;
+    private VarCharDataField key4;
 
     @Before
     public void setUp() throws Exception {
-        key1 = new VarcharDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "key1", null));
-        key2 = new VarcharDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "key2", null));
+        key1 = new VarCharDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "key1", null));
+        key2 = new VarCharDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "key2", null));
         key3 = new IntegerDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "key3", null));
-        key4 = new VarcharDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "key4", null));
+        key4 = new VarCharDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "key4", null));
         dataSchema = new DataSchema() {
             {
                 addField(key1);
@@ -36,7 +36,7 @@ public class DataSchemaTest {
     @Test
     public void readWriteDefault() {
         ExposedByteArrayOutputStream stream = new ExposedByteArrayOutputStream();
-        for (DataField field : dataSchema.getFields()) {
+        for (DataFieldBase field : dataSchema.getFields()) {
             field.write(field.getDefault(), stream);
         }
         ByteBuffer byteByffer = stream.toByteByffer();
@@ -112,9 +112,9 @@ public class DataSchemaTest {
         readEntry.rewind();
 
         // Random field access order
-        Assert.assertEquals("key4_value", dataSchema.readField(readEntry, key4));
-        Assert.assertEquals("key1_value", dataSchema.readField(readEntry, key1));
-        Assert.assertEquals(key3NumberValue, dataSchema.readField(readEntry, key3).intValue());
-        Assert.assertEquals("key2_value", dataSchema.readField(readEntry, key2));
+        Assert.assertEquals("key4_value", dataSchema.readFieldAndDecode(readEntry, key4));
+        Assert.assertEquals("key1_value", dataSchema.readFieldAndDecode(readEntry, key1));
+        Assert.assertEquals(key3NumberValue, dataSchema.readFieldAndDecode(readEntry, key3).intValue());
+        Assert.assertEquals("key2_value", dataSchema.readFieldAndDecode(readEntry, key2));
     }
 }

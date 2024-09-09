@@ -42,7 +42,7 @@ public class SampleIndexVariantBiConverter {
     }
 
     protected int expectedSize(String reference, String alternate, boolean interVariantSeparator) {
-        if (AlleleCodec.valid(reference, alternate)) {
+        if (AlleleSnvCodec.valid(reference, alternate)) {
             return INT24_LENGTH; // interVariantSeparator not needed when coding alleles
         } else {
             return INT24_LENGTH + reference.length() + SEPARATOR_LENGTH + alternate.length()
@@ -100,9 +100,9 @@ public class SampleIndexVariantBiConverter {
     }
 
     protected int toBytes(int relativeStart, String reference, String alternate, byte[] bytes, int offset, boolean interVariantSeparator) {
-        if (AlleleCodec.valid(reference, alternate)) {
+        if (AlleleSnvCodec.valid(reference, alternate)) {
             int length = append24bitInteger(relativeStart, bytes, offset);
-            bytes[offset] |= AlleleCodec.encode(reference, alternate);
+            bytes[offset] |= AlleleSnvCodec.encode(reference, alternate);
             return length;
         } else {
             int length = 0;
@@ -118,15 +118,17 @@ public class SampleIndexVariantBiConverter {
     }
 
     public Variant toVariant(String chromosome, int batchStart, byte[] bytes) {
-        return toVariant(chromosome, batchStart, bytes, 0);
+        return toVariant(chromosome, batchStart, bytes, 0, bytes.length);
     }
 
-    public Variant toVariant(String chromosome, int batchStart, byte[] bytes, int offset) {
+    public Variant toVariant(String chromosome, int batchStart, byte[] bytes, int offset, int length) {
         if (hasEncodedAlleles(bytes, offset)) {
             return toVariantEncodedAlleles(chromosome, batchStart, bytes, offset);
         } else {
-            int referenceLength = readNextSeparator(bytes, offset + INT24_LENGTH);
-            int alternateLength = readNextSeparator(bytes, offset + INT24_LENGTH + referenceLength + SEPARATOR_LENGTH);
+            int currentOffset = INT24_LENGTH;
+            int referenceLength = readNextSeparator(bytes, offset + currentOffset, length - currentOffset);
+            currentOffset += referenceLength + SEPARATOR_LENGTH;
+            int alternateLength = readNextSeparator(bytes, offset + currentOffset, length - currentOffset);
             return toVariant(chromosome, batchStart, bytes, offset, referenceLength, alternateLength);
         }
     }
@@ -680,12 +682,12 @@ public class SampleIndexVariantBiConverter {
         }
     }
 
-    private static boolean hasEncodedAlleles(byte[] bytes, int offset) {
+    public static boolean hasEncodedAlleles(byte[] bytes, int offset) {
         return (bytes[offset] & 0xF0) != 0;
     }
 
     private Variant toVariantEncodedAlleles(String chromosome, int batchStart, byte[] bytes, int offset) {
-        String[] refAlt = AlleleCodec.decode(bytes[offset]);
+        String[] refAlt = AlleleSnvCodec.decode(bytes[offset]);
         int start = batchStart + (read24bitInteger(bytes, offset) & 0x0F_FF_FF);
 
         return VariantPhoenixKeyFactory.buildVariant(chromosome, start, refAlt[0], refAlt[1], null, null);
@@ -702,12 +704,16 @@ public class SampleIndexVariantBiConverter {
     }
 
     private int readNextSeparator(byte[] bytes, int offset) {
-        for (int i = offset; i < bytes.length; i++) {
+        return readNextSeparator(bytes, offset, bytes.length - offset);
+    }
+
+    private int readNextSeparator(byte[] bytes, int offset, int length) {
+        for (int i = offset; i < (offset + length); i++) {
             if (bytes[i] == 0) {
                 return i - offset;
             }
         }
-        return bytes.length - offset;
+        return length - offset;
     }
 
     protected int getRelativeStart(Variant variant) {
