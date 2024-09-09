@@ -20,9 +20,14 @@ jobs:
         name: "Get current branch for Xetabase from target branch"
         run: |
           chmod +x ./.github/workflows/scripts/get-xetabase-branch.sh
-          xetabase_branch=$(./.github/workflows/scripts/get-xetabase-branch.sh ${{ github.event.pull_request.base.ref }})
+          echo "github.event.pull_request.base.ref: ${{ github.event.pull_request.base.ref }}"
+          echo "github.event.pull_request.head.ref: ${{ github.event.pull_request.head.ref }}"
+          echo "secrets.ZETTA_REPO_ACCESS_TOKEN: ${{ secrets.ZETTA_REPO_ACCESS_TOKEN }}"
+          xetabase_branch=$(./.github/workflows/scripts/get-xetabase-branch.sh ${{ github.event.pull_request.head.ref }})
           echo "__Xetabase ref:__ \"${xetabase_branch}\"" | tee -a ${GITHUB_STEP_SUMMARY}
           echo "xetabase_branch=${xetabase_branch}" >> $GITHUB_OUTPUT
+        env:
+          ZETTA_REPO_ACCESS_TOKEN: ${{ secrets.ZETTA_REPO_ACCESS_TOKEN }}
 
   test:
     name: "Run all tests before merging"
