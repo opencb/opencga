@@ -7,9 +7,8 @@ cd "$(dirname "$0")"/../../../ || exit 2
 
 ## Read the opencga version from the pom.xml
 BUILD_VERSION=$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)
-ls -lrth
 
-if [ "$IS_RELEASE" == "true" ]; then
+if [[ "$IS_RELEASE" == "true" ]]; then
   echo "v$BUILD_VERSION"
   exit 0
 fi
