@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
-import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -51,14 +50,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.analysis.AnalysisUtils.ANALYSIS_FOLDER;
+import static org.opencb.opencga.analysis.AnalysisUtils.ANALYSIS_RESOURCES_FOLDER;
 import static org.opencb.opencga.core.models.common.InternalStatus.READY;
 import static org.opencb.opencga.core.models.common.QualityControlStatus.COMPUTING;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 
 public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
 
-    // For relatedness analysis
+    // QC folders
+    public static final String QC_FOLDER = "qc/";
+    public static final String QC_DATA_FOLDER = QC_FOLDER + "data/";
 
+    // For relatedness analysis
+    public static final String RELATEDNESS_ANALYSIS_ID = "relatedness";
     protected static final String RELATEDNESS_POP_FREQ_FILENAME = "autosomes_1000G_QC_prune_in.frq";
     protected static final String RELATEDNESS_POP_FREQ_FILE_MSG = "Population frequency file";
     protected static final String RELATEDNESS_POP_EXCLUDE_VAR_FILENAME = "autosomes_1000G_QC.prune.out";
@@ -67,7 +72,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     protected static final String RELATEDNESS_THRESHOLDS_FILE_MSG = "Relatedness thresholds file";
 
     // For inferred sex analysis
-
+    public static final String INFERRED_SEX_ANALYSIS_ID = "inferred-sex";
     protected static final String INFERRED_SEX_THRESHOLDS_FILENAME = "karyotypic_sex_thresholds.json";
     protected static final String INFERRED_SEX_THRESHOLDS_FILE_MSG = "Karyotypic sex thresholds file";
 
@@ -143,8 +148,13 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     }
 
     protected void updateRelatednessFilePaths(QcRelatednessAnalysisParams relatednessParams) throws ToolException {
+        // Sanity check
+        if (relatednessParams == null) {
+            throw new ToolException("Internal error input parameter is null");
+        }
+
         // Get relatedness population frequency
-        if (relatednessParams != null && StringUtils.isNotEmpty(relatednessParams.getPopulationFrequencyFile())) {
+        if (StringUtils.isNotEmpty(relatednessParams.getPopulationFrequencyFile())) {
             Path path = checkFileParameter(relatednessParams.getPopulationFrequencyFile(), RELATEDNESS_POP_FREQ_FILE_MSG, getStudy(),
                     catalogManager, getToken());
             relatednessParams.setPopulationFrequencyFile(path.toAbsolutePath().toString());
@@ -154,7 +164,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Get relatedness population exclude variant
-        if (relatednessParams != null && StringUtils.isNotEmpty(relatednessParams.getPopulationExcludeVariantsFile())) {
+        if (StringUtils.isNotEmpty(relatednessParams.getPopulationExcludeVariantsFile())) {
             Path path = checkFileParameter(relatednessParams.getPopulationExcludeVariantsFile(), RELATEDNESS_POP_EXCLUDE_VAR_FILE_MSG,
                     getStudy(), catalogManager, getToken());
             relatednessParams.setPopulationExcludeVariantsFile(path.toAbsolutePath().toString());
@@ -164,24 +174,29 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Get relatedness thresholds
-        if (relatednessParams != null && StringUtils.isNotEmpty(relatednessParams.getThresholdsFile())) {
+        if (StringUtils.isNotEmpty(relatednessParams.getThresholdsFile())) {
             Path path = checkFileParameter(relatednessParams.getThresholdsFile(), RELATEDNESS_THRESHOLDS_FILE_MSG, getStudy(),
                     catalogManager, getToken());
             relatednessParams.setThresholdsFile(path.toAbsolutePath().toString());
         } else {
-            Path path = getExternalFilePath(RelatednessAnalysis.ID, RELATEDNESS_THRESHOLDS_FILENAME);
+            Path path = getExternalFilePath(RELATEDNESS_ANALYSIS_ID, RELATEDNESS_THRESHOLDS_FILENAME);
             relatednessParams.setThresholdsFile(path.toAbsolutePath().toString());
         }
     }
 
     protected void updateInferredSexFilePaths(QcInferredSexAnalysisParams inferredSexParams) throws ToolException {
+        // Sanity check
+        if (inferredSexParams == null) {
+            throw new ToolException("Internal error input parameter is null");
+        }
+
         // Get inferred sex thresholds
-        if (inferredSexParams != null && StringUtils.isNotEmpty(inferredSexParams.getThresholdsFile())) {
+        if (StringUtils.isNotEmpty(inferredSexParams.getThresholdsFile())) {
             Path path = checkFileParameter(inferredSexParams.getThresholdsFile(), INFERRED_SEX_THRESHOLDS_FILE_MSG, getStudy(),
                     catalogManager, getToken());
             inferredSexParams.setThresholdsFile(path.toAbsolutePath().toString());
         } else {
-            Path path = getExternalFilePath(InferredSexAnalysis.ID, INFERRED_SEX_THRESHOLDS_FILENAME);
+            Path path = getExternalFilePath(INFERRED_SEX_ANALYSIS_ID, INFERRED_SEX_THRESHOLDS_FILENAME);
             inferredSexParams.setThresholdsFile(path.toAbsolutePath().toString());
         }
     }
@@ -240,7 +255,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         switch (resourceName) {
             case RELATEDNESS_THRESHOLDS_FILENAME:
             case INFERRED_SEX_THRESHOLDS_FILENAME:
-                return copyExternalFile(getOutDir().resolve("analysis/qc/data").resolve(resourceName));
+                return copyExternalFile(getOpencgaHome().resolve(ANALYSIS_FOLDER).resolve(QC_DATA_FOLDER).resolve(resourceName));
             default:
                 return downloadExternalFile(analysisId, resourceName);
         }
@@ -263,7 +278,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     protected Path downloadExternalFile(String analysisId, String resourceName) throws ToolException {
         URL url = null;
         try {
-            url = new URL(ResourceUtils.URL + "analysis/" + analysisId + "/" + resourceName);
+            url = new URL(ResourceUtils.URL + ANALYSIS_FOLDER + analysisId + "/" + resourceName);
             ResourceUtils.downloadThirdParty(url, getOutDir());
         } catch (IOException e) {
             throw new ToolException("Something wrong happened downloading the resource '" + resourceName + "' from '" + url + "'", e);
@@ -277,7 +292,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
 
     protected Path downloadExternalFileAtResources(String analysisId, String resourceName) throws ToolException {
         // Check if the resource has been downloaded previously
-        Path resourcePath = getOpencgaHome().resolve("analysis/resources/" + analysisId);
+        Path resourcePath = getOpencgaHome().resolve(ANALYSIS_RESOURCES_FOLDER + analysisId);
         if (!Files.exists(resourcePath)) {
             // Create the resource path if it does not exist yet
             try {
@@ -290,7 +305,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
             // Otherwise, download it from the resource repository
             URL url = null;
             try {
-                url = new URL(ResourceUtils.URL + "analysis/" + analysisId + "/" + resourceName);
+                url = new URL(ResourceUtils.URL + ANALYSIS_FOLDER + analysisId + "/" + resourceName);
                 ResourceUtils.downloadThirdParty(url, resourcePath);
             } catch (IOException e) {
                 throw new ToolException("Something wrong happened downloading the resource '" + resourceName + "' from '" + url + "'", e);

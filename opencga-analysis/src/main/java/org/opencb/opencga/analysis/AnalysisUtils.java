@@ -20,6 +20,9 @@ import java.util.*;
 
 public class AnalysisUtils {
 
+    public static final String ANALYSIS_FOLDER = "analysis/";
+    public static final String ANALYSIS_RESOURCES_FOLDER = ANALYSIS_FOLDER + "resources/";
+
     public static boolean isSupportedCommand(String commands) {
         Set<String> commandSet = new HashSet<>(Arrays.asList(commands.replace(" ", "").split(",")));
         if (!commandSet.contains(commands)) {
