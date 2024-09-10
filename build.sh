@@ -360,7 +360,8 @@ function publish_reports() {
     # Compress the local directory into tar.gz
     tar -czf "$COMPRESSED_FILE" "$FILE_TO_SEND"
 
-    sshpass -p "$SSH_PASS" ssh -p -v "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
+    # Create the destination directory on the remote server
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
 
     # Send the compressed file to the remote server using scp
     sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$COMPRESSED_FILE" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
