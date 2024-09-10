@@ -111,7 +111,7 @@ function manage_dependency() {
     log_version_summary "$REPO,$VERSION,$BRANCH_NAME"
     if [ "$COMMAND" == "build" ];then
       log "Building $REPO branch $BRANCH_NAME."
-      mvn clean install -T 2 -DskipTests --no-transfer-progress
+      mvn clean install -B -T 2 -DskipTests --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
       else
@@ -123,9 +123,9 @@ function manage_dependency() {
       echo "${pwd} $REPO" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
       if [ "$REPO" == "cellbase" ]; then
         log "mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress"
-        mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress
+        mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress
       else
-        mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress
+        mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress
       fi
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $VERSION in $BRANCH_NAME FAILED!!!!!"
@@ -272,7 +272,7 @@ function build_opencga() {
   elif [ "$COMMAND" == "test" ];then
       local pwd=$(pwd -P)
       echo "${pwd} opencga" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
+      mvn clean install -B surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga test FAILED!!!!!"
         print_log_summary
@@ -307,7 +307,7 @@ function build_opencga_enterprise() {
   elif [ "$COMMAND" == "test" ]; then
       local pwd=$(pwd)
       echo "${pwd} opencga-enterprise" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      mvn clean install -B verify surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+      mvn clean install -B surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
       -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise test FAILED!!!!!"
@@ -334,24 +334,44 @@ function publish_reports() {
     local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
     echo "Xetabase tested is $VERSION"
     mv "$OPENCGA_ENTERPRISE_HOME_DIR/reports/test" "$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION"
-    FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION"
-    echo "The reports are in $FILE_TO_SEND"
+
     DESTINATION_PATH="/var/www/html/reports/xetabase"
     if [[ $TASK_REFERENCE == TASK* ]]; then
-      DESTINATION_PATH="$DESTINATION_PATH/$TASK_REFERENCE/"
+      DESTINATION_PATH="$DESTINATION_PATH/$TASK_REFERENCE"
     else
-      DESTINATION_PATH="$DESTINATION_PATH/"
+      DESTINATION_PATH="$DESTINATION_PATH"
     fi
     echo "Destination path: $DESTINATION_PATH"
+#
+#    echo "SSH_PASS $SSH_PASS"
+#    echo "SSH_PORT $SSH_PORT"
+#    echo "SSH_USER $SSH_USER"
+#    echo "SSH_HOST $SSH_HOST"
+#
+#    sshpass -p "$SSH_PASS" ssh -p -v "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
+#    echo "Created remote path: $DESTINATION_PATH"
+#    sshpass -p "$SSH_PASS" scp -r -P -v "$SSH_PORT" "$FILE_TO_SEND" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
 
-    echo "SSH_PASS $SSH_PASS"
-    echo "SSH_PORT $SSH_PORT"
-    echo "SSH_USER $SSH_USER"
-    echo "SSH_HOST $SSH_HOST"
+    # Define the local directory to compress and the output file
+    FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION"
+    echo "The reports are in $FILE_TO_SEND"COMPRESSED_FILE="test.tar.gz"
+    COMPRESSED_FILE="tests.tar.gz"
+    
+    # Compress the local directory into tar.gz
+    tar -czf "$COMPRESSED_FILE" -C "$(dirname "$FILE_TO_SEND")" "$(basename "$FILE_TO_SEND")"
+    
+    # Send the compressed file to the remote server using scp
+    sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$COMPRESSED_FILE" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
 
-    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
-    echo "Created remote path: $DESTINATION_PATH"
-    sshpass -p "$SSH_PASS" scp -r -P "$SSH_PORT" "$FILE_TO_SEND" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
+    # Connect to the remote server and decompress the file
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "tar -xzf $DESTINATION_PATH/$COMPRESSED_FILE -C /remote/destination"
+
+    # Optional: remove the compressed file after decompressing it on the remote server
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm $DESTINATION_PATH/$COMPRESSED_FILE"
+
+
+
+
     if [ $? -eq 0 ]; then
       echo "Uploaded test report to $DESTINATION_PATH"
     else
