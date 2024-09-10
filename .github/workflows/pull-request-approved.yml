@@ -16,6 +16,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: '10'
+          ## This is important to avoid the error in the next step: "fatal: repository 'https://github.com/zetta-genomics/opencga-enterprise.git/' not found"
+          persist-credentials: false
       - id: get_xetabase_branch
         name: "Get current branch for Xetabase from target branch"
         run: |
