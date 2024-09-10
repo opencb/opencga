@@ -17,41 +17,19 @@
 package org.opencb.opencga.analysis.family.qc;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
-import org.opencb.biodata.models.clinical.qc.RelatednessReport;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.utils.VariantQcAnalysisExecutorUtils;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
-import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
-import org.opencb.opencga.core.tools.variant.FamilyQcAnalysisExecutor;
 import org.opencb.opencga.core.tools.variant.FamilyVariantQcAnalysisExecutor;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.utils.VariantQcAnalysisExecutorUtils.CONFIG_FILENAME;
+import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.FAMILY_QC_TYPE;
 
 @ToolExecutor(id="opencga-local", tool = FamilyVariantQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -67,6 +45,6 @@ public class FamilyVariantQcLocalAnalysisExecutor extends FamilyVariantQcAnalysi
             throw new ToolExecutorException(e);
         }
 
-        VariantQcAnalysisExecutorUtils.run(getVcfPaths(), getJsonPaths(), configPath, getOutDir(), getOpencgaHome());
+        VariantQcAnalysisExecutorUtils.run(FAMILY_QC_TYPE, getVcfPaths(), getJsonPaths(), configPath, getOutDir(), getOpencgaHome());
     }
 }

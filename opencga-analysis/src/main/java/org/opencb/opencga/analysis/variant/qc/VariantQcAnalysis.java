@@ -32,8 +32,10 @@ import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
@@ -47,6 +49,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,6 +65,11 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     public static final String QC_FOLDER = "qc/";
     public static final String QC_DATA_FOLDER = QC_FOLDER + "data/";
 
+    // Data type
+    public static final String FAMILY_QC_TYPE = "family";
+    public static final String INDIVIDUAL_QC_TYPE = "individual";
+    public static final String SAMPLE_QC_TYPE = "sample";
+
     // For relatedness analysis
     public static final String RELATEDNESS_ANALYSIS_ID = "relatedness";
     protected static final String RELATEDNESS_POP_FREQ_FILENAME = "autosomes_1000G_QC_prune_in.frq";
@@ -75,6 +83,9 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     public static final String INFERRED_SEX_ANALYSIS_ID = "inferred-sex";
     protected static final String INFERRED_SEX_THRESHOLDS_FILENAME = "karyotypic_sex_thresholds.json";
     protected static final String INFERRED_SEX_THRESHOLDS_FILE_MSG = "Karyotypic sex thresholds file";
+
+    // For mendelian errors sex analysis
+    public static final String MENDELIAN_ERRORS_ANALYSIS_ID = "mendelian-errors";
 
     @Override
     protected void check() throws Exception {
@@ -217,6 +228,35 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolExecutorException(msg + " '" + path + "' does not exist (file ID: " + fileId + ")");
         }
         return path;
+    }
+
+    protected boolean setComputingStatus(String id, String qcType) throws ToolException {
+        try {
+            QualityControlStatus qcStatus = new QualityControlStatus(COMPUTING, "Performing " + qcType + " QC");
+            switch (qcType) {
+                case FAMILY_QC_TYPE: {
+                    FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControlStatus(qcStatus);
+                    catalogManager.getFamilyManager().update(getStudy(), id, updateParams, null, token);
+                    break;
+                }
+                case INDIVIDUAL_QC_TYPE: {
+                    IndividualUpdateParams updateParams = new IndividualUpdateParams().setQualityControlStatus(qcStatus);
+                    catalogManager.getIndividualManager().update(getStudy(), id, updateParams, null, token);
+                    break;
+                }
+                default: {
+                    String msg = "Internal error: unknown QC type '" + qcType + "' (valid values are: " + StringUtils.join(
+                            Arrays.asList(FAMILY_QC_TYPE, INDIVIDUAL_QC_TYPE), ",") + ")";
+                    throw new ToolException(msg);
+                }
+            }
+        } catch (CatalogException e) {
+            String msg = "Could not set status to COMPUTING before performing QC for " + qcType + " ID '" + id + "': " + e.getMessage();
+            logger.error(msg);
+            addError(new ToolException(msg, e));
+            return false;
+        }
+        return true;
     }
 
     protected static List<String> getNoSomaticSampleIds(Family family, String studyId, CatalogManager catalogManager, String token)

@@ -16,14 +16,10 @@
 
 package org.opencb.opencga.analysis.utils;
 
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
-import org.opencb.opencga.core.tools.ToolParams;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -33,12 +29,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.analysis.AnalysisUtils.ANALYSIS_FOLDER;
+import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.QC_FOLDER;
+
 public class VariantQcAnalysisExecutorUtils {
 
     public static String CONFIG_FILENAME = "config.json";
     public static String QC_JSON_EXTENSION = ".qc.json";
 
-    public static void run(LinkedList<Path> vcfPaths, LinkedList<Path> jsonPaths, Path configPath, Path outDir, Path opencgaHome)
+    private static String SCRIPT_VIRTUAL_FOLDER = "/script";
+    private static String JOB_VIRTUAL_FOLDER = "/jobdir";
+
+    public static void run(String qcType, LinkedList<Path> vcfPaths, LinkedList<Path> jsonPaths, Path configPath, Path outDir,
+                           Path opencgaHome)
             throws ToolExecutorException {
         // Run the Python script responsible for performing the family QC analyses
         //    variant_qc.main.py --vcf-file xxx --info-json xxx --bam-file xxx --qc-type xxx --config xxx --output-dir xxx
@@ -48,21 +51,21 @@ public class VariantQcAnalysisExecutorUtils {
         try {
             // Input binding
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-            inputBindings.add(new AbstractMap.SimpleEntry<>(opencgaHome.resolve("analysis/variant-qc").toAbsolutePath().toString(),
-                    "/script"));
+            inputBindings.add(new AbstractMap.SimpleEntry<>(opencgaHome.resolve(ANALYSIS_FOLDER).resolve(QC_FOLDER).toAbsolutePath()
+                    .toString(), SCRIPT_VIRTUAL_FOLDER));
 
             // Output binding
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDir.toAbsolutePath().toString(),
-                    "/jobdir");
+                    JOB_VIRTUAL_FOLDER);
 
-            String params = "python3 /script/variant_qc.main.py"
+            String params = "python3 " + SCRIPT_VIRTUAL_FOLDER + "/variant_qc.main.py"
                     + " --vcf-file " + StringUtils.join(vcfPaths.stream().map(p -> p.toAbsolutePath().toString().replace(
-                    outDir.toAbsolutePath().toString(), "/jobdir")).collect(Collectors.toList()), ",")
+                    outDir.toAbsolutePath().toString(), JOB_VIRTUAL_FOLDER)).collect(Collectors.toList()), ",")
                     + " --info-json " + StringUtils.join(jsonPaths.stream().map(p -> p.toAbsolutePath().toString().replace(
-                    outDir.toAbsolutePath().toString(), "/jobdir")).collect(Collectors.toList()), ",")
-                    + " --qc-type family"
-                    + " --config /jobdir/" + configPath.getFileName()
-                    + " --output-dir /jobdir";
+                    outDir.toAbsolutePath().toString(), JOB_VIRTUAL_FOLDER)).collect(Collectors.toList()), ",")
+                    + " --qc-type " + qcType
+                    + " --config " + JOB_VIRTUAL_FOLDER + "/" + configPath.getFileName()
+                    + " --output-dir " + JOB_VIRTUAL_FOLDER;
 
 
             // Execute Pythong script in docker

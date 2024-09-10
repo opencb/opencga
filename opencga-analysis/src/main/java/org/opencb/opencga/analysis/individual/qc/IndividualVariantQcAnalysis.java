@@ -54,7 +54,6 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.utils.VariantQcAnalysisExecutorUtils.QC_JSON_EXTENSION;
 import static org.opencb.opencga.core.models.common.InternalStatus.READY;
-import static org.opencb.opencga.core.models.common.QualityControlStatus.COMPUTING;
 import static org.opencb.opencga.core.models.common.QualityControlStatus.NONE;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_INDIVIDUALS;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.JSON;
@@ -118,7 +117,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
 
                 // Set quality control status to COMPUTING to prevent multiple individual QCs from running simultaneously
                 // for the same individual
-                if (!setComputingStatus(individual)) {
+                if (!setComputingStatus(individual.getId(), INDIVIDUAL_QC_TYPE)) {
                     continue;
                 }
 
@@ -198,21 +197,6 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
         if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
             updateIndividualQualityControl(individuals);
         }
-    }
-
-    private boolean setComputingStatus(Individual individual) throws ToolException {
-        try {
-            QualityControlStatus qcStatus = new QualityControlStatus(COMPUTING, "Performing individual QC");
-            IndividualUpdateParams updateParams = new IndividualUpdateParams().setQualityControlStatus(qcStatus);
-            catalogManager.getIndividualManager().update(getStudy(), individual.getId(), updateParams, null, token);
-        } catch (CatalogException e) {
-            String msg = "Could not set status to COMPUTING before performing the QC for the individual '" + individual.getId() + "': "
-                    + e.getMessage();
-            logger.error(msg);
-            addError(new ToolException(msg, e));
-            return false;
-        }
-        return true;
     }
 
     private void updateIndividualQualityControl(List<Individual> individuals) throws ToolException {

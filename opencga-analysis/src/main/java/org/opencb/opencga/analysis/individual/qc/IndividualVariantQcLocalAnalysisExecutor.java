@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import static org.opencb.opencga.analysis.utils.VariantQcAnalysisExecutorUtils.CONFIG_FILENAME;
+import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.INDIVIDUAL_QC_TYPE;
 
 @ToolExecutor(id="opencga-local", tool = IndividualVariantQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -44,6 +45,6 @@ public class IndividualVariantQcLocalAnalysisExecutor extends IndividualVariantQ
             throw new ToolExecutorException(e);
         }
 
-        VariantQcAnalysisExecutorUtils.run(getVcfPaths(), getJsonPaths(), configPath, getOutDir(), getOpencgaHome());
+        VariantQcAnalysisExecutorUtils.run(INDIVIDUAL_QC_TYPE, getVcfPaths(), getJsonPaths(), configPath, getOutDir(), getOpencgaHome());
     }
 }

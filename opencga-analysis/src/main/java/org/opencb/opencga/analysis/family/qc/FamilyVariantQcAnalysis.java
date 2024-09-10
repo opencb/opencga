@@ -27,7 +27,6 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
-import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -38,7 +37,6 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.QcRelatednessAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -54,7 +52,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.models.common.InternalStatus.READY;
-import static org.opencb.opencga.core.models.common.QualityControlStatus.COMPUTING;
 import static org.opencb.opencga.core.models.common.QualityControlStatus.NONE;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.JSON;
@@ -105,7 +102,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
                 // Set quality control status to COMPUTING to prevent multiple family QCs from running simultaneously
                 // for the same family
-                if (!setComputingStatus(family)) {
+                if (!setComputingStatus(family.getId(), FAMILY_QC_TYPE)) {
                     continue;
                 }
 
@@ -173,21 +170,6 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
         if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
             updateFamilyQualityControl(families);
         }
-    }
-
-    private boolean setComputingStatus(Family family) throws ToolException {
-        try {
-            QualityControlStatus qcStatus = new QualityControlStatus(COMPUTING, "Performing family QC");
-            FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControlStatus(qcStatus);
-            catalogManager.getFamilyManager().update(getStudy(), family.getId(), updateParams, null, token);
-        } catch (CatalogException e) {
-            String msg = "Could not set status to COMPUTING before performing the QC for the family " + family.getId() + ": "
-                    + e.getMessage();
-            logger.error(msg);
-            addError(new ToolException(msg, e));
-            return false;
-        }
-        return true;
     }
 
     public static void checkParameters(FamilyQcAnalysisParams params, String studyId, CatalogManager catalogManager, String token)
