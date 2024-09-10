@@ -354,17 +354,19 @@ function publish_reports() {
 
     # Define the local directory to compress and the output file
     FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION"
-    echo "The reports are in $FILE_TO_SEND"COMPRESSED_FILE="test.tar.gz"
+    echo "The reports are in $FILE_TO_SEND"
     COMPRESSED_FILE="tests.tar.gz"
     
     # Compress the local directory into tar.gz
-    tar -czf "$COMPRESSED_FILE" -C "$(dirname "$FILE_TO_SEND")" "$(basename "$FILE_TO_SEND")"
-    
+    tar -czf "$COMPRESSED_FILE" "$FILE_TO_SEND"
+
+    sshpass -p "$SSH_PASS" ssh -p -v "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
+
     # Send the compressed file to the remote server using scp
     sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$COMPRESSED_FILE" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
 
     # Connect to the remote server and decompress the file
-    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "tar -xzf $DESTINATION_PATH/$COMPRESSED_FILE -C /remote/destination"
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "tar -xzf $DESTINATION_PATH/$COMPRESSED_FILE"
 
     # Optional: remove the compressed file after decompressing it on the remote server
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm $DESTINATION_PATH/$COMPRESSED_FILE"
