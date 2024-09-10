@@ -64,8 +64,8 @@ import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.Va
 public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
 
     public static final String ID = "individual-variant-qc";
-    public static final String DESCRIPTION = "Run quality control (QC) for a given individual. It includes inferred sex and " +
-            " mendelian errors (UDP)";
+    public static final String DESCRIPTION = "Run quality control (QC) for a given individual. This includes inferred sex, Mendelian"
+            + " errors (UDP), and, if parents are present, a relatedness analysis is also performed";
 
     // Set of individuals with known parents, i.e., trios
     private Set<Individual> trios = new HashSet<>();
@@ -89,6 +89,8 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
         if (CollectionUtils.isNotEmpty(trios)) {
             updateRelatednessFilePaths(analysisParams.getRelatednessParams());
         }
+
+        updateInferredSexFilePaths(analysisParams.getInferredSexParams());
     }
 
     @Override

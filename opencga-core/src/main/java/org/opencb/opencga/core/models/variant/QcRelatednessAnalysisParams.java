@@ -21,13 +21,13 @@ import org.opencb.opencga.core.api.FieldConstants;
 
 public class QcRelatednessAnalysisParams {
 
-    @DataField(id = "populationFrequencyFile", description = FieldConstants.FAMILY_QC_RELATEDNESS_POP_FREQ_FILE_DESCRIPTION)
+    @DataField(id = "populationFrequencyFile", description = FieldConstants.QC_RELATEDNESS_POP_FREQ_FILE_DESCRIPTION)
     private String populationFrequencyFile;
 
-    @DataField(id = "populationExcludeVariantsFile", description = FieldConstants.FAMILY_QC_RELATEDNESS_POP_EXCLUDE_VAR_FILE_DESCRIPTION)
+    @DataField(id = "populationExcludeVariantsFile", description = FieldConstants.QC_RELATEDNESS_POP_EXCLUDE_VAR_FILE_DESCRIPTION)
     private String populationExcludeVariantsFile;
 
-    @DataField(id = "thresholdsFile", description = FieldConstants.FAMILY_QC_RELATEDNESS_THRESHOLD_FILE_DESCRIPTION)
+    @DataField(id = "thresholdsFile", description = FieldConstants.QC_RELATEDNESS_THRESHOLDS_FILE_DESCRIPTION)
     private String thresholdsFile;
 
     public QcRelatednessAnalysisParams() {
@@ -41,7 +41,7 @@ public class QcRelatednessAnalysisParams {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("FamilyQcRelatednessAnalysisParams{");
+        final StringBuilder sb = new StringBuilder("QcRelatednessAnalysisParams{");
         sb.append("populationFrequencyFile='").append(populationFrequencyFile).append('\'');
         sb.append(", populationExcludeVariantsFile='").append(populationExcludeVariantsFile).append('\'');
         sb.append(", thresholdsFile='").append(thresholdsFile).append('\'');

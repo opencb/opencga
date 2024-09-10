@@ -22,6 +22,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+@Deprecated
 public class InferredSexAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Inferred sex analysis params";
 

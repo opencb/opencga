@@ -1312,6 +1312,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--relatedness-params-thresholds-file"}, description = "Threshold file ID for relatedness analysis", required = false, arity = 1)
         public String relatednessParamsThresholdsFile;
     
+        @Parameter(names = {"--inferred-sex-params-thresholds-file"}, description = "Karyotypic sex thresholds file ID for inferred sex analysis", required = false, arity = 1)
+        public String inferredSexParamsThresholdsFile;
+    
         @Parameter(names = {"--inferred-sex-method"}, description = "Inferred sex method. Valid values: CoverageRatio", required = false, arity = 1)
         public String inferredSexMethod = "CoverageRatio";
     

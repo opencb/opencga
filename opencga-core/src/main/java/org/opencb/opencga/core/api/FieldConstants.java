@@ -183,6 +183,13 @@ public class FieldConstants {
     public static final String QC_OVERWRITE_DESCRIPTION = "Overwrite quality control in catalog";
     public static final String QC_FILES_DESCRIPTION = "File IDs related to the quality control";
     public static final String QC_COMMENTS_DESCRIPTION = "Comments related to the quality control";
+    public static final String QC_RELATEDNESS_DESCRIPTION = "Parameters for relatedness analysis";
+    public static final String QC_RELATEDNESS_POP_FREQ_FILE_DESCRIPTION = "Population frequencies file ID for relatedness analysis";
+    public static final String QC_RELATEDNESS_POP_EXCLUDE_VAR_FILE_DESCRIPTION = "Population exclude variants file ID for"
+            + " relatedness analysis";
+    public static final String QC_RELATEDNESS_THRESHOLDS_FILE_DESCRIPTION = "Threshold file ID for relatedness analysis";
+    public static final String QC_INFERRED_SEX_DESCRIPTION = "Parameters for inferred sex analysis";
+    public static final String QC_INFERRED_SEX_THRESHOLDS_FILE_DESCRIPTION = "Karyotypic sex thresholds file ID for inferred sex analysis";
 
     // Family quality control
     public static final String FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION = "List of family IDs";
@@ -191,11 +198,6 @@ public class FieldConstants {
     @Deprecated
     public static final String FAMILY_QC_RELATEDNESS_MAF_DESCRIPTION = "Minor allele frequence (MAF) is used to filter variants before"
             + " computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G + ":CEU>0.35 or cohort:ALL>0.05";
-    public static final String FAMILY_QC_RELATEDNESS_DESCRIPTION = "Parameters for relatedness analysis";
-    public static final String FAMILY_QC_RELATEDNESS_POP_FREQ_FILE_DESCRIPTION = "Population frequencies file ID for relatedness analysis";
-    public static final String FAMILY_QC_RELATEDNESS_POP_EXCLUDE_VAR_FILE_DESCRIPTION = "Population exclude variants file ID for"
-    + " relatedness analysis";
-    public static final String FAMILY_QC_RELATEDNESS_THRESHOLD_FILE_DESCRIPTION = "Threshold file ID for relatedness analysis";
     public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_REPORT_DESCRIPTION = "Relatedness report for family QC";
 
     // Individual quality control

@@ -35,8 +35,11 @@ public class IndividualQcAnalysisParams extends ToolParams {
     @DataField(id = "sample", description = FieldConstants.INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION, deprecated = true)
     private String sample;
 
-    @DataField(id = "relatednessParams", description = FieldConstants.FAMILY_QC_RELATEDNESS_DESCRIPTION)
+    @DataField(id = "relatednessParams", description = FieldConstants.QC_RELATEDNESS_DESCRIPTION)
     private QcRelatednessAnalysisParams relatednessParams;
+
+    @DataField(id = "inferredSexParams", description = FieldConstants.QC_INFERRED_SEX_DESCRIPTION)
+    private QcInferredSexAnalysisParams inferredSexParams;
 
     @Deprecated
     @DataField(id = "inferredSexMethod", description = FieldConstants.INFERRED_SEX_METHOD_DESCRIPTION,
@@ -58,21 +61,14 @@ public class IndividualQcAnalysisParams extends ToolParams {
     public IndividualQcAnalysisParams() {
     }
 
-    @Deprecated
-    public IndividualQcAnalysisParams(String individual, String sample, String inferredSexMethod, String outdir) {
-        this.individual = individual;
-        this.sample = sample;
-        this.inferredSexMethod = inferredSexMethod;
-        this.outdir = outdir;
-    }
-
     public IndividualQcAnalysisParams(List<String> individuals, String individual, String sample,
-                                      QcRelatednessAnalysisParams relatednessParams, String inferredSexMethod, List<String> skip,
-                                      Boolean skipIndex, Boolean overwrite, String outdir) {
+                                      QcRelatednessAnalysisParams relatednessParams, QcInferredSexAnalysisParams inferredSexParams,
+                                      String inferredSexMethod, List<String> skip, Boolean skipIndex, Boolean overwrite, String outdir) {
         this.individuals = individuals;
         this.individual = individual;
         this.sample = sample;
         this.relatednessParams = relatednessParams;
+        this.inferredSexParams = inferredSexParams;
         this.inferredSexMethod = inferredSexMethod;
         this.skip = skip;
         this.skipIndex = skipIndex;
@@ -87,6 +83,7 @@ public class IndividualQcAnalysisParams extends ToolParams {
         sb.append(", individual='").append(individual).append('\'');
         sb.append(", sample='").append(sample).append('\'');
         sb.append(", relatednessParams=").append(relatednessParams);
+        sb.append(", inferredSexParams=").append(inferredSexParams);
         sb.append(", inferredSexMethod='").append(inferredSexMethod).append('\'');
         sb.append(", skip=").append(skip);
         sb.append(", skipIndex=").append(skipIndex);
@@ -129,6 +126,15 @@ public class IndividualQcAnalysisParams extends ToolParams {
 
     public IndividualQcAnalysisParams setRelatednessParams(QcRelatednessAnalysisParams relatednessParams) {
         this.relatednessParams = relatednessParams;
+        return this;
+    }
+
+    public QcInferredSexAnalysisParams getInferredSexParams() {
+        return inferredSexParams;
+    }
+
+    public IndividualQcAnalysisParams setInferredSexParams(QcInferredSexAnalysisParams inferredSexParams) {
+        this.inferredSexParams = inferredSexParams;
         return this;
     }
 

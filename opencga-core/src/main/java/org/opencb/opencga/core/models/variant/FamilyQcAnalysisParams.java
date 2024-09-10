@@ -39,7 +39,7 @@ public class FamilyQcAnalysisParams extends ToolParams {
     @DataField(id = "relatednessMaf", description = FieldConstants.FAMILY_QC_RELATEDNESS_MAF_DESCRIPTION, deprecated = true)
     private String relatednessMaf;
 
-    @DataField(id = "relatednessParams", description = FieldConstants.FAMILY_QC_RELATEDNESS_DESCRIPTION)
+    @DataField(id = "relatednessParams", description = FieldConstants.QC_RELATEDNESS_DESCRIPTION)
     private QcRelatednessAnalysisParams relatednessParams;
 
     @DataField(id = "skipIndex", description = FieldConstants.QC_SKIP_INDEX_DESCRIPTION)
@@ -52,14 +52,6 @@ public class FamilyQcAnalysisParams extends ToolParams {
     private String outdir;
 
     public FamilyQcAnalysisParams() {
-    }
-
-    @Deprecated
-    public FamilyQcAnalysisParams(String family, String relatednessMethod, String relatednessMaf, String outdir) {
-        this.family = family;
-        this.relatednessMethod = relatednessMethod;
-        this.relatednessMaf = relatednessMaf;
-        this.outdir = outdir;
     }
 
     public FamilyQcAnalysisParams(List<String> families, String family, String relatednessMethod, String relatednessMaf,

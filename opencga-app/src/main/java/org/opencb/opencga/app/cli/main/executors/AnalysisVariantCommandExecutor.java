@@ -44,6 +44,7 @@ import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
+import org.opencb.opencga.core.models.variant.QcInferredSexAnalysisParams;
 import org.opencb.opencga.core.models.variant.QcRelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.RvtestsWrapperParams;
@@ -950,6 +951,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "relatednessParams.populationFrequencyFile",commandOptions.relatednessParamsPopulationFrequencyFile, true);
             putNestedIfNotEmpty(beanParams, "relatednessParams.populationExcludeVariantsFile",commandOptions.relatednessParamsPopulationExcludeVariantsFile, true);
             putNestedIfNotEmpty(beanParams, "relatednessParams.thresholdsFile",commandOptions.relatednessParamsThresholdsFile, true);
+            putNestedIfNotEmpty(beanParams, "inferredSexParams.thresholdsFile",commandOptions.inferredSexParamsThresholdsFile, true);
             putNestedIfNotEmpty(beanParams, "inferredSexMethod",commandOptions.inferredSexMethod, true);
             putNestedIfNotNull(beanParams, "skip",commandOptions.skip, true);
             putNestedIfNotNull(beanParams, "skipIndex",commandOptions.skipIndex, true);
