@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -510,7 +511,13 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                             if (filePosition >= 0) {
                                 schema.getFileIndex().getFilePositionIndex().write(filePosition, sampleFileIndex);
                             }
-                            builder.add(gt, new SampleVariantIndexEntry(variant, sampleFileIndex, indexEntry.getFileData().get(0)));
+                            ByteBuffer fileData;
+                            if (indexEntry.getFileData().isEmpty()) {
+                                fileData = null;
+                            } else {
+                                fileData = indexEntry.getFileData().get(0);
+                            }
+                            builder.add(gt, new SampleVariantIndexEntry(variant, sampleFileIndex, fileData));
                             countSampleGt(context, sampleId, gt);
                         }
                     }
