@@ -348,9 +348,13 @@ function publish_reports() {
     echo "The reports are in $FILE_TO_SEND"
 
     COMPRESSED_FILE="tests.tar.gz"
-    
+
+
+
     # Compress the local directory into tar.gz
-    tar -czf "$COMPRESSED_FILE" "$FILE_TO_SEND"
+    tar -czf "$COMPRESSED_FILE" "$FILE_TO_SEND/"
+
+    ls -lh "$COMPRESSED_FILE"
 
     # Create the destination directory on the remote server
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
@@ -760,5 +764,5 @@ publish_docker
 # Print final log summary
 print_log
 
-# Publish test reports
+# Publish test reports as last step because we need finished log file with all information
 publish_reports
