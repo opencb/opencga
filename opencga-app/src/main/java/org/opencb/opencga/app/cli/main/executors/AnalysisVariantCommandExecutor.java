@@ -551,6 +551,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "proteinKeyword",commandOptions.proteinKeyword, true);
             putNestedIfNotEmpty(beanParams, "drug",commandOptions.drug, true);
             putNestedIfNotEmpty(beanParams, "customAnnotation",commandOptions.customAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "source",commandOptions.source, true);
             putNestedIfNotEmpty(beanParams, "unknownGenotype",commandOptions.unknownGenotype, true);
             putNestedIfNotNull(beanParams, "sampleMetadata",commandOptions.sampleMetadata, true);
             putNestedIfNotNull(beanParams, "sort",commandOptions.sort, true);

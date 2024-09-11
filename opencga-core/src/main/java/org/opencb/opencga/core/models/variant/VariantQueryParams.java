@@ -202,7 +202,7 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     public static final String RELEASE_DESCR
             = "";
     public static final String SOURCE_DESCR = "Select the variant data source from where to fetch the data."
-            + " Accepted values are 'variant_index' (default), 'secondary_annotation_index' and 'secondary_sample_index'. "
+            + " Accepted values are 'variant_index' (default) and 'secondary_sample_index'. "
             + "When selecting a secondary_index, the data will be retrieved exclusively from that secondary index, "
             + "and the 'include/exclude' parameters will be ignored. "
             + "If the given query can not be fully resolved using the secondary index, an exception will be raised. "
@@ -343,7 +343,7 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     private String drug;
     @DataField(description = CUSTOM_ANNOTATION_DESCR)
     private String customAnnotation;
-    @DataField(since = "3.2.1", description = SOURCE_DESCR)
+    @DataField(since = "3.4.0", description = SOURCE_DESCR)
     private String source;
 
     @DataField(description = UNKNOWN_GENOTYPE_DESCR)

@@ -164,7 +164,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             privateStudyId = -1;
         } else {
             VariantStorageMetadataManager smm = dbAdaptor.getMetadataManager();
-            ensureStudyMetadataExists(null);
+            ensureStudyMetadataExists();
 
             StudyMetadata studyMetadata = smm.updateStudyMetadata(study, existingStudyMetadata -> {
                 if (existingStudyMetadata.getAggregation() == null) {
@@ -502,7 +502,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
      */
     @Override
     public URI preLoad(URI input, URI output) throws StorageEngineException {
-        getOrCreateStudyMetadata();
+        ensureStudyMetadataExists();
         int studyId = getStudyId();
 
         int currentRelease = getMetadataManager().getAndUpdateProjectMetadata(options).getRelease();
@@ -794,18 +794,10 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     /*  StudyMetadata utils methods        */
     /* --------------------------------------- */
 
-    protected StudyMetadata getOrCreateStudyMetadata() throws StorageEngineException {
-        return ensureStudyMetadataExists(getStudyMetadata());
-    }
-
-    protected StudyMetadata ensureStudyMetadataExists(StudyMetadata studyMetadata) throws StorageEngineException {
+    protected StudyMetadata ensureStudyMetadataExists() throws StorageEngineException {
+        StudyMetadata studyMetadata = getStudyMetadata();
         if (studyMetadata == null) {
-            studyMetadata = getStudyMetadata();
-            if (studyMetadata == null) {
-                String studyName = options.getString(VariantStorageOptions.STUDY.key(), VariantStorageOptions.STUDY.defaultValue());
-                logger.info("Creating a new StudyMetadata '{}'", studyName);
-                studyMetadata = getMetadataManager().createStudy(studyName);
-            }
+            throw new StorageEngineException("StudyMetadata not found");
         }
 //        privateStudyMetadata = studyMetadata;
         setStudyId(studyMetadata.getId());

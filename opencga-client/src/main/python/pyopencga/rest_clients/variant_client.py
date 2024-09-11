@@ -950,11 +950,14 @@ class Variant(_ParentRestClient):
             given genes and regions from que input query. This will prevent
             returning variants from regions out of the panel.
         :param str source: Select the variant data source from where to fetch
-            the data. Accepted values are 'variant_index' (default),
-            'secondary_annotation_index' and 'secondary_sample_index'. When
-            selecting a secondary_index, the data will be retrieved exclusively
-            from that secondary index, and the 'include/exclude' parameters
-            will be ignored. Some data might be missing or be partial.
+            the data. Accepted values are 'variant_index' (default) and
+            'secondary_sample_index'. When selecting a secondary_index, the
+            data will be retrieved exclusively from that secondary index, and
+            the 'include/exclude' parameters will be ignored. If the given
+            query can not be fully resolved using the secondary index, an
+            exception will be raised. As the returned variants will only
+            contain data from the secondary_index, some data might be missing
+            or be partial.
         :param str trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.:
             IDs, histologies, descriptions,...
         """

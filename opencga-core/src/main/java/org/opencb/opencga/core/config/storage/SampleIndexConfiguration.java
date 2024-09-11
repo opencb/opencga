@@ -4,6 +4,7 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
+import org.opencb.commons.utils.VersionUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 
 import java.beans.ConstructorProperties;
@@ -21,8 +22,15 @@ public class SampleIndexConfiguration {
     private final FileDataConfiguration fileDataConfiguration = new FileDataConfiguration();
     private final AnnotationIndexConfiguration annotationIndexConfiguration = new AnnotationIndexConfiguration();
 
+
+    // Test only
+    @Deprecated
     public static SampleIndexConfiguration defaultConfiguration() {
         return defaultConfiguration(false);
+    }
+
+    public static SampleIndexConfiguration defaultConfiguration(String cellbaseVersion) {
+        return defaultConfiguration(new VersionUtils.Version(cellbaseVersion).getMajor() == 4);
     }
 
     public static SampleIndexConfiguration defaultConfiguration(boolean cellbaseV4) {
@@ -181,7 +189,7 @@ public class SampleIndexConfiguration {
     }
 
     public void validate(String cellbaseVersion) {
-        addMissingValues(defaultConfiguration("v4".equalsIgnoreCase(cellbaseVersion)));
+        addMissingValues(defaultConfiguration(cellbaseVersion));
 
         for (IndexFieldConfiguration customField : fileIndexConfiguration.getCustomFields()) {
             customField.validate();

@@ -42,7 +42,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
 
     @Override
     protected void run() throws Exception {
-        for (String project : getVariantStorageProjects(organizationId)) {
+        for (String project : getVariantStorageProjects()) {
             VariantStorageEngine engine = getVariantStorageEngineByProject(project);
             if (!engine.getStorageEngineId().equals("hadoop")) {
                 continue;

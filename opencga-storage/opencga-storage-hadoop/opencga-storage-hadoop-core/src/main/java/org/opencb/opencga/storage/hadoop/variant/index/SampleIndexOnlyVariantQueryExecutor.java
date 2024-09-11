@@ -123,8 +123,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
 
         logger.info("HBase SampleIndex, skip variants table");
         if (variantQuery.getSource() == VariantQuerySource.SECONDARY_SAMPLE_INDEX) {
-            variantQuery.getEvents().add(new Event(Event.Type.INFO, "Using only the secondary sample index. Skip main variants index." +
-                    " Results might be partial."));
+            variantQuery.getEvents().add(new Event(Event.Type.INFO, "Using only the secondary sample index. Skip main variants index."
+                    + " Results might be partial."));
         }
 
         boolean count;

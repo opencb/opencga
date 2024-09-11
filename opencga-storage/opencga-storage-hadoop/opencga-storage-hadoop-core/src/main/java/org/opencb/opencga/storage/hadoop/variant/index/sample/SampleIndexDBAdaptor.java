@@ -233,7 +233,11 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region) throws IOException {
-        SampleIndexSchema schema = schemaFactory.getSchema(study, sample, false);
+        return rawIterator(study, sample, region, schemaFactory.getSchema(study, sample, false));
+    }
+
+    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region, SampleIndexSchema schema)
+            throws IOException {
         String tableName = getSampleIndexTableName(study, schema.getVersion());
         return hBaseManager.act(tableName, table -> {
             Scan scan = new Scan();

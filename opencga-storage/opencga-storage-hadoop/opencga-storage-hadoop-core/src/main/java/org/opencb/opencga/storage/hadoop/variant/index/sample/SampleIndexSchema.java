@@ -164,7 +164,7 @@ public final class SampleIndexSchema {
      * @return Default schema
      */
     public static SampleIndexSchema defaultSampleIndexSchema() {
-        SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
+        SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration(false);
         return new SampleIndexSchema(sampleIndexConfiguration, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION);
     }
 

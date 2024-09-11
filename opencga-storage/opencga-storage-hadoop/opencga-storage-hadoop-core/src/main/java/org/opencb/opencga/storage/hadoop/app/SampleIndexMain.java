@@ -12,19 +12,18 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -117,7 +116,8 @@ public class SampleIndexMain extends AbstractMain {
                 System.out.println("  query-detailed  <databaseName> [--study <study>] [--sample <sample>] [--region <region>] [--quiet] "
                         + "[query...]");
                 System.out.println("  query-raw       <databaseName> [--study <study>] [--sample <sample>] [--quiet]");
-                System.out.println("  index-stats     <databaseName> [--study <study>] [--sample <sample>]");
+                System.out.println("  index-stats     <databaseName> [--study <study>] [--sample <sample>] [--region <region>] "
+                        + "[--version <version>]");
                 break;
         }
         System.err.println("--------------------------");
@@ -197,12 +197,22 @@ public class SampleIndexMain extends AbstractMain {
 
         Map<String, Integer> counts = new TreeMap<>();
         Map<String, Map<String, Integer>> countsByGt = new TreeMap<>();
-        try (CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.rawIterator(studyId, sampleId, region)) {
+        SampleIndexSchema schema;
+        if (argsMap.containsKey("version")) {
+            StudyMetadata.SampleIndexConfigurationVersioned sampleIndexConfiguration
+                    = metadataManager.getStudyMetadata(studyId).getSampleIndexConfiguration(argsMap.getInt("version"));
+            schema = new SampleIndexSchema(sampleIndexConfiguration.getConfiguration(), sampleIndexConfiguration.getVersion());
+        } else {
+            schema = dbAdaptor.getSchemaFactory().getSchema(studyId, sampleId, false);
+        }
+        try (CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.rawIterator(studyId, sampleId, region, schema)) {
             while (iterator.hasNext()) {
                 SampleIndexEntry entry = iterator.next();
                 for (SampleIndexEntry.SampleIndexGtEntry gtEntry : entry.getGts().values()) {
                     String gt = gtEntry.getGt();
-                    addLength(gt, counts, countsByGt, "variants", new BitInputStream(
+                    counts.merge("variants", gtEntry.getCount(), Integer::sum);
+                    countsByGt.computeIfAbsent(gt, k -> new HashMap<>()).merge(gt + "_variants", gtEntry.getCount(), Integer::sum);
+                    addLength(gt, counts, countsByGt, "variant_array", new BitInputStream(
                             gtEntry.getVariants(), gtEntry.getVariantsOffset(), gtEntry.getVariantsLength()));
                     addLength(gt, counts, countsByGt, "fileIndex", gtEntry.getFileIndexStream());
                     addLength(gt, counts, countsByGt, "fileDataIndex", gtEntry.getFileDataIndexBuffer());
@@ -223,6 +233,8 @@ public class SampleIndexMain extends AbstractMain {
             }
         }
         print(new ObjectMap()
+                .append("version", schema.getVersion())
+                .append("configuration", schema.getConfiguration())
                 .append("total_bytes", bytes)
                 .append("total_size", IOUtils.humanReadableByteCount(bytes, true))
                 .append("counts", counts)

@@ -213,13 +213,19 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return studyDBAdaptor.lock(studyId, lockDuration, timeout, lockName);
     }
 
+    // Test purposes only
+    @Deprecated
     public StudyMetadata createStudy(String studyName) throws StorageEngineException {
+        return createStudy(studyName, "v5");
+    }
+
+    public StudyMetadata createStudy(String studyName, String cellbaseVersion) throws StorageEngineException {
         updateProjectMetadata(projectMetadata -> {
             if (!getStudies().containsKey(studyName)) {
                 StudyMetadata studyMetadata = new StudyMetadata(newStudyId(), studyName);
+                initSampleIndexConfigurationIfNeeded(studyMetadata, cellbaseVersion);
                 unsecureUpdateStudyMetadata(studyMetadata);
             }
-            return projectMetadata;
         });
         return getStudyMetadata(studyName);
     }
@@ -229,7 +235,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         Integer idOrNull = getStudyIdOrNull(study);
         int studyId;
         if (idOrNull == null) {
-            studyId = createStudy(study).getId();
+            studyId = createStudy(study, null).getId();
         } else {
             studyId = idOrNull;
         }
@@ -237,22 +243,35 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 ? StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING
                 : StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE;
         return updateStudyMetadata(studyId, studyMetadata -> {
-            List<StudyMetadata.SampleIndexConfigurationVersioned> configurations = studyMetadata.getSampleIndexConfigurations();
-            if (configurations == null || configurations.isEmpty()) {
-                configurations = new ArrayList<>(2);
-                configurations.add(new StudyMetadata.SampleIndexConfigurationVersioned(
-                        SampleIndexConfiguration.defaultConfiguration(),
-                        StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION,
-                        Date.from(Instant.now()), StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE));
-                studyMetadata.setSampleIndexConfigurations(configurations);
+            int version;
+            if (CollectionUtils.isEmpty(studyMetadata.getSampleIndexConfigurations())) {
+                studyMetadata.setSampleIndexConfigurations(new ArrayList<>(1));
+                version = StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION + 1;
+            } else {
+                version = studyMetadata.getSampleIndexConfigurationLatest().getVersion() + 1;
             }
-            int version = studyMetadata.getSampleIndexConfigurationLatest().getVersion() + 1;
-            configurations.add(new StudyMetadata.SampleIndexConfigurationVersioned(
+            studyMetadata.getSampleIndexConfigurations().add(new StudyMetadata.SampleIndexConfigurationVersioned(
                     configuration,
                     version,
                     Date.from(Instant.now()),
                     status));
         }).getSampleIndexConfigurationLatest();
+    }
+
+    private static void initSampleIndexConfigurationIfNeeded(StudyMetadata studyMetadata, String cellbaseVersion) {
+        List<StudyMetadata.SampleIndexConfigurationVersioned> configurations = studyMetadata.getSampleIndexConfigurations();
+        if (cellbaseVersion == null) {
+            logger.info("CellBase version not provided. Skipping SampleIndexConfiguration initialization");
+            return;
+        }
+        if (configurations == null || configurations.isEmpty()) {
+            configurations = new ArrayList<>(2);
+            configurations.add(new StudyMetadata.SampleIndexConfigurationVersioned(
+                    SampleIndexConfiguration.defaultConfiguration(cellbaseVersion),
+                    StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION,
+                    Date.from(Instant.now()), StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE));
+            studyMetadata.setSampleIndexConfigurations(configurations);
+        }
     }
 
     public boolean studyExists(String studyName) {
