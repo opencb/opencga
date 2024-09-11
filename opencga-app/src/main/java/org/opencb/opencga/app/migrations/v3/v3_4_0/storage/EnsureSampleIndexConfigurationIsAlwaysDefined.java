@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.migrations.v3.v3_4_0.storage;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.app.migrations.StorageMigrationTool;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
@@ -27,15 +28,19 @@ public class EnsureSampleIndexConfigurationIsAlwaysDefined extends StorageMigrat
             if (engine.getMetadataManager().exists()) {
                 for (Integer studyId : engine.getMetadataManager().getStudyIds()) {
                     StudyMetadata studyMetadata = engine.getMetadataManager().getStudyMetadata(studyId);
-                    List<StudyMetadata.SampleIndexConfigurationVersioned> configurations = studyMetadata.getSampleIndexConfigurations();
-                    if (configurations == null || configurations.isEmpty()) {
-                        configurations = new ArrayList<>(1);
-                        logger.info("Creating default SampleIndexConfiguration for study '" + studyMetadata.getName() + "' (" + studyId + ")");
-                        configurations.add(new StudyMetadata.SampleIndexConfigurationVersioned(
-                                preFileDataConfiguration(),
-                                StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION,
-                                Date.from(Instant.now()), StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE));
-                        studyMetadata.setSampleIndexConfigurations(configurations);
+                    if (CollectionUtils.isEmpty(studyMetadata.getSampleIndexConfigurations())) {
+                        engine.getMetadataManager().updateStudyMetadata(studyId, sm -> {
+                            if (CollectionUtils.isEmpty(sm.getSampleIndexConfigurations())) {
+                                List<StudyMetadata.SampleIndexConfigurationVersioned> configurations = new ArrayList<>(1);
+                                logger.info("Creating default SampleIndexConfiguration for study '" + studyMetadata.getName() + "'"
+                                        + " (" + studyId + ")");
+                                configurations.add(new StudyMetadata.SampleIndexConfigurationVersioned(
+                                        preFileDataConfiguration(),
+                                        StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION,
+                                        Date.from(Instant.now()), StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE));
+                                sm.setSampleIndexConfigurations(configurations);
+                            }
+                        });
                     }
                 }
             }
