@@ -63,7 +63,8 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
 
     // QC folders
     public static final String QC_FOLDER = "qc/";
-    public static final String QC_DATA_FOLDER = QC_FOLDER + "data/";
+    public static final String RESOURCES_FOLDER = "resources/";
+    public static final String QC_RESOURCES_FOLDER = QC_FOLDER + RESOURCES_FOLDER;
 
     // Data type
     public static final String FAMILY_QC_TYPE = "family";
@@ -292,17 +293,28 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     }
 
     protected Path getExternalFilePath(String analysisId, String resourceName) throws ToolException {
+        Path resourcesPath = getOutDir().resolve(RESOURCES_FOLDER);
+        if (!Files.exists(resourcesPath)) {
+            try {
+                Files.createDirectories(resourcesPath);
+                if (!Files.exists(resourcesPath)) {
+                    throw new ToolException("Something wrong happened when creating the resources folder at " + resourcesPath);
+                }
+            } catch (IOException e) {
+                throw new ToolException("Error creating the resources folder at " + resourcesPath, e);
+            }
+        }
         switch (resourceName) {
             case RELATEDNESS_THRESHOLDS_FILENAME:
             case INFERRED_SEX_THRESHOLDS_FILENAME:
-                return copyExternalFile(getOpencgaHome().resolve(ANALYSIS_FOLDER).resolve(QC_DATA_FOLDER).resolve(resourceName));
+                return copyExternalFile(getOpencgaHome().resolve(ANALYSIS_FOLDER).resolve(QC_RESOURCES_FOLDER).resolve(resourceName));
             default:
                 return downloadExternalFile(analysisId, resourceName);
         }
     }
 
     protected Path copyExternalFile(Path source) throws ToolException {
-        Path dest = getOutDir().resolve(source.getFileName());
+        Path dest = getOutDir().resolve(RESOURCES_FOLDER).resolve(source.getFileName());
         try {
             Files.copy(source, dest);
         } catch (IOException e) {
@@ -317,17 +329,18 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
 
     protected Path downloadExternalFile(String analysisId, String resourceName) throws ToolException {
         URL url = null;
+        Path resourcesPath = getOutDir().resolve(RESOURCES_FOLDER);
         try {
             url = new URL(ResourceUtils.URL + ANALYSIS_FOLDER + analysisId + "/" + resourceName);
-            ResourceUtils.downloadThirdParty(url, getOutDir());
+            ResourceUtils.downloadThirdParty(url, resourcesPath);
         } catch (IOException e) {
-            throw new ToolException("Something wrong happened downloading the resource '" + resourceName + "' from '" + url + "'", e);
+            throw new ToolException("Something wrong happened when downloading the resource '" + resourceName + "' from '" + url + "'", e);
         }
 
-        if (!Files.exists(getOutDir().resolve(resourceName))) {
-            throw new ToolException("After downloading the resource '" + resourceName + "', it does not exist at " + getOutDir());
+        if (!Files.exists(resourcesPath.resolve(resourceName))) {
+            throw new ToolException("After downloading the resource '" + resourceName + "', it does not exist at " + resourcesPath);
         }
-        return getOutDir().resolve(resourceName);
+        return resourcesPath.resolve(resourceName);
     }
 
     protected Path downloadExternalFileAtResources(String analysisId, String resourceName) throws ToolException {
