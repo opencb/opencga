@@ -360,7 +360,7 @@ function publish_reports() {
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "tar -xzf $DESTINATION_PATH/$COMPRESSED_FILE -C $DESTINATION_PATH"
 
     # Optional: remove the compressed file after decompressing it on the remote server
-#    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm $DESTINATION_PATH/$COMPRESSED_FILE"
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm $DESTINATION_PATH/$COMPRESSED_FILE"
 
     if [ $? -eq 0 ]; then
       echo "Uploaded test report to $DESTINATION_PATH"
