@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.qc;
 
+import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
@@ -261,6 +262,21 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
             return false;
         }
         return true;
+    }
+
+    protected <T> T checkQcReport(String id, String analysisId, List<String> skip, Path qcPath, String qcType, ObjectReader reader)
+            throws ToolException {
+        if (CollectionUtils.isEmpty(skip) || !skip.contains(analysisId)) {
+            java.io.File qcFile = qcPath.resolve(analysisId).resolve(id + QC_JSON_EXTENSION).toFile();
+            try {
+                return reader.readValue(qcFile);
+            } catch (IOException e) {
+                String msg = "Error parsing '" + analysisId + "' report (" + qcFile.getName() + " ) for " + qcType + " " + id;
+                logger.error(msg, e);
+                addError(new ToolException(msg, e));
+            }
+        }
+        return null;
     }
 
     protected static List<String> getNoSomaticSampleIds(Family family, String studyId, CatalogManager catalogManager, String token)

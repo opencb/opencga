@@ -190,6 +190,9 @@ public class FieldConstants {
     public static final String QC_RELATEDNESS_THRESHOLDS_FILE_DESCRIPTION = "Threshold file ID for relatedness analysis";
     public static final String QC_INFERRED_SEX_DESCRIPTION = "Parameters for inferred sex analysis";
     public static final String QC_INFERRED_SEX_THRESHOLDS_FILE_DESCRIPTION = "Karyotypic sex thresholds file ID for inferred sex analysis";
+    public static final String QC_INFERRED_SEX_REPORTS_DESCRIPTION = "List of inferred sex reports";
+    public static final String QC_RELATEDNESS_REPORTS_DESCRIPTION = "List of samples relatedness reports";
+    public static final String QC_MENDELIAN_ERROR_REPORTS_DESCRIPTION = "List of Mendelian error reports";
 
     // Family quality control
     public static final String FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION = "List of family IDs";
@@ -213,10 +216,6 @@ public class FieldConstants {
             + IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
     public static final String INDIVIDUAL_QC_SKIP_DESCRIPTION = "Individual QC analysis to skip. Valid values are: " + INFERRED_SEX_ID
             + ", " + MENDELIAN_ERRORS_ID;
-    public static final String INDIVIDUAL_QUALITY_CONTROL_INFERRED_SEX_REPORT_DESCRIPTION = "List of inferred sex reports, it depends on"
-            + " the method (currently by coverage ratio).";
-    public static final String INDIVIDUAL_QUALITY_CONTROL_SAMPLE_RELATEDNESS_REPORT_DESCRIPTION = "Reports of samples relatedness.";
-    public static final String INDIVIDUAL_QUALITY_CONTROL_MENDELIAN_ERRORS_DESCRIPTION = "Mendelian errors.";
 
     //Status
     public static final String STATUS_DATE_DESCRIPTION = "Date has set the status.";

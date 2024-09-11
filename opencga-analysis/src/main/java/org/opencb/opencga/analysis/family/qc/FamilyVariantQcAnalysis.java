@@ -95,65 +95,62 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                 // Decide if quality control has to be performed
                 //   - by checking the quality control status, if it is READY means it has been computed previously, and
                 //   - by checking the flag overwrite
-                if (family.getInternal() != null
-                        && !performQualityControl(family.getInternal().getQualityControlStatus(), analysisParams.getOverwrite())) {
-                    // Quality control does not have to be performed for this family
-                    continue;
+                if (family.getInternal() == null || performQualityControl(family.getInternal().getQualityControlStatus(),
+                        analysisParams.getOverwrite())) {
+                    // Set quality control status to COMPUTING to prevent multiple family QCs from running simultaneously
+                    // for the same family
+                    QualityControlStatus qcStatus = new QualityControlStatus(COMPUTING, "Performing " + FAMILY_QC_TYPE + " QC");
+                    if (!setQualityControlStatus(qcStatus, family.getId(), FAMILY_QC_TYPE)) {
+                        continue;
+                    }
+
+                    // Create directory to save variants and family
+                    Path famOutPath = Files.createDirectories(getOutDir().resolve(familyId));
+                    if (!Files.exists(famOutPath)) {
+                        throw new ToolException("Error creating directory: " + famOutPath);
+                    }
+
+                    // Export family variants (VCF format)
+                    // Create variant query
+                    String gt = getNoSomaticSampleIds(family, study, catalogManager, token).stream().map(s -> s + ":0/0,0/1,1/1")
+                            .collect(Collectors.joining(";"));
+                    Query query = new Query()
+                            .append(VariantQueryParam.STUDY.key(), study)
+                            .append(VariantQueryParam.TYPE.key(), VariantType.SNV)
+                            .append(VariantQueryParam.GENOTYPE.key(), gt)
+                            .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
+                                    .split(",")));
+
+                    // Create query options
+                    QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, "id,studies.samples");
+
+                    // Export to VCF.GZ format
+                    String basename = famOutPath.resolve(familyId).toAbsolutePath().toString();
+                    getVariantStorageManager().exportData(basename, VCF_GZ, null, query, queryOptions, token);
+
+                    // Check VCF file
+                    Path familyVcfPath = Paths.get(basename + "." + VCF_GZ.getExtension());
+                    if (!Files.exists(familyVcfPath)) {
+                        throw new ToolException("Something wrong happened when exporting VCF file for family ID " + familyId + ". VCF file "
+                                + familyVcfPath + " was not created. Export query = " + query.toJson() + "; export query options = "
+                                + queryOptions.toJson());
+                    }
+                    familyVcfPaths.add(familyVcfPath);
+
+                    // Export family (JSON format)
+                    Path familyJsonPath = Paths.get(basename + "." + JSON.getExtension());
+                    objectWriter.writeValue(familyJsonPath.toFile(), family);
+
+                    // Check VCF file
+                    if (!Files.exists(familyJsonPath)) {
+                        throw new ToolException("Something wrong happened when saving JSON file for family ID " + familyId + ". JSON file "
+                                + familyJsonPath + " was not created.");
+                    }
+                    familyJsonPaths.add(familyJsonPath);
+
+                    // Add family to the list
+                    families.add(family);
                 }
-
-                // Set quality control status to COMPUTING to prevent multiple family QCs from running simultaneously
-                // for the same family
-                QualityControlStatus qcStatus = new QualityControlStatus(COMPUTING, "Performing " + FAMILY_QC_TYPE + " QC");
-                if (!setQualityControlStatus(qcStatus, family.getId(), FAMILY_QC_TYPE)) {
-                    continue;
-                }
-
-                // Create directory to save variants and family
-                Path famOutPath = Files.createDirectories(getOutDir().resolve(familyId));
-                if (!Files.exists(famOutPath)) {
-                    throw new ToolException("Error creating directory: " + famOutPath);
-                }
-
-                // Export family variants (VCF format)
-                // Create variant query
-                String gt = getNoSomaticSampleIds(family, study, catalogManager, token).stream().map(s -> s + ":0/0,0/1,1/1")
-                        .collect(Collectors.joining(";"));
-                Query query = new Query()
-                        .append(VariantQueryParam.STUDY.key(), study)
-                        .append(VariantQueryParam.TYPE.key(), VariantType.SNV)
-                        .append(VariantQueryParam.GENOTYPE.key(), gt)
-                        .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
-                                .split(",")));
-
-                // Create query options
-                QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, "id,studies.samples");
-
-                // Export to VCF.GZ format
-                String basename = famOutPath.resolve(familyId).toAbsolutePath().toString();
-                getVariantStorageManager().exportData(basename, VCF_GZ, null, query, queryOptions, token);
-
-                // Check VCF file
-                Path familyVcfPath = Paths.get(basename + "." + VCF_GZ.getExtension());
-                if (!Files.exists(familyVcfPath)) {
-                    throw new ToolException("Something wrong happened when exporting VCF file for family ID " + familyId + ". VCF file "
-                            + familyVcfPath + " was not created. Export query = " + query.toJson() + "; export query options = "
-                            + queryOptions.toJson());
-                }
-                familyVcfPaths.add(familyVcfPath);
-
-                // Export family (JSON format)
-                Path familyJsonPath = Paths.get(basename + "." + JSON.getExtension());
-                objectWriter.writeValue(familyJsonPath.toFile(), family);
-
-                // Check VCF file
-                if (!Files.exists(familyJsonPath)) {
-                    throw new ToolException("Something wrong happened when saving JSON file for family ID " + familyId + ". JSON file "
-                            + familyJsonPath + " was not created.");
-                }
-                familyJsonPaths.add(familyJsonPath);
-
-                // Add family to the list
-                families.add(family);
             }
         } catch (CatalogException | IOException | StorageEngineException e) {
             throw new ToolException(e);
