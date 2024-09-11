@@ -23,13 +23,12 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
-import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
@@ -41,8 +40,6 @@ import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
-import org.opencb.opencga.core.models.variant.QcInferredSexAnalysisParams;
-import org.opencb.opencga.core.models.variant.QcRelatednessAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
@@ -148,91 +145,50 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    protected static void checkRelatednessParameters(QcRelatednessAnalysisParams relatednessParams, String studyId,
-                                                     CatalogManager catalogManager, String token) throws ToolException {
-        if (StringUtils.isNotEmpty(relatednessParams.getPopulationFrequencyFile())) {
-            checkFileParameter(relatednessParams.getPopulationFrequencyFile(), RELATEDNESS_POP_FREQ_FILE_MSG, studyId, catalogManager,
-                    token);
-        }
-        if (StringUtils.isNotEmpty(relatednessParams.getPopulationExcludeVariantsFile())) {
-            checkFileParameter(relatednessParams.getPopulationExcludeVariantsFile(), RELATEDNESS_POP_EXCLUDE_VAR_FILE_MSG, studyId,
-                    catalogManager, token);
-        }
-        if (StringUtils.isNotEmpty(relatednessParams.getThresholdsFile())) {
-            checkFileParameter(relatednessParams.getThresholdsFile(), RELATEDNESS_THRESHOLDS_FILE_MSG, studyId, catalogManager, token);
-        }
-    }
-
-    protected void updateRelatednessFilePaths(QcRelatednessAnalysisParams relatednessParams) throws ToolException {
-        // Sanity check
-        if (relatednessParams == null) {
-            throw new ToolException("Internal error input parameter is null");
-        }
-
-        // Get relatedness population frequency
-        if (StringUtils.isNotEmpty(relatednessParams.getPopulationFrequencyFile())) {
-            Path path = checkFileParameter(relatednessParams.getPopulationFrequencyFile(), RELATEDNESS_POP_FREQ_FILE_MSG, getStudy(),
-                    catalogManager, getToken());
-            relatednessParams.setPopulationFrequencyFile(path.toAbsolutePath().toString());
-        } else {
-            Path path = getExternalFilePath(RelatednessAnalysis.ID, RELATEDNESS_POP_FREQ_FILENAME);
-            relatednessParams.setPopulationFrequencyFile(path.toAbsolutePath().toString());
-        }
-
-        // Get relatedness population exclude variant
-        if (StringUtils.isNotEmpty(relatednessParams.getPopulationExcludeVariantsFile())) {
-            Path path = checkFileParameter(relatednessParams.getPopulationExcludeVariantsFile(), RELATEDNESS_POP_EXCLUDE_VAR_FILE_MSG,
-                    getStudy(), catalogManager, getToken());
-            relatednessParams.setPopulationExcludeVariantsFile(path.toAbsolutePath().toString());
-        } else {
-            Path path = getExternalFilePath(RelatednessAnalysis.ID, RELATEDNESS_POP_EXCLUDE_VAR_FILENAME);
-            relatednessParams.setPopulationExcludeVariantsFile(path.toAbsolutePath().toString());
-        }
-
-        // Get relatedness thresholds
-        if (StringUtils.isNotEmpty(relatednessParams.getThresholdsFile())) {
-            Path path = checkFileParameter(relatednessParams.getThresholdsFile(), RELATEDNESS_THRESHOLDS_FILE_MSG, getStudy(),
-                    catalogManager, getToken());
-            relatednessParams.setThresholdsFile(path.toAbsolutePath().toString());
-        } else {
-            Path path = getExternalFilePath(RELATEDNESS_ANALYSIS_ID, RELATEDNESS_THRESHOLDS_FILENAME);
-            relatednessParams.setThresholdsFile(path.toAbsolutePath().toString());
-        }
-    }
-
-    protected void updateInferredSexFilePaths(QcInferredSexAnalysisParams inferredSexParams) throws ToolException {
-        // Sanity check
-        if (inferredSexParams == null) {
-            throw new ToolException("Internal error input parameter is null");
-        }
-
-        // Get inferred sex thresholds
-        if (StringUtils.isNotEmpty(inferredSexParams.getThresholdsFile())) {
-            Path path = checkFileParameter(inferredSexParams.getThresholdsFile(), INFERRED_SEX_THRESHOLDS_FILE_MSG, getStudy(),
-                    catalogManager, getToken());
-            inferredSexParams.setThresholdsFile(path.toAbsolutePath().toString());
-        } else {
-            Path path = getExternalFilePath(INFERRED_SEX_ANALYSIS_ID, INFERRED_SEX_THRESHOLDS_FILENAME);
-            inferredSexParams.setThresholdsFile(path.toAbsolutePath().toString());
-        }
-    }
-
-    protected static Path checkFileParameter(String fileId, String msg, String studyId, CatalogManager catalogManager, String token)
+    protected static Path checkResourcesDir(String resourcesDir, String studyId, CatalogManager catalogManager, String token)
             throws ToolException {
-        if (StringUtils.isEmpty(fileId)) {
-            throw new ToolException(msg + " ID is empty");
-        }
-        File file;
-        try {
-            file = catalogManager.getFileManager().get(studyId, fileId, QueryOptions.empty(), token).first();
-        } catch (CatalogException e) {
-            throw new ToolExecutorException(msg + " ID '" + fileId + "' not found in OpenCGA catalog", e);
-        }
-        Path path = Paths.get(file.getUri());
-        if (!Files.exists(path)) {
-            throw new ToolExecutorException(msg + " '" + path + "' does not exist (file ID: " + fileId + ")");
+        Path path = null;
+        if (StringUtils.isNotEmpty(resourcesDir)) {
+            try {
+                Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), resourcesDir);
+                OpenCGAResult<File> fileResult = catalogManager.getFileManager().search(studyId, query, QueryOptions.empty(), token);
+                if (fileResult.getNumResults() == 0) {
+                    throw new ToolException("Could not find the resources path '" + resourcesDir + "' in OpenCGA catalog");
+                }
+                if (fileResult.getNumResults() > 1) {
+                    throw new ToolException("Multiple results found (" + fileResult.getNumResults() + ") for resources path '"
+                            + resourcesDir + "' in OpenCGA catalog");
+                }
+                path = Paths.get(fileResult.first().getUri());
+                if (!Files.exists(path)) {
+                    throw new ToolException("Resources path '" + path + "' does not exist (OpenCGA path: " + resourcesDir + ")");
+                }
+                return path;
+            } catch (CatalogException e) {
+                throw new ToolException("Error searching the OpenCGA catalog path '" + resourcesDir + "'", e);
+            }
         }
         return path;
+    }
+
+    protected void prepareRelatednessResources(String resourcesDir) throws ToolException {
+        Path path = checkResourcesDir(resourcesDir, getStudy(), getCatalogManager(), getToken());
+
+        // Copy relatedness population frequency file
+        copyQcResourceFile(path, RELATEDNESS_POP_FREQ_FILENAME);
+
+        // Copy relatedness population exclude variant file
+        copyQcResourceFile(path, RELATEDNESS_POP_FREQ_FILENAME);
+
+        // Copy relatedness thresholds file
+        copyQcResourceFile(path, RELATEDNESS_THRESHOLDS_FILENAME);
+    }
+
+    protected void prepareInferredSexResources(String resourcesDir) throws ToolException {
+        Path path = checkResourcesDir(resourcesDir, getStudy(), getCatalogManager(), getToken());
+
+        // Copy inferred sex thresholds file
+        copyQcResourceFile(path, INFERRED_SEX_THRESHOLDS_FILENAME);
     }
 
     protected boolean setQualityControlStatus(QualityControlStatus qcStatus, String id, String qcType) throws ToolException {
@@ -311,8 +267,64 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         return sampleIds;
     }
 
-    protected Path getExternalFilePath(String analysisId, String resourceName) throws ToolException {
-        Path resourcesPath = getOutDir().resolve(RESOURCES_FOLDER);
+    protected void copyQcResourceFile(Path path, String resourceName) throws ToolException {
+        // Copy resource file
+        if (path == null || !Files.exists(path.resolve(resourceName))) {
+            // Use the default resource file
+            copyQcResourceFile(resourceName);
+        } else {
+            // Use the custom resource file
+            copyQcResourceFile(path.resolve(resourceName));
+        }
+    }
+
+    protected void copyQcResourceFile(String resourceName) throws ToolException {
+        Path srcResourcesPath = getOpencgaHome().resolve(ANALYSIS_RESOURCES_FOLDER).resolve(QC_FOLDER);
+        Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
+        if (Files.exists(srcResourcesPath.resolve(resourceName))) {
+            // Copy resource file
+            copyQcResourceFile(srcResourcesPath.resolve(resourceName));
+        } else {
+            // Download directly into the job dir
+            // It can be improved by downloading once (the first time) in the analysis resources folder
+            URL url = null;
+            try {
+                url = new URL(ResourceUtils.URL + ANALYSIS_FOLDER + QC_FOLDER + "/" + resourceName);
+                ResourceUtils.downloadThirdParty(url, destResourcesPath);
+            } catch (IOException e) {
+                throw new ToolException("Something wrong happened when downloading the resource '" + resourceName + "' from '"
+                        + url + "'", e);
+            }
+
+            if (!Files.exists(destResourcesPath.resolve(resourceName))) {
+                throw new ToolException("Error downloading the resource '" + resourceName + "', it does not exist at " + destResourcesPath);
+            }
+        }
+    }
+
+    protected void copyQcResourceFile(Path srcResourcesPath) throws ToolException {
+        String resourceName = srcResourcesPath.getFileName().toString();
+        Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
+
+        String msg = "Error copying resource file '" + resourceName + "'";
+
+        // Copy resource file
+        try {
+            Files.copy(srcResourcesPath, destResourcesPath.resolve(resourceName));
+        } catch (IOException e) {
+            if (!Files.exists(destResourcesPath.resolve(resourceName))
+                    || srcResourcesPath.toFile().length() != destResourcesPath.resolve(resourceName).toFile().length()) {
+                throw new ToolException(msg, e);
+            }
+            logger.warn(msg, e);
+        }
+
+        if (!Files.exists(destResourcesPath.resolve(resourceName))) {
+            throw new ToolException(msg  + ", it does not exist at " + destResourcesPath);
+        }
+    }
+
+    protected Path checkResourcesPath(Path resourcesPath) throws ToolException {
         if (!Files.exists(resourcesPath)) {
             try {
                 Files.createDirectories(resourcesPath);
@@ -323,71 +335,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
                 throw new ToolException("Error creating the resources folder at " + resourcesPath, e);
             }
         }
-        switch (resourceName) {
-            case RELATEDNESS_THRESHOLDS_FILENAME:
-            case INFERRED_SEX_THRESHOLDS_FILENAME:
-                return copyExternalFile(getOpencgaHome().resolve(ANALYSIS_FOLDER).resolve(QC_RESOURCES_FOLDER).resolve(resourceName));
-            default:
-                return downloadExternalFile(analysisId, resourceName);
-        }
-    }
-
-    protected Path copyExternalFile(Path source) throws ToolException {
-        Path dest = getOutDir().resolve(RESOURCES_FOLDER).resolve(source.getFileName());
-        try {
-            Files.copy(source, dest);
-        } catch (IOException e) {
-            String msg = "Error copying resource file '" + source.getFileName() + "'";
-            if (!Files.exists(dest) || source.toFile().length() != dest.toFile().length()) {
-                throw new ToolException(msg, e);
-            }
-            logger.warn(msg, e);
-        }
-        return dest;
-    }
-
-    protected Path downloadExternalFile(String analysisId, String resourceName) throws ToolException {
-        URL url = null;
-        Path resourcesPath = getOutDir().resolve(RESOURCES_FOLDER);
-        try {
-            url = new URL(ResourceUtils.URL + ANALYSIS_FOLDER + analysisId + "/" + resourceName);
-            ResourceUtils.downloadThirdParty(url, resourcesPath);
-        } catch (IOException e) {
-            throw new ToolException("Something wrong happened when downloading the resource '" + resourceName + "' from '" + url + "'", e);
-        }
-
-        if (!Files.exists(resourcesPath.resolve(resourceName))) {
-            throw new ToolException("After downloading the resource '" + resourceName + "', it does not exist at " + resourcesPath);
-        }
-        return resourcesPath.resolve(resourceName);
-    }
-
-    protected Path downloadExternalFileAtResources(String analysisId, String resourceName) throws ToolException {
-        // Check if the resource has been downloaded previously
-        Path resourcePath = getOpencgaHome().resolve(ANALYSIS_RESOURCES_FOLDER + analysisId);
-        if (!Files.exists(resourcePath)) {
-            // Create the resource path if it does not exist yet
-            try {
-                Files.createDirectories(resourcePath);
-            } catch (IOException e) {
-                throw new ToolException("It could not create the resource path '" + resourcePath + "'", e);
-            }
-        }
-        if (!Files.exists(resourcePath.resolve(resourceName))) {
-            // Otherwise, download it from the resource repository
-            URL url = null;
-            try {
-                url = new URL(ResourceUtils.URL + ANALYSIS_FOLDER + analysisId + "/" + resourceName);
-                ResourceUtils.downloadThirdParty(url, resourcePath);
-            } catch (IOException e) {
-                throw new ToolException("Something wrong happened downloading the resource '" + resourceName + "' from '" + url + "'", e);
-            }
-
-            if (!Files.exists(resourcePath.resolve(resourceName))) {
-                throw new ToolException("After downloading the resource '" + resourceName + "', it does not exist at " + resourcePath);
-            }
-        }
-        return resourcePath.resolve(resourceName);
+        return resourcesPath;
     }
 
     protected boolean performQualityControl(QualityControlStatus qcStatus, Boolean overwrite) {

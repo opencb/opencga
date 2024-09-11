@@ -78,7 +78,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
         super.check();
         checkParameters(analysisParams, getStudy(), catalogManager, token);
 
-        // Check for the presence of trios to compute relatedness
+        // Check for the presence of trios to compute relatedness, and then prepare relatedness resource files
         for (String individualId : analysisParams.getIndividuals()) {
             // Get individual
             Individual individual = catalogManager.getIndividualManager().get(study, individualId, QueryOptions.empty(), token).first();
@@ -87,10 +87,11 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
             }
         }
         if (CollectionUtils.isNotEmpty(trios)) {
-            updateRelatednessFilePaths(analysisParams.getRelatednessParams());
+            prepareRelatednessResources(analysisParams.getResourcesDir());
         }
 
-        updateInferredSexFilePaths(analysisParams.getInferredSexParams());
+        // Prepare inferred sex resource files
+        prepareInferredSexResources(analysisParams.getResourcesDir());
     }
 
     @Override
@@ -321,7 +322,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
                     e -> "Individual ID " + e.getKey() + ": " + e.getValue()).collect(Collectors.toList()), ","));
         }
 
-        // Check relatedness files: pop. freq. file, pop. exclude var. file and threshold file
-        checkRelatednessParameters(params.getRelatednessParams(), studyId, catalogManager, token);
+        // Check resources dir
+        checkResourcesDir(params.getResourcesDir(), studyId, catalogManager, token);
     }
 }

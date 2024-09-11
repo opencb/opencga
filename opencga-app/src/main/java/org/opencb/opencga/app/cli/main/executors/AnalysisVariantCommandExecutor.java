@@ -44,8 +44,6 @@ import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
-import org.opencb.opencga.core.models.variant.QcInferredSexAnalysisParams;
-import org.opencb.opencga.core.models.variant.QcRelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.RvtestsWrapperParams;
 import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
@@ -625,11 +623,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
             putNestedIfNotEmpty(beanParams, "relatednessMethod",commandOptions.relatednessMethod, true);
             putNestedIfNotEmpty(beanParams, "relatednessMaf",commandOptions.relatednessMaf, true);
-            putNestedIfNotEmpty(beanParams, "relatednessParams.populationFrequencyFile",commandOptions.relatednessParamsPopulationFrequencyFile, true);
-            putNestedIfNotEmpty(beanParams, "relatednessParams.populationExcludeVariantsFile",commandOptions.relatednessParamsPopulationExcludeVariantsFile, true);
-            putNestedIfNotEmpty(beanParams, "relatednessParams.thresholdsFile",commandOptions.relatednessParamsThresholdsFile, true);
             putNestedIfNotNull(beanParams, "skipIndex",commandOptions.skipIndex, true);
             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+            putNestedIfNotEmpty(beanParams, "resourcesDir",commandOptions.resourcesDir, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
             familyQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -948,11 +944,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "individuals",commandOptions.individuals, true);
             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-            putNestedIfNotEmpty(beanParams, "relatednessParams.populationFrequencyFile",commandOptions.relatednessParamsPopulationFrequencyFile, true);
-            putNestedIfNotEmpty(beanParams, "relatednessParams.populationExcludeVariantsFile",commandOptions.relatednessParamsPopulationExcludeVariantsFile, true);
-            putNestedIfNotEmpty(beanParams, "relatednessParams.thresholdsFile",commandOptions.relatednessParamsThresholdsFile, true);
-            putNestedIfNotEmpty(beanParams, "inferredSexParams.thresholdsFile",commandOptions.inferredSexParamsThresholdsFile, true);
             putNestedIfNotEmpty(beanParams, "inferredSexMethod",commandOptions.inferredSexMethod, true);
+            putNestedIfNotEmpty(beanParams, "resourcesDir",commandOptions.resourcesDir, true);
             putNestedIfNotNull(beanParams, "skip",commandOptions.skip, true);
             putNestedIfNotNull(beanParams, "skipIndex",commandOptions.skipIndex, true);
             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);

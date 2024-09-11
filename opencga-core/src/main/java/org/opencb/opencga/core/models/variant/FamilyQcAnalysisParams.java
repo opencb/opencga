@@ -28,25 +28,34 @@ public class FamilyQcAnalysisParams extends ToolParams {
     @DataField(id = "families", description = FieldConstants.FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION)
     private List<String> families;
 
+    /**
+     * @deprecated to be removed when latest changes take place
+     */
     @Deprecated
     @DataField(id = "family", description = FieldConstants.FAMILY_QC_FAMILY_ID_DESCRIPTION, deprecated = true)
     private String family;
 
+    /**
+     * @deprecated to be removed when latest changes take place
+     */
     @Deprecated
     private String relatednessMethod;
 
+    /**
+     * @deprecated to be removed when latest changes take place
+     */
     @Deprecated
     @DataField(id = "relatednessMaf", description = FieldConstants.FAMILY_QC_RELATEDNESS_MAF_DESCRIPTION, deprecated = true)
     private String relatednessMaf;
-
-    @DataField(id = "relatednessParams", description = FieldConstants.QC_RELATEDNESS_DESCRIPTION)
-    private QcRelatednessAnalysisParams relatednessParams;
 
     @DataField(id = "skipIndex", description = FieldConstants.QC_SKIP_INDEX_DESCRIPTION)
     private Boolean skipIndex;
 
     @DataField(id = "overwrite", description = FieldConstants.QC_OVERWRITE_DESCRIPTION)
     private Boolean overwrite;
+
+    @DataField(id = "resourcesDir", description = FieldConstants.QC_RESOURCES_DIR_DESCRIPTION)
+    private String resourcesDir;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
@@ -55,14 +64,14 @@ public class FamilyQcAnalysisParams extends ToolParams {
     }
 
     public FamilyQcAnalysisParams(List<String> families, String family, String relatednessMethod, String relatednessMaf,
-                                  QcRelatednessAnalysisParams relatednessParams, Boolean skipIndex, Boolean overwrite, String outdir) {
+                                  Boolean skipIndex, Boolean overwrite, String resourcesDir, String outdir) {
         this.families = families;
         this.family = family;
         this.relatednessMethod = relatednessMethod;
         this.relatednessMaf = relatednessMaf;
-        this.relatednessParams = relatednessParams;
         this.skipIndex = skipIndex;
         this.overwrite = overwrite;
+        this.resourcesDir = resourcesDir;
         this.outdir = outdir;
     }
 
@@ -73,9 +82,9 @@ public class FamilyQcAnalysisParams extends ToolParams {
         sb.append(", family='").append(family).append('\'');
         sb.append(", relatednessMethod='").append(relatednessMethod).append('\'');
         sb.append(", relatednessMaf='").append(relatednessMaf).append('\'');
-        sb.append(", relatednessParams=").append(relatednessParams);
         sb.append(", skipIndex=").append(skipIndex);
         sb.append(", overwrite=").append(overwrite);
+        sb.append(", resourcesDir='").append(resourcesDir).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -117,15 +126,6 @@ public class FamilyQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public QcRelatednessAnalysisParams getRelatednessParams() {
-        return relatednessParams;
-    }
-
-    public FamilyQcAnalysisParams setRelatednessParams(QcRelatednessAnalysisParams relatednessParams) {
-        this.relatednessParams = relatednessParams;
-        return this;
-    }
-
     public Boolean getSkipIndex() {
         return skipIndex;
     }
@@ -141,6 +141,15 @@ public class FamilyQcAnalysisParams extends ToolParams {
 
     public FamilyQcAnalysisParams setOverwrite(Boolean overwrite) {
         this.overwrite = overwrite;
+        return this;
+    }
+
+    public String getResourcesDir() {
+        return resourcesDir;
+    }
+
+    public FamilyQcAnalysisParams setResourcesDir(String resourcesDir) {
+        this.resourcesDir = resourcesDir;
         return this;
     }
 

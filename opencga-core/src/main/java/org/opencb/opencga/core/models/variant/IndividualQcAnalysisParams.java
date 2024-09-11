@@ -35,16 +35,16 @@ public class IndividualQcAnalysisParams extends ToolParams {
     @DataField(id = "sample", description = FieldConstants.INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION, deprecated = true)
     private String sample;
 
-    @DataField(id = "relatednessParams", description = FieldConstants.QC_RELATEDNESS_DESCRIPTION)
-    private QcRelatednessAnalysisParams relatednessParams;
-
-    @DataField(id = "inferredSexParams", description = FieldConstants.QC_INFERRED_SEX_DESCRIPTION)
-    private QcInferredSexAnalysisParams inferredSexParams;
-
+    /**
+     * @deprecated to be removed after latest changes take place
+     */
     @Deprecated
     @DataField(id = "inferredSexMethod", description = FieldConstants.INFERRED_SEX_METHOD_DESCRIPTION,
             defaultValue = IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD, deprecated = true)
     private String inferredSexMethod;
+
+    @DataField(id = "resourcesDir", description = FieldConstants.QC_RESOURCES_DIR_DESCRIPTION)
+    private String resourcesDir;
 
     @DataField(id = "skip", description = FieldConstants.INDIVIDUAL_QC_SKIP_DESCRIPTION)
     private List<String> skip;
@@ -61,15 +61,13 @@ public class IndividualQcAnalysisParams extends ToolParams {
     public IndividualQcAnalysisParams() {
     }
 
-    public IndividualQcAnalysisParams(List<String> individuals, String individual, String sample,
-                                      QcRelatednessAnalysisParams relatednessParams, QcInferredSexAnalysisParams inferredSexParams,
-                                      String inferredSexMethod, List<String> skip, Boolean skipIndex, Boolean overwrite, String outdir) {
+    public IndividualQcAnalysisParams(List<String> individuals, String individual, String sample, String inferredSexMethod,
+                                      String resourcesDir, List<String> skip, Boolean skipIndex, Boolean overwrite, String outdir) {
         this.individuals = individuals;
         this.individual = individual;
         this.sample = sample;
-        this.relatednessParams = relatednessParams;
-        this.inferredSexParams = inferredSexParams;
         this.inferredSexMethod = inferredSexMethod;
+        this.resourcesDir = resourcesDir;
         this.skip = skip;
         this.skipIndex = skipIndex;
         this.overwrite = overwrite;
@@ -82,9 +80,8 @@ public class IndividualQcAnalysisParams extends ToolParams {
         sb.append("individuals=").append(individuals);
         sb.append(", individual='").append(individual).append('\'');
         sb.append(", sample='").append(sample).append('\'');
-        sb.append(", relatednessParams=").append(relatednessParams);
-        sb.append(", inferredSexParams=").append(inferredSexParams);
         sb.append(", inferredSexMethod='").append(inferredSexMethod).append('\'');
+        sb.append(", resourcesDir='").append(resourcesDir).append('\'');
         sb.append(", skip=").append(skip);
         sb.append(", skipIndex=").append(skipIndex);
         sb.append(", overwrite=").append(overwrite);
@@ -120,30 +117,21 @@ public class IndividualQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public QcRelatednessAnalysisParams getRelatednessParams() {
-        return relatednessParams;
-    }
-
-    public IndividualQcAnalysisParams setRelatednessParams(QcRelatednessAnalysisParams relatednessParams) {
-        this.relatednessParams = relatednessParams;
-        return this;
-    }
-
-    public QcInferredSexAnalysisParams getInferredSexParams() {
-        return inferredSexParams;
-    }
-
-    public IndividualQcAnalysisParams setInferredSexParams(QcInferredSexAnalysisParams inferredSexParams) {
-        this.inferredSexParams = inferredSexParams;
-        return this;
-    }
-
     public String getInferredSexMethod() {
         return inferredSexMethod;
     }
 
     public IndividualQcAnalysisParams setInferredSexMethod(String inferredSexMethod) {
         this.inferredSexMethod = inferredSexMethod;
+        return this;
+    }
+
+    public String getResourcesDir() {
+        return resourcesDir;
+    }
+
+    public IndividualQcAnalysisParams setResourcesDir(String resourcesDir) {
+        this.resourcesDir = resourcesDir;
         return this;
     }
 

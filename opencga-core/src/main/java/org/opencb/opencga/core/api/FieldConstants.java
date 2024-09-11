@@ -183,6 +183,7 @@ public class FieldConstants {
     public static final String QC_OVERWRITE_DESCRIPTION = "Overwrite quality control in catalog";
     public static final String QC_FILES_DESCRIPTION = "File IDs related to the quality control";
     public static final String QC_COMMENTS_DESCRIPTION = "Comments related to the quality control";
+    public static final String QC_RESOURCES_DIR_DESCRIPTION = "Directory where the QC resource files are located";
     public static final String QC_RELATEDNESS_DESCRIPTION = "Parameters for relatedness analysis";
     public static final String QC_RELATEDNESS_POP_FREQ_FILE_DESCRIPTION = "Population frequencies file ID for relatedness analysis";
     public static final String QC_RELATEDNESS_POP_EXCLUDE_VAR_FILE_DESCRIPTION = "Population exclude variants file ID for"

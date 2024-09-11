@@ -73,8 +73,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
         super.check();
         checkParameters(analysisParams, getStudy(), catalogManager, token);
 
-        // Update paths from relatedness external files
-        updateRelatednessFilePaths(analysisParams.getRelatednessParams());
+        // Prepare relatedness resource files
+        prepareRelatednessResources(analysisParams.getResourcesDir());
     }
 
     @Override
@@ -217,8 +217,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                     e -> "Family ID " + e.getKey() + ": " + e.getValue()).collect(Collectors.toList()), ","));
         }
 
-        // Check relatedness files: pop. freq. file, pop. exclude var. file and threshold file
-        checkRelatednessParameters(params.getRelatednessParams(), studyId, catalogManager, token);
+        // Check resources dir
+        checkResourcesDir(params.getResourcesDir(), studyId, catalogManager, token);
     }
 
     private void updateFamilyQualityControl(List<Family> families) throws ToolException {
