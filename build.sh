@@ -332,8 +332,13 @@ function publish_reports() {
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
     echo "Preparing destination path"
     local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+
+    # Define the local directory to compress and the output file
+    FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION/"
+    echo "The reports are in $FILE_TO_SEND"
+
     echo "Xetabase tested is $VERSION"
-    mv "$OPENCGA_ENTERPRISE_HOME_DIR/reports/test" "$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION"
+    mv "$OPENCGA_ENTERPRISE_HOME_DIR/reports/test/" "$FILE_TO_SEND"
 
     DESTINATION_PATH="/var/www/html/reports/xetabase"
     if [[ $TASK_REFERENCE == TASK* ]]; then
@@ -343,13 +348,7 @@ function publish_reports() {
     fi
     echo "Destination path: $DESTINATION_PATH"
 
-    # Define the local directory to compress and the output file
-    FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION"
-    echo "The reports are in $FILE_TO_SEND"
-
     COMPRESSED_FILE="tests.tar.gz"
-
-
 
     # Compress the local directory into tar.gz
     tar -czf "$COMPRESSED_FILE" "$FILE_TO_SEND/"
@@ -360,13 +359,13 @@ function publish_reports() {
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
 
     # Send the compressed file to the remote server using scp
-    sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$COMPRESSED_FILE" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
+    sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$COMPRESSED_FILE" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH/$COMPRESSED_FILE"
 
     # Connect to the remote server and decompress the file
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "tar -xzf $DESTINATION_PATH/$COMPRESSED_FILE"
 
     # Optional: remove the compressed file after decompressing it on the remote server
-    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm $DESTINATION_PATH/$COMPRESSED_FILE"
+#    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm $DESTINATION_PATH/$COMPRESSED_FILE"
 
     if [ $? -eq 0 ]; then
       echo "Uploaded test report to $DESTINATION_PATH"
