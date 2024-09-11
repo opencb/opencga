@@ -52,6 +52,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.models.common.InternalStatus.READY;
+import static org.opencb.opencga.core.models.common.QualityControlStatus.COMPUTING;
 import static org.opencb.opencga.core.models.common.QualityControlStatus.NONE;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.JSON;
@@ -102,7 +103,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
                 // Set quality control status to COMPUTING to prevent multiple family QCs from running simultaneously
                 // for the same family
-                if (!setComputingStatus(family.getId(), FAMILY_QC_TYPE)) {
+                QualityControlStatus qcStatus = new QualityControlStatus(COMPUTING, "Performing " + FAMILY_QC_TYPE + " QC");
+                if (!setQualityControlStatus(qcStatus, family.getId(), FAMILY_QC_TYPE)) {
                     continue;
                 }
 
@@ -223,7 +225,6 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
     }
 
     private void updateFamilyQualityControl(List<Family> families) throws ToolException {
-        final String extension = ".qc.json";
         ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         ObjectReader objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(FamilyQualityControl.class);
@@ -234,21 +235,21 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
             // Check output file
             String msg;
-            Path qcPath = getOutDir().resolve(family.getId()).resolve(family.getId() + extension);
+            Path qcPath = getOutDir().resolve(family.getId()).resolve(family.getId() + QC_JSON_EXTENSION);
             if (!Files.exists(qcPath)) {
-                msg = "Quality control error for family " + family.getId() + ": file " + qcPath.getFileName() + " not found";
+                msg = "Failure: file " + qcPath.getFileName() + " not found";
                 familyQc = new FamilyQualityControl();
                 qcStatus = new QualityControlStatus(NONE, msg);
                 addError(new ToolException(msg));
                 logger.error(msg);
             } else {
                 try {
-                    msg = "Computed successfully for family " + family.getId();
+                    msg = "Success";
                     familyQc = objectReader.readValue(qcPath.toFile());
                     qcStatus = new QualityControlStatus(READY, msg);
                     logger.info(msg);
                 } catch (IOException e) {
-                    msg = "Quality control error for family " + family.getId() + ": error parsing JSON file " + qcPath.getFileName();
+                    msg = "Failure: error parsing JSON file " + qcPath.getFileName();
                     familyQc = new FamilyQualityControl();
                     qcStatus = new QualityControlStatus(NONE, msg);
                     addError(e);

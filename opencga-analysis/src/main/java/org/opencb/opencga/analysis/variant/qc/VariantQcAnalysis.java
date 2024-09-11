@@ -35,6 +35,7 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualQualityControlStatus;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
@@ -66,6 +67,8 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     public static final String RESOURCES_FOLDER = "resources/";
     public static final String QC_RESOURCES_FOLDER = QC_FOLDER + RESOURCES_FOLDER;
 
+    public static final String QC_JSON_EXTENSION = ".qc.json";
+
     // Data type
     public static final String FAMILY_QC_TYPE = "family";
     public static final String INDIVIDUAL_QC_TYPE = "individual";
@@ -86,7 +89,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     protected static final String INFERRED_SEX_THRESHOLDS_FILE_MSG = "Karyotypic sex thresholds file";
 
     // For mendelian errors sex analysis
-    public static final String MENDELIAN_ERRORS_ANALYSIS_ID = "mendelian-errors";
+    public static final String MENDELIAN_ERROR_ANALYSIS_ID = "mendelian-errors";
 
     @Override
     protected void check() throws Exception {
@@ -231,9 +234,8 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         return path;
     }
 
-    protected boolean setComputingStatus(String id, String qcType) throws ToolException {
+    protected boolean setQualityControlStatus(QualityControlStatus qcStatus, String id, String qcType) throws ToolException {
         try {
-            QualityControlStatus qcStatus = new QualityControlStatus(COMPUTING, "Performing " + qcType + " QC");
             switch (qcType) {
                 case FAMILY_QC_TYPE: {
                     FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControlStatus(qcStatus);
@@ -241,7 +243,8 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
                     break;
                 }
                 case INDIVIDUAL_QC_TYPE: {
-                    IndividualUpdateParams updateParams = new IndividualUpdateParams().setQualityControlStatus(qcStatus);
+                    IndividualUpdateParams updateParams = new IndividualUpdateParams()
+                            .setQualityControlStatus((IndividualQualityControlStatus) qcStatus);
                     catalogManager.getIndividualManager().update(getStudy(), id, updateParams, null, token);
                     break;
                 }

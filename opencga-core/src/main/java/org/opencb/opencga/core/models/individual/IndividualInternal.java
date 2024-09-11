@@ -23,20 +23,20 @@ import org.opencb.opencga.core.models.common.QualityControlStatus;
 
 public class IndividualInternal extends Internal {
 
-    private QualityControlStatus qualityControlStatus;
+    private IndividualQualityControlStatus qualityControlStatus;
 
     public IndividualInternal() {
     }
 
     public IndividualInternal(InternalStatus status, String registrationDate, String modificationDate,
-                              QualityControlStatus qualityControlStatus) {
+                              IndividualQualityControlStatus qualityControlStatus) {
         super(status, registrationDate, modificationDate);
         this.qualityControlStatus = qualityControlStatus;
     }
 
     public static IndividualInternal init() {
         String time = TimeUtils.getTime();
-        return new IndividualInternal(new InternalStatus(InternalStatus.READY), time, time, new QualityControlStatus());
+        return new IndividualInternal(new InternalStatus(InternalStatus.READY), time, time, new IndividualQualityControlStatus());
     }
 
     @Override
@@ -77,11 +77,11 @@ public class IndividualInternal extends Internal {
         return this;
     }
 
-    public QualityControlStatus getQualityControlStatus() {
+    public IndividualQualityControlStatus getQualityControlStatus() {
         return qualityControlStatus;
     }
 
-    public IndividualInternal setQualityControlStatus(QualityControlStatus qualityControlStatus) {
+    public IndividualInternal setQualityControlStatus(IndividualQualityControlStatus qualityControlStatus) {
         this.qualityControlStatus = qualityControlStatus;
         return this;
     }

@@ -25,7 +25,6 @@ import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
@@ -60,8 +59,11 @@ public class IndividualUpdateParams {
     private List<Disorder> disorders;
     private StatusParams status;
     private IndividualQualityControl qualityControl;
-    private QualityControlStatus qualityControlStatus;
+    private IndividualQualityControlStatus qualityControlStatus;
     private Map<String, Object> attributes;
+
+    private static final String QUALITY_CONTROL_STATUS_KEY = "qualityControlStatus";
+    private static final String INTERNAL_QUALITY_CONTROL_STATUS_KEY = "internal.qualityControlStatus";
 
     public IndividualUpdateParams() {
     }
@@ -72,8 +74,8 @@ public class IndividualUpdateParams {
                                   String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, List<SampleReferenceParam> samples,
                                   List<AnnotationSet> annotationSets, List<Phenotype> phenotypes, List<Disorder> disorders,
-                                  StatusParams status, IndividualQualityControl qualityControl, QualityControlStatus qualityControlStatus,
-                                  Map<String, Object> attributes) {
+                                  StatusParams status, IndividualQualityControl qualityControl,
+                                  IndividualQualityControlStatus qualityControlStatus, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -104,9 +106,9 @@ public class IndividualUpdateParams {
         this.annotationSets = null;
 
         ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));
-        if (params.containsKey("qualityControlStatus")) {
-            params.put("internal.qualityControlStatus", params.get("qualityControlStatus"));
-            params.remove("qualityControlStatus");
+        if (params.containsKey(QUALITY_CONTROL_STATUS_KEY)) {
+            params.put(INTERNAL_QUALITY_CONTROL_STATUS_KEY, params.get(QUALITY_CONTROL_STATUS_KEY));
+            params.remove(QUALITY_CONTROL_STATUS_KEY);
         }
 
         this.annotationSets = annotationSetList;
@@ -341,11 +343,11 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public QualityControlStatus getQualityControlStatus() {
+    public IndividualQualityControlStatus getQualityControlStatus() {
         return qualityControlStatus;
     }
 
-    public IndividualUpdateParams setQualityControlStatus(QualityControlStatus qualityControlStatus) {
+    public IndividualUpdateParams setQualityControlStatus(IndividualQualityControlStatus qualityControlStatus) {
         this.qualityControlStatus = qualityControlStatus;
         return this;
     }

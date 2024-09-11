@@ -31,7 +31,7 @@ public class QualityControlStatus extends InternalStatus {
     public static final String COMPUTING = "COMPUTING";
     public static final String INCOMPLETE = "INCOMPLETE";
 
-    public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, COMPUTING, INCOMPLETE);
+    protected static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, COMPUTING, INCOMPLETE);
 
     public QualityControlStatus(String status, String message) {
         if (isValid(status)) {
@@ -49,18 +49,8 @@ public class QualityControlStatus extends InternalStatus {
         this(NONE, "");
     }
 
-    @Override
-    public String getId() {
-        return super.getId();
-    }
-
-    @Override
-    public String getName() {
-        return super.getName();
-    }
-
-    public static IndexStatus init() {
-        return new IndexStatus();
+    public static QualityControlStatus init() {
+        return new QualityControlStatus();
     }
 
     public static boolean isValid(String status) {

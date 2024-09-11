@@ -680,6 +680,9 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--quality-control-status-commit"}, description = "The body web service commit parameter", required = false, arity = 1)
         public String qualityControlStatusCommit;
     
+        @Parameter(names = {"--quality-control-status-code"}, description = "The body web service code parameter", required = false, arity = 1)
+        public Integer qualityControlStatusCode;
+    
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
