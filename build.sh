@@ -342,19 +342,11 @@ function publish_reports() {
       DESTINATION_PATH="$DESTINATION_PATH"
     fi
     echo "Destination path: $DESTINATION_PATH"
-#
-#    echo "SSH_PASS $SSH_PASS"
-#    echo "SSH_PORT $SSH_PORT"
-#    echo "SSH_USER $SSH_USER"
-#    echo "SSH_HOST $SSH_HOST"
-#
-#    sshpass -p "$SSH_PASS" ssh -p -v "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
-#    echo "Created remote path: $DESTINATION_PATH"
-#    sshpass -p "$SSH_PASS" scp -r -P -v "$SSH_PORT" "$FILE_TO_SEND" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
 
     # Define the local directory to compress and the output file
     FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION"
     echo "The reports are in $FILE_TO_SEND"
+
     COMPRESSED_FILE="tests.tar.gz"
     
     # Compress the local directory into tar.gz
@@ -371,9 +363,6 @@ function publish_reports() {
 
     # Optional: remove the compressed file after decompressing it on the remote server
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm $DESTINATION_PATH/$COMPRESSED_FILE"
-
-
-
 
     if [ $? -eq 0 ]; then
       echo "Uploaded test report to $DESTINATION_PATH"
@@ -765,11 +754,11 @@ build_opencga
 # Build opencga-enterprise
 build_opencga_enterprise
 
-# Publish test reports
-publish_reports
-
 # Publish Docker images
 publish_docker
 
 # Print final log summary
 print_log
+
+# Publish test reports
+publish_reports
