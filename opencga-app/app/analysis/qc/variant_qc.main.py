@@ -35,7 +35,7 @@ def get_parser():
                         help='comma-separated BAM file paths')
     parser.add_argument('-q', '--qc-type', dest='qc_type', choices = ['sample', 'individual', 'family'], required=True,
                         help='type of QC')
-    parser.add_argument('-c', '--config', dest='config',
+    parser.add_argument('-c', '--config', dest='config', required=True,
                         help='configuration file path')
     parser.add_argument('-o', '--output-dir', dest='output_dir',
                         help='output directory path')
@@ -217,6 +217,8 @@ def main():
         shutil.copy(vcf_files[i], qc_outdir_fpath)
         LOGGER.debug('Copying info JSON file "{}" in output directory "{}"'.format(info_jsons[i], qc_outdir_fpath))
         shutil.copy(info_jsons[i], qc_outdir_fpath)
+        LOGGER.debug('Copying config JSON file "{}" in output directory "{}"'.format(config, qc_outdir_fpath))
+        shutil.copy(config, qc_outdir_fpath)
 
         # Execute QC
         qc_executor(
