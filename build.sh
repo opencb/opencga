@@ -343,17 +343,12 @@ function publish_reports() {
     DESTINATION_PATH="/var/www/html/reports/xetabase"
     if [[ $TASK_REFERENCE == TASK* ]]; then
       DESTINATION_PATH="$DESTINATION_PATH/$TASK_REFERENCE"
-    else
-      DESTINATION_PATH="$DESTINATION_PATH"
     fi
     echo "Destination path: $DESTINATION_PATH"
 
     COMPRESSED_FILE="tests.tar.gz"
 
-    # Compress the local directory into tar.gz
-    tar -czf "$COMPRESSED_FILE" "$FILE_TO_SEND/"
-
-    ls -lh "$COMPRESSED_FILE"
+    tar -czf "$COMPRESSED_FILE" -C "$OPENCGA_ENTERPRISE_HOME_DIR/reports/" "$VERSION"
 
     # Create the destination directory on the remote server
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
