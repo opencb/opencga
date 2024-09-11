@@ -357,7 +357,7 @@ function publish_reports() {
     sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$COMPRESSED_FILE" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH/$COMPRESSED_FILE"
 
     # Connect to the remote server and decompress the file
-    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "tar -xzf $COMPRESSED_FILE -C $DESTINATION_PATH/"
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "tar -xzf $DESTINATION_PATH/$COMPRESSED_FILE -C $DESTINATION_PATH"
 
     # Optional: remove the compressed file after decompressing it on the remote server
 #    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm $DESTINATION_PATH/$COMPRESSED_FILE"
