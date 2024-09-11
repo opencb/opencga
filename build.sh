@@ -371,8 +371,34 @@ function publish_reports() {
   fi
 }
 
+## Function to upload the docker of Oopencga-enterprise to https://hub.docker.com/repositories/zettagenomics
+#function publish_dockers() {
+#  if [ "$DOCKER" == "true" ];then
+#    upload_docker_opencga
+#    upload_docker_enterprise
+#  fi
+#}
+
+#function upload_docker_opencga() {
+#  if [ "$DOCKER" == "true" ];then
+#    ## Move to opencga-enterprise to build or test
+#    cd "$OPENCGA_OPENCGA_HOME_DIR" || exit 2
+#    if [[ -n $TASK_REFERENCE ]]; then
+#      TAG=$TASK_REFERENCE
+#    else
+#      TAG="$(mvn help:evaluate --file "${OPENCGA_OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
+#    fi
+#    python3 ./build/cloud/docker/docker-build.py push --org opencb --images base,init --tag "$TAG"
+#    if [[ "$?" -ne 0 ]] ; then
+#      log_summary "[ERROR] OPENCGA DOCKER UPLOAD FAILED!!!!!"
+#    else
+#      log_summary "Opencga docker uploaded correctly with tag $TAG"
+#    fi
+#  fi
+#}
+
 # Function to upload the docker of Oopencga-enterprise to https://hub.docker.com/repositories/zettagenomics
-function publish_docker() {
+function publish_dockers() {
   if [ "$DOCKER" == "true" ];then
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
@@ -383,13 +409,12 @@ function publish_docker() {
     fi
     python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag "$TAG"
     if [[ "$?" -ne 0 ]] ; then
-      log_summary "[ERROR] DOCKER UPLOAD FAILED!!!!!"
+      log_summary "[ERROR] OPENCGA ENTERPRISE DOCKER UPLOAD FAILED!!!!!"
     else
-      log_summary "Docker uploaded correctly with tag $TAG"
+      log_summary "Opencga-enterprise docker uploaded correctly with tag $TAG"
     fi
   fi
 }
-
 
 
 ## FUNCTIONS TO MANAGE LOGS AND PRINTS ##
@@ -753,7 +778,7 @@ build_opencga
 build_opencga_enterprise
 
 # Publish Docker images
-publish_docker
+publish_dockers
 
 # Print final log summary
 print_log
