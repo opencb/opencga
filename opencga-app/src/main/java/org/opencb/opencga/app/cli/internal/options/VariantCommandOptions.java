@@ -1703,7 +1703,7 @@ public class VariantCommandOptions {
 
         // Other
         @Parameter(names = {"--skip"}, description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
-        public String skip;
+        public List<String> skip;
 
         @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
         public String outdir;

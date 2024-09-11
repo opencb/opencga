@@ -89,6 +89,15 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     // For mendelian errors sex analysis
     public static final String MENDELIAN_ERROR_ANALYSIS_ID = "mendelian-errors";
 
+    // For signature analysis
+    public static final String SIGNATURE_ANALYSIS_ID = "signature";
+
+    // For hr detect analysis
+    public static final String HR_DETECT_ANALYSIS_ID = "hr-detect";
+
+    // For genome plot analysis
+    public static final String GENOME_PLOT_ANALYSIS_ID = "genome-plot";
+
     @Override
     protected void check() throws Exception {
         super.check();

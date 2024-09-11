@@ -1551,6 +1551,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotNull(beanParams, "samples",commandOptions.samples, true);
             putNestedIfNotEmpty(beanParams, "vsId",commandOptions.vsId, true);
             putNestedIfNotEmpty(beanParams, "vsDescription",commandOptions.vsDescription, true);
             putNestedIfNotEmpty(beanParams, "vsQuery.id",commandOptions.vsQueryId, true);
@@ -1595,7 +1596,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "gpId",commandOptions.gpId, true);
             putNestedIfNotEmpty(beanParams, "gpDescription",commandOptions.gpDescription, true);
             putNestedIfNotEmpty(beanParams, "gpConfigFile",commandOptions.gpConfigFile, true);
-            putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
+            putNestedIfNotNull(beanParams, "skip",commandOptions.skip, true);
+            putNestedIfNotNull(beanParams, "skipIndex",commandOptions.skipIndex, true);
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+            putNestedIfNotEmpty(beanParams, "resourcesDir",commandOptions.resourcesDir, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
             sampleQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()

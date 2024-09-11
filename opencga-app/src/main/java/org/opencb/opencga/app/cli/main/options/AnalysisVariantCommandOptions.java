@@ -2248,6 +2248,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID.", required = false, arity = 1)
         public String sample;
     
+        @Parameter(names = {"--samples"}, description = "List of sample IDs", required = false, arity = 1)
+        public String samples;
+    
         @Parameter(names = {"--vs-id"}, description = "Variant stats ID.", required = false, arity = 1)
         public String vsId;
     
@@ -2382,6 +2385,15 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--skip"}, description = "Quality control metrics to skip. Valid values are: variant-stats, signature, signature-catalogue, signature-fitting, genome-plot", required = false, arity = 1)
         public String skip;
+    
+        @Parameter(names = {"--skip-index"}, description = "Do not save the computed quality control in catalog", required = false, arity = 1)
+        public Boolean skipIndex;
+    
+        @Parameter(names = {"--overwrite"}, description = "Overwrite quality control in catalog", required = false, arity = 1)
+        public Boolean overwrite;
+    
+        @Parameter(names = {"--resources-dir"}, description = "Directory where the QC resource files are located", required = false, arity = 1)
+        public String resourcesDir;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;

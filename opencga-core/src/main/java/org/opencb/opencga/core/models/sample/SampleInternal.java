@@ -21,7 +21,6 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.common.RgaIndex;
 
 import java.util.Objects;
@@ -36,13 +35,13 @@ public class SampleInternal extends Internal {
             description = FieldConstants.SAMPLE_INTERNAL_RGA_DESCRIPTION)
     private RgaIndex rga;
     private SampleInternalVariant variant;
-    private QualityControlStatus qualityControlStatus;
+    private SampleQualityControlStatus qualityControlStatus;
 
     public SampleInternal() {
     }
 
     public SampleInternal(String registrationDate, String modificationDate, InternalStatus status, RgaIndex rga,
-                          SampleInternalVariant variant, QualityControlStatus qualityControlStatus) {
+                          SampleInternalVariant variant, SampleQualityControlStatus qualityControlStatus) {
         super(status, registrationDate, modificationDate);
         this.rga = rga;
         this.variant = variant;
@@ -52,7 +51,7 @@ public class SampleInternal extends Internal {
     public static SampleInternal init() {
         String time = TimeUtils.getTime();
         return new SampleInternal(time, time, new InternalStatus(InternalStatus.READY), RgaIndex.init(), SampleInternalVariant.init(),
-                new QualityControlStatus());
+                new SampleQualityControlStatus());
     }
 
     @Override
@@ -113,11 +112,11 @@ public class SampleInternal extends Internal {
         return this;
     }
 
-    public QualityControlStatus getQualityControlStatus() {
+    public SampleQualityControlStatus getQualityControlStatus() {
         return qualityControlStatus;
     }
 
-    public SampleInternal setQualityControlStatus(QualityControlStatus qualityControlStatus) {
+    public SampleInternal setQualityControlStatus(SampleQualityControlStatus qualityControlStatus) {
         this.qualityControlStatus = qualityControlStatus;
         return this;
     }

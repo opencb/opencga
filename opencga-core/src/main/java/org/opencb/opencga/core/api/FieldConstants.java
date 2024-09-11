@@ -218,6 +218,8 @@ public class FieldConstants {
     public static final String INDIVIDUAL_QC_SKIP_DESCRIPTION = "Individual QC analysis to skip. Valid values are: " + INFERRED_SEX_ID
             + ", " + MENDELIAN_ERRORS_ID;
 
+    public static final String SAMPLE_QC_SAMPLE_ID_LIST_DESCRIPTION = "List of sample IDs";
+
     //Status
     public static final String STATUS_DATE_DESCRIPTION = "Date has set the status.";
     public static final String STATUS_MESSAGE_DESCRIPTION = "Deprecated: Message describing the status.";

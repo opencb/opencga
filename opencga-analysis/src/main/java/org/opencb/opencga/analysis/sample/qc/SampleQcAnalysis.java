@@ -57,6 +57,7 @@ import java.util.*;
 
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 
+@Deprecated
 @Tool(id = SampleQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleQcAnalysis.DESCRIPTION)
 public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
@@ -107,8 +108,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Prepare flags
         String skip = null;
-        if (StringUtils.isNotEmpty(analysisParams.getSkip())) {
-            skip = analysisParams.getSkip().toLowerCase().replace(" ", "");
+        if (CollectionUtils.isNotEmpty(analysisParams.getSkip())) {
+            skip = StringUtils.join(analysisParams.getSkip(), ",").toLowerCase();
         }
         if (StringUtils.isNotEmpty(skip)) {
             Set<String> skipValues = new HashSet<>(Arrays.asList(skip.split(",")));

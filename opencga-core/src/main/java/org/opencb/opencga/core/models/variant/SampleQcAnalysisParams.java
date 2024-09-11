@@ -20,6 +20,8 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import java.util.List;
+
 public class SampleQcAnalysisParams extends ToolParams {
     public static final String VARIANT_STATS_SKIP_VALUE = "variant-stats";
     public static final String SIGNATURE_SKIP_VALUE = "signature";
@@ -32,8 +34,12 @@ public class SampleQcAnalysisParams extends ToolParams {
             + ", " + SIGNATURE_SKIP_VALUE  + ", " + SIGNATURE_CATALOGUE_SKIP_VALUE + ", " + SIGNATURE_FITTING_SKIP_VALUE + ", "
             + GENOME_PLOT_SKIP_VALUE;
 
-    @DataField(id = "sample", description = FieldConstants.SAMPLE_ID_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "sample", description = FieldConstants.SAMPLE_ID_DESCRIPTION, deprecated = true)
     private String sample;
+
+    @DataField(id = "samples", description = FieldConstants.SAMPLE_QC_SAMPLE_ID_LIST_DESCRIPTION)
+    private List<String> samples;
 
     // Variant stats params
     @DataField(id = "vsId", description = FieldConstants.VARIANT_STATS_ID_DESCRIPTION)
@@ -102,7 +108,16 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     // Other
     @DataField(id = "skip", description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
-    private String skip;
+    private List<String> skip;
+
+    @DataField(id = "skipIndex", description = FieldConstants.QC_SKIP_INDEX_DESCRIPTION)
+    private Boolean skipIndex;
+
+    @DataField(id = "overwrite", description = FieldConstants.QC_OVERWRITE_DESCRIPTION)
+    private Boolean overwrite;
+
+    @DataField(id = "resourcesDir", description = FieldConstants.QC_RESOURCES_DIR_DESCRIPTION)
+    private String resourcesDir;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
@@ -110,12 +125,14 @@ public class SampleQcAnalysisParams extends ToolParams {
     public SampleQcAnalysisParams() {
     }
 
-    public SampleQcAnalysisParams(String sample, String vsId, String vsDescription, AnnotationVariantQueryParams vsQuery, String msId,
-                                  String msDescription, String msQuery, String msFitId, String msFitMethod, Integer msFitNBoot,
-                                  String msFitSigVersion, String msFitOrgan, Float msFitThresholdPerc, Float msFitThresholdPval,
-                                  Integer msFitMaxRareSigs, String msFitSignaturesFile, String msFitRareSignaturesFile, String gpId,
-                                  String gpDescription, String gpConfigFile, String skip, String outdir) {
+    public SampleQcAnalysisParams(String sample, List<String> samples, String vsId, String vsDescription,
+                                  AnnotationVariantQueryParams vsQuery, String msId, String msDescription, String msQuery, String msFitId,
+                                  String msFitMethod, Integer msFitNBoot, String msFitSigVersion, String msFitOrgan,
+                                  Float msFitThresholdPerc, Float msFitThresholdPval, Integer msFitMaxRareSigs, String msFitSignaturesFile,
+                                  String msFitRareSignaturesFile, String gpId, String gpDescription, String gpConfigFile, List<String> skip,
+                                  Boolean skipIndex, Boolean overwrite, String resourcesDir, String outdir) {
         this.sample = sample;
+        this.samples = samples;
         this.vsId = vsId;
         this.vsDescription = vsDescription;
         this.vsQuery = vsQuery;
@@ -136,6 +153,9 @@ public class SampleQcAnalysisParams extends ToolParams {
         this.gpDescription = gpDescription;
         this.gpConfigFile = gpConfigFile;
         this.skip = skip;
+        this.skipIndex = skipIndex;
+        this.overwrite = overwrite;
+        this.resourcesDir = resourcesDir;
         this.outdir = outdir;
     }
 
@@ -143,6 +163,7 @@ public class SampleQcAnalysisParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleQcAnalysisParams{");
         sb.append("sample='").append(sample).append('\'');
+        sb.append(", samples=").append(samples);
         sb.append(", vsId='").append(vsId).append('\'');
         sb.append(", vsDescription='").append(vsDescription).append('\'');
         sb.append(", vsQuery=").append(vsQuery);
@@ -162,7 +183,10 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", gpId='").append(gpId).append('\'');
         sb.append(", gpDescription='").append(gpDescription).append('\'');
         sb.append(", gpConfigFile='").append(gpConfigFile).append('\'');
-        sb.append(", skip='").append(skip).append('\'');
+        sb.append(", skip=").append(skip);
+        sb.append(", skipIndex=").append(skipIndex);
+        sb.append(", overwrite=").append(overwrite);
+        sb.append(", resourcesDir='").append(resourcesDir).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -174,6 +198,15 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setSample(String sample) {
         this.sample = sample;
+        return this;
+    }
+
+    public List<String> getSamples() {
+        return samples;
+    }
+
+    public SampleQcAnalysisParams setSamples(List<String> samples) {
+        this.samples = samples;
         return this;
     }
 
@@ -348,12 +381,39 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getSkip() {
+    public List<String> getSkip() {
         return skip;
     }
 
-    public SampleQcAnalysisParams setSkip(String skip) {
+    public SampleQcAnalysisParams setSkip(List<String> skip) {
         this.skip = skip;
+        return this;
+    }
+
+    public Boolean getSkipIndex() {
+        return skipIndex;
+    }
+
+    public SampleQcAnalysisParams setSkipIndex(Boolean skipIndex) {
+        this.skipIndex = skipIndex;
+        return this;
+    }
+
+    public Boolean getOverwrite() {
+        return overwrite;
+    }
+
+    public SampleQcAnalysisParams setOverwrite(Boolean overwrite) {
+        this.overwrite = overwrite;
+        return this;
+    }
+
+    public String getResourcesDir() {
+        return resourcesDir;
+    }
+
+    public SampleQcAnalysisParams setResourcesDir(String resourcesDir) {
+        this.resourcesDir = resourcesDir;
         return this;
     }
 

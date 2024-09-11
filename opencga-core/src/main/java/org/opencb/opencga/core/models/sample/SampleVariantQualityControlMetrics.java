@@ -20,9 +20,14 @@ public class SampleVariantQualityControlMetrics {
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_SIGNATURES_DESCRIPTION)
     private List<Signature> signatures;
 
+    @Deprecated
     @DataField(id = "genomePlot", name = "genomePlot",
-            description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_GENOME_PLOT_DESCRIPTION)
+            description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_GENOME_PLOT_DESCRIPTION, deprecated = true)
     private GenomePlot genomePlot;
+
+    @DataField(id = "genomePlots", name = "genomePlots",
+            description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_GENOME_PLOT_DESCRIPTION)
+    private List<GenomePlot> genomePlots;
 
     @DataField(id = "hrDetects",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_HRDETEC_DESCRIPTION)
@@ -81,6 +86,15 @@ public class SampleVariantQualityControlMetrics {
 
     public SampleVariantQualityControlMetrics setGenomePlot(GenomePlot genomePlot) {
         this.genomePlot = genomePlot;
+        return this;
+    }
+
+    public List<GenomePlot> getGenomePlots() {
+        return genomePlots;
+    }
+
+    public SampleVariantQualityControlMetrics setGenomePlots(List<GenomePlot> genomePlots) {
+        this.genomePlots = genomePlots;
         return this;
     }
 

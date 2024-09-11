@@ -62,7 +62,6 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.operations.variant.*;
@@ -952,6 +951,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         ObjectMap params = new SampleQcAnalysisParams(
                 cliOptions.sample,
+                null,
                 cliOptions.variantStatsId,
                 cliOptions.variantStatsDecription,
                 variantStatsQuery,
@@ -972,6 +972,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,
                 cliOptions.skip,
+                null,
+                null,
+                null,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 

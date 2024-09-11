@@ -694,6 +694,27 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--quality-control-files"}, description = "Files used for the quality control of the sample.", required = false, arity = 1)
         public String qualityControlFiles;
     
+        @Parameter(names = {"--quality-control-status-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String qualityControlStatusId;
+    
+        @Parameter(names = {"--quality-control-status-name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String qualityControlStatusName;
+    
+        @Parameter(names = {"--quality-control-status-description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String qualityControlStatusDescription;
+    
+        @Parameter(names = {"--quality-control-status-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String qualityControlStatusDate;
+    
+        @Parameter(names = {"--quality-control-status-version"}, description = "The body web service version parameter", required = false, arity = 1)
+        public String qualityControlStatusVersion;
+    
+        @Parameter(names = {"--quality-control-status-commit"}, description = "The body web service commit parameter", required = false, arity = 1)
+        public String qualityControlStatusCommit;
+    
+        @Parameter(names = {"--quality-control-status-code"}, description = "The body web service code parameter", required = false, arity = 1)
+        public Integer qualityControlStatusCode;
+    
         @Parameter(names = {"--somatic"}, description = "The body web service somatic parameter", required = false, arity = 1)
         public Boolean somatic;
     

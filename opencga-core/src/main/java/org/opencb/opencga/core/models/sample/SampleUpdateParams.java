@@ -41,6 +41,7 @@ public class SampleUpdateParams {
     private SampleProcessing processing;
     private SampleCollection collection;
     private SampleQualityControl qualityControl;
+    private SampleQualityControlStatus qualityControlStatus;
     private Boolean somatic;
     private List<Phenotype> phenotypes;
     private List<AnnotationSet> annotationSets;
@@ -52,7 +53,8 @@ public class SampleUpdateParams {
 
     public SampleUpdateParams(String id, String description, String creationDate, String modificationDate, String individualId,
                               ExternalSource source, SampleProcessing processing, SampleCollection collection,
-                              SampleQualityControl qualityControl, Boolean somatic, List<Phenotype> phenotypes,
+                              SampleQualityControl qualityControl, SampleQualityControlStatus qualityControlStatus, Boolean somatic,
+                              List<Phenotype> phenotypes,
                               List<AnnotationSet> annotationSets, Map<String, Object> attributes, StatusParams status) {
         this.id = id;
         this.description = description;
@@ -63,6 +65,7 @@ public class SampleUpdateParams {
         this.processing = processing;
         this.collection = collection;
         this.qualityControl = qualityControl;
+        this.qualityControlStatus = qualityControlStatus;
         this.somatic = somatic;
         this.phenotypes = phenotypes;
         this.annotationSets = annotationSets;
@@ -76,6 +79,10 @@ public class SampleUpdateParams {
         this.annotationSets = null;
 
         ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));
+        if (params.containsKey("qualityControlStatus")) {
+            params.put("internal.qualityControlStatus", params.get("qualityControlStatus"));
+            params.remove("qualityControlStatus");
+        }
 
         this.annotationSets = annotationSetList;
         if (this.annotationSets != null) {
@@ -90,7 +97,8 @@ public class SampleUpdateParams {
     public Sample toSample() {
         return new Sample(id, "", source, processing, collection, qualityControl, 1, 1, creationDate, modificationDate,
                 description, somatic != null && somatic, phenotypes, individualId, Collections.emptyList(), Collections.emptyList(),
-                status != null ? status.toStatus() : null, new SampleInternal(), annotationSets, attributes);
+                status != null ? status.toStatus() : null, new SampleInternal().setQualityControlStatus(qualityControlStatus),
+                annotationSets, attributes);
     }
 
     @Override
@@ -105,6 +113,7 @@ public class SampleUpdateParams {
         sb.append(", processing=").append(processing);
         sb.append(", collection=").append(collection);
         sb.append(", qualityControl=").append(qualityControl);
+        sb.append(", qualityControlStatus=").append(qualityControlStatus);
         sb.append(", somatic=").append(somatic);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", annotationSets=").append(annotationSets);
@@ -193,6 +202,15 @@ public class SampleUpdateParams {
 
     public SampleUpdateParams setQualityControl(SampleQualityControl qualityControl) {
         this.qualityControl = qualityControl;
+        return this;
+    }
+
+    public SampleQualityControlStatus getQualityControlStatus() {
+        return qualityControlStatus;
+    }
+
+    public SampleUpdateParams setQualityControlStatus(SampleQualityControlStatus qualityControlStatus) {
+        this.qualityControlStatus = qualityControlStatus;
         return this;
     }
 
