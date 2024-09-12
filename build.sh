@@ -111,7 +111,7 @@ function manage_dependency() {
     log_version_summary "$REPO,$VERSION,$BRANCH_NAME"
     if [ "$COMMAND" == "build" ];then
       log "Building $REPO branch $BRANCH_NAME."
-      mvn clean install -T 2 -DskipTests --no-transfer-progress
+      mvn clean install -B -T 2 -DskipTests --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
       else
@@ -123,9 +123,9 @@ function manage_dependency() {
       echo "${pwd} $REPO" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
       if [ "$REPO" == "cellbase" ]; then
         log "mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress"
-        mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress
+        mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress
       else
-        mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress
+        mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress
       fi
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $VERSION in $BRANCH_NAME FAILED!!!!!"
@@ -272,7 +272,7 @@ function build_opencga() {
   elif [ "$COMMAND" == "test" ];then
       local pwd=$(pwd -P)
       echo "${pwd} opencga" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
+      mvn clean install -B surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga test FAILED!!!!!"
         print_log_summary
@@ -307,7 +307,7 @@ function build_opencga_enterprise() {
   elif [ "$COMMAND" == "test" ]; then
       local pwd=$(pwd)
       echo "${pwd} opencga-enterprise" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      mvn clean install -B verify surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+      mvn clean install -B surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
       -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise test FAILED!!!!!"
@@ -332,20 +332,36 @@ function publish_reports() {
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
     echo "Preparing destination path"
     local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
-    echo "Xetabase tested is $VERSION"
-    mv "$OPENCGA_ENTERPRISE_HOME_DIR/reports/test" "$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION"
-    FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION"
+
+    # Define the local directory to compress and the output file
+    FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION/"
     echo "The reports are in $FILE_TO_SEND"
+
+    echo "Xetabase tested is $VERSION"
+    mv "$OPENCGA_ENTERPRISE_HOME_DIR/reports/test/" "$FILE_TO_SEND"
+
     DESTINATION_PATH="/var/www/html/reports/xetabase"
     if [[ $TASK_REFERENCE == TASK* ]]; then
-      DESTINATION_PATH="$DESTINATION_PATH/$TASK_REFERENCE/"
-    else
-      DESTINATION_PATH="$DESTINATION_PATH/"
+      DESTINATION_PATH="$DESTINATION_PATH/$TASK_REFERENCE"
     fi
     echo "Destination path: $DESTINATION_PATH"
+
+    COMPRESSED_FILE="tests.tar.gz"
+
+    tar -czf "$COMPRESSED_FILE" -C "$OPENCGA_ENTERPRISE_HOME_DIR/reports/" "$VERSION"
+
+    # Create the destination directory on the remote server
     sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
-    echo "Created remote path: $DESTINATION_PATH"
-    sshpass -p "$SSH_PASS" scp -r -P "$SSH_PORT" "$FILE_TO_SEND" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH"
+
+    # Send the compressed file to the remote server using scp
+    sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$COMPRESSED_FILE" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH/$COMPRESSED_FILE"
+
+    # Connect to the remote server and decompress the file
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "tar -xzf $DESTINATION_PATH/$COMPRESSED_FILE -C $DESTINATION_PATH"
+
+    # Optional: remove the compressed file after decompressing it on the remote server
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm $DESTINATION_PATH/$COMPRESSED_FILE"
+
     if [ $? -eq 0 ]; then
       echo "Uploaded test report to $DESTINATION_PATH"
     else
@@ -355,8 +371,34 @@ function publish_reports() {
   fi
 }
 
+## Function to upload the docker of Oopencga-enterprise to https://hub.docker.com/repositories/zettagenomics
+#function publish_dockers() {
+#  if [ "$DOCKER" == "true" ];then
+#    upload_docker_opencga
+#    upload_docker_enterprise
+#  fi
+#}
+
+#function upload_docker_opencga() {
+#  if [ "$DOCKER" == "true" ];then
+#    ## Move to opencga-enterprise to build or test
+#    cd "$OPENCGA_OPENCGA_HOME_DIR" || exit 2
+#    if [[ -n $TASK_REFERENCE ]]; then
+#      TAG=$TASK_REFERENCE
+#    else
+#      TAG="$(mvn help:evaluate --file "${OPENCGA_OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
+#    fi
+#    python3 ./build/cloud/docker/docker-build.py push --org opencb --images base,init --tag "$TAG"
+#    if [[ "$?" -ne 0 ]] ; then
+#      log_summary "[ERROR] OPENCGA DOCKER UPLOAD FAILED!!!!!"
+#    else
+#      log_summary "Opencga docker uploaded correctly with tag $TAG"
+#    fi
+#  fi
+#}
+
 # Function to upload the docker of Oopencga-enterprise to https://hub.docker.com/repositories/zettagenomics
-function publish_docker() {
+function publish_dockers() {
   if [ "$DOCKER" == "true" ];then
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
@@ -367,13 +409,12 @@ function publish_docker() {
     fi
     python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag "$TAG"
     if [[ "$?" -ne 0 ]] ; then
-      log_summary "[ERROR] DOCKER UPLOAD FAILED!!!!!"
+      log_summary "[ERROR] OPENCGA ENTERPRISE DOCKER UPLOAD FAILED!!!!!"
     else
-      log_summary "Docker uploaded correctly with tag $TAG"
+      log_summary "Opencga-enterprise docker uploaded correctly with tag $TAG"
     fi
   fi
 }
-
 
 
 ## FUNCTIONS TO MANAGE LOGS AND PRINTS ##
@@ -736,11 +777,11 @@ build_opencga
 # Build opencga-enterprise
 build_opencga_enterprise
 
-# Publish test reports
-publish_reports
-
 # Publish Docker images
-publish_docker
+publish_dockers
 
 # Print final log summary
 print_log
+
+# Publish test reports as last step because we need finished log file with all information
+publish_reports
