@@ -208,6 +208,17 @@ function validate() {
       REF_TYPE="branch"
       REF="$OPENCGA_EXPECTED_BRANCH"
     fi
+
+    cd "$OPENCGA_HOME_DIR" || exit 2
+    # Get the current branch name
+    branch=$(git branch --show-current)
+    cd - || exit 2
+    # Check if the command was successful
+    if [ $? -eq 0 ]; then
+      log "Opencga is on branch: \"$branch\""
+    else
+      log "Unable to determine the current branch."
+    fi
     log "OpenCGA version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DEPENDENCY_VERSION\" of opencga"
     log "Please, execute bellow command and retry:"
     log "  git -C \"$OPENCGA_HOME_DIR\" checkout $REF"
