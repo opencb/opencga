@@ -65,6 +65,9 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
     public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes variant stats, and if the sample " +
             "is somatic, mutational signature and genome plot are calculated.";
 
+    protected static final String PREPARE_QC_STEP = "prepare-qc";
+    protected static final String INDEX_QC_STEP = "index-qc";
+
     @ToolParams
     protected final SampleQcAnalysisParams analysisParams = new SampleQcAnalysisParams();
 

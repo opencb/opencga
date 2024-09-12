@@ -95,7 +95,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                 // Decide if quality control has to be performed
                 //   - by checking the quality control status, if it is READY means it has been computed previously, and
                 //   - by checking the flag overwrite
-                if (family.getInternal() == null || performQualityControl(family.getInternal().getQualityControlStatus(),
+                if (family.getInternal() == null || mustPerformQualityControl(family.getInternal().getQualityControlStatus(),
                         analysisParams.getOverwrite())) {
                     // Set quality control status to COMPUTING to prevent multiple family QCs from running simultaneously
                     // for the same family

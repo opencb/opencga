@@ -38,6 +38,8 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControlStatus;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleQualityControlStatus;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -214,6 +216,12 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
                     catalogManager.getIndividualManager().update(getStudy(), id, updateParams, null, token);
                     break;
                 }
+                case SAMPLE_QC_TYPE: {
+                    SampleUpdateParams updateParams = new SampleUpdateParams()
+                            .setQualityControlStatus((SampleQualityControlStatus) qcStatus);
+                    catalogManager.getSampleManager().update(getStudy(), id, updateParams, null, token);
+                    break;
+                }
                 default: {
                     String msg = "Internal error: unknown QC type '" + qcType + "' (valid values are: " + StringUtils.join(
                             Arrays.asList(FAMILY_QC_TYPE, INDIVIDUAL_QC_TYPE), ",") + ")";
@@ -233,12 +241,14 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
             throws ToolException {
         if (CollectionUtils.isEmpty(skip) || !skip.contains(analysisId)) {
             java.io.File qcFile = qcPath.resolve(analysisId).resolve(id + QC_JSON_EXTENSION).toFile();
-            try {
-                return reader.readValue(qcFile);
-            } catch (IOException e) {
-                String msg = "Error parsing '" + analysisId + "' report (" + qcFile.getName() + " ) for " + qcType + " " + id;
-                logger.error(msg, e);
-                addError(new ToolException(msg, e));
+            if (qcFile.exists()) {
+                try {
+                    return reader.readValue(qcFile);
+                } catch (IOException e) {
+                    String msg = "Error parsing '" + analysisId + "' report (" + qcFile.getName() + " ) for " + qcType + " " + id;
+                    logger.error(msg, e);
+                    addError(new ToolException(msg, e));
+                }
             }
         }
         return null;
@@ -347,7 +357,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         return resourcesPath;
     }
 
-    protected boolean performQualityControl(QualityControlStatus qcStatus, Boolean overwrite) {
+    protected boolean mustPerformQualityControl(QualityControlStatus qcStatus, Boolean overwrite) {
         boolean performQc;
         if (Boolean.TRUE.equals(overwrite)) {
             performQc = true;
@@ -358,5 +368,26 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
             performQc = true;
         }
         return performQc;
+    }
+
+    protected Path checkDirectory(Path dir) throws ToolException {
+        if (!Files.exists(dir)) {
+            try {
+                Files.createDirectories(dir);
+            } catch (IOException e) {
+                throw new ToolException("Error creating directory '" + dir + "'", e);
+            }
+            if (!Files.exists(dir)) {
+                throw new ToolException("Directory '" + dir + "' does not exist after creating directory");
+            }
+        }
+        return dir;
+    }
+
+    protected boolean mustSkip(String value, List<String> skip) {
+        if (CollectionUtils.isEmpty(skip)) {
+            return false;
+        }
+        return skip.contains(value);
     }
 }

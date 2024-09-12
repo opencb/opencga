@@ -111,7 +111,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
                 // Decide if quality control has to be performed
                 //   - by checking the quality control status, if it is READY means it has been computed previously, and
                 //   - by checking the flag overwrite
-                if (individual.getInternal() == null || performQualityControl(individual.getInternal().getQualityControlStatus(),
+                if (individual.getInternal() == null || mustPerformQualityControl(individual.getInternal().getQualityControlStatus(),
                         analysisParams.getOverwrite())) {
 
                     // Set quality control status to COMPUTING to prevent multiple individual QCs from running simultaneously

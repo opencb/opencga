@@ -41,6 +41,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
 import org.opencb.opencga.analysis.family.qc.FamilyVariantQcAnalysis;
+import org.opencb.opencga.analysis.sample.qc.SampleVariantQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
@@ -82,10 +83,7 @@ import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleQualityControl;
-import org.opencb.opencga.core.models.sample.SampleReferenceParam;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -112,6 +110,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 @RunWith(Parameterized.class)
@@ -767,6 +766,30 @@ public class VariantAnalysisTest {
         ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class,
                 params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
 //        checkExecutionResult(er, false);
+    }
+
+    @Test
+    public void testSampleQcStats() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_sample_qc_stats"));
+        System.out.println("outDir = " + outDir);
+
+        SampleQualityControl qc = new SampleQualityControl();
+        SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc).setQualityControlStatus(new SampleQualityControlStatus());
+        catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
+
+        SampleQcAnalysisParams params = new SampleQcAnalysisParams();
+        params.setSamples(Collections.singletonList(cancer_sample));
+        params.setVsId("test");
+        params.setVsDescription("Description test");
+        params.setVsQuery(new AnnotationVariantQueryParams());
+        params.setSkip(Arrays.asList(SIGNATURE_ANALYSIS_ID, HR_DETECT_ANALYSIS_ID, GENOME_PLOT_ANALYSIS_ID));
+
+        toolRunner.execute(SampleVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
+                outDir, null, false, token);
+
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, QueryOptions.empty(), token);
+        Sample sample = sampleResult.first();
+        System.out.println("sample.getQualityControl().getVariant() = " + sample.getQualityControl().getVariant());
     }
 
     @Test
