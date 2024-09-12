@@ -25,33 +25,38 @@ public class SampleQualityControlStatus extends QualityControlStatus {
     private int code;
 
     public static final int NONE_READY = 0;
-    public static final int SIGNATURE_READY = 1;
-    public static final int HR_DETECT_READY = 2;
-    public static final int GENOME_PLOT_READY = 4;
+    public static final int STATS_READY = 1;
+    public static final int SIGNATURE_READY = 2;
+    public static final int HR_DETECT_READY = 4;
+    public static final int GENOME_PLOT_READY = 8;
 
-    public SampleQualityControlStatus(int code, String message) {
+    public SampleQualityControlStatus(int code, boolean isSomatic, String message) {
         String status;
         switch (code) {
             case NONE_READY:
                 status = NONE;
                 break;
-            case SIGNATURE_READY + HR_DETECT_READY + GENOME_PLOT_READY:
+            case STATS_READY + SIGNATURE_READY + HR_DETECT_READY + GENOME_PLOT_READY:
                 status = READY;
                 break;
             default:
-                status = INCOMPLETE;
+                if (!isSomatic && (code | STATS_READY) > 0) {
+                    status = READY;
+                } else {
+                    status = INCOMPLETE;
+                }
                 break;
         }
         this.code = code;
         init(status, status, message);
     }
 
-    public SampleQualityControlStatus(int code) {
-        this(code, "");
+    public SampleQualityControlStatus(int code, boolean isSomatic) {
+        this(code, isSomatic, "");
     }
 
     public SampleQualityControlStatus() {
-        this(NONE_READY, "");
+        this(NONE_READY, false, "");
     }
 
     public SampleQualityControlStatus(String status, String message) {

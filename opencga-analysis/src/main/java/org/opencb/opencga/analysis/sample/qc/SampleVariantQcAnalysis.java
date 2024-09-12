@@ -245,7 +245,7 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
             if (qcCode != NONE_READY) {
                 // Update the sample QC code with the current one
                 SampleQualityControlStatus qcStatus = new SampleQualityControlStatus(
-                        qcCode | sample.getInternal().getQualityControlStatus().getCode(), "");
+                        qcCode | sample.getInternal().getQualityControlStatus().getCode(), sample.isSomatic(), "");
                 try {
                     SampleUpdateParams updateParams = new SampleUpdateParams()
                             .setQualityControl(sampleQc)
