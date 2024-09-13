@@ -12,13 +12,14 @@ chrx_vars = "data/20201028_CCDG_14151_B01_GRM_WGS_2020-08-05_chrX.recalibrated_v
 chrx_var_frq = "data/20201028_CCDG_14151_B01_GRM_WGS_2020-08-05_chrX.recalibrated_variants_filtered_annotated_chrX.frq"
 
 class IndividualQCExecutor:
-    def __init__(self, vcf_file, info_file, bam_file, config, output_parent_dir, sample_ids, id_):
+    def __init__(self, vcf_file, info_file, bam_file, config, resource_dir, output_parent_dir, sample_ids, id_):
         """Create output dir
 
         :param str vcf_file: VCF input file path
         :param str info_file: Info JSON input file path
         :param str or None bam_file: BAM input file path
         :param str config: Configuration file path
+        :param str resource_dir: Output directory path for resources
         :param str output_parent_dir: Output directory path for the id_ (e.g. /path/to/outdir/id1)
         :param list sample_ids: Sample IDs from the VCF file
         :param str id_: ID from the info JSON file
@@ -27,6 +28,7 @@ class IndividualQCExecutor:
         self.info_file = info_file
         self.bam_file = bam_file
         self.config = config
+        self.resource_dir = resource_dir
         self.output_parent_dir = output_parent_dir
         self.sample_ids = sample_ids
         self.id_ = id_
