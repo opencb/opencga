@@ -225,31 +225,31 @@ class FamilyQCExecutor:
         plink_path = str(plink_path)
         files_prefix = self.id_ + "_plink_relatedness_results"
         plink_output_folder_files_prefix = os.path.join(plink_outdir_fpath, files_prefix)
-        cmd_plink_files = ' '.join([plink_path,
-                                    "--vcf", str(filtered_vcf_fpath),
-                                    "--make-bed",
-                                    "--const-fid", self.id_,
-                                    "--chr", "1-22",
-                                    "--not-chr", "X,Y,MT",
-                                    "--allow-extra-chr",
-                                    "--snps-only",
-                                    "--biallelic-only", "strict",
-                                    "--vcf-half-call", "haploid",
-                                    "--update-sex", sex_info_fpath,
-                                    "--update-parents", parent_offspring_fpath,
-                                    "--out", plink_output_folder_files_prefix])
+        plink_files_args = ["--vcf", str(filtered_vcf_fpath),
+                      "--make-bed",
+                      "--const-fid", self.id_,
+                      "--chr", "1-22",
+                      "--not-chr", "X,Y,MT",
+                      "--allow-extra-chr",
+                      "--snps-only",
+                      "--biallelic-only", "strict",
+                      "--vcf-half-call", "haploid",
+                      "--update-sex", sex_info_fpath,
+                      "--update-parents", parent_offspring_fpath,
+                      "--out", plink_output_folder_files_prefix]
+        cmd_plink_files = [plink_path] +  plink_files_args
         LOGGER.debug('Generating PLINK files')
         plink_files = execute_bash_command(cmd_plink_files)
         if plink_files[0] == 0:
             plink_files_generated = os.listdir(plink_outdir_fpath)
             LOGGER.info('Files available in directory "{}":\n{}'.format(plink_outdir_fpath, plink_files_generated))
 
-            cmd_plink_ibd = ' '.join([plink_path,
-                                      "--bfile", plink_output_folder_files_prefix,
-                                      "--genome", "rel-check",
-                                      "--read-freq", str(pop_freq_fpath),
-                                      "--exclude", str(pop_exclude_var_fpath),
-                                      "--out", plink_output_folder_files_prefix])
+            plink_ibd_args = ["--bfile", plink_output_folder_files_prefix,
+                              "--genome", "rel-check",
+                              "--read-freq", str(pop_freq_fpath),
+                              "--exclude", str(pop_exclude_var_fpath),
+                              "--out", plink_output_folder_files_prefix]
+            cmd_plink_ibd = [plink_path] + plink_ibd_args
             LOGGER.debug("Performing IBD analysis")
             plink_ibd = execute_bash_command(cmd_plink_ibd)
             if plink_ibd[0] == 0:
