@@ -265,7 +265,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
         interpretationObject.put(LAST_OF_VERSION, true);
         interpretationObject.put(LAST_OF_RELEASE, true);
 
-        versionedMongoDBAdaptor.insert(clientSession, interpretationObject);
+        versionedMongoDBAdaptor.insert(clientSession, interpretationObject, interpretation.getRelease());
 
         return interpretation;
     }

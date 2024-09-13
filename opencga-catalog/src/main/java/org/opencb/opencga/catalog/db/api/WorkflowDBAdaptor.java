@@ -22,6 +22,7 @@ public interface WorkflowDBAdaptor extends CoreDBAdaptor<Workflow> {
         ID("id", TEXT, ""),
         UID("uid", LONG, ""),
         UUID("uuid", TEXT, ""),
+        NAME("name", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         DRAFT("draft", BOOLEAN, ""),
         TYPE("type", TEXT, ""),

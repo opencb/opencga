@@ -197,7 +197,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting individual '{}' ({})...", individual.getId(), individual.getUid());
-        versionedMongoDBAdaptor.insert(clientSession, individualDocument);
+        versionedMongoDBAdaptor.insert(clientSession, individualDocument, individual.getRelease());
         logger.debug("Individual '{}' successfully inserted", individual.getId());
 
         if (individual.getSamples() != null && !individual.getSamples().isEmpty()) {

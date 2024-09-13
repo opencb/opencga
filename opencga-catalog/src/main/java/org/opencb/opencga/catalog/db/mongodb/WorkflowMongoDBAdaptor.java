@@ -83,6 +83,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         long uid = getNewUid(clientSession);
         workflow.setUid(uid);
         workflow.setStudyUid(studyUid);
+        workflow.setRelease(dbAdaptorFactory.getCatalogStudyDBAdaptor().getCurrentRelease(clientSession, studyUid));
 
         Document workflowObject = workflowConverter.convertToStorageType(workflow);
 
@@ -92,7 +93,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
                 ? TimeUtils.toDate(workflow.getModificationDate()) : TimeUtils.getDate());
 
         logger.debug("Inserting workflow '{}' ({})...", workflow.getId(), workflow.getUid());
-        versionedMongoDBAdaptor.insert(clientSession, workflowObject);
+        versionedMongoDBAdaptor.insert(clientSession, workflowObject, workflow.getRelease());
         logger.debug("Workflow '{}' successfully inserted", workflow.getId());
 
         return workflow;
@@ -323,7 +324,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         final String[] acceptedBooleanParams = {QueryParams.DRAFT.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
-        final String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
@@ -513,6 +514,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
                     case RELEASE:
                     case VERSION:
                     case TYPE:
+                    case DRAFT:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

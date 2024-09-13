@@ -135,7 +135,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
         logger.debug("Inserting panel '{}' ({})", panel.getId(), panel.getUid());
 
         Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, studyUid);
-        versionedMongoDBAdaptor.insert(clientSession, panelDocument);
+        versionedMongoDBAdaptor.insert(clientSession, panelDocument, panel.getRelease());
         logger.info("Panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
     }
 

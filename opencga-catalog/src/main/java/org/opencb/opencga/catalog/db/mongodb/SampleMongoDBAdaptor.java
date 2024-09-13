@@ -187,7 +187,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         sampleObject.put(PRIVATE_INDIVIDUAL_UID, individualUid);
 
         logger.debug("Inserting sample '{}' ({})...", sample.getId(), sample.getUid());
-        versionedMongoDBAdaptor.insert(clientSession, sampleObject);
+        versionedMongoDBAdaptor.insert(clientSession, sampleObject, sample.getRelease());
         logger.debug("Sample '{}' successfully inserted", sample.getId());
 
         if (individualUid > 0) {

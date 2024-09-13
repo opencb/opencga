@@ -175,7 +175,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         ObjectMap updateMap = null;
         try {
             if (updateParams != null) {
-                updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));
+                updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams));
             }
         } catch (JsonProcessingException e) {
             throw new CatalogException("Could not parse WorkflowUpdateParams object: " + e.getMessage(), e);
@@ -548,7 +548,13 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
     private void validateNewWorkflow(Workflow workflow) throws CatalogParameterException {
         ParamUtils.checkIdentifier(workflow.getId(), ID.key());
-        ParamUtils.checkObj(workflow.getType(), TYPE.key());
+        if (Workflow.Type.values().length > 1) {
+            ParamUtils.checkObj(workflow.getType(), TYPE.key());
+        } else if (workflow.getType() == null) {
+            // TODO: Remove this condition in the future once we know we support more than one type.
+            // If there is only one valid type, we set it
+            workflow.setType(Workflow.Type.NEXTFLOW);
+        }
         workflow.setScripts(workflow.getScripts() != null ? workflow.getScripts() : Collections.emptyList());
         boolean main = false;
         for (WorkflowScript script : workflow.getScripts()) {
@@ -566,7 +572,11 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         }
         workflow.setRepository(workflow.getRepository() != null ? workflow.getRepository() : new WorkflowRepository(""));
         if (StringUtils.isEmpty(workflow.getRepository().getImage()) && CollectionUtils.isEmpty(workflow.getScripts())) {
-            throw new CatalogParameterException("No docker image or scripts found.");
+            throw new CatalogParameterException("No repository image or scripts found.");
+        }
+        if (StringUtils.isNotEmpty(workflow.getRepository().getImage()) && CollectionUtils.isNotEmpty(workflow.getScripts())) {
+            throw new CatalogParameterException("Both repository image and scripts found. Please, either add scripts or a repository"
+                    + " image.");
         }
 
         workflow.setName(ParamUtils.defaultString(workflow.getName(), workflow.getId()));

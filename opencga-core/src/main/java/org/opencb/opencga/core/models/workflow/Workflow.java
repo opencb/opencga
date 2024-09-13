@@ -30,6 +30,9 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "version", managed = true, indexed = true, description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
     private int version;
 
+    @DataField(id = "release", managed = true, indexed = true, description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
+    private int release;
+
     @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
     private Type type;
 
@@ -83,6 +86,7 @@ public class Workflow extends PrivateStudyUid {
         sb.append(", description='").append(description).append('\'');
         sb.append(", draft=").append(draft);
         sb.append(", version=").append(version);
+        sb.append(", release=").append(release);
         sb.append(", type=").append(type);
         sb.append(", repository=").append(repository);
         sb.append(", scripts=").append(scripts);
@@ -136,6 +140,15 @@ public class Workflow extends PrivateStudyUid {
 
     public Workflow setVersion(int version) {
         this.version = version;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public Workflow setRelease(int release) {
+        this.release = release;
         return this;
     }
 

@@ -136,11 +136,12 @@ public class SnapshotVersionedMongoDBAdaptor {
                 throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
     }
 
-    protected void insert(ClientSession session, Document document) {
+    protected void insert(ClientSession session, Document document, int release) {
         String uuid = getClientSessionUuid(session);
         document.put(VERSION, 1);
         document.put(LAST_OF_VERSION, true);
         document.put(LAST_OF_RELEASE, true);
+        document.put(RELEASE_FROM_VERSION, Collections.singletonList(release));
         document.put(PRIVATE_TRANSACTION_ID, uuid);
         collection.insert(session, document, QueryOptions.empty());
         archiveCollection.insert(session, document, QueryOptions.empty());

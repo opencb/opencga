@@ -228,7 +228,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         familyDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting family '{}' ({})...", family.getId(), family.getUid());
-        versionedMongoDBAdaptor.insert(clientSession, familyDocument);
+        versionedMongoDBAdaptor.insert(clientSession, familyDocument, family.getRelease());
         logger.debug("Family '{}' successfully inserted", family.getId());
 
         // Add family reference to the members
