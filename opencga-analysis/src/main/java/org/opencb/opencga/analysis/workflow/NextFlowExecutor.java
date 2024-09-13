@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 @Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.WORKFLOW, description = NextFlowExecutor.DESCRIPTION)
 public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
-    public final static String ID = "nextflow-run";
+    public final static String ID = "nextflow";
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
