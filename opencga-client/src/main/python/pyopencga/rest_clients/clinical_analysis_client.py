@@ -141,6 +141,8 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str quality_control_summary: Clinical Analysis quality control
             summary.
         :param str release: Release when it was created.
+        :param int snapshot: Snapshot value (Latest version of the entry in
+            the specified release).
         :param str status: Filter by status.
         :param str internal_status: Filter by internal status.
         :param str annotation: Annotation filters. Example:
@@ -166,6 +168,8 @@ class ClinicalAnalysis(_ParentRestClient):
             operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
             sensitive, '~/value/i' for case insensitive search.
         :param str uuid: Comma separated list of Interpretation UUIDs up to a
+            maximum of 100.
+        :param str name: Comma separated list of Interpretation names up to a
             maximum of 100.
         :param str clinical_analysis_id: Clinical Analysis id.
         :param str analyst_id: Analyst ID.
@@ -207,6 +211,8 @@ class ClinicalAnalysis(_ParentRestClient):
             operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
             sensitive, '~/value/i' for case insensitive search.
         :param str uuid: Comma separated list of Interpretation UUIDs up to a
+            maximum of 100.
+        :param str name: Comma separated list of Interpretation names up to a
             maximum of 100.
         :param str clinical_analysis_id: Clinical Analysis id.
         :param str analyst_id: Analyst ID.
@@ -280,7 +286,7 @@ class ClinicalAnalysis(_ParentRestClient):
         Run exomiser interpretation analysis.
         PATH: /{apiVersion}/analysis/clinical/interpreter/exomiser/run
 
-        :param dict data: Exomizer interpretation analysis params. (REQUIRED)
+        :param dict data: Exomiser interpretation analysis params. (REQUIRED)
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param str job_id: Job ID. It must be a unique string within the
@@ -748,6 +754,8 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str quality_control_summary: Clinical Analysis quality control
             summary.
         :param str release: Release when it was created.
+        :param int snapshot: Snapshot value (Latest version of the entry in
+            the specified release).
         :param str status: Filter by status.
         :param str internal_status: Filter by internal status.
         :param str annotation: Annotation filters. Example:
@@ -1031,6 +1039,9 @@ class ClinicalAnalysis(_ParentRestClient):
         :param bool flatten_annotations: Flatten the annotations?.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
+        :param str version: Comma separated list of clinical versions. 'all'
+            to get all the clinical versions. Not supported if multiple
+            clinical ids are provided.
         :param bool deleted: Boolean to retrieve deleted entries.
         """
 

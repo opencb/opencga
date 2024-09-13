@@ -49,7 +49,7 @@ public class VariantSearchToVariantConverterTest {
         expectedVariant.addStudyEntry(aux.getStudy("2"));
 
         VariantSearchModel variantSearchModel = converter.convertToStorageType(expectedVariant);
-        assertNull(variantSearchModel.getVariantId());
+        assertNotNull(variantSearchModel.getVariantId());
         assertEquals(variantId, variantSearchModel.getId());
         Variant actualVariant = converter.convertToDataModelType(variantSearchModel);
 

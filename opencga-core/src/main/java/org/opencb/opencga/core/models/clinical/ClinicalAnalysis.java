@@ -22,7 +22,6 @@ import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
@@ -100,9 +99,9 @@ public class ClinicalAnalysis extends Annotable {
             description = FieldConstants.CLINICAL_ANALYSIS_PANELS)
     private List<Panel> panels;
 
-    @DataField(id = "panelLock", indexed = true,
+    @DataField(id = "panelLocked", indexed = true,
             description = FieldConstants.CLINICAL_ANALYSIS_PANEL_LOCK)
-    private boolean panelLock;
+    private boolean panelLocked;
 
     @DataField(id = "locked", indexed = true,
             description = FieldConstants.CLINICAL_ANALYSIS_LOCKED)
@@ -179,6 +178,14 @@ public class ClinicalAnalysis extends Annotable {
             description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
+    /**
+     * Generic: Autoincremental version assigned to the registered entry.
+     *
+     * @apiNote Immutable
+     */
+    @DataField(id = "version", managed = true, indexed = true, description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
+    private int version;
+
     @DataField(id = "qualityControl", indexed = true,
             description = FieldConstants.GENERIC_QUALITY_CONTROL)
     private ClinicalAnalysisQualityControl qualityControl;
@@ -217,19 +224,19 @@ public class ClinicalAnalysis extends Annotable {
      */
     @DataField(id = "status", indexed = true, uncommentedClasses = {"Status"},
             description = FieldConstants.GENERIC_STATUS_DESCRIPTION)
-    private Status status;
+    private ClinicalStatus status;
 
     public ClinicalAnalysis() {
     }
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
-                            Family family, List<Panel> panels, boolean panelLock, boolean locked, Interpretation interpretation,
+                            Family family, List<Panel> panels, boolean panelLocked, boolean locked, Interpretation interpretation,
                             List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent,
                             List<ClinicalAnalyst> analysts, ClinicalReport report, ClinicalRequest request, ClinicalResponsible responsible,
                             ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate, String modificationDate,
-                            String dueDate, int release, List<ClinicalComment> comments, ClinicalAnalysisQualityControl qualityControl,
-                            List<ClinicalAudit> audit, ClinicalAnalysisInternal internal, List<AnnotationSet> annotationSets,
-                            Map<String, Object> attributes, Status status) {
+                            String dueDate, int release, int version, List<ClinicalComment> comments,
+                            ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit, ClinicalAnalysisInternal internal,
+                            List<AnnotationSet> annotationSets, Map<String, Object> attributes, ClinicalStatus status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -238,7 +245,7 @@ public class ClinicalAnalysis extends Annotable {
         this.proband = proband;
         this.family = family;
         this.panels = panels;
-        this.panelLock = panelLock;
+        this.panelLocked = panelLocked;
         this.locked = locked;
         this.interpretation = interpretation;
         this.secondaryInterpretations = secondaryInterpretations;
@@ -254,6 +261,7 @@ public class ClinicalAnalysis extends Annotable {
         this.dueDate = dueDate;
         this.qualityControl = qualityControl;
         this.release = release;
+        this.version = version;
         this.comments = comments;
         this.audit = audit;
         this.internal = internal;
@@ -274,7 +282,7 @@ public class ClinicalAnalysis extends Annotable {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", panels=").append(panels);
-        sb.append(", panelLock=").append(panelLock);
+        sb.append(", panelLocked=").append(panelLocked);
         sb.append(", locked=").append(locked);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
@@ -289,6 +297,7 @@ public class ClinicalAnalysis extends Annotable {
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", release=").append(release);
+        sb.append(", version=").append(version);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", comments=").append(comments);
         sb.append(", audit=").append(audit);
@@ -383,12 +392,23 @@ public class ClinicalAnalysis extends Annotable {
         return this;
     }
 
+    @Deprecated
+    @JsonIgnore
     public boolean isPanelLock() {
-        return panelLock;
+        return isPanelLocked();
     }
 
+    @Deprecated
     public ClinicalAnalysis setPanelLock(boolean panelLock) {
-        this.panelLock = panelLock;
+        return setPanelLocked(panelLock);
+    }
+
+    public boolean isPanelLocked() {
+        return panelLocked;
+    }
+
+    public ClinicalAnalysis setPanelLocked(boolean panelLocked) {
+        this.panelLocked = panelLocked;
         return this;
     }
 
@@ -532,6 +552,15 @@ public class ClinicalAnalysis extends Annotable {
         return this;
     }
 
+    public int getVersion() {
+        return version;
+    }
+
+    public ClinicalAnalysis setVersion(int version) {
+        this.version = version;
+        return this;
+    }
+
     public List<ClinicalComment> getComments() {
         return comments;
     }
@@ -583,11 +612,11 @@ public class ClinicalAnalysis extends Annotable {
         return this;
     }
 
-    public Status getStatus() {
+    public ClinicalStatus getStatus() {
         return status;
     }
 
-    public ClinicalAnalysis setStatus(Status status) {
+    public ClinicalAnalysis setStatus(ClinicalStatus status) {
         this.status = status;
         return this;
     }

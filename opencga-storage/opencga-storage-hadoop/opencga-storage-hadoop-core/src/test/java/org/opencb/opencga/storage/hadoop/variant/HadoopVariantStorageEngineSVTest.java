@@ -1,8 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -12,13 +10,15 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngineSVTest;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.opencb.opencga.core.api.ParamConstants.OVERWRITE;
 
 /**
@@ -33,9 +33,46 @@ public class HadoopVariantStorageEngineSVTest extends VariantStorageEngineSVTest
     public static HadoopExternalResource externalResource = new HadoopExternalResource();
     private Logger logger = LoggerFactory.getLogger(getClass());
 
+    public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
+
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        if (HBaseCompat.getInstance().isSolrTestingAvailable()) {
+            solr.before();
+            solr.configure(externalResource.getVariantStorageEngine());
+            System.out.println("Start embedded solr");
+        } else {
+            System.out.println("Skip embedded solr tests");
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() throws Exception {
+        if (HBaseCompat.getInstance().isSolrTestingAvailable()) {
+            solr.after();
+        }
+    }
+
+    @Override
+    public void before() throws Exception {
+        super.before();
+        if (HBaseCompat.getInstance().isSolrTestingAvailable()) {
+            solr.configure(variantStorageEngine);
+        }
+    }
+
     @Override
     protected void loadFiles() throws Exception {
+        if (HBaseCompat.getInstance().isSolrTestingAvailable()) {
+            solr.configure(variantStorageEngine);
+        }
         super.loadFiles();
+        if (HBaseCompat.getInstance().isSolrTestingAvailable()) {
+            variantStorageEngine.secondaryIndex();
+            assertTrue(variantStorageEngine.secondaryAnnotationIndexActiveAndAlive());
+        } else {
+            assertFalse(variantStorageEngine.secondaryAnnotationIndexActiveAndAlive());
+        }
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
     }
 
