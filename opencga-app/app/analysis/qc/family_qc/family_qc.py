@@ -165,7 +165,9 @@ class FamilyQCExecutor:
         # Return paths of text files generated. First path: individual, sample, sex information file. Second path: parent-offspring information file.
         return [sex_information_output_fpath, parent_offspring_output_fpath]
 
-    def relatedness_results_data_model(method):
+    def relatedness_results_data_model(method="PLINK/IBD"):
+        method = str(method)
+
         relatedness_json = {
             "method": "",
             "software": {
@@ -204,7 +206,6 @@ class FamilyQCExecutor:
                 "JOB_ID": ""
             }
         }
-        method = str(method)
         if method == "PLINK/IBD":
             LOGGER.info('Relatedness method to be used: "{}"'.format(method))
             relatedness_json["method"] = "PLINK/IBD"
