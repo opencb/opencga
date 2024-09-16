@@ -273,10 +273,15 @@ class FamilyQCExecutor:
         if 'UNKNOWN' == reported_result or reported_result == "":
             validation = "UNKNOWN"
         else:
-            if reported_result == inferred_result:
-                validation = "PASS"
-            else:
+            reported_result = set(reported_result.split(', '))
+            inferred_result = set(inferred_result.split(', '))
+            if len(reported_result) != len(inferred_result):
                 validation = "FAIL"
+            else:
+                if reported_result == inferred_result:
+                    validation = "PASS"
+                else:
+                    validation = "FAIL"
         # Return validation result
         return validation
 
