@@ -98,10 +98,8 @@ function manage_dependency() {
       cd "$REPO" || exit 2
       local BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"
   else
-   if [[ "$BRANCH_NAME" != "TASK"*  ]]; then
       log "The $REPO branch $BRANCH_NAME cloning process has failed!"
       exit 1
-   fi
   fi
   git checkout "$BRANCH_NAME"
   local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
@@ -249,15 +247,19 @@ function validate() {
 
 # Function to download and compile java-common-libs, cellbase and biodata dependencies
 function prepare_branches() {
-  ## Only if you pass the parameter: --prepare-branch
+  ## Only if you pass the parameter: --prepare-branch -b
+
   if [ "$PREPARE_BRANCHES" == "true" ]; then
     JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
+    echo "Downloading and compiling java-common-libs $JCL_DEPENDENCY_VERSION"
     manage_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
 
     BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout)"
+    echo "Downloading and compiling biodata $BIODATA_DEPENDENCY_VERSION"
     manage_dependency "biodata" "$BIODATA_DEPENDENCY_VERSION"
 
     CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
+    echo "Downloading and compiling cellbase $CELLBASE_DEPENDENCY_VERSION"
     manage_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
   else
     log_summary "Skipped prepare branches"
