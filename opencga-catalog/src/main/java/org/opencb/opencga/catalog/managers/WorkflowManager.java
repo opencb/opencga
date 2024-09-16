@@ -24,12 +24,14 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.workflow.*;
@@ -49,7 +51,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 public class WorkflowManager extends ResourceManager<Workflow> {
 
     public static final QueryOptions INCLUDE_WORKFLOW_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ID.key(), UID.key(),
-            UUID.key(), VERSION.key()));
+            UUID.key(), VERSION.key(), STUDY_UID.key()));
 
     private final CatalogIOManager catalogIOManager;
     private final IOManagerFactory ioManagerFactory;
@@ -144,7 +146,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                     StudyPermissions.Permissions.WRITE_WORKFLOWS);
 
             // 2. Validate the workflow parameters
-            validateNewWorkflow(workflow);
+            validateNewWorkflow(workflow, userId);
 
             // 3. We insert the workflow
             OpenCGAResult<Workflow> insert = getWorkflowDBAdaptor(organizationId).insert(study.getUid(), workflow, options);
@@ -349,11 +351,11 @@ public class WorkflowManager extends ResourceManager<Workflow> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> ids, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Workflow> delete(String studyStr, List<String> ids, QueryOptions options, String token) throws CatalogException {
         return delete(studyStr, ids, options, false, token);
     }
 
-    public OpenCGAResult delete(String studyStr, List<String> ids, ObjectMap params, boolean ignoreException, String token)
+    public OpenCGAResult<Workflow> delete(String studyStr, List<String> ids, ObjectMap params, boolean ignoreException, String token)
             throws CatalogException {
         if (ids == null || ListUtils.isEmpty(ids)) {
             throw new CatalogException("Missing list of workflow ids");
@@ -386,7 +388,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         }
 
         auditManager.initAuditBatch(operationId);
-        OpenCGAResult result = OpenCGAResult.empty();
+        OpenCGAResult<Workflow> result = OpenCGAResult.empty(Workflow.class);
         for (String id : ids) {
             String workflowId = id;
             String workflowUuid = "";
@@ -546,7 +548,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         return idQueryParam;
     }
 
-    private void validateNewWorkflow(Workflow workflow) throws CatalogParameterException {
+    private void validateNewWorkflow(Workflow workflow, String userId) throws CatalogParameterException {
         ParamUtils.checkIdentifier(workflow.getId(), ID.key());
         if (Workflow.Type.values().length > 1) {
             ParamUtils.checkObj(workflow.getType(), TYPE.key());
@@ -586,6 +588,8 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         workflow.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(workflow.getCreationDate(), CREATION_DATE.key()));
         workflow.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(workflow.getModificationDate(), MODIFICATION_DATE.key()));
         workflow.setAttributes(ParamUtils.defaultObject(workflow.getAttributes(), Collections.emptyMap()));
+        workflow.setInternal(new WorkflowInternal(new InternalStatus(InternalStatus.READY), TimeUtils.getTime(), TimeUtils.getTime(),
+                userId));
     }
 
     // **************************   ACLs  ******************************** //

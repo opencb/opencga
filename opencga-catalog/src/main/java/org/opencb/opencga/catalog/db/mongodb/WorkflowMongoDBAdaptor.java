@@ -163,7 +163,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
-    public DBIterator nativeIterator(Query query, QueryOptions options)
+    public DBIterator<Document> nativeIterator(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
@@ -172,7 +172,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
-    public DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
+    public DBIterator<Document> nativeIterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
@@ -372,13 +372,60 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
-    public OpenCGAResult<Workflow> delete(Workflow id) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+    public OpenCGAResult<Workflow> delete(Workflow workflow)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        try {
+            Query query = new Query()
+                    .append(QueryParams.UID.key(), workflow.getUid())
+                    .append(QueryParams.STUDY_UID.key(), workflow.getStudyUid());
+            OpenCGAResult<Document> result = nativeGet(query, new QueryOptions());
+            if (result.getNumResults() == 0) {
+                throw new CatalogDBException("Could not find workflow " + workflow.getId() + " with uid " + workflow.getUid());
+            }
+            return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
+        } catch (CatalogDBException e) {
+            logger.error("Could not delete workflow {}: {}", workflow.getId(), e.getMessage(), e);
+            throw new CatalogDBException("Could not delete workflow " + workflow.getId() + ": " + e.getMessage(), e);
+        }
     }
 
     @Override
     public OpenCGAResult<Workflow> delete(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+        try (DBIterator<Document> iterator = nativeIterator(query, new QueryOptions())) {
+            OpenCGAResult<Workflow> result = OpenCGAResult.empty(Workflow.class);
+            while (iterator.hasNext()) {
+                Document workflow = iterator.next();
+                String workflowId = workflow.getString(QueryParams.ID.key());
+
+                try {
+                    result.append(runTransaction(clientSession -> privateDelete(clientSession, workflow)));
+                } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+                    logger.error("Could not delete workflow {}: {}", workflowId, e.getMessage(), e);
+                    result.getEvents().add(new Event(Event.Type.ERROR, workflowId, e.getMessage()));
+                    result.setNumMatches(result.getNumMatches() + 1);
+                }
+            }
+            return result;
+        }
+    }
+
+    OpenCGAResult<Workflow> privateDelete(ClientSession clientSession, Document workflowDocument)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        long tmpStartTime = startQuery();
+
+        String workflowId = workflowDocument.getString(QueryParams.ID.key());
+        long workflowUid = workflowDocument.getLong(PRIVATE_UID);
+        long studyUid = workflowDocument.getLong(PRIVATE_STUDY_UID);
+
+        logger.debug("Deleting workflow {} ({})", workflowId, workflowUid);
+        // Delete workflow
+        Query workflowQuery = new Query()
+                .append(QueryParams.UID.key(), workflowUid)
+                .append(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bsonQuery = parseQuery(workflowQuery);
+        versionedMongoDBAdaptor.delete(clientSession, bsonQuery);
+        logger.debug("Workflow {}({}) deleted", workflowId, workflowUid);
+        return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
     @Override

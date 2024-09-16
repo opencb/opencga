@@ -127,4 +127,19 @@ public class WorkflowManagerTest extends AbstractManagerTest {
         assertEquals(updateParams.getDescription(), updatedWorkflow.getDescription());
     }
 
+    @Test
+    public void deleteWorkflowTest() throws CatalogException {
+        Workflow workflow = new Workflow()
+                .setId("workflow")
+                .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
+        workflowManager.create(studyFqn, workflow, QueryOptions.empty(), ownerToken);
+
+        OpenCGAResult<Workflow> result = workflowManager.delete(studyFqn, workflow.getId(), QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumDeleted());
+
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> workflowManager.get(studyFqn, workflow.getId(), QueryOptions.empty(), ownerToken));
+        assertTrue(exception.getMessage().contains("not found"));
+    }
+
 }

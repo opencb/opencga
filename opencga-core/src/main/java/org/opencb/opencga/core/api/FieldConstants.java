@@ -316,11 +316,11 @@ public class FieldConstants {
             + " scripts will not be mandatory.";
     public static final String WORKFLOW_SCRIPTS_DESCRIPTION = "List of scripts used by the Workflow.";
     public static final String WORKFLOW_VARIABLES_DESCRIPTION = "List of variables accepted by the Workflow.";
+    public static final String WORKFLOW_INTERNAL_DESCRIPTION = "Workflow internal information.";
     public static final String WORKFLOW_SOMATIC_DESCRIPTION = "Describes if the sample is somatic or not .";
     public static final String WORKFLOW_INDIVIDUAL_ID_DESCRIPTION = "Individual id of the sample.";
     public static final String WORKFLOW_FILE_IDS_DESCRIPTION = "File ids of the sample.";
     public static final String WORKFLOW_COHORT_IDS_DESCRIPTION = "Cohort ids of the sample.";
-    public static final String WORKFLOW_INTERNAL_DESCRIPTION = "Sample internal information.";
     public static final String WORKFLOW_EXTERNAL_SOURCE_DESCRIPTION = "The external source from where the example was imported.";
 
     //FileInternal
