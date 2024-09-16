@@ -270,7 +270,7 @@ class FamilyQCExecutor:
 
     def relatedness_validation(reported_result, inferred_result):
         LOGGER.debug('Comparing reported {} and inferred {} results'.format(reported_result, inferred_result))
-        if 'UNKNOWN' in reported_result or reported_result == "":
+        if 'UNKNOWN' == reported_result or reported_result == "":
             validation = "UNKNOWN"
         else:
             if reported_result == inferred_result:
