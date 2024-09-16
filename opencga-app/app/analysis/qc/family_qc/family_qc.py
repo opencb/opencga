@@ -286,7 +286,7 @@ class FamilyQCExecutor:
         # Return validation result
         return validation
 
-    def relatedness_inference(self, relatedness_thresholds_fpath, method, plink_genome_fpath):
+    def relatedness_inference(self, relatedness_thresholds_fpath, plink_genome_fpath, method="PLINK/IBD"):
         # Reading relatedness thresholds file (.tsv)
         LOGGER.debug('Getting relatedness thresholds from file: "{}"'.format(relatedness_thresholds_fpath))
         relatedness_thresholds_fhand = open(str(relatedness_thresholds_fpath))
