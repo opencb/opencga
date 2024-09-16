@@ -385,7 +385,7 @@ class FamilyQCExecutor:
                     unknown_results[1] = True
 
                 if all(unknown_results):
-                    relatedness_results["scores"]["reportedRelationship"] = "UNRELATED"
+                    relatedness_results["scores"]["reportedRelationship"] = "SPOUSE, UNRELATED"
                     LOGGER.info(
                         "UNRELATED family relationship found for sample {} (individual: {}) and sample {} (individual: {})".format(
                             score_result["sampleId1"], individual1_info["individualId"], score_result["sampleId2"],
