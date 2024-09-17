@@ -154,6 +154,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jobsSubCommands.addCommand("create", jobsCommandOptions.createCommandOptions);
         jobsSubCommands.addCommand("distinct", jobsCommandOptions.distinctCommandOptions);
         jobsSubCommands.addCommand("retry", jobsCommandOptions.retryCommandOptions);
+        jobsSubCommands.addCommand("run", jobsCommandOptions.runCommandOptions);
         jobsSubCommands.addCommand("search", jobsCommandOptions.searchCommandOptions);
         jobsSubCommands.addCommand("top", jobsCommandOptions.topCommandOptions);
         jobsSubCommands.addCommand("acl", jobsCommandOptions.aclCommandOptions);
