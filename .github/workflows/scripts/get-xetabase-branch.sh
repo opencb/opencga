@@ -19,11 +19,11 @@ get_xetabase_branch() {
     return 0
   fi
 
-  # Check if the branch name starts with "release-" and follows the patterns "release-a.b.x" or "release-a.b.c.x"
-  if [[ "$input_branch" =~ ^release-([0-9]+)\.([0-9]+)\.x$ ]] || [[ "$input_branch" =~ ^release-([0-9]+)\.([0-9]+)\.([0-9]+)\.x$ ]]; then
+  # Check if the branch name starts with "release-" and follows the patterns "release-a.x.x" or "release-a.b.x"
+  if [[ "$input_branch" =~ ^release-([0-9]+)\.x\.x$ ]] || [[ "$input_branch" =~ ^release-([0-9]+)\.([0-9]+)\.x$ ]]; then
     # Extract the MAJOR part of the branch name
     MAJOR=${BASH_REMATCH[1]}
-    # Calculate the XETABASE_MAJOR by subtracting 3 from MAJOR
+    # Calculate the XETABASE_MAJOR by subtracting 1 from MAJOR of opencga
     XETABASE_MAJOR=$((MAJOR - 1))
     # Check if the XETABASE_MAJOR is negative
     if (( XETABASE_MAJOR < 0 )); then
