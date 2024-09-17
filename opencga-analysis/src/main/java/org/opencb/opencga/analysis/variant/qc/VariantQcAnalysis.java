@@ -94,11 +94,12 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     // For signature analysis
     public static final String SIGNATURE_ANALYSIS_ID = "signature";
 
-    // For hr detect analysis
-    public static final String HR_DETECT_ANALYSIS_ID = "hr-detect";
-
     // For genome plot analysis
     public static final String GENOME_PLOT_ANALYSIS_ID = "genome-plot";
+
+    // Tool QC steps
+    public static final String PREPARE_QC_STEP = "prepare-qc";
+    public static final String INDEX_QC_STEP = "index-qc";
 
     @Override
     protected void check() throws Exception {

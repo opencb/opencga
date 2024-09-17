@@ -23,9 +23,9 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.qc.InferredSexReport;
-import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
-import org.opencb.biodata.models.clinical.qc.RelatednessReport;
+import org.opencb.biodata.models.clinical.qc.InferredSex;
+import org.opencb.biodata.models.clinical.qc.MendelianError;
+import org.opencb.biodata.models.clinical.qc.Relatedness;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -211,9 +211,9 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
         // Create readers for each QC report
         ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        ObjectReader inferredSexReportReader = JacksonUtils.getDefaultObjectMapper().readerFor(InferredSexReport.class);
-        ObjectReader mendelianErrorReportReader = JacksonUtils.getDefaultObjectMapper().readerFor(MendelianErrorReport.class);
-        ObjectReader relatednessReportReader = JacksonUtils.getDefaultObjectMapper().readerFor(RelatednessReport.class);
+        ObjectReader inferredSexReader = JacksonUtils.getDefaultObjectMapper().readerFor(InferredSex.class);
+        ObjectReader mendelianErrorReader = JacksonUtils.getDefaultObjectMapper().readerFor(MendelianError.class);
+        ObjectReader relatednessReader = JacksonUtils.getDefaultObjectMapper().readerFor(Relatedness.class);
 
         for (Individual individual : individuals) {
             // Check output files
@@ -230,27 +230,27 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
             IndividualQualityControl individualQc = individual.getQualityControl();
 
             // Check inferred sex report
-            InferredSexReport inferredSexReport = checkQcReport(individual.getId(), INFERRED_SEX_ANALYSIS_ID,
-                    analysisParams.getSkip(), qcPath, INDIVIDUAL_QC_TYPE, inferredSexReportReader);
-            if (inferredSexReport != null) {
+            InferredSex inferredSex = checkQcReport(individual.getId(), INFERRED_SEX_ANALYSIS_ID, analysisParams.getSkip(), qcPath,
+                    INDIVIDUAL_QC_TYPE, inferredSexReader);
+            if (inferredSex != null) {
                 qcCode |= INFERRED_SEX_READY;
-                individualQc.getInferredSexReports().add(inferredSexReport);
+                individualQc.getInferredSex().add(inferredSex);
             }
 
             // Check Mendelian error report
-            MendelianErrorReport mendelianErrorReport = checkQcReport(individual.getId(), MENDELIAN_ERROR_ANALYSIS_ID,
-                    analysisParams.getSkip(), qcPath, INDIVIDUAL_QC_TYPE, mendelianErrorReportReader);
-            if (mendelianErrorReport != null) {
+            MendelianError mendelianError = checkQcReport(individual.getId(), MENDELIAN_ERROR_ANALYSIS_ID, analysisParams.getSkip(), qcPath,
+                    INDIVIDUAL_QC_TYPE, mendelianErrorReader);
+            if (mendelianError != null) {
                 qcCode |= MENDELIAN_ERROR_READY;
-                individualQc.getMendelianErrorReports().add(mendelianErrorReport);
+                individualQc.getMendelianError().add(mendelianError);
             }
 
             // Check relatedness report
-            RelatednessReport relatednessReport = checkQcReport(individual.getId(), RELATEDNESS_ANALYSIS_ID,
-                    analysisParams.getSkip(), qcPath, INDIVIDUAL_QC_TYPE, relatednessReportReader);
-            if (relatednessReport != null) {
+            Relatedness relatedness = checkQcReport(individual.getId(), RELATEDNESS_ANALYSIS_ID, analysisParams.getSkip(), qcPath,
+                    INDIVIDUAL_QC_TYPE, relatednessReader);
+            if (relatedness != null) {
                 qcCode |= RELATEDNESS_READY;
-                individualQc.getRelatednessReports().add(relatednessReport);
+                individualQc.getRelatedness().add(relatedness);
             }
 
             // Update catalog (quality control and status) if necessary

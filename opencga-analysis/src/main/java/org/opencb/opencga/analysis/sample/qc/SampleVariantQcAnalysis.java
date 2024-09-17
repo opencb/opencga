@@ -37,7 +37,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.individual.IndividualQualityControlStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleQualityControlStatus;
@@ -58,8 +57,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis.INDEX_QC_STEP;
-import static org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis.PREPARE_QC_STEP;
 import static org.opencb.opencga.core.models.common.QualityControlStatus.COMPUTING;
 import static org.opencb.opencga.core.models.sample.SampleQualityControlStatus.*;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
@@ -282,14 +279,6 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
             if (signature != null) {
                 qcCode |= SIGNATURE_READY;
                 sampleQc.getVariant().getSignatures().add(signature);
-            }
-
-            // Check hr detect
-            HRDetect hrDetect = checkQcReport(sample.getId(), HR_DETECT_ANALYSIS_ID, analysisParams.getSkip(), qcPath, SAMPLE_QC_TYPE,
-                    hrDetectReader);
-            if (hrDetect != null) {
-                qcCode |= HR_DETECT_READY;
-                sampleQc.getVariant().getHrDetects().add(hrDetect);
             }
 
             // Check genome plot

@@ -39,12 +39,9 @@ import org.opencb.opencga.core.models.variant.GenomePlotAnalysisParams;
 import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
 import org.opencb.opencga.core.models.variant.HRDetectAnalysisParams;
 import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.InferredSexAnalysisParams;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
-import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
-import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.RvtestsWrapperParams;
 import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
@@ -54,6 +51,7 @@ import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 
@@ -173,9 +171,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "query":
                 queryResponse = query();
-                break;
-            case "relatedness-run":
-                queryResponse = runRelatedness();
                 break;
             case "rvtests-run":
                 queryResponse = runRvtests();
@@ -977,26 +972,17 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        InferredSexAnalysisParams inferredSexAnalysisParams = null;
+        ToolParams toolParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/inferredSex/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            inferredSexAnalysisParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), InferredSexAnalysisParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
-            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-
-            inferredSexAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), InferredSexAnalysisParams.class);
+            toolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ToolParams.class);
         }
-        return openCGAClient.getVariantClient().runInferredSex(inferredSexAnalysisParams, queryParams);
+        return openCGAClient.getVariantClient().runInferredSex(toolParams, queryParams);
     }
 
     private RestResponse<KnockoutByGene> queryKnockoutGene() throws Exception {
@@ -1100,27 +1086,17 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        MendelianErrorAnalysisParams mendelianErrorAnalysisParams = null;
+        ToolParams toolParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/mendelianError/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            mendelianErrorAnalysisParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), MendelianErrorAnalysisParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
-            putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
-            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-
-            mendelianErrorAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), MendelianErrorAnalysisParams.class);
+            toolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ToolParams.class);
         }
-        return openCGAClient.getVariantClient().runMendelianError(mendelianErrorAnalysisParams, queryParams);
+        return openCGAClient.getVariantClient().runMendelianError(toolParams, queryParams);
     }
 
     private RestResponse<VariantMetadata> metadata() throws Exception {
@@ -1358,49 +1334,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getVariantClient().query(queryParams);
-    }
-
-    private RestResponse<Job> runRelatedness() throws Exception {
-        logger.debug("Executing runRelatedness in Analysis - Variant command line");
-
-        AnalysisVariantCommandOptions.RunRelatednessCommandOptions commandOptions = analysisVariantCommandOptions.runRelatednessCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        RelatednessAnalysisParams relatednessAnalysisParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/relatedness/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            relatednessAnalysisParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), RelatednessAnalysisParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "individuals",commandOptions.individuals, true);
-            putNestedIfNotNull(beanParams, "samples",commandOptions.samples, true);
-            putNestedIfNotEmpty(beanParams, "minorAlleleFreq",commandOptions.minorAlleleFreq, true);
-            putNestedIfNotEmpty(beanParams, "method",commandOptions.method, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-
-            relatednessAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), RelatednessAnalysisParams.class);
-        }
-        return openCGAClient.getVariantClient().runRelatedness(relatednessAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runRvtests() throws Exception {

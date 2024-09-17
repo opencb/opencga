@@ -110,7 +110,8 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.*;
+import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.GENOME_PLOT_ANALYSIS_ID;
+import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.SIGNATURE_ANALYSIS_ID;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 @RunWith(Parameterized.class)
@@ -782,7 +783,7 @@ public class VariantAnalysisTest {
         params.setVsId("test");
         params.setVsDescription("Description test");
         params.setVsQuery(new AnnotationVariantQueryParams());
-        params.setSkip(Arrays.asList(SIGNATURE_ANALYSIS_ID, HR_DETECT_ANALYSIS_ID, GENOME_PLOT_ANALYSIS_ID));
+        params.setSkip(Arrays.asList(SIGNATURE_ANALYSIS_ID, GENOME_PLOT_ANALYSIS_ID));
 
         toolRunner.execute(SampleVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
                 outDir, null, false, token);

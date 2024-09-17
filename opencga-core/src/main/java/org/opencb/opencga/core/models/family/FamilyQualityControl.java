@@ -1,7 +1,7 @@
 package org.opencb.opencga.core.models.family;
 
 import org.opencb.biodata.models.clinical.ClinicalComment;
-import org.opencb.biodata.models.clinical.qc.RelatednessReport;
+import org.opencb.biodata.models.clinical.qc.Relatedness;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
@@ -13,7 +13,7 @@ public class FamilyQualityControl implements Serializable {
 
     @DataField(id = "relatedness",
             description = FieldConstants.FAMILY_QUALITY_CONTROL_RELATEDNESS_REPORT_DESCRIPTION)
-    private List<RelatednessReport> relatedness;
+    private List<Relatedness> relatedness;
 
     @DataField(id = "files",
             description = FieldConstants.QC_FILES_DESCRIPTION)
@@ -27,7 +27,7 @@ public class FamilyQualityControl implements Serializable {
         this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
-    public FamilyQualityControl(List<RelatednessReport> relatedness, List<String> files, List<ClinicalComment> comments) {
+    public FamilyQualityControl(List<Relatedness> relatedness, List<String> files, List<ClinicalComment> comments) {
         this.relatedness = relatedness;
         this.files = files;
         this.comments = comments;
@@ -43,11 +43,11 @@ public class FamilyQualityControl implements Serializable {
         return sb.toString();
     }
 
-    public List<RelatednessReport> getRelatedness() {
+    public List<Relatedness> getRelatedness() {
         return relatedness;
     }
 
-    public FamilyQualityControl setRelatedness(List<RelatednessReport> relatedness) {
+    public FamilyQualityControl setRelatedness(List<Relatedness> relatedness) {
         this.relatedness = relatedness;
         return this;
     }

@@ -61,7 +61,6 @@ public class AnalysisVariantCommandOptions {
         public RunMutationalSignatureCommandOptions runMutationalSignatureCommandOptions;
         public RunPlinkCommandOptions runPlinkCommandOptions;
         public QueryCommandOptions queryCommandOptions;
-        public RunRelatednessCommandOptions runRelatednessCommandOptions;
         public RunRvtestsCommandOptions runRvtestsCommandOptions;
         public AggregationStatsSampleCommandOptions aggregationStatsSampleCommandOptions;
         public RunSampleEligibilityCommandOptions runSampleEligibilityCommandOptions;
@@ -106,7 +105,6 @@ public class AnalysisVariantCommandOptions {
         this.runMutationalSignatureCommandOptions = new RunMutationalSignatureCommandOptions();
         this.runPlinkCommandOptions = new RunPlinkCommandOptions();
         this.queryCommandOptions = new QueryCommandOptions();
-        this.runRelatednessCommandOptions = new RunRelatednessCommandOptions();
         this.runRvtestsCommandOptions = new RunRvtestsCommandOptions();
         this.aggregationStatsSampleCommandOptions = new AggregationStatsSampleCommandOptions();
         this.runSampleEligibilityCommandOptions = new RunSampleEligibilityCommandOptions();
@@ -1252,7 +1250,7 @@ public class AnalysisVariantCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"individual-qc-run"}, commandDescription ="Run quality control (QC) for a given individual. It includes inferred sex and  mendelian errors (UDP)")
+    @Parameters(commandNames = {"individual-qc-run"}, commandDescription ="Run quality control (QC) for a given individual. This includes inferred sex, Mendelian errors (UDP), and, if parents are present, a relatedness analysis is also performed")
     public class RunIndividualQcCommandOptions {
     
         @ParametersDelegate
@@ -1297,8 +1295,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID (required when the individual has multiple samples)", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--inferred-sex-method"}, description = "Inferred sex method. Valid values: CoverageRatio", required = false, arity = 1)
-        public String inferredSexMethod = "CoverageRatio";
+        @Parameter(names = {"--inferred-sex-method"}, description = "Inferred sex method.", required = false, arity = 1)
+        public String inferredSexMethod;
     
         @Parameter(names = {"--resources-dir"}, description = "Directory where the QC resource files are located", required = false, arity = 1)
         public String resourcesDir;
@@ -1317,7 +1315,7 @@ public class AnalysisVariantCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"inferred-sex-run"}, commandDescription ="Infer sex from chromosome mean coverages.")
+    @Parameters(commandNames = {"inferred-sex-run"}, commandDescription =" [DEPRECATED] Inferred sex analysis")
     public class RunInferredSexCommandOptions {
     
         @ParametersDelegate
@@ -1352,15 +1350,6 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
-    
-        @Parameter(names = {"--individual"}, description = "Individual ID", required = false, arity = 1)
-        public String individual;
-    
-        @Parameter(names = {"--sample"}, description = "Sample ID (required when the individual has multiple samples)", required = false, arity = 1)
-        public String sample;
-    
-        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
-        public String outdir;
     
     }
 
@@ -1472,7 +1461,7 @@ public class AnalysisVariantCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"mendelian-error-run"}, commandDescription ="Run mendelian error analysis to infer uniparental disomy regions.")
+    @Parameters(commandNames = {"mendelian-error-run"}, commandDescription =" [DEPRECATED] Mendelian error analysis")
     public class RunMendelianErrorCommandOptions {
     
         @ParametersDelegate
@@ -1507,18 +1496,6 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
-    
-        @Parameter(names = {"--family"}, description = "The body web service family parameter", required = false, arity = 1)
-        public String family;
-    
-        @Parameter(names = {"--individual"}, description = "The body web service individual parameter", required = false, arity = 1)
-        public String individual;
-    
-        @Parameter(names = {"--sample"}, description = "The body web service sample parameter", required = false, arity = 1)
-        public String sample;
-    
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
-        public String outdir;
     
     }
 
@@ -1985,59 +1962,6 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
         public String trait; 
-    
-    }
-
-    @Parameters(commandNames = {"relatedness-run"}, commandDescription ="Compute a score to quantify relatedness between samples.")
-    public class RunRelatednessCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
-        public String jsonFile;
-    
-        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
-        public Boolean jsonDataModel = false;
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
-    
-        @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
-        public String jobId; 
-    
-        @Parameter(names = {"--job-description"}, description = "Job description", required = false, arity = 1)
-        public String jobDescription; 
-    
-        @Parameter(names = {"--job-depends-on"}, description = "Comma separated list of existing job IDs the job will depend on.", required = false, arity = 1)
-        public String jobDependsOn; 
-    
-        @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
-        public String jobTags; 
-    
-        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
-        public String jobScheduledStartTime; 
-    
-        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
-        public String jobPriority; 
-    
-        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
-        public Boolean jobDryRun; 
-    
-        @Parameter(names = {"--individuals"}, description = "The body web service individuals parameter", required = false, arity = 1)
-        public String individuals;
-    
-        @Parameter(names = {"--samples"}, description = "The body web service samples parameter", required = false, arity = 1)
-        public String samples;
-    
-        @Parameter(names = {"--minor-allele-freq"}, description = "The body web service minorAlleleFreq parameter", required = false, arity = 1)
-        public String minorAlleleFreq;
-    
-        @Parameter(names = {"--method"}, description = "The body web service method parameter", required = false, arity = 1)
-        public String method;
-    
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
-        public String outdir;
     
     }
 
