@@ -79,8 +79,8 @@ public class WorkflowCreateParams {
     }
 
     public Workflow toWorkflow() {
-        return new Workflow(id, name, description, draft, Workflow.Type.NEXTFLOW, repository, scripts, variables, creationDate,
-                modificationDate, attributes);
+        return new Workflow(id, name, description, draft, Workflow.Type.NEXTFLOW, repository, scripts, variables, new WorkflowInternal(),
+                creationDate, modificationDate, attributes);
     }
 
     public String getId() {

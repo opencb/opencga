@@ -45,6 +45,9 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
     private List<Variable> variables;
 
+    @DataField(id = "internal", description = FieldConstants.WORKFLOW_INTERNAL_DESCRIPTION)
+    private WorkflowInternal internal;
+
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
@@ -62,8 +65,8 @@ public class Workflow extends PrivateStudyUid {
     }
 
     public Workflow(String id, String name, String description, boolean draft, Type type, WorkflowRepository repository,
-                    List<WorkflowScript> scripts, List<Variable> variables, String creationDate, String modificationDate,
-                    Map<String, Object> attributes) {
+                    List<WorkflowScript> scripts, List<Variable> variables, WorkflowInternal internal, String creationDate,
+                    String modificationDate, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -72,6 +75,7 @@ public class Workflow extends PrivateStudyUid {
         this.repository = repository;
         this.scripts = scripts;
         this.variables = variables;
+        this.internal = internal;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.attributes = attributes;
@@ -91,6 +95,7 @@ public class Workflow extends PrivateStudyUid {
         sb.append(", repository=").append(repository);
         sb.append(", scripts=").append(scripts);
         sb.append(", variables=").append(variables);
+        sb.append(", internal=").append(internal);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", attributes=").append(attributes);
@@ -104,6 +109,12 @@ public class Workflow extends PrivateStudyUid {
 
     public Workflow setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    @Override
+    public Workflow setUid(long uid) {
+        super.setUid(uid);
         return this;
     }
 
@@ -194,6 +205,15 @@ public class Workflow extends PrivateStudyUid {
 
     public Workflow setScripts(List<WorkflowScript> scripts) {
         this.scripts = scripts;
+        return this;
+    }
+
+    public WorkflowInternal getInternal() {
+        return internal;
+    }
+
+    public Workflow setInternal(WorkflowInternal internal) {
+        this.internal = internal;
         return this;
     }
 
