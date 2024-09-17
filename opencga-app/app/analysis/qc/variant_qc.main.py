@@ -37,6 +37,8 @@ def get_parser():
                         help='type of QC')
     parser.add_argument('-c', '--config', dest='config', required=True,
                         help='configuration file path')
+    parser.add_argument('-r', '--resource-dir', dest='resource_dir', default='resources',
+                        help='resources directory path')
     parser.add_argument('-o', '--output-dir', dest='output_dir',
                         help='output directory path')
 
@@ -106,7 +108,9 @@ def check_input(vcf_fpath, info_fpath, qc_type):
         info_ids.append(record['id'])
         # Family
         if qc_type == 'family' and 'members' in record:
-            info_sample_ids = [member['id'] for member in record['members'] if 'id' in member]
+            info_sample_ids = [sample['id']
+                               for member in record['members'] if 'samples' in member
+                               for sample in member['samples'] if 'id' in sample]
         # Individual
         elif qc_type == 'individual' and 'samples' in record:
             info_sample_ids = [sample['id'] for sample in record['samples'] if 'id' in sample]
@@ -193,6 +197,7 @@ def main():
     bam_files = args.bam_file.split(',') if args.bam_file else [None]*len(vcf_files)
     qc_type = args.qc_type
     config = args.config
+    resource_dir = os.path.realpath(args.resource_dir)
     output_dir = os.path.realpath(os.path.expanduser(args.output_dir))
 
     # Setting up logger
@@ -226,6 +231,7 @@ def main():
             info_file=info_jsons[i],
             bam_file=bam_files[i],
             config=config,
+            resource_dir=resource_dir,
             output_parent_dir=qc_outdir_fpath,
             sample_ids=sample_ids,
             id_=id_
