@@ -18,53 +18,25 @@ package org.opencb.opencga.analysis.individual.qc;
 
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
-import org.opencb.biodata.models.clinical.qc.RelatednessReport;
-import org.opencb.biodata.models.clinical.qc.RelatednessScore;
+import org.opencb.biodata.models.clinical.qc.MendelianError;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.IssueEntry;
 import org.opencb.biodata.models.variant.avro.IssueType;
-import org.opencb.opencga.analysis.family.qc.IBDComputation;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 @Category(MediumTests.class)
 public class IndividualQcUtilsTest {
-
-    @Test
-    public void buildRelatednessReport() throws ToolException, IOException {
-
-        URI resourceUri = getResourceUri("ibd.genome");
-        File file = Paths.get(resourceUri.getPath()).toFile();
-        List<RelatednessScore> relatednessReport = IBDComputation.parseRelatednessScores(file, null, null);
-
-        System.out.println(JacksonUtils.getDefaultNonNullObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(relatednessReport));
-    }
-
-    @Test
-    public void parseMendelianError() throws IOException {
-        URI resourceUri = getResourceUri("mendelian.error.variants.json");
-        File file = Paths.get(resourceUri.getPath()).toFile();
-
-        List<Variant> variants = Arrays.asList(JacksonUtils.getDefaultNonNullObjectMapper().readValue(file, Variant[].class));
-        System.out.println(variants.size());
-
-        MendelianErrorReport mendelianErrorReport = buildMendelianErrorReport(variants.iterator(), variants.size());
-        System.out.println(JacksonUtils.getDefaultNonNullObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(mendelianErrorReport));
-
-//        List<Variant> variants = JacksonUtils.getDefaultNonNullObjectMapper().readerFor(Variant.class).readValue(path.toFile());
-//        System.out.println(variants.size());
-    }
-
 
     @Test
     public void parseKaryotypicSexThresholds() throws IOException {
@@ -75,7 +47,7 @@ public class IndividualQcUtilsTest {
         System.out.println(JacksonUtils.getDefaultNonNullObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(thresholds));
     }
 
-    private MendelianErrorReport buildMendelianErrorReport(Iterator iterator, long numVariants) {
+    private MendelianError buildMendelianError(Iterator iterator, long numVariants) {
         // Create auxiliary map
         //   sample      chrom      error    count
         Map<String, Map<String, Map<String, Integer>>> counter = new HashMap<>();
@@ -110,15 +82,15 @@ public class IndividualQcUtilsTest {
         }
 
         // Create mendelian error report from auxiliary map
-        MendelianErrorReport meReport = new MendelianErrorReport();
-        meReport.setNumErrors(numErrors);
+        MendelianError mendelianError = new MendelianError();
+        mendelianError.setNumErrors(numErrors);
         for (String sampleId : counter.keySet()) {
-            MendelianErrorReport.SampleAggregation sampleAgg = new MendelianErrorReport.SampleAggregation();
+            MendelianError.SampleAggregation sampleAgg = new MendelianError.SampleAggregation();
             int numSampleErrors = 0;
             for (String chrom : counter.get(sampleId).keySet()) {
                 int numChromErrors = counter.get(sampleId).get(chrom).values().stream().mapToInt(Integer::intValue).sum();
 
-                MendelianErrorReport.SampleAggregation.ChromosomeAggregation chromAgg = new MendelianErrorReport.SampleAggregation.ChromosomeAggregation();
+                MendelianError.SampleAggregation.ChromosomeAggregation chromAgg = new MendelianError.SampleAggregation.ChromosomeAggregation();
                 chromAgg.setChromosome(chrom);
                 chromAgg.setNumErrors(numChromErrors);
                 chromAgg.setErrorCodeAggregation(counter.get(sampleId).get(chrom));
@@ -131,9 +103,9 @@ public class IndividualQcUtilsTest {
             sampleAgg.setNumErrors(numSampleErrors);
             sampleAgg.setRatio(1.0d * numSampleErrors / numVariants);
 
-            meReport.getSampleAggregation().add(sampleAgg);
+            mendelianError.getSampleAggregation().add(sampleAgg);
         }
 
-        return meReport;
+        return mendelianError;
     }
 }

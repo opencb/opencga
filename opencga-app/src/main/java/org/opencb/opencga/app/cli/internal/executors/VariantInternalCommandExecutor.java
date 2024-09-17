@@ -28,22 +28,19 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
-import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
-import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
+import org.opencb.opencga.analysis.family.qc.FamilyVariantQcAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualVariantQcAnalysis;
+import org.opencb.opencga.analysis.sample.qc.SampleVariantQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
-import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
-import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
@@ -86,21 +83,18 @@ import java.util.List;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.ExomiserAnalysisCommandOptions.EXOMISER_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyVariantQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenomePlotCommandOptions.GENOME_PLOT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.HRDetectCommandOptions.HRDETECT_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualVariantQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTESTS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantQcCommandOptions.SAMPLE_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantAnnotateCommandOptions.ANNOTATION_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantExportCommandOptions.EXPORT_RUN_COMMAND;
@@ -227,15 +221,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case GENOME_PLOT_RUN_COMMAND:
                 genomePlot();
-                break;
-            case MENDELIAN_ERROR_RUN_COMMAND:
-                mendelianError();
-                break;
-            case INFERRED_SEX_RUN_COMMAND:
-                inferredSex();
-                break;
-            case RELATEDNESS_RUN_COMMAND:
-                relatedness();
                 break;
             case FAMILY_QC_RUN_COMMAND:
                 familyQc();
@@ -864,83 +849,33 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(GenomePlotAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
-    private void mendelianError() throws Exception {
-        VariantCommandOptions.MendelianErrorCommandOptions cliOptions = variantCommandOptions.mendelianErrorCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
-
-        MendelianErrorAnalysis mendelianErrorAnalysis = new MendelianErrorAnalysis();
-        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
-        mendelianErrorAnalysis.setStudy(cliOptions.study)
-                .setFamilyId(cliOptions.family)
-                .setIndividualId(cliOptions.individual)
-                .setSampleId(cliOptions.sample)
-                .start();
-    }
-
-    private void inferredSex() throws Exception {
-        VariantCommandOptions.InferredSexCommandOptions cliOptions = variantCommandOptions.inferredSexCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
-
-        InferredSexAnalysis inferredSexAnalysis = new InferredSexAnalysis();
-        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
-        inferredSexAnalysis.setStudyId(cliOptions.study)
-                .setIndividualId(cliOptions.individual)
-                .setSampleId(cliOptions.sample)
-                .start();
-    }
-
-    private void relatedness() throws Exception {
-        VariantCommandOptions.RelatednessCommandOptions cliOptions = variantCommandOptions.relatednessCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
-
-        RelatednessAnalysis relatednessAnalysis = new RelatednessAnalysis();
-        relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
-        relatednessAnalysis.setStudyId(cliOptions.study)
-                .setIndividualIds(cliOptions.individuals)
-                .setSampleIds(cliOptions.samples)
-                .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
-                .setMethod(cliOptions.method)
-                .start();
-    }
-
     private void familyQc() throws Exception {
-        VariantCommandOptions.FamilyQcCommandOptions cliOptions = variantCommandOptions.familyQcCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
+        VariantCommandOptions.FamilyVariantQcCommandOptions cliOptions = variantCommandOptions.familyVariantQcCommandOptions;
 
-        FamilyQcAnalysis familyQcAnalysis = new FamilyQcAnalysis();
-        familyQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
-        familyQcAnalysis.setStudyId(cliOptions.study)
-                .setFamilyId(cliOptions.family)
-                .setRelatednessMethod(cliOptions.relatednessMethod)
-                .setRelatednessMaf(cliOptions.relatednessMaf)
-                .start();
+        FamilyQcAnalysisParams familyParams = new FamilyQcAnalysisParams()
+                .setFamilies(Collections.singletonList(cliOptions.family))
+                .setOutdir(cliOptions.outdir);
+
+        ObjectMap params = familyParams.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(FamilyVariantQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void individualQc() throws Exception {
-        VariantCommandOptions.IndividualQcCommandOptions cliOptions = variantCommandOptions.individualQcCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
+        VariantCommandOptions.IndividualVariantQcCommandOptions cliOptions = variantCommandOptions.individualVariantQcCommandOptions;
 
-        IndividualQcAnalysis individualQcAnalysis = new IndividualQcAnalysis();
-        individualQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
-        individualQcAnalysis.setStudyId(cliOptions.study)
-                .setIndividualId(cliOptions.individual)
-                .setSampleId(cliOptions.sample)
-                .setInferredSexMethod(cliOptions.inferredSexMethod)
-                .start();
+        IndividualQcAnalysisParams individualParams = new IndividualQcAnalysisParams()
+                .setIndividuals(Collections.singletonList(cliOptions.individual))
+                .setOutdir(cliOptions.outdir);
+
+        ObjectMap params = individualParams.toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(IndividualVariantQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void sampleQc() throws Exception {
-        VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
+        VariantCommandOptions.SampleVariantQcCommandOptions cliOptions = variantCommandOptions.sampleVariantQcCommandOptions;
 
         // Check signature release
         checkSignatureVersion(cliOptions.signatureFitSigVersion);
@@ -978,7 +913,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(SampleQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
+        toolRunner.execute(SampleVariantQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     // Wrappers

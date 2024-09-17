@@ -3,7 +3,6 @@ package org.opencb.opencga.core.api;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
-import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
 public class FieldConstants {
 
@@ -179,21 +178,14 @@ public class FieldConstants {
     public static final String DISORDER_ID = "Disorder ID.";
 
     // Quality control
+    public static final String INFERRED_SEX_ID = "inferred-sex";
+    public static final String MENDELIAN_ERRORS_ID = "mendelian-errors";
+    public static final String RELATEDNESS_ID = "relatedness";
     public static final String QC_SKIP_INDEX_DESCRIPTION = "Do not save the computed quality control in catalog";
     public static final String QC_OVERWRITE_DESCRIPTION = "Overwrite quality control in catalog";
     public static final String QC_FILES_DESCRIPTION = "File IDs related to the quality control";
     public static final String QC_COMMENTS_DESCRIPTION = "Comments related to the quality control";
     public static final String QC_RESOURCES_DIR_DESCRIPTION = "Directory where the QC resource files are located";
-    public static final String QC_RELATEDNESS_DESCRIPTION = "Parameters for relatedness analysis";
-    public static final String QC_RELATEDNESS_POP_FREQ_FILE_DESCRIPTION = "Population frequencies file ID for relatedness analysis";
-    public static final String QC_RELATEDNESS_POP_EXCLUDE_VAR_FILE_DESCRIPTION = "Population exclude variants file ID for"
-            + " relatedness analysis";
-    public static final String QC_RELATEDNESS_THRESHOLDS_FILE_DESCRIPTION = "Threshold file ID for relatedness analysis";
-    public static final String QC_INFERRED_SEX_DESCRIPTION = "Parameters for inferred sex analysis";
-    public static final String QC_INFERRED_SEX_THRESHOLDS_FILE_DESCRIPTION = "Karyotypic sex thresholds file ID for inferred sex analysis";
-    public static final String QC_INFERRED_SEX_REPORTS_DESCRIPTION = "List of inferred sex reports";
-    public static final String QC_RELATEDNESS_REPORTS_DESCRIPTION = "List of samples relatedness reports";
-    public static final String QC_MENDELIAN_ERROR_REPORTS_DESCRIPTION = "List of Mendelian error reports";
 
     // Family quality control
     public static final String FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION = "List of family IDs";
@@ -205,18 +197,21 @@ public class FieldConstants {
     public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_REPORT_DESCRIPTION = "Relatedness report for family QC";
 
     // Individual quality control
-    public static final String INFERRED_SEX_ID = "inferred-sex";
-    public static final String MENDELIAN_ERRORS_ID = "mendelian-errors";
     public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_LIST_DESCRIPTION = "List of individual IDs";
     @Deprecated
     public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION = "Individual ID";
     @Deprecated
     public static final String INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION = "Sample ID (required when the individual has multiple samples)";
     @Deprecated
-    public static final String INFERRED_SEX_METHOD_DESCRIPTION = "Inferred sex method. Valid values: "
-            + IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
+    public static final String INFERRED_SEX_METHOD_DESCRIPTION = "Inferred sex method.";
     public static final String INDIVIDUAL_QC_SKIP_DESCRIPTION = "Individual QC analysis to skip. Valid values are: " + INFERRED_SEX_ID
             + ", " + MENDELIAN_ERRORS_ID;
+    public static final String INDIVIDUAL_QC_INFERRED_SEX_DESCRIPTION = "Inferred sex results for the individual";
+    public static final String INDIVIDUAL_QC_RELATEDNESS_DESCRIPTION = "Relatedness results for the individual";
+    public static final String INDIVIDUAL_QC_MENDELIAN_ERROR_DESCRIPTION = "Mendelian error results for the individual";
+
+
+    // Sample quality control
 
     public static final String SAMPLE_QC_SAMPLE_ID_LIST_DESCRIPTION = "List of sample IDs";
 

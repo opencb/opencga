@@ -19,7 +19,6 @@ package org.opencb.opencga.core.models.variant;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
-import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
 import java.util.List;
 
@@ -39,8 +38,7 @@ public class IndividualQcAnalysisParams extends ToolParams {
      * @deprecated to be removed after latest changes take place
      */
     @Deprecated
-    @DataField(id = "inferredSexMethod", description = FieldConstants.INFERRED_SEX_METHOD_DESCRIPTION,
-            defaultValue = IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD, deprecated = true)
+    @DataField(id = "inferredSexMethod", description = FieldConstants.INFERRED_SEX_METHOD_DESCRIPTION, deprecated = true)
     private String inferredSexMethod;
 
     @DataField(id = "resourcesDir", description = FieldConstants.QC_RESOURCES_DIR_DESCRIPTION)

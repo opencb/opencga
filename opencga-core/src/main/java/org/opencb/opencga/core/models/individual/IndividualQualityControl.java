@@ -17,9 +17,9 @@
 package org.opencb.opencga.core.models.individual;
 
 import org.opencb.biodata.models.clinical.ClinicalComment;
-import org.opencb.biodata.models.clinical.qc.InferredSexReport;
-import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
-import org.opencb.biodata.models.clinical.qc.RelatednessReport;
+import org.opencb.biodata.models.clinical.qc.InferredSex;
+import org.opencb.biodata.models.clinical.qc.MendelianError;
+import org.opencb.biodata.models.clinical.qc.Relatedness;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
@@ -31,20 +31,20 @@ public class IndividualQualityControl {
     /**
      * List of inferred sex reports
      */
-    @DataField(id = "inferredSexReports", indexed = true, description = FieldConstants.QC_INFERRED_SEX_REPORTS_DESCRIPTION)
-    private List<InferredSexReport> inferredSexReports;
+    @DataField(id = "InferredSex", indexed = true, description = FieldConstants.INDIVIDUAL_QC_INFERRED_SEX_DESCRIPTION)
+    private List<InferredSex> inferredSex;
 
     /**
      * List of relatedness reports
      */
-    @DataField(id = "relatednessReports", indexed = true, description = FieldConstants.QC_RELATEDNESS_REPORTS_DESCRIPTION)
-    private List<RelatednessReport> relatednessReports;
+    @DataField(id = "Relatedness", indexed = true, description = FieldConstants.INDIVIDUAL_QC_RELATEDNESS_DESCRIPTION)
+    private List<Relatedness> relatedness;
 
     /**
      * Mendelian errors
      */
-    @DataField(id = "mendelianErrorReports", indexed = true, description = FieldConstants.QC_MENDELIAN_ERROR_REPORTS_DESCRIPTION)
-    private List<MendelianErrorReport> mendelianErrorReports;
+    @DataField(id = "MendelianError", indexed = true, description = FieldConstants.INDIVIDUAL_QC_MENDELIAN_ERROR_DESCRIPTION)
+    private List<MendelianError> mendelianError;
 
     /**
      * File IDs related to the quality control
@@ -55,18 +55,18 @@ public class IndividualQualityControl {
     /**
      * Comments related to the quality control
      */
-    @DataField(id = "author", indexed = true, description = FieldConstants.QC_COMMENTS_DESCRIPTION)
+    @DataField(id = "comments", indexed = true, description = FieldConstants.QC_COMMENTS_DESCRIPTION)
     private List<ClinicalComment> comments;
 
     public IndividualQualityControl() {
         this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
-    public IndividualQualityControl(List<InferredSexReport> inferredSexReports, List<RelatednessReport> relatednessReports,
-                                    List<MendelianErrorReport> mendelianErrorReports, List<String> files, List<ClinicalComment> comments) {
-        this.inferredSexReports = inferredSexReports;
-        this.relatednessReports = relatednessReports;
-        this.mendelianErrorReports = mendelianErrorReports;
+    public IndividualQualityControl(List<InferredSex> inferredSex, List<Relatedness> relatedness, List<MendelianError> mendelianError,
+                                    List<String> files, List<ClinicalComment> comments) {
+        this.inferredSex = inferredSex;
+        this.relatedness = relatedness;
+        this.mendelianError = mendelianError;
         this.files = files;
         this.comments = comments;
     }
@@ -74,39 +74,39 @@ public class IndividualQualityControl {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualQualityControl{");
-        sb.append("inferredSexReports=").append(inferredSexReports);
-        sb.append(", relatednessReports=").append(relatednessReports);
-        sb.append(", mendelianErrorReports=").append(mendelianErrorReports);
+        sb.append("inferredSex=").append(inferredSex);
+        sb.append(", relatedness=").append(relatedness);
+        sb.append(", mendelianError=").append(mendelianError);
         sb.append(", files=").append(files);
         sb.append(", comments=").append(comments);
         sb.append('}');
         return sb.toString();
     }
 
-    public List<InferredSexReport> getInferredSexReports() {
-        return inferredSexReports;
+    public List<InferredSex> getInferredSex() {
+        return inferredSex;
     }
 
-    public IndividualQualityControl setInferredSexReports(List<InferredSexReport> inferredSexReports) {
-        this.inferredSexReports = inferredSexReports;
+    public IndividualQualityControl setInferredSex(List<InferredSex> inferredSex) {
+        this.inferredSex = inferredSex;
         return this;
     }
 
-    public List<RelatednessReport> getRelatednessReports() {
-        return relatednessReports;
+    public List<Relatedness> getRelatedness() {
+        return relatedness;
     }
 
-    public IndividualQualityControl setRelatednessReports(List<RelatednessReport> relatednessReports) {
-        this.relatednessReports = relatednessReports;
+    public IndividualQualityControl setRelatedness(List<Relatedness> relatedness) {
+        this.relatedness = relatedness;
         return this;
     }
 
-    public List<MendelianErrorReport> getMendelianErrorReports() {
-        return mendelianErrorReports;
+    public List<MendelianError> getMendelianError() {
+        return mendelianError;
     }
 
-    public IndividualQualityControl setMendelianErrorReports(List<MendelianErrorReport> mendelianErrorReports) {
-        this.mendelianErrorReports = mendelianErrorReports;
+    public IndividualQualityControl setMendelianError(List<MendelianError> mendelianError) {
+        this.mendelianError = mendelianError;
         return this;
     }
 
