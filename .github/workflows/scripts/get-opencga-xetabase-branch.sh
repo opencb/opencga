@@ -35,8 +35,8 @@ PATCH=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 3)
 
 ## it's a HOTFIX. Count the number of points to know if it is a hotfix
 COUNT=$(echo "$CLEAN_BUILD_VERSION" | grep -o '\.' | wc -l )
-if [ "$COUNT" -gt 2 ]; then
-  echo "release-$MAJOR.$MINOR.$PATCH.x"
+if [ "$COUNT" -gt 1 ]; then
+  echo "release-$MAJOR.$MINOR.x"
   exit 0
 fi
 
@@ -45,6 +45,6 @@ if [[ "$PATCH" ==  "0" ]]; then
   echo "develop"
   exit 0
 else #Is release branch
-  echo "release-$MAJOR.$MINOR.x"
+  echo "release-$MAJOR.x.x"
   exit 0
 fi
