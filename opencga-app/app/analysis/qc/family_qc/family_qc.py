@@ -309,9 +309,10 @@ class FamilyQCExecutor:
                 continue
             for column, value in enumerate(relatedness_thresholds_row_values):
                 if relatedness_thresholds_file_header[column] == 'relationship':
-                    relationship_groups_thresholds_dict[value] == {}
+                    relationship_key = value
+                    relationship_groups_thresholds_dict[relationship_key] = {}
                 else:
-                    relationship_groups_thresholds_dict[relatedness_thresholds_file_header[column]] == value
+                    relationship_groups_thresholds_dict[relationship_key][relatedness_thresholds_file_header[column]] = value
 
         # Reading plink genome file (.genome)
         LOGGER.debug('Getting PLINK results from file: "{}"'.format(plink_genome_fpath))
