@@ -27,7 +27,6 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
@@ -686,9 +685,8 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         return workflowAcls;
     }
 
-    public OpenCGAResult<AclEntryList<WorkflowPermissions>> updateAcl(String studyStr, List<String> workflowStringList, String memberList,
-                                                                      AclParams aclParams, ParamUtils.AclAction action, String token)
-            throws CatalogException {
+    public OpenCGAResult<AclEntryList<WorkflowPermissions>> updateAcl(String studyStr, String memberList, WorkflowAclUpdateParams params,
+                                                                      ParamUtils.AclAction action, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -697,32 +695,30 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyStr)
-                .append("workflowStringList", workflowStringList)
                 .append("memberList", memberList)
-                .append("aclParams", aclParams)
+                .append("params", params)
                 .append("action", action)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         List<String> members;
         List<Workflow> workflowList;
-        List<String> permissions = Collections.emptyList();
         try {
             auditManager.initAuditBatch(operationId);
 
-            if (CollectionUtils.isEmpty(workflowStringList)) {
+            ParamUtils.checkObj(params, "WorkflowAclUpdateParams");
+
+            if (CollectionUtils.isEmpty(params.getWorkflowIds())) {
                 throw new CatalogException("Update ACL: No workflows provided to be updated.");
             }
             if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
-
-            if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
-                permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-                checkPermissions(permissions, WorkflowPermissions::valueOf);
+            if (CollectionUtils.isNotEmpty(params.getPermissions())) {
+                checkPermissions(params.getPermissions(), WorkflowPermissions::valueOf);
             }
 
-            workflowList = internalGet(organizationId, study.getUid(), workflowStringList, INCLUDE_WORKFLOW_IDS, userId, false)
+            workflowList = internalGet(organizationId, study.getUid(), params.getWorkflowIds(), INCLUDE_WORKFLOW_IDS, userId, false)
                     .getResults();
             authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), userId);
 
@@ -735,8 +731,8 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             checkMembers(organizationId, study.getUid(), members);
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         } catch (CatalogException e) {
-            if (workflowStringList != null) {
-                for (String workflowId : workflowStringList) {
+            if (CollectionUtils.isNotEmpty(params.getWorkflowIds())) {
+                for (String workflowId : params.getWorkflowIds()) {
                     auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW, workflowId,
                             "", study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
@@ -758,7 +754,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             List<Long> workflowUids = batchWorkflowList.stream().map(Workflow::getUid).collect(Collectors.toList());
             List<String> workflowIds = batchWorkflowList.stream().map(Workflow::getId).collect(Collectors.toList());
             List<AuthorizationManager.CatalogAclParams> aclParamsList = new ArrayList<>();
-            AuthorizationManager.CatalogAclParams.addToList(workflowUids, permissions, Enums.Resource.WORKFLOW, aclParamsList);
+            AuthorizationManager.CatalogAclParams.addToList(workflowUids, params.getPermissions(), Enums.Resource.WORKFLOW, aclParamsList);
 
             try {
                 switch (action) {

@@ -6,11 +6,10 @@ import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.workflow.Workflow;
-import org.opencb.opencga.core.models.workflow.WorkflowRepository;
-import org.opencb.opencga.core.models.workflow.WorkflowScript;
-import org.opencb.opencga.core.models.workflow.WorkflowUpdateParams;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.models.workflow.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -146,6 +145,24 @@ public class WorkflowManagerTest extends AbstractManagerTest {
         CatalogException exception = assertThrows(CatalogException.class,
                 () -> workflowManager.get(studyFqn, workflow.getId(), QueryOptions.empty(), ownerToken));
         assertTrue(exception.getMessage().contains("not found"));
+    }
+
+    @Test
+    public void updateWorkflowAclTest() throws CatalogException {
+        Workflow workflow = new Workflow()
+                .setId("workflow")
+                .setType(Workflow.Type.OTHER)
+                .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
+        workflowManager.create(studyFqn, workflow, QueryOptions.empty(), ownerToken);
+
+        CatalogAuthorizationException catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> workflowManager.get(studyFqn, workflow.getId(), QueryOptions.empty(), noAccessToken1));
+        assertTrue(catalogAuthorizationException.getMessage().contains("denied"));
+
+        workflowManager.updateAcl(studyFqn, noAccessUserId1, new WorkflowAclUpdateParams(Collections.singletonList(workflow.getId()), Collections.singletonList("VIEW")),
+                ParamUtils.AclAction.ADD, ownerToken);
+        OpenCGAResult<Workflow> result = workflowManager.get(studyFqn, workflow.getId(), QueryOptions.empty(), noAccessToken1);
+        assertEquals(1, result.getNumResults());
     }
 
 }

@@ -6,6 +6,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
 import org.opencb.opencga.catalog.managers.WorkflowManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
@@ -221,26 +222,21 @@ public class WorkflowWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @POST
-//    @Path("/acl/{members}/update")
-//    @ApiOperation(value = "Update the set of permissions granted for the member", response = WorkflowAclEntryList.class)
-//    public Response updateAcl(
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-//            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-//            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
-//            @ApiParam(value = "JSON containing the parameters to update the permissions. If propagate flag is set to true, it will "
-//                    + "propagate the permissions defined to the individuals that are associated to the matching workflows", required = true)
-//            SampleAclUpdateParams params) {
-//        try {
-//            params = ObjectUtils.defaultIfNull(params, new SampleAclUpdateParams());
-//            SampleAclParams sampleAclParams = new SampleAclParams(
-//                    params.getIndividual(), params.getFamily(), params.getFile(), params.getCohort(), params.getPermissions());
-//            List<String> idList = StringUtils.isEmpty(params.getSample()) ? Collections.emptyList() : getIdList(params.getSample(), false);
-//            return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, action, token));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @POST
+    @Path("/acl/{members}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = WorkflowAclEntryList.class)
+    public Response updateAcl(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberIds,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD")
+                @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = "JSON containing the parameters to update the permissions.", required = true) WorkflowAclUpdateParams params) {
+        try {
+            return createOkResponse(workflowManager.updateAcl(studyStr, memberIds, params, action, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
 
 }
