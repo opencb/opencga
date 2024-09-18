@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 @Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.WORKFLOW, description = NextFlowExecutor.DESCRIPTION)
 public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
-    public final static String ID = "nextflow";
+    public final static String ID = "workflow";
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
@@ -74,6 +74,20 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (workflow == null) {
             throw new ToolException("Workflow '" + nextflowParams.getId() + "' is null");
         }
+
+        // Update job tags and attributes
+        ObjectMap attributes = new ObjectMap()
+                .append("WORKFLOW_ID", workflow.getManager().getId())
+                .append("WORKFLOW_VERSION", workflow.getManager().getVersion());
+        List<String> tags = new LinkedList<>();
+        tags.add(ID);
+        tags.add(workflow.getManager().getId().name());
+        tags.add(workflow.getManager().getId() + ":" + workflow.getManager().getVersion());
+        tags.add(workflow.getId());
+        if (CollectionUtils.isNotEmpty(workflow.getTags())) {
+            tags.addAll(workflow.getTags());
+        }
+        updateJobInformation(tags, attributes);
 
         if (MapUtils.isNotEmpty(nextflowParams.getParams())) {
             this.inputFileUris = new LinkedList<>();

@@ -16,9 +16,14 @@
 
 package org.opencb.opencga.analysis.tools;
 
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.job.JobUpdateParams;
+
+import java.util.List;
 
 public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
 
@@ -48,6 +53,13 @@ public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
     protected final String getStudyFqn() throws CatalogException {
         return getCatalogManager().getStudyManager().get(getParams().getString(ParamConstants.STUDY_PARAM), StudyManager.INCLUDE_STUDY_IDS,
                 getToken()).first().getFqn();
+    }
+
+    protected void updateJobInformation(List<String> tags, ObjectMap attributes) throws CatalogException {
+        JobUpdateParams updateParams = new JobUpdateParams()
+                .setTags(tags)
+                .setAttributes(attributes);
+        catalogManager.getJobManager().update(getStudyFqn(), getJobId(), updateParams, QueryOptions.empty(), token);
     }
 
 }
