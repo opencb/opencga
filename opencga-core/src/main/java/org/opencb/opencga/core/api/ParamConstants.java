@@ -584,11 +584,20 @@ public class ParamConstants {
     public static final String WORKFLOW_VERSION_DESCRIPTION = "Comma separated list of workflow versions. 'all' to get all the workflow "
             + "versions. Not supported if multiple workflow ids are provided";
     public static final String WORKFLOWS_ID_PARAM = "id";
-    public static final String WORKFLOWS_ID_DESCRIPTION = "Comma separated list workflow IDs" + UP_TO_100 + REGEX_SUPPORT;
-    public static final String WORKFLOWS_UUID_DESCRIPTION = "Comma separated list workflow UUIDs" + UP_TO_100;
     public static final String WORKFLOWS_UUID_PARAM = "uuid";
-    public static final String WORKFLOWS_TYPE_DESCRIPTION = "Workflow type. Allowed types: [NEXTFLOW]";
+    public static final String WORKFLOWS_NAME_PARAM = "name";
     public static final String WORKFLOWS_TYPE_PARAM = "type";
+    public static final String WORKFLOWS_TAGS_PARAM = "tags";
+    public static final String WORKFLOWS_DRAFT_PARAM = "draft";
+    public static final String WORKFLOWS_INTERNAL_REGISTRATION_USER_ID_PARAM = "internal.registrationUserId";
+    public static final String WORKFLOWS_ID_DESCRIPTION = "Comma separated list of workflow IDs" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String WORKFLOWS_NAME_DESCRIPTION = "Comma separated list of workflow names" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String WORKFLOWS_UUID_DESCRIPTION = "Comma separated list of workflow UUIDs" + UP_TO_100;
+    public static final String WORKFLOWS_TYPE_DESCRIPTION = "Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, "
+            + "RESEARCH or OTHER]";
+    public static final String WORKFLOWS_TAGS_DESCRIPTION = "Comma separated list of tags";
+    public static final String WORKFLOWS_DRAFT_DESCRIPTION = "Boolean field indicating whether the workflow is a draft or not.";
+    public static final String WORKFLOWS_INTERNAL_REGISTRATION_USER_ID_DESCRIPTION = "UserId that created the workflow.";
     public static final String WORKFLOW_SCRIPTS_ACTION_DESCRIPTION = "Action to be performed if the array of scripts is being updated "
             + "[SET, ADD, REMOVE]";
     public static final String WORKFLOW_SCRIPTS_ACTION_PARAM = "scriptsAction";

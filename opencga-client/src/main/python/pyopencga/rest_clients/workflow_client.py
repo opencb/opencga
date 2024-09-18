@@ -46,12 +46,23 @@ class Workflow(_ParentRestClient):
             the distinct values. (REQUIRED)
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
-        :param str id: Comma separated list workflow IDs up to a maximum of
+        :param str id: Comma separated list of workflow IDs up to a maximum of
             100. Also admits basic regular expressions using the operator '~',
             i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i'
             for case insensitive search.
-        :param str uuid: Comma separated list workflow UUIDs up to a maximum
-            of 100.
+        :param str name: Comma separated list of workflow names up to a
+            maximum of 100. Also admits basic regular expressions using the
+            operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+            sensitive, '~/value/i' for case insensitive search.
+        :param str uuid: Comma separated list of workflow UUIDs up to a
+            maximum of 100.
+        :param str tags: Comma separated list of tags.
+        :param bool draft: Boolean field indicating whether the workflow is a
+            draft or not.
+        :param str internal.registration_user_id: UserId that created the
+            workflow.
+        :param str type: Workflow type. Allowed types:
+            [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
             Examples: >2018, 2017-2018, <201805.
         :param str modification_date: Modification date. Format:
@@ -110,12 +121,23 @@ class Workflow(_ParentRestClient):
             Deactivated by default.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
-        :param str id: Comma separated list workflow IDs up to a maximum of
+        :param str id: Comma separated list of workflow IDs up to a maximum of
             100. Also admits basic regular expressions using the operator '~',
             i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i'
             for case insensitive search.
-        :param str uuid: Comma separated list workflow UUIDs up to a maximum
-            of 100.
+        :param str name: Comma separated list of workflow names up to a
+            maximum of 100. Also admits basic regular expressions using the
+            operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+            sensitive, '~/value/i' for case insensitive search.
+        :param str uuid: Comma separated list of workflow UUIDs up to a
+            maximum of 100.
+        :param str tags: Comma separated list of tags.
+        :param bool draft: Boolean field indicating whether the workflow is a
+            draft or not.
+        :param str internal.registration_user_id: UserId that created the
+            workflow.
+        :param str type: Workflow type. Allowed types:
+            [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
             Examples: >2018, 2017-2018, <201805.
         :param str modification_date: Modification date. Format:

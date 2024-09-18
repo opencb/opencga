@@ -52,9 +52,15 @@ export default class Workflow extends OpenCGAParentClass {
     * @param {String} field - Comma separated list of fields for which to obtain the distinct values.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
-    * @param {String} [params.id] - Comma separated list workflow IDs up to a maximum of 100. Also admits basic regular expressions using
+    * @param {String} [params.id] - Comma separated list of workflow IDs up to a maximum of 100. Also admits basic regular expressions using
     *     the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-    * @param {String} [params.uuid] - Comma separated list workflow UUIDs up to a maximum of 100.
+    * @param {String} [params.name] - Comma separated list of workflow names up to a maximum of 100. Also admits basic regular expressions
+    *     using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list of workflow UUIDs up to a maximum of 100.
+    * @param {String} [params.tags] - Comma separated list of tags.
+    * @param {Boolean} [params.draft] - Boolean field indicating whether the workflow is a draft or not.
+    * @param {String} [params.internal.registrationUserId] - UserId that created the workflow.
+    * @param {String} [params.type] - Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.acl] - Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}.
@@ -97,9 +103,15 @@ export default class Workflow extends OpenCGAParentClass {
     * @param {Boolean} [params.count = "false"] - Get the total number of results matching the query. Deactivated by default. The default
     *     value is false.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
-    * @param {String} [params.id] - Comma separated list workflow IDs up to a maximum of 100. Also admits basic regular expressions using
+    * @param {String} [params.id] - Comma separated list of workflow IDs up to a maximum of 100. Also admits basic regular expressions using
     *     the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-    * @param {String} [params.uuid] - Comma separated list workflow UUIDs up to a maximum of 100.
+    * @param {String} [params.name] - Comma separated list of workflow names up to a maximum of 100. Also admits basic regular expressions
+    *     using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list of workflow UUIDs up to a maximum of 100.
+    * @param {String} [params.tags] - Comma separated list of tags.
+    * @param {Boolean} [params.draft] - Boolean field indicating whether the workflow is a draft or not.
+    * @param {String} [params.internal.registrationUserId] - UserId that created the workflow.
+    * @param {String} [params.type] - Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.acl] - Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}.

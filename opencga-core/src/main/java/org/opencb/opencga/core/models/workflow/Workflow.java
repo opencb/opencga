@@ -36,11 +36,17 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
     private Type type;
 
+    @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
+    private WorkflowSystem manager;
+
     @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
     private WorkflowRepository repository;
 
     @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
     private List<WorkflowScript> scripts;
+
+    @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
+    private List<String> tags;
 
     @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
     private List<Variable> variables;
@@ -58,22 +64,27 @@ public class Workflow extends PrivateStudyUid {
     private Map<String, Object> attributes;
 
     public enum Type {
-        NEXTFLOW
+        CLINICAL_INTERPRETATION,
+        SECONDARY_ANALYSIS,
+        RESEARCH,
+        OTHER
     }
 
     public Workflow() {
     }
 
-    public Workflow(String id, String name, String description, boolean draft, Type type, WorkflowRepository repository,
-                    List<WorkflowScript> scripts, List<Variable> variables, WorkflowInternal internal, String creationDate,
-                    String modificationDate, Map<String, Object> attributes) {
+    public Workflow(String id, String name, String description, boolean draft, Type type, WorkflowSystem manager,
+                    WorkflowRepository repository, List<WorkflowScript> scripts, List<String> tags, List<Variable> variables,
+                    WorkflowInternal internal, String creationDate, String modificationDate, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.draft = draft;
         this.type = type;
+        this.manager = manager;
         this.repository = repository;
         this.scripts = scripts;
+        this.tags = tags;
         this.variables = variables;
         this.internal = internal;
         this.creationDate = creationDate;
@@ -92,8 +103,10 @@ public class Workflow extends PrivateStudyUid {
         sb.append(", version=").append(version);
         sb.append(", release=").append(release);
         sb.append(", type=").append(type);
+        sb.append(", manager=").append(manager);
         sb.append(", repository=").append(repository);
         sb.append(", scripts=").append(scripts);
+        sb.append(", tags=").append(tags);
         sb.append(", variables=").append(variables);
         sb.append(", internal=").append(internal);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -107,6 +120,7 @@ public class Workflow extends PrivateStudyUid {
         return id;
     }
 
+    @Override
     public Workflow setId(String id) {
         this.id = id;
         return this;
@@ -145,6 +159,15 @@ public class Workflow extends PrivateStudyUid {
         return this;
     }
 
+    public boolean isDraft() {
+        return draft;
+    }
+
+    public Workflow setDraft(boolean draft) {
+        this.draft = draft;
+        return this;
+    }
+
     public int getVersion() {
         return version;
     }
@@ -172,12 +195,12 @@ public class Workflow extends PrivateStudyUid {
         return this;
     }
 
-    public boolean isDraft() {
-        return draft;
+    public WorkflowSystem getManager() {
+        return manager;
     }
 
-    public Workflow setDraft(boolean draft) {
-        this.draft = draft;
+    public Workflow setManager(WorkflowSystem manager) {
+        this.manager = manager;
         return this;
     }
 
@@ -190,21 +213,30 @@ public class Workflow extends PrivateStudyUid {
         return this;
     }
 
-    public List<Variable> getVariables() {
-        return variables;
-    }
-
-    public Workflow setVariables(List<Variable> variables) {
-        this.variables = variables;
-        return this;
-    }
-
     public List<WorkflowScript> getScripts() {
         return scripts;
     }
 
     public Workflow setScripts(List<WorkflowScript> scripts) {
         this.scripts = scripts;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public Workflow setTags(List<String> tags) {
+        this.tags = tags;
+        return this;
+    }
+
+    public List<Variable> getVariables() {
+        return variables;
+    }
+
+    public Workflow setVariables(List<Variable> variables) {
+        this.variables = variables;
         return this;
     }
 

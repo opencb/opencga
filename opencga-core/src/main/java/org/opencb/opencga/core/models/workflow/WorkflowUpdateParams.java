@@ -15,6 +15,15 @@ public class WorkflowUpdateParams {
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
+    private WorkflowSystem manager;
+
+    @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
+    private Workflow.Type type;
+
+    @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
+    private List<String> tags;
+
     @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
     private boolean draft;
 
@@ -39,10 +48,14 @@ public class WorkflowUpdateParams {
     public WorkflowUpdateParams() {
     }
 
-    public WorkflowUpdateParams(String name, String description, boolean draft, WorkflowRepository repository, List<WorkflowScript> scripts,
-                                List<Variable> variables, String creationDate, String modificationDate, Map<String, Object> attributes) {
+    public WorkflowUpdateParams(String name, String description, WorkflowSystem manager, Workflow.Type type, List<String> tags,
+                                boolean draft, WorkflowRepository repository, List<WorkflowScript> scripts, List<Variable> variables,
+                                String creationDate, String modificationDate, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
+        this.manager = manager;
+        this.type = type;
+        this.tags = tags;
         this.draft = draft;
         this.repository = repository;
         this.scripts = scripts;
@@ -57,6 +70,9 @@ public class WorkflowUpdateParams {
         final StringBuilder sb = new StringBuilder("WorkflowUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", manager=").append(manager);
+        sb.append(", type=").append(type);
+        sb.append(", tags=").append(tags);
         sb.append(", draft=").append(draft);
         sb.append(", repository=").append(repository);
         sb.append(", scripts=").append(scripts);
@@ -83,6 +99,33 @@ public class WorkflowUpdateParams {
 
     public WorkflowUpdateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public WorkflowSystem getManager() {
+        return manager;
+    }
+
+    public WorkflowUpdateParams setManager(WorkflowSystem manager) {
+        this.manager = manager;
+        return this;
+    }
+
+    public Workflow.Type getType() {
+        return type;
+    }
+
+    public WorkflowUpdateParams setType(Workflow.Type type) {
+        this.type = type;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public WorkflowUpdateParams setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 

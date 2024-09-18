@@ -550,13 +550,17 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
     private void validateNewWorkflow(Workflow workflow, String userId) throws CatalogParameterException {
         ParamUtils.checkIdentifier(workflow.getId(), ID.key());
-        if (Workflow.Type.values().length > 1) {
-            ParamUtils.checkObj(workflow.getType(), TYPE.key());
-        } else if (workflow.getType() == null) {
-            // TODO: Remove this condition in the future once we know we support more than one type.
-            // If there is only one valid type, we set it
-            workflow.setType(Workflow.Type.NEXTFLOW);
+        ParamUtils.checkObj(workflow.getType(), TYPE.key());
+        if (workflow.getManager() == null) {
+            workflow.setManager(new WorkflowSystem());
         }
+        if (workflow.getManager().getId() == null) {
+            workflow.getManager().setId(WorkflowSystem.SystemId.NEXTFLOW);
+        }
+        if (StringUtils.isEmpty(workflow.getManager().getVersion())) {
+            workflow.getManager().setVersion("24.04.4");
+        }
+        workflow.setTags(workflow.getTags() != null ? workflow.getTags() : Collections.emptyList());
         workflow.setScripts(workflow.getScripts() != null ? workflow.getScripts() : Collections.emptyList());
         boolean main = false;
         for (WorkflowScript script : workflow.getScripts()) {

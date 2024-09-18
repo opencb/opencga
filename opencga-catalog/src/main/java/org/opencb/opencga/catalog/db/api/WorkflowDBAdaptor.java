@@ -26,9 +26,11 @@ public interface WorkflowDBAdaptor extends CoreDBAdaptor<Workflow> {
         DESCRIPTION("description", TEXT, ""),
         DRAFT("draft", BOOLEAN, ""),
         TYPE("type", TEXT, ""),
+        TAGS("tags", TEXT_ARRAY, ""),
         COMMAND_LINE("commandLine", TEXT, ""),
         SCRIPTS("scripts", OBJECT, ""),
         VARIABLES("variables", OBJECT, ""),
+        INTERNAL_REGISTRATION_USER_ID("internal.registrationUserId", TEXT, ""),
         RELEASE("release", INTEGER, ""), //  Release where the sample was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the sample

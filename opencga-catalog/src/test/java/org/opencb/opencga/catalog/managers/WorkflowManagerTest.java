@@ -34,6 +34,7 @@ public class WorkflowManagerTest extends AbstractManagerTest {
     public void createWorkflowTest() throws CatalogException {
         Workflow workflow = new Workflow()
                 .setId("workflow")
+                .setType(Workflow.Type.OTHER)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
         OpenCGAResult<Workflow> result = workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken);
         assertEquals(1, result.getNumResults());
@@ -78,11 +79,13 @@ public class WorkflowManagerTest extends AbstractManagerTest {
     public void workflowSearchTest() throws CatalogException {
         Workflow workflow = new Workflow()
                 .setId("workflow")
+                .setType(Workflow.Type.OTHER)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
         workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken);
 
         workflow = new Workflow()
                 .setId("workflow2")
+                .setType(Workflow.Type.OTHER)
                 .setDraft(true)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
         workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken);
@@ -107,11 +110,13 @@ public class WorkflowManagerTest extends AbstractManagerTest {
     public void updateWorkflowTest() throws CatalogException {
         Workflow workflow = new Workflow()
                 .setId("workflow")
+                .setType(Workflow.Type.OTHER)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
         workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken);
 
         WorkflowUpdateParams updateParams = new WorkflowUpdateParams()
                 .setName("newName")
+                .setType(Workflow.Type.OTHER)
                 .setDraft(true)
                 .setCreationDate("20240101000000")
                 .setModificationDate("20240201000000")
@@ -131,6 +136,7 @@ public class WorkflowManagerTest extends AbstractManagerTest {
     public void deleteWorkflowTest() throws CatalogException {
         Workflow workflow = new Workflow()
                 .setId("workflow")
+                .setType(Workflow.Type.OTHER)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
         workflowManager.create(studyFqn, workflow, QueryOptions.empty(), ownerToken);
 

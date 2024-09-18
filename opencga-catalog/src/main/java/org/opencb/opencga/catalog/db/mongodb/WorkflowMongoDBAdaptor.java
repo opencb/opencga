@@ -558,8 +558,11 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
 //                        break;
                     case ID:
                     case UUID:
+                    case NAME:
+                    case TAGS:
                     case RELEASE:
                     case VERSION:
+                    case INTERNAL_REGISTRATION_USER_ID:
                     case TYPE:
                     case DRAFT:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);

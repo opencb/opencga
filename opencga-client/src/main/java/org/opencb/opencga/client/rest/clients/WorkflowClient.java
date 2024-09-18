@@ -72,9 +72,15 @@ public class WorkflowClient extends AbstractParentClient {
      * @param field Comma separated list of fields for which to obtain the distinct values.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
-     *       id: Comma separated list workflow IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~',
+     *       id: Comma separated list of workflow IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~',
      *            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-     *       uuid: Comma separated list workflow UUIDs up to a maximum of 100.
+     *       name: Comma separated list of workflow names up to a maximum of 100. Also admits basic regular expressions using the operator
+     *            '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list of workflow UUIDs up to a maximum of 100.
+     *       tags: Comma separated list of tags.
+     *       draft: Boolean field indicating whether the workflow is a draft or not.
+     *       internal.registrationUserId: UserId that created the workflow.
+     *       type: Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
@@ -123,9 +129,15 @@ public class WorkflowClient extends AbstractParentClient {
      *       skip: Number of results to skip.
      *       count: Get the total number of results matching the query. Deactivated by default.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
-     *       id: Comma separated list workflow IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~',
+     *       id: Comma separated list of workflow IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~',
      *            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-     *       uuid: Comma separated list workflow UUIDs up to a maximum of 100.
+     *       name: Comma separated list of workflow names up to a maximum of 100. Also admits basic regular expressions using the operator
+     *            '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list of workflow UUIDs up to a maximum of 100.
+     *       tags: Comma separated list of tags.
+     *       draft: Boolean field indicating whether the workflow is a draft or not.
+     *       internal.registrationUserId: UserId that created the workflow.
+     *       type: Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:

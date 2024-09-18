@@ -20,9 +20,9 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | create | /{apiVersion}/workflows/create | include, exclude, study, includeResult, body[*] |
-#' | distinct | /{apiVersion}/workflows/distinct | study, id, uuid, creationDate, modificationDate, acl, release, snapshot, deleted, field[*] |
+#' | distinct | /{apiVersion}/workflows/distinct | study, id, name, uuid, tags, draft, internal.registrationUserId, type, creationDate, modificationDate, acl, release, snapshot, deleted, field[*] |
 #' | run | /{apiVersion}/workflows/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
-#' | search | /{apiVersion}/workflows/search | include, exclude, limit, skip, count, study, id, uuid, creationDate, modificationDate, acl, release, snapshot, deleted |
+#' | search | /{apiVersion}/workflows/search | include, exclude, limit, skip, count, study, id, name, uuid, tags, draft, internal.registrationUserId, type, creationDate, modificationDate, acl, release, snapshot, deleted |
 #' | update | /{apiVersion}/workflows/{workflowId}/update | include, exclude, workflowId[*], study, includeResult, body |
 #' | acl | /{apiVersion}/workflows/{workflows}/acl | workflows[*], study, member, silent |
 #' | delete | /{apiVersion}/workflows/{workflows}/delete | study, workflows[*] |
@@ -50,8 +50,13 @@ setMethod("workflowClient", "OpencgaR", function(OpencgaR, workflowId, workflows
         #' @section Endpoint /{apiVersion}/workflows/distinct:
         #' Workflow distinct method.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
-        #' @param id Comma separated list workflow IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-        #' @param uuid Comma separated list workflow UUIDs up to a maximum of 100.
+        #' @param id Comma separated list of workflow IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param name Comma separated list of workflow names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list of workflow UUIDs up to a maximum of 100.
+        #' @param tags Comma separated list of tags.
+        #' @param draft Boolean field indicating whether the workflow is a draft or not.
+        #' @param internal.registrationUserId UserId that created the workflow.
+        #' @param type Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
@@ -84,8 +89,13 @@ setMethod("workflowClient", "OpencgaR", function(OpencgaR, workflowId, workflows
         #' @param skip Number of results to skip.
         #' @param count Get the total number of results matching the query. Deactivated by default.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
-        #' @param id Comma separated list workflow IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-        #' @param uuid Comma separated list workflow UUIDs up to a maximum of 100.
+        #' @param id Comma separated list of workflow IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param name Comma separated list of workflow names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list of workflow UUIDs up to a maximum of 100.
+        #' @param tags Comma separated list of tags.
+        #' @param draft Boolean field indicating whether the workflow is a draft or not.
+        #' @param internal.registrationUserId UserId that created the workflow.
+        #' @param type Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .

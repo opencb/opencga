@@ -19,8 +19,14 @@ public class WorkflowCreateParams {
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-//    @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
-//    private Workflow.Type type;
+    @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
+    private WorkflowSystem manager;
+
+    @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
+    private Workflow.Type type;
+
+    @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
+    private List<String> tags;
 
     @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
     private boolean draft;
@@ -46,12 +52,15 @@ public class WorkflowCreateParams {
     public WorkflowCreateParams() {
     }
 
-    public WorkflowCreateParams(String id, String name, String description, boolean draft, WorkflowRepository repository,
-                                List<Variable> variables, List<WorkflowScript> scripts, String creationDate, String modificationDate,
-                                Map<String, Object> attributes) {
+    public WorkflowCreateParams(String id, String name, String description, WorkflowSystem manager, Workflow.Type type, List<String> tags,
+                                boolean draft, WorkflowRepository repository, List<Variable> variables, List<WorkflowScript> scripts,
+                                String creationDate, String modificationDate, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.manager = manager;
+        this.type = type;
+        this.tags = tags;
         this.draft = draft;
         this.repository = repository;
         this.variables = variables;
@@ -67,6 +76,9 @@ public class WorkflowCreateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", manager=").append(manager);
+        sb.append(", type=").append(type);
+        sb.append(", tags=").append(tags);
         sb.append(", draft=").append(draft);
         sb.append(", repository=").append(repository);
         sb.append(", variables=").append(variables);
@@ -79,7 +91,7 @@ public class WorkflowCreateParams {
     }
 
     public Workflow toWorkflow() {
-        return new Workflow(id, name, description, draft, Workflow.Type.NEXTFLOW, repository, scripts, variables, new WorkflowInternal(),
+        return new Workflow(id, name, description, draft, type, manager, repository, scripts, tags, variables, new WorkflowInternal(),
                 creationDate, modificationDate, attributes);
     }
 
@@ -107,6 +119,33 @@ public class WorkflowCreateParams {
 
     public WorkflowCreateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public WorkflowSystem getManager() {
+        return manager;
+    }
+
+    public WorkflowCreateParams setManager(WorkflowSystem manager) {
+        this.manager = manager;
+        return this;
+    }
+
+    public Workflow.Type getType() {
+        return type;
+    }
+
+    public WorkflowCreateParams setType(Workflow.Type type) {
+        this.type = type;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public WorkflowCreateParams setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 
