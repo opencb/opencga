@@ -324,7 +324,7 @@ class FamilyQCExecutor:
             genome_file_row_values = line.strip().split()
             if index != 0:
                 # Getting values from PLINK .genome file block
-                score = relatedness_results["scores"][0]
+                score = self.relatedness_results_data_model()["scores"][0]
                 score["sampleId1"] = str(genome_file_row_values[1])
                 score["sampleId2"] = str(genome_file_row_values[3])
                 score["values"]["RT"] = str(genome_file_row_values[4])
