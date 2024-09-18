@@ -33,9 +33,8 @@ MAJOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 1)
 MINOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 2)
 PATCH=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 3)
 
-## it's a HOTFIX. Count the number of points to know if it is a hotfix
-COUNT=$(echo "$CLEAN_BUILD_VERSION" | grep -o '\.' | wc -l )
-if [ "$COUNT" -gt 1 ]; then
+
+if [ "$PATCH" -gt 0 ]; then
   echo "release-$MAJOR.$MINOR.x"
   exit 0
 fi
