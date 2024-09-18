@@ -7,7 +7,8 @@ import sys
 ## Configure command-line options
 parser = argparse.ArgumentParser()
 parser.add_argument("action", help="Action to execute", choices=["dockerfile", "build", "push"], default="dockerfile")
-parser.add_argument("-t", "--custom-tool-dir", help="Path to the tool folder, this MUST contain a requirement.txt file")
+parser.add_argument("-t", "--custom-tool-dir", help="Path to the tool folder, this can contain a requirement.txt and/or install.r files", required=True)
+parser.add_argument("--install-r", help="Install R", action='store_true')
 parser.add_argument("--apt-get", help="List of apt-get packages to install")
 parser.add_argument("-o", "--organisation", help="Organisation of the Docker image", default="opencb")
 parser.add_argument("-n", "--name", help="Name of the docker image, e.g. my-tool")
@@ -76,10 +77,14 @@ def dockerfile():
 
     with open(custom_build_folder + "/Dockerfile", "w") as f:
         f.write("FROM ubuntu:24.04\n\n")
-        f.write("COPY . /app\n\n")
+        f.write("COPY . /opt/app\n\n")
 
         # Update Ubuntu and install base libraries
-        f.write("RUN apt update && apt -y upgrade && apt install -y python3 python3-pip r-base && \\ \n")
+        f.write("RUN apt update && apt -y upgrade && apt install -y python3 python3-pip && \\ \n")
+
+        # Install R
+        if args.install_r is True:
+            f.write("apt install -y r-base && \\ \n")
 
         # Install user's apt dependencies
         if args.apt_get is not None and not args.apt_get == "":
@@ -87,16 +92,16 @@ def dockerfile():
 
         # Install Python dependencies
         if os.path.isfile(custom_build_folder + "/requirements.txt"):
-            f.write("pip3 install -r /app/requirements.txt --break-system-packages && \\ \n")
+            f.write("pip3 install -r /opt/app/requirements.txt --break-system-packages && \\ \n")
 
         # Install R dependencies
-        if os.path.isfile(custom_build_folder + "/install.r"):
-            f.write("Rscript /app/install.r && \\ \n")
+        if args.install_r is True and os.path.isfile(custom_build_folder + "/install.r"):
+            f.write("Rscript /opt/app/install.r && \\ \n")
 
         f.write("rm -rf /var/lib/apt/lists/* \n\n")
 
-        f.write("USER opencga\n\n")
-        f.write("WORKDIR /app\n\n")
+        # f.write("USER opencga\n\n")
+        f.write("WORKDIR /opt/app\n\n")
         f.write("CMD bash\n")
 
 def build():
@@ -145,7 +150,13 @@ args = parser.parse_args()
 
 # 1. Set build folder to default value if not set
 if args.custom_tool_dir is not None and not args.custom_tool_dir == "":
-    custom_build_folder = args.custom_tool_dir
+    if args.custom_tool_dir.startswith("git@"):
+        custom_build_folder = "/tmp/custom-tool"
+        os.system("rm -rf " + custom_build_folder)
+        os.system("git clone " + args.custom_tool_dir + " " + custom_build_folder)
+    else:
+        custom_build_folder = args.custom_tool_dir
+
     if not os.path.isdir(custom_build_folder):
         error("Custom tool folder does not exist: " + custom_build_folder)
 else:
