@@ -34,13 +34,13 @@ MINOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 2)
 PATCH=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 3)
 
 
-if [ "$PATCH" -gt 0 ]; then
+if [ $PATCH -gt 0 ]; then
   echo "release-$MAJOR.$MINOR.x"
   exit 0
 fi
 
 ## It's develop branch
-if [[ "$PATCH" ==  "0" ]]; then
+if [ $MINOR -eq  0 ]; then
   echo "develop"
   exit 0
 else #Is release branch
