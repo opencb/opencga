@@ -16,8 +16,11 @@
 
 package org.opencb.opencga.analysis.variant.qc;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -30,34 +33,28 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
-import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualQualityControlStatus;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleQualityControlStatus;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.AnalysisUtils.ANALYSIS_FOLDER;
-import static org.opencb.opencga.analysis.AnalysisUtils.ANALYSIS_RESOURCES_FOLDER;
-import static org.opencb.opencga.core.models.common.InternalStatus.READY;
-import static org.opencb.opencga.core.models.common.QualityControlStatus.COMPUTING;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 
 public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
@@ -66,8 +63,10 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     public static final String QC_FOLDER = "qc/";
     public static final String RESOURCES_FOLDER = "resources/";
     public static final String QC_RESOURCES_FOLDER = QC_FOLDER + RESOURCES_FOLDER;
+    // File that contains the list of resource filenames (located at resources.opencb.org) to be downloaded
+    public static final String QC_RESOURCE_LIST_FILENAME = "qc_resource_list.txt";
 
-    public static final String QC_JSON_EXTENSION = ".qc.json";
+    public static final String QC_JSON_EXTENSION = ".json";
 
     // Data type
     public static final String FAMILY_QC_TYPE = "family";
@@ -76,20 +75,12 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
 
     // For relatedness analysis
     public static final String RELATEDNESS_ANALYSIS_ID = "relatedness";
-    protected static final String RELATEDNESS_POP_FREQ_FILENAME = "autosomes_1000G_QC_prune_in.frq";
-    protected static final String RELATEDNESS_POP_FREQ_FILE_MSG = "Population frequency file";
-    protected static final String RELATEDNESS_POP_EXCLUDE_VAR_FILENAME = "autosomes_1000G_QC.prune.out";
-    protected static final String RELATEDNESS_POP_EXCLUDE_VAR_FILE_MSG = "Population exclude variant file";
-    protected static final String RELATEDNESS_THRESHOLDS_FILENAME = "relatedness_thresholds.tsv";
-    protected static final String RELATEDNESS_THRESHOLDS_FILE_MSG = "Relatedness thresholds file";
 
     // For inferred sex analysis
     public static final String INFERRED_SEX_ANALYSIS_ID = "inferred-sex";
-    protected static final String INFERRED_SEX_THRESHOLDS_FILENAME = "karyotypic_sex_thresholds.json";
-    protected static final String INFERRED_SEX_THRESHOLDS_FILE_MSG = "Karyotypic sex thresholds file";
 
     // For mendelian errors sex analysis
-    public static final String MENDELIAN_ERROR_ANALYSIS_ID = "mendelian-errors";
+    public static final String MENDELIAN_ERROR_ANALYSIS_ID = "mendelian-error";
 
     // For signature analysis
     public static final String SIGNATURE_ANALYSIS_ID = "signature";
@@ -98,8 +89,22 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     public static final String GENOME_PLOT_ANALYSIS_ID = "genome-plot";
 
     // Tool QC steps
-    public static final String PREPARE_QC_STEP = "prepare-qc";
-    public static final String INDEX_QC_STEP = "index-qc";
+    protected static final String PREPARE_QC_STEP = "prepare-qc";
+    protected static final String INDEX_QC_STEP = "index-qc";
+
+    // Messages
+    protected static final String FAILURE_ERROR_PARSING_QC_JSON_FILE = "Failure: error parsing QC JSON file '";
+    protected static final String FAILURE_FILE = "Failure: file '";
+    protected static final String NOT_FOUND = "' not found";
+    protected static final String FAILURE_COULD_NOT_UPDATE_QUALITY_CONTROL_IN_OPEN_CGA_CATALOG = "Failure: Could not update quality control"
+            + " in OpenCGA catalog";
+    protected static final String SUCCESS = "Success";
+
+    protected LinkedList<Path> vcfPaths = new LinkedList<>();
+    protected LinkedList<Path> jsonPaths = new LinkedList<>();
+
+    protected Path userResourcesPath;
+    protected Set<String> failedQcSet;
 
     @Override
     protected void check() throws Exception {
@@ -128,6 +133,31 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         // Nothing to do
     }
 
+    //-------------------------------------------------------------------------
+
+    protected void clean() {
+        deleteFiles(vcfPaths);
+        deleteFiles(jsonPaths);
+    }
+
+    private void deleteFiles(List<Path> paths) {
+        for (Path path : paths) {
+            try {
+                Files.delete(path);
+            } catch (IOException e) {
+                try {
+                    addWarning("Could not delete file '" + path + "'");
+                } catch (ToolException ex) {
+                    logger.warn("When deleting file '" + path + "'", e);
+                }
+            }
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    // CHECKS MANAGEMENT
+    //-------------------------------------------------------------------------
+
     protected static void checkStudy(String studyId, CatalogManager catalogManager, String token) throws ToolException {
         if (StringUtils.isEmpty(studyId)) {
             throw new ToolException("Missing study");
@@ -140,8 +170,8 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    protected static void checkPermissions(StudyPermissions.Permissions permissions, String studyId, CatalogManager catalogManager,
-                                           String token) throws ToolException {
+    protected static void checkPermissions(StudyPermissions.Permissions permissions, Boolean skipIndex, String studyId,
+                                           CatalogManager catalogManager, String token) throws ToolException {
         checkStudy(studyId, catalogManager, token);
 
         try {
@@ -150,8 +180,14 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
             String organizationId = studyFqn.getOrganizationId();
             String userId = jwtPayload.getUserId(organizationId);
 
+            // Check acess permissions
             Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
             catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, study.getUid(), userId, permissions);
+
+            // Check admin permissions to Catalog index
+            if (!Boolean.TRUE.equals(skipIndex)) {
+                catalogManager.getAuthorizationManager().checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+            }
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -175,7 +211,8 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
                 if (!Files.exists(path)) {
                     throw new ToolException("Resources path '" + path + "' does not exist (OpenCGA path: " + resourcesDir + ")");
                 }
-                return path;
+
+                // TODO: Check permissions to read
             } catch (CatalogException e) {
                 throw new ToolException("Error searching the OpenCGA catalog path '" + resourcesDir + "'", e);
             }
@@ -183,62 +220,34 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         return path;
     }
 
-    protected void prepareRelatednessResources(String resourcesDir) throws ToolException {
-        Path path = checkResourcesDir(resourcesDir, getStudy(), getCatalogManager(), getToken());
-
-        // Copy relatedness population frequency file
-        copyQcResourceFile(path, RELATEDNESS_POP_FREQ_FILENAME);
-
-        // Copy relatedness population exclude variant file
-        copyQcResourceFile(path, RELATEDNESS_POP_FREQ_FILENAME);
-
-        // Copy relatedness thresholds file
-        copyQcResourceFile(path, RELATEDNESS_THRESHOLDS_FILENAME);
-    }
-
-    protected void prepareInferredSexResources(String resourcesDir) throws ToolException {
-        Path path = checkResourcesDir(resourcesDir, getStudy(), getCatalogManager(), getToken());
-
-        // Copy inferred sex thresholds file
-        copyQcResourceFile(path, INFERRED_SEX_THRESHOLDS_FILENAME);
-    }
-
-    protected boolean setQualityControlStatus(QualityControlStatus qcStatus, String id, String qcType) throws ToolException {
-        try {
-            switch (qcType) {
-                case FAMILY_QC_TYPE: {
-                    FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControlStatus(qcStatus);
-                    catalogManager.getFamilyManager().update(getStudy(), id, updateParams, null, token);
-                    break;
-                }
-                case INDIVIDUAL_QC_TYPE: {
-                    IndividualUpdateParams updateParams = new IndividualUpdateParams()
-                            .setQualityControlStatus((IndividualQualityControlStatus) qcStatus);
-                    catalogManager.getIndividualManager().update(getStudy(), id, updateParams, null, token);
-                    break;
-                }
-                case SAMPLE_QC_TYPE: {
-                    SampleUpdateParams updateParams = new SampleUpdateParams()
-                            .setQualityControlStatus((SampleQualityControlStatus) qcStatus);
-                    catalogManager.getSampleManager().update(getStudy(), id, updateParams, null, token);
-                    break;
-                }
-                default: {
-                    String msg = "Internal error: unknown QC type '" + qcType + "' (valid values are: " + StringUtils.join(
-                            Arrays.asList(FAMILY_QC_TYPE, INDIVIDUAL_QC_TYPE), ",") + ")";
-                    throw new ToolException(msg);
-                }
-            }
-        } catch (CatalogException e) {
-            String msg = "Could not set status to COMPUTING before performing QC for " + qcType + " ID '" + id + "': " + e.getMessage();
-            logger.error(msg);
-            addError(new ToolException(msg, e));
-            return false;
+    protected void checkFailedQcCounter(int size, String individualQcType) throws ToolException {
+        if (CollectionUtils.isNotEmpty(failedQcSet) && failedQcSet.size() == size) {
+            // If all QC fail, then the job fails
+            clean();
+            throw new ToolException("All " + individualQcType + " QCs fail. Please, check job results and logs for more details.");
         }
-        return true;
     }
 
-    protected <T> T checkQcReport(String id, String analysisId, List<String> skip, Path qcPath, String qcType, ObjectReader reader)
+    //-------------------------------------------------------------------------
+    // QC file result management
+    //-------------------------------------------------------------------------
+
+    protected boolean isQcArray(Path qcPath) throws ToolException {
+        try {
+            // Create an ObjectMapper instance
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            // Read the JSON file into a JsonNode
+            JsonNode rootNode = objectMapper.readTree(qcPath.toFile());
+
+            // Check if the root element is an array
+            return rootNode.isArray();
+        } catch (IOException e) {
+            throw new ToolException("Error checking QC file '" + qcPath + "'", e);
+        }
+    }
+
+    protected <T> T parseQcFile(String id, String analysisId, List<String> skip, Path qcPath, String qcType, ObjectReader reader)
             throws ToolException {
         if (CollectionUtils.isEmpty(skip) || !skip.contains(analysisId)) {
             java.io.File qcFile = qcPath.resolve(analysisId).resolve(id + QC_JSON_EXTENSION).toFile();
@@ -254,6 +263,10 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
         return null;
     }
+
+    //-------------------------------------------------------------------------
+    // Catalog utils
+    //-------------------------------------------------------------------------
 
     protected static List<String> getNoSomaticSampleIds(Family family, String studyId, CatalogManager catalogManager, String token)
             throws CatalogException {
@@ -287,60 +300,81 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         return sampleIds;
     }
 
-    protected void copyQcResourceFile(Path path, String resourceName) throws ToolException {
-        // Copy resource file
-        if (path == null || !Files.exists(path.resolve(resourceName))) {
-            // Use the default resource file
-            copyQcResourceFile(resourceName);
-        } else {
-            // Use the custom resource file
-            copyQcResourceFile(path.resolve(resourceName));
+    //-------------------------------------------------------------------------
+    // QC RESOURCES MANAGEMENT
+    //-------------------------------------------------------------------------
+
+    protected void prepareResources() throws ToolException {
+        // First, download default resource files
+        downloadQcResourceFiles();
+        if (userResourcesPath != null) {
+            // If necessary, copy the user resource files
+            copyUserResourceFiles();
         }
     }
 
-    protected void copyQcResourceFile(String resourceName) throws ToolException {
-        Path srcResourcesPath = getOpencgaHome().resolve(ANALYSIS_RESOURCES_FOLDER).resolve(QC_FOLDER);
+    protected void downloadQcResourceFiles() throws ToolException {
         Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
-        if (Files.exists(srcResourcesPath.resolve(resourceName))) {
-            // Copy resource file
-            copyQcResourceFile(srcResourcesPath.resolve(resourceName));
-        } else {
-            // Download directly into the job dir
-            // It can be improved by downloading once (the first time) in the analysis resources folder
-            URL url = null;
-            try {
-                url = new URL(ResourceUtils.URL + ANALYSIS_FOLDER + QC_FOLDER + "/" + resourceName);
-                ResourceUtils.downloadThirdParty(url, destResourcesPath);
-            } catch (IOException e) {
-                throw new ToolException("Something wrong happened when downloading the resource '" + resourceName + "' from '"
-                        + url + "'", e);
-            }
 
-            if (!Files.exists(destResourcesPath.resolve(resourceName))) {
-                throw new ToolException("Error downloading the resource '" + resourceName + "', it does not exist at " + destResourcesPath);
-            }
+        Path qcSourcesPath = getOutDir().resolve(RESOURCES_FOLDER).resolve(QC_RESOURCE_LIST_FILENAME);
+        downloadQcResourceFile(qcSourcesPath.getFileName().toString(), destResourcesPath);
+        if (!Files.exists(qcSourcesPath)) {
+            throw new ToolException("Unable to download QC resource list (file '" + qcSourcesPath.getFileName() + "')");
         }
-    }
 
-    protected void copyQcResourceFile(Path srcResourcesPath) throws ToolException {
-        String resourceName = srcResourcesPath.getFileName().toString();
-        Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
-
-        String msg = "Error copying resource file '" + resourceName + "'";
-
-        // Copy resource file
+        List<String> qcResourceList;
         try {
-            Files.copy(srcResourcesPath, destResourcesPath.resolve(resourceName));
+            qcResourceList = FileUtils.readLines(qcSourcesPath.toFile(), Charset.defaultCharset());
         } catch (IOException e) {
-            if (!Files.exists(destResourcesPath.resolve(resourceName))
-                    || srcResourcesPath.toFile().length() != destResourcesPath.resolve(resourceName).toFile().length()) {
-                throw new ToolException(msg, e);
-            }
-            logger.warn(msg, e);
+            throw new ToolException("Error reading QC resource list (file '" + qcSourcesPath.getFileName() + "')", e);
+        }
+
+        if (CollectionUtils.isEmpty(qcResourceList)) {
+            throw new ToolException("Something wrong happened: the QC resource list (file '" + qcSourcesPath.getFileName() + "') is empty");
+        }
+
+        // Download all resource files
+        for (String resourceName : qcResourceList) {
+            downloadQcResourceFile(resourceName, destResourcesPath);
+        }
+    }
+
+    protected void downloadQcResourceFile(String resourceName, Path destPath) throws ToolException {
+        Path destResourcesPath = checkResourcesPath(destPath);
+        URL url = null;
+        try {
+            url = new URL(ResourceUtils.URL + ANALYSIS_FOLDER + QC_FOLDER + "/" + resourceName);
+            ResourceUtils.downloadThirdParty(url, destPath);
+        } catch (IOException e) {
+            throw new ToolException("Something wrong happened when downloading the resource '" + resourceName + "' from '" + url + "'", e);
         }
 
         if (!Files.exists(destResourcesPath.resolve(resourceName))) {
-            throw new ToolException(msg  + ", it does not exist at " + destResourcesPath);
+            throw new ToolException("Error downloading the resource '" + resourceName + "', it does not exist at " + destResourcesPath);
+        }
+    }
+
+    protected void copyUserResourceFiles() throws ToolException {
+        // Sanity check
+        if (userResourcesPath == null) {
+            // Nothing to do
+            return;
+        }
+
+        Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
+
+        // Copy custom resource files to the job dir
+        for (java.io.File file : userResourcesPath.toFile().listFiles()) {
+            Path destPath = destResourcesPath.resolve(file.getName());
+            if (file.isFile()) {
+                try {
+                    Files.copy(file.toPath(), destPath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    if (!Files.exists(destPath) || destPath.toFile().length() != file.length()) {
+                        throw new ToolException("Error copying resource file '" + file + "'", e);
+                    }
+                }
+            }
         }
     }
 
@@ -358,37 +392,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         return resourcesPath;
     }
 
-    protected boolean mustPerformQualityControl(QualityControlStatus qcStatus, Boolean overwrite) {
-        boolean performQc;
-        if (Boolean.TRUE.equals(overwrite)) {
-            performQc = true;
-        } else if (qcStatus != null) {
-            String statusId = qcStatus.getId();
-            performQc = !(statusId.equals(COMPUTING) || statusId.equals(READY));
-        } else {
-            performQc = true;
-        }
-        return performQc;
-    }
-
-    protected Path checkDirectory(Path dir) throws ToolException {
-        if (!Files.exists(dir)) {
-            try {
-                Files.createDirectories(dir);
-            } catch (IOException e) {
-                throw new ToolException("Error creating directory '" + dir + "'", e);
-            }
-            if (!Files.exists(dir)) {
-                throw new ToolException("Directory '" + dir + "' does not exist after creating directory");
-            }
-        }
-        return dir;
-    }
-
-    protected boolean mustSkip(String value, List<String> skip) {
-        if (CollectionUtils.isEmpty(skip)) {
-            return false;
-        }
-        return skip.contains(value);
+    protected String getIdLogMessage(String id, String qcType) {
+        return " for " + qcType + " '" + id + "'";
     }
 }

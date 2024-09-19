@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.individual.qc;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -35,9 +36,10 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
-import org.opencb.opencga.core.models.individual.IndividualQualityControlStatus;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -54,8 +56,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.core.models.common.QualityControlStatus.COMPUTING;
-import static org.opencb.opencga.core.models.individual.IndividualQualityControlStatus.*;
+import static org.opencb.opencga.core.models.common.InternalStatus.READY;
+import static org.opencb.opencga.core.models.common.QualityControlStatus.ERROR;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_INDIVIDUALS;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.JSON;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF_GZ;
@@ -67,14 +69,20 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
     public static final String DESCRIPTION = "Run quality control (QC) for a given individual. This includes inferred sex, Mendelian"
             + " errors (UDP), and, if parents are present, a relatedness analysis is also performed";
 
-    // Set of individuals with known parents, i.e., trios
-    private Set<Individual> trios = new HashSet<>();
-
     @ToolParams
     protected final IndividualQcAnalysisParams analysisParams = new IndividualQcAnalysisParams();
 
+    // Individuals to perform QC and VCF and JSON files
+    private List<Individual> individuals = new ArrayList<>();
+
+    // Set of individuals with known parents, i.e., trios
+    private Set<Individual> trios = new HashSet<>();
+
+
     @Override
     protected void check() throws Exception {
+        setUpStorageEngineExecutor(study);
+
         super.check();
         checkParameters(analysisParams, getStudy(), catalogManager, token);
 
@@ -86,189 +94,247 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
                 trios.add(individual);
             }
         }
-        if (CollectionUtils.isNotEmpty(trios)) {
-            prepareRelatednessResources(analysisParams.getResourcesDir());
-        }
 
-        // Prepare inferred sex resource files
-        prepareInferredSexResources(analysisParams.getResourcesDir());
+        // Check custom resources path
+        userResourcesPath = checkResourcesDir(analysisParams.getResourcesDir(), getStudy(), catalogManager, token);
+    }
+
+    @Override
+    protected List<String> getSteps() {
+        List<String> steps = Arrays.asList(PREPARE_QC_STEP, ID);
+        if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
+            steps.add(INDEX_QC_STEP);
+        }
+        return steps;
     }
 
     @Override
     protected void run() throws ToolException {
-        setUpStorageEngineExecutor(study);
+        // Main steps
+        step(PREPARE_QC_STEP, this::prepareQualityControl);
+        step(ID, this::runIndividualQc);
+        if (getSteps().contains(INDEX_QC_STEP)) {
+            step(INDEX_QC_STEP, this::indexQualityControl);
+        }
 
-        List<Individual> individuals = new ArrayList<>();
-        LinkedList<Path> individualVcfPaths = new LinkedList<>();
-        LinkedList<Path> individualJsonPaths = new LinkedList<>();
+        // Clean execution
+        clean();
+    }
 
+    protected void prepareQualityControl() throws ToolException {
         try {
             ObjectWriter objectWriter = JacksonUtils.getDefaultObjectMapper().writerFor(Individual.class);
             for (String individualId : analysisParams.getIndividuals()) {
                 // Get individual
                 Individual individual = catalogManager.getIndividualManager().get(study, individualId, QueryOptions.empty(), token).first();
 
-                // Decide if quality control has to be performed
-                //   - by checking the quality control status, if it is READY means it has been computed previously, and
-                //   - by checking the flag overwrite
-                if (individual.getInternal() == null || mustPerformQualityControl(individual.getInternal().getQualityControlStatus(),
-                        analysisParams.getOverwrite())) {
+                // Add family to the list
+                individuals.add(individual);
 
-                    // Set quality control status to COMPUTING to prevent multiple individual QCs from running simultaneously
-                    // for the same individual
-                    IndividualQualityControlStatus qcStatus = new IndividualQualityControlStatus(COMPUTING,
-                            "Performing " + INDIVIDUAL_QC_TYPE + " QC");
-                    if (!setQualityControlStatus(qcStatus, individual.getId(), INDIVIDUAL_QC_TYPE)) {
-                        continue;
-                    }
-
-                    // Create directory to save variants and individual files
-                    Path individualOutPath = Files.createDirectories(getOutDir().resolve(individualId));
-                    if (!Files.exists(individualOutPath)) {
-                        throw new ToolException("Error creating directory: " + individualOutPath);
-                    }
-
-                    // Export individual variants (VCF format)
-                    // Create the query based on whether a trio is present or not
-                    Query query;
-                    if (trios.contains(individual)) {
-                        String child = individual.getSamples().get(0).getId();
-                        String father = individual.getFather().getSamples().get(0).getId();
-                        String mother = individual.getMother().getSamples().get(0).getId();
-                        query = new Query()
-                                .append(VariantQueryParam.SAMPLE.key(), child + ":0/1,1/1")
-                                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), child + "," + father + "," + mother)
-                                .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT");
-                    } else {
-                        // Create variant query
-                        String gt = getNoSomaticSampleIds(individual).stream().map(s -> s + ":0/0,0/1,1/1")
-                                .collect(Collectors.joining(";"));
-                        query = new Query()
-                                .append(VariantQueryParam.GENOTYPE.key(), gt);
-                    }
-                    query.append(VariantQueryParam.STUDY.key(), study)
-                            .append(VariantQueryParam.TYPE.key(), VariantType.SNV)
-                            .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
-                                    .split(",")));
-
-                    // Create query options
-                    QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, "id,studies.samples");
-
-                    // Export to VCF.GZ format
-                    String basename = individualOutPath.resolve(individualId).toAbsolutePath().toString();
-                    getVariantStorageManager().exportData(basename, VCF_GZ, null, query, queryOptions, token);
-
-                    // Check VCF file
-                    Path individualVcfPath = Paths.get(basename + "." + VCF_GZ.getExtension());
-                    if (!Files.exists(individualVcfPath)) {
-                        throw new ToolException("Something wrong happened when exporting VCF file for individual ID '" + individualId
-                                + "'. VCF file " + individualVcfPath + " was not created. Export query = " + query.toJson() + "; export query"
-                                + " options = " + queryOptions.toJson());
-                    }
-                    individualVcfPaths.add(individualVcfPath);
-
-                    // Export individual (JSON format)
-                    Path individualJsonPath = Paths.get(basename + "." + JSON.getExtension());
-                    objectWriter.writeValue(individualJsonPath.toFile(), individual);
-
-                    // Check VCF file
-                    if (!Files.exists(individualJsonPath)) {
-                        throw new ToolException("Something wrong happened when saving JSON file for individual ID '" + individualId
-                                + "'. JSON file " + individualJsonPath + " was not created.");
-                    }
-                    individualJsonPaths.add(individualJsonPath);
-
-                    // Add family to the list
-                    individuals.add(individual);
+                // Export individual variants (VCF format)
+                // Create the query based on whether a trio is present or not
+                Query query;
+                if (trios.contains(individual)) {
+                    String child = individual.getSamples().get(0).getId();
+                    String father = individual.getFather().getSamples().get(0).getId();
+                    String mother = individual.getMother().getSamples().get(0).getId();
+                    query = new Query()
+                            .append(VariantQueryParam.SAMPLE.key(), child + ":0/1,1/1")
+                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), child + "," + father + "," + mother)
+                            .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT");
+                } else {
+                    // Create variant query
+                    String gt = getNoSomaticSampleIds(individual).stream().map(s -> s + ":0/0,0/1,1/1")
+                            .collect(Collectors.joining(";"));
+                    query = new Query()
+                            .append(VariantQueryParam.GENOTYPE.key(), gt);
                 }
+                query.append(VariantQueryParam.STUDY.key(), study)
+                        .append(VariantQueryParam.TYPE.key(), VariantType.SNV)
+                        .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
+                                .split(",")));
+
+                // Create query options
+                QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, "id,studies.samples");
+
+                // Export to VCF.GZ format
+                String basename = getOutDir().resolve(individualId).toAbsolutePath().toString();
+                getVariantStorageManager().exportData(basename, VCF_GZ, null, query, queryOptions, token);
+
+                // Check VCF file
+                Path vcfPath = Paths.get(basename + "." + VCF_GZ.getExtension());
+                if (!Files.exists(vcfPath)) {
+                    throw new ToolException("Something wrong happened when exporting VCF file for individual ID '" + individualId
+                            + "'. VCF file " + vcfPath + " was not created. Export query = " + query.toJson() + "; export query"
+                            + " options = " + queryOptions.toJson());
+                }
+                vcfPaths.add(vcfPath);
+
+                // Export individual (JSON format)
+                Path jsonPath = Paths.get(basename + "." + JSON.getExtension());
+                objectWriter.writeValue(jsonPath.toFile(), individual);
+
+                // Check VCF file
+                if (!Files.exists(jsonPath)) {
+                    throw new ToolException("Something wrong happened when saving JSON file for individual ID '" + individualId
+                            + "'. JSON file " + jsonPath + " was not created.");
+                }
+                jsonPaths.add(jsonPath);
             }
         } catch (CatalogException | IOException | StorageEngineException e) {
+            // Clean execution
+            clean();
             throw new ToolException(e);
         }
 
-        // Get executor to execute Python script that computes the family QC
-        IndividualVariantQcAnalysisExecutor executor = getToolExecutor(IndividualVariantQcAnalysisExecutor.class);
-        executor.setVcfPaths(individualVcfPaths)
-                .setJsonPaths(individualJsonPaths)
-                .setQcParams(analysisParams);
-
-        // Step by step
-        step(executor::execute);
-
-        // Parse Python script results
-        if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
-            updateIndividualQualityControl(individuals);
-        }
+        // Prepare resource files
+        prepareResources();
     }
 
-    /**
-     * Update quality control for each individual by parsing the QC report for the inferred sex, Mendelian errors and relatedness analyses.
-     *
-     * @param individuals List of individuals
-     * @throws ToolException Tool exception
-     */
-    private void updateIndividualQualityControl(List<Individual> individuals) throws ToolException {
+    protected void runIndividualQc() throws ToolException {
+        // Get executor to execute Python script that computes the family QC
+        IndividualVariantQcAnalysisExecutor executor = getToolExecutor(IndividualVariantQcAnalysisExecutor.class);
+        executor.setVcfPaths(vcfPaths)
+                .setJsonPaths(jsonPaths)
+                .setQcParams(analysisParams)
+                .execute();
+    }
+
+    private void indexQualityControl() throws ToolException {
         // Create readers for each QC report
         ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         ObjectReader inferredSexReader = JacksonUtils.getDefaultObjectMapper().readerFor(InferredSex.class);
+        ObjectReader inferredSexListReader = JacksonUtils.getDefaultObjectMapper().readerFor(new TypeReference<List<InferredSex>>() {});
         ObjectReader mendelianErrorReader = JacksonUtils.getDefaultObjectMapper().readerFor(MendelianError.class);
+        ObjectReader mendelianErrorListReader = JacksonUtils.getDefaultObjectMapper().readerFor(
+                new TypeReference<List<MendelianError>>() {});
         ObjectReader relatednessReader = JacksonUtils.getDefaultObjectMapper().readerFor(Relatedness.class);
+        ObjectReader relatednessListReader = JacksonUtils.getDefaultObjectMapper().readerFor(new TypeReference<List<Relatedness>>() {});
 
+        QualityControlStatus qcStatus;
+        IndividualQualityControl individualQc;
+        Set<String> failedAnalysis = new HashSet<>();
+        String logMsg;
+
+        failedQcSet = new HashSet<>();
         for (Individual individual : individuals) {
-            // Check output files
-            Path qcPath = getOutDir().resolve(individual.getId());
+            individualQc = new IndividualQualityControl();
+
+            // Check and parse the inferred sex results
+            Path qcPath = getOutDir().resolve(individual.getId()).resolve(INFERRED_SEX_ANALYSIS_ID)
+                    .resolve(INFERRED_SEX_ANALYSIS_ID + QC_JSON_EXTENSION);
             if (!Files.exists(qcPath)) {
-                String msg = "Quality control error for individual " + individual.getId() + ": folder " + qcPath + " not found."
-                        + " None quality control was performed.";
-                logger.error(msg);
-                addError(new ToolException(msg));
-                continue;
-            }
+                failedQcSet.add(individual.getId());
+                failedAnalysis.add(INFERRED_SEX_ANALYSIS_ID);
+                individualQc.setInferredSex(Collections.emptyList());
 
-            int qcCode = NONE_READY;
-            IndividualQualityControl individualQc = individual.getQualityControl();
-
-            // Check inferred sex report
-            InferredSex inferredSex = checkQcReport(individual.getId(), INFERRED_SEX_ANALYSIS_ID, analysisParams.getSkip(), qcPath,
-                    INDIVIDUAL_QC_TYPE, inferredSexReader);
-            if (inferredSex != null) {
-                qcCode |= INFERRED_SEX_READY;
-                individualQc.getInferredSex().add(inferredSex);
-            }
-
-            // Check Mendelian error report
-            MendelianError mendelianError = checkQcReport(individual.getId(), MENDELIAN_ERROR_ANALYSIS_ID, analysisParams.getSkip(), qcPath,
-                    INDIVIDUAL_QC_TYPE, mendelianErrorReader);
-            if (mendelianError != null) {
-                qcCode |= MENDELIAN_ERROR_READY;
-                individualQc.getMendelianError().add(mendelianError);
-            }
-
-            // Check relatedness report
-            Relatedness relatedness = checkQcReport(individual.getId(), RELATEDNESS_ANALYSIS_ID, analysisParams.getSkip(), qcPath,
-                    INDIVIDUAL_QC_TYPE, relatednessReader);
-            if (relatedness != null) {
-                qcCode |= RELATEDNESS_READY;
-                individualQc.getRelatedness().add(relatedness);
-            }
-
-            // Update catalog (quality control and status) if necessary
-            if (qcCode != NONE_READY) {
-                // Update the individual QC code with the current one
-                IndividualQualityControlStatus qcStatus = new IndividualQualityControlStatus(
-                        qcCode | individual.getInternal().getQualityControlStatus().getCode(), "");
+                logMsg = FAILURE_FILE + qcPath.getFileName() + NOT_FOUND + getIdLogMessage(individual.getId(), INDIVIDUAL_QC_TYPE);
+                addError(new ToolException(logMsg));
+                logger.error(logMsg);
+            } else {
                 try {
-                    IndividualUpdateParams updateParams = new IndividualUpdateParams()
-                            .setQualityControl(individualQc)
-                            .setQualityControlStatus(qcStatus);
-                    catalogManager.getIndividualManager().update(getStudy(), individual.getId(), updateParams, null, token);
-                } catch (CatalogException e) {
-                    logger.error("Could not update quality control in OpenCGA catalog for individual " + individual.getId(), e);
+                    List<InferredSex> inferredSexList = isQcArray(qcPath)
+                            ? inferredSexListReader.readValue(qcPath.toFile())
+                            : Collections.singletonList(inferredSexReader.readValue(qcPath.toFile()));
+
+                    individualQc.setInferredSex(inferredSexList);
+                } catch (IOException e) {
+                    failedQcSet.add(individual.getId());
+                    failedAnalysis.add(INFERRED_SEX_ANALYSIS_ID);
+                    individualQc.setInferredSex(Collections.emptyList());
+
+                    logMsg = FAILURE_ERROR_PARSING_QC_JSON_FILE + qcPath.getFileName() + "'" + getIdLogMessage(individual.getId(),
+                            INDIVIDUAL_QC_TYPE);
                     addError(e);
+                    logger.error(logMsg, e);
                 }
             }
+
+            // Check and parse the mendelian error results
+            qcPath = getOutDir().resolve(individual.getId()).resolve(MENDELIAN_ERROR_ANALYSIS_ID)
+                    .resolve(MENDELIAN_ERROR_ANALYSIS_ID + QC_JSON_EXTENSION);
+            if (!Files.exists(qcPath)) {
+                failedQcSet.add(individual.getId());
+                failedAnalysis.add(MENDELIAN_ERROR_ANALYSIS_ID);
+                individualQc.setInferredSex(Collections.emptyList());
+
+                logMsg = FAILURE_FILE + qcPath.getFileName() + NOT_FOUND + getIdLogMessage(individual.getId(), INDIVIDUAL_QC_TYPE);
+                addError(new ToolException(logMsg));
+                logger.error(logMsg);
+            } else {
+                try {
+                    List<MendelianError> mendelianErrorList = isQcArray(qcPath)
+                            ? mendelianErrorListReader.readValue(qcPath.toFile())
+                            : Collections.singletonList(mendelianErrorReader.readValue(qcPath.toFile()));
+
+                    individualQc.setMendelianError(mendelianErrorList);
+                } catch (IOException e) {
+                    failedQcSet.add(individual.getId());
+                    failedAnalysis.add(MENDELIAN_ERROR_ANALYSIS_ID);
+                    individualQc.setMendelianError(Collections.emptyList());
+
+                    logMsg = FAILURE_ERROR_PARSING_QC_JSON_FILE + qcPath.getFileName() + "'" + getIdLogMessage(individual.getId(),
+                            INDIVIDUAL_QC_TYPE);
+                    addError(e);
+                    logger.error(logMsg, e);
+                }
+            }
+
+            // Check and parse the relatedness results, if trio is present
+            if (CollectionUtils.isNotEmpty(trios) && trios.contains(individual)) {
+                qcPath = getOutDir().resolve(individual.getId()).resolve(RELATEDNESS_ANALYSIS_ID)
+                        .resolve(RELATEDNESS_ANALYSIS_ID + QC_JSON_EXTENSION);
+                if (!Files.exists(qcPath)) {
+                    failedQcSet.add(individual.getId());
+                    failedAnalysis.add(RELATEDNESS_ANALYSIS_ID);
+                    individualQc.setRelatedness(Collections.emptyList());
+
+                    logMsg = FAILURE_FILE + qcPath.getFileName() + NOT_FOUND + getIdLogMessage(individual.getId(), INDIVIDUAL_QC_TYPE);
+                    addError(new ToolException(logMsg));
+                    logger.error(logMsg);
+                } else {
+                    try {
+                        List<Relatedness> relatednessList = isQcArray(qcPath)
+                                ? relatednessListReader.readValue(qcPath.toFile())
+                                : Collections.singletonList(relatednessReader.readValue(qcPath.toFile()));
+
+                        individualQc.setRelatedness(relatednessList);
+                    } catch (IOException e) {
+                        failedQcSet.add(individual.getId());
+                        failedAnalysis.add(RELATEDNESS_ANALYSIS_ID);
+                        individualQc.setRelatedness(Collections.emptyList());
+
+                        logMsg = FAILURE_ERROR_PARSING_QC_JSON_FILE + qcPath.getFileName() + "'" + getIdLogMessage(individual.getId(),
+                                INDIVIDUAL_QC_TYPE);
+                        addError(e);
+                        logger.error(logMsg, e);
+                    }
+                }
+            }
+
+            if (CollectionUtils.isEmpty(failedAnalysis)) {
+                qcStatus = new QualityControlStatus(READY, SUCCESS);
+            } else {
+                qcStatus = new QualityControlStatus(ERROR, "Failed analysis: " + StringUtils.join(failedAnalysis, ","));
+            }
+
+            try {
+                // Update catalog: quality control and status
+                IndividualUpdateParams updateParams = new IndividualUpdateParams()
+                        .setQualityControl(individualQc)
+                        .setQualityControlStatus(qcStatus);
+                catalogManager.getIndividualManager().update(getStudy(), individual.getId(), updateParams, null, token);
+            } catch (CatalogException e) {
+                failedQcSet.add(individual.getId());
+                logMsg = FAILURE_COULD_NOT_UPDATE_QUALITY_CONTROL_IN_OPEN_CGA_CATALOG + getIdLogMessage(individual.getId(),
+                        INDIVIDUAL_QC_TYPE);
+                addError(e);
+                logger.error(logMsg, e);
+            }
         }
+
+        checkFailedQcCounter(individuals.size(), INDIVIDUAL_QC_TYPE);
     }
 
     /**
@@ -287,14 +353,18 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
         checkStudy(studyId, catalogManager, token);
 
         // Check permissions
-        checkPermissions(WRITE_INDIVIDUALS, studyId, catalogManager, token);
+        checkPermissions(WRITE_INDIVIDUALS, params.getSkipIndex(), studyId, catalogManager, token);
+
+        if (!Boolean.TRUE.equals(params.getSkipIndex()) && CollectionUtils.isNotEmpty(params.getSkipAnalysis())) {
+            throw new ToolException("To index QC in the OpenCGA catalog, the 'skip analysis' parameter must be left empty");
+        }
 
         // Check individuals in catalog
         // Collect possible errors in a map where key is the family ID and value is the error
         Map<String, String> errors = new HashMap<>();
         for (String individualId : params.getIndividuals()) {
             // Get Individual from catalog
-            Individual individual;
+            Individual individual = null;
             try {
                 OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().get(studyId, individualId,
                         QueryOptions.empty(), token);
@@ -310,6 +380,18 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
                     if (CollectionUtils.isEmpty(sampleIds)) {
                         errors.put(individualId, "No samples found");
                     }
+                }
+
+                // Check compatibility between QC status (READY) and overwrite
+                if (!Boolean.TRUE.equals(params.getSkipIndex()) && !Boolean.TRUE.equals(params.getOverwrite())
+                        && Optional.ofNullable(individual)
+                        .map(Individual::getInternal)
+                        .map(IndividualInternal::getQualityControlStatus)
+                        .map(QualityControlStatus::getId)
+                        .filter(READY::equals)
+                        .isPresent()) {
+                    errors.put(individualId, "It is mandatory to set 'overwrite' to TRUE when QC has already been computed"
+                            + " (status: READY)");
                 }
             } catch (CatalogException e) {
                 errors.put(individualId, Arrays.toString(e.getStackTrace()));

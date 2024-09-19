@@ -107,8 +107,8 @@ public class SampleQcAnalysisParams extends ToolParams {
     private String gpConfigFile;
 
     // Other
-    @DataField(id = "skip", description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
-    private List<String> skip;
+    @DataField(id = "skipAnalysis", description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
+    private List<String> skipAnalysis;
 
     @DataField(id = "skipIndex", description = FieldConstants.QC_SKIP_INDEX_DESCRIPTION)
     private Boolean skipIndex;
@@ -129,8 +129,8 @@ public class SampleQcAnalysisParams extends ToolParams {
                                   AnnotationVariantQueryParams vsQuery, String msId, String msDescription, String msQuery, String msFitId,
                                   String msFitMethod, Integer msFitNBoot, String msFitSigVersion, String msFitOrgan,
                                   Float msFitThresholdPerc, Float msFitThresholdPval, Integer msFitMaxRareSigs, String msFitSignaturesFile,
-                                  String msFitRareSignaturesFile, String gpId, String gpDescription, String gpConfigFile, List<String> skip,
-                                  Boolean skipIndex, Boolean overwrite, String resourcesDir, String outdir) {
+                                  String msFitRareSignaturesFile, String gpId, String gpDescription, String gpConfigFile,
+                                  List<String> skipAnalysis, Boolean skipIndex, Boolean overwrite, String resourcesDir, String outdir) {
         this.sample = sample;
         this.samples = samples;
         this.vsId = vsId;
@@ -152,7 +152,7 @@ public class SampleQcAnalysisParams extends ToolParams {
         this.gpId = gpId;
         this.gpDescription = gpDescription;
         this.gpConfigFile = gpConfigFile;
-        this.skip = skip;
+        this.skipAnalysis = skipAnalysis;
         this.skipIndex = skipIndex;
         this.overwrite = overwrite;
         this.resourcesDir = resourcesDir;
@@ -183,7 +183,7 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", gpId='").append(gpId).append('\'');
         sb.append(", gpDescription='").append(gpDescription).append('\'');
         sb.append(", gpConfigFile='").append(gpConfigFile).append('\'');
-        sb.append(", skip=").append(skip);
+        sb.append(", skipAnalysis=").append(skipAnalysis);
         sb.append(", skipIndex=").append(skipIndex);
         sb.append(", overwrite=").append(overwrite);
         sb.append(", resourcesDir='").append(resourcesDir).append('\'');
@@ -381,12 +381,12 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public List<String> getSkip() {
-        return skip;
+    public List<String> getSkipAnalysis() {
+        return skipAnalysis;
     }
 
-    public SampleQcAnalysisParams setSkip(List<String> skip) {
-        this.skip = skip;
+    public SampleQcAnalysisParams setSkipAnalysis(List<String> skipAnalysis) {
+        this.skipAnalysis = skipAnalysis;
         return this;
     }
 

@@ -24,14 +24,13 @@ public class QualityControlStatus extends InternalStatus {
     /*
      * States
      *
-     * NONE --> COMPUTING --> READY
-     *                    --> INCOMPLETE
+     * NONE --> READY
+     *          ERROR
      */
     public static final String NONE = "NONE";
-    public static final String COMPUTING = "COMPUTING";
-    public static final String INCOMPLETE = "INCOMPLETE";
+    public static final String ERROR = "ERROR";
 
-    protected static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, COMPUTING, INCOMPLETE);
+    protected static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, ERROR);
 
     public QualityControlStatus(String status, String message) {
         if (isValid(status)) {
@@ -57,8 +56,7 @@ public class QualityControlStatus extends InternalStatus {
         return status != null
                 && (status.equals(READY)
                 || status.equals(DELETED)
-                || status.equals(INCOMPLETE)
                 || status.equals(NONE)
-                || status.equals(COMPUTING));
+                || status.equals(ERROR));
     }
 }

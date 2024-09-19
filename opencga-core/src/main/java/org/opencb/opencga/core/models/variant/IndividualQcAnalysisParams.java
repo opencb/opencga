@@ -44,8 +44,8 @@ public class IndividualQcAnalysisParams extends ToolParams {
     @DataField(id = "resourcesDir", description = FieldConstants.QC_RESOURCES_DIR_DESCRIPTION)
     private String resourcesDir;
 
-    @DataField(id = "skip", description = FieldConstants.INDIVIDUAL_QC_SKIP_DESCRIPTION)
-    private List<String> skip;
+    @DataField(id = "skipAnalysis", description = FieldConstants.INDIVIDUAL_QC_SKIP_ANALYSIS_DESCRIPTION)
+    private List<String> skipAnalysis;
 
     @DataField(id = "skipIndex", description = FieldConstants.QC_SKIP_INDEX_DESCRIPTION)
     private Boolean skipIndex;
@@ -60,13 +60,13 @@ public class IndividualQcAnalysisParams extends ToolParams {
     }
 
     public IndividualQcAnalysisParams(List<String> individuals, String individual, String sample, String inferredSexMethod,
-                                      String resourcesDir, List<String> skip, Boolean skipIndex, Boolean overwrite, String outdir) {
+                                      String resourcesDir, List<String> skipAnalysis, Boolean skipIndex, Boolean overwrite, String outdir) {
         this.individuals = individuals;
         this.individual = individual;
         this.sample = sample;
         this.inferredSexMethod = inferredSexMethod;
         this.resourcesDir = resourcesDir;
-        this.skip = skip;
+        this.skipAnalysis = skipAnalysis;
         this.skipIndex = skipIndex;
         this.overwrite = overwrite;
         this.outdir = outdir;
@@ -80,7 +80,7 @@ public class IndividualQcAnalysisParams extends ToolParams {
         sb.append(", sample='").append(sample).append('\'');
         sb.append(", inferredSexMethod='").append(inferredSexMethod).append('\'');
         sb.append(", resourcesDir='").append(resourcesDir).append('\'');
-        sb.append(", skip=").append(skip);
+        sb.append(", skipAnalysis=").append(skipAnalysis);
         sb.append(", skipIndex=").append(skipIndex);
         sb.append(", overwrite=").append(overwrite);
         sb.append(", outdir='").append(outdir).append('\'');
@@ -133,12 +133,12 @@ public class IndividualQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public List<String> getSkip() {
-        return skip;
+    public List<String> getSkipAnalysis() {
+        return skipAnalysis;
     }
 
-    public IndividualQcAnalysisParams setSkip(List<String> skip) {
-        this.skip = skip;
+    public IndividualQcAnalysisParams setSkipAnalysis(List<String> skipAnalysis) {
+        this.skipAnalysis = skipAnalysis;
         return this;
     }
 

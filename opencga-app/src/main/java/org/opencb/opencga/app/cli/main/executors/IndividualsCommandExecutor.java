@@ -19,6 +19,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -27,7 +28,6 @@ import org.opencb.opencga.core.models.individual.IndividualAclUpdateParams;
 import org.opencb.opencga.core.models.individual.IndividualCreateParams;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
-import org.opencb.opencga.core.models.individual.IndividualQualityControlStatus;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.individual.Location;
@@ -453,7 +453,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "qualityControlStatus.date",commandOptions.qualityControlStatusDate, true);
             putNestedIfNotEmpty(beanParams, "qualityControlStatus.version",commandOptions.qualityControlStatusVersion, true);
             putNestedIfNotEmpty(beanParams, "qualityControlStatus.commit",commandOptions.qualityControlStatusCommit, true);
-            putNestedIfNotNull(beanParams, "qualityControlStatus.code",commandOptions.qualityControlStatusCode, true);
             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
 
             individualUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()

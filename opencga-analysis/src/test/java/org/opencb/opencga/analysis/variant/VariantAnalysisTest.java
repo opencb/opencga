@@ -71,6 +71,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
@@ -83,7 +84,10 @@ import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
-import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -775,7 +779,7 @@ public class VariantAnalysisTest {
         System.out.println("outDir = " + outDir);
 
         SampleQualityControl qc = new SampleQualityControl();
-        SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc).setQualityControlStatus(new SampleQualityControlStatus());
+        SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc).setQualityControlStatus(new QualityControlStatus());
         catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
 
         SampleQcAnalysisParams params = new SampleQcAnalysisParams();
@@ -783,7 +787,7 @@ public class VariantAnalysisTest {
         params.setVsId("test");
         params.setVsDescription("Description test");
         params.setVsQuery(new AnnotationVariantQueryParams());
-        params.setSkip(Arrays.asList(SIGNATURE_ANALYSIS_ID, GENOME_PLOT_ANALYSIS_ID));
+        params.setSkipAnalysis(Arrays.asList(SIGNATURE_ANALYSIS_ID, GENOME_PLOT_ANALYSIS_ID));
 
         toolRunner.execute(SampleVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
                 outDir, null, false, token);
