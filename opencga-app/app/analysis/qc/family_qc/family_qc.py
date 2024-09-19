@@ -410,7 +410,7 @@ class FamilyQCExecutor:
         # Return dict/json with plink, inferred, reported and validation results
         return relatedness_results
 
-    def relatedness_results_json(self, relatedness_results, outdir_fpath):
+    def generate_relatedness_results_file(self, relatedness_results, outdir_fpath):
         relatedness_output_dir_fpath = outdir_fpath
 
         # Generating json file with relatedness results
@@ -435,16 +435,13 @@ class FamilyQCExecutor:
         # Filtering VCF and renaming variants
         filtered_vcf_fpath = self.filter_rename_variants_vcf(pop_freq_fpath, relatedness_output_dir_fpath)
         # Performing IBD analysis from PLINK
-        method, plink_genome_fpath = self.relatedness_plink(filtered_vcf_fpath, pop_freq_fpath, pop_exclude_var_fpath,
-                                                            relatedness_output_dir_fpath)
+        method, plink_genome_fpath = self.relatedness_plink(filtered_vcf_fpath, pop_freq_fpath, pop_exclude_var_fpath, relatedness_output_dir_fpath)
         # Inferring family relationships
-        relatedness_inference_dict = self.relatedness_inference(relatedness_thresholds_fpath, method,
-                                                                plink_genome_fpath)
+        relatedness_inference_dict = self.relatedness_inference(relatedness_thresholds_fpath, method, plink_genome_fpath)
         # Getting reported family relationships and validating inferred vs reported results
         relatedness_results_dict = self.relatedness_report(relatedness_inference_dict)
         # Generating file with results
-        relatedness_results_json_fpath = self.relatedness_results_json(relatedness_results_dict,
-                                                                       relatedness_output_dir_fpath)
+        relatedness_results_json_fpath = self.generate_relatedness_results_file(relatedness_results_dict, relatedness_output_dir_fpath)
 
     def run(self):
         # Checking data
