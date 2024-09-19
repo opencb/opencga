@@ -9,7 +9,20 @@ jobs:
     name: Execute JUnit and Jacoco tests
     runs-on: ubuntu-22.04
     steps:
-      - name: Clone OpenCGA Enterprise branch '${{ github.event.inputs.branch }}'
+      - name: Retrieve secrets from Keeper
+        id: ksecrets
+        uses: Keeper-Security/ksm-action@master
+        with:
+          keeper-secret-config: ${{ secrets.KEEPER_SM_GH_ZETTAGENOMICS }}
+          secrets: |
+            AZURE_KUBE_CONFIG/field/Secret Value > env:AZURE_KUBE_CONFIG
+            DOCKER_HUB_USER/field/Secret Value > env:DOCKER_HUB_USER
+            DOCKER_HUB_PASSWORD/field/Secret Value > env:DOCKER_HUB_PASSWORD
+            SSH_TESTING_SERVER_HOST/field/Secret Value > env:SSH_HOST
+            SSH_TESTING_SERVER_PORT/field/Secret Value > env:SSH_PORT
+            SSH_TESTING_SERVER_USER/field/Secret Value > env:SSH_USER
+            SSH_TESTING_SERVER_PASSWORD/field/Secret Value > env:SSH_PASS
+      - name: Clone OpenCGA Enterprise branch '${{ github.event.pull_request.head.ref }}'
         uses: actions/checkout@v4
         with:
           repository: zetta-genomics/opencga-enterprise
@@ -19,8 +32,8 @@ jobs:
         name: Get current branch for opencga from 'pom.xml' property
         run: |
           pwd
-          chmod +x ./.github/workflows/scripts/xetabase-branch.sh
-          opencga_branch=$(./.github/workflows/scripts/xetabase-branch.sh  ${{ github.event.pull_request.head.ref }})
+          chmod +x ./.github/workflows/scripts/get-opencga-xetabase-branch.sh
+          opencga_branch=$(./.github/workflows/scripts/get-opencga-xetabase-branch.sh  ${{ github.event.pull_request.head.ref }})
           echo "__OpenCGA ref:__ \"${opencga_branch}\"" | tee -a ${GITHUB_STEP_SUMMARY}
           echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
@@ -42,12 +55,26 @@ jobs:
         with:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
+      - name: DockerHub login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USER }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: K8s Tunnel MongoDB
         run: |
           wget https://dl.k8s.io/release/v1.28.2/bin/linux/amd64/kubectl
           chmod +x ./kubectl
-          echo "${{ secrets.AZURE_KUBE_CONFIG }}" > admin.conf
+          echo "${{ env.AZURE_KUBE_CONFIG }}" > admin.conf
           ./kubectl -n cellbase-db port-forward services/cellbase-rs0-svc 27018:27017 --kubeconfig ./admin.conf &
+      - name: Install sshpass
+        run: sudo apt-get install sshpass
+      - name: Add SSH Host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ env.SSH_PORT }} ${{ env.SSH_HOST }} >> ~/.ssh/known_hosts
+        env:
+          SSH_HOST: ${{ env.SSH_HOST }}
+          SSH_PORT: ${{ env.SSH_PORT }}
       - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, cellbase, opencga and opencga-enterprise
         run: |
-         ./build.sh -t -l runShortTests,runMediumTests -T ${{ github.event.pull_request.head.ref }} -c localhost:27018
+          ./build.sh -t -l runShortTests -d -b -s -T ${{ github.event.pull_request.head.ref }} -c localhost:27018 -H hdp3.1
