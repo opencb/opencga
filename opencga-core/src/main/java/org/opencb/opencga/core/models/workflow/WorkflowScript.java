@@ -4,8 +4,8 @@ import org.opencb.commons.annotations.DataField;
 
 public class WorkflowScript {
 
-    @DataField(id = "filename", description = "File name")
-    private String filename;
+    @DataField(id = "fileName", description = "File name")
+    private String fileName;
 
     @DataField(id = "content", description = "Script content")
     private String content;
@@ -16,8 +16,8 @@ public class WorkflowScript {
     public WorkflowScript() {
     }
 
-    public WorkflowScript(String filename, String content, boolean main) {
-        this.filename = filename;
+    public WorkflowScript(String fileName, String content, boolean main) {
+        this.fileName = fileName;
         this.content = content;
         this.main = main;
     }
@@ -25,19 +25,19 @@ public class WorkflowScript {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("WorkflowScript{");
-        sb.append("filename='").append(filename).append('\'');
+        sb.append("fileName='").append(fileName).append('\'');
         sb.append(", content='").append(content).append('\'');
         sb.append(", main=").append(main);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getFilename() {
-        return filename;
+    public String getFileName() {
+        return fileName;
     }
 
-    public WorkflowScript setFilename(String filename) {
-        this.filename = filename;
+    public WorkflowScript setFileName(String fileName) {
+        this.fileName = fileName;
         return this;
     }
 

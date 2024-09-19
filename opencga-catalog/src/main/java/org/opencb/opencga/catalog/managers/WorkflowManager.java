@@ -173,18 +173,10 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        ObjectMap updateMap = null;
-        try {
-            if (updateParams != null) {
-                updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams));
-            }
-        } catch (JsonProcessingException e) {
-            throw new CatalogException("Could not parse WorkflowUpdateParams object: " + e.getMessage(), e);
-        }
 
         ObjectMap auditParams = new ObjectMap()
                 .append("workflowId", workflowId)
-                .append("updateParams", updateMap)
+                .append("updateParams", updateParams)
                 .append("options", options)
                 .append("token", token);
 
@@ -207,6 +199,26 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                     INCLUDE_WORKFLOW_IDS, userId, false).first();
             id = workflow.getId();
             uuid = workflow.getUuid();
+
+            if (updateParams == null) {
+                throw new CatalogException("Missing parameters to update the workflow.");
+            }
+
+            if (updateParams.getManager() != null) {
+                if (updateParams.getManager().getId() == null) {
+                    throw new CatalogException("Manager id cannot be left empty.");
+                }
+                if (StringUtils.isEmpty(updateParams.getManager().getVersion())) {
+                    throw new CatalogException("Manager version cannot be left empty.");
+                }
+            }
+
+            ObjectMap updateMap;
+            try {
+                updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse WorkflowUpdateParams object: " + e.getMessage(), e);
+            }
 
             // 2. Update workflow object
             OpenCGAResult<Workflow> insert = getWorkflowDBAdaptor(organizationId).update(workflow.getUid(), updateMap, options);
@@ -563,7 +575,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         workflow.setScripts(workflow.getScripts() != null ? workflow.getScripts() : Collections.emptyList());
         boolean main = false;
         for (WorkflowScript script : workflow.getScripts()) {
-            ParamUtils.checkIdentifier(script.getFilename(), SCRIPTS.key() + ".id");
+            ParamUtils.checkIdentifier(script.getFileName(), SCRIPTS.key() + ".id");
             ParamUtils.checkParameter(script.getContent(), SCRIPTS.key() + ".content");
             if (script.isMain()) {
                 if (main) {

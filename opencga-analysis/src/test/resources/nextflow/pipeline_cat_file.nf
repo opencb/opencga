@@ -8,7 +8,7 @@ process foo {
 
   script:
   """
-  echo `cat $params.in` world > file.out
+  echo `cat $params.in` world > /data/output/file.out
   """
 }
 

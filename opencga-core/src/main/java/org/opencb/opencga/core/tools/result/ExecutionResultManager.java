@@ -181,6 +181,13 @@ public class ExecutionResultManager {
                     break;
                 }
             }
+            for (ToolStep executionStep : execution.getSteps()) {
+                if (executionStep.getStatus().equals(Status.Type.ERROR)) {
+                    // If there is any ERROR on any step, the final status will be ERROR
+                    finalStatus = Status.Type.ERROR;
+                    break;
+                }
+            }
         } else {
             addError(throwable, execution);
             finalStatus = Status.Type.ERROR;
