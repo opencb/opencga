@@ -410,7 +410,8 @@ class FamilyQCExecutor:
         # Return dict/json with plink, inferred, reported and validation results
         return relatedness_results
 
-    def generate_relatedness_results_file(self, relatedness_results, outdir_fpath):
+    @staticmethod
+    def generate_relatedness_results_file(relatedness_results, outdir_fpath):
         relatedness_output_dir_fpath = outdir_fpath
 
         # Generating json file with relatedness results
@@ -424,7 +425,7 @@ class FamilyQCExecutor:
         return relatedness_results_fpath
 
     def relatedness(self):
-        # Set up. Prepare reference file paths to use them later:
+        # Setup. Prepare reference file paths to use them later:
         pop_freq_fpath = "/path/to/pop_freq_prune_in.frq"
         pop_exclude_var_fpath = "/path/to/pop_exclude_var.prune.out"
         relatedness_thresholds_fpath = "/path/to/relatedness_thresholds.tsv"
