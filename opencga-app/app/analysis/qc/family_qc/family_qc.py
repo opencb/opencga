@@ -288,13 +288,11 @@ class FamilyQCExecutor:
         else:
             reported_result = set(reported_result.split(', '))
             inferred_result = set(inferred_result.split(', '))
-            if len(reported_result) != len(inferred_result):
-                validation = "FAIL"
+            if reported_result == inferred_result or reported_result.issubset(inferred_result):
+                validation = "PASS"
             else:
-                if reported_result == inferred_result:
-                    validation = "PASS"
-                else:
-                    validation = "FAIL"
+                validation = "FAIL"
+
         # Return validation result
         return validation
 
@@ -364,27 +362,23 @@ class FamilyQCExecutor:
         # Getting reported family relationship block:
         relatedness_results = relatedness_inference_results
         for score_result in relatedness_inference_results["scores"]:
-            LOGGER.debug(
-                'Getting reported relatedness information for sample {} and sample {}'.format(score_result["sampleId1"],
-                                                                                              score_result[
-                                                                                                  "sampleId2"]))
+            LOGGER.debug('Getting reported relatedness information for sample {} and sample {}'.format(score_result["sampleId1"], score_result["sampleId2"]))
             reported_relationship = []
             individual1_info = samples_individuals[score_result["sampleId1"]]
             individual2_info = samples_individuals[score_result["sampleId2"]]
             if individual1_info["individualId"] == "" or individual2_info["individualId"] == "":
-                LOGGER.warning(
-                    'No individual information available for sample {} and sample {}). Hence reported family relationship UNKNOWN'.format(
+                LOGGER.warning('No individual information available for sample {} and sample {}). Hence reported family relationship UNKNOWN'.format(
                         score_result["sampleId1"], score_result["sampleId2"]))
                 relatedness_results["scores"]["reportedRelationship"] = "UNKNOWN"
                 continue
             else:
                 unknown_results = [False, False]
                 if individual1_info["individualId"] in individual2_info["familyMembersRoles"].keys():
-                    reported_relationship.append(
-                        individual2_info["familyMembersRoles"][individual1_info["individualId"]])
+                    reported_relationship.append(individual2_info["familyMembersRoles"][individual1_info["individualId"]])
                 else:
                     reported_relationship.append("UNKNOWN")
                     unknown_results[0] = True
+
                 if individual2_info["individualId"] in individual1_info["familyMembersRoles"].keys():
                     reported_relationship.append(
                         individual1_info["familyMembersRoles"][individual2_info["individualId"]])
@@ -401,25 +395,23 @@ class FamilyQCExecutor:
                 elif any(unknown_results):
                     LOGGER.warning(
                         'Family relationship discrepancy found for sample {} (individual: {}) and sample {} (individual: {}). Hence reported family relationship UNKNOWN'.format(
-                            score_result["sampleId1"], individual1_info["individualId"], score_result["sampleId2"],
-                            individual2_info["individualId"]))
+                            score_result["sampleId1"], individual1_info["individualId"], score_result["sampleId2"],individual2_info["individualId"]))
                     score_result["reportedRelationship"] = "UNKNOWN"
                 else:
                     score_result["reportedRelationship"] = ', '.join(reported_relationship)
                     LOGGER.info(
                         "Family relationship reported for sample {} (individual: {}) and sample {} (individual: {})".format(
-                            score_result["sampleId1"], individual1_info["individualId"], score_result["sampleId2"],
-                            individual2_info["individualId"]))
+                            score_result["sampleId1"], individual1_info["individualId"], score_result["sampleId2"],individual2_info["individualId"]))
 
             # Validating reported vs inferred family relationship results block:
-            validation_result = FamilyQCExecutor.relatedness_validation(score_result["reportedRelationship"],
-                                                            score_result["inferredRelationship"])
+            validation_result = FamilyQCExecutor.relatedness_validation(score_result["reportedRelationship"], score_result["inferredRelationship"])
             score_result["validation"] = validation_result
 
         # Return dict/json with plink, inferred, reported and validation results
         return relatedness_results
 
-    def relatedness_results_json(self, relatedness_results, outdir_fpath):
+    @staticmethod
+    def generate_relatedness_results_file(relatedness_results, outdir_fpath):
         relatedness_output_dir_fpath = outdir_fpath
 
         # Generating json file with relatedness results
@@ -433,7 +425,7 @@ class FamilyQCExecutor:
         return relatedness_results_fpath
 
     def relatedness(self):
-        # Set up. Prepare reference file paths to use them later:
+        # Setup. Prepare reference file paths to use them later:
         pop_freq_fpath = "/path/to/pop_freq_prune_in.frq"
         pop_exclude_var_fpath = "/path/to/pop_exclude_var.prune.out"
         relatedness_thresholds_fpath = "/path/to/relatedness_thresholds.tsv"
@@ -444,16 +436,13 @@ class FamilyQCExecutor:
         # Filtering VCF and renaming variants
         filtered_vcf_fpath = self.filter_rename_variants_vcf(pop_freq_fpath, relatedness_output_dir_fpath)
         # Performing IBD analysis from PLINK
-        method, plink_genome_fpath = self.relatedness_plink(filtered_vcf_fpath, pop_freq_fpath, pop_exclude_var_fpath,
-                                                            relatedness_output_dir_fpath)
+        method, plink_genome_fpath = self.relatedness_plink(filtered_vcf_fpath, pop_freq_fpath, pop_exclude_var_fpath, relatedness_output_dir_fpath)
         # Inferring family relationships
-        relatedness_inference_dict = self.relatedness_inference(relatedness_thresholds_fpath, method,
-                                                                plink_genome_fpath)
+        relatedness_inference_dict = self.relatedness_inference(relatedness_thresholds_fpath, method, plink_genome_fpath)
         # Getting reported family relationships and validating inferred vs reported results
         relatedness_results_dict = self.relatedness_report(relatedness_inference_dict)
         # Generating file with results
-        relatedness_results_json_fpath = self.relatedness_results_json(relatedness_results_dict,
-                                                                       relatedness_output_dir_fpath)
+        relatedness_results_json_fpath = self.generate_relatedness_results_file(relatedness_results_dict, relatedness_output_dir_fpath)
 
     def run(self):
         # Checking data
