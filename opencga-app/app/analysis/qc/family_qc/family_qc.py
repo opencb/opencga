@@ -312,7 +312,7 @@ class FamilyQCExecutor:
                     relationship_key = value
                     relationship_groups_thresholds_dict[relationship_key] = {}
                 else:
-                    relationship_groups_thresholds_dict[relationship_key][relatedness_thresholds_file_header[column]] = value
+                    relationship_groups_thresholds_dict[relationship_key][relatedness_thresholds_file_header[column]] = float(value)
 
         # Reading plink genome file (.genome)
         LOGGER.debug('Getting PLINK results from file: "{}"'.format(plink_genome_fpath))
@@ -339,10 +339,10 @@ class FamilyQCExecutor:
                 inference_groups = []
                 for relationship, values in relationship_groups_thresholds_dict.items():
                     # Check if PI_HAT, Z0, Z1, Z2 values (from PLINK .genome file) are within range (internal thresholds)
-                    if (values['minPiHat'] <= score["values"]["PiHat"] <= values['maxPiHat']) and (
-                            values['minZ0'] <= score["values"]["z0"] <= values['maxZ0']) and (
-                            values['minZ1'] <= score["values"]["z1"] <= values['maxZ1']) and (
-                            values['minZ2'] <= score["values"]["z2"] <= values['maxZ2']):
+                    if ((values['minPiHat']) <= float(score["values"]["PiHat"]) <= values['maxPiHat']) and (
+                            values['minZ0'] <= float(score["values"]["z0"]) <= values['maxZ0']) and (
+                            values['minZ1'] <= float(score["values"]["z1"]) <= values['maxZ1']) and (
+                            values['minZ2'] <= float(score["values"]["z2"]) <= values['maxZ2']):
                         inference_groups.append(str(relationship))
                         continue
                 if len(inference_groups) == 0:
