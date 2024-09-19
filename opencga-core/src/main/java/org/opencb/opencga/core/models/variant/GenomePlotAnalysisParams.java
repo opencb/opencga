@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+@Deprecated
 public class GenomePlotAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Genome plot analysis params to customize the plot. The configuration file includes the title, "
             + " the plot density (i.e., the number of points to display), the general query and the list of tracks. Currently, the supported "

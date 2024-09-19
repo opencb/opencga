@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.variant;
+package org.opencb.opencga.core.models.variant.qc;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -42,72 +43,106 @@ public class SampleQcAnalysisParams extends ToolParams {
     private List<String> samples;
 
     // Variant stats params
-    @DataField(id = "vsId", description = FieldConstants.VARIANT_STATS_ID_DESCRIPTION)
+    @DataField(id = "statsParams", description = FieldConstants.SAMPLE_QC_VARIANT_STATS_PARAMS_DESCRIPTION)
+    private SampleQcVariantStatsAnalysisParams statsParams;
+
+    @Deprecated
+    @DataField(id = "vsId", description = FieldConstants.VARIANT_STATS_ID_DESCRIPTION, deprecated = true)
     private String vsId;
 
-    @DataField(id = "vsDescription", description = FieldConstants.VARIANT_STATS_DESCRIPTION_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "vsDescription", description = FieldConstants.VARIANT_STATS_DESCRIPTION_DESCRIPTION, deprecated = true)
     private String vsDescription;
 
-    @DataField(id = "vsQuery", description = FieldConstants.VARIANT_STATS_QUERY_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "vsQuery", description = FieldConstants.VARIANT_STATS_QUERY_DESCRIPTION, deprecated = true)
     private AnnotationVariantQueryParams vsQuery;
 
-    // Mutationsl signature params
+    // Mutational signature params
+    @DataField(id = "signatureParams", description = FieldConstants.SAMPLE_QC_SIGNATURE_PARAMS_DESCRIPTION)
+    private SampleQcSignatureAnalysisParams signatureParams;
 
-    @DataField(id = "msId", description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "msId", description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION, deprecated = true)
     private String msId;
 
-    @DataField(id = "msDescription", description = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "msDescription", description = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION, deprecated = true)
     private String msDescription;
 
-    @DataField(id = "msQuery", description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "msQuery", description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION, deprecated = true)
     private String msQuery;
 
-    @DataField(id = "msFitId", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "msFitId", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION, deprecated = true)
     private String msFitId;
 
-    @DataField(id = "msFitMethod", defaultValue = "FitMS", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "msFitMethod", defaultValue = "FitMS", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION,
+            deprecated = true)
     private String msFitMethod;
 
-    @DataField(id = "msFitNBoot", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_N_BOOT_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "msFitNBoot", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_N_BOOT_DESCRIPTION, deprecated = true)
     private Integer msFitNBoot;
 
+    @Deprecated
     @DataField(id = "msFitSigVersion", defaultValue = "RefSigv2",
-            description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIG_VERSION_DESCRIPTION)
+            description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIG_VERSION_DESCRIPTION, deprecated = true)
     private String msFitSigVersion;
 
-    @DataField(id = "msFitOrgan", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_ORGAN_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "msFitOrgan", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_ORGAN_DESCRIPTION, deprecated = true)
     private String msFitOrgan;
 
+    @Deprecated
     @DataField(id = "msFitThresholdPerc", defaultValue = "5f",
-            description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PERC_DESCRIPTION)
+            description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PERC_DESCRIPTION, deprecated = true)
     private Float msFitThresholdPerc;
 
+    @Deprecated
     @DataField(id = "msFitThresholdPval", defaultValue = "0.05f",
-            description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PVAL_DESCRIPTION)
+            description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PVAL_DESCRIPTION, deprecated = true)
     private Float msFitThresholdPval;
 
-    @DataField(id = "msFitMaxRareSigs", defaultValue = "1", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_MAX_RARE_SIGS_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "msFitMaxRareSigs", defaultValue = "1", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_MAX_RARE_SIGS_DESCRIPTION,
+            deprecated = true)
     private Integer msFitMaxRareSigs;
 
-    @DataField(id = "msFitSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIGNATURES_FILE_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "msFitSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIGNATURES_FILE_DESCRIPTION,
+            deprecated = true)
     private String msFitSignaturesFile;
 
-    @DataField(id = "msFitRareSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_RARE_SIGNATURES_FILE_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "msFitRareSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_RARE_SIGNATURES_FILE_DESCRIPTION,
+            deprecated = true)
     private String msFitRareSignaturesFile;
 
     // Genome plot
+    @DataField(id = "genomePlotParams", description = FieldConstants.SAMPLE_QC_GENOME_PLOT_PARAMS_DESCRIPTION)
+    private SampleQcGenomePlotAnalysisParams genomePlotParams;
 
-    @DataField(id = "gpId", description = FieldConstants.GENOME_PLOT_ID_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "gpId", description = FieldConstants.GENOME_PLOT_ID_DESCRIPTION, deprecated = true)
     private String gpId;
 
-    @DataField(id = "gpDescription", description = FieldConstants.GENOME_PLOT_DESCRIPTION_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "gpDescription", description = FieldConstants.GENOME_PLOT_DESCRIPTION_DESCRIPTION, deprecated = true)
     private String gpDescription;
 
-    @DataField(id = "gpConfigFile", description = FieldConstants.GENOME_PLOT_CONFIGURATION_FILE_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "gpConfigFile", description = FieldConstants.GENOME_PLOT_CONFIGURATION_FILE_DESCRIPTION, deprecated = true)
     private String gpConfigFile;
 
     // Other
-    @DataField(id = "skipAnalysis", description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
+    @Deprecated
+    @DataField(id = "skip", description = FieldConstants.SAMPLE_QC_SKIP_ANALYSIS_DESCRIPTION, deprecated = true)
+    private List<String> skip;
+
+    @DataField(id = "skipAnalysis", description = FieldConstants.SAMPLE_QC_SKIP_ANALYSIS_DESCRIPTION)
     private List<String> skipAnalysis;
 
     @DataField(id = "skipIndex", description = FieldConstants.QC_SKIP_INDEX_DESCRIPTION)
@@ -159,14 +194,30 @@ public class SampleQcAnalysisParams extends ToolParams {
         this.outdir = outdir;
     }
 
+    public SampleQcAnalysisParams(List<String> samples, SampleQcVariantStatsAnalysisParams statsParams,
+                                  SampleQcSignatureAnalysisParams signatureParams, SampleQcGenomePlotAnalysisParams genomePlotParams,
+                                  List<String> skipAnalysis, Boolean skipIndex, Boolean overwrite, String resourcesDir, String outdir) {
+        this.samples = samples;
+        this.statsParams = statsParams;
+        this.signatureParams = signatureParams;
+        this.genomePlotParams = genomePlotParams;
+        this.skipAnalysis = skipAnalysis;
+        this.skipIndex = skipIndex;
+        this.overwrite = overwrite;
+        this.resourcesDir = resourcesDir;
+        this.outdir = outdir;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleQcAnalysisParams{");
         sb.append("sample='").append(sample).append('\'');
         sb.append(", samples=").append(samples);
+        sb.append(", statsParams=").append(statsParams);
         sb.append(", vsId='").append(vsId).append('\'');
         sb.append(", vsDescription='").append(vsDescription).append('\'');
         sb.append(", vsQuery=").append(vsQuery);
+        sb.append(", signatureParams=").append(signatureParams);
         sb.append(", msId='").append(msId).append('\'');
         sb.append(", msDescription='").append(msDescription).append('\'');
         sb.append(", msQuery='").append(msQuery).append('\'');
@@ -180,9 +231,11 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", msFitMaxRareSigs=").append(msFitMaxRareSigs);
         sb.append(", msFitSignaturesFile='").append(msFitSignaturesFile).append('\'');
         sb.append(", msFitRareSignaturesFile='").append(msFitRareSignaturesFile).append('\'');
+        sb.append(", genomePlotParams=").append(genomePlotParams);
         sb.append(", gpId='").append(gpId).append('\'');
         sb.append(", gpDescription='").append(gpDescription).append('\'');
         sb.append(", gpConfigFile='").append(gpConfigFile).append('\'');
+        sb.append(", skip=").append(skip);
         sb.append(", skipAnalysis=").append(skipAnalysis);
         sb.append(", skipIndex=").append(skipIndex);
         sb.append(", overwrite=").append(overwrite);
@@ -210,6 +263,15 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
+    public SampleQcVariantStatsAnalysisParams getStatsParams() {
+        return statsParams;
+    }
+
+    public SampleQcAnalysisParams setStatsParams(SampleQcVariantStatsAnalysisParams statsParams) {
+        this.statsParams = statsParams;
+        return this;
+    }
+
     public String getVsId() {
         return vsId;
     }
@@ -234,6 +296,15 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setVsQuery(AnnotationVariantQueryParams vsQuery) {
         this.vsQuery = vsQuery;
+        return this;
+    }
+
+    public SampleQcSignatureAnalysisParams getSignatureParams() {
+        return signatureParams;
+    }
+
+    public SampleQcAnalysisParams setSignatureParams(SampleQcSignatureAnalysisParams signatureParams) {
+        this.signatureParams = signatureParams;
         return this;
     }
 
@@ -354,6 +425,15 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
+    public SampleQcGenomePlotAnalysisParams getGenomePlotParams() {
+        return genomePlotParams;
+    }
+
+    public SampleQcAnalysisParams setGenomePlotParams(SampleQcGenomePlotAnalysisParams genomePlotParams) {
+        this.genomePlotParams = genomePlotParams;
+        return this;
+    }
+
     public String getGpId() {
         return gpId;
     }
@@ -378,6 +458,15 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setGpConfigFile(String gpConfigFile) {
         this.gpConfigFile = gpConfigFile;
+        return this;
+    }
+
+    public List<String> getSkip() {
+        return skip;
+    }
+
+    public SampleQcAnalysisParams setSkip(List<String> skip) {
+        this.skip = skip;
         return this;
     }
 

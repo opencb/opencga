@@ -20,6 +20,7 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
+@Deprecated
 public class MutationalSignatureAnalysisParams extends ToolParams {
 
     public static final String SIGNATURE_CATALOGUE_SKIP_VALUE = "catalogue";

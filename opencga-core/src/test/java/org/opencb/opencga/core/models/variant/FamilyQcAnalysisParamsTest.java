@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.Test;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.variant.qc.FamilyQcAnalysisParams;
 
 import java.io.IOException;
 import java.nio.file.Files;

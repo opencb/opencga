@@ -2,7 +2,6 @@ package org.opencb.opencga.core.api;
 
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
-import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 
 public class FieldConstants {
 
@@ -99,10 +98,7 @@ public class FieldConstants {
     public static final String SAMPLE_QUALITY_CONTROL_FILES_DESCRIPTION = "Files used for the quality control of the sample.";
     public static final String SAMPLE_QUALITY_CONTROL_COMMENTS_DESCRIPTION = "Comments for the quality control of the sample.";
     public static final String SAMPLE_QUALITY_CONTROL_VARIANT_DESCRIPTION = "Describes variant quality control.";
-    public static final String SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION = "Quality control metrics to skip. Valid values are: "
-            + SampleQcAnalysisParams.VARIANT_STATS_SKIP_VALUE + ", " + SampleQcAnalysisParams.SIGNATURE_SKIP_VALUE + ", "
-            + SampleQcAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE + ", " + SampleQcAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE + ", "
-            + SampleQcAnalysisParams.GENOME_PLOT_SKIP_VALUE;
+    public static final String SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION = "Quality control metrics to skip.";
     public static final String SAMPLE_QUALITY_CONTROL_OVERWRITE_DESCRIPTION = "Overwrite sample quality control in OpenCGA catalog.";
 
     //SampleVariantQualityControlMetrics
@@ -177,17 +173,19 @@ public class FieldConstants {
 
     public static final String DISORDER_ID = "Disorder ID.";
 
-    // Quality control
+    // QC data model
+    public static final String QC_FILES_DESCRIPTION = "File IDs related to the quality control";
+    public static final String QC_COMMENTS_DESCRIPTION = "Comments related to the quality control";
+
+    // QC parameters
     public static final String INFERRED_SEX_ID = "inferred-sex";
     public static final String MENDELIAN_ERRORS_ID = "mendelian-errors";
     public static final String RELATEDNESS_ID = "relatedness";
     public static final String QC_SKIP_INDEX_DESCRIPTION = "Do not save the computed quality control in catalog";
     public static final String QC_OVERWRITE_DESCRIPTION = "Overwrite quality control in catalog";
-    public static final String QC_FILES_DESCRIPTION = "File IDs related to the quality control";
-    public static final String QC_COMMENTS_DESCRIPTION = "Comments related to the quality control";
     public static final String QC_RESOURCES_DIR_DESCRIPTION = "Directory where the QC resource files are located";
 
-    // Family quality control
+    // Family QC parameters
     public static final String FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION = "List of family IDs";
     @Deprecated
     public static final String FAMILY_QC_FAMILY_ID_DESCRIPTION = "Family ID";
@@ -196,7 +194,7 @@ public class FieldConstants {
             + " computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G + ":CEU>0.35 or cohort:ALL>0.05";
     public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_REPORT_DESCRIPTION = "Relatedness report for family QC";
 
-    // Individual quality control
+    // Individual QC parameters
     public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_LIST_DESCRIPTION = "List of individual IDs";
     @Deprecated
     public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION = "Individual ID";
@@ -210,10 +208,46 @@ public class FieldConstants {
     public static final String INDIVIDUAL_QC_RELATEDNESS_DESCRIPTION = "Relatedness results for the individual";
     public static final String INDIVIDUAL_QC_MENDELIAN_ERROR_DESCRIPTION = "Mendelian error results for the individual";
 
-
-    // Sample quality control
-
+    // Sample QC parameters
     public static final String SAMPLE_QC_SAMPLE_ID_LIST_DESCRIPTION = "List of sample IDs";
+    public static final String SAMPLE_QC_SKIP_ANALYSIS_DESCRIPTION = "Quality control analysis to skip";
+    public static final String SAMPLE_QC_VARIANT_STATS_PARAMS_DESCRIPTION = "Sample variant stats parameters";
+    public static final String SAMPLE_QC_VARIANT_STATS_ID_DESCRIPTION = "Sample variant stats ID";
+    public static final String SAMPLE_QC_VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Sample variant stats description";
+    public static final String SAMPLE_QC_VARIANT_STATS_VARIANT_QUERY_DESCRIPTION = "Variant query for Sample variant stats";
+    public static final String SAMPLE_QC_SIGNATURE_PARAMS_DESCRIPTION = "Mutational signature parameters";
+    public static final String SAMPLE_QC_SIGNATURE_ID_DESCRIPTION = "Signature ID";
+    public static final String SAMPLE_QC_SIGNATURE_DESCRIPTION_DESCRIPTION = "Signature description";
+    public static final String SAMPLE_QC_SIGNATURE_VARIANT_QUERY_DESCRIPTION = "Variant query for signature analysis";
+    public static final String SAMPLE_QC_SIGNATURE_FIT_PARAMS_DESCRIPTION = "Signature fitting parameters";
+    public static final String SAMPLE_QC_SIGNATURE_FIT_ID_DESCRIPTION = "Fitting signature ID";
+    public static final String SAMPLE_QC_SIGNATURE_FIT_METHOD_DESCRIPTION = "Either Fit or FitMS. If not specified then FitMS";
+    public static final String SAMPLE_QC_SIGNATURE_FIT_N_BOOT_DESCRIPTION = "Number of bootstrap to be used.";
+    public static final String SAMPLE_QC_SIGNATURE_FIT_SIG_VERSION_DESCRIPTION = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2."
+            + " If not specified RefSigv2.";
+    public static final String SAMPLE_QC_SIGNATURE_FIT_ORGAN_DESCRIPTION = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific"
+            + " signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ"
+            + " will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder,"
+            + " Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET"
+            + " (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.";
+    public static final String SAMPLE_QC_SIGNATURE_FIT_THRESHOLD_PERC_DESCRIPTION = "Threshold in percentage of total mutations in a"
+            + " sample, only exposures larger than THRPERC are considered. If not specified 5.";
+    public static final String SAMPLE_QC_SIGNATURE_FIT_THRESHOLD_PVAL_DESCRIPTION = "P-value to determine the empirical probability that"
+            + " the exposure is lower than the threshold. If not specified then 0.05.";
+    public static final String SAMPLE_QC_SIGNATURE_FIT_MAX_RARE_SIGS_DESCRIPTION = "Maximum number of rare signatures that are allowed to"
+            + " be present in each sample. If not specified 1.";
+    public static final String SAMPLE_QC_SIGNATURE_FIT_SIGNATURES_FILE_DESCRIPTION = "The file name containing mutational signatures. Each"
+            + " signature is in a column, with signature names as column hearders and channel names as row names in the first column with"
+            + " no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are"
+            + " considered common signatures.";
+    public static final String SAMPLE_QC_SIGNATURE_FIT_RARE_SIGNATURES_FILE_DESCRIPTION = "The file name containing mutational signatures."
+            + " Each signature is in a column, with signature names as column hearders and channel names as row names in the first column"
+            + " with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures"
+            + " are considered rare signatures.";
+    public static final String SAMPLE_QC_GENOME_PLOT_PARAMS_DESCRIPTION = "Genome plot parameters";
+    public static final String SAMPLE_QC_GENOME_PLOT_ID_DESCRIPTION = "Genome plot ID";
+    public static final String SAMPLE_QC_GENOME_PLOT_DESCRIPTION_DESCRIPTION = "Genome plot description";
+    public static final String SAMPLE_QC_GENOME_PLOT_CONFIG_FILE_DESCRIPTION = "Genome plot configuration file";
 
     //Status
     public static final String STATUS_DATE_DESCRIPTION = "Date has set the status.";
