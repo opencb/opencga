@@ -92,7 +92,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (CollectionUtils.isNotEmpty(workflow.getTags())) {
             tags.addAll(workflow.getTags());
         }
-//        updateJobInformation(tags, attributes);
+        updateJobInformation(tags, attributes);
 
         this.inputBindings = new LinkedList<>();
         if (MapUtils.isNotEmpty(nextflowParams.getParams())) {
