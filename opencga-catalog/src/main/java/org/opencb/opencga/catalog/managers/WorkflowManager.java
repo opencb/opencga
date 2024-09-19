@@ -563,7 +563,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         workflow.setScripts(workflow.getScripts() != null ? workflow.getScripts() : Collections.emptyList());
         boolean main = false;
         for (WorkflowScript script : workflow.getScripts()) {
-            ParamUtils.checkIdentifier(script.getFilename(), SCRIPTS.key() + ".id");
+            ParamUtils.checkIdentifier(script.getFileName(), SCRIPTS.key() + ".id");
             ParamUtils.checkParameter(script.getContent(), SCRIPTS.key() + ".content");
             if (script.isMain()) {
                 if (main) {

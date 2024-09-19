@@ -15,7 +15,7 @@ public class InputFileUtils {
 
     private final CatalogManager catalogManager;
 
-    private static final Pattern OPERATION_PATTERN = Pattern.compile("^(?i)(ocga://|opencga://)(.+)$");
+    private static final Pattern OPERATION_PATTERN = Pattern.compile("^(?i)(ocga://|opencga://|file://)(.+)$");
 
     private final static Logger logger = LoggerFactory.getLogger(InputFileUtils.class);
 
@@ -31,7 +31,8 @@ public class InputFileUtils {
         Matcher matcher = OPERATION_PATTERN.matcher(file);
 
         if (!matcher.find()) {
-            throw new CatalogException("Invalid OpenCGA file format. Accepted format is 'ocga://<path>' or 'opencga://<path>'");
+            throw new CatalogException("Invalid OpenCGA file format. Accepted format is 'ocga://<path>', 'opencga://<path>' or"
+                    + " 'file://<path>'.");
         }
 
         String filePath = matcher.group(2);

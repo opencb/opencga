@@ -14,10 +14,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
-import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
-import org.opencb.opencga.core.models.workflow.WorkflowCreateParams;
-import org.opencb.opencga.core.models.workflow.WorkflowRepository;
-import org.opencb.opencga.core.models.workflow.WorkflowScript;
+import org.opencb.opencga.core.models.workflow.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
@@ -85,6 +82,7 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
         WorkflowCreateParams workflow = new WorkflowCreateParams()
                 .setId("workflow")
+                .setType(Workflow.Type.OTHER)
 //                .setCommandLine("run nextflow-io/rnaseq-nf -with-docker");
                 .setRepository(new WorkflowRepository("nextflow-io/rnaseq-nf"));
         catalogManager.getWorkflowManager().create(studyFqn, workflow.toWorkflow(), QueryOptions.empty(), ownerToken);
@@ -111,6 +109,7 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         String content = IOUtils.toString(inputStream, "UTF-8");
         return new WorkflowCreateParams()
                 .setId("workflow")
+                .setType(Workflow.Type.OTHER)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", content, true)));
     }
 }
