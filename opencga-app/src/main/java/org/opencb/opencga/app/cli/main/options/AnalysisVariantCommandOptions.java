@@ -1301,8 +1301,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--resources-dir"}, description = "Directory where the QC resource files are located", required = false, arity = 1)
         public String resourcesDir;
     
-        @Parameter(names = {"--skip"}, description = "Individual QC analysis to skip. Valid values are: inferred-sex, mendelian-errors", required = false, arity = 1)
-        public String skip;
+        @Parameter(names = {"--skip-analysis"}, description = "List of individual QC analysis to skip. Valid values are: inferred-sex, mendelian-errors and relatedness (if parents are present)", required = false, arity = 1)
+        public String skipAnalysis;
     
         @Parameter(names = {"--skip-index"}, description = "Do not save the computed quality control in catalog", required = false, arity = 1)
         public Boolean skipIndex;
@@ -2307,8 +2307,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--gp-config-file"}, description = "Genome plot configuration file.", required = false, arity = 1)
         public String gpConfigFile;
     
-        @Parameter(names = {"--skip"}, description = "Quality control metrics to skip. Valid values are: variant-stats, signature, signature-catalogue, signature-fitting, genome-plot", required = false, arity = 1)
-        public String skip;
+        @Parameter(names = {"--skip-analysis"}, description = "Quality control metrics to skip. Valid values are: variant-stats, signature, signature-catalogue, signature-fitting, genome-plot", required = false, arity = 1)
+        public String skipAnalysis;
     
         @Parameter(names = {"--skip-index"}, description = "Do not save the computed quality control in catalog", required = false, arity = 1)
         public Boolean skipIndex;

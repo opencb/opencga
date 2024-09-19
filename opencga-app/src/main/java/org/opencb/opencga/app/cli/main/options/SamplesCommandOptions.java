@@ -712,9 +712,6 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--quality-control-status-commit"}, description = "The body web service commit parameter", required = false, arity = 1)
         public String qualityControlStatusCommit;
     
-        @Parameter(names = {"--quality-control-status-code"}, description = "The body web service code parameter", required = false, arity = 1)
-        public Integer qualityControlStatusCode;
-    
         @Parameter(names = {"--somatic"}, description = "The body web service somatic parameter", required = false, arity = 1)
         public Boolean somatic;
     

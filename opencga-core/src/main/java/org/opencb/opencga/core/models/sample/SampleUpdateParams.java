@@ -22,6 +22,7 @@ import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.ExternalSource;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.common.StatusParams;
 
 import java.util.Collections;
@@ -41,7 +42,7 @@ public class SampleUpdateParams {
     private SampleProcessing processing;
     private SampleCollection collection;
     private SampleQualityControl qualityControl;
-    private SampleQualityControlStatus qualityControlStatus;
+    private QualityControlStatus qualityControlStatus;
     private Boolean somatic;
     private List<Phenotype> phenotypes;
     private List<AnnotationSet> annotationSets;
@@ -53,9 +54,9 @@ public class SampleUpdateParams {
 
     public SampleUpdateParams(String id, String description, String creationDate, String modificationDate, String individualId,
                               ExternalSource source, SampleProcessing processing, SampleCollection collection,
-                              SampleQualityControl qualityControl, SampleQualityControlStatus qualityControlStatus, Boolean somatic,
-                              List<Phenotype> phenotypes,
-                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, StatusParams status) {
+                              SampleQualityControl qualityControl, QualityControlStatus qualityControlStatus, Boolean somatic,
+                              List<Phenotype> phenotypes, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
+                              StatusParams status) {
         this.id = id;
         this.description = description;
         this.creationDate = creationDate;
@@ -205,11 +206,11 @@ public class SampleUpdateParams {
         return this;
     }
 
-    public SampleQualityControlStatus getQualityControlStatus() {
+    public QualityControlStatus getQualityControlStatus() {
         return qualityControlStatus;
     }
 
-    public SampleUpdateParams setQualityControlStatus(SampleQualityControlStatus qualityControlStatus) {
+    public SampleUpdateParams setQualityControlStatus(QualityControlStatus qualityControlStatus) {
         this.qualityControlStatus = qualityControlStatus;
         return this;
     }

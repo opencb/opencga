@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.sample.qc;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -24,7 +25,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.GenomePlot;
-import org.opencb.biodata.models.clinical.qc.HRDetect;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
@@ -37,9 +37,9 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
-import org.opencb.opencga.core.models.sample.SampleQualityControlStatus;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
@@ -57,8 +57,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.core.models.common.QualityControlStatus.COMPUTING;
-import static org.opencb.opencga.core.models.sample.SampleQualityControlStatus.*;
+import static org.opencb.opencga.core.models.common.InternalStatus.READY;
+import static org.opencb.opencga.core.models.common.QualityControlStatus.ERROR;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.JSON;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF_GZ;
@@ -73,22 +73,22 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
     private static final String STATS_QC_STEP = SampleVariantStatsAnalysis.ID + "-qc";
     private static final String SOMATIC_QC_STEP = "somatic-qc";
 
-    // Samples to perform QC and VCF and JSON files for these samples
-    private List<Sample> targetSamples = new ArrayList<>();
-
-    // Set of somatic samples
-    private LinkedList<Sample> targetSomaticSamples = new LinkedList<>();
-    private LinkedList<Path> sampleVcfPaths = new LinkedList<>();
-    private LinkedList<Path> sampleJsonPaths = new LinkedList<>();
-
     @ToolParams
     protected final SampleQcAnalysisParams analysisParams = new SampleQcAnalysisParams();
 
+    // Samples
+    private List<Sample> samples = new ArrayList<>();
+
+    // List of somatic samples, for these we need to create VCF and JSON files
+    private LinkedList<Sample> targetSomaticSamples = new LinkedList<>();
+
+    Map<String, Set<String>> failedAnalysisPerSample = new HashMap<>();
+
     @Override
     protected void check() throws Exception {
-        super.check();
         setUpStorageEngineExecutor(study);
 
+        super.check();
         checkParameters(analysisParams, getStudy(), catalogManager, token);
 
         // Save the somatic samples
@@ -99,123 +99,128 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
                 targetSomaticSamples.add(sample);
             }
         }
+
+        // Check custom resources path
+        userResourcesPath = checkResourcesDir(analysisParams.getResourcesDir(), getStudy(), catalogManager, token);
     }
 
     @Override
     protected List<String> getSteps() {
-        if (Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
-            return Arrays.asList(STATS_QC_STEP, SOMATIC_QC_STEP);
+        List<String> steps = Arrays.asList(PREPARE_QC_STEP);
+        if (CollectionUtils.isEmpty(analysisParams.getSkipAnalysis())) {
+            steps.addAll(Arrays.asList(STATS_QC_STEP, SOMATIC_QC_STEP));
         } else {
-            return Arrays.asList(PREPARE_QC_STEP, STATS_QC_STEP, SOMATIC_QC_STEP, INDEX_QC_STEP);
+            if (!analysisParams.getSkipAnalysis().contains(SampleVariantStatsAnalysis.ID)) {
+                steps.add(STATS_QC_STEP);
+            }
+            if (!analysisParams.getSkipAnalysis().contains(SIGNATURE_ANALYSIS_ID)
+                    || !analysisParams.getSkipAnalysis().contains(GENOME_PLOT_ANALYSIS_ID)) {
+                steps.add(SOMATIC_QC_STEP);
+            }
         }
+        if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
+            steps.add(INDEX_QC_STEP);
+        }
+        return steps;
     }
 
     @Override
     protected void run() throws ToolException {
-        if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
-            step(STATS_QC_STEP, this::prepareQualityControl);
+        List<String> steps = getSteps();
+
+        // Main steps
+        step(PREPARE_QC_STEP, this::prepareQualityControl);
+        if (steps.contains(STATS_QC_STEP)) {
+            step(STATS_QC_STEP, this::runSampleVariantStatsStep);
         }
-        step(STATS_QC_STEP, this::runSampleVariantStatsStep);
-        step(SOMATIC_QC_STEP, this::runSomaticStep);
-        if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
+        if (steps.contains(SOMATIC_QC_STEP)) {
+            step(SOMATIC_QC_STEP, this::runSomaticStep);
+        }
+        if (steps.contains(INDEX_QC_STEP)) {
             step(STATS_QC_STEP, this::indexQualityControl);
         }
+
+        // Clean execution
+        clean();
     }
 
     protected void prepareQualityControl() throws ToolException {
-        // Prepare resource files
-        if (CollectionUtils.isNotEmpty(targetSomaticSamples)) {
-            // Prepare resource files for somatic samples
-            //prepareSignatureResources(analysisParams.getResourcesDir());
-            //prepareHrResources(analysisParams.getResourcesDir());
-            //prepareGenomePlotResources(analysisParams.getResourcesDir());
-        }
-
         try {
             ObjectWriter objectWriter = JacksonUtils.getDefaultObjectMapper().writerFor(Sample.class);
             for (String sampleId : analysisParams.getSamples()) {
                 // Get sample
                 Sample sample = catalogManager.getSampleManager().get(study, sampleId, QueryOptions.empty(), token).first();
 
-                // Decide if quality control has to be performed
-                //   - by checking the quality control status, if it is READY means it has been computed previously, and
-                //   - by checking the flag overwrite
-                if (sample.getInternal() == null || mustPerformQualityControl(sample.getInternal().getQualityControlStatus(),
-                        analysisParams.getOverwrite())) {
+                // Add sample to target sample list, i.e., for those samples, QC will be performed
+                samples.add(sample);
+                failedAnalysisPerSample.put(sample.getId(), new HashSet<>());
 
-                    // Set quality control status to COMPUTING to prevent multiple individual QCs from running simultaneously
-                    // for the same individual
-                    SampleQualityControlStatus qcStatus = new SampleQualityControlStatus(COMPUTING,
-                            "Performing " + SAMPLE_QC_TYPE + " QC");
-                    if (!setQualityControlStatus(qcStatus, sample.getId(), SAMPLE_QC_TYPE)) {
-                        continue;
+                // Only somatic samples need VCF and JSON files to compute signature, genome plot,...
+                if (sample.isSomatic()) {
+                    targetSomaticSamples.add(sample);
+
+                    // Export sample variants (VCF format)
+                    // Create the query based on whether a trio is present or not
+                    Query query = new Query();
+                    query.append(VariantQueryParam.SAMPLE.key(), sampleId + ":0/1,1/1")
+                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId)
+                            .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
+                            .append(VariantQueryParam.STUDY.key(), study)
+                            .append(VariantQueryParam.TYPE.key(), VariantType.SNV)
+                            .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
+                                    .split(",")));
+
+                    // Create query options
+                    QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, "id,studies.samples");
+
+                    // Export to VCF.GZ format
+                    String basename = getOutDir().resolve(sampleId).toAbsolutePath().toString();
+                    getVariantStorageManager().exportData(basename, VCF_GZ, null, query, queryOptions, token);
+
+                    // Check VCF file
+                    Path vcfPath = Paths.get(basename + "." + VCF_GZ.getExtension());
+                    if (!Files.exists(vcfPath)) {
+                        throw new ToolException("Something wrong happened when exporting VCF file for sample ID '" + sampleId + "'. VCF"
+                                + " file " + vcfPath + " was not created. Export query = " + query.toJson() + "; export query"
+                                + " options = " + queryOptions.toJson());
                     }
+                    vcfPaths.add(vcfPath);
 
-                    // Add sample to target sample list, i.e., for those samples, QC will be performed
-                    targetSamples.add(sample);
+                    // Export individual (JSON format)
+                    Path jsonPath = Paths.get(basename + "." + JSON.getExtension());
+                    objectWriter.writeValue(jsonPath.toFile(), sample);
 
-                    // Only somatic samples need VCF and JSON files to compute signature, genome plot,...
-                    if (sample.isSomatic()) {
-                        targetSomaticSamples.add(sample);
-
-                        // Create directory to save variants and sample files
-                        Path sampleOutPath = checkDirectory(getOutDir().resolve(sampleId));
-
-                        // Export sample variants (VCF format)
-                        // Create the query based on whether a trio is present or not
-                        Query query = new Query();
-                        query.append(VariantQueryParam.SAMPLE.key(), sampleId + ":0/1,1/1")
-                                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId)
-                                .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
-                                .append(VariantQueryParam.STUDY.key(), study)
-                                .append(VariantQueryParam.TYPE.key(), VariantType.SNV)
-                                .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
-                                        .split(",")));
-
-                        // Create query options
-                        QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, "id,studies.samples");
-
-                        // Export to VCF.GZ format
-                        String basename = sampleOutPath.resolve(sampleId).toAbsolutePath().toString();
-                        getVariantStorageManager().exportData(basename, VCF_GZ, null, query, queryOptions, token);
-
-                        // Check VCF file
-                        Path sampleVcfPath = Paths.get(basename + "." + VCF_GZ.getExtension());
-                        if (!Files.exists(sampleVcfPath)) {
-                            throw new ToolException("Something wrong happened when exporting VCF file for sample ID '" + sampleId + "'. VCF"
-                                    + " file " + sampleVcfPath + " was not created. Export query = " + query.toJson() + "; export query"
-                                    + " options = " + queryOptions.toJson());
-                        }
-                        sampleVcfPaths.add(sampleVcfPath);
-
-                        // Export individual (JSON format)
-                        Path sampleJsonPath = Paths.get(basename + "." + JSON.getExtension());
-                        objectWriter.writeValue(sampleJsonPath.toFile(), sample);
-
-                        // Check sample JSON file
-                        if (!Files.exists(sampleJsonPath)) {
-                            throw new ToolException("Something wrong happened when saving JSON file for sample ID '" + sampleId + "'. JSON"
-                                    + " file " + sampleJsonPath + " was not created.");
-                        }
-                        sampleJsonPaths.add(sampleJsonPath);
+                    // Check sample JSON file
+                    if (!Files.exists(jsonPath)) {
+                        throw new ToolException("Something wrong happened when saving JSON file for sample ID '" + sampleId + "'. JSON"
+                                + " file " + jsonPath + " was not created.");
                     }
+                    jsonPaths.add(jsonPath);
                 }
             }
         } catch (CatalogException | IOException | StorageEngineException e) {
+            // Clean execution
+            clean();
             throw new ToolException(e);
+        }
+
+        // Prepare resource files
+        if (CollectionUtils.isNotEmpty(targetSomaticSamples)) {
+            prepareResources();
         }
     }
 
     protected void runSampleVariantStatsStep() throws ToolException {
-        if (CollectionUtils.isEmpty(targetSamples)) {
+        if (CollectionUtils.isEmpty(samples)) {
             addWarning("No samples available for quality control. Please check your input parameters.");
             return;
         }
 
+        boolean callToolRunner;
         ToolRunner toolRunner = new ToolRunner(getOpencgaHome().toAbsolutePath().toString(), getCatalogManager(),
                 getVariantStorageManager());
 
-        for (Sample sample : targetSamples) {
+        for (Sample sample : samples) {
             SampleVariantStatsAnalysisParams statsParams = new SampleVariantStatsAnalysisParams()
                     .setSample(Collections.singletonList(sample.getId()))
                     .setIndex(!Boolean.TRUE.equals(analysisParams.getSkipIndex()))
@@ -224,8 +229,38 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
                     .setIndexOverwrite(analysisParams.getOverwrite())
                     .setVariantQuery(new SampleVariantStatsAnalysisParams.VariantQueryParams(analysisParams.getVsQuery().toQuery()));
 
-            Path outDir = checkDirectory(getOutDir().resolve(sample.getId()).resolve(SampleVariantStatsAnalysis.ID));
-            toolRunner.execute(SampleVariantStatsAnalysis.class, getStudy(), statsParams, outDir, null, false, getToken());
+            callToolRunner = true;
+
+            // Check the sample variant stats folder, and create
+            Path statsOutDir = getOutDir().resolve(sample.getId()).resolve(SampleVariantStatsAnalysis.ID);
+            if (!Files.exists(statsOutDir)) {
+                try {
+                    Files.createDirectories(statsOutDir);
+                    if (!Files.exists(statsOutDir)) {
+                        failedAnalysisPerSample.get(sample.getId()).add(SampleVariantStatsAnalysis.ID);
+                        String msg = "Could not create the sample variant stats folder for sample '" + sample.getId() + "'";
+                        addError(new ToolException(msg));
+                        logger.error(msg);
+                        callToolRunner = false;
+                    }
+                } catch (IOException e) {
+                    failedQcSet.add(sample.getId());
+                    failedAnalysisPerSample.get(sample.getId()).add(SampleVariantStatsAnalysis.ID);
+                    addError(e);
+                    logger.error("Creating sample variant stats folder for sample '" + sample.getId() + "'", e);
+                    callToolRunner = false;
+                }
+            }
+            if (callToolRunner) {
+                try {
+                    toolRunner.execute(SampleVariantStatsAnalysis.class, getStudy(), statsParams, statsOutDir, null, false, getToken());
+                } catch (ToolException e) {
+                    failedQcSet.add(sample.getId());
+                    failedAnalysisPerSample.get(sample.getId()).add(SampleVariantStatsAnalysis.ID);
+                    addError(e);
+                    logger.error("Error running sample variant stats for sample '" + sample.getId() + "'", e);
+                }
+            }
         }
     }
 
@@ -240,8 +275,8 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
 
         // Get executor to execute Python script that computes the family QC
         SampleVariantQcAnalysisExecutor executor = getToolExecutor(SampleVariantQcAnalysisExecutor.class);
-        executor.setVcfPaths(sampleVcfPaths)
-                .setJsonPaths(sampleJsonPaths)
+        executor.setVcfPaths(vcfPaths)
+                .setJsonPaths(jsonPaths)
                 .setQcParams(analysisParams)
                 .execute();
     }
@@ -256,55 +291,100 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
         ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         ObjectReader signatureReader = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class);
-        ObjectReader hrDetectReader = JacksonUtils.getDefaultObjectMapper().readerFor(HRDetect.class);
+        ObjectReader signatureListReader = JacksonUtils.getDefaultObjectMapper().readerFor(new TypeReference<List<Signature>>() {});
         ObjectReader genomePlotReader = JacksonUtils.getDefaultObjectMapper().readerFor(GenomePlot.class);
+        ObjectReader genomePlotListReader = JacksonUtils.getDefaultObjectMapper().readerFor(new TypeReference<List<GenomePlot>>() {});
 
-        for (Sample sample : targetSamples) {
-            // Check output files
-            Path qcPath = getOutDir().resolve(sample.getId());
+        QualityControlStatus qcStatus;
+        SampleQualityControl sampleQc;
+        String logMsg;
+
+        for (Sample sample : targetSomaticSamples) {
+            sampleQc = new SampleQualityControl();
+
+            // Check and parse the signature results
+            Path qcPath = getOutDir().resolve(sample.getId()).resolve(SIGNATURE_ANALYSIS_ID)
+                    .resolve(SIGNATURE_ANALYSIS_ID + QC_JSON_EXTENSION);
             if (!Files.exists(qcPath)) {
-                String msg = "Quality control error for sample " + sample.getId() + ": folder " + qcPath + " not found."
-                        + " None quality control was performed.";
-                logger.error(msg);
-                addError(new ToolException(msg));
-                continue;
-            }
+                failedQcSet.add(sample.getId());
+                failedAnalysisPerSample.get(sample.getId()).add(SIGNATURE_ANALYSIS_ID);
+                sampleQc.getVariant().setSignatures(Collections.emptyList());
 
-            int qcCode = NONE_READY;
-            SampleQualityControl sampleQc = sample.getQualityControl();
-
-            // Check signature
-            Signature signature = checkQcReport(sample.getId(), SIGNATURE_ANALYSIS_ID, analysisParams.getSkip(), qcPath, SAMPLE_QC_TYPE,
-                    signatureReader);
-            if (signature != null) {
-                qcCode |= SIGNATURE_READY;
-                sampleQc.getVariant().getSignatures().add(signature);
-            }
-
-            // Check genome plot
-            GenomePlot genomePlot = checkQcReport(sample.getId(), GENOME_PLOT_ANALYSIS_ID, analysisParams.getSkip(), qcPath, SAMPLE_QC_TYPE,
-                    genomePlotReader);
-            if (genomePlot != null) {
-                qcCode |= GENOME_PLOT_READY;
-                sampleQc.getVariant().getGenomePlots().add(genomePlot);
-            }
-
-            // Update catalog (quality control and status) if necessary
-            if (qcCode != NONE_READY) {
-                // Update the sample QC code with the current one
-                SampleQualityControlStatus qcStatus = new SampleQualityControlStatus(
-                        qcCode | sample.getInternal().getQualityControlStatus().getCode(), sample.isSomatic(), "");
+                logMsg = FAILURE_FILE + qcPath.getFileName() + NOT_FOUND + getIdLogMessage(sample.getId(), SAMPLE_QC_TYPE);
+                addError(new ToolException(logMsg));
+                logger.error(logMsg);
+            } else {
                 try {
-                    SampleUpdateParams updateParams = new SampleUpdateParams()
-                            .setQualityControl(sampleQc)
-                            .setQualityControlStatus(qcStatus);
-                    catalogManager.getSampleManager().update(getStudy(), sample.getId(), updateParams, null, token);
-                } catch (CatalogException e) {
-                    logger.error("Could not update quality control in OpenCGA catalog for sample " + sample.getId(), e);
+                    List<Signature> signatureList = isQcArray(qcPath)
+                            ? signatureListReader.readValue(qcPath.toFile())
+                            : Collections.singletonList(signatureReader.readValue(qcPath.toFile()));
+
+                    sampleQc.getVariant().setSignatures(signatureList);
+                } catch (IOException e) {
+                    failedQcSet.add(sample.getId());
+                    failedAnalysisPerSample.get(sample.getId()).add(SIGNATURE_ANALYSIS_ID);
+                    sampleQc.getVariant().setSignatures(Collections.emptyList());
+
+                    logMsg = FAILURE_ERROR_PARSING_QC_JSON_FILE + qcPath.getFileName() + "'" + getIdLogMessage(sample.getId(),
+                            INDIVIDUAL_QC_TYPE);
                     addError(e);
+                    logger.error(logMsg, e);
                 }
             }
+
+            // Check and parse the genome plot results
+            qcPath = getOutDir().resolve(sample.getId()).resolve(GENOME_PLOT_ANALYSIS_ID)
+                    .resolve(GENOME_PLOT_ANALYSIS_ID + QC_JSON_EXTENSION);
+            if (!Files.exists(qcPath)) {
+                failedQcSet.add(sample.getId());
+                failedAnalysisPerSample.get(sample.getId()).add(GENOME_PLOT_ANALYSIS_ID);
+                sampleQc.getVariant().setGenomePlots(Collections.emptyList());
+
+                logMsg = FAILURE_FILE + qcPath.getFileName() + NOT_FOUND + getIdLogMessage(sample.getId(), SAMPLE_QC_TYPE);
+                addError(new ToolException(logMsg));
+                logger.error(logMsg);
+            } else {
+                try {
+                    List<GenomePlot> genomePlotList = isQcArray(qcPath)
+                            ? genomePlotListReader.readValue(qcPath.toFile())
+                            : Collections.singletonList(genomePlotReader.readValue(qcPath.toFile()));
+
+                    sampleQc.getVariant().setGenomePlots(genomePlotList);
+                } catch (IOException e) {
+                    failedQcSet.add(sample.getId());
+                    failedAnalysisPerSample.get(sample.getId()).add(GENOME_PLOT_ANALYSIS_ID);
+                    sampleQc.getVariant().setGenomePlots(Collections.emptyList());
+
+                    logMsg = FAILURE_ERROR_PARSING_QC_JSON_FILE + qcPath.getFileName() + "'" + getIdLogMessage(sample.getId(),
+                            SAMPLE_QC_TYPE);
+                    addError(e);
+                    logger.error(logMsg, e);
+                }
+            }
+
+            if (CollectionUtils.isEmpty(failedAnalysisPerSample.get(sample.getId()))) {
+                qcStatus = new QualityControlStatus(READY, SUCCESS);
+            } else {
+                qcStatus = new QualityControlStatus(ERROR, "Failed analysis: "
+                        + StringUtils.join(failedAnalysisPerSample.get(sample.getId()), ","));
+            }
+
+            try {
+                // Update catalog: quality control and status
+                SampleUpdateParams updateParams = new SampleUpdateParams()
+                        .setQualityControl(sampleQc)
+                        .setQualityControlStatus(qcStatus);
+                catalogManager.getSampleManager().update(getStudy(), sample.getId(), updateParams, null, token);
+            } catch (CatalogException e) {
+                failedQcSet.add(sample.getId());
+                logMsg = FAILURE_COULD_NOT_UPDATE_QUALITY_CONTROL_IN_OPEN_CGA_CATALOG + getIdLogMessage(sample.getId(),
+                        INDIVIDUAL_QC_TYPE);
+                addError(e);
+                logger.error(logMsg, e);
+            }
         }
+
+        checkFailedQcCounter(samples.size(), SAMPLE_QC_TYPE);
     }
 
     /**
@@ -323,7 +403,7 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
         checkStudy(studyId, catalogManager, token);
 
         // Check permissions
-        checkPermissions(WRITE_SAMPLES, studyId, catalogManager, token);
+        checkPermissions(WRITE_SAMPLES, params.getSkipIndex(), studyId, catalogManager, token);
 
         // Check samples in catalog
         if (CollectionUtils.isEmpty(params.getSamples())) {

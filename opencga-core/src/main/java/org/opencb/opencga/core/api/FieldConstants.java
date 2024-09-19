@@ -204,8 +204,8 @@ public class FieldConstants {
     public static final String INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION = "Sample ID (required when the individual has multiple samples)";
     @Deprecated
     public static final String INFERRED_SEX_METHOD_DESCRIPTION = "Inferred sex method.";
-    public static final String INDIVIDUAL_QC_SKIP_DESCRIPTION = "Individual QC analysis to skip. Valid values are: " + INFERRED_SEX_ID
-            + ", " + MENDELIAN_ERRORS_ID;
+    public static final String INDIVIDUAL_QC_SKIP_ANALYSIS_DESCRIPTION = "List of individual QC analysis to skip. Valid values are: "
+            + INFERRED_SEX_ID + ", " + MENDELIAN_ERRORS_ID + " and " + RELATEDNESS_ID + " (if parents are present)";
     public static final String INDIVIDUAL_QC_INFERRED_SEX_DESCRIPTION = "Inferred sex results for the individual";
     public static final String INDIVIDUAL_QC_RELATEDNESS_DESCRIPTION = "Relatedness results for the individual";
     public static final String INDIVIDUAL_QC_MENDELIAN_ERROR_DESCRIPTION = "Mendelian error results for the individual";

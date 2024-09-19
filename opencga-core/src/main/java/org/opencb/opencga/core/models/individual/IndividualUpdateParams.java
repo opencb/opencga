@@ -25,6 +25,7 @@ import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
@@ -59,7 +60,7 @@ public class IndividualUpdateParams {
     private List<Disorder> disorders;
     private StatusParams status;
     private IndividualQualityControl qualityControl;
-    private IndividualQualityControlStatus qualityControlStatus;
+    private QualityControlStatus qualityControlStatus;
     private Map<String, Object> attributes;
 
     private static final String QUALITY_CONTROL_STATUS_KEY = "qualityControlStatus";
@@ -74,8 +75,8 @@ public class IndividualUpdateParams {
                                   String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, List<SampleReferenceParam> samples,
                                   List<AnnotationSet> annotationSets, List<Phenotype> phenotypes, List<Disorder> disorders,
-                                  StatusParams status, IndividualQualityControl qualityControl,
-                                  IndividualQualityControlStatus qualityControlStatus, Map<String, Object> attributes) {
+                                  StatusParams status, IndividualQualityControl qualityControl, QualityControlStatus qualityControlStatus,
+                                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -343,11 +344,11 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public IndividualQualityControlStatus getQualityControlStatus() {
+    public QualityControlStatus getQualityControlStatus() {
         return qualityControlStatus;
     }
 
-    public IndividualUpdateParams setQualityControlStatus(IndividualQualityControlStatus qualityControlStatus) {
+    public IndividualUpdateParams setQualityControlStatus(QualityControlStatus qualityControlStatus) {
         this.qualityControlStatus = qualityControlStatus;
         return this;
     }
