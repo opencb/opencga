@@ -22,7 +22,7 @@ import org.opencb.opencga.analysis.individual.qc.IndividualVariantQcAnalysis;
 import org.opencb.opencga.analysis.utils.VariantQcAnalysisExecutorUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
+import org.opencb.opencga.core.models.variant.qc.SampleQcAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.SampleVariantQcAnalysisExecutor;
 

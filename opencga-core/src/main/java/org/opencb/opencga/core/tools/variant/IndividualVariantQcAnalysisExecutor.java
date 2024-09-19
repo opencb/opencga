@@ -16,8 +16,7 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
+import org.opencb.opencga.core.models.variant.qc.IndividualQcAnalysisParams;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.nio.file.Path;

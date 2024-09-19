@@ -2175,6 +2175,12 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--samples"}, description = "List of sample IDs", required = false, arity = 1)
         public String samples;
     
+        @Parameter(names = {"--stats-params-id"}, description = "Sample variant stats ID", required = false, arity = 1)
+        public String statsParamsId;
+    
+        @Parameter(names = {"--stats-params-description"}, description = "Sample variant stats description", required = false, arity = 1)
+        public String statsParamsDescription;
+    
         @Parameter(names = {"--vs-id"}, description = "Variant stats ID.", required = false, arity = 1)
         public String vsId;
     
@@ -2259,6 +2265,12 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--vs-query-clinical-confirmed-status"}, description = "The body web service clinicalConfirmedStatus parameter", required = false, help = true, arity = 0)
         public boolean vsQueryClinicalConfirmedStatus = false;
     
+        @Parameter(names = {"--signature-params-id"}, description = "Signature ID", required = false, arity = 1)
+        public String signatureParamsId;
+    
+        @Parameter(names = {"--signature-params-description"}, description = "Signature description", required = false, arity = 1)
+        public String signatureParamsDescription;
+    
         @Parameter(names = {"--ms-id"}, description = "Signature ID.", required = false, arity = 1)
         public String msId;
     
@@ -2298,6 +2310,15 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--ms-fit-rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
         public String msFitRareSignaturesFile;
     
+        @Parameter(names = {"--genome-plot-params-id"}, description = "Genome plot ID", required = false, arity = 1)
+        public String genomePlotParamsId;
+    
+        @Parameter(names = {"--genome-plot-params-description"}, description = "Genome plot description", required = false, arity = 1)
+        public String genomePlotParamsDescription;
+    
+        @Parameter(names = {"--genome-plot-params-config-file"}, description = "Genome plot configuration file", required = false, arity = 1)
+        public String genomePlotParamsConfigFile;
+    
         @Parameter(names = {"--gp-id"}, description = "Genome plot ID.", required = false, arity = 1)
         public String gpId;
     
@@ -2307,7 +2328,10 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--gp-config-file"}, description = "Genome plot configuration file.", required = false, arity = 1)
         public String gpConfigFile;
     
-        @Parameter(names = {"--skip-analysis"}, description = "Quality control metrics to skip. Valid values are: variant-stats, signature, signature-catalogue, signature-fitting, genome-plot", required = false, arity = 1)
+        @Parameter(names = {"--skip"}, description = "Quality control analysis to skip", required = false, arity = 1)
+        public String skip;
+    
+        @Parameter(names = {"--skip-analysis"}, description = "Quality control analysis to skip", required = false, arity = 1)
         public String skipAnalysis;
     
         @Parameter(names = {"--skip-index"}, description = "Do not save the computed quality control in catalog", required = false, arity = 1)

@@ -1615,7 +1615,7 @@ public class VariantCommandOptions {
         public String genomePlotConfigFile;
 
         // Other
-        @Parameter(names = {"--skip"}, description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
+        @Parameter(names = {"--skip"}, description = FieldConstants.SAMPLE_QC_SKIP_ANALYSIS_DESCRIPTION)
         public List<String> skip;
 
         @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
