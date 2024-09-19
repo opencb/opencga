@@ -7,10 +7,12 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.utils.InputFileUtils;
+import org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UserProcessUtils;
@@ -70,7 +72,14 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             throw new IllegalArgumentException("Missing Nextflow ID");
         }
 
-        OpenCGAResult<Workflow> result = catalogManager.getWorkflowManager().get(study, nextflowParams.getId(), QueryOptions.empty(), token);
+        OpenCGAResult<Workflow> result;
+        if (nextflowParams.getVersion() != null) {
+            Query query = new Query(WorkflowDBAdaptor.QueryParams.VERSION.key(), nextflowParams.getVersion());
+            result = catalogManager.getWorkflowManager().get(study, Collections.singletonList(nextflowParams.getId()), query,
+                    QueryOptions.empty(), false, token);
+        } else {
+            result = catalogManager.getWorkflowManager().get(study, nextflowParams.getId(), QueryOptions.empty(), token);
+        }
         if (result.getNumResults() == 0) {
             throw new ToolException("Workflow '" + nextflowParams.getId() + "' not found");
         }
@@ -169,7 +178,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         // And give ownership permissions to the user running this process
         stringBuilder.append("; chown -R ")
                 .append(UserProcessUtils.getUserUid()).append(":").append(UserProcessUtils.getGroupId()).append(" ").append(outputDir)
-                        .append("\"");
+                .append("\"");
 
         startTraceFileMonitor();
 
