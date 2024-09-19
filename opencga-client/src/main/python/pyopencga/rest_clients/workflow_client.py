@@ -19,6 +19,24 @@ class Workflow(_ParentRestClient):
     def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         super(Workflow, self).__init__(configuration, token, login_handler, *args, **kwargs)
 
+    def update_acl(self, members, action, data=None, **options):
+        """
+        Update the set of permissions granted for the member.
+        PATH: /{apiVersion}/workflows/acl/{members}/update
+
+        :param dict data: JSON containing the parameters to update the
+            permissions. (REQUIRED)
+        :param str action: Action to be performed [ADD, SET, REMOVE or RESET].
+            Allowed values: ['SET ADD REMOVE RESET'] (REQUIRED)
+        :param str members: Comma separated list of user or group ids.
+            (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        options['action'] = action
+        return self._post(category='workflows', resource='update', subcategory='acl', second_query_id=members, data=data, **options)
+
     def create(self, data=None, **options):
         """
         Create a workflow.

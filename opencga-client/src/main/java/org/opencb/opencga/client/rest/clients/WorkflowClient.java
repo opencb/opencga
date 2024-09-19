@@ -25,6 +25,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
 import org.opencb.opencga.core.models.workflow.Workflow;
 import org.opencb.opencga.core.models.workflow.WorkflowAclEntryList;
+import org.opencb.opencga.core.models.workflow.WorkflowAclUpdateParams;
 import org.opencb.opencga.core.models.workflow.WorkflowCreateParams;
 import org.opencb.opencga.core.models.workflow.WorkflowUpdateParams;
 import org.opencb.opencga.core.response.RestResponse;
@@ -48,6 +49,24 @@ public class WorkflowClient extends AbstractParentClient {
 
     public WorkflowClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
+    }
+
+    /**
+     * Update the set of permissions granted for the member.
+     * @param members Comma separated list of user or group ids.
+     * @param action Action to be performed [ADD, SET, REMOVE or RESET].
+     * @param data JSON containing the parameters to update the permissions.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<WorkflowAclEntryList> updateAcl(String members, String action, WorkflowAclUpdateParams data, ObjectMap params)
+            throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.putIfNotNull("action", action);
+        params.put("body", data);
+        return execute("workflows", null, "acl", members, "update", params, POST, WorkflowAclEntryList.class);
     }
 
     /**

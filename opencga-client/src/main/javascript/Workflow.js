@@ -34,6 +34,18 @@ export default class Workflow extends OpenCGAParentClass {
         super(config);
     }
 
+    /** Update the set of permissions granted for the member
+    * @param {String} members - Comma separated list of user or group ids.
+    * @param {Object} data - JSON containing the parameters to update the permissions.
+    * @param {"SET ADD REMOVE RESET"} action = "ADD" - Action to be performed [ADD, SET, REMOVE or RESET]. The default value is ADD.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    updateAcl(members, action, data, params) {
+        return this._post("workflows", null, "acl", members, "update", data, {action, ...params});
+    }
+
     /** Create a workflow
     * @param {Object} data - JSON containing workflow information.
     * @param {Object} [params] - The Object containing the following optional parameters:
@@ -47,7 +59,7 @@ export default class Workflow extends OpenCGAParentClass {
     create(data, params) {
         return this._post("workflows", null, null, null, "create", data, params);
     }
-
+#
     /** Workflow distinct method
     * @param {String} field - Comma separated list of fields for which to obtain the distinct values.
     * @param {Object} [params] - The Object containing the following optional parameters:

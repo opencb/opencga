@@ -19,6 +19,7 @@
 #'
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
+#' | updateAcl | /{apiVersion}/workflows/acl/{members}/update | study, members[*], action[*], body[*] |
 #' | create | /{apiVersion}/workflows/create | include, exclude, study, includeResult, body[*] |
 #' | distinct | /{apiVersion}/workflows/distinct | study, id, name, uuid, tags, draft, internal.registrationUserId, type, creationDate, modificationDate, acl, release, snapshot, deleted, field[*] |
 #' | run | /{apiVersion}/workflows/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
@@ -34,8 +35,18 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("workflowClient", "OpencgaR", function(OpencgaR, workflowId, workflows, endpointName, params=NULL, ...) {
+setMethod("workflowClient", "OpencgaR", function(OpencgaR, members, workflowId, workflows, endpointName, params=NULL, ...) {
     switch(endpointName,
+
+        #' @section Endpoint /{apiVersion}/workflows/acl/{members}/update:
+        #' Update the set of permissions granted for the member.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param members Comma separated list of user or group ids.
+        #' @param action Action to be performed [ADD, SET, REMOVE or RESET]. Allowed values: ['SET ADD REMOVE RESET']
+        #' @param data JSON containing the parameters to update the permissions.
+        updateAcl=fetchOpenCGA(object=OpencgaR, category="workflows", categoryId=NULL, subcategory="acl",
+                subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
 
         #' @section Endpoint /{apiVersion}/workflows/create:
         #' Create a workflow.
