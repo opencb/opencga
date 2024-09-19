@@ -206,8 +206,7 @@ class FamilyQCExecutor:
         }
         return relatedness_json
 
-    def relatedness_plink(self, filtered_vcf_fpath, pop_freq_fpath, pop_exclude_var_fpath, outdir_fpath, plink_path,
-                          method="PLINK/IBD"):
+    def relatedness_plink(self, filtered_vcf_fpath, pop_freq_fpath, pop_exclude_var_fpath, outdir_fpath, plink_path="plink1.9", method="PLINK/IBD"):
         LOGGER.info('Method: {}'.format(method))
         plink_outdir_fpath = create_output_dir(path_elements=[str(outdir_fpath), 'plink_IBD'])
         sex_info_fpath, parent_offspring_fpath = self.generate_files_for_plink_fam_file(outdir_fpath=plink_outdir_fpath)
@@ -357,11 +356,10 @@ class FamilyQCExecutor:
         # Return dict/json with plink and inferred results
         return relatedness_results
 
-    def relatedness_report(self, relatedness_inference_results):
+    def relatedness_report(self, relatedness_results):
         samples_individuals = self.get_samples_individuals_info()
         # Getting reported family relationship block:
-        relatedness_results = relatedness_inference_results
-        for score_result in relatedness_inference_results["scores"]:
+        for score_result in relatedness_results["scores"]:
             LOGGER.debug('Getting reported relatedness information for sample {} and sample {}'.format(score_result["sampleId1"], score_result["sampleId2"]))
             reported_relationship = []
             individual1_info = samples_individuals[score_result["sampleId1"]]
@@ -426,9 +424,10 @@ class FamilyQCExecutor:
 
     def relatedness(self):
         # Setup. Prepare reference file paths to use them later:
-        pop_freq_fpath = "/path/to/pop_freq_prune_in.frq"
-        pop_exclude_var_fpath = "/path/to/pop_exclude_var.prune.out"
-        relatedness_thresholds_fpath = "/path/to/relatedness_thresholds.tsv"
+        resources_path = os.path.join(os.path.dirname(self.output_parent_dir),'resources')
+        pop_freq_fpath = os.path.join(resources_path,'autosomes_1000G_QC_prune_in.frq')
+        pop_exclude_var_fpath = os.path.join(resources_path,'autosomes_1000G_QC.prune.out')
+        relatedness_thresholds_fpath = os.path.join(resources_path,'relatedness_thresholds.tsv')
 
         # Create output dir for relatedness analysis
         relatedness_output_dir_fpath = create_output_dir(path_elements=[self.output_parent_dir, 'relatedness'])
@@ -436,13 +435,14 @@ class FamilyQCExecutor:
         # Filtering VCF and renaming variants
         filtered_vcf_fpath = self.filter_rename_variants_vcf(pop_freq_fpath, relatedness_output_dir_fpath)
         # Performing IBD analysis from PLINK
-        method, plink_genome_fpath = self.relatedness_plink(filtered_vcf_fpath, pop_freq_fpath, pop_exclude_var_fpath, relatedness_output_dir_fpath)
+        relatedness_results, plink_genome_fpath = self.relatedness_plink(filtered_vcf_fpath, pop_freq_fpath, pop_exclude_var_fpath, relatedness_output_dir_fpath)
         # Inferring family relationships
-        relatedness_inference_dict = self.relatedness_inference(relatedness_thresholds_fpath, method, plink_genome_fpath)
+        relatedness_results = self.relatedness_inference(relatedness_thresholds_fpath, plink_genome_fpath, relatedness_results)
         # Getting reported family relationships and validating inferred vs reported results
-        relatedness_results_dict = self.relatedness_report(relatedness_inference_dict)
+        relatedness_results = self.relatedness_report(relatedness_results)
+
         # Generating file with results
-        relatedness_results_json_fpath = self.generate_relatedness_results_file(relatedness_results_dict, relatedness_output_dir_fpath)
+        relatedness_results_fpath = self.generate_relatedness_results_file(relatedness_results, relatedness_output_dir_fpath)
 
     def run(self):
         # Checking data
