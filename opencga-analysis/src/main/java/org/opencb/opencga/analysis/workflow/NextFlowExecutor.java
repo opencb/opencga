@@ -84,7 +84,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         ObjectMap attributes = new ObjectMap()
                 .append("WORKFLOW_ID", workflow.getManager().getId())
                 .append("WORKFLOW_VERSION", workflow.getManager().getVersion());
-        List<String> tags = new LinkedList<>();
+        Set<String> tags = new HashSet<>();
         tags.add(ID);
         tags.add(workflow.getManager().getId().name());
         tags.add(workflow.getManager().getId() + ":" + workflow.getManager().getVersion());
@@ -92,7 +92,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (CollectionUtils.isNotEmpty(workflow.getTags())) {
             tags.addAll(workflow.getTags());
         }
-        updateJobInformation(tags, attributes);
+        updateJobInformation(new ArrayList<>(tags), attributes);
 
         this.inputBindings = new LinkedList<>();
         if (MapUtils.isNotEmpty(nextflowParams.getParams())) {
