@@ -100,3 +100,6 @@ venv
 
 # Java annotation processor (APT)
 .factorypath
+
+#app
+opencga-app/app/analysis/qc/resources
