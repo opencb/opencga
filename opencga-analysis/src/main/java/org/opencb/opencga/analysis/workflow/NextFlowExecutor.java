@@ -115,12 +115,14 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
                 } else {
                     cliParamsBuilder.append("--").append(entry.getKey()).append(" ");
                 }
-                if (inputFileUtils.isValidOpenCGAFile(entry.getValue())) {
-                    File file = inputFileUtils.getOpenCGAFile(study, entry.getValue(), token);
-                    inputBindings.add(new AbstractMap.SimpleEntry<>(file.getUri().getPath(), inputDir.resolve(file.getName()).toString()));
-                    cliParamsBuilder.append(inputDir).append("/").append(file.getName()).append(" ");
-                } else {
-                    cliParamsBuilder.append(entry.getValue()).append(" ");
+                if (StringUtils.isNotEmpty(entry.getValue())) {
+                    if (inputFileUtils.isValidOpenCGAFile(entry.getValue())) {
+                        File file = inputFileUtils.getOpenCGAFile(study, entry.getValue(), token);
+                        inputBindings.add(new AbstractMap.SimpleEntry<>(file.getUri().getPath(), inputDir.resolve(file.getName()).toString()));
+                        cliParamsBuilder.append(inputDir).append("/").append(file.getName()).append(" ");
+                    } else {
+                        cliParamsBuilder.append(entry.getValue()).append(" ");
+                    }
                 }
             }
             this.cliParams = cliParamsBuilder.toString();
@@ -161,8 +163,9 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         StringBuilder stringBuilder = new StringBuilder()
                 .append("bash -c \"nextflow -c ").append(inputDir).append("/nextflow.config").append(" run ");
         if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getImage())) {
-            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
-            dockerParams.put("-v", "/var/run/docker.sock:/var/run/docker.sock");
+//            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
+            stringBuilder.append(workflow.getRepository().getImage());
+//            dockerParams.put("-v", "/var/run/docker.sock:/var/run/docker.sock");
         } else {
             for (WorkflowScript script : workflow.getScripts()) {
                 if (script.isMain()) {
