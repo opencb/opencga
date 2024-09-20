@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
@@ -26,6 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Email;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -125,7 +125,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     public OpenCGAResult resetPassword(String organizationId, String userId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         OpenCGAResult result = null;
-        String newPassword = RandomStringUtils.randomAlphanumeric(12);
+        String newPassword = PasswordUtils.getStrongRandomPassword();
 
         OpenCGAResult<User> user =
                 dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId)

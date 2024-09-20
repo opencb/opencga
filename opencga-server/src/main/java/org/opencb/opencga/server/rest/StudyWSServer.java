@@ -23,6 +23,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.templates.TemplateRunner;
+import org.opencb.opencga.catalog.db.api.NoteDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -46,7 +47,9 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
@@ -613,9 +616,17 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateNote(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,REMOVE,SET", defaultValue = "ADD")
+                @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
         try {
+            if (tagsAction == null) {
+                tagsAction = ParamUtils.BasicUpdateAction.ADD;
+            }
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(NoteDBAdaptor.QueryParams.TAGS.key(), tagsAction);
+            queryOptions.put(Constants.ACTIONS, actionMap);
             OpenCGAResult<Note> result = catalogManager.getNotesManager().updateStudyNote(studyStr, noteId, parameters, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {

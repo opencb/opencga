@@ -4,13 +4,14 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-import java.util.Map;
-
 public class ExomiserWrapperParams extends ToolParams {
     public static final String DESCRIPTION = "Exomiser parameters";
 
-    @DataField(id = "sample", description = FieldConstants.SAMPLE_ID_DESCRIPTION)
+    @DataField(id = "sample", description = FieldConstants.EXOMISER_SAMPLE_DESCRIPTION, required = true)
     private String sample;
+
+    @DataField(id = "exomiserVersion", description = FieldConstants.EXOMISER_VERSION_DESCRIPTION)
+    private String exomiserVersion;
 
     @DataField(id = "clinicalAnalysisType", description = FieldConstants.EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION,
             defaultValue = "SINGLE")
@@ -22,9 +23,10 @@ public class ExomiserWrapperParams extends ToolParams {
     public ExomiserWrapperParams() {
     }
 
-    public ExomiserWrapperParams(String sample, String clinicalAnalysisType, String outdir) {
+    public ExomiserWrapperParams(String sample, String clinicalAnalysisType, String exomiserVersion, String outdir) {
         this.sample = sample;
         this.clinicalAnalysisType = clinicalAnalysisType;
+        this.exomiserVersion = exomiserVersion;
         this.outdir = outdir;
     }
 
@@ -33,6 +35,7 @@ public class ExomiserWrapperParams extends ToolParams {
         final StringBuilder sb = new StringBuilder("ExomiserWrapperParams{");
         sb.append("sample='").append(sample).append('\'');
         sb.append(", clinicalAnalysisType=").append(clinicalAnalysisType);
+        sb.append("exomiserVersion='").append(exomiserVersion).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -53,6 +56,15 @@ public class ExomiserWrapperParams extends ToolParams {
 
     public ExomiserWrapperParams setClinicalAnalysisType(String clinicalAnalysisType) {
         this.clinicalAnalysisType = clinicalAnalysisType;
+        return this;
+    }
+
+    public String getExomiserVersion() {
+        return exomiserVersion;
+    }
+
+    public ExomiserWrapperParams setExomiserVersion(String exomiserVersion) {
+        this.exomiserVersion = exomiserVersion;
         return this;
     }
 
