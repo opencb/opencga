@@ -110,7 +110,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
             StringBuilder cliParamsBuilder = new StringBuilder();
             for (Map.Entry<String, String> entry : nextflowParams.getParams().entrySet()) {
-                if (entry.getKey().startsWith("--")) {
+                if (entry.getKey().startsWith("-")) {
                     cliParamsBuilder.append(entry.getKey()).append(" ");
                 } else {
                     cliParamsBuilder.append("--").append(entry.getKey()).append(" ");
