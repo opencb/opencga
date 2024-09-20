@@ -441,7 +441,8 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                     Enums.Priority.getPriority(parameters.getString(QueryParams.PRIORITY.key())).getValue());
         }
 
-        String[] acceptedObjectParams = {QueryParams.EXECUTION.key(), QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key()};
+        String[] acceptedObjectParams = {QueryParams.EXECUTION.key(), QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key(),
+                QueryParams.TOOL_EXTERNAL_EXECUTOR.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (document.getSet().containsKey(QueryParams.STUDY.key())) {

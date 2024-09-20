@@ -2,7 +2,6 @@ package org.opencb.opencga.analysis.binary;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.utils.InputFileUtils;
@@ -12,6 +11,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.JobRunDockerParams;
 import org.opencb.opencga.core.models.job.JobRunParams;
+import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.slf4j.Logger;
@@ -60,13 +60,11 @@ public class BinaryExecutor extends OpenCgaToolScopeStudy {
         }
 
         // Update job tags and attributes
-        ObjectMap attributes = new ObjectMap()
-                .append("DOCKER_ID", runParams.getDocker().getId())
-                .append("DOCKER_TAG", runParams.getDocker().getTag());
+        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(runParams.getDocker().getId(), runParams.getDocker().getTag());
         List<String> tags = new LinkedList<>();
         tags.add(ID);
         tags.add(this.dockerImage);
-        updateJobInformation(tags, attributes);
+        updateJobInformation(tags, toolInfoExecutor);
 
         // Build input bindings
         this.inputBindings = new LinkedList<>();

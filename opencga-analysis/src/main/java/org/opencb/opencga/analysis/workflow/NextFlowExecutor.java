@@ -19,6 +19,7 @@ import org.opencb.opencga.core.common.UserProcessUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
 import org.opencb.opencga.core.models.workflow.Workflow;
 import org.opencb.opencga.core.models.workflow.WorkflowScript;
@@ -90,9 +91,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         }
 
         // Update job tags and attributes
-        ObjectMap attributes = new ObjectMap()
-                .append("WORKFLOW_ID", workflow.getManager().getId())
-                .append("WORKFLOW_VERSION", workflow.getManager().getVersion());
+        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(workflow.getManager().getId().name(), workflow.getManager().getVersion());
         Set<String> tags = new HashSet<>();
         tags.add(ID);
         tags.add(workflow.getManager().getId().name());
@@ -101,7 +100,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (CollectionUtils.isNotEmpty(workflow.getTags())) {
             tags.addAll(workflow.getTags());
         }
-        updateJobInformation(new ArrayList<>(tags), attributes);
+        updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
         this.inputBindings = new LinkedList<>();
         if (MapUtils.isNotEmpty(nextflowParams.getParams())) {

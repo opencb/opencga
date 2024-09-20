@@ -305,6 +305,8 @@ public class FieldConstants {
     public static final String TOOL_INFO_RESOURCE_DESCRIPTION = "Tool info resource can have the values AUDIT, USER, PROJECT, "
             + "STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, "
             + "VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.";
+    public static final String TOOL_INFO_EXTERNAL_EXECUTOR_DESCRIPTION = "Object containing the id and version of the external tool that"
+            + " is being executed.";
 
     // Workflow
     public static final String WORKFLOW_ID_DESCRIPTION = "Workflow ID.";
