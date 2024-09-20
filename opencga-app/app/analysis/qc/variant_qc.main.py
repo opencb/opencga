@@ -103,20 +103,20 @@ def check_input(vcf_fpath, info_fpath, qc_type):
     # Getting IDs and sample IDs from info JSON file
     info_ids = []
     info_sample_ids = []
-    for record in info_json:
-        # Getting all IDs in info file
-        info_ids.append(record['id'])
-        # Family
-        if qc_type == 'family' and 'members' in record:
-            info_sample_ids = [sample['id']
-                               for member in record['members'] if 'samples' in member
-                               for sample in member['samples'] if 'id' in sample]
-        # Individual
-        elif qc_type == 'individual' and 'samples' in record:
-            info_sample_ids = [sample['id'] for sample in record['samples'] if 'id' in sample]
-        # Sample
-        elif qc_type == 'sample' and 'id' in record:
-            info_sample_ids.append(record['id'])
+    record = info_json
+    # Getting all IDs in info file
+    info_ids.append(record['id'])
+    # Family
+    if qc_type == 'family' and 'members' in record:
+        info_sample_ids = [sample['id']
+                            for member in record['members'] if 'samples' in member
+                            for sample in member['samples'] if 'id' in sample]
+    # Individual
+    elif qc_type == 'individual' and 'samples' in record:
+        info_sample_ids = [sample['id'] for sample in record['samples'] if 'id' in sample]
+    # Sample
+    elif qc_type == 'sample' and 'id' in record:
+        info_sample_ids.append(record['id'])
     info_sample_ids.sort()
 
     # Checking whether input file and info file have the same samples
