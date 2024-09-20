@@ -379,7 +379,6 @@ public class JobManager extends ResourceManager<Job> {
             job.setInput(Collections.emptyList());
         } else {
             // We only check input files if the job does not depend on other job that might be creating the necessary file.
-
             List<File> inputFiles = getJobInputFilesFromParams(study.getFqn(), job, tokenPayload.getToken());
             job.setInput(inputFiles);
         }
@@ -458,9 +457,10 @@ public class JobManager extends ResourceManager<Job> {
                     // We look for files in the dynamic params
                     Map<String, Object> dynamicParams = (Map<String, Object>) entry.getValue();
                     for (Map.Entry<String, Object> subEntry : dynamicParams.entrySet()) {
-                        if (subEntry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
+                        String subEntryKey = subEntry.getKey().toLowerCase();
+                        if (!subEntryKey.contains("profile") && subEntryKey.endsWith(fileParamSuffix)) {
                             // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in
-                            // catalog
+                            // catalog (except words such as 'profile')
                             try {
                                 // Validate the user has access to the file
                                 File file = catalogManager.getFileManager().get(study, (String) subEntry.getValue(),
