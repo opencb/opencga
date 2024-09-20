@@ -175,7 +175,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (StringUtils.isNotEmpty(cliParams)) {
             stringBuilder.append(" ").append(cliParams);
         }
-        stringBuilder.append(" -with-report ").append(outputDir).append("/report.html");
+        stringBuilder.append(" -with-report ").append(outputDir).append("/report.html\"");
 //        // And give ownership permissions to the user running this process
 //        stringBuilder.append("; chown -R ")
 //                .append(UserProcessUtils.getUserUid()).append(":").append(UserProcessUtils.getGroupId()).append(" ").append(outputDir)
