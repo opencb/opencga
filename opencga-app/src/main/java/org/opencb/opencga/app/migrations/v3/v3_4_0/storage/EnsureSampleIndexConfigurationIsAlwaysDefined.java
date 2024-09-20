@@ -13,7 +13,7 @@ import java.util.Date;
 import java.util.List;
 
 @Migration(id = "ensure_sample_index_configuration_is_defined",
-        description = "Ensure that the SampleIndexConfiguration object is correctly defined. #TASK-6765", version = "3.4.0",
+        description = "Ensure that the SampleIndexConfiguration object is correctly defined. #TASK-6765", version = "4.0.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
         patch = 1,

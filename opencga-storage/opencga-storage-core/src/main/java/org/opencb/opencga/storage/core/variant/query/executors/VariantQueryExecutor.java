@@ -63,6 +63,12 @@ public abstract class VariantQueryExecutor {
         queryOptions.put(QueryOptions.TIMEOUT, timeout);
     }
 
+    /**
+     * Determine if this VariantQueryExecutor can run the given query.
+     * @param variantQuery    Query to execute
+     * @return         True if this variant query executor is valid for the query
+     * @throws StorageEngineException if there is an error
+     */
     public final boolean canUseThisExecutor(ParsedVariantQuery variantQuery) throws StorageEngineException {
         boolean canUseThisExecutor = canUseThisExecutor(variantQuery, variantQuery.getInputOptions());
         if (canUseThisExecutor) {
@@ -77,7 +83,7 @@ public abstract class VariantQueryExecutor {
     }
 
     /**
-     * Determine if this VariantQueryExecutor can run the given query.
+     * Internal method to determine if this VariantQueryExecutor can run the given query.
      * @param variantQuery    Query to execute
      * @param options  Options for the query
      * @return         True if this variant query executor is valid for the query
