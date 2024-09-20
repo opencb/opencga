@@ -11,11 +11,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
-import org.opencb.opencga.catalog.utils.InputFileUtils;
 import org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor;
+import org.opencb.opencga.catalog.utils.InputFileUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.common.UserProcessUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -164,7 +163,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getImage())) {
 //            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
             stringBuilder.append(workflow.getRepository().getImage());
-//            dockerParams.put("-v", "/var/run/docker.sock:/var/run/docker.sock");
+            dockerParams.put("-v", "/var/run/docker.sock:/var/run/docker.sock");
         } else {
             for (WorkflowScript script : workflow.getScripts()) {
                 if (script.isMain()) {
@@ -177,10 +176,10 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             stringBuilder.append(" ").append(cliParams);
         }
         stringBuilder.append(" -with-report ").append(outputDir).append("/report.html");
-        // And give ownership permissions to the user running this process
-        stringBuilder.append("; chown -R ")
-                .append(UserProcessUtils.getUserUid()).append(":").append(UserProcessUtils.getGroupId()).append(" ").append(outputDir)
-                .append("\"");
+//        // And give ownership permissions to the user running this process
+//        stringBuilder.append("; chown -R ")
+//                .append(UserProcessUtils.getUserUid()).append(":").append(UserProcessUtils.getGroupId()).append(" ").append(outputDir)
+//                .append("\"");
 
         startTraceFileMonitor();
 
