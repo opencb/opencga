@@ -268,6 +268,21 @@ public class OpenCGATestExternalResource extends ExternalResource {
             Files.copy(inputStream, analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
         }
 
+        // QC
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc")).toAbsolutePath();
+        List<String> qcFiles = Arrays.asList("variant_qc.main.py", "utils.py", "__init__.py");
+        for (String qcFile : qcFiles) {
+            inputStream = new FileInputStream("../opencga-app/app/analysis/qc/" + qcFile);
+            Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
+        }
+        // Family QC
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc/family_qc")).toAbsolutePath();
+        qcFiles = Arrays.asList("family_qc.py", "__init__.py");
+        for (String qcFile : qcFiles) {
+            inputStream = new FileInputStream("../opencga-app/app/analysis/qc/family_qc/" + qcFile);
+            Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
+        }
+
         return opencgaHome;
     }
 

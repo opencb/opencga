@@ -26,6 +26,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.Relatedness;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
@@ -74,19 +75,21 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
     @Override
     protected void check() throws Exception {
+        // IMPORTANT: the first thing to do since it initializes "study" from params.get(STUDY_PARAM)
+        super.check();
+
         setUpStorageEngineExecutor(study);
 
         // Check parameters
-        super.check();
-        checkParameters(analysisParams, getStudy(), catalogManager, token);
+        checkParameters(analysisParams, study, catalogManager, token);
 
         // Check custom resources path
-        userResourcesPath = checkResourcesDir(analysisParams.getResourcesDir(), getStudy(), catalogManager, token);
+        userResourcesPath = checkResourcesDir(analysisParams.getResourcesDir(), study, catalogManager, token);
     }
 
     @Override
     protected List<String> getSteps() {
-        List<String> steps = Arrays.asList(PREPARE_QC_STEP, ID);
+        List<String> steps = new ArrayList<>(Arrays.asList(PREPARE_QC_STEP, ID));
         if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
             steps.add(INDEX_QC_STEP);
         }
@@ -131,7 +134,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                 // Create query options
                 QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, "id,studies.samples");
 
-                // Export to VCF.GZ format
+                // Export variants (VCF.GZ format)
                 String basename = getOutDir().resolve(familyId).toAbsolutePath().toString();
                 getVariantStorageManager().exportData(basename, VCF_GZ, null, query, queryOptions, token);
 
@@ -144,11 +147,11 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                 }
                 vcfPaths.add(vcfPath);
 
-                // Export family (JSON format)
-                Path jsonPath = Paths.get(basename + "." + JSON.getExtension());
+                // Write family (JSON format)
+                Path jsonPath = Paths.get(basename + "_info." + JSON.getExtension());
                 objectWriter.writeValue(jsonPath.toFile(), family);
 
-                // Check VCF file
+                // Check JSON file
                 if (!Files.exists(jsonPath)) {
                     throw new ToolException("Something wrong happened when saving JSON file for family ID " + familyId + ". JSON file "
                             + jsonPath + " was not created.");
@@ -189,7 +192,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
             familyQc = new FamilyQualityControl();
 
             // Check and parse the relatedness output file
-            Path qcPath = getOutDir().resolve(family.getId()).resolve(RELATEDNESS_ANALYSIS_ID + QC_JSON_EXTENSION);
+            Path qcPath = getOutDir().resolve(family.getId()).resolve(RELATEDNESS_ANALYSIS_ID)
+                    .resolve(RELATEDNESS_ANALYSIS_ID + QC_JSON_EXTENSION);
             if (!Files.exists(qcPath)) {
                 failedQcSet.add(family.getId());
                 qcStatus = new QualityControlStatus(ERROR, FAILURE_FILE + qcPath.getFileName() + NOT_FOUND);
@@ -199,11 +203,16 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                 logger.error(logMsg);
             } else {
                 try {
-                    List<Relatedness> relatedness = isQcArray(qcPath)
+                    List<Relatedness> relatednessList = isQcArray(qcPath)
                             ? relatednessListReader.readValue(qcPath.toFile())
                             : Collections.singletonList(relatednessReader.readValue(qcPath.toFile()));
 
-                    familyQc.setRelatedness(relatedness);
+                    // Set common attributes
+                    for (Relatedness relatedness : relatednessList) {
+                        addCommonAttributes(relatedness.getAttributes());
+                    }
+
+                    familyQc.setRelatedness(relatednessList);
                     qcStatus = new QualityControlStatus(READY, SUCCESS);
                 } catch (IOException e) {
                     failedQcSet.add(family.getId());
@@ -232,7 +241,6 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
         checkFailedQcCounter(families.size(), FAMILY_QC_TYPE);
     }
-
 
     public static void checkParameters(FamilyQcAnalysisParams params, String studyId, CatalogManager catalogManager, String token)
             throws ToolException {

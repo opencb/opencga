@@ -62,6 +62,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -116,8 +117,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.GENOME_PLOT_ANALYSIS_ID;
-import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.SIGNATURE_ANALYSIS_ID;
+import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 @RunWith(Parameterized.class)
@@ -1111,22 +1111,39 @@ public class VariantAnalysisTest {
     public void testFamilyQC() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_family_qc"));
 
+        // To be sure, all samples are no-somatic
+        SampleUpdateParams sampleUpdateParams = new SampleUpdateParams().setSomatic(false);
+        catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
         // Update quality control for the cancer sample
         FamilyQualityControl qc = new FamilyQualityControl();
-        FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControl(qc);
-        catalogManager.getFamilyManager().update(STUDY, family, updateParams, null, token);
+        FamilyUpdateParams familyUpdateParams = new FamilyUpdateParams().setQualityControl(qc);
+        catalogManager.getFamilyManager().update(STUDY, family, familyUpdateParams, null, token);
 
         // Family QC analysis
         FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
         params.setFamilies(Arrays.asList(family));
 
+        String jobId = "test-family-qc-" + TimeUtils.getTimeMillis();
         toolRunner.execute(FamilyVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY),
-                outDir, null, false, token);
+                outDir, jobId, false, token);
 
         Family fam = catalogManager.getFamilyManager().get(STUDY, family, QueryOptions.empty(), token).first();
-        System.out.println("fam.getInternal().getQualityControlStatus() = " + fam.getInternal().getQualityControlStatus());
 
+        // Some output to check
+        System.out.println("fam.getInternal().getQualityControlStatus() = " + fam.getInternal().getQualityControlStatus());
+        System.out.println("fam.getQualityControl() = " + fam.getQualityControl());
         System.out.println("outDir = " + outDir);
+
+        // Restore
+        sampleUpdateParams = new SampleUpdateParams().setSomatic(true);
+        catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
+        // Asserts
+        assertEquals(fam.getInternal().getQualityControlStatus().getId(), QualityControlStatus.READY);
+        assertNotNull(fam.getQualityControl());
+        assertEquals(1, fam.getQualityControl().getRelatedness().size());
+        assertEquals(jobId, fam.getQualityControl().getRelatedness().get(0).getAttributes().get(OPENCGA_JOB_ID_ATTR));
     }
 
     @Test

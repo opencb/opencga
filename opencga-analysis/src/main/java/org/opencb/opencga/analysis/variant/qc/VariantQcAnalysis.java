@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ResourceUtils;
@@ -99,6 +100,9 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     protected static final String FAILURE_COULD_NOT_UPDATE_QUALITY_CONTROL_IN_OPEN_CGA_CATALOG = "Failure: Could not update quality control"
             + " in OpenCGA catalog";
     protected static final String SUCCESS = "Success";
+
+    // Common attributes
+    public static final String OPENCGA_JOB_ID_ATTR = "OPENCGA_JOB_ID";
 
     protected LinkedList<Path> vcfPaths = new LinkedList<>();
     protected LinkedList<Path> jsonPaths = new LinkedList<>();
@@ -247,6 +251,19 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
+    protected void addCommonAttributes(ObjectMap attributes) {
+        if (attributes != null) {
+            attributes.append(OPENCGA_JOB_ID_ATTR, getJobId());
+        } else {
+            String msg = "Could not add common attributes, such as " + OPENCGA_JOB_ID_ATTR;
+            try {
+                addWarning(msg);
+            } catch (ToolException e) {
+                logger.warn(msg, e);
+            }
+        }
+    }
+
     protected <T> T parseQcFile(String id, String analysisId, List<String> skip, Path qcPath, String qcType, ObjectReader reader)
             throws ToolException {
         if (CollectionUtils.isEmpty(skip) || !skip.contains(analysisId)) {
@@ -356,15 +373,16 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
 
     protected void copyUserResourceFiles() throws ToolException {
         // Sanity check
-        if (userResourcesPath == null) {
-            // Nothing to do
-            return;
+        if (userResourcesPath != null && Files.exists(userResourcesPath)) {
+            copyUserResourceFiles(userResourcesPath);
         }
+    }
 
+    protected void copyUserResourceFiles(Path inputPath) throws ToolException {
         Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
 
         // Copy custom resource files to the job dir
-        for (java.io.File file : userResourcesPath.toFile().listFiles()) {
+        for (java.io.File file : inputPath.toFile().listFiles()) {
             Path destPath = destResourcesPath.resolve(file.getName());
             if (file.isFile()) {
                 try {
