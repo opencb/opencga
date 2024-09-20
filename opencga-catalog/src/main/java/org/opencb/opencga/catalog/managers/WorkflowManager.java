@@ -561,7 +561,6 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
     private void validateNewWorkflow(Workflow workflow, String userId) throws CatalogParameterException {
         ParamUtils.checkIdentifier(workflow.getId(), ID.key());
-        ParamUtils.checkObj(workflow.getType(), TYPE.key());
         if (workflow.getManager() == null) {
             workflow.setManager(new WorkflowSystem());
         }
@@ -571,6 +570,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         if (StringUtils.isEmpty(workflow.getManager().getVersion())) {
             workflow.getManager().setVersion("24.04.4");
         }
+        workflow.setType(ParamUtils.defaultObject(workflow.getType(), Workflow.Type.OTHER));
         workflow.setTags(workflow.getTags() != null ? workflow.getTags() : Collections.emptyList());
         workflow.setScripts(workflow.getScripts() != null ? workflow.getScripts() : Collections.emptyList());
         boolean main = false;

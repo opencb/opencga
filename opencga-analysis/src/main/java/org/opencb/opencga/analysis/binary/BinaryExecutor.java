@@ -5,7 +5,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
-import org.opencb.opencga.analysis.utils.InputFileUtils;
+import org.opencb.opencga.catalog.utils.InputFileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;

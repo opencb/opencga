@@ -36,6 +36,9 @@ public class WorkflowUpdateParams {
     @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
     private List<Variable> variables;
 
+    @DataField(id = "minimumRequirements", description = FieldConstants.WORKFLOW_MINIMUM_REQUIREMENTS_DESCRIPTION)
+    private WorkflowMinimumRequirements minimumRequirements;
+
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
@@ -50,7 +53,8 @@ public class WorkflowUpdateParams {
 
     public WorkflowUpdateParams(String name, String description, WorkflowSystem manager, Workflow.Type type, List<String> tags,
                                 boolean draft, WorkflowRepository repository, List<WorkflowScript> scripts, List<Variable> variables,
-                                String creationDate, String modificationDate, Map<String, Object> attributes) {
+                                WorkflowMinimumRequirements minimumRequirements, String creationDate, String modificationDate,
+                                Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
         this.manager = manager;
@@ -60,6 +64,7 @@ public class WorkflowUpdateParams {
         this.repository = repository;
         this.scripts = scripts;
         this.variables = variables;
+        this.minimumRequirements = minimumRequirements;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.attributes = attributes;
@@ -77,6 +82,7 @@ public class WorkflowUpdateParams {
         sb.append(", repository=").append(repository);
         sb.append(", scripts=").append(scripts);
         sb.append(", variables=").append(variables);
+        sb.append(", minimumRequirements=").append(minimumRequirements);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", attributes=").append(attributes);

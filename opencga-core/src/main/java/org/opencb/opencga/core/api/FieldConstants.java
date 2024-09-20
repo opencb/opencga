@@ -317,7 +317,12 @@ public class FieldConstants {
     public static final String WORKFLOW_SCRIPTS_DESCRIPTION = "List of scripts used by the Workflow.";
     public static final String WORKFLOW_TAGS_DESCRIPTION = "List of tags.";
     public static final String WORKFLOW_VARIABLES_DESCRIPTION = "List of variables accepted by the Workflow.";
+    public static final String WORKFLOW_MINIMUM_REQUIREMENTS_DESCRIPTION = "Minimum requirements to execute the workflow.";
     public static final String WORKFLOW_INTERNAL_DESCRIPTION = "Workflow internal information.";
+
+    public static final String WORKFLOW_MIN_REQUIREMENTS_CPU_DESCRIPTION = "Minimum number of cpu cores required to execute the workflow.";
+    public static final String WORKFLOW_MIN_REQUIREMENTS_MEMORY_DESCRIPTION = "Minimum memory required to execute the workflow"
+            + " (expressed in GB).";
 
     public static final String WORKFLOW_SYSTEM_ID_DESCRIPTION = "Workflow system id. Valid values: NEXTFLOW.";
     public static final String WORKFLOW_SYSTEM_VERSION_DESCRIPTION = "Workflow system version to use.";
