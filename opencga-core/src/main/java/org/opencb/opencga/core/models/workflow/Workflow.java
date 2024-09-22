@@ -51,6 +51,9 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
     private List<Variable> variables;
 
+    @DataField(id = "minimumRequirements", description = FieldConstants.WORKFLOW_MINIMUM_REQUIREMENTS_DESCRIPTION)
+    private WorkflowMinimumRequirements minimumRequirements;
+
     @DataField(id = "internal", description = FieldConstants.WORKFLOW_INTERNAL_DESCRIPTION)
     private WorkflowInternal internal;
 
@@ -66,7 +69,7 @@ public class Workflow extends PrivateStudyUid {
     public enum Type {
         CLINICAL_INTERPRETATION,
         SECONDARY_ANALYSIS,
-        RESEARCH,
+        RESEARCH_ANALYSIS,
         OTHER
     }
 
@@ -75,7 +78,8 @@ public class Workflow extends PrivateStudyUid {
 
     public Workflow(String id, String name, String description, boolean draft, Type type, WorkflowSystem manager,
                     WorkflowRepository repository, List<WorkflowScript> scripts, List<String> tags, List<Variable> variables,
-                    WorkflowInternal internal, String creationDate, String modificationDate, Map<String, Object> attributes) {
+                    WorkflowMinimumRequirements minimumRequirements, WorkflowInternal internal, String creationDate,
+                    String modificationDate, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -86,6 +90,7 @@ public class Workflow extends PrivateStudyUid {
         this.scripts = scripts;
         this.tags = tags;
         this.variables = variables;
+        this.minimumRequirements = minimumRequirements;
         this.internal = internal;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
@@ -108,6 +113,7 @@ public class Workflow extends PrivateStudyUid {
         sb.append(", scripts=").append(scripts);
         sb.append(", tags=").append(tags);
         sb.append(", variables=").append(variables);
+        sb.append(", minimumRequirements=").append(minimumRequirements);
         sb.append(", internal=").append(internal);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -237,6 +243,15 @@ public class Workflow extends PrivateStudyUid {
 
     public Workflow setVariables(List<Variable> variables) {
         this.variables = variables;
+        return this;
+    }
+
+    public WorkflowMinimumRequirements getMinimumRequirements() {
+        return minimumRequirements;
+    }
+
+    public Workflow setMinimumRequirements(WorkflowMinimumRequirements minimumRequirements) {
+        this.minimumRequirements = minimumRequirements;
         return this;
     }
 

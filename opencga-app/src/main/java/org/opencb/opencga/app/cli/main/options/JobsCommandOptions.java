@@ -120,16 +120,16 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         public String toolId;
     
         @Parameter(names = {"--tool-description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
-        public String toolDescription = "No description available";
+        public String toolDescription;
     
         @Parameter(names = {"--tool-scope"}, description = "Tool info scope can have the values GLOBAL, PROJECT and STUDY.", required = false, arity = 1)
-        public String toolScope = "No description available";
+        public String toolScope;
     
         @Parameter(names = {"--tool-type"}, description = "Tool info type can have the values OPERATION and ANALYSIS.", required = false, arity = 1)
-        public String toolType = "No description available";
+        public String toolType;
     
         @Parameter(names = {"--tool-resource"}, description = "Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.", required = false, arity = 1)
-        public String toolResource = "No description available";
+        public String toolResource;
     
         @Parameter(names = {"--priority"}, description = "The body web service priority parameter", required = false, arity = 1)
         public String priority;

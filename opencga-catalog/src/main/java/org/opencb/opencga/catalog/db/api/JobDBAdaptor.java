@@ -113,6 +113,7 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         TOOL("tool", OBJECT, ""),
         TOOL_ID("tool.id", TEXT, ""),
         TOOL_TYPE("tool.type", TEXT, ""),
+        TOOL_EXTERNAL_EXECUTOR("tool.externalExecutor", OBJECT, ""),
 
         PRIORITY("priority", TEXT, ""),
 

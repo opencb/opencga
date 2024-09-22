@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.utils;
+package org.opencb.opencga.catalog.utils;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -16,8 +16,7 @@ public class InputFileUtils {
     private final CatalogManager catalogManager;
 
     private static final Pattern OPERATION_PATTERN = Pattern.compile("^(?i)(ocga://|opencga://|file://)(.+)$");
-
-    private final static Logger logger = LoggerFactory.getLogger(InputFileUtils.class);
+    private final Logger logger = LoggerFactory.getLogger(InputFileUtils.class);
 
     public InputFileUtils(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;

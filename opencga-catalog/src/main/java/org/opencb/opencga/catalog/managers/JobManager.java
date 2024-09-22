@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
+import org.opencb.opencga.catalog.utils.InputFileUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.FieldConstants;
@@ -379,8 +380,12 @@ public class JobManager extends ResourceManager<Job> {
             job.setInput(Collections.emptyList());
         } else {
             // We only check input files if the job does not depend on other job that might be creating the necessary file.
-
-            List<File> inputFiles = getJobInputFilesFromParams(study.getFqn(), job, tokenPayload.getToken());
+            List<File> inputFiles;
+            if (job.getTool().getId().equalsIgnoreCase("binary") || job.getTool().getId().equalsIgnoreCase("workflow")) {
+                inputFiles = getWorkflowJobInputFilesFromParams(study.getFqn(), job, tokenPayload.getToken());
+            } else {
+                inputFiles = getJobInputFilesFromParams(study.getFqn(), job, tokenPayload.getToken());
+            }
             job.setInput(inputFiles);
         }
 
@@ -434,7 +439,6 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-
     public List<File> getJobInputFilesFromParams(String study, Job job, String token) throws CatalogException {
         // Look for input files
         String fileParamSuffix = "file";
@@ -469,6 +473,46 @@ public class JobManager extends ResourceManager<Job> {
                             } catch (CatalogException e) {
                                 throw new CatalogException("Cannot find file '" + subEntry.getValue() + "' from variable '"
                                         + entry.getKey() + "." + subEntry.getKey() + "'. ", e);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return inputFiles;
+    }
+
+    public List<File> getWorkflowJobInputFilesFromParams(String study, Job job, String token) throws CatalogException {
+        InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
+        // Look for input files
+        List<File> inputFiles = new ArrayList<>();
+        if (job.getParams() != null) {
+            for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
+                if (entry.getValue() instanceof String) {
+                    String fileStr = (String) entry.getValue();
+                    if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
+                        try {
+                            File file = inputFileUtils.getOpenCGAFile(study, fileStr, token);
+                            inputFiles.add(file);
+                        } catch (CatalogException e) {
+                            throw new CatalogException("Cannot find file '" + entry.getValue() + "' from job param '" + entry.getKey()
+                                    + "'; (study = " + study + ") :" + e.getMessage(), e);
+                        }
+                    }
+                } else if (entry.getValue() instanceof Map) {
+                    // We look for files in the dynamic params
+                    Map<String, Object> dynamicParams = (Map<String, Object>) entry.getValue();
+                    for (Map.Entry<String, Object> subEntry : dynamicParams.entrySet()) {
+                        if (subEntry.getValue() instanceof String) {
+                            String fileStr = (String) subEntry.getValue();
+                            if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
+                                try {
+                                    File file = inputFileUtils.getOpenCGAFile(study, fileStr, token);
+                                    inputFiles.add(file);
+                                } catch (CatalogException e) {
+                                    throw new CatalogException("Cannot find file '" + subEntry.getValue() + "' from variable '"
+                                            + entry.getKey() + "." + subEntry.getKey() + "'. ", e);
+                                }
                             }
                         }
                     }

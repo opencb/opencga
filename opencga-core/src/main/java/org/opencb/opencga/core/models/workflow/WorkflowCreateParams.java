@@ -37,6 +37,9 @@ public class WorkflowCreateParams {
     @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
     private List<Variable> variables;
 
+    @DataField(id = "minimumRequirements", description = FieldConstants.WORKFLOW_MINIMUM_REQUIREMENTS_DESCRIPTION)
+    private WorkflowMinimumRequirements minimumRequirements;
+
     @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
     private List<WorkflowScript> scripts;
 
@@ -53,8 +56,9 @@ public class WorkflowCreateParams {
     }
 
     public WorkflowCreateParams(String id, String name, String description, WorkflowSystem manager, Workflow.Type type, List<String> tags,
-                                boolean draft, WorkflowRepository repository, List<Variable> variables, List<WorkflowScript> scripts,
-                                String creationDate, String modificationDate, Map<String, Object> attributes) {
+                                boolean draft, WorkflowRepository repository, List<Variable> variables,
+                                WorkflowMinimumRequirements minimumRequirements, List<WorkflowScript> scripts, String creationDate,
+                                String modificationDate, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -64,6 +68,7 @@ public class WorkflowCreateParams {
         this.draft = draft;
         this.repository = repository;
         this.variables = variables;
+        this.minimumRequirements = minimumRequirements;
         this.scripts = scripts;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
@@ -82,6 +87,7 @@ public class WorkflowCreateParams {
         sb.append(", draft=").append(draft);
         sb.append(", repository=").append(repository);
         sb.append(", variables=").append(variables);
+        sb.append(", minimumRequirements=").append(minimumRequirements);
         sb.append(", scripts=").append(scripts);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -91,8 +97,8 @@ public class WorkflowCreateParams {
     }
 
     public Workflow toWorkflow() {
-        return new Workflow(id, name, description, draft, type, manager, repository, scripts, tags, variables, new WorkflowInternal(),
-                creationDate, modificationDate, attributes);
+        return new Workflow(id, name, description, draft, type, manager, repository, scripts, tags, variables, minimumRequirements,
+                new WorkflowInternal(), creationDate, modificationDate, attributes);
     }
 
     public String getId() {
@@ -173,6 +179,15 @@ public class WorkflowCreateParams {
 
     public WorkflowCreateParams setVariables(List<Variable> variables) {
         this.variables = variables;
+        return this;
+    }
+
+    public WorkflowMinimumRequirements getMinimumRequirements() {
+        return minimumRequirements;
+    }
+
+    public WorkflowCreateParams setMinimumRequirements(WorkflowMinimumRequirements minimumRequirements) {
+        this.minimumRequirements = minimumRequirements;
         return this;
     }
 

@@ -29,43 +29,49 @@ public class ToolInfo {
             description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
 
-    @DataField(id = "description", defaultValue = "No description available",
-            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
+    @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-    @DataField(id = "scope", defaultValue = "No description available",
-            description = FieldConstants.TOOL_INFO_SCOPE_DESCRIPTION)
+    @DataField(id = "scope", description = FieldConstants.TOOL_INFO_SCOPE_DESCRIPTION)
     private Scope scope;
 
-    @DataField(id = "type", defaultValue = "No description available",
-            description = FieldConstants.TOOL_INFO_TYPE_DESCRIPTION)
+    @DataField(id = "type", description = FieldConstants.TOOL_INFO_TYPE_DESCRIPTION)
     private Type type;
 
-    @DataField(id = "resource", defaultValue = "No description available",
-            description = FieldConstants.TOOL_INFO_RESOURCE_DESCRIPTION)
+    @DataField(id = "resource", description = FieldConstants.TOOL_INFO_RESOURCE_DESCRIPTION)
     private Enums.Resource resource;
+
+    @DataField(id = "resource", description = FieldConstants.TOOL_INFO_EXTERNAL_EXECUTOR_DESCRIPTION)
+    private ToolInfoExecutor externalExecutor;
 
 
     public ToolInfo() {
     }
 
     public ToolInfo(String id, String description, Scope scope, Type type, Enums.Resource resource) {
+        this(id, description, scope, type, resource, null);
+    }
+
+    public ToolInfo(String id, String description, Scope scope, Type type, Enums.Resource resource, ToolInfoExecutor externalExecutor) {
         this.id = id;
         this.description = description;
         this.scope = scope;
         this.type = type;
         this.resource = resource;
+        this.externalExecutor = externalExecutor;
     }
 
     @Override
     public String toString() {
-        return "ToolInfo{" +
-                "id='" + id + '\'' +
-                ", description='" + description + '\'' +
-                ", scope=" + scope +
-                ", type=" + type +
-                ", resource=" + resource +
-                '}';
+        final StringBuilder sb = new StringBuilder("ToolInfo{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", scope=").append(scope);
+        sb.append(", type=").append(type);
+        sb.append(", resource=").append(resource);
+        sb.append(", externalExecutor=").append(externalExecutor);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {
@@ -110,6 +116,15 @@ public class ToolInfo {
 
     public ToolInfo setResource(Enums.Resource resource) {
         this.resource = resource;
+        return this;
+    }
+
+    public ToolInfoExecutor getExternalExecutor() {
+        return externalExecutor;
+    }
+
+    public ToolInfo setExternalExecutor(ToolInfoExecutor externalExecutor) {
+        this.externalExecutor = externalExecutor;
         return this;
     }
 }
