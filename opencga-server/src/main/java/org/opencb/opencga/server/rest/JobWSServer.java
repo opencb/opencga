@@ -124,7 +124,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/run")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = BinaryExecutor.DESCRIPTION, response = Job.class)
-    public Response updateByPost(
+    public Response runByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -309,7 +309,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query")
     })
-    public Response updateByPost(
+    public Response runByPost(
             @ApiParam(value = ParamConstants.JOBS_DESCRIPTION, required = true) @PathParam("jobs") String jobStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
