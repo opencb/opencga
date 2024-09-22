@@ -41,7 +41,7 @@ public class ToolInfo {
     @DataField(id = "resource", description = FieldConstants.TOOL_INFO_RESOURCE_DESCRIPTION)
     private Enums.Resource resource;
 
-    @DataField(id = "resource", description = FieldConstants.TOOL_INFO_EXTERNAL_EXECUTOR_DESCRIPTION)
+    @DataField(id = "externalExecutor", since = "3.3.0", description = FieldConstants.TOOL_INFO_EXTERNAL_EXECUTOR_DESCRIPTION)
     private ToolInfoExecutor externalExecutor;
 
 

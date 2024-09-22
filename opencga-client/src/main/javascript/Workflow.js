@@ -59,7 +59,7 @@ export default class Workflow extends OpenCGAParentClass {
     create(data, params) {
         return this._post("workflows", null, null, null, "create", data, params);
     }
-#
+
     /** Workflow distinct method
     * @param {String} field - Comma separated list of fields for which to obtain the distinct values.
     * @param {Object} [params] - The Object containing the following optional parameters:

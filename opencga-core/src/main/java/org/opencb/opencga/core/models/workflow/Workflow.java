@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.workflow;
 
+import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
@@ -8,6 +9,7 @@ import org.opencb.opencga.core.models.study.Variable;
 import java.util.List;
 import java.util.Map;
 
+@DataClass(id = "Workflow", since = "3.3.0", description = "Job data model hosts information about any job.")
 public class Workflow extends PrivateStudyUid {
 
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
@@ -24,26 +26,11 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-    @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
-    private boolean draft;
-
-    @DataField(id = "version", managed = true, indexed = true, description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
-    private int version;
-
-    @DataField(id = "release", managed = true, indexed = true, description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
-    private int release;
-
     @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
     private Type type;
 
     @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
     private WorkflowSystem manager;
-
-    @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
-    private WorkflowRepository repository;
-
-    @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
-    private List<WorkflowScript> scripts;
 
     @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
     private List<String> tags;
@@ -53,6 +40,21 @@ public class Workflow extends PrivateStudyUid {
 
     @DataField(id = "minimumRequirements", description = FieldConstants.WORKFLOW_MINIMUM_REQUIREMENTS_DESCRIPTION)
     private WorkflowMinimumRequirements minimumRequirements;
+
+    @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
+    private boolean draft;
+
+    @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
+    private WorkflowRepository repository;
+
+    @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
+    private List<WorkflowScript> scripts;
+
+    @DataField(id = "version", managed = true, indexed = true, description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
+    private int version;
+
+    @DataField(id = "release", managed = true, indexed = true, description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
+    private int release;
 
     @DataField(id = "internal", description = FieldConstants.WORKFLOW_INTERNAL_DESCRIPTION)
     private WorkflowInternal internal;
@@ -67,18 +69,18 @@ public class Workflow extends PrivateStudyUid {
     private Map<String, Object> attributes;
 
     public enum Type {
-        CLINICAL_INTERPRETATION,
         SECONDARY_ANALYSIS,
         RESEARCH_ANALYSIS,
+        CLINICAL_INTERPRETATION_ANALYSIS,
         OTHER
     }
 
     public Workflow() {
     }
 
-    public Workflow(String id, String name, String description, boolean draft, Type type, WorkflowSystem manager,
-                    WorkflowRepository repository, List<WorkflowScript> scripts, List<String> tags, List<Variable> variables,
-                    WorkflowMinimumRequirements minimumRequirements, WorkflowInternal internal, String creationDate,
+    public Workflow(String id, String name, String description, Type type, WorkflowSystem manager, List<String> tags,
+                    List<Variable> variables, WorkflowMinimumRequirements minimumRequirements, boolean draft,
+                    WorkflowRepository repository, List<WorkflowScript> scripts, WorkflowInternal internal, String creationDate,
                     String modificationDate, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -104,16 +106,16 @@ public class Workflow extends PrivateStudyUid {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", draft=").append(draft);
-        sb.append(", version=").append(version);
-        sb.append(", release=").append(release);
         sb.append(", type=").append(type);
         sb.append(", manager=").append(manager);
-        sb.append(", repository=").append(repository);
-        sb.append(", scripts=").append(scripts);
         sb.append(", tags=").append(tags);
         sb.append(", variables=").append(variables);
         sb.append(", minimumRequirements=").append(minimumRequirements);
+        sb.append(", draft=").append(draft);
+        sb.append(", repository=").append(repository);
+        sb.append(", scripts=").append(scripts);
+        sb.append(", version=").append(version);
+        sb.append(", release=").append(release);
         sb.append(", internal=").append(internal);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');

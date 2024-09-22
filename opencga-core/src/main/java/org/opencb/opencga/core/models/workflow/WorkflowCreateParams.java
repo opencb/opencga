@@ -97,7 +97,7 @@ public class WorkflowCreateParams {
     }
 
     public Workflow toWorkflow() {
-        return new Workflow(id, name, description, draft, type, manager, repository, scripts, tags, variables, minimumRequirements,
+        return new Workflow(id, name, description, type, manager, tags, variables, minimumRequirements, draft, repository, scripts,
                 new WorkflowInternal(), creationDate, modificationDate, attributes);
     }
 
