@@ -16,10 +16,7 @@ parser.add_argument("-v", "--version", help="Tag of the docker image, e.g. v1.0.
 parser.add_argument("-l", "--latest", help="Make the docker image latest, e.g. v1.0.0", default="False")
 parser.add_argument("-u", "--username", help="Username to login to the docker registry")
 parser.add_argument("-p", "--password", help="Password to login to the docker registry",)
-# parser.add_argument('--docker-build-args',
-#                     help="Additional build arguments to pass to the docker build command. Usage: --docker-build-args='ARGS' e.g: --docker-build-args='--no-cache'",
-#                     default="")
-parser.add_argument('--server', help="Docker registry server", default="docker.io")
+# parser.add_argument('--server', help="Docker registry server", default="docker.io")
 
 ## Some ANSI colors to print shell output
 shell_colors = {
@@ -31,24 +28,20 @@ shell_colors = {
     'reset': '\033[0m'
 }
 
-
 def error(message):
     sys.stderr.write(shell_colors['red'] + 'ERROR: %s\n' % message + shell_colors['reset'])
     sys.exit(2)
-
 
 def print_header(str):
     print(shell_colors['magenta'] + "*************************************************" + shell_colors['reset'])
     print(shell_colors['magenta'] + str + shell_colors['reset'])
     print(shell_colors['magenta'] + "*************************************************" + shell_colors['reset'])
 
-
 def run(command):
     print(shell_colors['bold'] + command + shell_colors['reset'])
     code = os.system(command)
     if code != 0:
         error("Error executing: " + command)
-
 
 def login(loginRequired=False):
     if args.username is None or args.password is None:
@@ -72,35 +65,41 @@ def get_docker_image_id():
 
 
 def dockerfile():
-    # print_header('Creating Dockerfile ...')
     print(shell_colors['blue'] + "Creating Dockerfile  ..." + shell_colors['reset'])
 
     with open(custom_build_folder + "/Dockerfile", "w") as f:
+        ## Set base image and copy the custom tool folder
         f.write("FROM ubuntu:24.04\n\n")
         f.write("COPY . /opt/app\n\n")
 
-        # Update Ubuntu and install base libraries
+        ## Install Ubuntu OS dependencies with 'apt'
+        # 1. Update Ubuntu and install base libraries
         f.write("RUN apt update && apt -y upgrade && apt install -y python3 python3-pip && \\ \n")
 
-        # Install R
+        # 2. Install R
         if args.install_r is True:
             f.write("apt install -y r-base && \\ \n")
 
-        # Install user's apt dependencies
+        # 3. Install user's apt dependencies
         if args.apt_get is not None and not args.apt_get == "":
             f.write("apt install -y " + args.apt_get.replace(",", " ") + " && \\ \n")
 
-        # Install Python dependencies
+        # 4. Check and build C/C++ tools
+        if os.path.isfile(custom_build_folder + "/makefile") or os.path.isfile(custom_build_folder + "/Makefile"):
+            f.write("apt install -y build-essential && \\ \n")
+            f.write("make -C /opt/app && \\ \n")
+
+        ## Install application dependencies, only Python and R supported
+        # 1. Install Python dependencies
         if os.path.isfile(custom_build_folder + "/requirements.txt"):
             f.write("pip3 install -r /opt/app/requirements.txt --break-system-packages && \\ \n")
 
-        # Install R dependencies
+        # 2. Install R dependencies
         if args.install_r is True and os.path.isfile(custom_build_folder + "/install.r"):
             f.write("Rscript /opt/app/install.r && \\ \n")
 
+        ## Clean up and set working directory
         f.write("rm -rf /var/lib/apt/lists/* \n\n")
-
-        # f.write("USER opencga\n\n")
         f.write("WORKDIR /opt/app\n\n")
         f.write("CMD bash\n")
 
@@ -116,9 +115,6 @@ def build():
     run(command)
 
 def tag_latest(image):
-    # if server:
-    #     print("Don't use tag latest in server " + server)
-    #     return
     latest_tag = os.popen(("curl -s https://registry.hub.docker.com/v1/repositories/" + args.organisation + "/" + args.name + "/tags"
                            + " | jq -r .[].name"
                            + " | grep -v latest"
@@ -137,9 +133,6 @@ def push():
     image = get_docker_image_id()
     print(shell_colors['blue'] + "Pushing to Docker Hub image: " + image + shell_colors['reset'])
 
-    # if server:
-    #     run("docker tag " + image + ":" + tag + " " + server + image + ":" + tag)
-    # run("docker push " + server + image + ":" + tag)
     run("docker push " + image)
     if args.latest == True:
         tag_latest(image)
@@ -151,7 +144,7 @@ args = parser.parse_args()
 # 1. Set build folder to default value if not set
 if args.custom_tool_dir is not None and not args.custom_tool_dir == "":
     if args.custom_tool_dir.startswith("git@"):
-        custom_build_folder = "/tmp/custom-tool"
+        custom_build_folder = "/tmp/opencga-custom-tool"
         os.system("rm -rf " + custom_build_folder)
         os.system("git clone " + args.custom_tool_dir + " " + custom_build_folder)
     else:
@@ -162,13 +155,7 @@ if args.custom_tool_dir is not None and not args.custom_tool_dir == "":
 else:
     error("Custom tool folder is required")
 
-# 2. Set docker server
-# if args.server != "docker.io":
-#     server = args.server + "/"
-# else:
-#     server = ""
-
-## Execute the action
+## 2. Execute the action
 if args.action == "dockerfile":
     dockerfile()
 elif args.action == "build":
