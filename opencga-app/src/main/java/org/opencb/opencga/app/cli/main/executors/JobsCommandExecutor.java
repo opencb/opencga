@@ -26,6 +26,8 @@ import org.opencb.opencga.core.models.job.JobRetryParams;
 import org.opencb.opencga.core.models.job.JobRunDockerParams;
 import org.opencb.opencga.core.models.job.JobRunGitParams;
 import org.opencb.opencga.core.models.job.JobRunParams;
+import org.opencb.opencga.core.models.job.JobToolBuildDockerParams;
+import org.opencb.opencga.core.models.job.JobToolBuildParams;
 import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.models.job.ToolInfo;
@@ -88,6 +90,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "search":
                 queryResponse = search();
+                break;
+            case "tool-build":
+                queryResponse = buildTool();
                 break;
             case "top":
                 queryResponse = top();
@@ -354,6 +359,52 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getJobClient().search(queryParams);
+    }
+
+    private RestResponse<Job> buildTool() throws Exception {
+        logger.debug("Executing buildTool in Jobs command line");
+
+        JobsCommandOptions.BuildToolCommandOptions commandOptions = jobsCommandOptions.buildToolCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        JobToolBuildParams jobToolBuildParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/tool/build"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            jobToolBuildParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), JobToolBuildParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "gitRepository",commandOptions.gitRepository, true);
+            putNestedIfNotEmpty(beanParams, "aptGet",commandOptions.aptGet, true);
+            putNestedIfNotNull(beanParams, "installR",commandOptions.installR, true);
+            putNestedIfNotEmpty(beanParams, "docker.organisation",commandOptions.dockerOrganisation, true);
+            putNestedIfNotEmpty(beanParams, "docker.name",commandOptions.dockerName, true);
+            putNestedIfNotEmpty(beanParams, "docker.tag",commandOptions.dockerTag, true);
+            putNestedIfNotEmpty(beanParams, "docker.user",commandOptions.dockerUser, true);
+            putNestedIfNotEmpty(beanParams, "docker.password",commandOptions.dockerPassword, true);
+
+            jobToolBuildParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), JobToolBuildParams.class);
+        }
+        return openCGAClient.getJobClient().buildTool(jobToolBuildParams, queryParams);
     }
 
     private RestResponse<JobTop> top() throws Exception {
