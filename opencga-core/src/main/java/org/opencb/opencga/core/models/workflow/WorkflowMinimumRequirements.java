@@ -6,10 +6,10 @@ import org.opencb.opencga.core.api.FieldConstants;
 public class WorkflowMinimumRequirements {
 
     @DataField(id = "cpu", description = FieldConstants.WORKFLOW_MIN_REQUIREMENTS_CPU_DESCRIPTION)
-    private int cpu;
+    private Integer cpu;
 
     @DataField(id = "memory", description = FieldConstants.WORKFLOW_MIN_REQUIREMENTS_MEMORY_DESCRIPTION)
-    private int memory;
+    private Integer memory;
 
     public WorkflowMinimumRequirements() {
     }

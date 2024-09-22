@@ -61,15 +61,16 @@ public class CustomToolBuilder extends OpenCgaToolScopeStudy {
         StringBuilder cliBuilder = new StringBuilder();
 
         // 1. Get the path to the custom-tool-docker-builder script
-        Path customToolDockerBuildPath = this.getOpencgaHome()
+        Path customToolDockerBuilderPath = this.getOpencgaHome()
                 .resolve("cloud")
                 .resolve("docker")
                 .resolve("custom-tool-docker-builder")
                 .resolve(PYTHON_SCRIPT_NAME);
-        logger.info("Executing custom-tool-docker-builder script: {}", customToolDockerBuildPath);
+        logger.info("Executing custom-tool-docker-builder script: {}", customToolDockerBuilderPath);
 
         // 2. Prepare basic CLI params
-        cliBuilder.append(customToolDockerBuildPath).append(" ")
+        cliBuilder.append("python3").append(" ")
+                .append(customToolDockerBuilderPath).append(" ")
                 .append("-t").append(" ").append(toolBuildParams.getGitRepository()).append(" ")
                 .append("-o").append(" ").append(toolBuildParams.getDocker().getOrganisation()).append(" ")
                 .append("-n").append(" ").append(toolBuildParams.getDocker().getName()).append(" ")
