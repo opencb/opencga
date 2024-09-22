@@ -85,14 +85,14 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             case "retry":
                 queryResponse = retry();
                 break;
-            case "run":
-                queryResponse = run();
-                break;
             case "search":
                 queryResponse = search();
                 break;
             case "tool-build":
                 queryResponse = buildTool();
+                break;
+            case "tool-run":
+                queryResponse = runTool();
                 break;
             case "top":
                 queryResponse = top();
@@ -280,50 +280,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getJobClient().retry(jobRetryParams, queryParams);
     }
 
-    private RestResponse<Job> run() throws Exception {
-        logger.debug("Executing run in Jobs command line");
-
-        JobsCommandOptions.RunCommandOptions commandOptions = jobsCommandOptions.runCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        JobRunParams jobRunParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            jobRunParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), JobRunParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "commandLine",commandOptions.commandLine, true);
-            putNestedIfNotEmpty(beanParams, "docker.id",commandOptions.dockerId, true);
-            putNestedIfNotEmpty(beanParams, "docker.tag",commandOptions.dockerTag, true);
-            putNestedIfNotEmpty(beanParams, "docker.token",commandOptions.dockerToken, true);
-            putNestedIfNotEmpty(beanParams, "git.repository",commandOptions.gitRepository, true);
-            putNestedIfNotEmpty(beanParams, "git.reference",commandOptions.gitReference, true);
-
-            jobRunParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), JobRunParams.class);
-        }
-        return openCGAClient.getJobClient().run(jobRunParams, queryParams);
-    }
-
     private RestResponse<Job> search() throws Exception {
         logger.debug("Executing search in Jobs command line");
 
@@ -405,6 +361,50 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), JobToolBuildParams.class);
         }
         return openCGAClient.getJobClient().buildTool(jobToolBuildParams, queryParams);
+    }
+
+    private RestResponse<Job> runTool() throws Exception {
+        logger.debug("Executing runTool in Jobs command line");
+
+        JobsCommandOptions.RunToolCommandOptions commandOptions = jobsCommandOptions.runToolCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        JobRunParams jobRunParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/tool/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            jobRunParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), JobRunParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "commandLine",commandOptions.commandLine, true);
+            putNestedIfNotEmpty(beanParams, "docker.id",commandOptions.dockerId, true);
+            putNestedIfNotEmpty(beanParams, "docker.tag",commandOptions.dockerTag, true);
+            putNestedIfNotEmpty(beanParams, "docker.token",commandOptions.dockerToken, true);
+            putNestedIfNotEmpty(beanParams, "git.repository",commandOptions.gitRepository, true);
+            putNestedIfNotEmpty(beanParams, "git.reference",commandOptions.gitReference, true);
+
+            jobRunParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), JobRunParams.class);
+        }
+        return openCGAClient.getJobClient().runTool(jobRunParams, queryParams);
     }
 
     private RestResponse<JobTop> top() throws Exception {

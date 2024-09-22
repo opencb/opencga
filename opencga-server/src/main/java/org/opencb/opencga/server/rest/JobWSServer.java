@@ -121,7 +121,7 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/run")
+    @Path("/tool/run")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = BinaryExecutor.DESCRIPTION, response = Job.class)
     public Response runByPost(
