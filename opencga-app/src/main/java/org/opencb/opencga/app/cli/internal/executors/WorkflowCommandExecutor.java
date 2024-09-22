@@ -31,7 +31,7 @@ public class WorkflowCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(workflowCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
-            case "nextflow-run":
+            case "workflow":
                 nextflowRun();
                 break;
             default:

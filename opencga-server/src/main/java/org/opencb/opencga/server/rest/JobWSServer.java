@@ -20,7 +20,8 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.binary.BinaryExecutor;
+import org.opencb.opencga.analysis.customTool.CustomToolBuilder;
+import org.opencb.opencga.analysis.customTool.CustomToolExecutor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -123,7 +124,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @POST
     @Path("/tool/run")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = BinaryExecutor.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = CustomToolExecutor.DESCRIPTION, response = Job.class)
     public Response runByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -134,13 +135,13 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = NextFlowRunParams.DESCRIPTION, required = true) JobRunParams params) {
-        return submitJob(BinaryExecutor.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(CustomToolExecutor.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
     @Path("/tool/build")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = BinaryExecutor.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = CustomToolExecutor.DESCRIPTION, response = Job.class)
     public Response dockerBuildByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -151,7 +152,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = "body", required = true) JobToolBuildParams params) {
-        return submitJob(BinaryExecutor.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(CustomToolBuilder.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET

@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.binary;
+package org.opencb.opencga.analysis.customTool;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -21,10 +21,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-@Tool(id = BinaryExecutor.ID, resource = Enums.Resource.JOB, description = BinaryExecutor.DESCRIPTION)
-public class BinaryExecutor extends OpenCgaToolScopeStudy {
+@Tool(id = CustomToolExecutor.ID, resource = Enums.Resource.JOB, description = CustomToolExecutor.DESCRIPTION)
+public class CustomToolExecutor extends OpenCgaToolScopeStudy {
 
-    public final static String ID = "binary";
+    public final static String ID = "custom-tool";
     public static final String DESCRIPTION = "Execute an analysis from a custom binary.";
 
     @ToolParams
@@ -35,7 +35,7 @@ public class BinaryExecutor extends OpenCgaToolScopeStudy {
     List<AbstractMap.SimpleEntry<String, String>> inputBindings;
     private String dockerImage;
 
-    private final static Logger logger = LoggerFactory.getLogger(BinaryExecutor.class);
+    private final static Logger logger = LoggerFactory.getLogger(CustomToolExecutor.class);
 
     @Override
     protected void check() throws Exception {

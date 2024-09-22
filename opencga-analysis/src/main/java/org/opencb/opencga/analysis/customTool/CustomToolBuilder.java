@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.binary;
+package org.opencb.opencga.analysis.customTool;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -19,10 +19,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
-@Tool(id = BioinfoToolBuilder.ID, resource = Enums.Resource.JOB, description = BioinfoToolBuilder.DESCRIPTION)
-public class BioinfoToolBuilder extends OpenCgaToolScopeStudy {
+@Tool(id = CustomToolBuilder.ID, resource = Enums.Resource.JOB, description = CustomToolBuilder.DESCRIPTION)
+public class CustomToolBuilder extends OpenCgaToolScopeStudy {
 
-    public static final String ID = "tool-builder";
+    public static final String ID = "custom-tool-builder";
     public static final String DESCRIPTION = "Build an external bioinformatic tool from a GitHub repository URL.";
 
     private static final String PYTHON_SCRIPT_NAME = "custom-tool-docker-build.py";
@@ -30,7 +30,7 @@ public class BioinfoToolBuilder extends OpenCgaToolScopeStudy {
     @ToolParams
     protected JobToolBuildParams toolBuildParams = new JobToolBuildParams();
 
-    private final static Logger logger = LoggerFactory.getLogger(BioinfoToolBuilder.class);
+    private final static Logger logger = LoggerFactory.getLogger(CustomToolBuilder.class);
 
     @Override
     protected void check() throws Exception {
