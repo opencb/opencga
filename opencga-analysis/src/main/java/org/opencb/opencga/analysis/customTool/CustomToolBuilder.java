@@ -64,11 +64,12 @@ public class CustomToolBuilder extends OpenCgaToolScopeStudy {
         Path customToolDockerBuildPath = this.getOpencgaHome()
                 .resolve("cloud")
                 .resolve("docker")
-                .resolve("custom-tool-docker-builder");
+                .resolve("custom-tool-docker-builder")
+                .resolve(PYTHON_SCRIPT_NAME);
+        logger.info("Executing custom-tool-docker-builder script: {}", customToolDockerBuildPath);
 
         // 2. Prepare basic CLI params
-        cliBuilder.append(PYTHON_SCRIPT_NAME).append(" ")
-                .append(customToolDockerBuildPath).append(" ")
+        cliBuilder.append(customToolDockerBuildPath).append(" ")
                 .append("-t").append(" ").append(toolBuildParams.getGitRepository()).append(" ")
                 .append("-o").append(" ").append(toolBuildParams.getDocker().getOrganisation()).append(" ")
                 .append("-n").append(" ").append(toolBuildParams.getDocker().getName()).append(" ")
