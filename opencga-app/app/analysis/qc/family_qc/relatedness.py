@@ -45,7 +45,7 @@ class Relatedness:
         # Reading VCF
         vcf_fhand = gzip.open(self.family_qc_executor_info.vcf_file, 'r')
         # Reading pop_freq file
-        input_pop_freq_fhand = open(str(self.pop_freq_file), 'r')
+        input_pop_freq_fhand = open(self.pop_freq_file, 'r')
         LOGGER.debug('Getting variant IDs to include in the VCF from file: "{}"'.format(self.pop_freq_file))
         variant_ids_to_include = [line.strip().split()[1] for line in input_pop_freq_fhand]
 
@@ -81,14 +81,14 @@ class Relatedness:
         family_info_fhand = open(self.family_qc_executor_info.info_file)
         family_info_json = json.load(family_info_fhand)
         samples_individuals = {}
-        for sample in self.sample_ids:
+        for sample in self.family_qc_executor_info.sample_ids:
             samples_individuals[sample] = {'individualId': '', 'individualSex': 0, 'fatherId': 'NA', 'motherId': 'NA',
                                            'familyMembersRoles': 'NA'}
 
         LOGGER.debug('Getting individual information for each sample')
         for member in family_info_json['members']:
             for sample_member in member['samples']:
-                if sample_member['id'] in self.sample_ids:
+                if sample_member['id'] in self.family_qc_executor_info.sample_ids:
                     # Filling in individual info
                     LOGGER.debug('Individual information for sample "{}" found'.format(sample_member['id']))
                     samples_individuals[sample_member['id']]['individualId'] = member['id']
