@@ -121,26 +121,29 @@ class Relatedness:
         # Return samples_individuals dictionary
         return samples_individuals
 
-    def generate_files_for_plink_fam_file(self, outdir_fpath):
+    def generate_files_for_plink_fam_file(self):
         # Getting family id and sample_individuals_info
-        family_id = self.id_
+        family_id = self.family_qc_executor_info.id_
         samples_individuals = self.get_samples_individuals_info()
+
+        # Create dir for PLINK if it does not exist yet:
+        plink_dir = create_output_dir(path_elements=[self.output_relatedness_dir, 'plink_IBD'])
 
         # Generating text file to update sex information
         sex_information_output_file_name = family_id + '_individual_sample_sex_information.txt'
-        sex_information_output_fpath = os.path.join(str(outdir_fpath), sex_information_output_file_name)
+        sex_information_output_fpath = os.path.join(plink_dir, sex_information_output_file_name)
         sex_information_output_fhand = open(sex_information_output_fpath, 'w')
         LOGGER.debug('Generating text file to update individual, sample, sex information: "{}"'.format(
             sex_information_output_fpath))
 
         # Generating text file to update parent-offspring relationships
         parent_offspring_output_file_name = family_id + '_parent_offspring_relationships.txt'
-        parent_offspring_output_fpath = os.path.join(str(outdir_fpath), parent_offspring_output_file_name)
+        parent_offspring_output_fpath = os.path.join(plink_dir, parent_offspring_output_file_name)
         parent_offspring_output_fhand = open(parent_offspring_output_fpath, 'w')
         LOGGER.debug(
             'Generating text file to update parent-offspring relationships: "{}"'.format(parent_offspring_output_fpath))
 
-        for sample in self.sample_ids:
+        for sample in self.family_qc_executor_info.sample_ids:
             # Individual information for that sample
             individual_info = samples_individuals[sample]
             # Structure = FamilyID SampleID Sex
