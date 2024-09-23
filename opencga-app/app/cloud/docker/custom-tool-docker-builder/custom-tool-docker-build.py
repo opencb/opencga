@@ -143,7 +143,7 @@ args = parser.parse_args()
 
 # 1. Set build folder to default value if not set
 if args.custom_tool_dir is not None and not args.custom_tool_dir == "":
-    if args.custom_tool_dir.startswith("git@"):
+    if args.custom_tool_dir.startswith("git@") or args.custom_tool_dir.startswith("https://"):
         custom_build_folder = "/tmp/opencga-custom-tool"
         os.system("rm -rf " + custom_build_folder)
         os.system("git clone " + args.custom_tool_dir + " " + custom_build_folder)
