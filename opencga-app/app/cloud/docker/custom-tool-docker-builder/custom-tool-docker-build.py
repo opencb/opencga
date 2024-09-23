@@ -74,7 +74,7 @@ def dockerfile():
 
         ## Install Ubuntu OS dependencies with 'apt'
         # 1. Update Ubuntu and install base libraries
-        f.write("RUN apt update && apt -y upgrade && apt install -y python3 python3-pip && \\ \n")
+        f.write("RUN apt update && apt -y upgrade && apt install -y python3 python3-pip docker-ce docker-ce-cli containerd.io && \\ \n")
 
         # 2. Install R
         if args.install_r is True:
