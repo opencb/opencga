@@ -2,16 +2,22 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIncludeHandler;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParser;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalInterpretationQueryParser;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -19,23 +25,27 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Paths;
 import java.text.ParseException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
@@ -240,7 +250,7 @@ public class CvdbSolrEngineQueryTest {
         assertTrue(CollectionUtils.isNotEmpty(result.first().getPrimaryFindings()));
         Phenotype phenotype = result.first().getPrimaryFindings().get(0).getEvidences().get(0).getPhenotypes().get(0);
         assertEquals("VACTERL-like phenotypes", phenotype.getId());
-        assertTrue(StringUtils.isNotEmpty(phenotype.getSource()));
+        assertTrue(StringUtils.isEmpty(phenotype.getSource()));
 
         queryOptions.put(INCLUDE, "id,primaryFindings.evidences.phenotypes");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, userToken);
@@ -579,15 +589,15 @@ public class CvdbSolrEngineQueryTest {
             assertTrue(ca.getInterpretation().getPanels().stream().map(p -> p.getId()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
         }
 
-        // Check existing panel name
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
-        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
-        assertTrue(result.getNumResults() > 0);
-        for (ClinicalAnalysis ca : result.getResults()) {
-            assertTrue(ca.getInterpretation().getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
-        }
+//        // Check existing panel name
+//        query = new Query(PROJECT_PARAM_NAME, projectId);
+//        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+//        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
+//        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+//        assertTrue(result.getNumResults() > 0);
+//        for (ClinicalAnalysis ca : result.getResults()) {
+//            assertTrue(ca.getInterpretation().getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+//        }
 
         // Check non-existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
@@ -860,15 +870,15 @@ public class CvdbSolrEngineQueryTest {
             assertTrue(ci.getPanels().stream().map(p -> p.getId()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
         }
 
-        // Check existing panel name
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
-        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, userToken);
-        assertTrue(result.getNumResults() > 0);
-        for (Interpretation ci : result.getResults()) {
-            assertTrue(ci.getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
-        }
+//        // Check existing panel name
+//        query = new Query(PROJECT_PARAM_NAME, projectId);
+//        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+//        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
+//        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, userToken);
+//        assertTrue(result.getNumResults() > 0);
+//        for (Interpretation ci : result.getResults()) {
+//            assertTrue(ci.getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+//        }
 
         // Check non-existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
@@ -914,22 +924,22 @@ public class CvdbSolrEngineQueryTest {
             }
         }
 
-        // Check existing panel name
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
-        result = cvdbEngine.searchClinicalVariants(query, queryOptions, userToken);
-        assertTrue(result.getNumResults() > 0);
-        alreadyChecked.clear();
-        for (ClinicalVariant cv : result.getResults()) {
-            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
-            assertTrue(StringUtils.isNotEmpty(ciId));
-            if (!alreadyChecked.contains(ciId)) {
-                Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
-                assertTrue(ci.getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
-                alreadyChecked.add(ciId);
-            }
-        }
+//        // Check existing panel name
+//        query = new Query(PROJECT_PARAM_NAME, projectId);
+//        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+//        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
+//        result = cvdbEngine.searchClinicalVariants(query, queryOptions, userToken);
+//        assertTrue(result.getNumResults() > 0);
+//        alreadyChecked.clear();
+//        for (ClinicalVariant cv : result.getResults()) {
+//            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+//            assertTrue(StringUtils.isNotEmpty(ciId));
+//            if (!alreadyChecked.contains(ciId)) {
+//                Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
+//                assertTrue(ci.getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+//                alreadyChecked.add(ciId);
+//            }
+//        }
 
         // Check non-existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
@@ -982,22 +992,22 @@ public class CvdbSolrEngineQueryTest {
             }
         }
 
-        // Check existing panel name
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
-        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, userToken);
-        assertTrue(result.getNumResults() > 0);
-        alreadyChecked.clear();
-        for (ClinicalVariantEvidence cve : result.getResults()) {
-            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
-            assertTrue(StringUtils.isNotEmpty(ciId));
-            if (!alreadyChecked.contains(ciId)) {
-                Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
-                assertTrue(ci.getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
-                alreadyChecked.add(ciId);
-            }
-        }
+//        // Check existing panel name
+//        query = new Query(PROJECT_PARAM_NAME, projectId);
+//        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+//        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
+//        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, userToken);
+//        assertTrue(result.getNumResults() > 0);
+//        alreadyChecked.clear();
+//        for (ClinicalVariantEvidence cve : result.getResults()) {
+//            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
+//            assertTrue(StringUtils.isNotEmpty(ciId));
+//            if (!alreadyChecked.contains(ciId)) {
+//                Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
+//                assertTrue(ci.getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+//                alreadyChecked.add(ciId);
+//            }
+//        }
 
         // Check non-existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
@@ -2050,153 +2060,753 @@ public class CvdbSolrEngineQueryTest {
     //-----------------------------------------------------------------------
 
     @Test
-    public void testExcludeQueryClinicalInterpretations() throws IOException, CvdbException, CatalogException {
-        // CVDB query
+    public void testExcludeQueryClinicalAInterpretationsUsingMediumJson() throws IOException, CvdbException, CatalogException {
         Query query;
-
-        QueryOptions queryOptions = new QueryOptions();
-//        queryOptions.put(LIMIT, 100);
-        queryOptions.put(EXCLUDE, "panels,primaryFindings");
-
-        DataResult<Interpretation> result;
-
-        // ciId = OPA-6522-1.2, primary = true
-        // ciId = SAP-32015-1.2, primary = true
-
-        // Check boolean (true)
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
-        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, userToken);
-        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
-        assertTrue(result.getNumResults() > 0);
 
-        for (Interpretation ci : result.getResults()) {
-            assertTrue(CollectionUtils.isEmpty(ci.getPanels()));
-            assertTrue(CollectionUtils.isEmpty(ci.getPrimaryFindings()));
-            ClinicalAnalysis clinicalAnalyis = TestUtilities.getClinicalAnalyis(ci.getClinicalAnalysisId(), projectId, cvdbEngine, userToken);
-            assertEquals(ci.getId(), clinicalAnalyis.getInterpretation().getId());
-        }
+//        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, userToken);
+//        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
+//        assertTrue(result.getNumResults() > 0);
+//
+//        for (Interpretation ci : result.getResults()) {
+//            assertTrue(CollectionUtils.isEmpty(ci.getPanels()));
+//            assertTrue(CollectionUtils.isEmpty(ci.getPrimaryFindings()));
+//            ClinicalAnalysis clinicalAnalyis = TestUtilities.getClinicalAnalyis(ci.getClinicalAnalysisId(), projectId, cvdbEngine, userToken);
+//            assertEquals(ci.getId(), clinicalAnalyis.getInterpretation().getId());
+//        }
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(EXCLUDE, "panels,interpretation.panels,secondaryInterpretations.panels");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("mediumJson", solrQuery.getFields());
     }
 
     @Test
-    public void testBuildClinicalAnalysisNotUsingJson() throws IOException, CvdbException, CatalogException {
-        // CVDB query
+    public void testExcludeQueryClinicalInterpretationsUsingMaxJson1() throws IOException, CvdbException, CatalogException {
         Query query;
-
-        QueryOptions queryOptions = new QueryOptions();
-//        queryOptions.put(LIMIT, 100);
-        queryOptions.put(INCLUDE, "id,family.members.id");
-
-        DataResult<ClinicalAnalysis> result;
-
-        // Check boolean (true)
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
-        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
-        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
-        assertTrue(result.getNumResults() > 0);
 
-        for (ClinicalAnalysis ca : result.getResults()) {
-            assertTrue(StringUtils.isNotEmpty(ca.getId()));
-            assertTrue(ca.getType() == null);
-            assertTrue(StringUtils.isEmpty(ca.getDescription()));
-            assertTrue(ca.getFamily() != null);
-            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getMembers()));
-            assertTrue(CollectionUtils.isEmpty(ca.getFamily().getPhenotypes()));
-        }
-    }
-
-    @Test
-    public void testBuildClinicalAnalysisNotUsingJsonAndMultipleFields() throws IOException, CvdbException, CatalogException {
-        // CVDB query
-        Query query;
+//        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+//        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
+//        assertTrue(result.getNumResults() > 0);
+//
+//        for (ClinicalAnalysis ca : result.getResults()) {
+//            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+//            assertTrue(ca.getType() == null);
+//            assertTrue(StringUtils.isEmpty(ca.getDescription()));
+//            assertTrue(ca.getFamily() != null);
+//            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getMembers()));
+//            assertTrue(CollectionUtils.isEmpty(ca.getFamily().getPhenotypes()));
+//        }
+//    }
+//
+//    @Test
+//    public void testBuildClinicalAnalysisNotUsingJsonAndMultipleFields() throws IOException, CvdbException, CatalogException {
+//        // CVDB query
+//        Query query;
 
         QueryOptions queryOptions = new QueryOptions();
-//        queryOptions.put(LIMIT, 100);
-        queryOptions.put(INCLUDE, "id,family.members.id,panels.id,panels.name,panels.stats,interpretation.stats,interpretation.id");
+        queryOptions.put(EXCLUDE, "panels,interpretation.panels");
 
-        DataResult<ClinicalAnalysis> result;
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
 
-        // Check boolean (true)
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
-        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
-        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
-        assertTrue(result.getNumResults() > 0);
 
-        for (ClinicalAnalysis ca : result.getResults()) {
-            assertTrue(StringUtils.isNotEmpty(ca.getId()));
-            assertTrue(ca.getType() == null);
-            assertTrue(StringUtils.isEmpty(ca.getDescription()));
-            assertTrue(ca.getFamily() != null);
-            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getMembers()));
-            assertTrue(CollectionUtils.isEmpty(ca.getFamily().getPhenotypes()));
-            assertTrue(CollectionUtils.isNotEmpty(ca.getPanels()));
-            for (Panel panel : ca.getPanels()) {
-                assertTrue(StringUtils.isNotEmpty(panel.getId()));
-                assertTrue(StringUtils.isNotEmpty(panel.getName()));
-                assertTrue(MapUtils.isNotEmpty(panel.getStats()));
+//        // Check boolean (true)
+//        query = new Query(PROJECT_PARAM_NAME, projectId);
+//        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+//        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+//        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+//        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
+//        assertTrue(result.getNumResults() > 0);
+//
+//        for (ClinicalAnalysis ca : result.getResults()) {
+//            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+//            assertTrue(ca.getType() == null);
+//            assertTrue(StringUtils.isEmpty(ca.getDescription()));
+//            assertTrue(ca.getFamily() != null);
+//            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getMembers()));
+//            assertTrue(CollectionUtils.isEmpty(ca.getFamily().getPhenotypes()));
+//            assertTrue(CollectionUtils.isNotEmpty(ca.getPanels()));
+//            for (Panel panel : ca.getPanels()) {
+//                assertTrue(StringUtils.isNotEmpty(panel.getId()));
+//                assertTrue(StringUtils.isNotEmpty(panel.getName()));
+//                assertTrue(MapUtils.isNotEmpty(panel.getStats()));
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(ca.getDisorder() != null);
+            assertTrue(ca.getPanels() == null);
+            assertTrue(ca.getInterpretation().getPanels() == null);
+            for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
+                assertTrue(secondaryInterpretation.getPanels() != null);
             }
         }
     }
 
     @Test
-    public void testBuildClinicalAnalysisUsingJsonNotInclude() throws IOException, CvdbException, CatalogException {
-        // CVDB query
+    public void testExcludeQueryClinicalInterpretationsUsingMaxJson2() throws IOException, CvdbException, CatalogException {
         Query query;
-
-        QueryOptions queryOptions = new QueryOptions();
-
-        DataResult<ClinicalAnalysis> result;
-
-        // Check boolean (true)
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
-        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
-        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
-        assertTrue(result.getNumResults() > 0);
 
-        for (ClinicalAnalysis ca : result.getResults()) {
+//        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+//        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
+//        assertTrue(result.getNumResults() > 0);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(EXCLUDE, "panels");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(ca.getDisorder() != null);
+            assertTrue(ca.getPanels() == null);
+            assertTrue(ca.getInterpretation().getPanels() != null);
+            for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
+                assertTrue(secondaryInterpretation.getPanels() != null);
+            }
+        }
+    }
+
+    //-----------------------------------------------------------------------
+    // Include
+    //-----------------------------------------------------------------------
+
+    @Test
+    public void testIncludeClinicalAnalysisUsingIndexedFields() throws IOException, CvdbException, CatalogException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "id,family.members.id");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertTrue(solrQuery.getFields().contains("id"));
+        assertTrue(solrQuery.getFields().contains("familyMemberIds"));
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        for (ClinicalAnalysis ca : results.getResults()) {
             assertTrue(StringUtils.isNotEmpty(ca.getId()));
-            assertTrue(ca.getType() != null);
-            assertTrue(ca.getFamily() != null);
-            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getMembers()));
-            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getPhenotypes()));
+            assertTrue(StringUtils.isEmpty(ca.getDescription()));
+            for (Individual member : ca.getFamily().getMembers()) {
+                assertTrue(StringUtils.isNotEmpty(member.getId()));
+                assertTrue(StringUtils.isEmpty(member.getName()));
+            }
+            assertTrue(ca.getDisorder() == null);
+            assertTrue(ca.getPanels() == null);
+            assertTrue(ca.getInterpretation() == null);
+            assertTrue(ca.getSecondaryInterpretations() == null);
         }
     }
 
     @Test
-    public void testBuildClinicalAnalysisUsingJsonIncludeWithField() throws IOException, CvdbException, CatalogException {
-        // CVDB query
+    public void testIncludeClinicalAnalysisUsingMinJsonIncludeWithField() throws IOException, CvdbException, CatalogException {
         Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "id,family.members.sex");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+            assertTrue(StringUtils.isEmpty(ca.getDescription()));
+            for (Individual member : ca.getFamily().getMembers()) {
+                assertTrue(StringUtils.isEmpty(member.getId()));
+                assertTrue(StringUtils.isEmpty(member.getName()));
+                assertTrue(member.getSex() != null);
+            }
+            assertTrue(ca.getDisorder() == null);
+            assertTrue(ca.getPanels() == null);
+            assertTrue(ca.getInterpretation() == null);
+            assertTrue(ca.getSecondaryInterpretations() == null);
+        }
+    }
+
+    @Test
+    public void testIncludeClinicalAnalysisUsingMinJsonIncludeWithField1() throws IOException, CvdbException, CatalogException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "id,type,proband.id,proband.samples.id,family.id,family.members.id,disorder.id,interpretation.id,interpretation.stats,panels.id,panels.name,panels.source,panels.stats");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+            assertTrue(ca.getType() != null);
+            assertTrue(StringUtils.isNotEmpty(ca.getProband().getId()));
+            for (Sample sample : ca.getProband().getSamples()) {
+                assertTrue(StringUtils.isNotEmpty(sample.getId()));
+            }
+            assertTrue(StringUtils.isNotEmpty(ca.getFamily().getId()));
+            for (Individual member : ca.getFamily().getMembers()) {
+                assertTrue(StringUtils.isNotEmpty(member.getId()));
+            }
+            assertTrue(StringUtils.isNotEmpty(ca.getDisorder().getId()));
+            assertTrue(StringUtils.isNotEmpty(ca.getInterpretation().getId()));
+            assertTrue(ca.getInterpretation().getId() != null);
+            for (Panel panel : ca.getPanels()) {
+                assertTrue(StringUtils.isNotEmpty(panel.getId()));
+                assertTrue(StringUtils.isNotEmpty(panel.getName()));
+                assertTrue(panel.getSource() != null);
+                assertTrue(panel.getStats() != null);
+            }
+        }
+    }
+
+
+    @Test
+    public void testIncludeClinicalAnalysisUsingMediumJsonIncludeWithField() throws IOException, CvdbException, CatalogException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "id,family.members.name,interpretation.primaryFindings.annotation");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("mediumJson", solrQuery.getFields());
+    }
+
+    @Test
+    public void testIncludeClinicalAnalysisMinJson() throws IOException, CvdbException, CatalogException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,family.members.name");
 
-        DataResult<ClinicalAnalysis> result;
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+    }
 
-        // Check boolean (true)
+    @Test
+    public void testIncludeClinicalAnalysisUsingMaxJsonNoInclude() throws IOException, CvdbException, CatalogException {
+        Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
-        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
-        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
-        assertTrue(result.getNumResults() > 0);
 
-        for (ClinicalAnalysis ca : result.getResults()) {
+//        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+//        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
+//        assertTrue(result.getNumResults() > 0);
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        for (ClinicalAnalysis ca : results.getResults()) {
             assertTrue(StringUtils.isNotEmpty(ca.getId()));
-            assertTrue(ca.getFamily() != null);
-            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getMembers()));
             for (Individual member : ca.getFamily().getMembers()) {
+                assertTrue(StringUtils.isNotEmpty(member.getId()));
                 assertTrue(StringUtils.isNotEmpty(member.getName()));
             }
-            assertTrue(CollectionUtils.isEmpty(ca.getFamily().getPhenotypes()));
+            assertTrue(ca.getDisorder() != null);
+            assertTrue(ca.getPanels() != null);
+            for (Panel panel : ca.getPanels()) {
+                assertTrue(StringUtils.isNotEmpty(panel.getId()));
+                assertTrue(StringUtils.isNotEmpty(panel.getName()));
+                assertTrue(panel.getSource() != null);
+                assertTrue(MapUtils.isNotEmpty(panel.getStats()));
+            }
+            assertTrue(ca.getInterpretation() != null);
+            assertTrue(StringUtils.isNotEmpty(ca.getInterpretation().getId()));
+            assertTrue(StringUtils.isNotEmpty(ca.getInterpretation().getDescription()));
+            assertTrue(ca.getInterpretation().getStats() != null);
+            assertTrue(ca.getSecondaryInterpretations() != null);
+        }
+    }
+
+    @Test
+    public void testIncludeClinicalAnalysisUsingMaxJson() throws IOException, CvdbException, CatalogException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "panels");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(StringUtils.isEmpty(ca.getId()));
+            assertTrue(ca.getDisorder() == null);
+            assertTrue(ca.getPanels() != null);
+            for (Panel panel : ca.getPanels()) {
+                assertTrue(StringUtils.isNotEmpty(panel.getId()));
+                assertTrue(StringUtils.isNotEmpty(panel.getName()));
+                assertTrue(panel.getSource() != null);
+                assertTrue(MapUtils.isNotEmpty(panel.getStats()));
+            }
+            assertTrue(ca.getInterpretation() == null);
+            assertTrue(ca.getSecondaryInterpretations() == null);
+        }
+    }
+
+    @Test
+    public void testIncludeClinicalAnalysisUsingMinJson() throws IOException, CvdbException, CatalogException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "interpretation.primaryFindings.id");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(StringUtils.isEmpty(ca.getId()));
+            assertTrue(ca.getDisorder() == null);
+            assertTrue(ca.getPanels() == null);
+            assertTrue(ca.getInterpretation() != null);
+            assertTrue(ca.getSecondaryInterpretations() == null);
+        }
+    }
+
+    @Test
+    public void testIncludeClinicalInterpretationNoneJson() throws CvdbException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "id");
+
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("id", solrQuery.getFields());
+    }
+
+    @Test
+    public void testIncludeClinicalInterpretationMinJson() throws CvdbException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "primaryFindings.evidences");
+
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+    }
+
+    @Test
+    public void testIncludeClinicalInterpretationMediumJson() throws CvdbException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "primaryFindings.annotation.id");
+
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("mediumJson", solrQuery.getFields());
+    }
+
+    @Test
+    public void testIncludeClinicalInterpretationMaxJson() throws CvdbException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "panels.genes");
+
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+    }
+
+    @Test
+    public void testIncludeClinicalInterpretationMinJson2() throws CvdbException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MINIMUM_JSON);
+
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+    }
+
+    @Test
+    public void testIncludeClinicalInterpretationMediumJson2() throws CvdbException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MEDIUM_JSON);
+
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("mediumJson", solrQuery.getFields());
+    }
+
+    @Test
+    public void testIncludeClinicalAnalysistionMediumJson2() throws CvdbException, CatalogException, IOException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MEDIUM_JSON);
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("mediumJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+            assertTrue(ca.getDisorder() != null);
+            assertTrue(ca.getPanels() != null);
+            for (Panel panel : ca.getPanels()) {
+                assertTrue(StringUtils.isNotEmpty(panel.getId()));
+                assertTrue(StringUtils.isNotEmpty(panel.getName()));
+                assertTrue(panel.getSource() != null);
+                assertTrue(MapUtils.isNotEmpty(panel.getStats()));
+            }
+            assertTrue(ca.getInterpretation() != null);
+            assertTrue(ca.getSecondaryInterpretations() != null);
+        }
+    }
+
+    @Test
+    public void testClinicalAnalysisQueryByCaReport() throws CvdbException, CatalogException, IOException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CA_REPORT_NAME, "testing");
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MINIMUM_JSON);
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(ca.getReport().getDiscussion().getText().contains(query.getString(CA_REPORT_NAME)));
+        }
+    }
+
+    @Test
+    public void testClinicalAnalysisQueryByCiDescription() throws CvdbException, CatalogException, IOException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_DESCRIPTION_NAME, "genomics_england_tiering");
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "interpretation.description");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            boolean found = false;
+            if (StringUtils.isNotEmpty(ca.getInterpretation().getDescription())
+                    && ca.getInterpretation().getDescription().contains(query.getString(CI_DESCRIPTION_NAME))) {
+                found = true;
+                break;
+            }
+            assertTrue(found);
+        }
+    }
+
+    @Test
+    public void testClinicalAnalysisQueryByCvCt() throws CvdbException, CatalogException, IOException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, "missense_variant");
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            boolean found = false;
+            for (ClinicalVariant cv : ca.getInterpretation().getPrimaryFindings()) {
+                for (ConsequenceType ct : cv.getAnnotation().getConsequenceTypes()) {
+                    for (SequenceOntologyTerm sot : ct.getSequenceOntologyTerms()) {
+                        if (sot.getName().equals(query.getString(CV_ANNOT_CONSEQUENCE_TYPE_NAME))) {
+                            found = true;
+                        }
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+    }
+
+    @Test
+    public void testClinicalAnalysisQueryByCvCtAND() throws CvdbException, CatalogException, IOException {
+        List<String> soTerms = Arrays.asList("stop_gained", "missense_variant");
+
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, StringUtils.join(soTerms, ";"));
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            boolean found = false;
+            for (ClinicalVariant cv : ca.getInterpretation().getPrimaryFindings()) {
+                for (ConsequenceType ct : cv.getAnnotation().getConsequenceTypes()) {
+                    List<String> soList = ct.getSequenceOntologyTerms().stream().map(sot -> sot.getName()).collect(Collectors.toList());
+                    if (soList.contains(soTerms.get(0)) && soList.contains(soTerms.get(1))) {
+                        found = true;
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+    }
+
+    @Test
+    public void testClinicalAnalysisQueryByCvCtOR() throws CvdbException, CatalogException, IOException {
+        List<String> soTerms = Arrays.asList("stop_gained", "missense_variant");
+
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, StringUtils.join(soTerms, ","));
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            boolean found = false;
+            for (ClinicalVariant cv : ca.getInterpretation().getPrimaryFindings()) {
+                for (ConsequenceType ct : cv.getAnnotation().getConsequenceTypes()) {
+                    List<String> soList = ct.getSequenceOntologyTerms().stream().map(sot -> sot.getName()).collect(Collectors.toList());
+                    if (soList.contains(soTerms.get(0)) || soList.contains(soTerms.get(1))) {
+                        found = true;
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+    }
+
+    @Test
+    public void testClinicalAnalysisQueryByCveClinicalSignificance() throws CvdbException, CatalogException, IOException {
+        // &cveClinicalSignificance=likely_benign
+
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CVE_CLINICAL_SIGNIFICANCE_NAME, ClinicalProperty.ClinicalSignificance.LIKELY_BENIGN);
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        assertTrue(results.getNumResults() > 0);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            boolean found = false;
+            for (ClinicalVariant cv : ca.getInterpretation().getPrimaryFindings()) {
+                for (ClinicalVariantEvidence cve : cv.getEvidences()) {
+                    if (cve.getClassification().getClinicalSignificance() == ClinicalProperty.ClinicalSignificance.LIKELY_BENIGN) {
+                        found = true;
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+    }
+
+    /* Code to update clinical analysis for testing:
+
+        ObjectWriter objectWriter = JacksonUtils.getDefaultObjectMapper().writerFor(ClinicalAnalysis.class);
+        if ("OPA-6522-1".equals(ca.getId())) {
+          ca.setReport(new ClinicalReport().setDiscussion(new ClinicalDiscussion().setText("Text for testing purposes")));
+          ca.getInterpretation().getPrimaryFindings().get(0).getEvidences().get(0).getClassification().setClinicalSignificance(ClinicalProperty.ClinicalSignificance.LIKELY_BENIGN);
+          ca.getInterpretation().getPrimaryFindings().get(1).getAnnotation().getConsequenceTypes().get(0).getSequenceOntologyTerms().add(new SequenceOntologyTerm("SO:0001587", "stop_gained"));
+          ca.getInterpretation().getPrimaryFindings().get(2).getAnnotation().getConsequenceTypes().get(0).getSequenceOntologyTerms().add(new SequenceOntologyTerm("SO:0001821", "inframe_insertion"));
+
+          objectWriter.writeValue(Paths.get("/tmp/ca1.new.json").toFile(), ca);
+        }
+     */
+
+    @Test
+    public void test() throws CatalogException, IOException, CvdbException {
+        // https://test.app.zettagenomics.com/task-5516/opencga/webservices/rest/v2/analysis/clinical
+        // /cvdb/case/query?studyId=eglh&ciPanelId=Congenital_neutropaenia-PanelAppId-28&sid=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTcwOTEzMTMzNywiZXhwIjoxNzA5MTM0OTM3fQ.jR3Fh7-5aRitqmKl64IJAKXG2Z5_omRbHmxTt5fB8es&limit=1
+        String panelId = "VACTERL-like_phenotypes-PanelAppId-101";
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PANEL_ID_NAME, panelId);
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+        }
+    }
+
+
+
+    //-----------------------------------------------------------------------
+    //-----------------------------------------------------------------------
+
+    private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException, CatalogException {
+        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CA_ID_NAME, caId);
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals(caId, result.first().getId());
+        return result.first();
+    }
+
+    private Interpretation getClinicalInterpretation(String ciId) throws IOException, CvdbException, CatalogException {
+        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_ID_NAME, ciId);
+        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), userToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals(ciId, result.first().getId());
+        return result.first();
+    }
+
+    private ClinicalVariant getClinicalVariant(String cvId) throws IOException, CvdbException, CatalogException {
+        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CV_ID_NAME, cvId);
+        DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), userToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals(cvId, result.first().getId());
+        return result.first();
+    }
+
+    private boolean existsVariantId(String variantId, ClinicalAnalysis clinicalAnalysis) {
+        if (existsVariantId(variantId, clinicalAnalysis.getInterpretation())) {
+            return true;
+        }
+        for (Interpretation interpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+            if (existsVariantId(variantId, interpretation)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean existsVariantId(String variantId, Interpretation interpretation) {
+        if (existsVariantId(variantId, interpretation.getPrimaryFindings())) {
+            return true;
+        }
+        if (existsVariantId(variantId, interpretation.getSecondaryFindings())) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean existsVariantId(String variantId, List<ClinicalVariant> clinicalVariants) {
+        for (ClinicalVariant clinicaVariant : clinicalVariants) {
+            if (clinicaVariant.toString().equals(variantId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
+        for (String caFilename : caFilenames) {
+            URL resource = ClinicalInterpretationConverterTest.class.getClassLoader().getResource(caFilename);
+            ClinicalAnalysisLoadResult loadResult = catalogManager.getClinicalAnalysisManager().load(studyId, Paths.get(resource.getPath()),
+                    userToken);
+            System.out.println(loadResult);
+        }
+        OpenCGAResult<ClinicalAnalysis> results = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),
+                QueryOptions.empty(), opencgaToken);
+        for (ClinicalAnalysis clinicalAnalysis : results.getResults()) {
+            catalogManager.getClinicalAnalysisManager().updateAcl(study.getFqn(), Collections.singletonList(clinicalAnalysis.getId()),
+                    "user", new ClinicalAnalysisAclUpdateParams(null, "VIEW"), ParamUtils.AclAction.SET, false, opencgaToken);
         }
     }
 }
-
 

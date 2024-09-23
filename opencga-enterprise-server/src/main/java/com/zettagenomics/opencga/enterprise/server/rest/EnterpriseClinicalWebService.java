@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
@@ -44,16 +45,22 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public class EnterpriseClinicalWebService extends ClinicalWebService {
 
     protected CvdbSolrEngine cvdbEngine;
-    private final ClinicalInterpretationManager clinicalInterpretationManager;
+    private ClinicalInterpretationManager clinicalInterpretationManager;
+
+    private static AtomicBoolean eClinicalInitialized = new AtomicBoolean(false);
 
     public EnterpriseClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
         // Get enterprise configuration to set the CVDB engine
-        EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
-        cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, new VariantStorageMetadataManager(
-                new DummyVariantStorageMetadataDBAdaptorFactory()));
-        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory, opencgaHome);
+        if (!eClinicalInitialized.get()) {
+            logger.info("Initializing CVDB Solr Engine");
+            EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
+            cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, new VariantStorageMetadataManager(
+                    new DummyVariantStorageMetadataDBAdaptorFactory()));
+            clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory, opencgaHome);
+            eClinicalInitialized.set(true);
+        }
     }
 
     //-------------------------------------------------------------------------
@@ -229,7 +236,6 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
     public Response searchClinicalAnalsyses() {
-        String key = CA_ID.key();
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);

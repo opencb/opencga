@@ -580,9 +580,9 @@
 	<!-- Clinical interpretation -->
 
     <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
-	<field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
+	<field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
 
-	<!-- Panel IDs contain both IDs and names -->
+	<!-- Panel IDs contain IDs -->
     <field name="panelIds" type="string" indexed="true" stored="true" multiValued="true"/>
 
 	<field name="analystId" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -595,7 +595,7 @@
 	<field name="methodVersion" type="string" indexed="true" stored="true" multiValued="false"/>
 	<field name="methodCommit" type="string" indexed="true" stored="true" multiValued="false"/>
 	<!-- Method software/dependencies are stores: name == version -->
-	<field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
+	<field name="methodDependencies" type="text_en" indexed="true" stored="true" multiValued="true"/>
 
 	<!-- Comments are stores: author == message == tag1:tag2:.. == date -->
     <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
@@ -603,14 +603,19 @@
     <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
     <field name="statusId" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="statusName" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="statusDescription" type="text_en" indexed="true" stored="true" multiValued="false"/>
+    <field name="statusType" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="statusDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
 
 	<field name="creationDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
 	<field name="modificationDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
     <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
-    <field name="json" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- Minimum JSON -->
+    <field name="minJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- Medium JSON, i.e. without Panel.{gene|region|variant} for case, interpretation and secondaryInterpetrations -->
+    <field name="mediumJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- Max JSON, i.e. with all information -->
+    <field name="maxJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
 
 </schema>

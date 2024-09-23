@@ -16,7 +16,6 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
-import com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -25,10 +24,8 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
-import org.opencb.opencga.core.tools.annotations.ApiImplicitParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser;
@@ -37,15 +34,10 @@ import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.util.*;
-import java.util.regex.Matcher;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.simpleDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.solrDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SCORE;
-import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.FIELD_SEPARATOR;
 
 public class ClinicalQueryParser {
 
@@ -260,7 +252,7 @@ public class ClinicalQueryParser {
         // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
 
         // <field name="discussionAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
-        addStringFilters("discussionAuthor", query.getString(ClinicalQueryParam.CV_DISCUSSION_AUTHOR_NAME), filters);
+        addTextFilters("discussionAuthor", query.getString(ClinicalQueryParam.CV_DISCUSSION_AUTHOR_NAME), filters);
 
         // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("discussionDate", query.getString(ClinicalQueryParam.CV_DISCUSSION_DATE_NAME), filters);
@@ -550,6 +542,12 @@ public class ClinicalQueryParser {
         }
 
         return variantQuery;
+    }
+
+    protected void logQueries(Query query, QueryOptions queryOptions, SolrQuery solrQuery, String title) {
+        logger.info("{} query: {}", title, query.toJson());
+        logger.info("{} query options: {}", title, queryOptions.toJson());
+        logger.info("Solr query: {}", solrQuery.toQueryString());
     }
 
     //-------------------------------------------------------------------------
