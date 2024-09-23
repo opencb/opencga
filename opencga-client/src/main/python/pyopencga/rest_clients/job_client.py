@@ -70,6 +70,16 @@ class Job(_ParentRestClient):
             search.
         :param str tool_type: Tool type executed by the job [OPERATION,
             ANALYSIS].
+        :param str tool.external_executor.id: Id of the external executor.
+            This field is only applicable for jobs executed by an external
+            executor.
+        :param str parent_id: Job id that generated this job (if any).
+        :param bool dry_run: Flag indicating that the job will be executed in
+            dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
+        :param bool internal.kill_job_requested: Flag indicating that the user
+            requested to kill the job.
         :param str user_id: User that created the job.
         :param str priority: Priority of the job.
         :param str status: Filter by status.
@@ -143,6 +153,16 @@ class Job(_ParentRestClient):
             search.
         :param str tool_type: Tool type executed by the job [OPERATION,
             ANALYSIS].
+        :param str tool.external_executor.id: Id of the external executor.
+            This field is only applicable for jobs executed by an external
+            executor.
+        :param str parent_id: Job id that generated this job (if any).
+        :param bool dry_run: Flag indicating that the job will be executed in
+            dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
+        :param bool internal.kill_job_requested: Flag indicating that the user
+            requested to kill the job.
         :param str user_id: User that created the job.
         :param str priority: Priority of the job.
         :param str status: Filter by status.

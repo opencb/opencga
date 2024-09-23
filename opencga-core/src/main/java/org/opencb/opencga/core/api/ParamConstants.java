@@ -554,6 +554,14 @@ public class ParamConstants {
     public static final String JOB_DEPENDS_ON_PARAM = "dependsOn";
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job IDs the job will depend on.";
     public static final String JOB_TOOL_ID_PARAM = "toolId";
+    public static final String JOB_TOOL_EXTERNAL_EXECUTOR_ID_PARAM = "tool.externalExecutor.id";
+    public static final String JOB_TOOL_EXTERNAL_EXECUTOR_ID_DESCRIPTION = "Id of the external executor. This field is only applicable for "
+            + "jobs executed by an external executor.";
+    public static final String JOB_DRY_RUN_PARAM = "dryRun";
+    public static final String JOB_PARENT_ID_PARAM = "parentId";
+    public static final String JOB_PARENT_ID_DESCRIPTION = "Job id that generated this job (if any).";
+    public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_PARAM = "internal.killJobRequested";
+    public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION = "Flag indicating that the user requested to kill the job.";
     public static final String JOB_TOOL_TYPE_PARAM = "toolType";
     public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job" + REGEX_SUPPORT;
     public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
@@ -590,6 +598,7 @@ public class ParamConstants {
     public static final String WORKFLOWS_TAGS_PARAM = "tags";
     public static final String WORKFLOWS_DRAFT_PARAM = "draft";
     public static final String WORKFLOWS_INTERNAL_REGISTRATION_USER_ID_PARAM = "internal.registrationUserId";
+    public static final String WORKFLOWS_MANAGER_ID_PARAM = "manager.id";
     public static final String WORKFLOWS_ID_DESCRIPTION = "Comma separated list of workflow IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String WORKFLOWS_NAME_DESCRIPTION = "Comma separated list of workflow names" + UP_TO_100 + REGEX_SUPPORT;
     public static final String WORKFLOWS_UUID_DESCRIPTION = "Comma separated list of workflow UUIDs" + UP_TO_100;
@@ -598,6 +607,7 @@ public class ParamConstants {
     public static final String WORKFLOWS_TAGS_DESCRIPTION = "Comma separated list of tags";
     public static final String WORKFLOWS_DRAFT_DESCRIPTION = "Boolean field indicating whether the workflow is a draft or not.";
     public static final String WORKFLOWS_INTERNAL_REGISTRATION_USER_ID_DESCRIPTION = "UserId that created the workflow.";
+    public static final String WORKFLOWS_MANAGER_ID_DESCRIPTION = "Id of the workflow system (Allowed values: NEXTFLOW).";
     public static final String WORKFLOW_SCRIPTS_ACTION_DESCRIPTION = "Action to be performed if the array of scripts is being updated "
             + "[SET, ADD, REMOVE]";
     public static final String WORKFLOW_SCRIPTS_ACTION_PARAM = "scriptsAction";

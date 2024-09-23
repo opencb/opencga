@@ -66,6 +66,12 @@ export default class Job extends OpenCGAParentClass {
     * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
+    * @param {String} [params.tool.externalExecutor.id] - Id of the external executor. This field is only applicable for jobs executed by an
+    *     external executor.
+    * @param {String} [params.parentId] - Job id that generated this job (if any).
+    * @param {Boolean} [params.dryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate
+    *     that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+    * @param {Boolean} [params.internal.killJobRequested] - Flag indicating that the user requested to kill the job.
     * @param {String} [params.userId] - User that created the job.
     * @param {String} [params.priority] - Priority of the job.
     * @param {String} [params.status] - Filter by status.
@@ -120,6 +126,12 @@ export default class Job extends OpenCGAParentClass {
     * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
+    * @param {String} [params.tool.externalExecutor.id] - Id of the external executor. This field is only applicable for jobs executed by an
+    *     external executor.
+    * @param {String} [params.parentId] - Job id that generated this job (if any).
+    * @param {Boolean} [params.dryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate
+    *     that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+    * @param {Boolean} [params.internal.killJobRequested] - Flag indicating that the user requested to kill the job.
     * @param {String} [params.userId] - User that created the job.
     * @param {String} [params.priority] - Priority of the job.
     * @param {String} [params.status] - Filter by status.

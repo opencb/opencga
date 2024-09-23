@@ -79,6 +79,8 @@ class Workflow(_ParentRestClient):
             draft or not.
         :param str internal.registration_user_id: UserId that created the
             workflow.
+        :param str manager.id: Id of the workflow system (Allowed values:
+            NEXTFLOW).
         :param str type: Workflow type. Allowed types:
             [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
@@ -154,6 +156,8 @@ class Workflow(_ParentRestClient):
             draft or not.
         :param str internal.registration_user_id: UserId that created the
             workflow.
+        :param str manager.id: Id of the workflow system (Allowed values:
+            NEXTFLOW).
         :param str type: Workflow type. Allowed types:
             [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
