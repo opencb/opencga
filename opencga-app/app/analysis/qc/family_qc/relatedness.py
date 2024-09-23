@@ -41,7 +41,7 @@ class Relatedness:
         self.relatedness_thresholds_file = relatedness_thresholds_fpath
 
 
-    def filter_rename_variants_vcf(self, outdir_fpath):
+    def filter_rename_variants_vcf(self):
         # Reading VCF
         vcf_fhand = gzip.open(self.family_qc_executor_info.vcf_file, 'r')
         # Reading pop_freq file
@@ -50,7 +50,7 @@ class Relatedness:
         variant_ids_to_include = [line.strip().split()[1] for line in input_pop_freq_fhand]
 
         # Create output dir and file
-        filtered_vcf_outdir_fpath = create_output_dir(path_elements=[str(outdir_fpath), 'filtered_vcf'])
+        filtered_vcf_outdir_fpath = create_output_dir(path_elements=[self.output_relatedness_dir, 'filtered_vcf'])
         output_file_name = 'filtered_vcf_' + str(self.vcf_file.split('/')[-1])
         filtered_vcf_fpath = os.path.join(filtered_vcf_outdir_fpath, output_file_name)
         filtered_vcf_fhand = gzip.open(filtered_vcf_fpath, 'wt')
