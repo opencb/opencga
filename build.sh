@@ -729,6 +729,7 @@ while [[ $# -gt 0 ]]; do
     ;;
   --debug)
     DEBUG="true"
+    set -x
     shift # past argument
     ;;
   *) # unknown option
