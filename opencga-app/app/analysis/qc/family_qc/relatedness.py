@@ -78,7 +78,7 @@ class Relatedness:
         return filtered_vcf_fpath
 
     def get_samples_individuals_info(self):
-        family_info_fhand = open(self.info_file)
+        family_info_fhand = open(self.family_qc_executor_info.info_file)
         family_info_json = json.load(family_info_fhand)
         samples_individuals = {}
         for sample in self.sample_ids:
