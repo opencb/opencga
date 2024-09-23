@@ -7,6 +7,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.NoteDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
@@ -16,6 +19,8 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -188,6 +193,45 @@ public class NoteManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("denied");
         catalogManager.getNotesManager().updateStudyNote(studyFqn, note.getId(), noteUpdateParams, INCLUDE_RESULT, normalToken1);
+    }
+
+    @Test
+    public void noteTagsUpdateTest() throws CatalogException {
+        NoteCreateParams noteCreateParams = new NoteCreateParams()
+                .setId("note1")
+                .setVisibility(Note.Visibility.PRIVATE)
+                .setValueType(Note.Type.STRING)
+                .setTags(Arrays.asList("tag1", "tag2"))
+                .setValue("hello");
+        Note note = catalogManager.getNotesManager().createStudyNote(studyFqn, noteCreateParams, INCLUDE_RESULT, ownerToken).first();
+        assertEquals(2, note.getTags().size());
+        assertArrayEquals(Arrays.asList("tag1", "tag2").toArray(), note.getTags().toArray());
+
+        QueryOptions queryOptions = new QueryOptions();
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(NoteDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.ADD);
+        queryOptions.put(Constants.ACTIONS, actionMap);
+        queryOptions.put(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        NoteUpdateParams updateParams = new NoteUpdateParams().setTags(Arrays.asList("tag3", "tag1"));
+        note = catalogManager.getNotesManager().updateStudyNote(studyFqn, note.getId(), updateParams, queryOptions, ownerToken).first();
+        assertEquals(3, note.getTags().size());
+        assertArrayEquals(Arrays.asList("tag1", "tag2", "tag3").toArray(), note.getTags().toArray());
+
+        // Remove tag1 and tag2
+        actionMap.put(NoteDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        queryOptions.put(Constants.ACTIONS, actionMap);
+        updateParams = new NoteUpdateParams().setTags(Arrays.asList("tag1", "tag2"));
+        note = catalogManager.getNotesManager().updateStudyNote(studyFqn, note.getId(), updateParams, queryOptions, ownerToken).first();
+        assertEquals(1, note.getTags().size());
+        assertArrayEquals(Arrays.asList("tag3").toArray(), note.getTags().toArray());
+
+        // Set new list of tags
+        actionMap.put(NoteDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.SET);
+        queryOptions.put(Constants.ACTIONS, actionMap);
+        updateParams = new NoteUpdateParams().setTags(Arrays.asList("tag4", "tag5"));
+        note = catalogManager.getNotesManager().updateStudyNote(studyFqn, note.getId(), updateParams, queryOptions, ownerToken).first();
+        assertEquals(2, note.getTags().size());
+        assertArrayEquals(Arrays.asList("tag4", "tag5").toArray(), note.getTags().toArray());
     }
 
     @Test
