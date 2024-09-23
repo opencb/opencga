@@ -27,8 +27,9 @@ class Relatedness:
         if isinstance(family_qc_executor_info,FamilyQCExecutor):
             self.family_qc_executor_info = family_qc_executor_info
             self.set_relatedness_files()
+            self.set_relatedness_dir()
         else:
-            msg = "No instance of FamilyQCExecutor was found"
+            msg = "No instance of FamilyQCExecutor was found. Therefore relatedness analysis cannot be executed."
             LOGGER.error(msg)
             raise TypeError(msg)
 
@@ -40,6 +41,9 @@ class Relatedness:
         relatedness_thresholds_fpath = os.path.join(self.family_qc_executor_info.resource_dir,'relatedness_thresholds.tsv')
         self.relatedness_thresholds_file = relatedness_thresholds_fpath
 
+    def set_relatedness_dir(self):
+        output_relatedness_dir = create_output_dir(path_elements=[self.family_qc_executor_info.output_parent_dir, 'relatedness'])
+        self.output_relatedness_dir = output_relatedness_dir
 
     def filter_rename_variants_vcf(self):
         # Reading VCF
