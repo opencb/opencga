@@ -71,6 +71,7 @@ public class CustomToolBuilder extends OpenCgaToolScopeStudy {
         // 2. Prepare basic CLI params
         cliBuilder.append("python3").append(" ")
                 .append(customToolDockerBuilderPath).append(" ")
+                .append("push").append(" ")
                 .append("-t").append(" ").append(toolBuildParams.getGitRepository()).append(" ")
                 .append("-o").append(" ").append(toolBuildParams.getDocker().getOrganisation()).append(" ")
                 .append("-n").append(" ").append(toolBuildParams.getDocker().getName()).append(" ")
