@@ -53,7 +53,7 @@ function calculate_branch() {
     local TMP_DIR=$(pwd)
     cd "$OPENCGA_ENTERPRISE_HOME_DIR"
     ## This is opencga-enterprise
-    local ENTERPRISE_BRANCH="$(git branch --show-current)"
+    ENTERPRISE_BRANCH="$(git branch --show-current)"
     cd "$TMP_DIR"
     ## If opencga-enterprise branch name is main, develop then we return the same name.
     ## Otherwise, we calculate the dependency branch from the dependency version.
