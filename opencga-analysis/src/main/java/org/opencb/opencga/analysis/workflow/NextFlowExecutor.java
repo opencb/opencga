@@ -163,8 +163,9 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getImage())) {
 //            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
             stringBuilder.append(workflow.getRepository().getImage());
-            dockerParams.put("-v", "/var/run/docker.sock:/var/run/docker.sock");
-            dockerParams.put("-e", "DOCKER_HOST='tcp://localhost:2375'");
+            dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
+            dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
+            dockerParams.put("--network", "host");
         } else {
             for (WorkflowScript script : workflow.getScripts()) {
                 if (script.isMain()) {
