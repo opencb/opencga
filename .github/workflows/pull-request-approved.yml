@@ -27,8 +27,20 @@ jobs:
         with:
           repository: zetta-genomics/opencga-enterprise
           token: ${{ secrets.GH_PRIVATE_TOKEN }}
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: "0" # Perform a full clone, not a shallow one to build.sh can get the branch name
       - name: Diagnóstico de Git
+        run: |
+          git status
+          git branch -a
+          git show-ref
+          git log -1
+      - name: Checkout en la rama correcta
+        run: |
+          git fetch --all
+          git checkout ${{ github.event.pull_request.head.ref }}
+          echo "Rama actual: $(git branch --show-current)"
+      - name: Segundo Diagnóstico de Git
         run: |
           git status
           git branch -a
