@@ -70,7 +70,7 @@ function calculate_branch() {
         echo "release-$MAJOR.x.x"
       fi
     else
-      echo "$CURRENT_BRANCH"
+      echo "$ENTERPRISE_BRANCH"
     fi
   fi
 }
