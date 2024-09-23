@@ -26,7 +26,6 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.Relatedness;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
@@ -122,7 +121,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
                 // Export family variants (VCF format)
                 // Create variant query
-                String gt = getNoSomaticSampleIds(family, study, catalogManager, token).stream().map(s -> s + ":0/0,0/1,1/1")
+                String gt = getIndexedAndNoSomaticSampleIds(family, study, catalogManager, token).stream().map(s -> s + ":0/0,0/1,1/1")
                         .collect(Collectors.joining(";"));
                 Query query = new Query()
                         .append(VariantQueryParam.STUDY.key(), study)
@@ -271,7 +270,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                     family = familyResult.first();
 
                     // Check number of samples
-                    List<String> sampleIds = getNoSomaticSampleIds(family, studyId, catalogManager, token);
+                    List<String> sampleIds = getIndexedAndNoSomaticSampleIds(family, studyId, catalogManager, token);
                     if (sampleIds.size() < 2) {
                         errors.put(familyId, "Too few samples found (" + sampleIds.size() + ") for that family members; minimum is 2 member"
                                 + " samples");

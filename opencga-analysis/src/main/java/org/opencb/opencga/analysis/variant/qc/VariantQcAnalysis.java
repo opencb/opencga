@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -285,7 +286,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     // Catalog utils
     //-------------------------------------------------------------------------
 
-    protected static List<String> getNoSomaticSampleIds(Family family, String studyId, CatalogManager catalogManager, String token)
+    protected static List<String> getIndexedAndNoSomaticSampleIds(Family family, String studyId, CatalogManager catalogManager, String token)
             throws CatalogException {
         // Get list of individual IDs
         List<String> individualIds = family.getMembers().stream().map(m -> m.getId()).collect(Collectors.toList());
@@ -297,17 +298,17 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(studyId, query, queryOptions, token);
         for (Individual individual : individualResult.getResults()) {
             if (CollectionUtils.isNotEmpty(individual.getSamples())) {
-                sampleIds.addAll(getNoSomaticSampleIds(individual));
+                sampleIds.addAll(getIndexedAndNoSomaticSampleIds(individual));
             }
         }
         return sampleIds;
     }
 
-    protected static List<String> getNoSomaticSampleIds(Individual individual) {
+    protected static List<String> getIndexedAndNoSomaticSampleIds(Individual individual) {
         List<String> sampleIds = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(individual.getSamples())) {
             for (Sample sample : individual.getSamples()) {
-                if (!sample.isSomatic()) {
+                if (isSampleIndexed(sample) && !sample.isSomatic()) {
                     // We take the first no somatic sample for each individual
                     sampleIds.add(sample.getId());
                     break;
@@ -315,6 +316,17 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
             }
         }
         return sampleIds;
+    }
+
+    protected static boolean isSampleIndexed(Sample sample) {
+        if (sample.getInternal() != null
+                && sample.getInternal().getVariant() != null
+                && sample.getInternal().getVariant().getIndex() != null
+                && sample.getInternal().getVariant().getIndex().getStatus() != null
+                && InternalStatus.READY.equals(sample.getInternal().getVariant().getIndex().getStatus().getId())) {
+            return true;
+        }
+        return false;
     }
 
     //-------------------------------------------------------------------------

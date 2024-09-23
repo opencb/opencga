@@ -144,7 +144,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
                             .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT");
                 } else {
                     // Create variant query
-                    String gt = getNoSomaticSampleIds(individual).stream().map(s -> s + ":0/0,0/1,1/1")
+                    String gt = getIndexedAndNoSomaticSampleIds(individual).stream().map(s -> s + ":0/0,0/1,1/1")
                             .collect(Collectors.joining(";"));
                     query = new Query()
                             .append(VariantQueryParam.GENOTYPE.key(), gt);
@@ -376,9 +376,9 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
                     individual = individualResult.first();
 
                     // Check number of samples
-                    List<String> sampleIds = getNoSomaticSampleIds(individual);
+                    List<String> sampleIds = getIndexedAndNoSomaticSampleIds(individual);
                     if (CollectionUtils.isEmpty(sampleIds)) {
-                        errors.put(individualId, "No samples found");
+                        errors.put(individualId, "None of the input individuals have indexed and somatic samples");
                     }
                 }
 

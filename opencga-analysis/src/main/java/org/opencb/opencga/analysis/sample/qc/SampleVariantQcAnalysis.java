@@ -150,52 +150,54 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
             for (String sampleId : analysisParams.getSamples()) {
                 // Get sample
                 Sample sample = catalogManager.getSampleManager().get(study, sampleId, QueryOptions.empty(), token).first();
+                if (isSampleIndexed(sample)) {
 
-                // Add sample to target sample list, i.e., for those samples, QC will be performed
-                samples.add(sample);
-                failedAnalysisPerSample.put(sample.getId(), new HashSet<>());
+                    // Add sample to target sample list, i.e., for those samples, QC will be performed
+                    samples.add(sample);
+                    failedAnalysisPerSample.put(sample.getId(), new HashSet<>());
 
-                // Only somatic samples need VCF and JSON files to compute signature, genome plot,...
-                if (sample.isSomatic()) {
-                    targetSomaticSamples.add(sample);
+                    // Only somatic samples need VCF and JSON files to compute signature, genome plot,...
+                    if (sample.isSomatic()) {
+                        targetSomaticSamples.add(sample);
 
-                    // Export sample variants (VCF format)
-                    // Create the query based on whether a trio is present or not
-                    Query query = new Query();
-                    query.append(VariantQueryParam.SAMPLE.key(), sampleId + ":0/1,1/1")
-                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId)
-                            .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
-                            .append(VariantQueryParam.STUDY.key(), study)
-                            .append(VariantQueryParam.TYPE.key(), VariantType.SNV)
-                            .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
-                                    .split(",")));
+                        // Export sample variants (VCF format)
+                        // Create the query based on whether a trio is present or not
+                        Query query = new Query();
+                        query.append(VariantQueryParam.SAMPLE.key(), sampleId + ":0/1,1/1")
+                                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId)
+                                .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
+                                .append(VariantQueryParam.STUDY.key(), study)
+                                .append(VariantQueryParam.TYPE.key(), VariantType.SNV)
+                                .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
+                                        .split(",")));
 
-                    // Create query options
-                    QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, "id,studies.samples");
+                        // Create query options
+                        QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, "id,studies.samples");
 
-                    // Export to VCF.GZ format
-                    String basename = getOutDir().resolve(sampleId).toAbsolutePath().toString();
-                    getVariantStorageManager().exportData(basename, VCF_GZ, null, query, queryOptions, token);
+                        // Export to VCF.GZ format
+                        String basename = getOutDir().resolve(sampleId).toAbsolutePath().toString();
+                        getVariantStorageManager().exportData(basename, VCF_GZ, null, query, queryOptions, token);
 
-                    // Check VCF file
-                    Path vcfPath = Paths.get(basename + "." + VCF_GZ.getExtension());
-                    if (!Files.exists(vcfPath)) {
-                        throw new ToolException("Something wrong happened when exporting VCF file for sample ID '" + sampleId + "'. VCF"
-                                + " file " + vcfPath + " was not created. Export query = " + query.toJson() + "; export query"
-                                + " options = " + queryOptions.toJson());
+                        // Check VCF file
+                        Path vcfPath = Paths.get(basename + "." + VCF_GZ.getExtension());
+                        if (!Files.exists(vcfPath)) {
+                            throw new ToolException("Something wrong happened when exporting VCF file for sample ID '" + sampleId + "'. VCF"
+                                    + " file " + vcfPath + " was not created. Export query = " + query.toJson() + "; export query"
+                                    + " options = " + queryOptions.toJson());
+                        }
+                        vcfPaths.add(vcfPath);
+
+                        // Export individual (JSON format)
+                        Path jsonPath = Paths.get(basename + "." + JSON.getExtension());
+                        objectWriter.writeValue(jsonPath.toFile(), sample);
+
+                        // Check sample JSON file
+                        if (!Files.exists(jsonPath)) {
+                            throw new ToolException("Something wrong happened when saving JSON file for sample ID '" + sampleId + "'. JSON"
+                                    + " file " + jsonPath + " was not created.");
+                        }
+                        jsonPaths.add(jsonPath);
                     }
-                    vcfPaths.add(vcfPath);
-
-                    // Export individual (JSON format)
-                    Path jsonPath = Paths.get(basename + "." + JSON.getExtension());
-                    objectWriter.writeValue(jsonPath.toFile(), sample);
-
-                    // Check sample JSON file
-                    if (!Files.exists(jsonPath)) {
-                        throw new ToolException("Something wrong happened when saving JSON file for sample ID '" + sampleId + "'. JSON"
-                                + " file " + jsonPath + " was not created.");
-                    }
-                    jsonPaths.add(jsonPath);
                 }
             }
         } catch (CatalogException | IOException | StorageEngineException e) {
@@ -411,6 +413,7 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
         }
 
         // Collect possible errors in a map where key is the sample ID and value is the error
+        int indexCount = 0;
         Map<String, String> errors = new HashMap<>();
         for (String sampleId : params.getSamples()) {
             // Get sample from catalog
@@ -420,6 +423,10 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
                     errors.put(sampleId, "Sample not found");
                 } else if (sampleResult.getNumResults() > 1) {
                     errors.put(sampleId, "More than one sample found");
+                } else {
+                    if (isSampleIndexed(sampleResult.first())) {
+                        indexCount++;
+                    }
                 }
             } catch (CatalogException e) {
                 errors.put(sampleId, Arrays.toString(e.getStackTrace()));
@@ -430,6 +437,11 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
         if (MapUtils.isNotEmpty(errors)) {
             throw new ToolException("Found the following error for sample IDs: " + StringUtils.join(errors.entrySet().stream().map(
                     e -> "Sample ID " + e.getKey() + ": " + e.getValue()).collect(Collectors.toList()), ","));
+        }
+
+        // Check indexed samples
+        if (indexCount == 0) {
+            throw new ToolException("None of the input samples are indexed");
         }
 
         // Check resources dir
