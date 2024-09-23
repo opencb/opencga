@@ -51,7 +51,7 @@ class Relatedness:
 
         # Create output dir and file
         filtered_vcf_outdir_fpath = create_output_dir(path_elements=[self.output_relatedness_dir, 'filtered_vcf'])
-        output_file_name = 'filtered_vcf_' + str(self.vcf_file.split('/')[-1])
+        output_file_name = 'filtered_vcf_' + os.path.basename(self.family_qc_executor_info.vcf_file)
         filtered_vcf_fpath = os.path.join(filtered_vcf_outdir_fpath, output_file_name)
         filtered_vcf_fhand = gzip.open(filtered_vcf_fpath, 'wt')
         LOGGER.debug('Generating filtered VCF with variant IDs under ID column: "{}"'.format(filtered_vcf_fpath))
