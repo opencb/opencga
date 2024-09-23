@@ -72,6 +72,7 @@ export default class Workflow extends OpenCGAParentClass {
     * @param {String} [params.tags] - Comma separated list of tags.
     * @param {Boolean} [params.draft] - Boolean field indicating whether the workflow is a draft or not.
     * @param {String} [params.internal.registrationUserId] - UserId that created the workflow.
+    * @param {String} [params.manager.id] - Id of the workflow system (Allowed values: NEXTFLOW).
     * @param {String} [params.type] - Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
@@ -123,6 +124,7 @@ export default class Workflow extends OpenCGAParentClass {
     * @param {String} [params.tags] - Comma separated list of tags.
     * @param {Boolean} [params.draft] - Boolean field indicating whether the workflow is a draft or not.
     * @param {String} [params.internal.registrationUserId] - UserId that created the workflow.
+    * @param {String} [params.manager.id] - Id of the workflow system (Allowed values: NEXTFLOW).
     * @param {String} [params.type] - Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.

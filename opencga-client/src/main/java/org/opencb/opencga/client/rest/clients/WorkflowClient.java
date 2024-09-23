@@ -99,6 +99,7 @@ public class WorkflowClient extends AbstractParentClient {
      *       tags: Comma separated list of tags.
      *       draft: Boolean field indicating whether the workflow is a draft or not.
      *       internal.registrationUserId: UserId that created the workflow.
+     *       manager.id: Id of the workflow system (Allowed values: NEXTFLOW).
      *       type: Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
@@ -156,6 +157,7 @@ public class WorkflowClient extends AbstractParentClient {
      *       tags: Comma separated list of tags.
      *       draft: Boolean field indicating whether the workflow is a draft or not.
      *       internal.registrationUserId: UserId that created the workflow.
+     *       manager.id: Id of the workflow system (Allowed values: NEXTFLOW).
      *       type: Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.

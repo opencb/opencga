@@ -21,9 +21,9 @@
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/workflows/acl/{members}/update | study, members[*], action[*], body[*] |
 #' | create | /{apiVersion}/workflows/create | include, exclude, study, includeResult, body[*] |
-#' | distinct | /{apiVersion}/workflows/distinct | study, id, name, uuid, tags, draft, internal.registrationUserId, type, creationDate, modificationDate, acl, release, snapshot, deleted, field[*] |
+#' | distinct | /{apiVersion}/workflows/distinct | study, id, name, uuid, tags, draft, internal.registrationUserId, manager.id, type, creationDate, modificationDate, acl, release, snapshot, deleted, field[*] |
 #' | run | /{apiVersion}/workflows/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
-#' | search | /{apiVersion}/workflows/search | include, exclude, limit, skip, count, study, id, name, uuid, tags, draft, internal.registrationUserId, type, creationDate, modificationDate, acl, release, snapshot, deleted |
+#' | search | /{apiVersion}/workflows/search | include, exclude, limit, skip, count, study, id, name, uuid, tags, draft, internal.registrationUserId, manager.id, type, creationDate, modificationDate, acl, release, snapshot, deleted |
 #' | update | /{apiVersion}/workflows/{workflowId}/update | include, exclude, workflowId[*], study, includeResult, body |
 #' | acl | /{apiVersion}/workflows/{workflows}/acl | workflows[*], study, member, silent |
 #' | delete | /{apiVersion}/workflows/{workflows}/delete | study, workflows[*] |
@@ -67,6 +67,7 @@ setMethod("workflowClient", "OpencgaR", function(OpencgaR, members, workflowId, 
         #' @param tags Comma separated list of tags.
         #' @param draft Boolean field indicating whether the workflow is a draft or not.
         #' @param internal.registrationUserId UserId that created the workflow.
+        #' @param manager.id Id of the workflow system (Allowed values: NEXTFLOW).
         #' @param type Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
@@ -106,6 +107,7 @@ setMethod("workflowClient", "OpencgaR", function(OpencgaR, members, workflowId, 
         #' @param tags Comma separated list of tags.
         #' @param draft Boolean field indicating whether the workflow is a draft or not.
         #' @param internal.registrationUserId UserId that created the workflow.
+        #' @param manager.id Id of the workflow system (Allowed values: NEXTFLOW).
         #' @param type Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
