@@ -161,7 +161,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         StringBuilder stringBuilder = new StringBuilder()
                 .append("bash -c \"nextflow -c ").append(inputDir).append("/nextflow.config").append(" run ");
         if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getImage())) {
-            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
+//            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
             stringBuilder.append(workflow.getRepository().getImage());
             dockerParams.put("-v", "/var/run/docker.sock:/var/run/docker.sock");
             dockerParams.put("-e", "DOCKER_HOST='tcp://localhost:2375'");
