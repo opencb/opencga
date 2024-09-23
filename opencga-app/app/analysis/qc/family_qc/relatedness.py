@@ -11,21 +11,20 @@ LOGGER = logging.getLogger('variant_qc_logger')
 
 
 class Relatedness:
-    def __init__(self, output_relatedness_dir):
+    def __init__(self, family_qc_executor_info):
         """
         """
 
-        self.output_relatedness_dir = output_relatedness_dir
-        self.pop_freq_file = ""
-        self.pop_exclude_var_file = ""
-        self.relatedness_thresholds_file = ""
-        self.family_qc_executor_info = ""
+        self.output_relatedness_dir = None
+        self.pop_freq_file = None
+        self.pop_exclude_var_file = None
+        self.relatedness_thresholds_file = None
+        self.family_qc_executor_info = family_qc_executor_info
         self.relatedness_results = ""
 
 
-    def set_family_qc_executor_info(self,family_qc_executor_info):
-        if isinstance(family_qc_executor_info,FamilyQCExecutor):
-            self.family_qc_executor_info = family_qc_executor_info
+    def set_family_qc_executor_info(self):
+        if isinstance(self.family_qc_executor_info,FamilyQCExecutor):
             self.set_relatedness_files()
             self.set_relatedness_dir()
         else:
