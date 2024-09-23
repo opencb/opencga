@@ -23,7 +23,7 @@ class Relatedness:
         self.relatedness_results = ""
 
 
-    def set_family_qc_executor_info(self):
+    def relatedness_setup(self):
         if isinstance(self.family_qc_executor_info,FamilyQCExecutor):
             self.set_relatedness_files()
             self.set_relatedness_dir()
