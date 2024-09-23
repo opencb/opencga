@@ -28,6 +28,12 @@ jobs:
           repository: zetta-genomics/opencga-enterprise
           token: ${{ secrets.GH_PRIVATE_TOKEN }}
           fetch-depth: "0" # Perform a full clone, not a shallow one to build.sh can get the branch name
+      - name: Diagnóstico de Git
+        run: |
+          git status
+          git branch -a
+          git show-ref
+          git log -1
       - id: get_opencga_branch
         name: Get current branch for opencga from 'pom.xml' property
         run: |
