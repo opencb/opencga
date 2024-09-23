@@ -409,7 +409,7 @@ class Relatedness:
                             score_result["sampleId1"], individual1_info["individualId"], score_result["sampleId2"],individual2_info["individualId"]))
 
             # Validating reported vs inferred family relationship results block:
-            validation_result = FamilyQCExecutor.relatedness_validation(score_result["reportedRelationship"], score_result["inferredRelationship"])
+            validation_result = Relatedness.relatedness_validation(score_result["reportedRelationship"], score_result["inferredRelationship"])
             score_result["validation"] = validation_result
 
         # Return dict/json with plink, inferred, reported and validation results
