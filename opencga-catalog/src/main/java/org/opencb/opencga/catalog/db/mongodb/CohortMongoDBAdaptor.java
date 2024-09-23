@@ -286,7 +286,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     OpenCGAResult<Cohort> transactionalUpdate(ClientSession clientSession, Cohort cohort, ObjectMap parameters,
-                                              List<VariableSet> variableSetList, QueryOptions queryOptions)
+                                              List<VariableSet> variableSetList, QueryOptions queryOptions, boolean incrementVersion)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         Query tmpQuery = new Query()
@@ -341,7 +341,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     }
 
     @Override
-    OpenCGAResult<Cohort> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
+    OpenCGAResult<Cohort> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument,
+                                              boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
