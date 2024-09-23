@@ -302,10 +302,10 @@ class Relatedness:
         # Return validation result
         return validation
 
-    def relatedness_inference(self, relatedness_thresholds_fpath, plink_genome_fpath, relatedness_results):
+    def relatedness_inference(self, plink_genome_fpath, relatedness_results):
         # Reading relatedness thresholds file (.tsv)
-        LOGGER.debug('Getting relatedness thresholds from file: "{}"'.format(relatedness_thresholds_fpath))
-        relatedness_thresholds_fhand = open(str(relatedness_thresholds_fpath))
+        LOGGER.debug('Getting relatedness thresholds from file: "{}"'.format(self.relatedness_thresholds_file))
+        relatedness_thresholds_fhand = open(self.relatedness_thresholds_file)
         relationship_groups_thresholds_dict = {}
         for index, line in enumerate(relatedness_thresholds_fhand):
             relatedness_thresholds_row_values = line.strip().split()
