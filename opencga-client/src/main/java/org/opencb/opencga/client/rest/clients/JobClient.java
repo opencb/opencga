@@ -95,6 +95,11 @@ public class JobClient extends AbstractParentClient {
      *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
+     *       tool.externalExecutor.id: Id of the external executor. This field is only applicable for jobs executed by an external executor.
+     *       parentId: Job id that generated this job (if any).
+     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
+     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       internal.killJobRequested: Flag indicating that the user requested to kill the job.
      *       userId: User that created the job.
      *       priority: Priority of the job.
      *       status: Filter by status.
@@ -154,6 +159,11 @@ public class JobClient extends AbstractParentClient {
      *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
+     *       tool.externalExecutor.id: Id of the external executor. This field is only applicable for jobs executed by an external executor.
+     *       parentId: Job id that generated this job (if any).
+     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
+     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       internal.killJobRequested: Flag indicating that the user requested to kill the job.
      *       userId: User that created the job.
      *       priority: Priority of the job.
      *       status: Filter by status.

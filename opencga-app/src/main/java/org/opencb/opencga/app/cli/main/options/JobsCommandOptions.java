@@ -195,6 +195,18 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
         public String toolType; 
     
+        @Parameter(names = {"--tool.external-executor.id"}, description = "Id of the external executor. This field is only applicable for jobs executed by an external executor.", required = false, arity = 1)
+        public String toolExternalExecutorId; 
+    
+        @Parameter(names = {"--parent-id"}, description = "Job id that generated this job (if any).", required = false, arity = 1)
+        public String parentId; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
+        @Parameter(names = {"--internal.kill-job-requested"}, description = "Flag indicating that the user requested to kill the job.", required = false, arity = 1)
+        public Boolean internalKillJobRequested; 
+    
         @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
         public String userId; 
     
@@ -318,6 +330,18 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
         public String toolType; 
+    
+        @Parameter(names = {"--tool.external-executor.id"}, description = "Id of the external executor. This field is only applicable for jobs executed by an external executor.", required = false, arity = 1)
+        public String toolExternalExecutorId; 
+    
+        @Parameter(names = {"--parent-id"}, description = "Job id that generated this job (if any).", required = false, arity = 1)
+        public String parentId; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
+        @Parameter(names = {"--internal.kill-job-requested"}, description = "Flag indicating that the user requested to kill the job.", required = false, arity = 1)
+        public Boolean internalKillJobRequested; 
     
         @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
         public String userId; 

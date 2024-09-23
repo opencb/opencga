@@ -112,8 +112,10 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
 
         TOOL("tool", OBJECT, ""),
         TOOL_ID("tool.id", TEXT, ""),
+        TOOL_EXTERNAL_EXECUTOR_ID("tool.externalExecutor.id", TEXT, ""),
         TOOL_TYPE("tool.type", TEXT, ""),
         TOOL_EXTERNAL_EXECUTOR("tool.externalExecutor", OBJECT, ""),
+        PARENT_ID("parentId", TEXT, ""),
 
         PRIORITY("priority", TEXT, ""),
 
@@ -133,6 +135,7 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         INPUT("input", OBJECT, ""),
         OUTPUT("output", OBJECT, ""),
         DEPENDS_ON("dependsOn", TEXT_ARRAY, ""),
+        DRY_RUN("dryRun", BOOLEAN, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
         EXECUTION("execution", OBJECT, ""),
