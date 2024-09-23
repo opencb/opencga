@@ -41,12 +41,12 @@ class Relatedness:
         self.relatedness_thresholds_file = relatedness_thresholds_fpath
 
 
-    def filter_rename_variants_vcf(self, pop_freq_fpath, outdir_fpath):
+    def filter_rename_variants_vcf(self, outdir_fpath):
         # Reading VCF
         vcf_fhand = gzip.open(self.family_qc_executor_info.vcf_file, 'r')
         # Reading pop_freq file
-        input_pop_freq_fhand = open(str(pop_freq_fpath), 'r')
-        LOGGER.debug('Getting variant IDs to include in the VCF from file: "{}"'.format(pop_freq_fpath))
+        input_pop_freq_fhand = open(str(self.pop_freq_file), 'r')
+        LOGGER.debug('Getting variant IDs to include in the VCF from file: "{}"'.format(self.pop_freq_file))
         variant_ids_to_include = [line.strip().split()[1] for line in input_pop_freq_fhand]
 
         # Create output dir and file
