@@ -53,31 +53,20 @@ function calculate_branch() {
     local TMP_DIR=$(pwd)
     cd "$OPENCGA_ENTERPRISE_HOME_DIR"
     ## This is opencga-enterprise
-    local CURRENT_BRANCH="$(git branch --show-current)"
+    local ENTERPRISE_BRANCH="$(git branch --show-current)"
     cd "$TMP_DIR"
     ## If opencga-enterprise branch name is main, develop then we return the same name.
     ## Otherwise, we calculate the dependency branch from the dependency version.
-    if [[ "$CURRENT_BRANCH" == "TASK"* ]]; then
+    if [[ "$ENTERPRISE_BRANCH" == "TASK"* || "$ENTERPRISE_BRANCH" == "release"* ]]; then
       local VERSION=$(echo "$1" | cut -d "-" -f 1)
       local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
       local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
       local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-
       if [ $PATCH -gt 0 ]; then ## It's a hotfix
         echo "release-$MAJOR.$MINOR.x"
-      elif [ $MINOR -eq  0 ]; then ## It's a develop branch
+      elif [ $MINOR -eq 0 ]; then ## It's a develop branch
         echo "develop"
       else  ## It's a release branch
-        echo "release-$MAJOR.x.x"
-      fi
-    elif [[ "$CURRENT_BRANCH" == "release"* ]]; then
-      local VERSION=$(echo "$1" | cut -d "-" -f 1)
-      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
-      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
-      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-      if [ $PATCH -gt 0 ]; then
-        echo "release-$MAJOR.$MINOR.x"
-      else
         echo "release-$MAJOR.x.x"
       fi
     else
