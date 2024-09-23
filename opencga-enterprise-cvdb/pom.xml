@@ -199,7 +199,7 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-core</artifactId>
-            <version>3.2.0-SNAPSHOT</version>
+            <version>${opencga.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
