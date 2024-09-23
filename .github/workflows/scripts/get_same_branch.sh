@@ -7,36 +7,27 @@
 
 ENTERPRISE_BRANCH_NAME=$1
 
-#
-#if [[ -z $BRANCH_NAME  ]]; then
-#  echo "The first parameter is mandatory and must be a valid branch name."
-#  exit 1
-#fi
-#
-#if [[ $BRANCH_NAME != "TASK-"*   ]]; then
-#  echo "No need to check dependencies."
-#  exit 0
-#fi
-
-#function install(){
-#  local REPO=$1
-#  cd /home/runner/work/ || exit 2
-#  git clone https://github.com/opencb/"$REPO".git -b "$BRANCH_NAME"
-#  if [ -d "./$REPO" ]; then
-#    cd "$REPO" || exit 2
-#    echo "Branch name $BRANCH_NAME already exists."
-#    mvn clean install -DskipTests
+#function calculate_branch(){
+#  if [[ $ENTERPRISE_BRANCH_NAME == "v"* ]]; then
+#    echo "v$1"
 #  else
-#    echo "$CURRENT Branch is NOT EQUALS $BRANCH_NAME "
+#    CURRENT_BRANCH="$(git branch --show-current)"
+#    if [[ "$CURRENT_BRANCH" != "release"* ]];then
+#      echo "$CURRENT_BRANCH"
+#    else
+#      local VERSION=$(echo "$1" | cut -d "-" -f 1)
+#      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
+#      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
+#      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
+#      local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
+#      if [ -z "$HOTFIX" ]; then
+#        echo "release-$MAJOR.x.x"
+#      else
+#        echo "release-$MAJOR.$MINOR.x"
+#      fi
+#    fi
 #  fi
 #}
-#
-#install "java-common-libs"
-#install "biodata"
-#install "cellbase"
-
-
-
 function calculate_branch(){
   if [[ $ENTERPRISE_BRANCH_NAME == "v"* ]]; then
     echo "v$1"
@@ -49,11 +40,12 @@ function calculate_branch(){
       local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
       local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
       local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-      local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
-      if [ -z "$HOTFIX" ]; then
+
+      # Comprobar si es hotfix: el PATCH es mayor que 0
+      if [ "$PATCH" -gt 0 ]; then
         echo "release-$MAJOR.$MINOR.x"
       else
-        echo "release-$MAJOR.$MINOR.$PATCH.x"
+        echo "release-$MAJOR.x.x"
       fi
     fi
   fi
@@ -69,7 +61,7 @@ function install(){
   if [ -d "./$REPO" ]; then
     cd "$REPO" || exit 2
     echo "Branch name $BRANCH_NAME already exists."
-    mvn clean install -DskipTests
+    mvn clean install -DskipTests --no-transfer-progress
     if [ $? -eq 0 ]; then
       echo "$REPO Compilation Successful!!!"
     fi
@@ -93,4 +85,3 @@ CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -
 install "cellbase" $CELLBASE_DEPENDENCY_VERSION
 OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
 install "opencga" $OPENCGA_DEPENDENCY_VERSION
-
