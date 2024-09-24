@@ -53,35 +53,24 @@ function calculate_branch() {
     local TMP_DIR=$(pwd)
     cd "$OPENCGA_ENTERPRISE_HOME_DIR"
     ## This is opencga-enterprise
-    local CURRENT_BRANCH="$(git branch --show-current)"
+    ENTERPRISE_BRANCH="$(git branch --show-current)"
     cd "$TMP_DIR"
     ## If opencga-enterprise branch name is main, develop then we return the same name.
     ## Otherwise, we calculate the dependency branch from the dependency version.
-    if [[ "$CURRENT_BRANCH" == "TASK"* ]]; then
+    if [[ "$ENTERPRISE_BRANCH" == "TASK"* || "$ENTERPRISE_BRANCH" == "release"* ]]; then
       local VERSION=$(echo "$1" | cut -d "-" -f 1)
       local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
       local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
       local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-
       if [ $PATCH -gt 0 ]; then ## It's a hotfix
         echo "release-$MAJOR.$MINOR.x"
-      elif [ $MINOR -eq  0 ]; then ## It's a develop branch
+      elif [ $MINOR -eq 0 ]; then ## It's a develop branch
         echo "develop"
       else  ## It's a release branch
         echo "release-$MAJOR.x.x"
       fi
-    elif [[ "$CURRENT_BRANCH" == "release"* ]]; then
-      local VERSION=$(echo "$1" | cut -d "-" -f 1)
-      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
-      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
-      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-      if [ $PATCH -gt 0 ]; then
-        echo "release-$MAJOR.$MINOR.x"
-      else
-        echo "release-$MAJOR.x.x"
-      fi
     else
-      echo "$CURRENT_BRANCH"
+      echo "$ENTERPRISE_BRANCH"
     fi
   fi
 }
@@ -97,10 +86,8 @@ function manage_dependency() {
       cd "$REPO" || exit 2
       local BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"
   else
-   if [[ "$BRANCH_NAME" != "TASK"*  ]]; then
       log "The $REPO branch $BRANCH_NAME cloning process has failed!"
       exit 1
-   fi
   fi
   git checkout "$BRANCH_NAME"
   local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
@@ -207,6 +194,17 @@ function validate() {
       REF_TYPE="branch"
       REF="$OPENCGA_EXPECTED_BRANCH"
     fi
+
+    cd "$OPENCGA_HOME_DIR" || exit 2
+    # Get the current branch name
+    branch=$(git branch --show-current)
+    cd - || exit 2
+    # Check if the command was successful
+    if [ $? -eq 0 ]; then
+      log "Opencga is on branch: \"$branch\""
+    else
+      log "Unable to determine the current branch."
+    fi
     log "OpenCGA version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DEPENDENCY_VERSION\" of opencga"
     log "Please, execute bellow command and retry:"
     log "  git -C \"$OPENCGA_HOME_DIR\" checkout $REF"
@@ -237,15 +235,19 @@ function validate() {
 
 # Function to download and compile java-common-libs, cellbase and biodata dependencies
 function prepare_branches() {
-  ## Only if you pass the parameter: --prepare-branch
+  ## Only if you pass the parameter: --prepare-branch -b
+
   if [ "$PREPARE_BRANCHES" == "true" ]; then
     JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
+    echo "Downloading and compiling java-common-libs $JCL_DEPENDENCY_VERSION"
     manage_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
 
     BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout)"
+    echo "Downloading and compiling biodata $BIODATA_DEPENDENCY_VERSION"
     manage_dependency "biodata" "$BIODATA_DEPENDENCY_VERSION"
 
     CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
+    echo "Downloading and compiling cellbase $CELLBASE_DEPENDENCY_VERSION"
     manage_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
   else
     log_summary "Skipped prepare branches"
@@ -727,6 +729,7 @@ while [[ $# -gt 0 ]]; do
     ;;
   --debug)
     DEBUG="true"
+    set -x
     shift # past argument
     ;;
   *) # unknown option

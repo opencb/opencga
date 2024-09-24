@@ -44,7 +44,7 @@ jobs:
           opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh "${{ inputs.release }}" )
           echo "OpenCGA ref: __\"${opencga_branch}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
           echo "Is release: __\"${{ inputs.release }}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
-          echo "Opencga branch=${opencga_branch}" >> $GITHUB_OUTPUT
+          echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
           echo "Opencga-enterprise branch=${{ inputs.branch }}" >> $GITHUB_OUTPUT
           echo "hadoop=${{ inputs.hadoop }}" >> $GITHUB_OUTPUT
           echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
