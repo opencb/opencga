@@ -117,6 +117,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
                         String[] split = s.split("==");
                         dockerParams.put(split[0], split[1]);
                     });
+                    continue;
                 }
                 if (entry.getKey().startsWith("-")) {
                     cliParamsBuilder.append(entry.getKey()).append(" ");
