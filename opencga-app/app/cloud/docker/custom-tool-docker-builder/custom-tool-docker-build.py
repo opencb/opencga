@@ -74,17 +74,24 @@ def dockerfile():
 
         ## Install Ubuntu OS dependencies with 'apt'
         # 1. Update Ubuntu and install base libraries
-        f.write("RUN apt update && apt -y upgrade && apt install -y python3 python3-pip docker-ce docker-ce-cli containerd.io && \\ \n")
+        f.write("RUN apt update && apt -y upgrade && apt install -y python3 python3-pip ca-certificates curl && \\ \n")
 
-        # 2. Install R
+        # 2. Install Docker
+        f.write("install -m 0755 -d /etc/apt/keyrings && \\ \n")
+        f.write("curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && \\ \n")
+        f.write("chmod a+r /etc/apt/keyrings/docker.asc && \\ \n")
+        f.write("echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \\ \n")
+        f.write("apt update && apt install -y docker-ce docker-ce-cli containerd.io && \\ \n")
+
+        # 3. Install R
         if args.install_r is True:
             f.write("apt install -y r-base && \\ \n")
 
-        # 3. Install user's apt dependencies
+        # 4. Install user's apt dependencies
         if args.apt_get is not None and not args.apt_get == "":
             f.write("apt install -y " + args.apt_get.replace(",", " ") + " && \\ \n")
 
-        # 4. Check and build C/C++ tools
+        # 5. Check and build C/C++ tools
         if os.path.isfile(custom_build_folder + "/makefile") or os.path.isfile(custom_build_folder + "/Makefile"):
             f.write("apt install -y build-essential && \\ \n")
             f.write("make -C /opt/app && \\ \n")
@@ -107,11 +114,19 @@ def build():
     image = get_docker_image_id()
     print(shell_colors['blue'] + "Building " + image + " ..." + shell_colors['reset'])
 
-    command = ("docker build"
-               + " -t " + image
-               + " -f " + custom_build_folder +  "/Dockerfile"
-               # + " " + args.docker_build_args + " "
-               + " " + custom_build_folder)
+    if os.path.isfile("/var/run/docker.sock"):
+        command = ("docker build"
+                   + " -t " + image
+                   + " -f " + custom_build_folder +  "/Dockerfile"
+                   + " -v /var/run/docker.sock:/var/run/docker.sock"
+                   + " --env DOCKER_HOST='tcp://localhost:2375'"
+                   + " --network host"
+                   + " " + custom_build_folder)
+    else:
+        command = ("docker build"
+                   + " -t " + image
+                   + " -f " + custom_build_folder +  "/Dockerfile"
+                   + " " + custom_build_folder)
     run(command)
 
 def tag_latest(image):
