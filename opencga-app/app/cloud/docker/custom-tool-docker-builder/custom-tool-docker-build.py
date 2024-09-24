@@ -114,11 +114,19 @@ def build():
     image = get_docker_image_id()
     print(shell_colors['blue'] + "Building " + image + " ..." + shell_colors['reset'])
 
-    command = ("docker build"
-               + " -t " + image
-               + " -f " + custom_build_folder +  "/Dockerfile"
-               # + " " + args.docker_build_args + " "
-               + " " + custom_build_folder)
+    if os.path.isfile("/var/run/docker.sock"):
+        command = ("docker build"
+                   + " -t " + image
+                   + " -f " + custom_build_folder +  "/Dockerfile"
+                   + " -v /var/run/docker.sock:/var/run/docker.sock"
+                   + " --env DOCKER_HOST='tcp://localhost:2375'"
+                   + " --network host"
+                   + " " + custom_build_folder)
+    else:
+        command = ("docker build"
+                   + " -t " + image
+                   + " -f " + custom_build_folder +  "/Dockerfile"
+                   + " " + custom_build_folder)
     run(command)
 
 def tag_latest(image):
