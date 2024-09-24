@@ -56,6 +56,8 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
     // Build list of inputfiles in case we need to specifically mount them in read only mode
     List<AbstractMap.SimpleEntry<String, String>> inputBindings;
 
+    private Map<String, String> dockerParams;
+
     private Thread thread;
     private final int monitorThreadPeriod = 5000;
 
@@ -71,6 +73,8 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (nextflowParams.getId() == null) {
             throw new IllegalArgumentException("Missing Nextflow ID");
         }
+
+        dockerParams = new HashMap<>();
 
         OpenCGAResult<Workflow> result;
         if (nextflowParams.getVersion() != null) {
@@ -108,6 +112,12 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
             StringBuilder cliParamsBuilder = new StringBuilder();
             for (Map.Entry<String, String> entry : nextflowParams.getParams().entrySet()) {
+                if (entry.getKey().equalsIgnoreCase("dockerParams")) {
+                    Arrays.asList(entry.getValue().split(",")).forEach(s -> {
+                        String[] split = s.split("==");
+                        dockerParams.put(split[0], split[1]);
+                    });
+                }
                 if (entry.getKey().startsWith("-")) {
                     cliParamsBuilder.append(entry.getKey()).append(" ");
                 } else {
@@ -150,8 +160,8 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             throw new RuntimeException("Can't fetch nextflow.config file");
         }
 
-        Map<String, String> dockerParams = new HashMap<>();
-        dockerParams.put("user", "0:0");
+
+//        dockerParams.put("user", "0:0");
 
         // Build output binding
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
@@ -163,9 +173,9 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getImage())) {
 //            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
             stringBuilder.append(workflow.getRepository().getImage());
-            dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
-            dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
-            dockerParams.put("--network", "host");
+//            dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
+//            dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
+//            dockerParams.put("--network", "host");
         } else {
             for (WorkflowScript script : workflow.getScripts()) {
                 if (script.isMain()) {
