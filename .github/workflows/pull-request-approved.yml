@@ -29,23 +29,6 @@ jobs:
           token: ${{ secrets.GH_PRIVATE_TOKEN }}
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: "0" # Perform a full clone, not a shallow one to build.sh can get the branch name
-#      - name: Diagnóstico de Git
-#        run: |
-#          git status
-#          git branch -a
-#          git show-ref
-#          git log -1
-#      - name: Checkout en la rama correcta
-#        run: |
-#          git fetch --all
-#          git checkout ${{ github.event.pull_request.head.ref }}
-#          echo "Rama actual: $(git branch --show-current)"
-#      - name: Segundo Diagnóstico de Git
-#        run: |
-#          git status
-#          git branch -a
-#          git show-ref
-#          git log -1
       - id: get_opencga_branch
         name: Get current branch for opencga from 'pom.xml' property
         run: |
@@ -95,4 +78,4 @@ jobs:
           SSH_PORT: ${{ env.SSH_PORT }}
       - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, cellbase, opencga and opencga-enterprise
         run: |
-         ./build.sh -t -l runShortTests -d -b -s -T ${{ github.event.pull_request.head.ref }} -c localhost:27018 -H hdp3.1 --debug
+         ./build.sh -t -l runShortTests -d -b -s -T ${{ github.event.pull_request.head.ref }} -c localhost:27018 -H hdp3.1
