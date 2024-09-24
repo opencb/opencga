@@ -31,6 +31,7 @@ search:
   configSet: "${OPENCGA.STORAGE.SEARCH.CONFIG_SET}"
   mode: "cloud"
   timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
+  writeTimeout: ${OPENCGA.STORAGE.SEARCH.WRITE.TIMEOUT}
   insertBatchSize: 5000
 
 ## Clinical database for indexing the pathogenic variants reported.

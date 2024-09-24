@@ -36,20 +36,29 @@ public class SearchConfiguration {
     private String manager;
     private boolean active;
     private int timeout;
+    private int writeTimeout;
     private int insertBatchSize;
 
     private static final String DEFAULT_MODE = "cloud";
     private static final boolean DEFAULT_ACTIVE = true;
     private static final int DEFAULT_TIMEOUT = 30000;
+    private static final int DEFAULT_WRITE_TIMEOUT = 120000;
     private static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
 
 
     public SearchConfiguration() {
-        this(Collections.emptyList(), "", DEFAULT_MODE, "", "", "", DEFAULT_ACTIVE, DEFAULT_TIMEOUT, DEFAULT_INSERT_BATCH_SIZE);
+        this(Collections.emptyList(), "", DEFAULT_MODE, "", "", "", DEFAULT_ACTIVE, DEFAULT_TIMEOUT, DEFAULT_WRITE_TIMEOUT,
+                DEFAULT_INSERT_BATCH_SIZE);
+    }
+
+    @Deprecated
+    public SearchConfiguration(List<String> hosts, String configSet, String mode, String user, String password, String manager,
+                               boolean active, int timeout, int insertBatchSize) {
+        this(hosts, configSet, mode, user, password, manager, active, timeout, DEFAULT_WRITE_TIMEOUT, insertBatchSize);
     }
 
     public SearchConfiguration(List<String> hosts, String configSet, String mode, String user, String password, String manager,
-                               boolean active, int timeout, int insertBatchSize) {
+                               boolean active, int timeout, int writeTimeout, int insertBatchSize) {
         this.hosts = hosts;
         this.configSet = configSet;
         this.mode = mode;
@@ -58,32 +67,25 @@ public class SearchConfiguration {
         this.manager = manager;
         this.active = active;
         this.timeout = timeout;
+        this.writeTimeout = writeTimeout;
         this.insertBatchSize = insertBatchSize;
     }
 
     @Override
     public String toString() {
-        return "SearchConfiguration{" +
-                "hosts=" + hosts +
-                ", configSet='" + configSet + '\'' +
-                ", mode='" + mode + '\'' +
-                ", user='" + user + '\'' +
-                ", password='" + password + '\'' +
-                ", manager='" + manager + '\'' +
-                ", active=" + active +
-                ", timeout=" + timeout +
-                ", insertBatchSize=" + insertBatchSize +
-                '}';
-    }
-
-    @Deprecated
-    public String getHost() {
-        return String.join(",", getHosts());
-    }
-
-    @Deprecated
-    public SearchConfiguration setHost(String host) {
-        return setHosts(StringUtils.isEmpty(host) ? Collections.emptyList() : Arrays.asList(host.split(",")));
+        final StringBuilder sb = new StringBuilder("SearchConfiguration{");
+        sb.append("hosts=").append(hosts);
+        sb.append(", configSet='").append(configSet).append('\'');
+        sb.append(", mode='").append(mode).append('\'');
+        sb.append(", user='").append(user).append('\'');
+        sb.append(", password='").append(password).append('\'');
+        sb.append(", manager='").append(manager).append('\'');
+        sb.append(", active=").append(active);
+        sb.append(", timeout=").append(timeout);
+        sb.append(", writeTimeout=").append(writeTimeout);
+        sb.append(", insertBatchSize=").append(insertBatchSize);
+        sb.append('}');
+        return sb.toString();
     }
 
     public List<String> getHosts() {
@@ -99,8 +101,9 @@ public class SearchConfiguration {
         return configSet;
     }
 
-    public void setConfigSet(String configSet) {
+    public SearchConfiguration setConfigSet(String configSet) {
         this.configSet = configSet;
+        return this;
     }
 
     public String getMode() {
@@ -157,14 +160,12 @@ public class SearchConfiguration {
         return this;
     }
 
-    @Deprecated
-    public int getRows() {
-        return insertBatchSize;
+    public int getWriteTimeout() {
+        return writeTimeout;
     }
 
-    @Deprecated
-    public SearchConfiguration setRows(int rows) {
-        this.insertBatchSize = rows;
+    public SearchConfiguration setWriteTimeout(int writeTimeout) {
+        this.writeTimeout = writeTimeout;
         return this;
     }
 
