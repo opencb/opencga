@@ -370,6 +370,52 @@ class RelatednessAnalysis:
         
         return reported_relationship
 
+    def relatedness_scores(self, plink_genome_fpath):
+        # Reading plink genome file (.genome)
+        LOGGER.debug('Getting PLINK results from file: "{}"'.format(plink_genome_fpath))
+        input_genome_file_fhand = open(str(plink_genome_fpath))
+
+        # Preparing relatedness results data model (scores)
+        for index, line in enumerate(input_genome_file_fhand):
+            genome_file_row_values = line.strip().split()
+            if index != 0:
+                # Getting values from PLINK .genome file block
+                values = {"RT": str(genome_file_row_values[4]),
+                          "ez": float(genome_file_row_values[5]),
+                          "z0": float(genome_file_row_values[6]),
+                          "z1": float(genome_file_row_values[7]),
+                          "z2": float(genome_file_row_values[8]),
+                          "PiHat": float(genome_file_row_values[9])
+                        }
+                score = {"sampleId1": str(genome_file_row_values[1]),
+                         "sampleId2": str(genome_file_row_values[3]),
+                         "reportedRelationship": None,
+                         "inferredRelationship": None,
+                         "validation": None,
+                         "values": values
+                        }
+
+                # Getting reported family relationship block:
+                all_samples_individuals_info = self.get_samples_individuals_info()
+                samples_individuals = {}
+                for sample,individual_info in all_samples_individuals_info.items():
+                    if sample == score["sampleId1"]:
+                        samples_individuals["sampleId1"] = sample
+                        samples_individuals["individualInfo1"] = individual_info
+                    if sample == score["sampleId2"]:
+                        samples_individuals["sampleId2"] = sample
+                        samples_individuals["individualInfo2"] = individual_info
+                score["reportedRelationship"] = RelatednessAnalysis.relatedness_report(samples_individuals)
+
+                # Inferring family relationship block:
+                score["inferredRelationship"] = self.relatedness_inference(score["sampleId1"],score["sampleId2"],values)
+
+                # Validating reported vs inferred family relationship results block:
+                score["validation"] = RelatednessAnalysis.relatedness_validation(score["reportedRelationship"], score["inferredRelationship"])
+                
+                # Adding score to scores list:
+                self.relatedness_results.add_score(score)
+
     def relatedness(self):
         # Prepare reference file paths to use them later:
         resources_path = os.path.join(os.path.dirname(self.output_parent_dir),'resources')
