@@ -237,12 +237,9 @@ class RelatednessAnalysis:
 
             plink_genome_fpath = plink_output_folder_files_prefix + '.genome'
             if os.path.isfile(plink_genome_fpath) == False:
-                LOGGER.error('File "{}" does not exist. Check:\nSTDOUT: "{}"\nSTDERR: "{}"'.format(plink_genome_fpath,
-                                                                                                   plink_ibd[1],
-                                                                                                   plink_ibd[2]))
+                LOGGER.error('File "{}" does not exist. Check:\nSTDOUT: "{}"\nSTDERR: "{}"'.format(plink_genome_fpath, plink_ibd[1], plink_ibd[2]))
                 raise Exception(
-                    'File "{}" does not exist. Check:\nSTDOUT: "{}"\nSTDERR: "{}"'.format(plink_genome_fpath,
-                                                                                          plink_ibd[1], plink_ibd[2]))
+                    'File "{}" does not exist. Check:\nSTDOUT: "{}"\nSTDERR: "{}"'.format(plink_genome_fpath, plink_ibd[1], plink_ibd[2]))
             else:
                 # Filling in method, software, and attributes fields from the relatedness results data model'
                 LOGGER.debug('Filling in method, software, and attributes fields from the relatedness results data model')
@@ -346,57 +343,56 @@ class RelatednessAnalysis:
         # Return dict/json with plink and inferred results
         return relatedness_results
 
-    def relatedness_report(self, relatedness_results):
-        samples_individuals = self.get_samples_individuals_info()
+    @staticmethod
+    def relatedness_report(samples_individuals_info):
         # Getting reported family relationship block:
-        for score_result in relatedness_results["scores"]:
-            LOGGER.debug('Getting reported relatedness information for sample {} and sample {}'.format(score_result["sampleId1"], score_result["sampleId2"]))
+        expected_keys = ["sampleId1","individualInfo1","sampleId2","individualInfo2"]
+        if expected_keys != list(samples_individuals_info.keys()):
+            msg = "Expected keys {} are not present in samples_individuals_info dictionary. Keys found: {}".format(expected_keys, samples_individuals_info.keys())
+            LOGGER.error(msg)
+            raise TypeError(msg)
+        LOGGER.debug('Getting reported relatedness information for sample {} and sample {}'.format(samples_individuals_info["sampleId1"], samples_individuals_info["sampleId2"]))
+
+        individual1_info = samples_individuals_info["individualInfo1"]
+        individual2_info = samples_individuals_info["individualInfo2"]
+        if individual1_info["individualId"] == "" or individual2_info["individualId"] == "":
+            LOGGER.warning('No individual information available for sample {} and sample {}). Hence reported family relationship UNKNOWN'.format(
+                samples_individuals_info["sampleId1"], samples_individuals_info["sampleId2"]))
+            reported_relationship = "UNKNOWN"
+        else:
             reported_relationship = []
-            individual1_info = samples_individuals[score_result["sampleId1"]]
-            individual2_info = samples_individuals[score_result["sampleId2"]]
-            if individual1_info["individualId"] == "" or individual2_info["individualId"] == "":
-                LOGGER.warning('No individual information available for sample {} and sample {}). Hence reported family relationship UNKNOWN'.format(
-                        score_result["sampleId1"], score_result["sampleId2"]))
-                relatedness_results["scores"]["reportedRelationship"] = "UNKNOWN"
-                continue
+            unknown_results = [False, False]
+            if individual1_info["individualId"] in individual2_info["familyMembersRoles"].keys():
+                reported_relationship.append(individual2_info["familyMembersRoles"][individual1_info["individualId"]])
             else:
-                unknown_results = [False, False]
-                if individual1_info["individualId"] in individual2_info["familyMembersRoles"].keys():
-                    reported_relationship.append(individual2_info["familyMembersRoles"][individual1_info["individualId"]])
-                else:
-                    reported_relationship.append("UNKNOWN")
-                    unknown_results[0] = True
+                reported_relationship.append("UNKNOWN")
+                unknown_results[0] = True
 
-                if individual2_info["individualId"] in individual1_info["familyMembersRoles"].keys():
-                    reported_relationship.append(
-                        individual1_info["familyMembersRoles"][individual2_info["individualId"]])
-                else:
-                    reported_relationship.append("UNKNOWN")
-                    unknown_results[1] = True
+            if individual2_info["individualId"] in individual1_info["familyMembersRoles"].keys():
+                reported_relationship.append(
+                    individual1_info["familyMembersRoles"][individual2_info["individualId"]])
+            else:
+                reported_relationship.append("UNKNOWN")
+                unknown_results[1] = True
 
-                if all(unknown_results):
-                    score_result["reportedRelationship"] = "SPOUSE, UNRELATED"
-                    LOGGER.info(
-                        "UNRELATED family relationship found for sample {} (individual: {}) and sample {} (individual: {})".format(
-                            score_result["sampleId1"], individual1_info["individualId"], score_result["sampleId2"],
-                            individual2_info["individualId"]))
-                elif any(unknown_results):
-                    LOGGER.warning(
-                        'Family relationship discrepancy found for sample {} (individual: {}) and sample {} (individual: {}). Hence reported family relationship UNKNOWN'.format(
-                            score_result["sampleId1"], individual1_info["individualId"], score_result["sampleId2"],individual2_info["individualId"]))
-                    score_result["reportedRelationship"] = "UNKNOWN"
-                else:
-                    score_result["reportedRelationship"] = ', '.join(reported_relationship)
-                    LOGGER.info(
-                        "Family relationship reported for sample {} (individual: {}) and sample {} (individual: {})".format(
-                            score_result["sampleId1"], individual1_info["individualId"], score_result["sampleId2"],individual2_info["individualId"]))
-
-            # Validating reported vs inferred family relationship results block:
-            validation_result = RelatednessAnalysis.relatedness_validation(score_result["reportedRelationship"], score_result["inferredRelationship"])
-            score_result["validation"] = validation_result
-
-        # Return dict/json with plink, inferred, reported and validation results
-        return relatedness_results
+            if all(unknown_results):
+                reported_relationship = "SPOUSE, UNRELATED"
+                LOGGER.info(
+                    "UNRELATED family relationship found for sample {} (individual: {}) and sample {} (individual: {})".format(
+                        samples_individuals_info["sampleId1"], individual1_info["individualId"], samples_individuals_info["sampleId2"],
+                        individual2_info["individualId"]))
+            elif any(unknown_results):
+                LOGGER.warning(
+                    'Family relationship discrepancy found for sample {} (individual: {}) and sample {} (individual: {}). Hence reported family relationship UNKNOWN'.format(
+                        samples_individuals_info["sampleId1"], individual1_info["individualId"], samples_individuals_info["sampleId2"],individual2_info["individualId"]))
+                reported_relationship = "UNKNOWN"
+            else:
+                reported_relationship = ', '.join(reported_relationship)
+                LOGGER.info(
+                    "Family relationship reported for sample {} (individual: {}) and sample {} (individual: {})".format(
+                        samples_individuals_info["sampleId1"], individual1_info["individualId"], samples_individuals_info["sampleId2"],individual2_info["individualId"]))
+        
+        return reported_relationship
 
     @staticmethod
     def generate_relatedness_results_file(relatedness_results, outdir_fpath):
