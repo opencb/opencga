@@ -416,28 +416,6 @@ class RelatednessAnalysis:
                 # Adding score to scores list:
                 self.relatedness_results.add_score(score)
 
-    def relatedness(self):
-        # Prepare reference file paths to use them later:
-        resources_path = os.path.join(os.path.dirname(self.output_parent_dir),'resources')
-        pop_freq_fpath = os.path.join(resources_path,'autosomes_1000G_QC_prune_in.frq')
-        pop_exclude_var_fpath = os.path.join(resources_path,'autosomes_1000G_QC.prune.out')
-        relatedness_thresholds_fpath = os.path.join(resources_path,'relatedness_thresholds.tsv')
-
-        # Create output dir for relatedness analysis
-        relatedness_output_dir_fpath = create_output_dir(path_elements=[self.output_parent_dir, 'relatedness'])
-
-        # Filtering VCF and renaming variants
-        filtered_vcf_fpath = self.filter_rename_variants_vcf(pop_freq_fpath, relatedness_output_dir_fpath)
-        # Performing IBD analysis from PLINK
-        relatedness_results, plink_genome_fpath = self.relatedness_plink(filtered_vcf_fpath, pop_freq_fpath, pop_exclude_var_fpath, relatedness_output_dir_fpath)
-        # Inferring family relationships
-        relatedness_results = self.relatedness_inference(relatedness_thresholds_fpath, plink_genome_fpath, relatedness_results)
-        # Getting reported family relationships and validating inferred vs reported results
-        relatedness_results = self.relatedness_report(relatedness_results)
-
-        # Generating file with results
-        relatedness_results_fpath = self.generate_relatedness_results_file(relatedness_results, relatedness_output_dir_fpath)
-
     def run(self):
         """
         Execute the relatedness analysis
