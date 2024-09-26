@@ -1,10 +1,13 @@
+#!/usr/bin/env python3
+
 import os
 import logging
 import gzip
 import json
 
-from utils import create_output_dir, execute_bash_command
-from family_qc import FamilyQCExecutor
+from utils import create_output_dir, execute_bash_command, generate_results_json
+from family_qc.family_qc import FamilyQCExecutor
+from family_qc.relatedness_results import RelatednessResults, Software, Scores, Values, Images, Attributes
 
 
 LOGGER = logging.getLogger('variant_qc_logger')
