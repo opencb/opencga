@@ -23,7 +23,7 @@ class RelatednessAnalysis:
         self.pop_exclude_var_file = None
         self.relatedness_thresholds_file = None
         self.family_qc_executor_info = family_qc_executor_info
-        self.relatedness_results = ""
+        self.relatedness_results = RelatednessResults()
 
 
     def relatedness_setup(self):
