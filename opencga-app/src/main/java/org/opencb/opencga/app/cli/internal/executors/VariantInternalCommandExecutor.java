@@ -856,7 +856,10 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantCommandOptions.FamilyVariantQcCommandOptions cliOptions = variantCommandOptions.familyVariantQcCommandOptions;
 
         FamilyQcAnalysisParams familyParams = new FamilyQcAnalysisParams()
-                .setFamilies(Collections.singletonList(cliOptions.family))
+                .setFamilies(cliOptions.families)
+                .setSkipIndex(cliOptions.skipIndex)
+                .setOverwrite(cliOptions.overwrite)
+                .setResourcesDir(cliOptions.resourcesDir)
                 .setOutdir(cliOptions.outdir);
 
         ObjectMap params = familyParams.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);

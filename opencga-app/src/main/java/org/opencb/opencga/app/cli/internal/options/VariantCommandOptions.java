@@ -1493,15 +1493,17 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--family"}, description = "Family ID.", required = true)
-        public String family;
+        @Parameter(names = {"--families"}, description = "List of family IDs", required = true)
+        public List<String> families;
 
-        @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
-        public String relatednessMethod = "PLINK/IBD";
+        @Parameter(names = {"--skip-index"}, description = "Do not save the computed quality control in catalog", required = false, arity = 1)
+        public Boolean skipIndex;
 
-        @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35,"
-                + " cohort:ALL>0.05")
-        public String relatednessMaf = "cohort:ALL>0.05";
+        @Parameter(names = {"--overwrite"}, description = "Overwrite quality control in catalog", required = false, arity = 1)
+        public Boolean overwrite;
+
+        @Parameter(names = {"--resources-dir"}, description = "Directory where the QC resource files are located", required = false, arity = 1)
+        public String resourcesDir;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
