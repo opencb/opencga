@@ -282,7 +282,7 @@ class RelatednessAnalysis:
         # Return validation result
         return validation
 
-    def relatedness_inference(self, plink_genome_fpath, relatedness_results):
+    def relatedness_inference(self, sampleId1, sampleId2, score_values):
         # Reading relatedness thresholds file (.tsv)
         LOGGER.debug('Getting relatedness thresholds from file: "{}"'.format(self.relatedness_thresholds_file))
         relatedness_thresholds_fhand = open(self.relatedness_thresholds_file)
@@ -299,49 +299,25 @@ class RelatednessAnalysis:
                 else:
                     relationship_groups_thresholds_dict[relationship_key][relatedness_thresholds_file_header[column]] = float(value)
 
-        # Reading plink genome file (.genome)
-        LOGGER.debug('Getting PLINK results from file: "{}"'.format(plink_genome_fpath))
-        input_genome_file_fhand = open(str(plink_genome_fpath))
-
-        # Preparing relatedness results data model (scores)
-        relatedness_scores = []
-        for index, line in enumerate(input_genome_file_fhand):
-            genome_file_row_values = line.strip().split()
-            if index != 0:
-                # Getting values from PLINK .genome file block
-                score = self.relatedness_results_data_model()["scores"][0]
-                score["sampleId1"] = str(genome_file_row_values[1])
-                score["sampleId2"] = str(genome_file_row_values[3])
-                score["values"]["RT"] = str(genome_file_row_values[4])
-                score["values"]["ez"] = str(genome_file_row_values[5])
-                score["values"]["z0"] = str(genome_file_row_values[6])
-                score["values"]["z1"] = str(genome_file_row_values[7])
-                score["values"]["z2"] = str(genome_file_row_values[8])
-                score["values"]["PiHat"] = str(genome_file_row_values[9])
-
-                # Inferring family relationship block:
-                LOGGER.debug("Inferring family relationship between sample {} and sample {} ".format(str(genome_file_row_values[1]),str(genome_file_row_values[3])))
-                inference_groups = []
-                for relationship, values in relationship_groups_thresholds_dict.items():
-                    # Check if PI_HAT, Z0, Z1, Z2 values (from PLINK .genome file) are within range (internal thresholds)
-                    if ((values['minPiHat']) <= float(score["values"]["PiHat"]) <= values['maxPiHat']) and (
-                            values['minZ0'] <= float(score["values"]["z0"]) <= values['maxZ0']) and (
-                            values['minZ1'] <= float(score["values"]["z1"]) <= values['maxZ1']) and (
-                            values['minZ2'] <= float(score["values"]["z2"]) <= values['maxZ2']):
-                        inference_groups.append(str(relationship))
-                        continue
-                if len(inference_groups) == 0:
-                    score["inferredRelationship"] = "UNKNOWN"
-                    LOGGER.info("UNKNOWN family relationship inferred between sample {} and sample {} ".format(
-                        str(genome_file_row_values[1]), str(genome_file_row_values[3])))
-                else:
-                    score["inferredRelationship"] = ', '.join(inference_groups)
-                LOGGER.info("Family relationship inferred between sample {} and sample {} ".format(str(genome_file_row_values[1]),str(genome_file_row_values[3])))
-                relatedness_scores.append(score)
-        relatedness_results["scores"] = relatedness_scores
-
-        # Return dict/json with plink and inferred results
-        return relatedness_results
+        # Inferring family relationship block:
+        LOGGER.info("Inferring family relationship between sample '{}' and sample '{}' ".format(sampleId1, sampleId2))
+        inference_groups = []
+        for relationship, values in relationship_groups_thresholds_dict.items():
+            # Check if PI_HAT, Z0, Z1, Z2 values (from PLINK .genome file) are within range (internal thresholds)
+            if ((values['minPiHat']) <= score_values["PiHat"] <= values['maxPiHat']) and (
+                    values['minZ0'] <= score_values["z0"] <= values['maxZ0']) and (
+                    values['minZ1'] <= score_values["z1"] <= values['maxZ1']) and (
+                    values['minZ2'] <= score_values["z2"] <= values['maxZ2']):
+                inference_groups.append(str(relationship))
+                continue
+        if len(inference_groups) == 0:
+            inferred_relationship = "UNKNOWN"
+            LOGGER.info("UNKNOWN family relationship inferred between sample '{}' and sample '{}' ".format(sampleId1, sampleId2))
+        else:
+            inferred_relationship = ', '.join(inference_groups)
+        LOGGER.info("Family relationship inferred between sample '{}' and sample '{}' ".format(sampleId1, sampleId2))
+        
+        return inferred_relationship
 
     @staticmethod
     def relatedness_report(samples_individuals_info):
