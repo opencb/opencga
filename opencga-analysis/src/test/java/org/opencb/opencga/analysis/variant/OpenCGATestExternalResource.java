@@ -270,7 +270,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         // QC
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc")).toAbsolutePath();
-        List<String> qcFiles = Arrays.asList("variant_qc.main.py", "utils.py", "__init__.py");
+        List<String> qcFiles = Arrays.asList("variant_qc.main.py", "utils.py", "__init__.py", "resources.txt");
         for (String qcFile : qcFiles) {
             inputStream = new FileInputStream("../opencga-app/app/analysis/qc/" + qcFile);
             Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
