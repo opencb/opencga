@@ -57,8 +57,8 @@ public class InternalStatus extends Status {
         }
     }
 
-    public InternalStatus(String id, String name, String description, String date, String version, String commit) {
-        super(id, name, description, date);
+    public InternalStatus(String id, String description, String date, String version, String commit) {
+        super(id, description, date);
         if (!isValid(id)) {
             throw new IllegalArgumentException("Unknown status id '" + id + "'");
         }
@@ -112,12 +112,7 @@ public class InternalStatus extends Status {
     }
 
     protected void init(String statusId, String description) {
-        init(statusId, statusId, description);
-    }
-
-    protected void init(String statusId, String statusName, String description) {
         super.id = statusId;
-        super.name = statusName;
         super.description = description;
         super.date = TimeUtils.getTime();
         this.version = GitRepositoryState.getInstance().getBuildVersion();
@@ -150,7 +145,6 @@ public class InternalStatus extends Status {
         sb.append("version='").append(version).append('\'');
         sb.append(", commit='").append(commit).append('\'');
         sb.append(", id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", date='").append(date).append('\'');
         sb.append('}');
@@ -181,15 +175,6 @@ public class InternalStatus extends Status {
 
     public InternalStatus setId(String id) {
         this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return StringUtils.isNotEmpty(name) ? name : id;
-    }
-
-    public InternalStatus setName(String name) {
-        this.name = name;
         return this;
     }
 

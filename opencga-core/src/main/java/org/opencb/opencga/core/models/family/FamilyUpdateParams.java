@@ -41,8 +41,6 @@ public class FamilyUpdateParams {
     private String modificationDate;
     private List<IndividualReferenceParam> members;
     private Integer expectedSize;
-    private FamilyQualityControl qualityControl;
-    private QualityControlStatus qualityControlStatus;
     private StatusParams status;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
@@ -52,7 +50,6 @@ public class FamilyUpdateParams {
 
     public FamilyUpdateParams(String id, String name, String description, String creationDate, String modificationDate,
                               List<IndividualReferenceParam> members, Integer expectedSize, StatusParams status,
-                              FamilyQualityControl qualityControl, QualityControlStatus qualityControlStatus,
                               List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -62,8 +59,6 @@ public class FamilyUpdateParams {
         this.members = members;
         this.expectedSize = expectedSize;
         this.status = status;
-        this.qualityControl = qualityControl;
-        this.qualityControlStatus = qualityControlStatus;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
@@ -74,10 +69,6 @@ public class FamilyUpdateParams {
         this.annotationSets = null;
 
         ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));
-        if (params.containsKey("qualityControlStatus")) {
-            params.put("internal.qualityControlStatus", params.get("qualityControlStatus"));
-            params.remove("qualityControlStatus");
-        }
 
         this.annotationSets = annotationSetList;
         if (this.annotationSets != null) {
@@ -94,8 +85,7 @@ public class FamilyUpdateParams {
                         ? members.stream().map(m -> new Individual().setId(m.getId()).setUuid(m.getUuid())).collect(Collectors.toList())
                         : null,
                 creationDate, modificationDate, description, members != null ? members.size() : 0, 1, 1, annotationSets,
-                status != null ? status.toStatus() : null, new FamilyInternal().setQualityControlStatus(qualityControlStatus),
-                Collections.emptyMap(), null, attributes);
+                status != null ? status.toStatus() : null, new FamilyInternal(), Collections.emptyMap(), null, attributes);
     }
 
     @Override
@@ -108,8 +98,6 @@ public class FamilyUpdateParams {
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", members=").append(members);
         sb.append(", expectedSize=").append(expectedSize);
-        sb.append(", qualityControl=").append(qualityControl);
-        sb.append(", qualityControlStatus=").append(qualityControlStatus);
         sb.append(", status=").append(status);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
@@ -186,24 +174,6 @@ public class FamilyUpdateParams {
 
     public FamilyUpdateParams setStatus(StatusParams status) {
         this.status = status;
-        return this;
-    }
-
-    public FamilyQualityControl getQualityControl() {
-        return qualityControl;
-    }
-
-    public FamilyUpdateParams setQualityControl(FamilyQualityControl qualityControl) {
-        this.qualityControl = qualityControl;
-        return this;
-    }
-
-    public QualityControlStatus getQualityControlStatus() {
-        return qualityControlStatus;
-    }
-
-    public FamilyUpdateParams setQualityControlStatus(QualityControlStatus qualityControlStatus) {
-        this.qualityControlStatus = qualityControlStatus;
         return this;
     }
 

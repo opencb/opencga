@@ -39,11 +39,9 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
+import org.opencb.opencga.core.models.common.InternalQualityControl;
 import org.opencb.opencga.core.models.common.QualityControlStatus;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.family.FamilyAclParams;
-import org.opencb.opencga.core.models.family.FamilyQualityControl;
-import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
@@ -1221,13 +1219,12 @@ public class FamilyManagerTest extends AbstractManagerTest {
         FamilyQualityControl qualityControl = new FamilyQualityControl(null, Arrays.asList("file1", "file2"),
                 Collections.singletonList(new ClinicalComment("author", "message", Collections.singletonList("tag"), "date")));
 
-        FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControl(qualityControl);
         String qcStatusId = READY;
         String qcStatusMsg = "Successfully computed";
-        updateParams.setQualityControlStatus(new QualityControlStatus(qcStatusId, qcStatusMsg));
+        QualityControlStatus qualityControlStatus = new QualityControlStatus(qcStatusId, qcStatusMsg);
 
-        DataResult<Family> updatedFamily = familyManager.update(studyFqn, originalFamily.first().getId(),
-                updateParams, QueryOptions.empty(), ownerToken);
+        DataResult<Family> updatedFamily = familyManager.updateQualityControl(studyFqn, originalFamily.first().getId(),
+                qualityControl, qualityControlStatus, ownerToken);
         assertEquals(1, updatedFamily.getNumUpdated());
 
         updatedFamily = familyManager.get(studyFqn, originalFamily.first().getId(), QueryOptions.empty(), ownerToken);

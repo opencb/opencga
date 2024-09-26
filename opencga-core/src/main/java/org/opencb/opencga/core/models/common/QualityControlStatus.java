@@ -34,7 +34,7 @@ public class QualityControlStatus extends InternalStatus {
 
     public QualityControlStatus(String status, String message) {
         if (isValid(status)) {
-            init(status, status, message);
+            init(status, message);
         } else {
             throw new IllegalArgumentException("Unknown status " + status);
         }

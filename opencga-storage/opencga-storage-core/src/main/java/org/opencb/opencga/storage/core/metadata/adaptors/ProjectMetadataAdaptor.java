@@ -7,7 +7,6 @@ import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 
 import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Created on 02/05/18.
@@ -17,14 +16,12 @@ import java.util.concurrent.TimeoutException;
 public interface ProjectMetadataAdaptor extends AutoCloseable {
 
     default Lock lockProject(long lockDuration, long timeout)
-            throws InterruptedException, TimeoutException, StorageEngineException {
+            throws StorageEngineException {
         return lockProject(lockDuration, timeout, null);
     }
 
     Lock lockProject(long lockDuration, long timeout, String lockName)
-            throws InterruptedException, TimeoutException, StorageEngineException;
-
-    void unLockProject(long lockId) throws StorageEngineException;
+            throws StorageEngineException;
 
     DataResult<ProjectMetadata> getProjectMetadata();
 

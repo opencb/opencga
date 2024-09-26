@@ -20,10 +20,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -112,7 +110,7 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     }
 
     @Test
-    public void testRemoveFieldFromVariableSet() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
+    public void testRemoveFieldFromVariableSet() throws CatalogException {
         DataResult<VariableSet> variableSetDataResult = createExampleVariableSet("VARSET_1", false);
         DataResult result = catalogStudyDBAdaptor.removeFieldFromVariableSet(5L, variableSetDataResult.first().getUid(), "NAME",
                 orgAdminUserId1);
@@ -165,7 +163,7 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
      * @throws CatalogDBException
      */
     @Test
-    public void addFieldToVariableSetTest1() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
+    public void addFieldToVariableSetTest1() throws CatalogException {
         DataResult<VariableSet> varset1 = createExampleVariableSet("VARSET_1", false);
         createExampleVariableSet("VARSET_2", true);
         Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "", null,
@@ -191,7 +189,7 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
      * @throws CatalogDBException
      */
     @Test
-    public void addFieldToVariableSetTest2() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
+    public void addFieldToVariableSetTest2() throws CatalogException {
         Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap());
         thrown.expect(CatalogDBException.class);
@@ -208,7 +206,7 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     }
 
     @Test
-    public void removeUsersFromAllGroups() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public void removeUsersFromAllGroups() throws CatalogException {
         catalogStudyDBAdaptor.createGroup(studyUid, new Group("name1", Arrays.asList(normalUserId1, normalUserId2)));
         catalogStudyDBAdaptor.createGroup(studyUid, new Group("name2", Arrays.asList(normalUserId1, normalUserId2, normalUserId3)));
         catalogStudyDBAdaptor.createGroup(studyUid, new Group("name3", Arrays.asList(normalUserId1, normalUserId3)));
@@ -221,7 +219,7 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     }
 
     @Test
-    public void resyncUserWithSyncedGroups() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public void resyncUserWithSyncedGroups() throws CatalogException {
         // We create synced groups and not synced groups in study studyUid
         Group group = new Group("@notSyncedGroup", Arrays.asList(normalUserId1, normalUserId2, normalUserId3));
         catalogStudyDBAdaptor.createGroup(studyUid, group);
@@ -293,7 +291,7 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     }
 
     @Test
-    public void updateUserToGroups() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public void updateUserToGroups() throws CatalogException {
         // We create synced groups and not synced groups in study studyUid
         Group group = new Group("@notSyncedGroup", Collections.emptyList());
         catalogStudyDBAdaptor.createGroup(studyUid, group);

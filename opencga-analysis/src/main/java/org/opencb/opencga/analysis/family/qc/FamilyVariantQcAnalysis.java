@@ -225,11 +225,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
             }
 
             try {
-                // Update catalog: quality control and status
-                FamilyUpdateParams updateParams = new FamilyUpdateParams()
-                        .setQualityControl(familyQc)
-                        .setQualityControlStatus(qcStatus);
-                catalogManager.getFamilyManager().update(getStudy(), family.getId(), updateParams, null, token);
+                catalogManager.getFamilyManager().updateQualityControl(getStudy(), family.getId(), familyQc, qcStatus, token);
             } catch (CatalogException e) {
                 failedQcSet.add(family.getId());
                 logMsg = FAILURE_COULD_NOT_UPDATE_QUALITY_CONTROL_IN_OPEN_CGA_CATALOG + getIdLogMessage(family.getId(), FAMILY_QC_TYPE);

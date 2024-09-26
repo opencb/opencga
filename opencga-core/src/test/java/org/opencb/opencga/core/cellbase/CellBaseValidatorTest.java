@@ -28,8 +28,8 @@ public class CellBaseValidatorTest {
 
     @Test
     public void testValidateUndefinedDataRelease() throws IOException {
-        CellBaseConfiguration c = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.2", null, null), "hsapiens", "grch38", true);
-        Assert.assertEquals("v5.2", c.getVersion());
+        CellBaseConfiguration c = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.8", null, null), "hsapiens", "grch38", true);
+        Assert.assertEquals("v5.8", c.getVersion());
         Assert.assertNotNull(c.getDataRelease());
     }
 
@@ -96,7 +96,7 @@ public class CellBaseValidatorTest {
     @Test
     public void testApiKeyEmpty() throws IOException {
         String apiKey = "";
-        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.2", null, apiKey), "hsapiens", "grch38", true);
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.8", null, apiKey), "hsapiens", "grch38", true);
         Assert.assertNull(validated.getApiKey());
     }
 

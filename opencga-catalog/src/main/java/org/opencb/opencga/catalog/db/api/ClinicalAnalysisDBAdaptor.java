@@ -78,8 +78,10 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         RESPONSIBLE("responsible", OBJECT, ""),
         FLAGS("flags", OBJECT, ""),
         FLAGS_ID("flags.id", TEXT, ""),
+        VERSION("version", INTEGER, ""),
         RELEASE("release", INTEGER, ""),
-        PANEL_LOCK("panelLock", BOOLEAN, ""),
+        SNAPSHOT("snapshot", INTEGER, ""),
+        PANEL_LOCKED("panelLocked", BOOLEAN, ""),
         LOCKED("locked", BOOLEAN, ""),
 
         SAMPLE("sample", TEXT_ARRAY, ""), // Alias to search for samples within proband.samples or family.members.samples
@@ -235,8 +237,7 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
     OpenCGAResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
 
     OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList,
-                         List<ClinicalAudit> clinicalAuditList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+                         List<ClinicalAudit> clinicalAuditList, QueryOptions options) throws CatalogException;
 
     OpenCGAResult<ClinicalAnalysis> update(long id, ObjectMap parameters, List<VariableSet> variableSetList,
                                            List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
