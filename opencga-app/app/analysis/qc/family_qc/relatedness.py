@@ -394,22 +394,6 @@ class RelatednessAnalysis:
         
         return reported_relationship
 
-    @staticmethod
-    def generate_relatedness_results_file(relatedness_results, outdir_fpath):
-        relatedness_output_dir_fpath = outdir_fpath
-
-        # Generating json file with relatedness results
-        relatedness_results_file_name = 'relatedness.json'
-        relatedness_results_fpath = os.path.join(relatedness_output_dir_fpath, relatedness_results_file_name)
-        LOGGER.debug('Generating json file with relatedness results. File path: "{}"'.format(relatedness_results_fpath))
-        json.dump(relatedness_results, open(relatedness_results_fpath, 'w'))
-        LOGGER.info('Finished writing json file with relatedness results: "{}"'.format(relatedness_results_fpath))
-        LOGGER.info('Relatedness analysis complete')
-
-        # Return json file path with relatedness results
-        return relatedness_results_fpath
-
-
     def relatedness(self):
         # Prepare reference file paths to use them later:
         resources_path = os.path.join(os.path.dirname(self.output_parent_dir),'resources')
