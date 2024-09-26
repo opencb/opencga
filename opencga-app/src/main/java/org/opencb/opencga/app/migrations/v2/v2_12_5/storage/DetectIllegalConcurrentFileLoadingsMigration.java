@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v2_12_5.storage;
+package org.opencb.opencga.app.migrations.v2.v2_12_5.storage;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -42,7 +42,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
 
     @Override
     protected void run() throws Exception {
-        for (String project : getVariantStorageProjects(organizationId)) {
+        for (String project : getVariantStorageProjects()) {
             VariantStorageEngine engine = getVariantStorageEngineByProject(project);
             if (!engine.getStorageEngineId().equals("hadoop")) {
                 continue;

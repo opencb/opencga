@@ -363,6 +363,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         operationsVariantStorageSubCommands.addCommand("configure-variant-secondary-sample-index", operationsVariantStorageCommandOptions.configureVariantSecondarySampleIndexCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-secondary-index", operationsVariantStorageCommandOptions.secondaryIndexVariantCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-secondary-index-delete", operationsVariantStorageCommandOptions.deleteVariantSecondaryIndexCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("variant-setup", operationsVariantStorageCommandOptions.setupVariantCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-stats-delete", operationsVariantStorageCommandOptions.deleteVariantStatsCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-stats-index", operationsVariantStorageCommandOptions.indexVariantStatsCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-study-delete", operationsVariantStorageCommandOptions.deleteVariantStudyCommandOptions);

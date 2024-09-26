@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.operations.variant;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -32,8 +33,13 @@ public class VariantFileDeleteParams extends ToolParams {
         this.resume = resume;
     }
 
+    @DataField(description = "List of file ids to delete. Use 'all' to remove the whole study", required = true)
     private List<String> file;
+
+    @DataField(description = "Resume failed delete operation.", defaultValue = "false")
     private boolean resume;
+
+    @DataField(description = "Force delete operation. This would allow deleting partially loaded files.", defaultValue = "false")
     private boolean force;
 
     public List<String> getFile() {

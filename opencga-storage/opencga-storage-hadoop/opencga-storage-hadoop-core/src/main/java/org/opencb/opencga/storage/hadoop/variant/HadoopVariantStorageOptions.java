@@ -8,7 +8,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
 
     HADOOP_LOAD_FILES_IN_PARALLEL("storage.hadoop.load.filesInParallel", 1),
     HBASE_NAMESPACE("storage.hadoop.hbase.namespace"),
-    EXPECTED_FILES_NUMBER("expected_files_number", 5000),
+    EXPECTED_FILES_NUMBER("expected_files_number", 50),
     EXPECTED_SAMPLES_NUMBER("expected_samples_number"),
     DBADAPTOR_PHOENIX_FETCH_SIZE("storage.hadoop.phoenix.fetchSize", -1),
     DBADAPTOR_PHOENIX_QUERY_COMPLEXITY_THRESHOLD("storage.hadoop.phoenix.queryComplexityThreshold", 250),
@@ -64,7 +64,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     // Variant table configuration
     /////////////////////////
     VARIANT_TABLE_COMPRESSION("storage.hadoop.variant.table.compression", Compression.Algorithm.SNAPPY.getName()),
-    VARIANT_TABLE_PRESPLIT_SIZE("storage.hadoop.variant.table.preSplit.numSplits", 500),
+    VARIANT_TABLE_PRESPLIT_SIZE("storage.hadoop.variant.table.preSplit.numSplits", 50),
     // Do not create phoenix indexes. Testing purposes only
     VARIANT_TABLE_INDEXES_SKIP("storage.hadoop.variant.table.indexes.skip"),
     VARIANT_TABLE_LOAD_REFERENCE("storage.hadoop.variant.table.load.reference", false),
@@ -78,7 +78,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     // Archive table configuration
     /////////////////////////
     ARCHIVE_TABLE_COMPRESSION("storage.hadoop.archive.table.compression", Compression.Algorithm.GZ.getName()),
-    ARCHIVE_TABLE_PRESPLIT_SIZE("storage.hadoop.archive.table.preSplit.splitsPerBatch", 500),
+    ARCHIVE_TABLE_PRESPLIT_SIZE("storage.hadoop.archive.table.preSplit.splitsPerBatch", 10),
+    ARCHIVE_TABLE_PRESPLIT_EXTRA_SPLITS("storage.hadoop.archive.table.preSplit.extraSplits", 3),
 
     ARCHIVE_CHUNK_SIZE("storage.hadoop.archive.table.chunkSize", 1000),
     ARCHIVE_FILE_BATCH_SIZE("storage.hadoop.archive.table.fileBatchSize", 1000),
@@ -92,7 +93,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     // Sample index table configuration
     /////////////////////////
     SAMPLE_INDEX_TABLE_COMPRESSION("storage.hadoop.sampleIndex.table.compression", Compression.Algorithm.SNAPPY.getName()),
-    SAMPLE_INDEX_TABLE_PRESPLIT_SIZE("storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit", 15),
+    SAMPLE_INDEX_TABLE_PRESPLIT_SIZE("storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit", 200),
+    SAMPLE_INDEX_TABLE_PRESPLIT_EXTRA_SPLITS("storage.hadoop.sampleIndex.table.preSplit.extraSplits", 5),
     SAMPLE_INDEX_BUILD_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.build.maxSamplesPerMR", 2000),
     SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.annotation.maxSamplesPerMR", 2000),
     SAMPLE_INDEX_FAMILY_MAX_TRIOS_PER_MR("storage.hadoop.sampleIndex.family.maxTriosPerMR", 1000),

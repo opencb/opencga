@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.study.Variable;
@@ -62,12 +63,10 @@ public interface AnnotationSetDBAdaptor<T> extends CoreDBAdaptor<T> {
      * @param variableSetId variable set id to identify the annotations that will add a new annotation.
      * @param variable      new variable that will be added.
      * @return a OpenCGAResult object.
-     * @throws CatalogDBException if the variable could not be added to an existing annotationSet.
-     * @throws CatalogParameterException if there is any unexpected parameter.
-     * @throws CatalogAuthorizationException if the operation is not authorized.
+     * @throws CatalogException if the variable could not be added to an existing annotationSet, there is any unexpected parameter or
+     *                          the operation is not authorized.
      */
-    OpenCGAResult addVariableToAnnotations(long studyUid, long variableSetId, Variable variable)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult addVariableToAnnotations(long studyUid, long variableSetId, Variable variable) throws CatalogException;
 
 //    /**
 //     * This method will rename the id of all the annotations corresponding to the variableSetId changing oldName per newName.
@@ -88,12 +87,10 @@ public interface AnnotationSetDBAdaptor<T> extends CoreDBAdaptor<T> {
      * @param variableSetId  variable set id for which the annotationSets have to delete the annotation.
      * @param annotationName Annotation name.
      * @return a OpenCGAResult object.
-     * @throws CatalogDBException when there is an error in the database.
-     * @throws CatalogParameterException if there is any unexpected parameter.
-     * @throws CatalogAuthorizationException if the operation is not authorized.
+     * @throws CatalogException when there is an error in the database, there is any unexpected parameter or the operation is not
+     *                          authorized.
      */
-    OpenCGAResult removeAnnotationField(long studyUid, long variableSetId, String annotationName)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult removeAnnotationField(long studyUid, long variableSetId, String annotationName) throws CatalogException;
 
     /**
      * Makes a groupBy to obtain the different values that every annotation has and the total number of each.
