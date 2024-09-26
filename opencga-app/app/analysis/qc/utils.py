@@ -3,6 +3,7 @@
 import os
 import logging
 import subprocess
+import json
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -40,3 +41,17 @@ def execute_bash_command(cmd):
         raise Exception(msg)
 
     return return_code, stdout, stderr
+
+def generate_results_json(results: dict, outdir_path: str):
+    """
+    Generate a JSON file.
+    
+    :param results: dict object
+    :param outdir_path: Path to the output directory where the JSON file will be stored
+    """
+    results_file_name = 'results.json'
+    results_fpath = os.path.join(outdir_path, results_file_name)
+    LOGGER.debug('Generating JSON file with results. File path: "{}"'.format(results_fpath))
+    with open(results_fpath, 'w') as file:
+        json.dump(results, file, indent=2)
+        LOGGER.info('Finished writing json file with results: "{}"'.format(results_fpath))
