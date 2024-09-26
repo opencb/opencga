@@ -43,37 +43,22 @@ public class FamilyInternal extends Internal {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyInternal{");
-        sb.append("registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(lastModified).append('\'');
+        sb.append("status=").append(status);
+        sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", status=").append(status);
+        sb.append(", qualityControlStatus=").append(qualityControlStatus);
         sb.append('}');
         return sb.toString();
     }
 
+    @Override
     public FamilyStatus getStatus() {
         return status;
     }
 
     public FamilyInternal setStatus(FamilyStatus status) {
         this.status = status;
-        return this;
-    }
-
-    public String getRegistrationDate() {
-        return registrationDate;
-    }
-
-    public FamilyInternal setRegistrationDate(String registrationDate) {
-        this.registrationDate = registrationDate;
-        return this;
-    }
-
-    public String getLastModified() {
-        return lastModified;
-    }
-
-    public FamilyInternal setLastModified(String lastModified) {
-        this.lastModified = lastModified;
         return this;
     }
 

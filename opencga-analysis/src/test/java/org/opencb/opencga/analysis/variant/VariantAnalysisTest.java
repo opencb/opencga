@@ -74,6 +74,7 @@ import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyInternalUpdateParams;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.file.File;
@@ -1116,9 +1117,8 @@ public class VariantAnalysisTest {
         catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
 
         // Update quality control for the cancer sample
-        FamilyQualityControl qc = new FamilyQualityControl();
-        FamilyUpdateParams familyUpdateParams = new FamilyUpdateParams().setQualityControl(qc);
-        catalogManager.getFamilyManager().update(STUDY, family, familyUpdateParams, null, token);
+        catalogManager.getFamilyManager().updateQualityControl(STUDY, family, new FamilyQualityControl(), new QualityControlStatus(),
+                token);
 
         // Family QC analysis
         FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
