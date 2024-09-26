@@ -79,6 +79,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
         setUpStorageEngineExecutor(study);
 
+        logger.info("Checking {}", analysisParams);
+
         // Check parameters
         checkParameters(analysisParams, study, catalogManager, token);
 
@@ -291,8 +293,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
         // Check error
         if (MapUtils.isNotEmpty(errors)) {
-            throw new ToolException("Found the following error for family IDs: " + StringUtils.join(errors.entrySet().stream().map(
-                    e -> "Family ID " + e.getKey() + ": " + e.getValue()).collect(Collectors.toList()), ","));
+            throw new ToolException("Found the following errors: " + StringUtils.join(errors.entrySet().stream().map(
+                    e -> "Family ID '" + e.getKey() + "': " + e.getValue()).collect(Collectors.toList()), ","));
         }
 
         // Check resources dir
