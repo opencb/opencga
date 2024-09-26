@@ -439,9 +439,29 @@ class RelatednessAnalysis:
         relatedness_results_fpath = self.generate_relatedness_results_file(relatedness_results, relatedness_output_dir_fpath)
 
     def run(self):
-        # Checking data
-        # self.checking_data()  # TODO check input data (config parameters)
+        """
+        Execute the relatedness analysis
+        """
 
-        # Running family QC steps
-        # Run relatedness analysis
-        self.relatedness()
+        try:
+            LOGGER.info('Starting relatedness analysis')
+
+            # Relatedness input files set up
+            self.relatedness_setup()
+
+            # Filtering VCF and renaming variants
+            filtered_vcf_fpath = self.filter_rename_variants_vcf()
+            
+            # Performing IBD analysis from PLINK
+            plink_genome_fpath = self.relatedness_plink(filtered_vcf_fpath)
+
+            # Getting and calculating relatedness scores: reported relationship, inferred relationship, validation
+            self.relatedness_scores(plink_genome_fpath)
+
+            # Generating file with results
+            generate_results_json(self.relatedness_results.model_dump(),self.output_relatedness_dir)
+            LOGGER.info('Relatedness analysis completed successfully')
+
+        except Exception as e:
+            LOGGER.error("Error during relatedness analysis: '{}'".format(e))
+            raise
