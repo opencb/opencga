@@ -56,6 +56,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
     List<AbstractMap.SimpleEntry<String, String>> inputBindings;
 
     private Map<String, String> dockerParams;
+    private String outDirPath;
 
     private Thread thread;
     private final int monitorThreadPeriod = 5000;
@@ -92,6 +93,8 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             throw new ToolException("Workflow '" + nextflowParams.getId() + "' is null");
         }
 
+        outDirPath = getOutDir().toAbsolutePath().toString();
+
         // Update job tags and attributes
         ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(workflow.getManager().getId().name(), workflow.getManager().getVersion());
         Set<String> tags = new HashSet<>();
@@ -111,13 +114,6 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
             StringBuilder cliParamsBuilder = new StringBuilder();
             for (Map.Entry<String, String> entry : nextflowParams.getParams().entrySet()) {
-                if (entry.getKey().equalsIgnoreCase("dockerParams")) {
-                    Arrays.asList(entry.getValue().split(",")).forEach(s -> {
-                        String[] split = s.split("==");
-                        dockerParams.put(split[0], split[1]);
-                    });
-                    continue;
-                }
                 if (entry.getKey().startsWith("-")) {
                     cliParamsBuilder.append(entry.getKey()).append(" ");
                 } else {
@@ -128,7 +124,12 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
                         File file = inputFileUtils.getOpenCGAFile(study, entry.getValue(), token);
                         String path = file.getUri().getPath();
                         inputBindings.add(new AbstractMap.SimpleEntry<>(path, path));
+                        logger.debug("Params: OpenCGA input file: {}", path);
                         cliParamsBuilder.append(path).append(" ");
+                    } else if (inputFileUtils.isDynamicOutputFolder(entry.getValue())) {
+                        String dynamicOutputFolder = inputFileUtils.getDynamicOutputFolder(entry.getValue(), outDirPath);
+                        logger.debug("Params: Dynamic output folder: {}", dynamicOutputFolder);
+                        cliParamsBuilder.append(dynamicOutputFolder).append(" ");
                     } else {
                         cliParamsBuilder.append(entry.getValue()).append(" ");
                     }
@@ -161,8 +162,6 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         } else {
             throw new RuntimeException("Can't fetch nextflow.config file");
         }
-
-        String outDirPath = getOutDir().toAbsolutePath().toString();
 
         // Establish working directory
         dockerParams.put("-w", outDirPath);

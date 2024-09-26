@@ -16,6 +16,7 @@ public class InputFileUtils {
     private final CatalogManager catalogManager;
 
     private static final Pattern OPERATION_PATTERN = Pattern.compile("^(?i)(ocga://|opencga://|file://)(.+)$");
+    private static final String OUTPUT = "$OUTPUT";
     private final Logger logger = LoggerFactory.getLogger(InputFileUtils.class);
 
     public InputFileUtils(CatalogManager catalogManager) {
@@ -41,6 +42,17 @@ public class InputFileUtils {
             throw new CatalogException("File '" + file + "' not found in study '" + study + "'");
         }
         return result.first();
+    }
+
+    public boolean isDynamicOutputFolder(String file) {
+        return file.toUpperCase().startsWith(OUTPUT);
+    }
+
+    public String getDynamicOutputFolder(String file, String outDir) {
+        if (!isDynamicOutputFolder(file)) {
+            return file;
+        }
+        return outDir + file.substring(OUTPUT.length());
     }
 
 }
