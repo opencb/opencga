@@ -65,7 +65,6 @@ public class ArchiveDriver extends Configured implements Tool {
 
     public static final String CONFIG_ARCHIVE_INPUT_FILE_VCF      = "opencga.archive.input.file.vcf";
     public static final String CONFIG_ARCHIVE_INPUT_FILE_VCF_META = "opencga.archive.input.file.vcf.meta";
-    public static final String CONFIG_ARCHIVE_TABLE_NAME          = "opencga.archive.table.name";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveDriver.class);
 
@@ -82,7 +81,7 @@ public class ArchiveDriver extends Configured implements Tool {
 
         URI inputFile = URI.create(conf.get(CONFIG_ARCHIVE_INPUT_FILE_VCF));
         URI inputMetaFile = URI.create(conf.get(CONFIG_ARCHIVE_INPUT_FILE_VCF_META));
-        String tableName = conf.get(CONFIG_ARCHIVE_TABLE_NAME);
+        String tableName = conf.get(ArchiveTableHelper.CONFIG_ARCHIVE_TABLE_NAME);
         int studyId = conf.getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
         int fileId = conf.getInt(HadoopVariantStorageEngine.FILE_ID, -1);
 
@@ -223,7 +222,7 @@ public class ArchiveDriver extends Configured implements Tool {
         conf.set(CONFIG_ARCHIVE_INPUT_FILE_VCF, toolArgs[0]);
         conf.set(CONFIG_ARCHIVE_INPUT_FILE_VCF_META, toolArgs[1]);
         conf = HBaseManager.addHBaseSettings(conf, toolArgs[2]);
-        conf.set(CONFIG_ARCHIVE_TABLE_NAME, toolArgs[3]);
+        conf.set(ArchiveTableHelper.CONFIG_ARCHIVE_TABLE_NAME, toolArgs[3]);
         conf.set(HadoopVariantStorageEngine.STUDY_ID, toolArgs[4]);
         conf.set(HadoopVariantStorageEngine.FILE_ID, toolArgs[5]);
         //set the configuration back, so that Tool can configure itself

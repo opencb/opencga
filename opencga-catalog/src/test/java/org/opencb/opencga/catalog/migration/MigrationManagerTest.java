@@ -11,12 +11,14 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.FileOutputStream;
@@ -120,10 +122,11 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public static class MigrationWithJobs extends MigrationTool {
         @Override
         protected void run() throws Exception {
-            String fqn = catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).first().getFqn();
+            String fqn = catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).first().getFqn();
             getMigrationRun().getJobs().clear();
 
-            getMigrationRun().addJob(catalogManager.getJobManager().submitProject(fqn, "my-tool", null, Collections.emptyMap(), null, null, null, null, token).first());
+            getMigrationRun().addJob(catalogManager.getJobManager().submitProject(fqn, "my-tool", null, Collections.emptyMap(), null, null,
+                    null, null, token).first());
         }
     }
 
@@ -133,9 +136,11 @@ public class MigrationManagerTest extends AbstractManagerTest {
         super.setUp();
         try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(),
                 catalogManager.getIoManagerFactory())) {
-            mongoDBAdaptorFactory.getMongoDataStore()
-                    .getCollection(MongoDBAdaptorFactory.MIGRATION_COLLECTION)
-                    .remove(new Document(), new QueryOptions(MongoDBCollection.MULTI, true));
+            for (String organizationId : mongoDBAdaptorFactory.getOrganizationIds()) {
+                mongoDBAdaptorFactory.getMongoDataStore(organizationId)
+                        .getCollection(OrganizationMongoDBAdaptorFactory.MIGRATION_COLLECTION)
+                        .remove(new Document(), new QueryOptions(MongoDBCollection.MULTI, true));
+            }
         }
         Files.createDirectories(catalogManagerResource.getOpencgaHome().resolve("conf"));
         try (OutputStream os = new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml").toFile())) {
@@ -148,22 +153,23 @@ public class MigrationManagerTest extends AbstractManagerTest {
         MigrationManager migrationManager = catalogManager.getMigrationManager();
         String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        List<Class<? extends MigrationTool>> pendingMigrations = migrationManager.getPendingMigrations("0.0.1", token);
+        List<Class<? extends MigrationTool>> pendingMigrations = migrationManager.getPendingMigrations(organizationId, "0.0.1", token);
         assertEquals(0, pendingMigrations.size());
 
-        pendingMigrations = migrationManager.getPendingMigrations("0.1.0", token);
+        pendingMigrations = migrationManager.getPendingMigrations(organizationId, "0.1.0", token);
         assertEquals(2, pendingMigrations.size());
         for (Class<? extends MigrationTool> pendingMigration : pendingMigrations) {
             Migration annotation = pendingMigration.getAnnotation(Migration.class);
             assertTrue(Arrays.asList("test-1", "test-2").contains(annotation.id()));
         }
         // Run migrations up to 0.0.1
-        migrationManager.runMigration("0.0.1", Collections.emptySet(), Collections.emptySet(), false, catalogManagerResource.getOpencgaHome().toString(), token);
+        migrationManager.runMigration("0.0.1", Collections.emptySet(), Collections.emptySet(), false,
+                catalogManagerResource.getOpencgaHome().toString(), token);
 
-        pendingMigrations = migrationManager.getPendingMigrations("0.1.0", token);
+        pendingMigrations = migrationManager.getPendingMigrations(organizationId, "0.1.0", token);
         assertEquals(0, pendingMigrations.size());
 
-        pendingMigrations = migrationManager.getPendingMigrations("0.2.0", token);
+        pendingMigrations = migrationManager.getPendingMigrations(organizationId, "0.2.0", token);
         assertEquals(2, pendingMigrations.size());
         for (int i = 0; i < pendingMigrations.size(); i++) {
             Class<? extends MigrationTool> pendingMigration = pendingMigrations.get(i);
@@ -171,7 +177,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
             assertTrue(Arrays.asList("test2-1", "test2-2").contains(annotation.id()));
         }
 
-        pendingMigrations = migrationManager.getPendingMigrations("0.2.1", token);
+        pendingMigrations = migrationManager.getPendingMigrations(organizationId, "0.2.1", token);
         assertEquals(4, pendingMigrations.size());
         for (int i = 0; i < pendingMigrations.size(); i++) {
             Class<? extends MigrationTool> pendingMigration = pendingMigrations.get(i);
@@ -191,9 +197,10 @@ public class MigrationManagerTest extends AbstractManagerTest {
                     fail();
             }
         }
-        migrationManager.runMigration("0.2.0", Collections.emptySet(), Collections.emptySet(), false, catalogManagerResource.getOpencgaHome().toString(), token);
+        migrationManager.runMigration("0.2.0", Collections.emptySet(), Collections.emptySet(), false,
+                catalogManagerResource.getOpencgaHome().toString(), token);
 
-        pendingMigrations = migrationManager.getPendingMigrations("0.2.3", token);
+        pendingMigrations = migrationManager.getPendingMigrations(organizationId, "0.2.3", token);
         assertEquals(2, pendingMigrations.size());
         for (int i = 0; i < pendingMigrations.size(); i++) {
             Class<? extends MigrationTool> pendingMigration = pendingMigrations.get(i);
@@ -212,17 +219,20 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
         thrown.expectMessage("manual");
         thrown.expect(MigrationException.class);
-        migrationManager.runMigration("0.2.2", Collections.emptySet(), Collections.emptySet(), false, catalogManagerResource.getOpencgaHome().toString(), token);
+        migrationManager.runMigration("0.2.2", Collections.emptySet(), Collections.emptySet(), false,
+                catalogManagerResource.getOpencgaHome().toString(), token);
     }
 
     @Test
     public void testManualMigrations() throws CatalogException, IOException {
         String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", catalogManagerResource.getOpencgaHome(), new ObjectMap("key", "OtherValue"), token);
+        MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration(organizationId, "0.2.1", "test4-1-manual",
+                catalogManagerResource.getOpencgaHome(), false, false, new ObjectMap("key", "OtherValue"), token);
         assertEquals(MigrationRun.MigrationStatus.ERROR, migrationRun.getStatus());
 
-        migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", catalogManagerResource.getOpencgaHome(), new ObjectMap("key", "value"), token);
+        migrationRun = catalogManager.getMigrationManager().runManualMigration(organizationId, "0.2.1", "test4-1-manual",
+                catalogManagerResource.getOpencgaHome(), false, false, new ObjectMap("key", "value"), token);
         assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
     }
 
@@ -230,19 +240,24 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public void testMigrationsWithJobs() throws CatalogException, IOException {
         String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", catalogManagerResource.getOpencgaHome(), new ObjectMap("key", "value"), token);
+        catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual",
+                catalogManagerResource.getOpencgaHome(), new ObjectMap("key", "value"), token);
 
         // RUN. New status ON_HOLD
-        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), false, catalogManagerResource.getOpencgaHome().toString(), token);
+        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), false,
+                catalogManagerResource.getOpencgaHome().toString(), token);
 
-        MigrationRun migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token).stream().filter(p1 -> p1.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
+        MigrationRun migrationRun = catalogManager.getMigrationManager().getMigrationRuns(organizationId, token)
+                .stream().filter(p1 -> p1.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.ON_HOLD, migrationRun.getStatus());
         Date start = migrationRun.getStart();
         JobReferenceParam j = migrationRun.getJobs().get(0);
 
         // RUN. Migration run does not get triggered
-        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), false, catalogManagerResource.getOpencgaHome().toString(), token);
-        migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token).stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
+        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), false,
+                catalogManagerResource.getOpencgaHome().toString(), token);
+        migrationRun = catalogManager.getMigrationManager().getMigrationRuns(organizationId, token)
+                .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.ON_HOLD, migrationRun.getStatus());
         assertEquals(start, migrationRun.getStart());
         assertEquals(j, migrationRun.getJobs().get(0));
@@ -253,13 +268,14 @@ public class MigrationManagerTest extends AbstractManagerTest {
         catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(),
                 new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), status), new QueryOptions(), token);
 
-        migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
+        migrationRun = catalogManager.getMigrationManager().getMigrationRuns(organizationId, token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.ERROR, migrationRun.getStatus());
 
         // RUN. Migration run triggered. Status: ON_HOLD
-        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), false, catalogManagerResource.getOpencgaHome().toString(), token);
-        migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
+        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), false,
+                catalogManagerResource.getOpencgaHome().toString(), token);
+        migrationRun = catalogManager.getMigrationManager().getMigrationRuns(organizationId, token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.ON_HOLD, migrationRun.getStatus());
 
@@ -270,7 +286,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(),
                 new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), status), new QueryOptions(), token);
 
-        migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
+        migrationRun = catalogManager.getMigrationManager().getMigrationRuns(organizationId, token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
     }
@@ -282,13 +298,15 @@ public class MigrationManagerTest extends AbstractManagerTest {
         try (OutputStream os = new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml").toFile())) {
             new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_ONLY).serialize(os);
         }
-        MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.2", "test4-2", catalogManagerResource.getOpencgaHome(), new ObjectMap("key", "value"), token);
+        MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration(organizationId, "0.2.2", "test4-2",
+                catalogManagerResource.getOpencgaHome(), false, false, new ObjectMap("key", "value"), token);
         assertEquals(MigrationRun.MigrationStatus.PENDING, migrationRun.getStatus());
 
         try (OutputStream os = new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml").toFile())) {
             new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE).serialize(os);
         }
-        migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.2", "test4-2", catalogManagerResource.getOpencgaHome(), new ObjectMap("key", "value"), token);
+        migrationRun = catalogManager.getMigrationManager().runManualMigration(organizationId, "0.2.2", "test4-2",
+                catalogManagerResource.getOpencgaHome(), false, false, new ObjectMap("key", "value"), token);
         assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
     }
 

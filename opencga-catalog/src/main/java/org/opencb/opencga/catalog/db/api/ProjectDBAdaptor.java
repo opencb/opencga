@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.StudyPermissions;
@@ -58,14 +59,11 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_MSG("internal.status.msg", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
-        USER_ID("userId", TEXT, ""),
         INTERNAL_DATASTORES("internal.datastores", TEXT_ARRAY, ""),
         INTERNAL_DATASTORES_VARIANT("internal.datastores.variant", TEXT_ARRAY, ""),
         INTERNAL("internal", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         OWNER("owner", TEXT, ""),
 
@@ -136,19 +134,11 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
     OpenCGAResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(Project project, String userId, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Project> insert(Project project, QueryOptions options) throws CatalogException;
 
     OpenCGAResult<Project> get(long project, QueryOptions options) throws CatalogDBException;
 
     OpenCGAResult incrementCurrentRelease(long projectId) throws CatalogDBException;
-
-    long getId(String userId, String projectAlias) throws CatalogDBException;
-
-    String getOwnerId(long projectId) throws CatalogDBException;
-
 
     default OpenCGAResult<Long> count() throws CatalogDBException {
         return count(new Query());

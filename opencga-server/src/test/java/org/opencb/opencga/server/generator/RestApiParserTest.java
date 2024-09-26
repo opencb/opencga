@@ -65,6 +65,7 @@ public class RestApiParserTest {
     @Test
     public void parseToFile() throws IOException {
         List<Class<?>> classes = new LinkedList<>();
+        classes.add(OrganizationWSServer.class);
         classes.add(UserWSServer.class);
         classes.add(ProjectWSServer.class);
         classes.add(StudyWSServer.class);

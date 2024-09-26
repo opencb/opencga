@@ -275,6 +275,11 @@ public class AuditRecord {
             this.error = error;
         }
 
+        public Status(Result name, Throwable exception) {
+            this.name = name;
+            this.error = new Error(0, exception.getClass().getSimpleName(), exception.getMessage());
+        }
+
         public enum Result {
             SUCCESS,
             ERROR

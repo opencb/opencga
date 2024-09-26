@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.InterpretationConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.InterpretationCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -74,11 +75,11 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
     private final MongoDBCollection deleteInterpretationCollection;
     private final ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private final InterpretationConverter interpretationConverter;
-    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBCollection archiveInterpretationCollection,
                                         MongoDBCollection deleteInterpretationCollection, Configuration configuration,
-                                        MongoDBAdaptorFactory dbAdaptorFactory) {
+                                        OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(InterpretationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.clinicalDBAdaptor = dbAdaptorFactory.getClinicalAnalysisDBAdaptor();
@@ -86,7 +87,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
         this.archiveInterpretationCollection = archiveInterpretationCollection;
         this.deleteInterpretationCollection = deleteInterpretationCollection;
         this.interpretationConverter = new InterpretationConverter();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(interpretationCollection, archiveInterpretationCollection,
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(interpretationCollection, archiveInterpretationCollection,
                 deleteInterpretationCollection);
     }
 
@@ -108,6 +109,10 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
         return interpretationCollection;
     }
 
+    public MongoDBCollection getArchiveInterpretationCollection() {
+        return archiveInterpretationCollection;
+    }
+
     @Override
     public OpenCGAResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(interpretation, "clinicalAnalysis");
@@ -116,8 +121,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public OpenCGAResult insert(long studyId, Interpretation interpretation, ParamUtils.SaveInterpretationAs action,
-                                List<ClinicalAudit> clinicalAuditList)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+                                List<ClinicalAudit> clinicalAuditList) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting interpretation insert transaction for interpretation id '{}'", interpretation.getId());
@@ -236,7 +240,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
                     + interpretation.getId() + "'} already exists.");
         }
 
-        long interpretationUid = getNewUid();
+        long interpretationUid = getNewUid(clientSession);
         interpretation.setUid(interpretationUid);
         interpretation.setStudyUid(studyId);
         if (StringUtils.isEmpty(interpretation.getUuid())) {
@@ -429,7 +433,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
         String[] booleanParams = {LOCKED.key()};
         filterBooleanParams(parameters, document.getSet(), booleanParams);
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
@@ -631,7 +635,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
         try {
             return runTransaction(clientSession -> update(clientSession, interpretation.first(), parameters, clinicalAuditList, action,
                     queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update interpretation {}: {}", interpretationId, e.getMessage(), e);
             throw new CatalogDBException("Could not update interpretation " + interpretationId + ": " + e.getMessage(), e.getCause());
         }
@@ -650,7 +654,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
 
                 return OpenCGAResult.empty(Interpretation.class).setNumUpdated(1);
             });
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not revert version of interpretation {}: {}", id, e.getMessage(), e);
             CatalogDBException exception = new CatalogDBException("Could not revert version of interpretation");
             exception.addSuppressed(e);
@@ -814,7 +818,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
 
                 return delete(clientSession, interpretation, clinicalAuditList, clinicalResult.first());
             });
-        } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete interpretation {}: {}", interpretationId, e.getMessage(), e);
             throw new CatalogDBException("Could not delete interpretation " + interpretation.getId() + ": " + e.getMessage(), e.getCause());
         }
@@ -848,7 +852,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
 
                     return delete(clientSession, interpretation, clinicalAuditList, clinicalResult.first());
                 }));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete interpretation {}: {}", interpretationId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, interpretationId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -942,8 +946,8 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
             qOptions = new QueryOptions();
         }
 
-        qOptions = filterQueryOptions(qOptions, Arrays.asList(QueryParams.ID.key(), QueryParams.UUID.key(), QueryParams.UID.key(),
-                QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key()));
+        qOptions = filterQueryOptionsToIncludeKeys(qOptions, Arrays.asList(QueryParams.ID.key(), QueryParams.UUID.key(),
+                QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key()));
 
         logger.debug("Interpretation query : {}", bson.toBsonDocument());
         MongoDBCollection collection = getQueryCollection(query, interpretationCollection, archiveInterpretationCollection,
@@ -1132,6 +1136,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
                         break;
                     // Other parameter that can be queried.
                     case ID:
+                    case NAME:
                     case UUID:
                     case PANELS_UID:
                     case RELEASE:

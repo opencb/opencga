@@ -62,8 +62,8 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
 
     OpenCGAResult nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Sample> insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogException;
 
     OpenCGAResult<Sample> get(long sampleId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
@@ -86,13 +86,11 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
      */
     OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
-    default OpenCGAResult<Sample> setRgaIndexes(long studyUid, RgaIndex rgaIndex)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    default OpenCGAResult<Sample> setRgaIndexes(long studyUid, RgaIndex rgaIndex) throws CatalogException {
         return setRgaIndexes(studyUid, Collections.emptyList(), rgaIndex);
     }
 
-    OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex) throws CatalogException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -116,8 +114,6 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         COHORT_IDS("cohortIds", TEXT_ARRAY, ""),
         SOMATIC("somatic", BOOLEAN, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),

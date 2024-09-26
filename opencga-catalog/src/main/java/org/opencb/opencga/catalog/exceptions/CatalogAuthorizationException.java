@@ -20,6 +20,28 @@ package org.opencb.opencga.catalog.exceptions;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogAuthorizationException extends CatalogException {
+
+    public enum ErrorCode {
+        KILL_JOB("kill", "Only the job owner or the study administrator can kill a job.");
+
+        private final String permission;
+        private final String message;
+
+        ErrorCode(String permission, String message) {
+            this.permission = permission;
+            this.message = message;
+        }
+
+        public String getPermission() {
+            return permission;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+    }
+
+
     public CatalogAuthorizationException(String message) {
         super(message);
     }
@@ -48,10 +70,6 @@ public class CatalogAuthorizationException extends CatalogException {
         return deny(userId, "execute", resource, id, name);
     }
 
-    public static CatalogAuthorizationException adminOnlySupportedOperation() {
-        return new CatalogAuthorizationException("Operation only supported for 'admin' user");
-    }
-
     @Deprecated
     public static CatalogAuthorizationException deny(String userId, String permission, String resource, long id, String name) {
         return new CatalogAuthorizationException("Permission denied. "
@@ -67,15 +85,64 @@ public class CatalogAuthorizationException extends CatalogException {
                 + resource + " { id: " + id + (name == null || name.isEmpty() ? "" : ", name: \"" + name + "\"") + " }");
     }
 
+    public static CatalogAuthorizationException deny(String userId, String resource, String id, ErrorCode errorCode) {
+        return deny(userId, resource, id, errorCode, null);
+    }
+
+    public static CatalogAuthorizationException deny(String userId, String resource, String id, ErrorCode errorCode, Throwable cause) {
+        return new CatalogAuthorizationException("Permission denied. "
+                + (userId == null || userId.isEmpty() ? "" : "User '" + userId + "'")
+                + " cannot " + errorCode.getPermission() + " " + resource + " { id: " + id + " }. " + errorCode.getMessage(), cause);
+    }
+
     public static CatalogAuthorizationException deny(String userId, String description) {
         return new CatalogAuthorizationException("Permission denied. " + (userId == null || userId.isEmpty() ? "" : "User '" + userId + "'")
                 + " cannot " + description);
+    }
+
+    public static CatalogAuthorizationException deny(Throwable cause) {
+        return new CatalogAuthorizationException("Permission denied.", cause);
     }
 
     public static CatalogAuthorizationException denyAny(String userId, String permission, String resource) {
         return new CatalogAuthorizationException("Permission denied. "
                 + (userId == null || userId.isEmpty() ? "" : "User '" + userId + "'")
                 + " cannot " + permission + " any " + resource + ".");
+    }
+
+    public static CatalogAuthorizationException notOrganizationOwner() {
+        return notOrganizationOwner("perform this action");
+    }
+
+    public static CatalogAuthorizationException notOrganizationOwner(String action) {
+        return new CatalogAuthorizationException("Permission denied: Only the organization owner can " + action);
+    }
+
+    public static CatalogAuthorizationException notOrganizationOwnerOrAdmin() {
+        return notOrganizationOwnerOrAdmin("perform this action");
+    }
+
+    public static CatalogAuthorizationException notOrganizationOwnerOrAdmin(String action) {
+        return new CatalogAuthorizationException("Permission denied: Only the owner or administrators of the organization can " + action);
+    }
+
+    public static CatalogAuthorizationException notStudyAdmin(String action) {
+        return new CatalogAuthorizationException("Permission denied: Only the study administrators can " + action);
+    }
+
+    public static CatalogAuthorizationException notStudyMember(String action) {
+        return new CatalogAuthorizationException("Permission denied: Only the members of the study can " + action);
+    }
+
+    public static CatalogAuthorizationException opencgaAdminOnlySupportedOperation() {
+        return opencgaAdminOnlySupportedOperation("perform this action");
+    }
+
+    public static CatalogAuthorizationException opencgaAdminOnlySupportedOperation(String action) {
+        if (action == null || action.isEmpty()) {
+            action = "perform this action";
+        }
+        return new CatalogAuthorizationException("Permission denied: Only the OPENCGA ADMINISTRATOR users can " + action);
     }
 
 }

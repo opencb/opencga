@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.migration;
 
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 
 import java.util.EnumMap;
 import java.util.LinkedList;
