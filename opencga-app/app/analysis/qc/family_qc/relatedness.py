@@ -11,24 +11,24 @@ LOGGER = logging.getLogger('variant_qc_logger')
 
 
 class Relatedness:
-    def __init__(self, output_relatedness_dir):
+    def __init__(self, family_qc_executor_info):
         """
         """
 
-        self.output_relatedness_dir = output_relatedness_dir
-        self.pop_freq_file = ""
-        self.pop_exclude_var_file = ""
-        self.relatedness_thresholds_file = ""
-        self.family_qc_executor_info = ""
+        self.output_relatedness_dir = None
+        self.pop_freq_file = None
+        self.pop_exclude_var_file = None
+        self.relatedness_thresholds_file = None
+        self.family_qc_executor_info = family_qc_executor_info
         self.relatedness_results = ""
 
 
-    def set_family_qc_executor_info(self,family_qc_executor_info):
-        if isinstance(family_qc_executor_info,FamilyQCExecutor):
-            self.family_qc_executor_info = family_qc_executor_info
+    def relatedness_setup(self):
+        if isinstance(self.family_qc_executor_info,FamilyQCExecutor):
             self.set_relatedness_files()
+            self.set_relatedness_dir()
         else:
-            msg = "No instance of FamilyQCExecutor was found"
+            msg = "No instance of FamilyQCExecutor was found. Therefore relatedness analysis cannot be executed."
             LOGGER.error(msg)
             raise TypeError(msg)
 
@@ -40,18 +40,21 @@ class Relatedness:
         relatedness_thresholds_fpath = os.path.join(self.family_qc_executor_info.resource_dir,'relatedness_thresholds.tsv')
         self.relatedness_thresholds_file = relatedness_thresholds_fpath
 
+    def set_relatedness_dir(self):
+        output_relatedness_dir = create_output_dir(path_elements=[self.family_qc_executor_info.output_parent_dir, 'relatedness'])
+        self.output_relatedness_dir = output_relatedness_dir
 
-    def filter_rename_variants_vcf(self, pop_freq_fpath, outdir_fpath):
+    def filter_rename_variants_vcf(self):
         # Reading VCF
         vcf_fhand = gzip.open(self.family_qc_executor_info.vcf_file, 'r')
         # Reading pop_freq file
-        input_pop_freq_fhand = open(str(pop_freq_fpath), 'r')
-        LOGGER.debug('Getting variant IDs to include in the VCF from file: "{}"'.format(pop_freq_fpath))
+        input_pop_freq_fhand = open(self.pop_freq_file, 'r')
+        LOGGER.debug('Getting variant IDs to include in the VCF from file: "{}"'.format(self.pop_freq_file))
         variant_ids_to_include = [line.strip().split()[1] for line in input_pop_freq_fhand]
 
         # Create output dir and file
-        filtered_vcf_outdir_fpath = create_output_dir(path_elements=[str(outdir_fpath), 'filtered_vcf'])
-        output_file_name = 'filtered_vcf_' + str(self.vcf_file.split('/')[-1])
+        filtered_vcf_outdir_fpath = create_output_dir(path_elements=[self.output_relatedness_dir, 'filtered_vcf'])
+        output_file_name = 'filtered_vcf_' + os.path.basename(self.family_qc_executor_info.vcf_file)
         filtered_vcf_fpath = os.path.join(filtered_vcf_outdir_fpath, output_file_name)
         filtered_vcf_fhand = gzip.open(filtered_vcf_fpath, 'wt')
         LOGGER.debug('Generating filtered VCF with variant IDs under ID column: "{}"'.format(filtered_vcf_fpath))
@@ -78,17 +81,17 @@ class Relatedness:
         return filtered_vcf_fpath
 
     def get_samples_individuals_info(self):
-        family_info_fhand = open(self.info_file)
+        family_info_fhand = open(self.family_qc_executor_info.info_file)
         family_info_json = json.load(family_info_fhand)
         samples_individuals = {}
-        for sample in self.sample_ids:
+        for sample in self.family_qc_executor_info.sample_ids:
             samples_individuals[sample] = {'individualId': '', 'individualSex': 0, 'fatherId': 'NA', 'motherId': 'NA',
                                            'familyMembersRoles': 'NA'}
 
         LOGGER.debug('Getting individual information for each sample')
         for member in family_info_json['members']:
             for sample_member in member['samples']:
-                if sample_member['id'] in self.sample_ids:
+                if sample_member['id'] in self.family_qc_executor_info.sample_ids:
                     # Filling in individual info
                     LOGGER.debug('Individual information for sample "{}" found'.format(sample_member['id']))
                     samples_individuals[sample_member['id']]['individualId'] = member['id']
@@ -121,26 +124,29 @@ class Relatedness:
         # Return samples_individuals dictionary
         return samples_individuals
 
-    def generate_files_for_plink_fam_file(self, outdir_fpath):
+    def generate_files_for_plink_fam_file(self):
         # Getting family id and sample_individuals_info
-        family_id = self.id_
+        family_id = self.family_qc_executor_info.id_
         samples_individuals = self.get_samples_individuals_info()
+
+        # Create dir for PLINK if it does not exist yet:
+        plink_dir = create_output_dir(path_elements=[self.output_relatedness_dir, 'plink_IBD'])
 
         # Generating text file to update sex information
         sex_information_output_file_name = family_id + '_individual_sample_sex_information.txt'
-        sex_information_output_fpath = os.path.join(str(outdir_fpath), sex_information_output_file_name)
+        sex_information_output_fpath = os.path.join(plink_dir, sex_information_output_file_name)
         sex_information_output_fhand = open(sex_information_output_fpath, 'w')
         LOGGER.debug('Generating text file to update individual, sample, sex information: "{}"'.format(
             sex_information_output_fpath))
 
         # Generating text file to update parent-offspring relationships
         parent_offspring_output_file_name = family_id + '_parent_offspring_relationships.txt'
-        parent_offspring_output_fpath = os.path.join(str(outdir_fpath), parent_offspring_output_file_name)
+        parent_offspring_output_fpath = os.path.join(plink_dir, parent_offspring_output_file_name)
         parent_offspring_output_fhand = open(parent_offspring_output_fpath, 'w')
         LOGGER.debug(
             'Generating text file to update parent-offspring relationships: "{}"'.format(parent_offspring_output_fpath))
 
-        for sample in self.sample_ids:
+        for sample in self.family_qc_executor_info.sample_ids:
             # Individual information for that sample
             individual_info = samples_individuals[sample]
             # Structure = FamilyID SampleID Sex
@@ -210,17 +216,17 @@ class Relatedness:
         }
         return relatedness_json
 
-    def relatedness_plink(self, filtered_vcf_fpath, pop_freq_fpath, pop_exclude_var_fpath, outdir_fpath, plink_path="plink1.9", method="PLINK/IBD"):
+    def relatedness_plink(self, filtered_vcf_fpath, plink_path="plink1.9", method="PLINK/IBD"):
         LOGGER.info('Method: {}'.format(method))
-        plink_outdir_fpath = create_output_dir(path_elements=[str(outdir_fpath), 'plink_IBD'])
-        sex_info_fpath, parent_offspring_fpath = self.generate_files_for_plink_fam_file(outdir_fpath=plink_outdir_fpath)
+        plink_dir = create_output_dir(path_elements=[self.output_relatedness_dir, 'plink_IBD'])
+        sex_info_fpath, parent_offspring_fpath = self.generate_files_for_plink_fam_file()
         # Preparing PLINK commands
         plink_path = str(plink_path)
-        files_prefix = self.id_ + "_plink_relatedness_results"
-        plink_output_folder_files_prefix = os.path.join(plink_outdir_fpath, files_prefix)
+        files_prefix = self.family_qc_executor_info.id_ + "_plink_relatedness_results"
+        plink_output_folder_files_prefix = os.path.join(plink_dir, files_prefix)
         plink_files_args = ["--vcf", str(filtered_vcf_fpath),
                       "--make-bed",
-                      "--const-fid", self.id_,
+                      "--const-fid", self.family_qc_executor_info.id_,
                       "--chr", "1-22",
                       "--not-chr", "X,Y,MT",
                       "--allow-extra-chr",
@@ -234,20 +240,20 @@ class Relatedness:
         LOGGER.debug('Generating PLINK files')
         plink_files = execute_bash_command(cmd_plink_files)
         if plink_files[0] == 0:
-            plink_files_generated = os.listdir(plink_outdir_fpath)
-            LOGGER.info('Files available in directory "{}":\n{}'.format(plink_outdir_fpath, plink_files_generated))
+            plink_files_generated = os.listdir(plink_dir)
+            LOGGER.info('Files available in directory "{}":\n{}'.format(plink_dir, plink_files_generated))
 
             plink_ibd_args = ["--bfile", plink_output_folder_files_prefix,
                               "--genome", "rel-check",
-                              "--read-freq", str(pop_freq_fpath),
-                              "--exclude", str(pop_exclude_var_fpath),
+                              "--read-freq", self.pop_freq_file,
+                              "--exclude", self.pop_exclude_var_file,
                               "--out", plink_output_folder_files_prefix]
             cmd_plink_ibd = [plink_path] + plink_ibd_args
             LOGGER.debug("Performing IBD analysis")
             plink_ibd = execute_bash_command(cmd_plink_ibd)
             if plink_ibd[0] == 0:
-                plink_files_generated = os.listdir(plink_outdir_fpath)
-                LOGGER.info('Files available in directory "{}":\n{}'.format(plink_outdir_fpath, plink_files_generated))
+                plink_files_generated = os.listdir(plink_dir)
+                LOGGER.info('Files available in directory "{}":\n{}'.format(plink_dir, plink_files_generated))
 
             plink_genome_fpath = plink_output_folder_files_prefix + '.genome'
             if os.path.isfile(plink_genome_fpath) == False:
@@ -277,8 +283,8 @@ class Relatedness:
                 cli = cmd_plink_files + ['|'] + cmd_plink_ibd
                 relatedness_results["attributes"]["cli"] = ' '.join(cli)
                 files = []
-                for dir in os.listdir(str(outdir_fpath)):
-                    files.extend(os.listdir(os.path.join(str(outdir_fpath),dir)))
+                for dir in os.listdir(self.output_relatedness_dir):
+                    files.extend(os.listdir(os.path.join(self.output_relatedness_dir,dir)))
                 relatedness_results["attributes"]["files"] = files
                 # Return relatedness results json with method information and path of .genome file generated by PLINK
                 return [relatedness_results, plink_genome_fpath]
@@ -299,10 +305,10 @@ class Relatedness:
         # Return validation result
         return validation
 
-    def relatedness_inference(self, relatedness_thresholds_fpath, plink_genome_fpath, relatedness_results):
+    def relatedness_inference(self, plink_genome_fpath, relatedness_results):
         # Reading relatedness thresholds file (.tsv)
-        LOGGER.debug('Getting relatedness thresholds from file: "{}"'.format(relatedness_thresholds_fpath))
-        relatedness_thresholds_fhand = open(str(relatedness_thresholds_fpath))
+        LOGGER.debug('Getting relatedness thresholds from file: "{}"'.format(self.relatedness_thresholds_file))
+        relatedness_thresholds_fhand = open(self.relatedness_thresholds_file)
         relationship_groups_thresholds_dict = {}
         for index, line in enumerate(relatedness_thresholds_fhand):
             relatedness_thresholds_row_values = line.strip().split()
@@ -406,7 +412,7 @@ class Relatedness:
                             score_result["sampleId1"], individual1_info["individualId"], score_result["sampleId2"],individual2_info["individualId"]))
 
             # Validating reported vs inferred family relationship results block:
-            validation_result = FamilyQCExecutor.relatedness_validation(score_result["reportedRelationship"], score_result["inferredRelationship"])
+            validation_result = Relatedness.relatedness_validation(score_result["reportedRelationship"], score_result["inferredRelationship"])
             score_result["validation"] = validation_result
 
         # Return dict/json with plink, inferred, reported and validation results
