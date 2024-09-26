@@ -164,8 +164,7 @@ class RelatednessAnalysis:
         parent_offspring_output_file_name = family_id + '_parent_offspring_relationships.txt'
         parent_offspring_output_fpath = os.path.join(plink_dir, parent_offspring_output_file_name)
         parent_offspring_output_fhand = open(parent_offspring_output_fpath, 'w')
-        LOGGER.debug(
-            'Generating text file to update parent-offspring relationships: "{}"'.format(parent_offspring_output_fpath))
+        LOGGER.debug('Generating text file to update parent-offspring relationships: "{}"'.format(parent_offspring_output_fpath))
 
         for sample in self.family_qc_executor_info.sample_ids:
             # Individual information for that sample
@@ -195,47 +194,6 @@ class RelatednessAnalysis:
 
         # Return paths of text files generated. First path: individual, sample, sex information file. Second path: parent-offspring information file.
         return [sex_information_output_fpath, parent_offspring_output_fpath]
-
-    def relatedness_results_data_model(self):
-        relatedness_json = {
-            "method": "",
-            "software": {
-                "name": "",
-                "version": "",
-                "commit": "",
-                "params": {}
-            },
-            "scores": [
-                {
-                    "sampleId1": "",
-                    "sampleId2": "",
-                    "reportedRelationship": "",
-                    "inferredRelationship": "",
-                    "validation": "",
-                    "values": {
-                        "RT": "",
-                        "ez": "",
-                        "z0": "",
-                        "z1": "",
-                        "z2": "",
-                        "PiHat": ""
-                    }
-                }
-            ],
-            "images": [
-                {
-                    "name": "",
-                    "base64": "",
-                    "description": ""
-                }
-            ],
-            "attributes": {
-                "cli": "",
-                "files": [],
-                "JOB_ID": ""
-            }
-        }
-        return relatedness_json
 
     def relatedness_plink(self, filtered_vcf_fpath, plink_path="plink1.9", method="PLINK/IBD"):
         LOGGER.info('Method: {}'.format(method))
