@@ -27,7 +27,7 @@ class RelatednessAnalysis:
 
 
     def relatedness_setup(self):
-        if isinstance(self.family_qc_executor_info,FamilyQCExecutor):
+        if isinstance(self.family_qc_executor_info, FamilyQCExecutor):
             self.set_relatedness_files()
             self.set_relatedness_dir()
         else:
@@ -36,12 +36,30 @@ class RelatednessAnalysis:
             raise TypeError(msg)
 
     def set_relatedness_files(self):
-        pop_freq_file = os.path.join(self.family_qc_executor_info.resource_dir,'autosomes_1000G_QC_prune_in.frq')
-        self.pop_freq_file = pop_freq_file
-        pop_exclude_var_fpath = os.path.join(self.family_qc_executor_info.resource_dir,'autosomes_1000G_QC.prune.out')
-        self.pop_exclude_var_file = pop_exclude_var_fpath
-        relatedness_thresholds_fpath = os.path.join(self.family_qc_executor_info.resource_dir,'relatedness_thresholds.tsv')
-        self.relatedness_thresholds_file = relatedness_thresholds_fpath
+        LOGGER.info('Checking and setting up relatedness files')
+        if os.path.exists(os.path.join(self.family_qc_executor_info.resource_dir)):
+            relatedness_files = {
+                "pop_freq_file": os.path.join(self.family_qc_executor_info.resource_dir,'autosomes_1000G_QC_prune_in.frq'),
+                "pop_exclude_var_file": os.path.join(self.family_qc_executor_info.resource_dir,'autosomes_1000G_QC.prune.out'),
+                "relatedness_thresholds_file": os.path.join(self.family_qc_executor_info.resource_dir,'relatedness_thresholds.tsv')
+                }
+            for key,file in relatedness_files.items():
+                if os.path.isfile(file):
+                    if key == "pop_freq_file":
+                        self.pop_freq_file = file
+                    elif key == "pop_exclude_var_file":
+                        self.pop_exclude_var_file = file
+                    else:
+                        self.relatedness_thresholds_file = file
+                    LOGGER.info('File {} set up successfully'.format(file))
+                else:
+                    msg = 'File "{}" does not exist'.format(file)
+                    LOGGER.error(msg)
+                    raise FileNotFoundError(msg)
+        else:
+            msg = 'Directory "{}" does not exist'.format(os.path.join(self.family_qc_executor_info.resource_dir))
+            LOGGER.error(msg)
+            raise FileNotFoundError(msg)
 
     def set_relatedness_dir(self):
         output_relatedness_dir = create_output_dir(path_elements=[self.family_qc_executor_info.output_parent_dir, 'relatedness'])
