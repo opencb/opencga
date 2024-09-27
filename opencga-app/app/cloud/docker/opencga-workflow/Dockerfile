@@ -1,7 +1,7 @@
 ### Multi Stage building
 
-## 1. Based on Ubuntu 24.04 (noble)
-FROM eclipse-temurin:11.0.24_8-jre-noble AS base
+## 1. Based on Ubuntu 22.04 (jammy)
+FROM eclipse-temurin:11.0.24_8-jre-jammy AS base
 
 ARG BUILD_PATH="."
 
@@ -32,18 +32,18 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpa
     # Add docker group to opencga user
     usermod -a -G docker opencga
 
-COPY --chown=opencga:opencga ${BUILD_PATH} /opt/opencga
+COPY --chown=opencga:opencga ${BUILD_PATH} ${OPENCGA_HOME}
 
 
 ## 2. Based on base
 FROM base
-RUN apt-get install -y python3 python3-pip bcftools && \
-    pip3 install --break-system-packages /opt/opencga/clients/python && \
+RUN apt-get update && apt-get -y upgrade && apt-get install -y python3 python3-pip bcftools && \
+    pip3 install ${OPENCGA_HOME}/clients/python && \
     ## Clean downloaded packages to make images smaller
     rm -rf /var/lib/apt/lists/*
 
 USER opencga
 ## Declare the volume to be mounted later
-VOLUME /opt/opencga/conf
+VOLUME ${OPENCGA_CONFIG_DIR}
 
-WORKDIR /opt/opencga
+WORKDIR ${OPENCGA_HOME}
