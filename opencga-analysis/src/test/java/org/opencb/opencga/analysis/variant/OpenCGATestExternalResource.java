@@ -280,9 +280,9 @@ public class OpenCGATestExternalResource extends ExternalResource {
             }
         }
 
-        // QC
+        // QC commons
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc")).toAbsolutePath();
-        List<String> qcFiles = Arrays.asList("variant_qc.main.py", "utils.py", "__init__.py", "resources.txt");
+        List<String> qcFiles = Arrays.asList("variant_qc.main.py", "utils.py", "resources.txt", "__init__.py");
         for (String qcFile : qcFiles) {
             try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/qc/" + qcFile)) {
                 Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
@@ -290,7 +290,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
         // Family QC
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc/family_qc")).toAbsolutePath();
-        qcFiles = Arrays.asList("family_qc.py", "__init__.py");
+        qcFiles = Arrays.asList("family_qc.py", "relatedness.py", "relatedness_results.py", "__init__.py");
         for (String qcFile : qcFiles) {
             try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/qc/family_qc/" + qcFile)) {
                 Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
