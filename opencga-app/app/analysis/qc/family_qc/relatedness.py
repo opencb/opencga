@@ -43,9 +43,9 @@ class RelatednessAnalysis:
             #     "relatedness_thresholds_file": os.path.join(self.family_qc_executor_info["resource_dir"],'relatedness_thresholds.tsv')
             #     }
             relatedness_files = {
-                "pop_freq_file": os.path.join(os.path.dirname(self.family_qc_executor_info["output_parent_dir"]),'resources','autosomes_1000G_QC_prune_in.frq'),
-                "pop_exclude_var_file": os.path.join(os.path.dirname(self.family_qc_executor_info["output_parent_dir"]),'resources','autosomes_1000G_QC.prune.out'),
-                "relatedness_thresholds_file": os.path.join(os.path.dirname(self.family_qc_executor_info["output_parent_dir"]),'resources','relatedness_thresholds.tsv')
+                "pop_freq_file": os.path.join(self.family_qc_executor_info["output_parent_dir"],'resources','autosomes_1000G_QC_prune_in.frq'),
+                "pop_exclude_var_file": os.path.join(self.family_qc_executor_info["output_parent_dir"],'resources','autosomes_1000G_QC.prune.out'),
+                "relatedness_thresholds_file": os.path.join(self.family_qc_executor_info["output_parent_dir"],'resources','relatedness_thresholds.tsv')
                 }
             for key,file in relatedness_files.items():
                 if os.path.isfile(file):
@@ -424,7 +424,6 @@ class RelatednessAnalysis:
         """
         Execute the relatedness analysis
         """
-
         try:
             LOGGER.info('Starting relatedness analysis')
 
