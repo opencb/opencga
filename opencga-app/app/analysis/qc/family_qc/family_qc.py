@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 import logging
 import json
 
@@ -46,7 +46,7 @@ class FamilyQCExecutor:
             "info_file": self.info_file,
             "bam_file": None,
             "config": self.config,
-            "resource_dir": self.resource_dir,
+            "resource_dir": os.path.join(os.path.dirname(self.output_parent_dir),'resources'),
             "output_parent_dir": self.output_parent_dir,
             "sample_ids": self.sample_ids,
             "id_": self.id_
