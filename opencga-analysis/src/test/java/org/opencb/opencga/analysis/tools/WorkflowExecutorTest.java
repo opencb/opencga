@@ -83,15 +83,26 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         WorkflowCreateParams workflow = new WorkflowCreateParams()
                 .setId("workflow")
                 .setType(Workflow.Type.OTHER)
-//                .setCommandLine("run nextflow-io/rnaseq-nf -with-docker");
-                .setRepository(new WorkflowRepository("nextflow-io/rnaseq-nf"));
+                .setRepository(new WorkflowRepository("nf-core/demo"));
         catalogManager.getWorkflowManager().create(studyFqn, workflow.toWorkflow(), QueryOptions.empty(), ownerToken);
+
+        catalogManager.getFileManager().create(studyFqn, new FileCreateParams()
+                .setPath("samplesheet.csv")
+                .setContent("sample,fastq_1,fastq_2\n" +
+                        "SAMPLE3_SE,https://raw.githubusercontent.com/nf-core/test-datasets/viralrecon/illumina/amplicon/sample1_R1.fastq.gz,ocga://samplesheet.csv file://samplesheet.csv hello opencga://samplesheet.csv\n" +
+                        "SAMPLE3_SE,https://raw.githubusercontent.com/nf-core/test-datasets/viralrecon/illumina/amplicon/sample2_R1.fastq.gz,")
+                .setType(File.Type.FILE), false, ownerToken);
 
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
 
         StopWatch stopWatch = StopWatch.createStarted();
         NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
-        NextFlowRunParams runParams = new NextFlowRunParams(workflow.getId(), 1, Collections.emptyMap());
+        Map<String, String> cliParams = new HashMap<>();
+        cliParams.put("input", "file://samplesheet.csv");
+        cliParams.put("outdir", "$OUTPUT");
+        cliParams.put("genome", "GRCh37");
+        cliParams.put("-profile", "docker");
+        NextFlowRunParams runParams = new NextFlowRunParams(workflow.getId(), 1, cliParams);
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,

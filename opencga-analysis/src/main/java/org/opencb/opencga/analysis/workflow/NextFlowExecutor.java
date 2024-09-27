@@ -55,6 +55,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
     // Build list of inputfiles in case we need to specifically mount them in read only mode
     List<AbstractMap.SimpleEntry<String, String>> inputBindings;
 
+    private Path temporalInputDir;
     private Map<String, String> dockerParams;
     private String outDirPath;
 
@@ -75,6 +76,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         }
 
         dockerParams = new HashMap<>();
+        temporalInputDir = Files.createDirectory(getOutDir().resolve(".opencga_input"));
 
         OpenCGAResult<Workflow> result;
         if (nextflowParams.getVersion() != null) {
@@ -105,7 +107,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (CollectionUtils.isNotEmpty(workflow.getTags())) {
             tags.addAll(workflow.getTags());
         }
-        updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
+//        updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
         this.inputBindings = new LinkedList<>();
         if (MapUtils.isNotEmpty(nextflowParams.getParams())) {
@@ -121,14 +123,30 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
                 }
                 if (StringUtils.isNotEmpty(entry.getValue())) {
                     if (inputFileUtils.isValidOpenCGAFile(entry.getValue())) {
-                        File file = inputFileUtils.getOpenCGAFile(study, entry.getValue(), token);
-                        String path = file.getUri().getPath();
-                        inputBindings.add(new AbstractMap.SimpleEntry<>(path, path));
-                        logger.debug("Params: OpenCGA input file: {}", path);
-                        cliParamsBuilder.append(path).append(" ");
+                        File file = inputFileUtils.findOpenCGAFileFromPattern(study, entry.getValue(), token);
+                        if (inputFileUtils.fileMayContainReferencesToOtherFiles(file)) {
+                            Path outputFile = temporalInputDir.resolve(file.getName());
+                            List<File> files = inputFileUtils.findAndReplaceFilePathToUrisFromFile(study, file, outputFile, token);
+
+                            // Write outputFile as inputBinding
+                            inputBindings.add(new AbstractMap.SimpleEntry<>(outputFile.toString(), outputFile.toString()));
+                            logger.info("Params: OpenCGA input file: {}", outputFile);
+                            cliParamsBuilder.append(outputFile).append(" ");
+
+                            // Add files to inputBindings to ensure they are also mounted (if any)
+                            for (File tmpFile : files) {
+                                inputBindings.add(new AbstractMap.SimpleEntry<>(tmpFile.getUri().getPath(), tmpFile.getUri().getPath()));
+                                logger.info("Inner files from '{}': OpenCGA input file: '{}'", outputFile, tmpFile.getUri().getPath());
+                            }
+                        } else {
+                            String path = file.getUri().getPath();
+                            inputBindings.add(new AbstractMap.SimpleEntry<>(path, path));
+                            logger.info("Params: OpenCGA input file: {}", path);
+                            cliParamsBuilder.append(path).append(" ");
+                        }
                     } else if (inputFileUtils.isDynamicOutputFolder(entry.getValue())) {
                         String dynamicOutputFolder = inputFileUtils.getDynamicOutputFolder(entry.getValue(), outDirPath);
-                        logger.debug("Params: Dynamic output folder: {}", dynamicOutputFolder);
+                        logger.info("Params: Dynamic output folder: {}", dynamicOutputFolder);
                         cliParamsBuilder.append(dynamicOutputFolder).append(" ");
                     } else {
                         cliParamsBuilder.append(entry.getValue()).append(" ");
@@ -144,7 +162,6 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
     @Override
     protected void run() throws Exception {
-        Path temporalInputDir = Files.createDirectory(getOutDir().resolve(".opencga_input"));
         for (WorkflowScript script : workflow.getScripts()) {
             // Write script files
             Path path = temporalInputDir.resolve(script.getFileName());

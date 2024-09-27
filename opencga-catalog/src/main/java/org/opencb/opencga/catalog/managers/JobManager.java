@@ -492,7 +492,7 @@ public class JobManager extends ResourceManager<Job> {
                     String fileStr = (String) entry.getValue();
                     if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
                         try {
-                            File file = inputFileUtils.getOpenCGAFile(study, fileStr, token);
+                            File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
                             inputFiles.add(file);
                         } catch (CatalogException e) {
                             throw new CatalogException("Cannot find file '" + entry.getValue() + "' from job param '" + entry.getKey()
@@ -507,7 +507,7 @@ public class JobManager extends ResourceManager<Job> {
                             String fileStr = (String) subEntry.getValue();
                             if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
                                 try {
-                                    File file = inputFileUtils.getOpenCGAFile(study, fileStr, token);
+                                    File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
                                     inputFiles.add(file);
                                 } catch (CatalogException e) {
                                     throw new CatalogException("Cannot find file '" + subEntry.getValue() + "' from variable '"

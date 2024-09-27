@@ -75,7 +75,7 @@ public class CustomToolExecutor extends OpenCgaToolScopeStudy {
         Map<String, String> inputDirectoryMounts = new HashMap<>();
         for (String param : params) {
             if (inputFileUtils.isValidOpenCGAFile(param)) {
-                File file = inputFileUtils.getOpenCGAFile(study, param, token);
+                File file = inputFileUtils.findOpenCGAFileFromPattern(study, param, token);
                 Path parent = Paths.get(file.getUri()).getParent();
                 if (!inputDirectoryMounts.containsKey(parent.toString())) {
                     inputDirectoryMounts.put(parent.toString(), "/data/input" + inputDirectoryMounts.size());
