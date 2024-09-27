@@ -43,12 +43,12 @@
     </modules>
 
     <properties>
-        <pyopencga.version>3.2.1</pyopencga.version>
-        <opencgar.version>3.2.1</opencgar.version>
-        <cellbase.version>6.2.1</cellbase.version>
-        <biodata.version>3.2.1</biodata.version>
-        <java-common-libs.version>5.2.1</java-common-libs.version>
-        <iva.version>3.2.1</iva.version>
+        <pyopencga.version>3.2.2-SNAPSHOT</pyopencga.version>
+        <opencgar.version>3.2.2-SNAPSHOT</opencgar.version>
+        <cellbase.version>6.2.2-SNAPSHOT</cellbase.version>
+        <biodata.version>3.2.2-SNAPSHOT</biodata.version>
+        <java-common-libs.version>5.2.2-SNAPSHOT</java-common-libs.version>
+        <iva.version>3.2.2-SNAPSHOT</iva.version>
 
         <oskar.version>0.2.0</oskar.version>
 
