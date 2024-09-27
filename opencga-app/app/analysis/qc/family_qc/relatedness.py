@@ -6,7 +6,6 @@ import gzip
 import json
 
 from utils import create_output_dir, execute_bash_command, generate_results_json
-from family_qc.family_qc import FamilyQCExecutor
 from family_qc.relatedness_results import RelatednessResults, Software, Scores, Values, Images, Attributes
 
 
@@ -27,7 +26,7 @@ class RelatednessAnalysis:
 
 
     def relatedness_setup(self):
-        if isinstance(self.family_qc_executor_info, FamilyQCExecutor):
+        if self.family_qc_executor_info != None:
             self.set_relatedness_files()
             self.set_relatedness_dir()
         else:
@@ -37,11 +36,16 @@ class RelatednessAnalysis:
 
     def set_relatedness_files(self):
         LOGGER.info('Checking and setting up relatedness files')
-        if os.path.exists(os.path.join(self.family_qc_executor_info.resource_dir)):
+        if os.path.exists(self.family_qc_executor_info["resource_dir"]):
+            # relatedness_files = {
+            #     "pop_freq_file": os.path.join(self.family_qc_executor_info["resource_dir"],'autosomes_1000G_QC_prune_in.frq'),
+            #     "pop_exclude_var_file": os.path.join(self.family_qc_executor_info["resource_dir"],'autosomes_1000G_QC.prune.out'),
+            #     "relatedness_thresholds_file": os.path.join(self.family_qc_executor_info["resource_dir"],'relatedness_thresholds.tsv')
+            #     }
             relatedness_files = {
-                "pop_freq_file": os.path.join(self.family_qc_executor_info.resource_dir,'autosomes_1000G_QC_prune_in.frq'),
-                "pop_exclude_var_file": os.path.join(self.family_qc_executor_info.resource_dir,'autosomes_1000G_QC.prune.out'),
-                "relatedness_thresholds_file": os.path.join(self.family_qc_executor_info.resource_dir,'relatedness_thresholds.tsv')
+                "pop_freq_file": os.path.join(os.path.dirname(self.family_qc_executor_info["output_parent_dir"]),'resources','autosomes_1000G_QC_prune_in.frq'),
+                "pop_exclude_var_file": os.path.join(os.path.dirname(self.family_qc_executor_info["output_parent_dir"]),'resources','autosomes_1000G_QC.prune.out'),
+                "relatedness_thresholds_file": os.path.join(os.path.dirname(self.family_qc_executor_info["output_parent_dir"]),'resources','relatedness_thresholds.tsv')
                 }
             for key,file in relatedness_files.items():
                 if os.path.isfile(file):
@@ -57,17 +61,17 @@ class RelatednessAnalysis:
                     LOGGER.error(msg)
                     raise FileNotFoundError(msg)
         else:
-            msg = 'Directory "{}" does not exist'.format(os.path.join(self.family_qc_executor_info.resource_dir))
+            msg = 'Directory "{}" does not exist'.format(os.path.join(self.family_qc_executor_info["resource_dir"]))
             LOGGER.error(msg)
             raise FileNotFoundError(msg)
 
     def set_relatedness_dir(self):
-        output_relatedness_dir = create_output_dir(path_elements=[self.family_qc_executor_info.output_parent_dir, 'relatedness'])
+        output_relatedness_dir = create_output_dir(path_elements=[self.family_qc_executor_info["output_parent_dir"], 'relatedness'])
         self.output_relatedness_dir = output_relatedness_dir
 
     def filter_rename_variants_vcf(self):
         # Reading VCF
-        vcf_fhand = gzip.open(self.family_qc_executor_info.vcf_file, 'r')
+        vcf_fhand = gzip.open(self.family_qc_executor_info["vcf_file"], 'r')
         # Reading pop_freq file
         input_pop_freq_fhand = open(self.pop_freq_file, 'r')
         LOGGER.debug('Getting variant IDs to include in the VCF from file: "{}"'.format(self.pop_freq_file))
@@ -75,7 +79,7 @@ class RelatednessAnalysis:
 
         # Create output dir and file
         filtered_vcf_outdir_fpath = create_output_dir(path_elements=[self.output_relatedness_dir, 'filtered_vcf'])
-        output_file_name = 'filtered_vcf_' + os.path.basename(self.family_qc_executor_info.vcf_file)
+        output_file_name = 'filtered_vcf_' + os.path.basename(self.family_qc_executor_info["vcf_file"])
         filtered_vcf_fpath = os.path.join(filtered_vcf_outdir_fpath, output_file_name)
         filtered_vcf_fhand = gzip.open(filtered_vcf_fpath, 'wt')
         LOGGER.debug('Generating filtered VCF with variant IDs under ID column: "{}"'.format(filtered_vcf_fpath))
@@ -102,17 +106,17 @@ class RelatednessAnalysis:
         return filtered_vcf_fpath
 
     def get_samples_individuals_info(self):
-        family_info_fhand = open(self.family_qc_executor_info.info_file)
+        family_info_fhand = open(self.family_qc_executor_info["info_file"])
         family_info_json = json.load(family_info_fhand)
         samples_individuals = {}
-        for sample in self.family_qc_executor_info.sample_ids:
+        for sample in self.family_qc_executor_info["sample_ids"]:
             samples_individuals[sample] = {'individualId': '', 'individualSex': 0, 'fatherId': 'NA', 'motherId': 'NA',
                                            'familyMembersRoles': 'NA'}
 
         LOGGER.debug('Getting individual information for each sample')
         for member in family_info_json['members']:
             for sample_member in member['samples']:
-                if sample_member['id'] in self.family_qc_executor_info.sample_ids:
+                if sample_member['id'] in self.family_qc_executor_info["sample_ids"]:
                     # Filling in individual info
                     LOGGER.debug('Individual information for sample "{}" found'.format(sample_member['id']))
                     samples_individuals[sample_member['id']]['individualId'] = member['id']
@@ -147,7 +151,7 @@ class RelatednessAnalysis:
 
     def generate_files_for_plink_fam_file(self):
         # Getting family id and sample_individuals_info
-        family_id = self.family_qc_executor_info.id_
+        family_id = self.family_qc_executor_info["id_"]
         samples_individuals = self.get_samples_individuals_info()
 
         # Create dir for PLINK if it does not exist yet:
@@ -166,7 +170,7 @@ class RelatednessAnalysis:
         parent_offspring_output_fhand = open(parent_offspring_output_fpath, 'w')
         LOGGER.debug('Generating text file to update parent-offspring relationships: "{}"'.format(parent_offspring_output_fpath))
 
-        for sample in self.family_qc_executor_info.sample_ids:
+        for sample in self.family_qc_executor_info["sample_ids"]:
             # Individual information for that sample
             individual_info = samples_individuals[sample]
             # Structure = FamilyID SampleID Sex
@@ -202,11 +206,11 @@ class RelatednessAnalysis:
         sex_info_fpath, parent_offspring_fpath = self.generate_files_for_plink_fam_file()
         # Preparing PLINK commands
         plink_path = str(plink_path)
-        files_prefix = self.family_qc_executor_info.id_ + "_plink_relatedness_results"
+        files_prefix = self.family_qc_executor_info["id_"] + "_plink_relatedness_results"
         plink_output_folder_files_prefix = os.path.join(plink_dir, files_prefix)
         plink_files_args = ["--vcf", str(filtered_vcf_fpath),
                       "--make-bed",
-                      "--const-fid", self.family_qc_executor_info.id_,
+                      "--const-fid", self.family_qc_executor_info["id_"],
                       "--chr", "1-22",
                       "--not-chr", "X,Y,MT",
                       "--allow-extra-chr",
