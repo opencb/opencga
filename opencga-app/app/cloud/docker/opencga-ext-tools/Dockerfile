@@ -13,7 +13,7 @@ WORKDIR /opt/opencga/signature.tools.lib
 RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y \
     libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
     libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
-    gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base && \
+    gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base python3 python3-pip && \
     ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
     R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
     R -e "BiocManager::install('BiocStyle')" && \
@@ -21,6 +21,9 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     ## signature.tools.lib installation \
     R -e 'install.packages(c("devtools", "getopt"), repos=c("http://cran.rstudio.com/", "https://www.stats.bris.ac.uk/R/"))' && \
     git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib
+
+# Upgrade pip and install the pydantic Python module
+RUN pip3 install --upgrade pip && pip3 install pydantic
 
 WORKDIR /opt/opencga/signature.tools.lib
 
