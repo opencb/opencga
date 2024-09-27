@@ -37,7 +37,7 @@ COPY --chown=opencga:opencga ${BUILD_PATH} ${OPENCGA_HOME}
 
 ## 2. Based on base
 FROM base
-RUN apt-get update && apt-get -y upgrade && apt-get install -y python3 python3-pip bcftools && \
+RUN apt-get update && apt-get -y upgrade && apt-get install -y python3 python3-pip r-base samtools bcftools && \
     pip3 install ${OPENCGA_HOME}/clients/python && \
     ## Clean downloaded packages to make images smaller
     rm -rf /var/lib/apt/lists/*
