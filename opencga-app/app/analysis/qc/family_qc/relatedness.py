@@ -36,7 +36,8 @@ class RelatednessAnalysis:
 
     def set_relatedness_files(self):
         LOGGER.info('Checking and setting up relatedness files')
-        if os.path.exists(self.family_qc_executor_info["resource_dir"]):
+        if os.path.exists(os.path.join(self.family_qc_executor_info["output_parent_dir"],'resources')):
+        # if os.path.exists(self.family_qc_executor_info["resource_dir"]): #TODO check resource_dir in family_qc_executor
             # relatedness_files = {
             #     "pop_freq_file": os.path.join(self.family_qc_executor_info["resource_dir"],'autosomes_1000G_QC_prune_in.frq'),
             #     "pop_exclude_var_file": os.path.join(self.family_qc_executor_info["resource_dir"],'autosomes_1000G_QC.prune.out'),
