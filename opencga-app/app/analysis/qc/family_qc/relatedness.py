@@ -36,18 +36,11 @@ class RelatednessAnalysis:
 
     def set_relatedness_files(self):
         LOGGER.info('Checking and setting up relatedness files')
-        resources_path = os.path.join(self.family_qc_executor_info["output_parent_dir"],'../resources')
-        if os.path.exists(resources_path):
-        # if os.path.exists(self.family_qc_executor_info["resource_dir"]): #TODO check resource_dir in family_qc_executor
-            # relatedness_files = {
-            #     "pop_freq_file": os.path.join(self.family_qc_executor_info["resource_dir"],'autosomes_1000G_QC_prune_in.frq'),
-            #     "pop_exclude_var_file": os.path.join(self.family_qc_executor_info["resource_dir"],'autosomes_1000G_QC.prune.out'),
-            #     "relatedness_thresholds_file": os.path.join(self.family_qc_executor_info["resource_dir"],'relatedness_thresholds.tsv')
-            #     }
+        if os.path.exists(self.family_qc_executor_info["resource_dir"]):
             relatedness_files = {
-                "pop_freq_file": os.path.join(resources_path,'autosomes_1000G_QC_prune_in.frq'),
-                "pop_exclude_var_file": os.path.join(resources_path,'autosomes_1000G_QC.prune.out'),
-                "relatedness_thresholds_file": os.path.join(resources_path,'relatedness_thresholds.tsv')
+                "pop_freq_file": os.path.join(self.family_qc_executor_info["resource_dir"],'autosomes_1000G_QC_prune_in.frq'),
+                "pop_exclude_var_file": os.path.join(self.family_qc_executor_info["resource_dir"],'autosomes_1000G_QC.prune.out'),
+                "relatedness_thresholds_file": os.path.join(self.family_qc_executor_info["resource_dir"],'relatedness_thresholds.tsv')
                 }
             for key,file in relatedness_files.items():
                 if os.path.isfile(file):
