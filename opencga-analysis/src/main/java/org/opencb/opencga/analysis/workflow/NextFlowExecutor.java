@@ -267,7 +267,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         // Build output binding
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDirPath, outDirPath);
 
-        String dockerImage = "opencb/opencga-workflow";
+        String dockerImage = "opencb/opencga-workflow:TASK-6445";
         StringBuilder stringBuilder = new StringBuilder()
                 .append("bash -c \"NXF_VER=").append(workflow.getManager().getVersion()).append(" nextflow -c ").append(nextflowConfigPath).append(" run ");
         if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getImage())) {
