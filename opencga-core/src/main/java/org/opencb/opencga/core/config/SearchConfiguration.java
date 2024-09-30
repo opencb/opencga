@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.opencb.opencga.core.config.Configuration.reportUnusedField;
+
 /**
  * Created by wasim on 09/11/16.
  */
@@ -86,6 +88,17 @@ public class SearchConfiguration {
         sb.append(", insertBatchSize=").append(insertBatchSize);
         sb.append('}');
         return sb.toString();
+    }
+
+    @Deprecated
+    public String getHost() {
+        return null;
+    }
+
+    @Deprecated
+    public SearchConfiguration setHost(String host) {
+        reportUnusedField("search.configuration#host", host);
+        return this;
     }
 
     public List<String> getHosts() {
@@ -169,6 +182,16 @@ public class SearchConfiguration {
         return this;
     }
 
+    @Deprecated
+    public int getRows() {
+        return 0;
+    }
+
+    @Deprecated
+    public SearchConfiguration setRows(int rows) {
+        reportUnusedField("search.configuration#rows", rows);
+        return this;
+    }
     public int getInsertBatchSize() {
         return insertBatchSize;
     }

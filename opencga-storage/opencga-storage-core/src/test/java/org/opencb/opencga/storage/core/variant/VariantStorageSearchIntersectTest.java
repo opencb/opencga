@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -92,8 +93,8 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 //            new Exception().printStackTrace();
 //            return invocation.callRealMethod();
 //        }).when(solrClient).query(anyString(), any());
+        // Configure variant storage engine by using the current solrClient
         solr.configure(this.variantStorageEngine);
-        variantStorageEngine.getVariantSearchManager().setSolrClient(solrClient);
         for (VariantQueryExecutor variantQueryExecutor : variantStorageEngine.getVariantQueryExecutors()) {
             if (variantQueryExecutor instanceof SearchIndexVariantQueryExecutor) {
                 this.variantQueryExecutor = ((SearchIndexVariantQueryExecutor) variantQueryExecutor);
