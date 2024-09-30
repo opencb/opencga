@@ -65,7 +65,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     public static final String RESOURCES_FOLDER = "resources/";
     public static final String QC_RESOURCES_FOLDER = QC_FOLDER + RESOURCES_FOLDER;
 
-    public static final String QC_JSON_EXTENSION = ".json";
+    public static final String QC_RESULTS_FILENAME = "results.json";
 
     // Data type
     public static final String FAMILY_QC_TYPE = "family";
@@ -265,7 +265,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     protected <T> T parseQcFile(String id, String analysisId, List<String> skip, Path qcPath, String qcType, ObjectReader reader)
             throws ToolException {
         if (CollectionUtils.isEmpty(skip) || !skip.contains(analysisId)) {
-            java.io.File qcFile = qcPath.resolve(analysisId).resolve(id + QC_JSON_EXTENSION).toFile();
+            java.io.File qcFile = qcPath.resolve(analysisId).resolve(QC_RESULTS_FILENAME).toFile();
             if (qcFile.exists()) {
                 try {
                     return reader.readValue(qcFile);

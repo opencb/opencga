@@ -222,8 +222,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
             individualQc = new IndividualQualityControl();
 
             // Check and parse the inferred sex results
-            Path qcPath = getOutDir().resolve(individual.getId()).resolve(INFERRED_SEX_ANALYSIS_ID)
-                    .resolve(INFERRED_SEX_ANALYSIS_ID + QC_JSON_EXTENSION);
+            Path qcPath = getOutDir().resolve(individual.getId()).resolve(INFERRED_SEX_ANALYSIS_ID).resolve(QC_RESULTS_FILENAME);
             if (!Files.exists(qcPath)) {
                 failedQcSet.add(individual.getId());
                 failedAnalysis.add(INFERRED_SEX_ANALYSIS_ID);
@@ -252,8 +251,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
             }
 
             // Check and parse the mendelian error results
-            qcPath = getOutDir().resolve(individual.getId()).resolve(MENDELIAN_ERROR_ANALYSIS_ID)
-                    .resolve(MENDELIAN_ERROR_ANALYSIS_ID + QC_JSON_EXTENSION);
+            qcPath = getOutDir().resolve(individual.getId()).resolve(MENDELIAN_ERROR_ANALYSIS_ID).resolve(QC_RESULTS_FILENAME);
             if (!Files.exists(qcPath)) {
                 failedQcSet.add(individual.getId());
                 failedAnalysis.add(MENDELIAN_ERROR_ANALYSIS_ID);
@@ -283,8 +281,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
 
             // Check and parse the relatedness results, if trio is present
             if (CollectionUtils.isNotEmpty(trios) && trios.contains(individual)) {
-                qcPath = getOutDir().resolve(individual.getId()).resolve(RELATEDNESS_ANALYSIS_ID)
-                        .resolve(RELATEDNESS_ANALYSIS_ID + QC_JSON_EXTENSION);
+                qcPath = getOutDir().resolve(individual.getId()).resolve(RELATEDNESS_ANALYSIS_ID).resolve(QC_RESULTS_FILENAME);
                 if (!Files.exists(qcPath)) {
                     failedQcSet.add(individual.getId());
                     failedAnalysis.add(RELATEDNESS_ANALYSIS_ID);

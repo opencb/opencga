@@ -194,7 +194,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
             // Check and parse the relatedness output file
             Path qcPath = getOutDir().resolve(family.getId()).resolve(RELATEDNESS_ANALYSIS_ID)
-                    .resolve(RELATEDNESS_ANALYSIS_ID + QC_JSON_EXTENSION);
+                    .resolve(QC_RESULTS_FILENAME);
             if (!Files.exists(qcPath)) {
                 failedQcSet.add(family.getId());
                 qcStatus = new QualityControlStatus(ERROR, FAILURE_FILE + qcPath.getFileName() + NOT_FOUND);

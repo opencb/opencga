@@ -41,8 +41,8 @@ import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
-import org.opencb.opencga.core.models.variant.qc.SampleQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.qc.SampleQcAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -305,8 +305,7 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
             sampleQc = new SampleQualityControl();
 
             // Check and parse the signature results
-            Path qcPath = getOutDir().resolve(sample.getId()).resolve(SIGNATURE_ANALYSIS_ID)
-                    .resolve(SIGNATURE_ANALYSIS_ID + QC_JSON_EXTENSION);
+            Path qcPath = getOutDir().resolve(sample.getId()).resolve(SIGNATURE_ANALYSIS_ID).resolve(QC_RESULTS_FILENAME);
             if (!Files.exists(qcPath)) {
                 failedQcSet.add(sample.getId());
                 failedAnalysisPerSample.get(sample.getId()).add(SIGNATURE_ANALYSIS_ID);
@@ -335,8 +334,7 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
             }
 
             // Check and parse the genome plot results
-            qcPath = getOutDir().resolve(sample.getId()).resolve(GENOME_PLOT_ANALYSIS_ID)
-                    .resolve(GENOME_PLOT_ANALYSIS_ID + QC_JSON_EXTENSION);
+            qcPath = getOutDir().resolve(sample.getId()).resolve(GENOME_PLOT_ANALYSIS_ID).resolve(QC_RESULTS_FILENAME);
             if (!Files.exists(qcPath)) {
                 failedQcSet.add(sample.getId());
                 failedAnalysisPerSample.get(sample.getId()).add(GENOME_PLOT_ANALYSIS_ID);
