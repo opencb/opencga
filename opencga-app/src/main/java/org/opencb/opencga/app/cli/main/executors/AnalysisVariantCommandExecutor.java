@@ -41,6 +41,7 @@ import org.opencb.opencga.core.models.variant.HRDetectAnalysisParams;
 import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.InferredSexAnalysisParams;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
+import org.opencb.opencga.core.models.variant.LiftoverWrapperParams;
 import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
@@ -155,6 +156,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "knockout-run":
                 queryResponse = runKnockout();
+                break;
+            case "liftover-run":
+                queryResponse = runLiftover();
                 break;
             case "mendelian-error-run":
                 queryResponse = runMendelianError();
@@ -1070,6 +1074,47 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), KnockoutAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runKnockout(knockoutAnalysisParams, queryParams);
+    }
+
+    private RestResponse<Job> runLiftover() throws Exception {
+        logger.debug("Executing runLiftover in Analysis - Variant command line");
+
+        AnalysisVariantCommandOptions.RunLiftoverCommandOptions commandOptions = analysisVariantCommandOptions.runLiftoverCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        LiftoverWrapperParams liftoverWrapperParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/liftover/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            liftoverWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), LiftoverWrapperParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
+            putNestedIfNotEmpty(beanParams, "targetAssembly",commandOptions.targetAssembly, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
+            liftoverWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), LiftoverWrapperParams.class);
+        }
+        return openCGAClient.getVariantClient().runLiftover(liftoverWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runMendelianError() throws Exception {

@@ -67,6 +67,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisVariantSubCommands.addCommand("knockout-gene-query", analysisVariantCommandOptions.queryKnockoutGeneCommandOptions);
         analysisVariantSubCommands.addCommand("knockout-individual-query", analysisVariantCommandOptions.queryKnockoutIndividualCommandOptions);
         analysisVariantSubCommands.addCommand("knockout-run", analysisVariantCommandOptions.runKnockoutCommandOptions);
+        analysisVariantSubCommands.addCommand("liftover-run", analysisVariantCommandOptions.runLiftoverCommandOptions);
         analysisVariantSubCommands.addCommand("mendelian-error-run", analysisVariantCommandOptions.runMendelianErrorCommandOptions);
         analysisVariantSubCommands.addCommand("metadata", analysisVariantCommandOptions.metadataCommandOptions);
         analysisVariantSubCommands.addCommand("mutational-signature-query", analysisVariantCommandOptions.queryMutationalSignatureCommandOptions);
