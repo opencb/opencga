@@ -107,4 +107,14 @@ public class InputFileUtils {
         return outDir + file.substring(OUTPUT.length());
     }
 
+    public String appendSubpath(String path, String subpath) {
+        if ((path.endsWith("/") && !subpath.startsWith("/")) || (!path.endsWith("/") && subpath.startsWith("/"))) {
+            return path + subpath;
+        } else if (path.endsWith("/") && subpath.startsWith("/")) {
+            return path + subpath.substring(1);
+        } else {
+            return path + "/" + subpath;
+        }
+    }
+
 }
