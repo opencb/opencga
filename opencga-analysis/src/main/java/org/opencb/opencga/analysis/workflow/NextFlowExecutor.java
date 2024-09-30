@@ -304,6 +304,18 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
                     .forEach(java.io.File::delete);
         }
 
+        // Delete temporal files and folders created by nextflow
+        try (Stream<Path> paths = Files.walk(getOutDir().resolve(".nextflow"))) {
+            paths.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(java.io.File::delete);
+        }
+        try (Stream<Path> paths = Files.walk(getOutDir().resolve("work"))) {
+            paths.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(java.io.File::delete);
+        }
+
     }
 
     @Override
