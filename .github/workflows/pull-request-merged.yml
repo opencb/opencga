@@ -19,6 +19,6 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@develop
     needs: build
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
+      cli: python3 ./build/cloud/docker/docker-build.py delete --images base,workflow --tag ${{ github.head_ref }}
     secrets: inherit
 

@@ -1,5 +1,5 @@
-## Based on Ubuntu 24.04 (noble)
-FROM eclipse-temurin:11.0.24_8-jre-noble
+## Based on Ubuntu 22.04 (jammy)
+FROM eclipse-temurin:11.0.24_8-jre-jammy
 
 ARG BUILD_PATH="."
 
@@ -23,11 +23,6 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpa
     ## Install yq
     wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && \
     chmod +x /usr/local/bin/yq && \
-
-    ## Install Nextflow \
-    curl -s https://get.nextflow.io | bash && \
-    chmod +xr nextflow && \
-    mv nextflow /usr/local/bin/ && \
 
     ## Clean downloaded packages to make images smaller
     rm -rf /var/lib/apt/lists/* && \
