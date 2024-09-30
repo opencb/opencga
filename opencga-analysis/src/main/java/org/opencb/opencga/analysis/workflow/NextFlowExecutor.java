@@ -32,6 +32,7 @@ import org.opencb.opencga.core.tools.result.ToolStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -295,33 +296,44 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         StopWatch stopWatch = StopWatch.createStarted();
         DockerUtils.run(dockerImage, inputBindings, outputBinding, stringBuilder.toString(), dockerParams);
         logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
-        endTraceFileMonitor();
+    }
 
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+    }
+
+    @Override
+    protected void onShutdown() {
+        endTraceFileMonitor();
+        deleteTemporalFiles();
+    }
+
+    private void deleteTemporalFiles() {
         // Delete input files and temporal directory
         try (Stream<Path> paths = Files.walk(temporalInputDir)) {
             paths.sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
                     .forEach(java.io.File::delete);
+        } catch (IOException e) {
+            logger.error("Could not delete temporal input directory: " + temporalInputDir, e);
         }
-
         // Delete temporal files and folders created by nextflow
         try (Stream<Path> paths = Files.walk(getOutDir().resolve(".nextflow"))) {
             paths.sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
                     .forEach(java.io.File::delete);
+        } catch (IOException e) {
+            logger.error("Could not delete temporal nextflow directory: " + getOutDir().resolve(".nextflow"), e);
         }
         try (Stream<Path> paths = Files.walk(getOutDir().resolve("work"))) {
             paths.sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
                     .forEach(java.io.File::delete);
+        } catch (IOException e) {
+            logger.error("Could not delete temporal work directory: " + getOutDir().resolve("work"), e);
         }
 
-    }
-
-    @Override
-    protected void onShutdown() {
-        super.onShutdown();
-        endTraceFileMonitor();
     }
 
     protected void endTraceFileMonitor() {
