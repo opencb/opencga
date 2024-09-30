@@ -73,6 +73,8 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             throw new IllegalArgumentException("Missing Nextflow ID");
         }
 
+        InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
+
         dockerParams = new HashMap<>();
         temporalInputDir = Files.createDirectory(getOutDir().resolve(".opencga_input"));
 
@@ -119,11 +121,10 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         }
         updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
+        StringBuilder cliParamsBuilder = new StringBuilder();
         this.inputBindings = new LinkedList<>();
         if (MapUtils.isNotEmpty(nextflowParams.getParams())) {
-            InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
 
-            StringBuilder cliParamsBuilder = new StringBuilder();
             for (Map.Entry<String, String> entry : nextflowParams.getParams().entrySet()) {
                 String variableId = removePrefix(entry.getKey());
                 // Remove from the mandatoryParams set
@@ -152,33 +153,32 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
                     }
                 }
             }
-            for (String mandatoryParam : mandatoryParams) {
-                logger.info("Processing missing mandatory param: '{}'", mandatoryParam);
-                WorkflowVariable workflowVariable = variableMap.get(mandatoryParam);
+        }
 
-                if (workflowVariable.getId().startsWith("-")) {
-                    cliParamsBuilder.append(workflowVariable.getId()).append(" ");
-                } else {
-                    cliParamsBuilder.append("--").append(workflowVariable.getId()).append(" ");
-                }
+        for (String mandatoryParam : mandatoryParams) {
+            logger.info("Processing missing mandatory param: '{}'", mandatoryParam);
+            WorkflowVariable workflowVariable = variableMap.get(mandatoryParam);
 
-                if (StringUtils.isNotEmpty(workflowVariable.getDefaultValue())) {
-                    if (workflowVariable.isOutput()) {
-                        processOutputCli(workflowVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
-                    } else {
-                        processInputCli(workflowVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
-                    }
-                } else if (workflowVariable.isOutput()) {
-                    processOutputCli("", inputFileUtils, cliParamsBuilder);
-                } else {
-                    throw new ToolException("Missing mandatory parameter: " + mandatoryParam);
-                }
+            if (workflowVariable.getId().startsWith("-")) {
+                cliParamsBuilder.append(workflowVariable.getId()).append(" ");
+            } else {
+                cliParamsBuilder.append("--").append(workflowVariable.getId()).append(" ");
             }
 
-            this.cliParams = cliParamsBuilder.toString();
-        } else {
-            this.cliParams = "";
+            if (StringUtils.isNotEmpty(workflowVariable.getDefaultValue())) {
+                if (workflowVariable.isOutput()) {
+                    processOutputCli(workflowVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
+                } else {
+                    processInputCli(workflowVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
+                }
+            } else if (workflowVariable.isOutput()) {
+                processOutputCli("", inputFileUtils, cliParamsBuilder);
+            } else {
+                throw new ToolException("Missing mandatory parameter: " + mandatoryParam);
+            }
         }
+
+        this.cliParams = cliParamsBuilder.toString();
     }
 
     void processInputCli(String value, InputFileUtils inputFileUtils, StringBuilder cliParamsBuilder) throws CatalogException {

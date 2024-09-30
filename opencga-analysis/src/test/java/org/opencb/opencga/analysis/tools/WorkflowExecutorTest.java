@@ -86,6 +86,9 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
                 .setType(Workflow.Type.OTHER)
                 .setVariables(Arrays.asList(
                         new WorkflowVariable()
+                                .setId("input")
+                                .setRequired(true),
+                        new WorkflowVariable()
                                 .setId("outdir")
                                 .setOutput(true)
                                 .setRequired(true),
