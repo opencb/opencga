@@ -107,7 +107,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (CollectionUtils.isNotEmpty(workflow.getTags())) {
             tags.addAll(workflow.getTags());
         }
-//        updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
+        updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
         this.inputBindings = new LinkedList<>();
         if (MapUtils.isNotEmpty(nextflowParams.getParams())) {
@@ -189,7 +189,6 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         // Build output binding
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDirPath, outDirPath);
 
-//        String dockerImage = "nextflow/nextflow:" + workflow.getManager().getVersion();
         String dockerImage = "opencb/opencga-workflow";
         StringBuilder stringBuilder = new StringBuilder()
                 .append("bash -c \"NXF_VER=").append(workflow.getManager().getVersion()).append(" nextflow -c ").append(nextflowConfigPath).append(" run ");
@@ -211,10 +210,6 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             stringBuilder.append(" ").append(cliParams);
         }
         stringBuilder.append(" -with-report ").append(outDirPath).append("/report.html\"");
-//        // And give ownership permissions to the user running this process
-//        stringBuilder.append("; chown -R ")
-//                .append(UserProcessUtils.getUserUid()).append(":").append(UserProcessUtils.getGroupId()).append(" ").append(outputDir)
-//                .append("\"");
 
         startTraceFileMonitor();
 
