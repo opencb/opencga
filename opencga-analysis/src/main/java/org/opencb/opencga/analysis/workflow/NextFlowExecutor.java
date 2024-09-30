@@ -190,9 +190,9 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDirPath, outDirPath);
 
 //        String dockerImage = "nextflow/nextflow:" + workflow.getManager().getVersion();
-        String dockerImage = "pfurio/nextflow";
+        String dockerImage = "opencb/opencga-workflow";
         StringBuilder stringBuilder = new StringBuilder()
-                .append("bash -c \"nextflow -c ").append(nextflowConfigPath).append(" run ");
+                .append("bash -c \"NXF_VER=").append(workflow.getManager().getVersion()).append(" nextflow -c ").append(nextflowConfigPath).append(" run ");
         if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getImage())) {
 //            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
             stringBuilder.append(workflow.getRepository().getImage());
