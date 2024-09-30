@@ -116,7 +116,7 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         StopWatch stopWatch = StopWatch.createStarted();
         NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
         Map<String, String> cliParams = new HashMap<>();
-        cliParams.put("input", "file://samplesheet.csv");
+//        cliParams.put("input", "file://samplesheet.csv");
 //        cliParams.put("outdir", "$OUTPUT");
 //        cliParams.put("genome", "GRCh37");
 //        cliParams.put("-profile", "docker");

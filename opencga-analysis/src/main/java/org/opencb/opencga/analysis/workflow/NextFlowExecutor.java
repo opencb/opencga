@@ -150,7 +150,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
                     } else if (workflowVariable.isOutput()) {
                         processOutputCli("", inputFileUtils, cliParamsBuilder);
                     } else if (workflowVariable.isRequired() && workflowVariable.getType() != WorkflowVariable.WorkflowType.FLAG) {
-                        throw new ToolException("Missing value for mandatory parameter: " + variableId);
+                        throw new ToolException("Missing value for mandatory parameter: '" + variableId + "'.");
                     }
                 }
             }
@@ -175,7 +175,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             } else if (workflowVariable.isOutput()) {
                 processOutputCli("", inputFileUtils, cliParamsBuilder);
             } else {
-                throw new ToolException("Missing mandatory parameter: " + mandatoryParam);
+                throw new ToolException("Missing mandatory parameter: '" + mandatoryParam + "'.");
             }
         }
 
@@ -191,7 +191,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
                 // Write outputFile as inputBinding
                 inputBindings.add(new AbstractMap.SimpleEntry<>(outputFile.toString(), outputFile.toString()));
-                logger.info("Params: OpenCGA input file: {}", outputFile);
+                logger.info("Params: OpenCGA input file: '{}'", outputFile);
                 cliParamsBuilder.append(outputFile).append(" ");
 
                 // Add files to inputBindings to ensure they are also mounted (if any)
@@ -202,7 +202,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             } else {
                 String path = file.getUri().getPath();
                 inputBindings.add(new AbstractMap.SimpleEntry<>(path, path));
-                logger.info("Params: OpenCGA input file: {}", path);
+                logger.info("Params: OpenCGA input file: '{}'", path);
                 cliParamsBuilder.append(path).append(" ");
             }
         } else {
@@ -220,7 +220,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             // If it starts directly with the subpath...
             dynamicOutputFolder = inputFileUtils.appendSubpath(outDirPath, value);
         }
-        logger.info("Params: Dynamic output folder: {}", dynamicOutputFolder);
+        logger.info("Params: Dynamic output folder: '{}'", dynamicOutputFolder);
         cliParamsBuilder.append(dynamicOutputFolder).append(" ");
     }
 
@@ -304,7 +304,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
     }
 
     @Override
-    protected void onShutdown() {
+    protected void close() {
         endTraceFileMonitor();
         deleteTemporalFiles();
     }
@@ -316,7 +316,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
                     .map(Path::toFile)
                     .forEach(java.io.File::delete);
         } catch (IOException e) {
-            logger.error("Could not delete temporal input directory: " + temporalInputDir, e);
+            logger.warn("Could not delete temporal input directory: " + temporalInputDir, e);
         }
         // Delete temporal files and folders created by nextflow
         try (Stream<Path> paths = Files.walk(getOutDir().resolve(".nextflow"))) {
@@ -324,14 +324,14 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
                     .map(Path::toFile)
                     .forEach(java.io.File::delete);
         } catch (IOException e) {
-            logger.error("Could not delete temporal nextflow directory: " + getOutDir().resolve(".nextflow"), e);
+            logger.warn("Could not delete temporal nextflow directory: " + getOutDir().resolve(".nextflow"), e);
         }
         try (Stream<Path> paths = Files.walk(getOutDir().resolve("work"))) {
             paths.sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
                     .forEach(java.io.File::delete);
         } catch (IOException e) {
-            logger.error("Could not delete temporal work directory: " + getOutDir().resolve("work"), e);
+            logger.warn("Could not delete temporal work directory: " + getOutDir().resolve("work"), e);
         }
 
     }
