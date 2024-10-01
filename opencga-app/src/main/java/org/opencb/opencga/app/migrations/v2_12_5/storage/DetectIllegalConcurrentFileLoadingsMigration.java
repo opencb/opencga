@@ -145,7 +145,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                                     metadataManager.getFileName(studyId, file), file);
                         }
                     }
-                } else if (sampleMetadata.getSampleIndexStatus(Optional.of(sampleMetadata.getSampleIndexVersion()).orElse(-1)) == TaskMetadata.Status.READY) {
+                } else if (sampleMetadata.getSampleIndexStatus(Optional.ofNullable(sampleMetadata.getSampleIndexVersion()).orElse(-1)) == TaskMetadata.Status.READY) {
                     for (Integer fileId : sampleMetadata.getFiles()) {
                         if (affectedFiles.contains(fileId)) {
                             FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
