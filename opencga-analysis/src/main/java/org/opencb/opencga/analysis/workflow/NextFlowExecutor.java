@@ -211,7 +211,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
     }
 
-    void processOutputCli(String value, InputFileUtils inputFileUtils, StringBuilder cliParamsBuilder) {
+    void processOutputCli(String value, InputFileUtils inputFileUtils, StringBuilder cliParamsBuilder) throws CatalogException {
         String dynamicOutputFolder;
         if (inputFileUtils.isDynamicOutputFolder(value)) {
             // If it starts with $OUTPUT/...
