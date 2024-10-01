@@ -2,13 +2,10 @@ package org.opencb.opencga.analysis.customTool;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.commons.utils.DockerUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
-import org.opencb.opencga.catalog.utils.InputFileUtils;
+import org.opencb.opencga.analysis.tools.OpenCgaDockerToolScopeStudy;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.JobRunDockerParams;
 import org.opencb.opencga.core.models.job.JobRunParams;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
@@ -17,12 +14,11 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
 
 @Tool(id = CustomToolExecutor.ID, resource = Enums.Resource.JOB, description = CustomToolExecutor.DESCRIPTION)
-public class CustomToolExecutor extends OpenCgaToolScopeStudy {
+public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
 
     public final static String ID = "custom-tool";
     public static final String DESCRIPTION = "Execute an analysis from a custom binary.";
@@ -31,8 +27,6 @@ public class CustomToolExecutor extends OpenCgaToolScopeStudy {
     protected JobRunParams runParams = new JobRunParams();
 
     private String cliParams;
-    // Build list of inputfiles in case we need to specifically mount them in read only mode
-    List<AbstractMap.SimpleEntry<String, String>> inputBindings;
     private String dockerImage;
 
     private final static Logger logger = LoggerFactory.getLogger(CustomToolExecutor.class);
@@ -66,38 +60,15 @@ public class CustomToolExecutor extends OpenCgaToolScopeStudy {
         tags.add(this.dockerImage);
         updateJobInformation(tags, toolInfoExecutor);
 
-        // Build input bindings
-        this.inputBindings = new LinkedList<>();
-        InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
-
         StringBuilder cliParamsBuilder = new StringBuilder();
-        String[] params = runParams.getCommandLine().split(" ");
-        Map<String, String> inputDirectoryMounts = new HashMap<>();
-        for (String param : params) {
-            if (inputFileUtils.isValidOpenCGAFile(param)) {
-                File file = inputFileUtils.findOpenCGAFileFromPattern(study, param, token);
-                Path parent = Paths.get(file.getUri()).getParent();
-                if (!inputDirectoryMounts.containsKey(parent.toString())) {
-                    inputDirectoryMounts.put(parent.toString(), "/data/input" + inputDirectoryMounts.size());
-                }
-                String directoryMount = inputDirectoryMounts.get(parent.toString());
-                inputBindings.add(new AbstractMap.SimpleEntry<>(parent.toString(), directoryMount));
-                cliParamsBuilder.append(directoryMount).append("/").append(file.getName()).append(" ");
-            } else {
-                cliParamsBuilder.append(param).append(" ");
-            }
-        }
+        processInputParams(runParams.getCommandLine(), cliParamsBuilder);
         this.cliParams = cliParamsBuilder.toString();
     }
 
     @Override
     protected void run() throws Exception {
-        // Build output binding
-        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
-                "/data/output");
-
         StopWatch stopWatch = StopWatch.createStarted();
-        String cmdline = DockerUtils.run(dockerImage, inputBindings, outputBinding, cliParams, null);
+        String cmdline = runDocker(dockerImage, cliParams);
         logger.info("Docker command line: " + cmdline);
         logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
     }
