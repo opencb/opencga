@@ -89,6 +89,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
 
         QUALITY_CONTROL("qualityControl", TEXT_ARRAY, ""),
+        QUALITY_CONTROL_STATUS("internal.qualityControlStatus", TEXT_ARRAY, ""),
 
         KARYOTYPIC_SEX("karyotypicSex", TEXT, ""),
         LIFE_STATUS("lifeStatus", TEXT, ""),

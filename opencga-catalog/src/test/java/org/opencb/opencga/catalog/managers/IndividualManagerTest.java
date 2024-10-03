@@ -21,12 +21,10 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualQualityControl;
-import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
@@ -38,6 +36,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.opencb.opencga.core.models.common.InternalStatus.READY;
 
 @Category(MediumTests.class)
 public class IndividualManagerTest extends AbstractManagerTest {
@@ -623,9 +622,14 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         IndividualQualityControl qualityControl = new IndividualQualityControl(null, null, null, Collections.emptyList(),
                 Arrays.asList(new ClinicalComment("pfurio", "message", Collections.singletonList("tag"), "today")));
-        DataResult<Individual> update = individualManager.update(studyFqn, individualDataResult.first().getId(),
-                new IndividualUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), ownerToken);
-        assertEquals(1, update.getNumUpdated());
+
+        String qcStatusId = READY;
+        String qcStatusMsg = "Successfully computed";
+        QualityControlStatus qualityControlStatus = new QualityControlStatus(qcStatusId, qcStatusMsg);
+
+        DataResult<Individual> updatedIndividual = individualManager.updateQualityControl(studyFqn, individualDataResult.first().getId(),
+                qualityControl, qualityControlStatus, ownerToken);
+        assertEquals(1, updatedIndividual.getNumUpdated());
 
         Individual individual = individualManager.get(studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), ownerToken)
                 .first();
@@ -634,6 +638,8 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals("message", individual.getQualityControl().getComments().get(0).getMessage());
         assertEquals("tag", individual.getQualityControl().getComments().get(0).getTags().get(0));
         assertEquals("today", individual.getQualityControl().getComments().get(0).getDate());
+        assertEquals(qcStatusId, individual.getInternal().getQualityControlStatus().getId());
+        assertEquals(qcStatusMsg, individual.getInternal().getQualityControlStatus().getDescription());
     }
 
     @Test

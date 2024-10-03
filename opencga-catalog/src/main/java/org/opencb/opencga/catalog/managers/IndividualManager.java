@@ -44,6 +44,8 @@ import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.InternalQualityControl;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -1040,8 +1042,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return endResult(result, ignoreException);
     }
 
-    private OpenCGAResult update(String organizationId, Study study, Individual individual, IndividualUpdateParams updateParams,
-                                 QueryOptions options, String userId) throws CatalogException {
+    private <T extends IndividualUpdateParams> OpenCGAResult update(String organizationId, Study study, Individual individual,
+                                                                    T updateParams, QueryOptions options, String userId)
+            throws CatalogException {
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
             try {
@@ -1167,6 +1170,35 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             update.setResults(result.getResults());
         }
         return update;
+    }
+
+    public OpenCGAResult<Individual> updateQualityControl(String studyStr, String individualId,
+                                                          IndividualQualityControl individualQualityControl,
+                                                          QualityControlStatus qualityControlStatus, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
+
+        // Check study admin permissions
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+
+        ParamUtils.checkObj(individualQualityControl, "IndividualQualityControl");
+        ParamUtils.checkObj(qualityControlStatus, "QualityControlStatus");
+
+        OpenCGAResult<Individual> internalResult = internalGet(organizationId, study.getUid(), individualId, QueryOptions.empty(), userId);
+        if (internalResult.getNumResults() == 0) {
+            throw new CatalogException("Individual '" + individualId + "' not found");
+        }
+        Individual individual = internalResult.first();
+
+        // Update catalog: quality control and status
+        IndividualInternalUpdateParams updateParams = new IndividualInternalUpdateParams()
+                .setQualityControl(individualQualityControl)
+                .setInternal(new InternalQualityControl(qualityControlStatus));
+
+        return catalogManager.getIndividualManager().update(organizationId, study, individual, updateParams, null, userId);
     }
 
     @Override

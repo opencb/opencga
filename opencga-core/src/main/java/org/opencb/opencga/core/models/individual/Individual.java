@@ -186,6 +186,7 @@ public class Individual extends Annotable {
     public Individual() {
     }
 
+    @Deprecated
     public Individual(String id, String name, Individual father, Individual mother, Location location, SexOntologyTermAnnotation sex,
                       KaryotypicSex karyotypicSex, OntologyTermAnnotation ethnicity, IndividualPopulation population, LifeStatus lifeStatus,
                       String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,

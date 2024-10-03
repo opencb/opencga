@@ -40,7 +40,6 @@ import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.variant.qc.IndividualQcAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -317,11 +316,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
             }
 
             try {
-                // Update catalog: quality control and status
-                IndividualUpdateParams updateParams = new IndividualUpdateParams()
-                        .setQualityControl(individualQc)
-                        .setQualityControlStatus(qcStatus);
-                catalogManager.getIndividualManager().update(getStudy(), individual.getId(), updateParams, null, token);
+                catalogManager.getIndividualManager().updateQualityControl(getStudy(), individual.getId(), individualQc, qcStatus, token);
             } catch (CatalogException e) {
                 failedQcSet.add(individual.getId());
                 logMsg = FAILURE_COULD_NOT_UPDATE_QUALITY_CONTROL_IN_OPEN_CGA_CATALOG + getIdLogMessage(individual.getId(),
