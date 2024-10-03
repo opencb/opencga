@@ -29,6 +29,7 @@ import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
+import org.opencb.opencga.core.models.study.VariantSetupResult;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.Api;
@@ -96,6 +97,23 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             }
             return new DataResult<>()
                     .setResults(Collections.singletonList(newConfiguration))
+                    .setNumResults(1)
+                    .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
+        });
+    }
+
+    @POST
+    @Path("/variant/setup")
+    @ApiOperation(value = "Execute Variant Setup to allow using the variant engine. This setup is necessary before starting any variant operation.",
+            response = VariantSetupResult.class)
+    public Response variantConfigure(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Variant setup params") VariantSetupParams params) {
+        return run(() -> {
+            StopWatch stopWatch = StopWatch.createStarted();
+            VariantSetupResult result = variantManager.variantSetup(study, params, token);
+            return new DataResult<>()
+                    .setResults(Collections.singletonList(result))
                     .setNumResults(1)
                     .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
         });

@@ -30,8 +30,10 @@ import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -69,6 +71,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     private String clinicalAnalysisId;
     private String sampleId;
     private ClinicalAnalysis.Type clinicalAnalysisType;
+    private String exomiserVersion;
 
     private ClinicalAnalysis clinicalAnalysis;
 
@@ -99,8 +102,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
                     token);
-        } catch (
-                CatalogException e) {
+        } catch (CatalogException e) {
             throw new ToolException(e);
         }
         if (clinicalAnalysisQueryResult.getNumResults() != 1) {
@@ -119,6 +121,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         }
         sampleId = clinicalAnalysis.getProband().getSamples().get(0).getId();
 
+        // Check clinical analysis type
         if (clinicalAnalysis.getType() == ClinicalAnalysis.Type.FAMILY) {
             clinicalAnalysisType = ClinicalAnalysis.Type.FAMILY;
         } else {
@@ -126,6 +129,13 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         }
         logger.info("The clinical analysis type is {}, so the Exomiser will be run in mode {}", clinicalAnalysis.getType(),
                 clinicalAnalysisType);
+
+        // Check exomiser version
+        if (StringUtils.isEmpty(exomiserVersion)) {
+            // Missing exomiser version use the default one
+            exomiserVersion = ConfigurationUtils.getToolDefaultVersion(ExomiserWrapperAnalysis.ID, configuration);
+            logger.warn("Missing exomiser version, using the default {}", exomiserVersion);
+        }
 
         // Update executor params with OpenCGA home and session ID
         setUpStorageEngineExecutor(studyId);
@@ -135,20 +145,20 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     protected void run() throws ToolException {
         step(() -> {
             executorParams.put(EXECUTOR_ID, ExomiserWrapperAnalysisExecutor.ID);
-
-            // Execute using the ExomiserWrapperAnalysisExecutor
-            exomiserExecutor = getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
+            ExomiserWrapperAnalysisExecutor exomiserExecutor = getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
                     .setStudyId(studyId)
                     .setSampleId(sampleId)
-                    .setClinicalAnalysisType(clinicalAnalysisType);
+                    .setClinicalAnalysisType(clinicalAnalysisType)
+                    .setExomiserVersion(exomiserVersion);
+
             exomiserExecutor.execute();
 
-            // Save interpretation
-            saveInterpretation(studyId, clinicalAnalysis);
+            saveInterpretation(studyId, clinicalAnalysis, exomiserExecutor.getDockerImageName(), exomiserExecutor.getDockerImageVersion());
         });
     }
 
-    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis) throws ToolException, StorageEngineException,
+    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, String dockerImage, String dockerImageVersion)
+            throws ToolException, StorageEngineException,
             CatalogException, IOException {
         // Interpretation method
         Map<String, String> softwareParams = new HashMap<>();
@@ -157,9 +167,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 GitRepositoryState.getInstance().getCommitId(), Collections.singletonList(
                 new Software()
                         .setName("Exomiser")
-                        .setRepository("Docker: " + ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_NAME)
-                        .setVersion(ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_VERSION)
-                        .setParams(softwareParams)));
+                        .setRepository("Docker: " + dockerImage)
+                        .setVersion(dockerImageVersion)));
 
         // Analyst
         ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(studyId, token);
@@ -286,8 +295,17 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 // Convert variants to clinical variants
                 for (Variant variant : variantResults.getResults()) {
                     ClinicalVariant clinicalVariant = clinicalVariantCreator.create(variant);
-                    List<ExomiserTranscriptAnnotation> exomiserTranscripts = new ArrayList<>(variantTranscriptMap.get(normalizedToTsv
-                            .get(variant.toStringSimple())));
+                    List<ExomiserTranscriptAnnotation> exomiserTranscripts = new ArrayList<>();
+                    if (normalizedToTsv.containsKey(variant.toStringSimple())) {
+                        if (variantTranscriptMap.containsKey(normalizedToTsv.get(variant.toStringSimple()))) {
+                            exomiserTranscripts.addAll(variantTranscriptMap.get(normalizedToTsv.get(variant.toStringSimple())));
+                        } else {
+                            logger.warn("Variant {} (normalizedToTsv {}), not found in map variantTranscriptMap", variant.toStringSimple(),
+                                    normalizedToTsv.get(variant.toStringSimple()));
+                        }
+                    } else {
+                        logger.warn("Variant {} not found in map normalizedToTsv", variant.toStringSimple());
+                    }
                     for (String[] fields : variantTsvMap.get(variant.toStringSimple())) {
                         ClinicalProperty.ModeOfInheritance moi = getModeOfInheritance(fields[4]);
                         Map<String, Object> attributes = getAttributesFromTsv(fields);
@@ -473,6 +491,15 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
     public ExomiserInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
+    }
+
+    public String getExomiserVersion() {
+        return exomiserVersion;
+    }
+
+    public ExomiserInterpretationAnalysis setExomiserVersion(String exomiserVersion) {
+        this.exomiserVersion = exomiserVersion;
         return this;
     }
 }

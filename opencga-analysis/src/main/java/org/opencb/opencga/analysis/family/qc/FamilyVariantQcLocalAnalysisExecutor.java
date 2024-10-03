@@ -30,6 +30,7 @@ import java.nio.file.Path;
 
 import static org.opencb.opencga.analysis.utils.VariantQcAnalysisExecutorUtils.CONFIG_FILENAME;
 import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.FAMILY_QC_TYPE;
+import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.RESOURCES_FOLDER;
 
 @ToolExecutor(id="opencga-local", tool = FamilyVariantQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)

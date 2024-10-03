@@ -46,6 +46,7 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.manager.VariantOperationsTest;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
@@ -74,6 +75,7 @@ import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyInternalUpdateParams;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.file.File;
@@ -188,6 +190,9 @@ public class VariantAnalysisTest {
 
 
             setUpCatalogManager();
+
+            VariantOperationsTest.dummyVariantSetup(variantStorageManager, STUDY, token);
+            VariantOperationsTest.dummyVariantSetup(variantStorageManager, CANCER_STUDY, token);
 
             file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
             variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
@@ -1116,9 +1121,8 @@ public class VariantAnalysisTest {
         catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
 
         // Update quality control for the cancer sample
-        FamilyQualityControl qc = new FamilyQualityControl();
-        FamilyUpdateParams familyUpdateParams = new FamilyUpdateParams().setQualityControl(qc);
-        catalogManager.getFamilyManager().update(STUDY, family, familyUpdateParams, null, token);
+        catalogManager.getFamilyManager().updateQualityControl(STUDY, family, new FamilyQualityControl(), new QualityControlStatus(),
+                token);
 
         // Family QC analysis
         FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();

@@ -144,7 +144,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
                             .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT");
                 } else {
                     // Create variant query
-                    String gt = getNoSomaticSampleIds(individual).stream().map(s -> s + ":0/0,0/1,1/1")
+                    String gt = getIndexedAndNoSomaticSampleIds(individual).stream().map(s -> s + ":0/0,0/1,1/1")
                             .collect(Collectors.joining(";"));
                     query = new Query()
                             .append(VariantQueryParam.GENOTYPE.key(), gt);
@@ -222,8 +222,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
             individualQc = new IndividualQualityControl();
 
             // Check and parse the inferred sex results
-            Path qcPath = getOutDir().resolve(individual.getId()).resolve(INFERRED_SEX_ANALYSIS_ID)
-                    .resolve(INFERRED_SEX_ANALYSIS_ID + QC_JSON_EXTENSION);
+            Path qcPath = getOutDir().resolve(individual.getId()).resolve(INFERRED_SEX_ANALYSIS_ID).resolve(QC_RESULTS_FILENAME);
             if (!Files.exists(qcPath)) {
                 failedQcSet.add(individual.getId());
                 failedAnalysis.add(INFERRED_SEX_ANALYSIS_ID);
@@ -252,8 +251,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
             }
 
             // Check and parse the mendelian error results
-            qcPath = getOutDir().resolve(individual.getId()).resolve(MENDELIAN_ERROR_ANALYSIS_ID)
-                    .resolve(MENDELIAN_ERROR_ANALYSIS_ID + QC_JSON_EXTENSION);
+            qcPath = getOutDir().resolve(individual.getId()).resolve(MENDELIAN_ERROR_ANALYSIS_ID).resolve(QC_RESULTS_FILENAME);
             if (!Files.exists(qcPath)) {
                 failedQcSet.add(individual.getId());
                 failedAnalysis.add(MENDELIAN_ERROR_ANALYSIS_ID);
@@ -283,8 +281,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
 
             // Check and parse the relatedness results, if trio is present
             if (CollectionUtils.isNotEmpty(trios) && trios.contains(individual)) {
-                qcPath = getOutDir().resolve(individual.getId()).resolve(RELATEDNESS_ANALYSIS_ID)
-                        .resolve(RELATEDNESS_ANALYSIS_ID + QC_JSON_EXTENSION);
+                qcPath = getOutDir().resolve(individual.getId()).resolve(RELATEDNESS_ANALYSIS_ID).resolve(QC_RESULTS_FILENAME);
                 if (!Files.exists(qcPath)) {
                     failedQcSet.add(individual.getId());
                     failedAnalysis.add(RELATEDNESS_ANALYSIS_ID);
@@ -376,9 +373,9 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
                     individual = individualResult.first();
 
                     // Check number of samples
-                    List<String> sampleIds = getNoSomaticSampleIds(individual);
+                    List<String> sampleIds = getIndexedAndNoSomaticSampleIds(individual);
                     if (CollectionUtils.isEmpty(sampleIds)) {
-                        errors.put(individualId, "No samples found");
+                        errors.put(individualId, "None of the input individuals have indexed and somatic samples");
                     }
                 }
 

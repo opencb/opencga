@@ -697,9 +697,6 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--quality-control-status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String qualityControlStatusId;
     
-        @Parameter(names = {"--quality-control-status-name"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String qualityControlStatusName;
-    
         @Parameter(names = {"--quality-control-status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String qualityControlStatusDescription;
     
@@ -711,6 +708,9 @@ public class SamplesCommandOptions {
     
         @Parameter(names = {"--quality-control-status-commit"}, description = "The body web service commit parameter", required = false, arity = 1)
         public String qualityControlStatusCommit;
+    
+        @Parameter(names = {"--quality-control-status-name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String qualityControlStatusName;
     
         @Parameter(names = {"--somatic"}, description = "The body web service somatic parameter", required = false, arity = 1)
         public Boolean somatic;

@@ -51,6 +51,8 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.InternalQualityControl;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
@@ -959,8 +961,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return endResult(result, ignoreException);
     }
 
-    private OpenCGAResult<Family> update(String organizationId, Study study, Family family, FamilyUpdateParams updateParams,
-                                         QueryOptions options, String userId) throws CatalogException {
+    private <T extends FamilyUpdateParams> OpenCGAResult<Family> update(String organizationId, Study study, Family family,
+                                         T updateParams, QueryOptions options, String userId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         ObjectMap parameters = new ObjectMap();
@@ -1073,6 +1075,34 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             update.setResults(result.getResults());
         }
         return update;
+    }
+
+    public OpenCGAResult<Family> updateQualityControl(String studyStr, String familyId, FamilyQualityControl familyQualityControl,
+                                                      QualityControlStatus qualityControlStatus, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
+
+        // Check study admin permissions
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+
+        ParamUtils.checkObj(familyQualityControl, "FamilyQualityControl");
+        ParamUtils.checkObj(qualityControlStatus, "QualityControlStatus");
+
+        OpenCGAResult<Family> internalResult = internalGet(organizationId, study.getUid(), familyId, QueryOptions.empty(), userId);
+        if (internalResult.getNumResults() == 0) {
+            throw new CatalogException("Family '" + familyId + "' not found");
+        }
+        Family family = internalResult.first();
+
+        // Update catalog: quality control and status
+        FamilyInternalUpdateParams updateParams = new FamilyInternalUpdateParams()
+                .setQualityControl(familyQualityControl)
+                .setInternal(new InternalQualityControl(qualityControlStatus));
+
+        return catalogManager.getFamilyManager().update(organizationId, study, family, updateParams, null, userId);
     }
 
     public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String clinicalAnalysisId, String familyId,

@@ -85,6 +85,7 @@ public class SampleIndexBuilder {
         }
 
         sampleIndexDBAdaptor.createTableIfNeeded(studyId, schema.getVersion(), options);
+        sampleIndexDBAdaptor.expandTableIfNeeded(studyId, schema.getVersion(), sampleIds, options);
 
         if (finalSamplesList.size() < 20) {
             logger.info("Run sample index build on samples " + finalSamplesList);

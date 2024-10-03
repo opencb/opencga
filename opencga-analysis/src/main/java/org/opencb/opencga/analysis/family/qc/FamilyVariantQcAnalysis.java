@@ -26,7 +26,6 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.Relatedness;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
@@ -80,6 +79,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
         setUpStorageEngineExecutor(study);
 
+        logger.info("Checking {}", analysisParams);
+
         // Check parameters
         checkParameters(analysisParams, study, catalogManager, token);
 
@@ -122,7 +123,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
                 // Export family variants (VCF format)
                 // Create variant query
-                String gt = getNoSomaticSampleIds(family, study, catalogManager, token).stream().map(s -> s + ":0/0,0/1,1/1")
+                String gt = getIndexedAndNoSomaticSampleIds(family, study, catalogManager, token).stream().map(s -> s + ":0/0,0/1,1/1")
                         .collect(Collectors.joining(";"));
                 Query query = new Query()
                         .append(VariantQueryParam.STUDY.key(), study)
@@ -193,7 +194,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
             // Check and parse the relatedness output file
             Path qcPath = getOutDir().resolve(family.getId()).resolve(RELATEDNESS_ANALYSIS_ID)
-                    .resolve(RELATEDNESS_ANALYSIS_ID + QC_JSON_EXTENSION);
+                    .resolve(QC_RESULTS_FILENAME);
             if (!Files.exists(qcPath)) {
                 failedQcSet.add(family.getId());
                 qcStatus = new QualityControlStatus(ERROR, FAILURE_FILE + qcPath.getFileName() + NOT_FOUND);
@@ -226,11 +227,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
             }
 
             try {
-                // Update catalog: quality control and status
-                FamilyUpdateParams updateParams = new FamilyUpdateParams()
-                        .setQualityControl(familyQc)
-                        .setQualityControlStatus(qcStatus);
-                catalogManager.getFamilyManager().update(getStudy(), family.getId(), updateParams, null, token);
+                catalogManager.getFamilyManager().updateQualityControl(getStudy(), family.getId(), familyQc, qcStatus, token);
             } catch (CatalogException e) {
                 failedQcSet.add(family.getId());
                 logMsg = FAILURE_COULD_NOT_UPDATE_QUALITY_CONTROL_IN_OPEN_CGA_CATALOG + getIdLogMessage(family.getId(), FAMILY_QC_TYPE);
@@ -271,7 +268,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                     family = familyResult.first();
 
                     // Check number of samples
-                    List<String> sampleIds = getNoSomaticSampleIds(family, studyId, catalogManager, token);
+                    List<String> sampleIds = getIndexedAndNoSomaticSampleIds(family, studyId, catalogManager, token);
                     if (sampleIds.size() < 2) {
                         errors.put(familyId, "Too few samples found (" + sampleIds.size() + ") for that family members; minimum is 2 member"
                                 + " samples");
@@ -296,8 +293,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
 
         // Check error
         if (MapUtils.isNotEmpty(errors)) {
-            throw new ToolException("Found the following error for family IDs: " + StringUtils.join(errors.entrySet().stream().map(
-                    e -> "Family ID " + e.getKey() + ": " + e.getValue()).collect(Collectors.toList()), ","));
+            throw new ToolException("Found the following errors: " + StringUtils.join(errors.entrySet().stream().map(
+                    e -> "Family ID '" + e.getKey() + "': " + e.getValue()).collect(Collectors.toList()), ","));
         }
 
         // Check resources dir

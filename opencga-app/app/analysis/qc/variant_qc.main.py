@@ -10,8 +10,8 @@ import gzip
 from datetime import datetime
 
 from utils import create_output_dir
-from sample_qc.sample_qc import SampleQCExecutor
-from individual_qc.individual_qc import IndividualQCExecutor
+#from sample_qc.sample_qc import SampleQCExecutor
+#from individual_qc.individual_qc import IndividualQCExecutor
 from family_qc.family_qc import FamilyQCExecutor
 
 

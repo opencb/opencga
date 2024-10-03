@@ -23,6 +23,7 @@ import org.opencb.opencga.core.exceptions.ToolExecutorException;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.AnalysisUtils.ANALYSIS_FOLDER;
 import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.QC_FOLDER;
+import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.RESOURCES_FOLDER;
 
 public class VariantQcAnalysisExecutorUtils {
 
@@ -64,7 +66,8 @@ public class VariantQcAnalysisExecutorUtils {
                     + " --info-json " + StringUtils.join(jsonPaths.stream().map(p -> p.toAbsolutePath().toString().replace(
                     outDir.toAbsolutePath().toString(), JOB_VIRTUAL_FOLDER)).collect(Collectors.toList()), ",")
                     + " --qc-type " + qcType
-                    + " --config " + JOB_VIRTUAL_FOLDER + "/" + configPath.getFileName()
+                    + " --config " + Paths.get(JOB_VIRTUAL_FOLDER).resolve(configPath.getFileName())
+                    + " --resource-dir " + Paths.get(JOB_VIRTUAL_FOLDER).resolve(RESOURCES_FOLDER)
                     + " --output-dir " + JOB_VIRTUAL_FOLDER;
 
 

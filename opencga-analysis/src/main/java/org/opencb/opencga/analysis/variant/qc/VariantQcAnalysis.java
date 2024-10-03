@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -34,6 +33,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -43,8 +43,6 @@ import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -55,19 +53,19 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.analysis.AnalysisUtils.ANALYSIS_FOLDER;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 
 public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
 
     // QC folders
-    public static final String QC_FOLDER = "qc/";
+    private final static String RESOURCES_URL = "http://resources.opencb.org/task-6766/";
+    private static final String QC = "qc";
+
+    public static final String QC_FOLDER = QC + "/";
     public static final String RESOURCES_FOLDER = "resources/";
     public static final String QC_RESOURCES_FOLDER = QC_FOLDER + RESOURCES_FOLDER;
-    // File that contains the list of resource filenames (located at resources.opencb.org) to be downloaded
-    public static final String QC_RESOURCE_LIST_FILENAME = "qc_resource_list.txt";
 
-    public static final String QC_JSON_EXTENSION = ".json";
+    public static final String QC_RESULTS_FILENAME = "results.json";
 
     // Data type
     public static final String FAMILY_QC_TYPE = "family";
@@ -267,7 +265,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     protected <T> T parseQcFile(String id, String analysisId, List<String> skip, Path qcPath, String qcType, ObjectReader reader)
             throws ToolException {
         if (CollectionUtils.isEmpty(skip) || !skip.contains(analysisId)) {
-            java.io.File qcFile = qcPath.resolve(analysisId).resolve(id + QC_JSON_EXTENSION).toFile();
+            java.io.File qcFile = qcPath.resolve(analysisId).resolve(QC_RESULTS_FILENAME).toFile();
             if (qcFile.exists()) {
                 try {
                     return reader.readValue(qcFile);
@@ -285,7 +283,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     // Catalog utils
     //-------------------------------------------------------------------------
 
-    protected static List<String> getNoSomaticSampleIds(Family family, String studyId, CatalogManager catalogManager, String token)
+    protected static List<String> getIndexedAndNoSomaticSampleIds(Family family, String studyId, CatalogManager catalogManager, String token)
             throws CatalogException {
         // Get list of individual IDs
         List<String> individualIds = family.getMembers().stream().map(m -> m.getId()).collect(Collectors.toList());
@@ -297,17 +295,17 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(studyId, query, queryOptions, token);
         for (Individual individual : individualResult.getResults()) {
             if (CollectionUtils.isNotEmpty(individual.getSamples())) {
-                sampleIds.addAll(getNoSomaticSampleIds(individual));
+                sampleIds.addAll(getIndexedAndNoSomaticSampleIds(individual));
             }
         }
         return sampleIds;
     }
 
-    protected static List<String> getNoSomaticSampleIds(Individual individual) {
+    protected static List<String> getIndexedAndNoSomaticSampleIds(Individual individual) {
         List<String> sampleIds = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(individual.getSamples())) {
             for (Sample sample : individual.getSamples()) {
-                if (!sample.isSomatic()) {
+                if (isSampleIndexed(sample) && !sample.isSomatic()) {
                     // We take the first no somatic sample for each individual
                     sampleIds.add(sample.getId());
                     break;
@@ -315,6 +313,17 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
             }
         }
         return sampleIds;
+    }
+
+    protected static boolean isSampleIndexed(Sample sample) {
+        if (sample.getInternal() != null
+                && sample.getInternal().getVariant() != null
+                && sample.getInternal().getVariant().getIndex() != null
+                && sample.getInternal().getVariant().getIndex().getStatus() != null
+                && InternalStatus.READY.equals(sample.getInternal().getVariant().getIndex().getStatus().getId())) {
+            return true;
+        }
+        return false;
     }
 
     //-------------------------------------------------------------------------
@@ -333,41 +342,22 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     protected void downloadQcResourceFiles() throws ToolException {
         Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
 
-        Path qcSourcesPath = getOutDir().resolve(RESOURCES_FOLDER).resolve(QC_RESOURCE_LIST_FILENAME);
-        downloadQcResourceFile(qcSourcesPath.getFileName().toString(), destResourcesPath);
-        if (!Files.exists(qcSourcesPath)) {
-            throw new ToolException("Unable to download QC resource list (file '" + qcSourcesPath.getFileName() + "')");
-        }
-
-        List<String> qcResourceList;
+        List<java.io.File> resourceFiles;
         try {
-            qcResourceList = FileUtils.readLines(qcSourcesPath.toFile(), Charset.defaultCharset());
+            resourceFiles = ResourceUtils.getResourceFiles(RESOURCES_URL, QC, getOpencgaHome());
         } catch (IOException e) {
-            throw new ToolException("Error reading QC resource list (file '" + qcSourcesPath.getFileName() + "')", e);
+            throw new ToolException(e);
         }
 
-        if (CollectionUtils.isEmpty(qcResourceList)) {
-            throw new ToolException("Something wrong happened: the QC resource list (file '" + qcSourcesPath.getFileName() + "') is empty");
-        }
-
-        // Download all resource files
-        for (String resourceName : qcResourceList) {
-            downloadQcResourceFile(resourceName, destResourcesPath);
-        }
-    }
-
-    protected void downloadQcResourceFile(String resourceName, Path destPath) throws ToolException {
-        Path destResourcesPath = checkResourcesPath(destPath);
-        URL url = null;
-        try {
-            url = new URL(ResourceUtils.URL + ANALYSIS_FOLDER + QC_FOLDER + "/" + resourceName);
-            ResourceUtils.downloadThirdParty(url, destPath);
-        } catch (IOException e) {
-            throw new ToolException("Something wrong happened when downloading the resource '" + resourceName + "' from '" + url + "'", e);
-        }
-
-        if (!Files.exists(destResourcesPath.resolve(resourceName))) {
-            throw new ToolException("Error downloading the resource '" + resourceName + "', it does not exist at " + destResourcesPath);
+        for (java.io.File resourceFile : resourceFiles) {
+            Path dest = destResourcesPath.resolve(resourceFile.getName());
+            try {
+                Files.copy(resourceFile.toPath(), dest, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                if (!Files.exists(dest) || dest.toFile().length() != resourceFile.length()) {
+                    throw new ToolException("Error copying resource file '" + resourceFile + "'", e);
+                }
+            }
         }
     }
 
