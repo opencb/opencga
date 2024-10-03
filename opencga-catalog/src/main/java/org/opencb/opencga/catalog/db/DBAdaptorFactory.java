@@ -117,4 +117,7 @@ public interface DBAdaptorFactory extends AutoCloseable {
     ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor(String organization) throws CatalogDBException;
 
     InterpretationDBAdaptor getInterpretationDBAdaptor(String organization) throws CatalogDBException;
+
+    EventDBAdaptor getEventDBAdaptor(String organization) throws CatalogDBException;
+
 }

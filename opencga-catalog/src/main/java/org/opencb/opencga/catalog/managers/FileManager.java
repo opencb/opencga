@@ -128,8 +128,9 @@ public class FileManager extends AnnotationSetManager<File> {
     private StudyManager studyManager;
     private IOManagerFactory ioManagerFactory;
 
-    FileManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
+    FileManager(AuthorizationManager authorizationManager, AuditManager auditManager,
+                CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory,
+                Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();

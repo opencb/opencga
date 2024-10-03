@@ -86,8 +86,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     private StudyManager studyManager;
 
 
-    public InterpretationManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                                 DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+    public InterpretationManager(AuthorizationManager authorizationManager, AuditManager auditManager,
+                                 CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();

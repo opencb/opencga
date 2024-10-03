@@ -91,6 +91,7 @@
         <nimbus-jose-jwt.version>9.31</nimbus-jose-jwt.version>
         <azure-client.version>1.7.14</azure-client.version>
         <azure-batch.version>4.0.1</azure-batch.version>
+        <reactivex.version>3.1.6</reactivex.version>
         <!-- Cannot upgrade the version until we upgrade GRPC version -->
         <azure.version>1.13.0</azure.version>
         <azure.optional>true</azure.optional>
@@ -1141,7 +1142,11 @@
                 <artifactId>kryo</artifactId>
                 <version>${kryo.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>io.reactivex.rxjava3</groupId>
+                <artifactId>rxjava</artifactId>
+                <version>${reactivex.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

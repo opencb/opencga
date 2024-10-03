@@ -28,6 +28,8 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.db.api.EventDBAdaptor;
+import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -378,6 +380,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     @Override
     public CohortDBAdaptor getCatalogCohortDBAdaptor(String organizationId) throws CatalogDBException {
         return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogCohortDBAdaptor();
+    }
+
+    @Override
+    public EventDBAdaptor getEventDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogEventDBAdaptor();
     }
 
     @Override

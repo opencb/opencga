@@ -79,8 +79,9 @@ public class ProjectManager extends AbstractManager {
             ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.UUID.key(),
             ProjectDBAdaptor.QueryParams.FQN.key()));
 
-    ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration) {
+    ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager,
+                   CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager,
+                   Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
         this.catalogIOManager = catalogIOManager;
     }

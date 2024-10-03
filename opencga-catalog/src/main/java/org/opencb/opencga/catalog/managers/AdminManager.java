@@ -39,7 +39,7 @@ public class AdminManager extends AbstractManager {
     protected static Logger logger = LoggerFactory.getLogger(AdminManager.class);
 
     AdminManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration)
+                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration)
             throws CatalogException {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
         this.catalogIOManager = catalogIOManager;

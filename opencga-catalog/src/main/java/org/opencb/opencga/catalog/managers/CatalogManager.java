@@ -43,6 +43,8 @@ import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.events.EventManager;
+import org.opencb.opencga.core.events.OpencgaEvent;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
@@ -60,6 +62,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
 import static org.opencb.opencga.core.api.ParamConstants.*;
@@ -132,6 +135,8 @@ public class CatalogManager implements AutoCloseable {
 
     private void configureManagers(Configuration configuration) throws CatalogException {
         initializeAdmin(configuration);
+        EventManager.configure(getPreEventConsumer(), getPostEventConsumer(), configuration);
+
         for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
             QueryOptions options = new QueryOptions(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
             options.put(OrganizationDBAdaptor.IS_ORGANIZATION_ADMIN_OPTION, true);
@@ -145,9 +150,10 @@ public class CatalogManager implements AutoCloseable {
         migrationManager = new MigrationManager(this, catalogDBAdaptorFactory, configuration);
 
         noteManager = new NoteManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
-        adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
-        organizationManager = new OrganizationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
-                authenticationFactory, configuration);
+        adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
+                configuration);
+        organizationManager = new OrganizationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+                catalogIOManager, authenticationFactory, configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 authenticationFactory, configuration);
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
@@ -161,9 +167,23 @@ public class CatalogManager implements AutoCloseable {
         cohortManager = new CohortManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         familyManager = new FamilyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         panelManager = new PanelManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
-        clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+        clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this,
+                catalogDBAdaptorFactory, configuration);
+        interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 configuration);
-        interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+    }
+
+    private Consumer<OpencgaEvent> getPreEventConsumer() {
+        return opencgaEvent -> {
+//            catalogDBAdaptorFactory.getEventDBAdaptor(opencgaEvent.getOrganizationId()).insert(new OpencgaProcessedEvent());
+            System.out.println("Pre event consumer: " + opencgaEvent);
+        };
+    }
+
+    private Consumer<OpencgaEvent> getPostEventConsumer() {
+        return opencgaEvent -> {
+            System.out.println("Post event consumer: " + opencgaEvent);
+        };
     }
 
     private void initializeAdmin(Configuration configuration) throws CatalogDBException {
@@ -373,6 +393,11 @@ public class CatalogManager implements AutoCloseable {
 
     @Override
     public void close() throws CatalogException {
+        try {
+            EventManager.getInstance().close();
+        } catch (Exception e) {
+            throw new CatalogException(e);
+        }
         catalogDBAdaptorFactory.close();
     }
 

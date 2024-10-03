@@ -79,8 +79,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     private StudyManager studyManager;
 
 
-    CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                  DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+    CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager,
+                  CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();

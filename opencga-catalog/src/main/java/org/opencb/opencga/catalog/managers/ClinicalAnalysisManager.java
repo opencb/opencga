@@ -122,8 +122,8 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
     private UserManager userManager;
     private StudyManager studyManager;
 
-    ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                            DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+    ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager,
+                            CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();

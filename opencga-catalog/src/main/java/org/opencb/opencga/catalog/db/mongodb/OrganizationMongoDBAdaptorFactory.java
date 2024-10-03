@@ -42,6 +42,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String PANEL_COLLECTION = "panel";
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
+    public static final String EVENT_COLLECTION = "event";
 
     public static final String NOTE_ARCHIVE_COLLECTION = "note_archive";
     public static final String SAMPLE_ARCHIVE_COLLECTION = "sample_archive";
@@ -83,6 +84,7 @@ public class OrganizationMongoDBAdaptorFactory {
             FAMILY_COLLECTION,
             CLINICAL_ANALYSIS_COLLECTION,
             INTERPRETATION_COLLECTION,
+            EVENT_COLLECTION,
 
             NOTE_ARCHIVE_COLLECTION,
             SAMPLE_ARCHIVE_COLLECTION,
@@ -131,6 +133,7 @@ public class OrganizationMongoDBAdaptorFactory {
     private final PanelMongoDBAdaptor panelDBAdaptor;
     private final ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private final InterpretationMongoDBAdaptor interpretationDBAdaptor;
+    private final EventMongoDBAdaptor eventDBAdaptor;
     private final AuditMongoDBAdaptor auditDBAdaptor;
 //    private final MetaMongoDBAdaptor metaDBAdaptor;
     private final MigrationMongoDBAdaptor migrationDBAdaptor;
@@ -170,6 +173,7 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection familyCollection = mongoDataStore.getCollection(FAMILY_COLLECTION);
         MongoDBCollection clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
         MongoDBCollection interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
+        MongoDBCollection eventCollection = mongoDataStore.getCollection(EVENT_COLLECTION);
 
         MongoDBCollection notesArchivedCollection = mongoDataStore.getCollection(NOTE_ARCHIVE_COLLECTION);
         MongoDBCollection sampleArchivedCollection = mongoDataStore.getCollection(SAMPLE_ARCHIVE_COLLECTION);
@@ -218,6 +222,7 @@ public class OrganizationMongoDBAdaptorFactory {
         migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, configuration, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, configuration);
         authorizationMongoDBAdaptor = new AuthorizationMongoDBAdaptor(this, configuration);
+        eventDBAdaptor = new EventMongoDBAdaptor(eventCollection, configuration);
 
         mongoDBCollectionMap = new HashMap<>();
 //        mongoDBCollectionMap.put(METADATA_COLLECTION, metaCollection);
@@ -237,6 +242,7 @@ public class OrganizationMongoDBAdaptorFactory {
         mongoDBCollectionMap.put(FAMILY_COLLECTION, familyCollection);
         mongoDBCollectionMap.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
         mongoDBCollectionMap.put(INTERPRETATION_COLLECTION, interpretationCollection);
+        mongoDBCollectionMap.put(EVENT_COLLECTION, eventCollection);
 
         mongoDBCollectionMap.put(NOTE_ARCHIVE_COLLECTION, notesArchivedCollection);
         mongoDBCollectionMap.put(SAMPLE_ARCHIVE_COLLECTION, sampleArchivedCollection);
@@ -480,6 +486,10 @@ public class OrganizationMongoDBAdaptorFactory {
 
     public AuthorizationMongoDBAdaptor getAuthorizationDBAdaptor() {
         return authorizationMongoDBAdaptor;
+    }
+
+    public EventMongoDBAdaptor getCatalogEventDBAdaptor() {
+        return eventDBAdaptor;
     }
 
     public MongoDataStore getMongoDataStore() {

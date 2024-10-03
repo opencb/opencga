@@ -67,11 +67,9 @@ public class UserManager extends AbstractManager {
     private final AuthenticationFactory authenticationFactory;
 
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager,
-                AuthenticationFactory authenticationFactory, Configuration configuration)
-            throws CatalogException {
+                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, AuthenticationFactory authenticationFactory,
+                Configuration configuration) throws CatalogException {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
-
         this.catalogIOManager = catalogIOManager;
         this.authenticationFactory = authenticationFactory;
     }

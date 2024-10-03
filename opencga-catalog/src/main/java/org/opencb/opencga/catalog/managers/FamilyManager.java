@@ -88,8 +88,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                  DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+    FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager,
+                  CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();

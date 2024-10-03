@@ -80,8 +80,8 @@ public class PanelManager extends ResourceManager<Panel> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    PanelManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                 DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+    PanelManager(AuthorizationManager authorizationManager, AuditManager auditManager,
+                 CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();

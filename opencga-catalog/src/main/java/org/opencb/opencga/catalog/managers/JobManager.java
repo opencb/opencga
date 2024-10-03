@@ -83,8 +83,9 @@ public class JobManager extends ResourceManager<Job> {
     private StudyManager studyManager;
     private IOManagerFactory ioManagerFactory;
 
-    JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-               DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
+    JobManager(AuthorizationManager authorizationManager, AuditManager auditManager,
+               CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory,
+               Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();

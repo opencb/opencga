@@ -39,6 +39,8 @@ import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.events.EventManager;
+import org.opencb.opencga.core.events.OpenCgaObserver;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -100,12 +102,36 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    IndividualManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                      DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+    IndividualManager(AuthorizationManager authorizationManager, AuditManager auditManager,
+                      CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
+
+        System.out.println(Thread.currentThread().getName());
+
+        IndividualManager individualManager = this;
+        EventManager.getInstance().subscribe("sample.create", new OpenCgaObserver(opencgaEvent -> {
+            System.out.println("IndividualManager notified of sample " + opencgaEvent.getId() + " creation");
+            System.out.println(Thread.currentThread().getName());
+
+            try {
+//                    catalogDBAdaptorFactory.getMongoDBCollectionMap();
+                individualManager.create(opencgaEvent.getStudy(), new Individual().setId(opencgaEvent.getId()),
+                        Collections.singletonList(opencgaEvent.getId()), QueryOptions.empty(), opencgaEvent.getToken());
+            } catch (CatalogException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println("Individual created '" + opencgaEvent.getId() + "'");
+        }, (throwable, opencgaEvent) -> {
+//            catalogDBAdaptorFactory.getEventDBAdaptor().update(opencgaEvent, IndividualManager.class, ERROR);
+            System.out.println("ON ERROR");
+            throw new RuntimeException(throwable.getMessage());
+        }, opencgaEvent -> {
+//            catalogDBAdaptorFactory.getEventDBAdaptor().update(opencgaEvent, IndividualManager.class, SUCCESS);
+            System.out.println("ON COMPLETE");
+        }));
     }
 
     @Override

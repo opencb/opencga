@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
@@ -32,6 +33,8 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.events.EventManager;
+import org.opencb.opencga.core.events.OpenCgaObserver;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
@@ -64,6 +67,25 @@ public class AuditManager {
         this.authorizationManager = authorizationManager;
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.auditRecordMap = new HashMap<>();
+
+        EventManager.getInstance().subscribe("*.*", new OpenCgaObserver(opencgaEvent -> { },
+                (throwable, opencgaEvent) -> {
+                    logger.error("Action '{}' ended with error '{}'", opencgaEvent.getEventId(), throwable.getMessage());
+                    String[] split = opencgaEvent.getEventId().split("\\.");
+                    Enums.Resource resource = Enums.Resource.valueOf(split[0].toUpperCase());
+                    Enums.Action action = Enums.Action.valueOf(split[1].toUpperCase());
+                    audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, opencgaEvent.getId(), null,
+                            opencgaEvent.getStudy(), null, opencgaEvent.getInputParams(),
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                    new Error(0, throwable.getMessage(), throwable.getLocalizedMessage())));
+                }, opencgaEvent -> {
+            logger.info("Completed '{}' action with success.", opencgaEvent.getEventId());
+            String[] split = opencgaEvent.getEventId().split("\\.");
+            Enums.Resource resource = Enums.Resource.valueOf(split[0].toUpperCase());
+            Enums.Action action = Enums.Action.valueOf(split[1].toUpperCase());
+            audit(opencgaEvent.getToken(), opencgaEvent.getUserId(), action, resource, opencgaEvent.getId(), null, opencgaEvent.getStudy(),
+                    null, opencgaEvent.getInputParams(), new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        }));
     }
 
     public void audit(String organizationId, AuditRecord auditRecord) throws CatalogException {
