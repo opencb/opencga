@@ -19,14 +19,15 @@
     </modules>
 
     <properties>
-        <opencga.version>3.2.1</opencga.version>
-        <pyopencga.version>2.2.1</pyopencga.version>
-        <opencgar.version>2.2.1</opencgar.version>
-        <cellbase.version>6.2.1</cellbase.version>
-        <biodata.version>3.2.1</biodata.version>
-        <java-common-libs.version>5.2.1</java-common-libs.version>
-        <iva.version>2.2.1</iva.version>
-        <oskar.version>0.2.0</oskar.version>
+        <opencga.version>4.0.0-SNAPSHOT</opencga.version>
+        <pyopencga.version>3.0.0_dev</pyopencga.version>
+        <opencgar.version>3.0.0_dev</opencgar.version>
+        <cellbase.version>7.0.0-SNAPSHOT</cellbase.version>
+        <biodata.version>4.0.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>6.0.0-SNAPSHOT</java-common-libs.version>
+        <iva.version>3.0.0-SNAPSHOT</iva.version>
+	
+	<oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.14.3</jackson.version>
         <jersey.version>2.30.1</jersey.version>
