@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -23,6 +24,7 @@ public class InputFileUtils {
     private static final Pattern OPENCGA_PATH_PATTERN = Pattern.compile("^(?i)(ocga://|opencga://|file://)(.+)$");
     private static final Pattern OPENCGA_PATH_IN_LINE_PATTERN = Pattern.compile("(?i)(ocga://|opencga://|file://)(\\S+)");
     private static final String OUTPUT = "$OUTPUT";
+    private static final List<String> OUTPUT_LIST = Arrays.asList("$OUTPUT", "$JOB_OUTPUT");
     private final Logger logger = LoggerFactory.getLogger(InputFileUtils.class);
 
     public InputFileUtils(CatalogManager catalogManager) {
@@ -97,14 +99,31 @@ public class InputFileUtils {
     }
 
     public boolean isDynamicOutputFolder(String file) {
-        return file.toUpperCase().startsWith(OUTPUT);
+        for (String prefix : OUTPUT_LIST) {
+            if (file.toUpperCase().startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    public String getDynamicOutputFolder(String file, String outDir) {
-        if (!isDynamicOutputFolder(file)) {
-            return file;
+    public String getDynamicOutputFolder(String file, String outDir) throws CatalogException {
+        for (String prefix : OUTPUT_LIST) {
+            if (file.toUpperCase().startsWith(prefix)) {
+                return outDir + file.substring(prefix.length());
+            }
         }
-        return outDir + file.substring(OUTPUT.length());
+        throw new CatalogException("Unexpected error. File '" + file + "' is not a dynamic output folder");
+    }
+
+    public String appendSubpath(String path, String subpath) {
+        if ((path.endsWith("/") && !subpath.startsWith("/")) || (!path.endsWith("/") && subpath.startsWith("/"))) {
+            return path + subpath;
+        } else if (path.endsWith("/") && subpath.startsWith("/")) {
+            return path + subpath.substring(1);
+        } else {
+            return path + "/" + subpath;
+        }
     }
 
 }

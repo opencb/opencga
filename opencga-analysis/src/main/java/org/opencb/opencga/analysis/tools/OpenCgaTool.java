@@ -278,6 +278,7 @@ public abstract class OpenCgaTool {
             logException(exception);
             privateLogger.info("------- Tool '" + getId() + "' executed in "
                     + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
+            close();
         }
         return result;
     }
@@ -340,6 +341,12 @@ public abstract class OpenCgaTool {
      * @throws Exception on error
      */
     protected abstract void run() throws Exception;
+
+    /**
+     * Method that may be overrided by subclasses to clean up resources.
+     */
+    protected void close() {
+    }
 
     /**
      * Method to be called by the Runtime shutdownHook in case of an unexpected system shutdown.

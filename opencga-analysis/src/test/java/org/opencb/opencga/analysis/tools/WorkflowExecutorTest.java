@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -83,6 +84,23 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         WorkflowCreateParams workflow = new WorkflowCreateParams()
                 .setId("workflow")
                 .setType(Workflow.Type.OTHER)
+                .setVariables(Arrays.asList(
+                        new WorkflowVariable()
+                                .setId("input")
+                                .setRequired(true),
+                        new WorkflowVariable()
+                                .setId("outdir")
+                                .setOutput(true)
+                                .setRequired(true),
+                        new WorkflowVariable()
+                                .setId("genome")
+                                .setRequired(true)
+                                .setDefaultValue("GRCh37"),
+                        new WorkflowVariable()
+                                .setId("-profile")
+                                .setRequired(true)
+                                .setDefaultValue("docker")
+                ))
                 .setRepository(new WorkflowRepository("nf-core/demo"));
         catalogManager.getWorkflowManager().create(studyFqn, workflow.toWorkflow(), QueryOptions.empty(), ownerToken);
 
@@ -99,9 +117,9 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
         Map<String, String> cliParams = new HashMap<>();
         cliParams.put("input", "file://samplesheet.csv");
-        cliParams.put("outdir", "$OUTPUT");
-        cliParams.put("genome", "GRCh37");
-        cliParams.put("-profile", "docker");
+//        cliParams.put("outdir", "$OUTPUT");
+//        cliParams.put("genome", "GRCh37");
+//        cliParams.put("-profile", "docker");
         NextFlowRunParams runParams = new NextFlowRunParams(workflow.getId(), 1, cliParams);
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);

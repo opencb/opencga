@@ -4,7 +4,6 @@ import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
-import org.opencb.opencga.core.models.study.Variable;
 
 import java.util.List;
 import java.util.Map;
@@ -36,7 +35,7 @@ public class Workflow extends PrivateStudyUid {
     private List<String> tags;
 
     @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
-    private List<Variable> variables;
+    private List<WorkflowVariable> variables;
 
     @DataField(id = "minimumRequirements", description = FieldConstants.WORKFLOW_MINIMUM_REQUIREMENTS_DESCRIPTION)
     private WorkflowMinimumRequirements minimumRequirements;
@@ -79,7 +78,7 @@ public class Workflow extends PrivateStudyUid {
     }
 
     public Workflow(String id, String name, String description, Type type, WorkflowSystem manager, List<String> tags,
-                    List<Variable> variables, WorkflowMinimumRequirements minimumRequirements, boolean draft,
+                    List<WorkflowVariable> variables, WorkflowMinimumRequirements minimumRequirements, boolean draft,
                     WorkflowRepository repository, List<WorkflowScript> scripts, WorkflowInternal internal, String creationDate,
                     String modificationDate, Map<String, Object> attributes) {
         this.id = id;
@@ -239,11 +238,11 @@ public class Workflow extends PrivateStudyUid {
         return this;
     }
 
-    public List<Variable> getVariables() {
+    public List<WorkflowVariable> getVariables() {
         return variables;
     }
 
-    public Workflow setVariables(List<Variable> variables) {
+    public Workflow setVariables(List<WorkflowVariable> variables) {
         this.variables = variables;
         return this;
     }

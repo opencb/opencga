@@ -2,7 +2,6 @@ package org.opencb.opencga.core.models.workflow;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.models.study.Variable;
 
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,7 @@ public class WorkflowUpdateParams {
     private List<WorkflowScript> scripts;
 
     @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
-    private List<Variable> variables;
+    private List<WorkflowVariable> variables;
 
     @DataField(id = "minimumRequirements", description = FieldConstants.WORKFLOW_MINIMUM_REQUIREMENTS_DESCRIPTION)
     private WorkflowMinimumRequirements minimumRequirements;
@@ -52,9 +51,9 @@ public class WorkflowUpdateParams {
     }
 
     public WorkflowUpdateParams(String name, String description, WorkflowSystem manager, Workflow.Type type, List<String> tags,
-                                boolean draft, WorkflowRepository repository, List<WorkflowScript> scripts, List<Variable> variables,
-                                WorkflowMinimumRequirements minimumRequirements, String creationDate, String modificationDate,
-                                Map<String, Object> attributes) {
+                                boolean draft, WorkflowRepository repository, List<WorkflowScript> scripts,
+                                List<WorkflowVariable> variables, WorkflowMinimumRequirements minimumRequirements, String creationDate,
+                                String modificationDate, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
         this.manager = manager;
@@ -162,11 +161,11 @@ public class WorkflowUpdateParams {
         return this;
     }
 
-    public List<Variable> getVariables() {
+    public List<WorkflowVariable> getVariables() {
         return variables;
     }
 
-    public WorkflowUpdateParams setVariables(List<Variable> variables) {
+    public WorkflowUpdateParams setVariables(List<WorkflowVariable> variables) {
         this.variables = variables;
         return this;
     }

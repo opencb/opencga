@@ -9,19 +9,18 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.DockerUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaDockerToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor;
 import org.opencb.opencga.catalog.utils.InputFileUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
 import org.opencb.opencga.core.models.workflow.Workflow;
 import org.opencb.opencga.core.models.workflow.WorkflowScript;
+import org.opencb.opencga.core.models.workflow.WorkflowVariable;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -30,6 +29,7 @@ import org.opencb.opencga.core.tools.result.ToolStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -40,7 +40,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 @Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.WORKFLOW, description = NextFlowExecutor.DESCRIPTION)
-public class NextFlowExecutor extends OpenCgaToolScopeStudy {
+public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
     public final static String ID = "workflow";
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
@@ -50,20 +50,11 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
     private Workflow workflow;
     private String cliParams;
-    // Build list of inputfiles in case we need to specifically mount them in read only mode
-    private List<String> inputFileUris;
-    // Build list of inputfiles in case we need to specifically mount them in read only mode
-    List<AbstractMap.SimpleEntry<String, String>> inputBindings;
 
-    private Path temporalInputDir;
-    private Map<String, String> dockerParams;
     private String outDirPath;
 
     private Thread thread;
     private final int monitorThreadPeriod = 5000;
-
-//    private final Path inputDir = Paths.get("/data/input");
-//    private final String outputDir = "/data/output";
 
     private final static Logger logger = LoggerFactory.getLogger(NextFlowExecutor.class);
 
@@ -75,8 +66,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             throw new IllegalArgumentException("Missing Nextflow ID");
         }
 
-        dockerParams = new HashMap<>();
-        temporalInputDir = Files.createDirectory(getOutDir().resolve(".opencga_input"));
+        InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
 
         OpenCGAResult<Workflow> result;
         if (nextflowParams.getVersion() != null) {
@@ -97,6 +87,18 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
 
         outDirPath = getOutDir().toAbsolutePath().toString();
 
+        Set<String> mandatoryParams = new HashSet<>();
+        Map<String, WorkflowVariable> variableMap = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(workflow.getVariables())) {
+            for (WorkflowVariable variable : workflow.getVariables()) {
+                String variableId = removePrefix(variable.getId());
+                variableMap.put(variableId, variable);
+                if (variable.isRequired()) {
+                    mandatoryParams.add(variableId);
+                }
+            }
+        }
+
         // Update job tags and attributes
         ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(workflow.getManager().getId().name(), workflow.getManager().getVersion());
         Set<String> tags = new HashSet<>();
@@ -109,55 +111,62 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         }
 //        updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
-        this.inputBindings = new LinkedList<>();
+        StringBuilder cliParamsBuilder = new StringBuilder();
         if (MapUtils.isNotEmpty(nextflowParams.getParams())) {
-            this.inputFileUris = new LinkedList<>();
-            InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
-
-            StringBuilder cliParamsBuilder = new StringBuilder();
             for (Map.Entry<String, String> entry : nextflowParams.getParams().entrySet()) {
+                String variableId = removePrefix(entry.getKey());
+                // Remove from the mandatoryParams set
+                mandatoryParams.remove(variableId);
+
+                WorkflowVariable workflowVariable = variableMap.get(variableId);
+
                 if (entry.getKey().startsWith("-")) {
                     cliParamsBuilder.append(entry.getKey()).append(" ");
                 } else {
                     cliParamsBuilder.append("--").append(entry.getKey()).append(" ");
                 }
                 if (StringUtils.isNotEmpty(entry.getValue())) {
-                    if (inputFileUtils.isValidOpenCGAFile(entry.getValue())) {
-                        File file = inputFileUtils.findOpenCGAFileFromPattern(study, entry.getValue(), token);
-                        if (inputFileUtils.fileMayContainReferencesToOtherFiles(file)) {
-                            Path outputFile = temporalInputDir.resolve(file.getName());
-                            List<File> files = inputFileUtils.findAndReplaceFilePathToUrisFromFile(study, file, outputFile, token);
-
-                            // Write outputFile as inputBinding
-                            inputBindings.add(new AbstractMap.SimpleEntry<>(outputFile.toString(), outputFile.toString()));
-                            logger.info("Params: OpenCGA input file: {}", outputFile);
-                            cliParamsBuilder.append(outputFile).append(" ");
-
-                            // Add files to inputBindings to ensure they are also mounted (if any)
-                            for (File tmpFile : files) {
-                                inputBindings.add(new AbstractMap.SimpleEntry<>(tmpFile.getUri().getPath(), tmpFile.getUri().getPath()));
-                                logger.info("Inner files from '{}': OpenCGA input file: '{}'", outputFile, tmpFile.getUri().getPath());
-                            }
-                        } else {
-                            String path = file.getUri().getPath();
-                            inputBindings.add(new AbstractMap.SimpleEntry<>(path, path));
-                            logger.info("Params: OpenCGA input file: {}", path);
-                            cliParamsBuilder.append(path).append(" ");
-                        }
-                    } else if (inputFileUtils.isDynamicOutputFolder(entry.getValue())) {
-                        String dynamicOutputFolder = inputFileUtils.getDynamicOutputFolder(entry.getValue(), outDirPath);
-                        logger.info("Params: Dynamic output folder: {}", dynamicOutputFolder);
-                        cliParamsBuilder.append(dynamicOutputFolder).append(" ");
+                    if ((workflowVariable != null && workflowVariable.isOutput()) || inputFileUtils.isDynamicOutputFolder(entry.getValue())) {
+                        processOutputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
                     } else {
-                        cliParamsBuilder.append(entry.getValue()).append(" ");
+                        processInputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
+                    }
+                } else if (workflowVariable != null) {
+                    if (StringUtils.isNotEmpty(workflowVariable.getDefaultValue())) {
+                        cliParamsBuilder.append(workflowVariable.getDefaultValue()).append(" ");
+                    } else if (workflowVariable.isOutput()) {
+                        processOutputCli("", inputFileUtils, cliParamsBuilder);
+                    } else if (workflowVariable.isRequired() && workflowVariable.getType() != WorkflowVariable.WorkflowType.FLAG) {
+                        throw new ToolException("Missing value for mandatory parameter: '" + variableId + "'.");
                     }
                 }
             }
-            this.cliParams = cliParamsBuilder.toString();
-        } else {
-            this.cliParams = "";
-            this.inputFileUris = Collections.emptyList();
         }
+
+        for (String mandatoryParam : mandatoryParams) {
+            logger.info("Processing missing mandatory param: '{}'", mandatoryParam);
+            WorkflowVariable workflowVariable = variableMap.get(mandatoryParam);
+
+            if (workflowVariable.getId().startsWith("-")) {
+                cliParamsBuilder.append(workflowVariable.getId()).append(" ");
+            } else {
+                cliParamsBuilder.append("--").append(workflowVariable.getId()).append(" ");
+            }
+
+            if (StringUtils.isNotEmpty(workflowVariable.getDefaultValue())) {
+                if (workflowVariable.isOutput()) {
+                    processOutputCli(workflowVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
+                } else {
+                    processInputCli(workflowVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
+                }
+            } else if (workflowVariable.isOutput()) {
+                processOutputCli("", inputFileUtils, cliParamsBuilder);
+            } else {
+                throw new ToolException("Missing mandatory parameter: '" + mandatoryParam + "'.");
+            }
+        }
+
+        this.cliParams = cliParamsBuilder.toString();
     }
 
     @Override
@@ -166,7 +175,7 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             // Write script files
             Path path = temporalInputDir.resolve(script.getFileName());
             Files.write(path, script.getContent().getBytes());
-            inputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
+            dockerInputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
         }
 
         // Write nextflow.config file
@@ -175,30 +184,20 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
         if (nextflowConfig != null) {
             nextflowConfigPath = temporalInputDir.resolve("nextflow.config");
             Files.copy(nextflowConfig.openStream(), nextflowConfigPath);
-            inputBindings.add(new AbstractMap.SimpleEntry<>(nextflowConfigPath.toString(), nextflowConfigPath.toString()));
+            dockerInputBindings.add(new AbstractMap.SimpleEntry<>(nextflowConfigPath.toString(), nextflowConfigPath.toString()));
         } else {
             throw new RuntimeException("Can't fetch nextflow.config file");
         }
 
-        // Establish working directory
-        dockerParams.put("-w", outDirPath);
-        // Set HOME environment variable to the temporal input directory. This is because nextflow creates a hidden folder there and,
-        // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
-        dockerParams.put("-e", "HOME=" + temporalInputDir);
-
         // Build output binding
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDirPath, outDirPath);
 
-//        String dockerImage = "nextflow/nextflow:" + workflow.getManager().getVersion();
-        String dockerImage = "pfurio/nextflow";
+        String dockerImage = "opencb/opencga-workflow:TASK-6445";
         StringBuilder stringBuilder = new StringBuilder()
-                .append("bash -c \"nextflow -c ").append(nextflowConfigPath).append(" run ");
+                .append("bash -c \"NXF_VER=").append(workflow.getManager().getVersion()).append(" nextflow -c ").append(nextflowConfigPath).append(" run ");
         if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getImage())) {
 //            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
             stringBuilder.append(workflow.getRepository().getImage());
-            dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
-            dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
-            dockerParams.put("--network", "host");
         } else {
             for (WorkflowScript script : workflow.getScripts()) {
                 if (script.isMain()) {
@@ -211,32 +210,48 @@ public class NextFlowExecutor extends OpenCgaToolScopeStudy {
             stringBuilder.append(" ").append(cliParams);
         }
         stringBuilder.append(" -with-report ").append(outDirPath).append("/report.html\"");
-//        // And give ownership permissions to the user running this process
-//        stringBuilder.append("; chown -R ")
-//                .append(UserProcessUtils.getUserUid()).append(":").append(UserProcessUtils.getGroupId()).append(" ").append(outputDir)
-//                .append("\"");
 
         startTraceFileMonitor();
 
+        Map<String, String> dockerParams = new HashMap<>();
+        // Set HOME environment variable to the temporal input directory. This is because nextflow creates a hidden folder there and,
+        // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
+        dockerParams.put("-e", "HOME=" + temporalInputDir);
+
         // Execute docker image
         StopWatch stopWatch = StopWatch.createStarted();
-        DockerUtils.run(dockerImage, inputBindings, outputBinding, stringBuilder.toString(), dockerParams);
+        runDocker(dockerImage, outputBinding, stringBuilder.toString(), dockerParams);
         logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
-        endTraceFileMonitor();
-
-        // Delete input files and temporal directory
-        try (Stream<Path> paths = Files.walk(temporalInputDir)) {
-            paths.sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(java.io.File::delete);
-        }
-
     }
 
     @Override
-    protected void onShutdown() {
-        super.onShutdown();
+    protected void finalize() throws Throwable {
+        super.finalize();
+    }
+
+    @Override
+    protected void close() {
+        super.close();
         endTraceFileMonitor();
+        deleteTemporalFiles();
+    }
+
+    private void deleteTemporalFiles() {
+        // Delete temporal files and folders created by nextflow
+        try (Stream<Path> paths = Files.walk(getOutDir().resolve(".nextflow"))) {
+            paths.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(java.io.File::delete);
+        } catch (IOException e) {
+            logger.warn("Could not delete temporal nextflow directory: " + getOutDir().resolve(".nextflow"), e);
+        }
+        try (Stream<Path> paths = Files.walk(getOutDir().resolve("work"))) {
+            paths.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(java.io.File::delete);
+        } catch (IOException e) {
+            logger.warn("Could not delete temporal work directory: " + getOutDir().resolve("work"), e);
+        }
     }
 
     protected void endTraceFileMonitor() {
