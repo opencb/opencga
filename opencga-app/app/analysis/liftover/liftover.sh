@@ -17,7 +17,7 @@
 #/bin/bash
 
 INPUT_FILE=$1
-TARGET_ASSEMBLY=$2
+TARGET_ASSEMBLY=$2  ## Values accepted are: GRCh38, hg38
 OUTPUT_FILE=$3
 
 if [ -z "$INPUT_FILE" ] || [ -z "$TARGET_ASSEMBLY" ] || [ -z "$OUTPUT_FILE" ]; then
@@ -74,5 +74,6 @@ fi
 bcftools +liftover --no-version -Oz $INPUT_FILE -- -s $SOURCE_REFERENCE_FILE -f $TARGET_REFERENCE_FILE -c $CHAIN_FILE --reject rejected.vcf --reject-type v --write-reject --write-src > $OUTPUT_FILE
 
 ## Clean folders
+rm *.fa
 rm *.fai
 rm *.chain.gz

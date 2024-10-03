@@ -1,5 +1,7 @@
 package org.opencb.opencga.analysis.wrappers.liftover;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
@@ -8,6 +10,7 @@ import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.*;
 
 @ToolExecutor(id = LiftoverWrapperAnalysisExecutor.ID,
@@ -26,13 +29,22 @@ public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     protected void run() throws Exception {
         StringBuilder sb = initCommandLine();
 
-        // Append mounts
+        // 1. Wrapper analysis sets the path to the liftover executable
+        Object liftoverPath = getExecutorParams().get("liftoverPath");
+        if (StringUtils.isEmpty(liftoverPath.toString())) {
+            throw new IllegalArgumentException("Missing liftoverPath parameter");
+        }
+
+        // 2. Copy liftover executable to the job output directory
+        FileUtils.copyFile(new File(liftoverPath.toString()), getOutDir().toFile());
+
+        // 3. Append mounts
         List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(null,
                 PlinkWrapperAnalysis.FILE_PARAM_NAMES, getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
-        appendCommand("bcftools +liftover", sb);
+        appendCommand("liftover.sh", sb);
 
         // Append input file params
         appendInputFiles(inputFilenames, mountMap, sb);
@@ -47,7 +59,7 @@ public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: {}", sb);
         runCommandLine(sb.toString());
     }
 

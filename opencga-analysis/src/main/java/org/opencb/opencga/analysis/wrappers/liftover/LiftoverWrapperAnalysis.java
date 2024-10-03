@@ -17,11 +17,9 @@
 package org.opencb.opencga.analysis.wrappers.liftover;
 
 
-import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
-import org.opencb.opencga.analysis.variant.manager.CatalogUtils;
-import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysisExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.variant.LiftoverWrapperParams;
@@ -40,17 +38,23 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
     protected void check() throws Exception {
         super.check();
 
-        if (StringUtils.isEmpty(analysisParams.getFile())) {
+        if (CollectionUtils.isEmpty(analysisParams.getFiles())) {
             throw new ToolException("Liftover 'file' parameter is mandatory.");
         }
 
-        if (StringUtils.isEmpty(analysisParams.getOutdir())) {
-            String file = analysisParams.getFile();
-            if (file.contains("/")) {
-                analysisParams.setOutdir(file.substring(0, file.lastIndexOf('/')));
-            } else {
-                analysisParams.setOutdir("");
-            }
+        if (StringUtils.isEmpty(analysisParams.getTargetAssembly())) {
+            throw new ToolException("Liftover 'targetDirectory' parameter is mandatory, valid options are 'GRCh38' and 'hg38'.");
+        }
+
+        if (StringUtils.isEmpty(analysisParams.getVcfOutdir())) {
+//            String file = analysisParams.getFiles();
+//            if (file.contains("/")) {
+//                // Set output directory to the parent directory of the input file
+//                analysisParams.setOutdir(file.substring(0, file.lastIndexOf('/')));
+//            } else {
+//                // Set output directory to the study root directory
+//                analysisParams.setOutdir("");
+//            }
         }
     }
 
@@ -59,9 +63,11 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
 //        setUpStorageEngineExecutor(study);
 
         step(() -> {
+            executorParams.append("opencgaHome", getOpencgaHome().toString());
             executorParams.append("study", study);
-            executorParams.append("file", analysisParams.getFile());
+            executorParams.append("files", analysisParams.getFiles());
             executorParams.append("targetAssembly", analysisParams.getTargetAssembly());
+            executorParams.append("vcfOutdir", analysisParams.getVcfOutdir());
             executorParams.append("outdir", analysisParams.getOutdir());
 
             getToolExecutor(LiftoverWrapperAnalysisExecutor.class)

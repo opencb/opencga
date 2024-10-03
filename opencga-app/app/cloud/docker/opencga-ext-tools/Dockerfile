@@ -1,4 +1,4 @@
-FROM debian:bullseye
+FROM ubuntu:22.04
 
 LABEL org.label-schema.vendor="OpenCB" \
       org.label-schema.name="opencga-ext-tools" \
@@ -7,31 +7,31 @@ LABEL org.label-schema.vendor="OpenCB" \
       maintainer="Joaquin Tarraga <joaquintarraga@gmail.com>" \
       org.label-schema.schema-version="1.0"
 
-# WORKDIR /opt/opencga/signature.tools.lib
-
-# run update and install necessary packages
+## Run update and install necessary packages
 RUN apt-get update -y && \
     ## 1. Install system dependencies
-    DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev \
+    DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev build-essential \
     libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
-    gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base && \
+    gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base wget libopenblas0-openmp libcholmod3 libsuitesparse-dev && \
+    apt-get remove libopenblas0-pthread && \
 
     ## 2. Install samtools and bcftools 1.21 and plugins
+#     apt-get update -y && apt-get install -y wget && \
     wget https://github.com/samtools/samtools/releases/download/1.21/samtools-1.21.tar.bz2 && \
     tar xjvf samtools-1.21.tar.bz2 && \
     cd samtools-1.21 && \
-    ./configure --prefix=/usr/local/bin && \
+    ./configure --prefix=/usr/local && \
     make && make install && \
     cd .. && \
 
     wget http://github.com/samtools/bcftools/releases/download/1.21/bcftools-1.21.tar.bz2 && \
     tar xjvf bcftools-1.21.tar.bz2 && \
-    wget -P bcftools-1.21 http://raw.githubusercontent.com/DrTimothyAldenDavis/SuiteSparse/stable/{SuiteSparse_config/SuiteSparse_config,CHOLMOD/Include/cholmod}.h && \
+    bash -c 'wget -P bcftools-1.21 http://raw.githubusercontent.com/DrTimothyAldenDavis/SuiteSparse/stable/{SuiteSparse_config/SuiteSparse_config,CHOLMOD/Include/cholmod}.h' && \
     cd bcftools-1.21/ && \
-    /bin/rm -f plugins/{score.{c,h},{munge,liftover,metal,blup}.c,pgs.{c,mk}} && \
-    wget -P plugins http://raw.githubusercontent.com/freeseek/score/master/{score.{c,h},{munge,liftover,metal,blup}.c,pgs.{c,mk}} && \
+    bash -c '/bin/rm -f plugins/{score.{c,h},{munge,liftover,metal,blup}.c,pgs.{c,mk}}' && \
+    bash -c 'wget -P plugins http://raw.githubusercontent.com/freeseek/score/master/{score.{c,h},{munge,liftover,metal,blup}.c,pgs.{c,mk}}' && \
     make && \
-    /bin/cp bcftools plugins/{munge,liftover,score,metal,pgs,blup}.so /usr/local/bin/ && \
+    bash -c '/bin/cp bcftools plugins/{munge,liftover,score,metal,pgs,blup}.so /usr/local/bin/' && \
     wget -P /usr/local/bin http://raw.githubusercontent.com/freeseek/score/master/assoc_plot.R && \
     chmod a+x /usr/local/bin/assoc_plot.R && \
     cd .. && \
@@ -42,7 +42,7 @@ RUN apt-get update -y && \
     R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
 
     ## 4. Install signature.tools.lib installation \
-    R -e 'install.packages(c("devtools", "getopt"), repos=c("http://cran.rstudio.com/", "https://www.stats.bris.ac.uk/R/"))' && \
+    R -e "install.packages(c('devtools', 'getopt'), repos=c('http://cran.rstudio.com/', 'https://www.stats.bris.ac.uk/R/'))" && \
     git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
     cd /opt/opencga/signature.tools.lib && \
     git fetch origin --tags && \
@@ -50,24 +50,12 @@ RUN apt-get update -y && \
     sed -i '/Mmusculus/d' DESCRIPTION && \
     sed -i '/Cfamiliaris/d' DESCRIPTION && \
     sed -i '/1000genomes/d' DESCRIPTION && \
-    R -e 'options(timeout = 3600);devtools::install(repos="https://www.stats.bris.ac.uk/R/")' && \
+    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
     cd .. && \
 
     ## 5. Clean up
     rm -rf samtools-1.21 bcftools-1.21 /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
-
-# WORKDIR /opt/opencga/signature.tools.lib
-
-# RUN git fetch origin --tags && \
-#     git checkout tags/v2.4.4 && \
-#     sed -i '/Mmusculus/d' DESCRIPTION && \
-#     sed -i '/Cfamiliaris/d' DESCRIPTION && \
-#     sed -i '/1000genomes/d' DESCRIPTION && \
-#     R -e 'options(timeout = 3600);devtools::install(repos="https://www.stats.bris.ac.uk/R/")' && \
-#     ## Clean up
-#     rm -rf /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
-#     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 
 ENV BCFTOOLS_PLUGINS="/usr/local/bin"
 

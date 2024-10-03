@@ -18,39 +18,44 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import java.util.List;
+
 public class LiftoverWrapperParams extends ToolParams {
 
     public static final String DESCRIPTION = "BCFtools +liftover plugin params";
 
-    private String file;
+    private List<String> files;
     private String targetAssembly;
+    private String vcfOutdir;
     private String outdir;
 
     public LiftoverWrapperParams() {
     }
 
-    public LiftoverWrapperParams(String file, String targetAssembly, String outdir) {
-        this.file = file;
+    public LiftoverWrapperParams(List<String> files, String targetAssembly, String vcfOutdir, String outdir) {
+        this.files = files;
         this.targetAssembly = targetAssembly;
+        this.vcfOutdir = vcfOutdir;
         this.outdir = outdir;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("LiftoverWrapperParams{");
-        sb.append("file='").append(file).append('\'');
+        sb.append("files=").append(files);
         sb.append(", targetAssembly='").append(targetAssembly).append('\'');
+        sb.append(", vcfOutdir='").append(vcfOutdir).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getFile() {
-        return file;
+    public List<String> getFiles() {
+        return files;
     }
 
-    public LiftoverWrapperParams setFile(String file) {
-        this.file = file;
+    public LiftoverWrapperParams setFiles(List<String> files) {
+        this.files = files;
         return this;
     }
 
@@ -60,6 +65,15 @@ public class LiftoverWrapperParams extends ToolParams {
 
     public LiftoverWrapperParams setTargetAssembly(String targetAssembly) {
         this.targetAssembly = targetAssembly;
+        return this;
+    }
+
+    public String getVcfOutdir() {
+        return vcfOutdir;
+    }
+
+    public LiftoverWrapperParams setVcfOutdir(String vcfOutdir) {
+        this.vcfOutdir = vcfOutdir;
         return this;
     }
 
