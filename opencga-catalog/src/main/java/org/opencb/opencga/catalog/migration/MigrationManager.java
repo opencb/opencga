@@ -239,7 +239,8 @@ public class MigrationManager {
                         p -> p.getValue().getStatus(),
                         () -> new EnumMap<>(MigrationRun.MigrationStatus.class),
                         Collectors.counting())))
-                .setVersionCount(runs.stream().collect(Collectors.groupingBy(p -> p.getKey().version(), Collectors.counting())));
+                .setVersionCount(runs.stream().collect(Collectors.groupingBy(p -> p.getKey().version(),
+                        TreeMap::new, Collectors.counting())));
 
         long toBeApplied = migrationSummary
                 .getStatusCount()

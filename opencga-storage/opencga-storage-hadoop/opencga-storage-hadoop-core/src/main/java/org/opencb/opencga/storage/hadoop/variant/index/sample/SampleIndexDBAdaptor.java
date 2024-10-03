@@ -233,7 +233,11 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region) throws IOException {
-        SampleIndexSchema schema = schemaFactory.getSchema(study, sample, false);
+        return rawIterator(study, sample, region, schemaFactory.getSchema(study, sample, false));
+    }
+
+    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region, SampleIndexSchema schema)
+            throws IOException {
         String tableName = getSampleIndexTableName(study, schema.getVersion());
         return hBaseManager.act(tableName, table -> {
             Scan scan = new Scan();
@@ -621,6 +625,9 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (includeAll || !query.emptyFileIndex()) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
+                if (includeAll) {
+                    scan.addColumn(family, SampleIndexSchema.toFileDataColumn(gt));
+                }
                 if (includeAll || query.isIncludeParentColumns()
                         || query.hasFatherFilter() || query.hasMotherFilter() || query.getMendelianErrorType() != null) {
                     scan.addColumn(family, SampleIndexSchema.toParentsGTColumn(gt));
@@ -633,7 +640,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         scan.setCaching(hBaseManager.getConf().getInt("hbase.client.scanner.caching", 100));
 
         logger.info("---------");
-        logger.info("Sample = \"" + query.getSample() + "\" , schema version = " + query.getSchema().getVersion());
+        logger.info("Study = \"" + query.getStudy() + "\" (id=" + studyId + ")");
+        logger.info("Sample = \"" + query.getSample() + "\" (id=" + sampleId + ") , schema version = " + query.getSchema().getVersion());
         logger.info("Table = " + getSampleIndexTableName(query));
         printScan(scan);
         printQuery(locusQuery);

@@ -5,6 +5,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -166,6 +167,10 @@ public class SampleIndexEntry {
         private int fileIndexOffset;
         private int fileIndexLength;
 
+        private byte[] fileData;
+        private int fileDataOffset;
+        private int fileDataLength;
+
         private byte[] annotationIndex;
         private int annotationIndexOffset;
         private int annotationIndexLength;
@@ -286,6 +291,33 @@ public class SampleIndexEntry {
             this.fileIndex = fileIndex;
             this.fileIndexOffset = offset;
             this.fileIndexLength = length;
+            return this;
+        }
+
+        public byte[] getFileData() {
+            return fileData;
+        }
+
+        public ByteBuffer getFileDataIndexBuffer() {
+            // Slice the buffer.
+            // The wrap buffer contains the whole array, where the position is the offset.
+            // The position might be set to 0 by `.reset()` method, which would allow reading data before offset.
+            return fileData == null ? null : ByteBuffer.wrap(fileData, fileDataOffset, fileDataLength)
+                    .slice();
+        }
+
+        public int getFileDataOffset() {
+            return fileDataOffset;
+        }
+
+        public int getFileDataLength() {
+            return fileDataLength;
+        }
+
+        public SampleIndexGtEntry setFileDataIndex(byte[] fileDataIndex, int offset, int length) {
+            this.fileData = fileDataIndex;
+            this.fileDataOffset = offset;
+            this.fileDataLength = length;
             return this;
         }
 
@@ -480,6 +512,8 @@ public class SampleIndexEntry {
                     : Bytes.toStringBinary(variants, variantsOffset, variantsLength));
             sb.append(", fileIndex=").append(fileIndex == null ? "null"
                     : Bytes.toStringBinary(fileIndex, fileIndexOffset, fileIndexLength));
+            sb.append(", fileData=").append(fileData == null ? "null"
+                    : Bytes.toStringBinary(fileData, fileDataOffset, fileDataLength));
             sb.append(", annotationIndex=").append(annotationIndex == null ? "null"
                     : Bytes.toStringBinary(annotationIndex, annotationIndexOffset, annotationIndexLength));
             sb.append(", annotationIndexLength=").append(annotationIndexLength);

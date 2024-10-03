@@ -4,6 +4,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -45,10 +46,17 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
             annotationIndexEntry = new AnnotationIndexEntry(annotationIndexEntry);
         }
         List<BitBuffer> filesIndex = new ArrayList<>();
+        List<ByteBuffer> filesData = new ArrayList<>();
         if (hasFileIndex()) {
             filesIndex.add(nextFileIndexEntry());
+            if (hasFileDataIndex()) {
+                filesData.add(getFileDataEntry());
+            }
             while (isMultiFileIndex()) {
                 filesIndex.add(nextMultiFileIndexEntry());
+                if (hasFileDataIndex()) {
+                    filesData.add(getFileDataEntry());
+                }
             }
         }
         Byte parentsCode = null;
@@ -57,7 +65,7 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
         }
         String genotype = nextGenotype();
         Variant variant = next();
-        return new SampleVariantIndexEntry(variant, filesIndex, genotype, annotationIndexEntry, parentsCode, null);
+        return new SampleVariantIndexEntry(variant, filesIndex, filesData, genotype, annotationIndexEntry, parentsCode, null);
     }
 
     /**
@@ -81,12 +89,16 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
 
     boolean hasFileIndex();
 
+    boolean hasFileDataIndex();
+
     boolean isMultiFileIndex();
 
     /**
      * @return the file index value of the next element.
      */
     BitBuffer nextFileIndexEntry();
+
+    ByteBuffer getFileDataEntry();
 
     BitBuffer nextMultiFileIndexEntry();
 

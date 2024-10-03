@@ -58,6 +58,6 @@ public class SampleVariantIndexEntryTest {
         if (multiFileIndex) {
             this.fileIndex.setMultiFile(fileIndex, 0);
         }
-        return new SampleVariantIndexEntry(new Variant(s), fileIndex);
+        return new SampleVariantIndexEntry(new Variant(s), fileIndex, null);
     }
 }

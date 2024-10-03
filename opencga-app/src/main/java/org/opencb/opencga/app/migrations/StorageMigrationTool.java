@@ -46,7 +46,7 @@ public abstract class StorageMigrationTool extends MigrationTool {
      * @return List of projects
      * @throws Exception on error
      */
-    protected final List<String> getVariantStorageProjects(String organizationId) throws Exception {
+    protected final List<String> getVariantStorageProjects() throws Exception {
         Set<String> projects = new LinkedHashSet<>();
 
         for (String studyFqn : getVariantStorageStudies(organizationId)) {

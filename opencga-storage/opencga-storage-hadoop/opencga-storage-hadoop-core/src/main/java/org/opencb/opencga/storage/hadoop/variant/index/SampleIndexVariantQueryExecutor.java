@@ -58,9 +58,9 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) {
+    public boolean canUseThisExecutor(ParsedVariantQuery query, QueryOptions options) {
         if (options.getBoolean(SAMPLE_INDEX_INTERSECT, true)) {
-            return SampleIndexQueryParser.validSampleIndexQuery(query);
+            return SampleIndexQueryParser.validSampleIndexQuery(query.getQuery());
         }
         return false;
     }

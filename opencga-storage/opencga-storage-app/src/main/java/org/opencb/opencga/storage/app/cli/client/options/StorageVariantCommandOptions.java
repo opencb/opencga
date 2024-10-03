@@ -20,6 +20,7 @@ import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
+import org.opencb.opencga.core.models.variant.VariantQueryParams;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
@@ -31,7 +32,6 @@ import java.util.Map;
 
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationCommandOptions.ANNOTATION_ID_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationCommandOptions.ANNOTATION_ID_PARAM;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created by imedina on 22/01/17.
@@ -249,31 +249,31 @@ public class StorageVariantCommandOptions {
      */
     public static class BasicVariantQueryOptions {
 
-        @Parameter(names = {"--id"}, description = ID_DESCR, variableArity = true)
+        @Parameter(names = {"--id"}, description = VariantQueryParams.ID_DESCR, variableArity = true)
         public List<String> id;
 
-        @Parameter(names = {"-r", "--region"}, description = REGION_DESCR)
+        @Parameter(names = {"-r", "--region"}, description = VariantQueryParams.REGION_DESCR)
         public String region;
 
         @Parameter(names = {"--region-file"}, description = "GFF File with regions")
         public String regionFile;
 
-        @Parameter(names = {"-g", "--gene"}, description = GENE_DESCR)
+        @Parameter(names = {"-g", "--gene"}, description = VariantQueryParams.GENE_DESCR)
         public String gene;
 
-        @Parameter(names = {"-t", "--type"}, description = TYPE_DESCR)
+        @Parameter(names = {"-t", "--type"}, description = VariantQueryParams.TYPE_DESCR)
         public String type;
 
-        @Parameter(names = {"--ct", "--consequence-type"}, description = ANNOT_CONSEQUENCE_TYPE_DESCR)
+        @Parameter(names = {"--ct", "--consequence-type"}, description = VariantQueryParams.ANNOT_CONSEQUENCE_TYPE_DESCR)
         public String consequenceType;
 
-        @Parameter(names = {"-c", "--conservation"}, description = ANNOT_CONSERVATION_DESCR)
+        @Parameter(names = {"-c", "--conservation"}, description = VariantQueryParams.ANNOT_CONSERVATION_DESCR)
         public String conservation;
 
-        @Parameter(names = {"--ps", "--protein-substitution"}, description = ANNOT_PROTEIN_SUBSTITUTION_DESCR)
+        @Parameter(names = {"--ps", "--protein-substitution"}, description = VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION_DESCR)
         public String proteinSubstitution;
 
-        @Parameter(names = {"--fs", "--functional-score"}, description = ANNOT_FUNCTIONAL_SCORE_DESCR)
+        @Parameter(names = {"--fs", "--functional-score"}, description = VariantQueryParams.ANNOT_FUNCTIONAL_SCORE_DESCR)
         public String functionalScore;
 
         @Deprecated
@@ -288,16 +288,16 @@ public class StorageVariantCommandOptions {
             this.populationFreqAlt = populationFreqAlt;
         }
 
-        @Parameter(names = {"--pf", "--population-frequency-alt"}, description = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR)
+        @Parameter(names = {"--pf", "--population-frequency-alt"}, description = VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR)
         public String populationFreqAlt;
 
-        @Parameter(names = {"--cohort-stats-ref"}, description = STATS_REF_DESCR)
+        @Parameter(names = {"--cohort-stats-ref"}, description = VariantQueryParams.STATS_REF_DESCR)
         public String rf;
 
-        @Parameter(names = {"--cohort-stats-alt"}, description = STATS_ALT_DESCR)
+        @Parameter(names = {"--cohort-stats-alt"}, description = VariantQueryParams.STATS_ALT_DESCR)
         public String af;
 
-        @Parameter(names = {"--maf", "--cohort-stats-maf"}, description = STATS_MAF_DESCR)
+        @Parameter(names = {"--maf", "--cohort-stats-maf"}, description = VariantQueryParams.STATS_MAF_DESCR)
         public String maf;
 
     }
@@ -310,13 +310,13 @@ public class StorageVariantCommandOptions {
 //        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter")
 //        public String study;
 
-        @Parameter(names = {"--gt", "--genotype"}, description = GENOTYPE_DESCR)
+        @Parameter(names = {"--gt", "--genotype"}, description = VariantQueryParams.GENOTYPE_DESCR)
         public String sampleGenotype;
 
-        @Parameter(names = {"--sample"}, description = SAMPLE_DESCR)
+        @Parameter(names = {"--sample"}, description = VariantQueryParams.SAMPLE_DESCR)
         public String samples;
 
-        @Parameter(names = {"--sample-data"}, description = SAMPLE_DATA_DESCR)
+        @Parameter(names = {"--sample-data"}, description = VariantQueryParams.SAMPLE_DATA_DESCR)
         public String sampleData;
 
         @Parameter(names = {"--format"}, hidden = true)
@@ -324,10 +324,10 @@ public class StorageVariantCommandOptions {
             sampleData = format;
         }
 
-        @Parameter(names = {"-f", "--file"}, description = FILE_DESCR)
+        @Parameter(names = {"-f", "--file"}, description = VariantQueryParams.FILE_DESCR)
         public String file;
 
-        @Parameter(names = {"--file-data"}, description = FILE_DATA_DESCR)
+        @Parameter(names = {"--file-data"}, description = VariantQueryParams.FILE_DATA_DESCR)
         public String fileData;
 
         @Parameter(names = {"--info"}, hidden = true)
@@ -335,16 +335,16 @@ public class StorageVariantCommandOptions {
             fileData = info;
         }
 
-        @Parameter(names = {"--filter"}, description = FILTER_DESCR)
+        @Parameter(names = {"--filter"}, description = VariantQueryParams.FILTER_DESCR)
         public String filter;
 
-        @Parameter(names = {"--qual"}, description = QUAL_DESCR)
+        @Parameter(names = {"--qual"}, description = VariantQueryParams.QUAL_DESCR)
         public String qual;
 
-        @Parameter(names = {"--score"}, description = SCORE_DESCR)
+        @Parameter(names = {"--score"}, description = VariantQueryParams.SCORE_DESCR)
         public String score;
 
-        @Parameter(names = {"--biotype"}, description = ANNOT_BIOTYPE_DESCR)
+        @Parameter(names = {"--biotype"}, description = VariantQueryParams.ANNOT_BIOTYPE_DESCR)
         public String geneBiotype;
 
         @Parameter(names = {"--population-maf"}, hidden = true, description = DEPRECATED + "use --pmaf or --population-frequency-maf")
@@ -352,32 +352,32 @@ public class StorageVariantCommandOptions {
             this.populationFreqMaf = populationFreqMaf;
         }
 
-        @Parameter(names = {"--pmaf", "--population-frequency-maf"}, description = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR)
+        @Parameter(names = {"--pmaf", "--population-frequency-maf"}, description = VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR)
         public String populationFreqMaf;
 
-        @Parameter(names = {"--population-frequency-ref"}, description = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR)
+        @Parameter(names = {"--population-frequency-ref"}, description = VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR)
         public String populationFreqRef;
 
-        @Parameter(names = {"--transcript-flag"}, description = ANNOT_TRANSCRIPT_FLAG_DESCR)
+        @Parameter(names = {"--transcript-flag"}, description = VariantQueryParams.ANNOT_TRANSCRIPT_FLAG_DESCR)
         public String flags;
 
-        @Parameter(names = {"--gene-trait-id"}, description = ANNOT_GENE_TRAIT_ID_DESCR)
+        @Parameter(names = {"--gene-trait-id"}, description = VariantQueryParams.ANNOT_GENE_TRAIT_ID_DESCR)
         public String geneTraitId;
 
         @Deprecated
         @Parameter(names = {"--gene-trait-name"}, hidden = true, description = DEPRECATED + "use --trait")
         public String geneTraitName;
 
-        @Parameter(names = {"--go", "--gene-ontology"}, description = ANNOT_GO_DESCR)
+        @Parameter(names = {"--go", "--gene-ontology"}, description = VariantQueryParams.ANNOT_GO_DESCR)
         public String go;
 
-        @Parameter(names = {"--expression"}, description = ANNOT_EXPRESSION_DESCR)
+        @Parameter(names = {"--expression"}, description = VariantQueryParams.ANNOT_EXPRESSION_DESCR)
         public String expression;
 
-        @Parameter(names = {"--protein-keywords"}, description = ANNOT_PROTEIN_KEYWORD_DESCR)
+        @Parameter(names = {"--protein-keywords"}, description = VariantQueryParams.ANNOT_PROTEIN_KEYWORD_DESCR)
         public String proteinKeywords;
 
-        @Parameter(names = {"--drug"}, description = ANNOT_DRUG_DESCR)
+        @Parameter(names = {"--drug"}, description = VariantQueryParams.ANNOT_DRUG_DESCR)
         public String drugs;
 
         @Deprecated
@@ -392,23 +392,23 @@ public class StorageVariantCommandOptions {
             setXref(clinvar);
         }
 
-        @Parameter(names = {"--trait"}, description = ANNOT_TRAIT_DESCR)
+        @Parameter(names = {"--trait"}, description = VariantQueryParams.ANNOT_TRAIT_DESCR)
         void setTrait(String trait) {
             this.trait = this.trait == null ? trait : this.trait + ',' + trait;
         }
 
         public String trait;
 
-        @Parameter(names = {"--mgf", "--cohort-stats-mgf"}, description = STATS_MGF_DESCR)
+        @Parameter(names = {"--mgf", "--cohort-stats-mgf"}, description = VariantQueryParams.STATS_MGF_DESCR)
         public String mgf;
 
-        @Parameter(names = {"--cohort-stats-pass"}, description = STATS_PASS_FREQ_DESCR)
+        @Parameter(names = {"--cohort-stats-pass"}, description = VariantQueryParams.STATS_PASS_FREQ_DESCR)
         public String cohortStatsPass;
 
-        @Parameter(names = {"--stats-missing-allele"}, description = MISSING_ALLELES_DESCR)
+        @Parameter(names = {"--stats-missing-allele"}, description = VariantQueryParams.MISSING_ALLELES_DESCR)
         public String missingAlleleCount;
 
-        @Parameter(names = {"--stats-missing-genotype"}, description = MISSING_GENOTYPES_DESCR)
+        @Parameter(names = {"--stats-missing-genotype"}, description = VariantQueryParams.MISSING_GENOTYPES_DESCR)
         public String missingGenotypeCount;
 
 //        @Parameter(names = {"--dominant"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is" +
@@ -427,7 +427,7 @@ public class StorageVariantCommandOptions {
 //        public String compoundHeterozygous;
 
 
-        @Parameter(names = {"--include-study"}, description = INCLUDE_STUDY_DESCR)
+        @Parameter(names = {"--include-study"}, description = VariantQueryParams.INCLUDE_STUDY_DESCR)
         public String includeStudy;
 
         @Deprecated
@@ -436,7 +436,7 @@ public class StorageVariantCommandOptions {
             includeStudy = outputStudy;
         }
 
-        @Parameter(names = {"--include-file"}, description = INCLUDE_FILE_DESCR)
+        @Parameter(names = {"--include-file"}, description = VariantQueryParams.INCLUDE_FILE_DESCR)
         public String includeFile;
 
         @Deprecated
@@ -445,7 +445,7 @@ public class StorageVariantCommandOptions {
             includeFile = outputFile;
         }
 
-        @Parameter(names = {"--include-sample"}, description = INCLUDE_SAMPLE_DESCR)
+        @Parameter(names = {"--include-sample"}, description = VariantQueryParams.INCLUDE_SAMPLE_DESCR)
         public String includeSample;
 
         @Deprecated
@@ -454,7 +454,7 @@ public class StorageVariantCommandOptions {
             includeSample = outputSample;
         }
 
-        @Parameter(names = {"--include-sample-data"}, description = INCLUDE_SAMPLE_DATA_DESCR)
+        @Parameter(names = {"--include-sample-data"}, description = VariantQueryParams.INCLUDE_SAMPLE_DATA_DESCR)
         public String includeSampleData;
 
         @Parameter(names = {"--include-format"}, hidden = true)
@@ -462,10 +462,10 @@ public class StorageVariantCommandOptions {
             includeSampleData = includeFormat;
         }
 
-        @Parameter(names = {"--include-genotype"}, description = INCLUDE_GENOTYPE_DESCR)
+        @Parameter(names = {"--include-genotype"}, description = VariantQueryParams.INCLUDE_GENOTYPE_DESCR)
         public boolean includeGenotype;
 
-        @Parameter(names = {"--include-sample-id"}, description = INCLUDE_SAMPLE_ID_DESCR)
+        @Parameter(names = {"--include-sample-id"}, description = VariantQueryParams.INCLUDE_SAMPLE_ID_DESCR)
         public boolean includeSampleId;
 
         @Parameter(names = {"--annotations", "--output-vcf-info"}, description = "Set variant annotation to return in the INFO column. " +
@@ -478,7 +478,7 @@ public class StorageVariantCommandOptions {
             this.unknownGenotype = outputUnknownGenotype;
         }
 
-        @Parameter(names = {"--unknown-genotype"}, description = UNKNOWN_GENOTYPE_DESCR)
+        @Parameter(names = {"--unknown-genotype"}, description = VariantQueryParams.UNKNOWN_GENOTYPE_DESCR)
         public String unknownGenotype = "./.";
 
         @Deprecated
@@ -493,29 +493,29 @@ public class StorageVariantCommandOptions {
             setXref(annotXref);
         }
 
-        @Parameter(names = {"--xref"}, description = ANNOT_XREF_DESCR)
+        @Parameter(names = {"--xref"}, description = VariantQueryParams.ANNOT_XREF_DESCR)
         void setXref(String xref) {
             this.xref = this.xref == null ? xref : this.xref + ',' + xref;
         }
 
         public String xref;
 
-        @Parameter(names = {"--clinical"}, description = ANNOT_CLINICAL_DESCR)
+        @Parameter(names = {"--clinical"}, description = VariantQueryParams.ANNOT_CLINICAL_DESCR)
         public String clinical;
 
-        @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Parameter(names = {"--clinical-significance"}, description = VariantQueryParams.ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
 
-        @Parameter(names = {"--clinical-confirmed-status"}, description = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR)
+        @Parameter(names = {"--clinical-confirmed-status"}, description = VariantQueryParams.ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR)
         public boolean clinicalConfirmedStatus;
 
-        @Parameter(names = {"--sample-metadata"}, description = SAMPLE_METADATA_DESCR)
+        @Parameter(names = {"--sample-metadata"}, description = VariantQueryParams.SAMPLE_METADATA_DESCR)
         public boolean samplesMetadata;
 
-        @Parameter(names = {"--sample-limit"}, description = SAMPLE_LIMIT_DESCR)
+        @Parameter(names = {"--sample-limit"}, description = VariantQueryParams.SAMPLE_LIMIT_DESCR)
         public int sampleLimit;
 
-        @Parameter(names = {"--sample-skip"}, description = SAMPLE_SKIP_DESCR)
+        @Parameter(names = {"--sample-skip"}, description = VariantQueryParams.SAMPLE_SKIP_DESCR)
         public int sampleSkip;
 
         @Parameter(names = {"--summary"}, description = "Fast fetch of main variant parameters")
@@ -534,7 +534,7 @@ public class StorageVariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.QueryCommandOptions commonQueryOptions = queryCommandOptions;
 
-        @Parameter(names = {"-s", "--study"}, description = STUDY_DESCR)
+        @Parameter(names = {"-s", "--study"}, description = VariantQueryParams.STUDY_DESCR)
         public String study;
 
         @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", arity = 1)
@@ -665,10 +665,10 @@ public class StorageVariantCommandOptions {
         @Parameter(names = ANNOTATION_ID_PARAM, description = ANNOTATION_ID_DESCRIPTION)
         public String annotationId = VariantAnnotationManager.CURRENT;
 
-        @Parameter(names = {"--id"}, description = ID_DESCR, variableArity = true)
+        @Parameter(names = {"--id"}, description = VariantQueryParams.ID_DESCR, variableArity = true)
         public List<String> id;
 
-        @Parameter(names = {"-r", "--region"}, description = REGION_DESCR)
+        @Parameter(names = {"-r", "--region"}, description = VariantQueryParams.REGION_DESCR)
         public String region;
 
     }

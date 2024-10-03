@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSamp
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.isGenotypeColumn;
@@ -41,7 +42,7 @@ public class SampleIndexVariantBiConverter {
     }
 
     protected int expectedSize(String reference, String alternate, boolean interVariantSeparator) {
-        if (AlleleCodec.valid(reference, alternate)) {
+        if (AlleleSnvCodec.valid(reference, alternate)) {
             return INT24_LENGTH; // interVariantSeparator not needed when coding alleles
         } else {
             return INT24_LENGTH + reference.length() + SEPARATOR_LENGTH + alternate.length()
@@ -99,9 +100,9 @@ public class SampleIndexVariantBiConverter {
     }
 
     protected int toBytes(int relativeStart, String reference, String alternate, byte[] bytes, int offset, boolean interVariantSeparator) {
-        if (AlleleCodec.valid(reference, alternate)) {
+        if (AlleleSnvCodec.valid(reference, alternate)) {
             int length = append24bitInteger(relativeStart, bytes, offset);
-            bytes[offset] |= AlleleCodec.encode(reference, alternate);
+            bytes[offset] |= AlleleSnvCodec.encode(reference, alternate);
             return length;
         } else {
             int length = 0;
@@ -211,6 +212,7 @@ public class SampleIndexVariantBiConverter {
         private int nonIntergenicCount;
         private int clinicalCount;
         private BitInputStream fileIndex;
+        private ByteBuffer fileDataIndex;
         private int fileIndexCount; // Number of fileIndex elements visited
         private int fileIndexIdx;   // Index over file index array. Index of last visited fileIndex
 
@@ -239,6 +241,7 @@ public class SampleIndexVariantBiConverter {
             this.popFreq = gtEntry.getPopulationFrequencyIndexStream();
             this.clinicalIndex = gtEntry.getClinicalIndexStream();
             this.fileIndex = gtEntry.getFileIndexStream();
+            this.fileDataIndex = gtEntry.getFileDataIndexBuffer();
         }
 
         @Override
@@ -249,6 +252,11 @@ public class SampleIndexVariantBiConverter {
         @Override
         public boolean hasFileIndex() {
             return gtEntry.getFileIndex() != null;
+        }
+
+        @Override
+        public boolean hasFileDataIndex() {
+            return gtEntry.getFileData() != null;
         }
 
         @Override
@@ -279,6 +287,11 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
+        public ByteBuffer getFileDataEntry() {
+            return getFileDataIndex(fileIndexIdx);
+        }
+
+        @Override
         public BitBuffer nextMultiFileIndexEntry() {
             if (isMultiFileIndex()) {
                 fileIndexIdx++;
@@ -289,7 +302,11 @@ public class SampleIndexVariantBiConverter {
         }
 
         private BitBuffer getFileIndex(int i) {
-            return schema.getFileIndex().read(fileIndex, i);
+            return schema.getFileIndex().readEntry(fileIndex, i);
+        }
+
+        private ByteBuffer getFileDataIndex(int i) {
+            return schema.getFileData().readEntry(fileDataIndex, i);
         }
 
         @Override
@@ -357,7 +374,7 @@ public class SampleIndexVariantBiConverter {
                 if (clinical) {
                     int nextClinical = nextClinicalIndex();
                     // TODO: Reuse BitBuffer
-                    annotationIndexEntry.setClinicalIndex(schema.getClinicalIndexSchema().read(clinicalIndex, nextClinical));
+                    annotationIndexEntry.setClinicalIndex(schema.getClinicalIndexSchema().readEntry(clinicalIndex, nextClinical));
                 }
             }
 
@@ -455,7 +472,17 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
+        public boolean hasFileDataIndex() {
+            return false;
+        }
+
+        @Override
         public BitBuffer nextFileIndexEntry() {
+            throw new NoSuchElementException("Empty iterator");
+        }
+
+        @Override
+        public ByteBuffer getFileDataEntry() {
             throw new NoSuchElementException("Empty iterator");
         }
 
@@ -653,12 +680,12 @@ public class SampleIndexVariantBiConverter {
         }
     }
 
-    private static boolean hasEncodedAlleles(byte[] bytes, int offset) {
+    public static boolean hasEncodedAlleles(byte[] bytes, int offset) {
         return (bytes[offset] & 0xF0) != 0;
     }
 
     private Variant toVariantEncodedAlleles(String chromosome, int batchStart, byte[] bytes, int offset) {
-        String[] refAlt = AlleleCodec.decode(bytes[offset]);
+        String[] refAlt = AlleleSnvCodec.decode(bytes[offset]);
         int start = batchStart + (read24bitInteger(bytes, offset) & 0x0F_FF_FF);
 
         return VariantPhoenixKeyFactory.buildVariant(chromosome, start, refAlt[0], refAlt[1], null, null);

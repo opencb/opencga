@@ -175,6 +175,7 @@ public class IndexFieldConfiguration {
     public enum Source {
         VARIANT,
         META,
+        STUDY,
         FILE,
         SAMPLE,
         ANNOTATION

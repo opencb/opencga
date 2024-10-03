@@ -169,6 +169,7 @@ public class VariantQueryParser {
         variantQuery.setApproximateCountSamplingSize(options.getInt(
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
+        variantQuery.setSource(VariantQuerySource.get(inputQuery));
 
         variantQuery.setProjection(projectionParser.parseVariantQueryProjection(inputQuery, options));
 

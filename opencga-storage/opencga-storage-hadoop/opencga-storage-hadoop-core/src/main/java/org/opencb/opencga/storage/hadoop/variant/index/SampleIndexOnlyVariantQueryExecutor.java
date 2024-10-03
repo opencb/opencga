@@ -6,9 +6,12 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.tools.commons.Converter;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -25,6 +28,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQuerySource;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
@@ -42,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
@@ -86,9 +91,16 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) {
+        VariantQuery query = variantQuery.getQuery();
+        if (variantQuery.getSource() == VariantQuerySource.SECONDARY_SAMPLE_INDEX) {
+            if (SampleIndexQueryParser.validSampleIndexQuery(query) && isQueryCovered(query)) {
+                return true;
+            } else {
+                throw new VariantQueryException("Unable to apply given filter using only the secondary sample index.");
+            }
+        }
         if (SampleIndexQueryParser.validSampleIndexQuery(query)) {
-
             if (isFullyCoveredQuery(query, options)) {
                 return true;
             }
@@ -110,6 +122,10 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
 
         logger.info("HBase SampleIndex, skip variants table");
+        if (variantQuery.getSource() == VariantQuerySource.SECONDARY_SAMPLE_INDEX) {
+            variantQuery.getEvents().add(new Event(Event.Type.INFO, "Using only the secondary sample index. Skip main variants index."
+                    + " Results might be partial."));
+        }
 
         boolean count;
         Future<Long> asyncCountFuture;
@@ -145,6 +161,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         }
     }
 
+    @Override
+    protected VariantQuerySource getSource() {
+        return VariantQuerySource.SECONDARY_SAMPLE_INDEX;
+    }
+
     private VariantDBIterator getVariantDBIterator(SampleIndexQuery sampleIndexQuery, ParsedVariantQuery parsedQuery) {
         QueryOptions options = parsedQuery.getInputOptions();
         VariantDBIterator variantIterator;
@@ -160,7 +181,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             } catch (IOException e) {
                 throw VariantQueryException.internalException(e).setQuery(parsedQuery.getInputQuery());
             }
-            boolean includeAll = parsedQuery.getInputQuery().getBoolean("includeAllFromSampleIndex", false);
+            boolean includeAll = parsedQuery.getSource() == VariantQuerySource.SECONDARY_SAMPLE_INDEX
+                    || parsedQuery.getInputQuery().getBoolean("includeAllFromSampleIndex", false);
             SampleVariantIndexEntryToVariantConverter converter = new SampleVariantIndexEntryToVariantConverter(
                     parsedQuery, sampleIndexQuery, dbAdaptor.getMetadataManager(), includeAll);
             variantIterator = VariantDBIterator.wrapper(Iterators.transform(rawIterator, converter::convert));
@@ -179,13 +201,21 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     private boolean isFullyCoveredQuery(Query inputQuery, QueryOptions options) {
         Query query = new Query(inputQuery);
 
-//        ParsedVariantQuery parsedVariantQuery = variantQueryProjectionParser.parseQuery(query, options, true);
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
-
-        return isQueryCovered(query) && isIncludeCovered(sampleIndexQuery, inputQuery, options);
+        return isQueryCovered(sampleIndexQuery)
+                && isIncludeCovered(sampleIndexQuery, inputQuery, options);
     }
 
-    private boolean isQueryCovered(Query query) {
+    private boolean isQueryCovered(Query inputQuery) {
+        Query query = new Query(inputQuery);
+
+        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
+
+        return isQueryCovered(sampleIndexQuery);
+    }
+
+    private boolean isQueryCovered(SampleIndexQuery sampleIndexQuery) {
+        Query query = sampleIndexQuery.getUncoveredQuery();
         if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)
                 || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO)
                 || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO_STRICT)) {
@@ -276,17 +306,18 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         }
 
         private final boolean includeStudy;
-        private String studyName;
-        private List<FamilyRole> familyRoleOrder;
+        private final boolean includeFiles;
+        private final boolean includeAll;
+        private final String studyName;
+        private final List<FamilyRole> familyRoleOrder;
         private String sampleName;
         private String motherName;
         private String fatherName;
-        private LinkedHashMap<String, Integer> samplesPosition;
-        private List<String> sampleFiles;
-        private IndexField<String> filterField;
-        private IndexField<String> qualField;
+        private final LinkedHashMap<String, Integer> samplesPosition;
+        private final List<String> sampleFiles;
+        private final IndexField<String> filterField;
+        private final IndexField<String> qualField;
         private final SampleIndexSchema schema;
-        private final boolean includeAll;
 
 
         SampleVariantIndexEntryToVariantConverter(ParsedVariantQuery parseQuery, SampleIndexQuery sampleIndexQuery,
@@ -298,6 +329,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             includeStudy = !projection.getStudyIds().isEmpty();
             if (includeStudy) {
                 int studyId = projection.getStudyIds().get(0); // only one study
+                // force includeFiles if "includeAll"
+                includeFiles = includeAll || !projection.getStudy(studyId).getFiles().isEmpty();
                 VariantQueryProjection.StudyVariantQueryProjection projectionStudy = projection.getStudy(studyId);
                 studyName = projectionStudy.getStudyMetadata().getName();
 
@@ -343,7 +376,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                     this.fatherName = null;
                 }
 
-                if (includeAll) {
+                if (includeFiles) {
                     if (sampleMetadata == null) {
                         sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
                     }
@@ -363,11 +396,27 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                             sampleFiles = Collections.singletonList(fileName);
                         }
                     }
+                } else {
+                    sampleFiles = null;
+                }
+
+                if (includeAll) {
                     filterField = schema.getFileIndex()
                             .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.FILTER);
                     qualField = schema.getFileIndex()
                             .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL);
+                } else {
+                    filterField = null;
+                    qualField = null;
                 }
+            } else {
+                samplesPosition = null;
+                sampleFiles = null;
+                includeFiles = false;
+                studyName = null;
+                filterField = null;
+                qualField = null;
+                familyRoleOrder = null;
             }
         }
 
@@ -400,27 +449,63 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                             throw new IllegalStateException("Unexpected value: " + role);
                     }
                 }
-                if (includeAll) {
-                    HashMap<String, String> fileAttributes = new HashMap<>();
-                    for (BitBuffer fileIndexBitBuffer : entry.getFilesIndex()) {
-                        String filter = filterField.readAndDecode(fileIndexBitBuffer);
-                        if (filter == null) {
-                            filter = "NA";
-                        }
-                        fileAttributes.put(StudyEntry.FILTER, filter);
-                        String qual = qualField.readAndDecode(fileIndexBitBuffer);
-                        if (qual == null) {
-                            qual = "NA";
-                        }
-                        fileAttributes.put(StudyEntry.QUAL, qual);
+                List<List<AlternateCoordinate>> allAlternateCoordinates = new ArrayList<>();
+                HashMap<String, String> fileAttributes = new HashMap<>();
+                Iterator<ByteBuffer> fileDataIterator = entry.getFileData().iterator();
+                for (BitBuffer fileIndexBitBuffer : entry.getFilesIndex()) {
+                    ByteBuffer fileDataBitBuffer;
+                    if (fileDataIterator.hasNext()) {
+                        fileDataBitBuffer = fileDataIterator.next();
+                    } else {
+                        fileDataBitBuffer = null;
+                    }
 
+                    if (includeFiles) {
+                        if (includeAll) {
+                            String filter = filterField.readAndDecode(fileIndexBitBuffer);
+                            if (filter == null) {
+                                filter = "NA";
+                            }
+                            fileAttributes.put(StudyEntry.FILTER, filter);
+                            String qual = qualField.readAndDecode(fileIndexBitBuffer);
+                            if (qual == null) {
+                                qual = "NA";
+                            }
+                            fileAttributes.put(StudyEntry.QUAL, qual);
+                        }
+                        OriginalCall call = null;
+                        if (fileDataBitBuffer != null && schema.getFileData().isIncludeOriginalCall()) {
+                            call = schema.getFileData().readOriginalCall(fileDataBitBuffer, v);
+                        }
+                        if (fileDataBitBuffer != null && schema.getFileData().isIncludeSecondaryAlternates()) {
+                            allAlternateCoordinates.add(schema.getFileData().readSecondaryAlternates(fileDataBitBuffer, v));
+                        }
                         Integer idx = schema.getFileIndex().getFilePositionIndex().readAndDecode(fileIndexBitBuffer);
                         String fileName = sampleFiles.get(idx);
                         studyEntry.setFiles(new ArrayList<>());
-                        studyEntry.getFiles().add(new FileEntry(fileName, null, fileAttributes));
+                        studyEntry.getFiles().add(new FileEntry(fileName, call, fileAttributes));
                         if (sampleEntry != null) {
                             sampleEntry.setFileIndex(0);
                         }
+                    }
+                }
+
+                if (allAlternateCoordinates.size() == 1) {
+                    studyEntry.setSecondaryAlternates(allAlternateCoordinates.get(0));
+                } else if (allAlternateCoordinates.size() > 1) {
+                    List<AlternateCoordinate> alternateCoordinates = allAlternateCoordinates.get(0);
+                    boolean allSame = true;
+                    for (int i = 1; i < allAlternateCoordinates.size(); i++) {
+                        List<AlternateCoordinate> thisAltCoord = allAlternateCoordinates.get(i);
+                        if (!thisAltCoord.equals(alternateCoordinates)) {
+                            allSame = false;
+                            break;
+                        }
+                    }
+                    if (allSame) {
+                        studyEntry.setSecondaryAlternates(alternateCoordinates);
+                    } else {
+                        logger.warn("Multiple conflicting alternates from different files!");
                     }
                 }
                 studyEntry.setSortedSamplesPosition(samplesPosition);
@@ -483,17 +568,23 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             List<Variant> indels = new ArrayList<>();
             for (Variant variant : variants) {
                 boolean secAlt = false;
-                for (SampleEntry sample : variant.getStudies().get(0).getSamples()) {
-                    if (GenotypeClass.SEC.test(sample.getData().get(0))) {
-                        secAlt = true;
-                        break;
+                StudyEntry studyEntry = variant.getStudies().get(0);
+                if (studyEntry.getSecondaryAlternates() == null || studyEntry.getSecondaryAlternates().isEmpty()) {
+                    for (SampleEntry sample : studyEntry.getSamples()) {
+                        if (GenotypeClass.SEC.test(sample.getData().get(0))) {
+                            secAlt = true;
+                            break;
+                        }
                     }
                 }
                 if (secAlt) {
                     multiAllelic.add(variant);
                 } else {
                     if (variant.getLengthReference() == 0 || variant.getLengthAlternate() == 0) {
-                        indels.add(variant);
+                        if (studyEntry.getFiles().isEmpty() || studyEntry.getFiles().get(0).getCall() == null) {
+                            // Missing call.
+                            indels.add(variant);
+                        }
                     }
                 }
             }
@@ -512,19 +603,21 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 }
             }
 
-            StopWatch stopWatch = StopWatch.createStarted();
-            for (Future<?> future : futures) {
-                try {
-                    // Should end in few seconds
-                    future.get(90, TimeUnit.SECONDS);
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    throw new VariantQueryException("Error fetching extra data", e);
+            if (!futures.isEmpty()) {
+                StopWatch stopWatch = StopWatch.createStarted();
+                for (Future<?> future : futures) {
+                    try {
+                        // Should end in few seconds
+                        future.get(90, TimeUnit.SECONDS);
+                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                        throw new VariantQueryException("Error fetching extra data", e);
+                    }
                 }
+                logger.info("Fetch {} ({} multi-allelic and {} indels) partial variants in {} in {} threads",
+                        multiAllelic.size() + indels.size(), multiAllelic.size(), indels.size(),
+                        TimeUtils.durationToString(stopWatch),
+                        futures.size());
             }
-            logger.info("Fetch {} partial variants in {} in {} threads",
-                    multiAllelic.size() + indels.size(),
-                    TimeUtils.durationToString(stopWatch),
-                    futures.size());
             return variants;
         }
 
