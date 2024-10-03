@@ -41,6 +41,7 @@ function error() {
   log "=========================="
 }
 
+
 # Function to calculate the branch for dependencies
 function calculate_branch() {
   local EXISTS=""
@@ -48,7 +49,7 @@ function calculate_branch() {
     local EXISTS=$(git ls-remote origin "$TASK_REFERENCE")
   fi
   if [[ -n $EXISTS ]]; then
-    echo $TASK_REFERENCE
+    echo "$TASK_REFERENCE"
   else
     local TMP_DIR=$(pwd)
     cd "$OPENCGA_ENTERPRISE_HOME_DIR"
@@ -62,24 +63,23 @@ function calculate_branch() {
       local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
       local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
       local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-      local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
-      if [[ "$PATCH" == "0" ]]; then
-        echo "develop"
-      elif [ -z "$HOTFIX" ]; then
+
+      if [ $PATCH -gt 0 ]; then ## It's a hotfix
         echo "release-$MAJOR.$MINOR.x"
-      else
-        echo "release-$MAJOR.$MINOR.$PATCH.x"
+      elif [ $MINOR -eq  0 ]; then ## It's a develop branch
+        echo "develop"
+      else  ## It's a release branch
+        echo "release-$MAJOR.x.x"
       fi
     elif [[ "$CURRENT_BRANCH" == "release"* ]]; then
       local VERSION=$(echo "$1" | cut -d "-" -f 1)
       local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
       local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
       local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-      local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
-      if [ -z "$HOTFIX" ]; then
+      if [ $PATCH -gt 0 ]; then
         echo "release-$MAJOR.$MINOR.x"
       else
-        echo "release-$MAJOR.$MINOR.$PATCH.x"
+        echo "release-$MAJOR.x.x"
       fi
     else
       echo "$CURRENT_BRANCH"
