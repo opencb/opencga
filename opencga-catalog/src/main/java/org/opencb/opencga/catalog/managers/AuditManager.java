@@ -33,7 +33,6 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.events.EventManager;
 import org.opencb.opencga.core.events.OpenCgaObserver;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -68,23 +67,22 @@ public class AuditManager {
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.auditRecordMap = new HashMap<>();
 
-        EventManager.getInstance().subscribe("*.*", new OpenCgaObserver(opencgaEvent -> { },
-                (throwable, opencgaEvent) -> {
-                    logger.error("Action '{}' ended with error '{}'", opencgaEvent.getEventId(), throwable.getMessage());
-                    String[] split = opencgaEvent.getEventId().split("\\.");
-                    Enums.Resource resource = Enums.Resource.valueOf(split[0].toUpperCase());
-                    Enums.Action action = Enums.Action.valueOf(split[1].toUpperCase());
-                    audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, opencgaEvent.getId(), null,
-                            opencgaEvent.getStudy(), null, opencgaEvent.getInputParams(),
-                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                                    new Error(0, throwable.getMessage(), throwable.getLocalizedMessage())));
-                }, opencgaEvent -> {
+        EventManager.getInstance().subscribe("*.*", new OpenCgaObserver(Enums.Resource.AUDIT, opencgaEvent -> {
             logger.info("Completed '{}' action with success.", opencgaEvent.getEventId());
             String[] split = opencgaEvent.getEventId().split("\\.");
             Enums.Resource resource = Enums.Resource.valueOf(split[0].toUpperCase());
             Enums.Action action = Enums.Action.valueOf(split[1].toUpperCase());
             audit(opencgaEvent.getToken(), opencgaEvent.getUserId(), action, resource, opencgaEvent.getId(), null, opencgaEvent.getStudy(),
                     null, opencgaEvent.getInputParams(), new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        }, (throwable, opencgaEvent) -> {
+            logger.error("Action '{}' ended with error '{}'", opencgaEvent.getEventId(), throwable.getMessage());
+            String[] split = opencgaEvent.getEventId().split("\\.");
+            Enums.Resource resource = Enums.Resource.valueOf(split[0].toUpperCase());
+            Enums.Action action = Enums.Action.valueOf(split[1].toUpperCase());
+            audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, opencgaEvent.getId(), null,
+                    opencgaEvent.getStudy(), null, opencgaEvent.getInputParams(),
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                            new Error(0, throwable.getMessage(), throwable.getLocalizedMessage())));
         }));
     }
 

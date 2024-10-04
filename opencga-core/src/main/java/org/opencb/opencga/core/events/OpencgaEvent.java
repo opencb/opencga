@@ -5,9 +5,9 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 
 public class OpencgaEvent {
 
+    private String organizationId;
     private String eventId;
     private ObjectMap inputParams;
-    private String organizationId;
     private String userId;
     private String study;
     private String id;

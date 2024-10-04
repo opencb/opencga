@@ -51,6 +51,8 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
     public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
 
+    public static final String EVENT_ARCHIVE_COLLECTION = "event_archive";
+
     public static final String DELETED_NOTE_COLLECTION = "note_deleted";
     public static final String DELETED_USER_COLLECTION = "user_deleted";
     public static final String DELETED_PROJECT_COLLECTION = "project_deleted";
@@ -182,6 +184,8 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection panelArchivedCollection = mongoDataStore.getCollection(PANEL_ARCHIVE_COLLECTION);
         MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
 
+        MongoDBCollection eventArchiveCollection = mongoDataStore.getCollection(EVENT_ARCHIVE_COLLECTION);
+
         MongoDBCollection deletedNotesCollection = mongoDataStore.getCollection(DELETED_NOTE_COLLECTION);
         MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
         MongoDBCollection deletedProjectCollection = mongoDataStore.getCollection(DELETED_PROJECT_COLLECTION);
@@ -222,7 +226,7 @@ public class OrganizationMongoDBAdaptorFactory {
         migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, configuration, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, configuration);
         authorizationMongoDBAdaptor = new AuthorizationMongoDBAdaptor(this, configuration);
-        eventDBAdaptor = new EventMongoDBAdaptor(eventCollection, configuration);
+        eventDBAdaptor = new EventMongoDBAdaptor(eventCollection, eventArchiveCollection, configuration, this);
 
         mongoDBCollectionMap = new HashMap<>();
 //        mongoDBCollectionMap.put(METADATA_COLLECTION, metaCollection);

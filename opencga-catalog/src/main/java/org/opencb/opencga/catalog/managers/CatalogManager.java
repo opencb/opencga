@@ -43,8 +43,6 @@ import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Optimizations;
-import org.opencb.opencga.core.events.EventManager;
-import org.opencb.opencga.core.events.OpencgaEvent;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
@@ -62,7 +60,6 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
 import static org.opencb.opencga.core.api.ParamConstants.*;
@@ -135,7 +132,7 @@ public class CatalogManager implements AutoCloseable {
 
     private void configureManagers(Configuration configuration) throws CatalogException {
         initializeAdmin(configuration);
-        EventManager.configure(getPreEventConsumer(), getPostEventConsumer(), configuration);
+        EventManager.configure(catalogDBAdaptorFactory);
 
         for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
             QueryOptions options = new QueryOptions(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
@@ -171,19 +168,6 @@ public class CatalogManager implements AutoCloseable {
                 catalogDBAdaptorFactory, configuration);
         interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 configuration);
-    }
-
-    private Consumer<OpencgaEvent> getPreEventConsumer() {
-        return opencgaEvent -> {
-//            catalogDBAdaptorFactory.getEventDBAdaptor(opencgaEvent.getOrganizationId()).insert(new OpencgaProcessedEvent());
-            System.out.println("Pre event consumer: " + opencgaEvent);
-        };
-    }
-
-    private Consumer<OpencgaEvent> getPostEventConsumer() {
-        return opencgaEvent -> {
-            System.out.println("Post event consumer: " + opencgaEvent);
-        };
     }
 
     private void initializeAdmin(Configuration configuration) throws CatalogDBException {

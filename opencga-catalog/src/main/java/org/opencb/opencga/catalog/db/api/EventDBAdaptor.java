@@ -1,28 +1,31 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.core.events.OpencgaEvent;
-import org.opencb.opencga.core.events.OpencgaProcessedEvent;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.event.CatalogEvent;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER;
-import static org.opencb.commons.datastore.core.QueryParam.Type.STRING;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 public interface EventDBAdaptor {
 
     enum QueryParams implements QueryParam {
+        UID("uid", LONG, ""),
+        UUID("uuid", STRING, ""),
         ID("id", STRING, ""),
-        VERSION("version", STRING, ""),
-        START("date", QueryParam.Type.DATE, ""),
-        END("date", QueryParam.Type.DATE, ""),
-        PATCH("patch", INTEGER, ""),
-        STATUS("status", STRING, "");
+        SUBSCRIBERS("subscribers", OBJECT, ""),
+        SUCCESSFUL("successful", BOOLEAN, ""),
+        CREATION_DATE("creationDate", STRING, ""),
+        MODIFICATION_DATE("modificationDate", STRING, "");
 
-        private static Map<String, MigrationDBAdaptor.QueryParams> map = new HashMap<>();
+        private static Map<String, QueryParams> map = new HashMap<>();
         static {
-            for (MigrationDBAdaptor.QueryParams params : MigrationDBAdaptor.QueryParams.values()) {
+            for (QueryParams params : QueryParams.values()) {
                 map.put(params.key(), params);
             }
         }
@@ -52,24 +55,66 @@ public interface EventDBAdaptor {
             return description;
         }
 
-        public static Map<String, MigrationDBAdaptor.QueryParams> getMap() {
+        public static Map<String, QueryParams> getMap() {
             return map;
         }
 
-        public static MigrationDBAdaptor.QueryParams getParam(String key) {
+        public static QueryParams getParam(String key) {
             return map.get(key);
         }
     }
 
-    enum Status {
-        SUCCESS,
-        ERROR
+    enum SubscribersQueryParams implements QueryParam {
+        ID("id", STRING, ""),
+        SUCCESSFUL("successful", BOOLEAN, ""),
+        NUM_ATTEMPTS("numAttempts", INTEGER, "");
+
+        private static Map<String, SubscribersQueryParams> map = new HashMap<>();
+        static {
+            for (SubscribersQueryParams params : SubscribersQueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        SubscribersQueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, SubscribersQueryParams> getMap() {
+            return map;
+        }
+
+        public static SubscribersQueryParams getParam(String key) {
+            return map.get(key);
+        }
     }
 
-    void insert(OpencgaProcessedEvent event);
+    void insert(CatalogEvent event) throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException;
 
-    void addSubscriber(OpencgaEvent event, String subscriber, Status status);
+    void updateSubscriber(CatalogEvent event, Enums.Resource resource, boolean successful)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    void finishEvent(OpencgaEvent opencgaEvent);
+    void finishEvent(CatalogEvent opencgaEvent) throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException;
 
 }

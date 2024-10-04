@@ -12,6 +12,10 @@ public class CatalogRuntimeException extends IllegalArgumentException {
         super(message, cause);
     }
 
+    public CatalogRuntimeException(CatalogException e) {
+        super(e.getMessage(), e);
+    }
+
     public static CatalogRuntimeException internalException(Exception e, String message) {
         if (e instanceof CatalogRuntimeException) {
             return ((CatalogRuntimeException) e);

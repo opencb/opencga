@@ -1,21 +1,36 @@
 package org.opencb.opencga.core.events;
 
+import org.opencb.opencga.core.models.common.Enums;
+
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class OpenCgaObserver {
 
+    private Enums.Resource resource;
     private Consumer<OpencgaEvent> onNext;
     private BiConsumer<Throwable, OpencgaEvent> onError;
-    private Consumer<OpencgaEvent> onComplete;
 
     public OpenCgaObserver() {
     }
 
-    public OpenCgaObserver(Consumer<OpencgaEvent> onNext, BiConsumer<Throwable, OpencgaEvent> onError, Consumer<OpencgaEvent> onComplete) {
+    public OpenCgaObserver(Enums.Resource resource, Consumer<OpencgaEvent> onSuccess) {
+        this(resource, onSuccess, (throwable, opencgaEvent) -> {});
+    }
+
+    public OpenCgaObserver(Enums.Resource resource, Consumer<OpencgaEvent> onNext, BiConsumer<Throwable, OpencgaEvent> onError) {
+        this.resource = resource;
         this.onNext = onNext;
         this.onError = onError;
-        this.onComplete = onComplete;
+    }
+
+    public Enums.Resource getResource() {
+        return resource;
+    }
+
+    public OpenCgaObserver setResource(Enums.Resource resource) {
+        this.resource = resource;
+        return this;
     }
 
     public Consumer<OpencgaEvent> getOnNext() {
@@ -36,12 +51,4 @@ public class OpenCgaObserver {
         return this;
     }
 
-    public Consumer<OpencgaEvent> getOnComplete() {
-        return onComplete;
-    }
-
-    public OpenCgaObserver setOnComplete(Consumer<OpencgaEvent> onComplete) {
-        this.onComplete = onComplete;
-        return this;
-    }
 }

@@ -40,7 +40,6 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.events.EventManager;
 import org.opencb.opencga.core.events.OpencgaEvent;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
@@ -51,6 +50,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.ExternalSource;
 import org.opencb.opencga.core.models.common.RgaIndex;
+import org.opencb.opencga.core.models.event.CatalogEvent;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
@@ -259,8 +259,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
             auditManager.auditCreate(organizationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            EventManager.getInstance().notify("sample.create", new OpencgaEvent(organizationId, "sample.create", auditParams, userId,
-                    study.getFqn(), sample.getId(), token, insert));
+            EventManager.getInstance().notify(new CatalogEvent("sample.create", new OpencgaEvent(organizationId, "sample.create",
+                    auditParams, userId, study.getFqn(), sample.getId(), token, insert)));
             return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(organizationId, userId, Enums.Resource.SAMPLE, sample.getId(), "", studyId, studyUuid, auditParams,
