@@ -184,7 +184,7 @@ public class VariantAnalysisTest {
             setUpCatalogManager();
 
             file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
-//            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
+            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
 
             for (int i = 0; i < file.getSampleIds().size(); i++) {
                 String id = file.getSampleIds().get(i);
