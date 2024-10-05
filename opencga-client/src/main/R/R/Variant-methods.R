@@ -389,7 +389,7 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data BCFtools +liftover plugin params.
+        #' @param data BCFtools +liftover plugin parameterss.
         runLiftover=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="variant/liftover",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 

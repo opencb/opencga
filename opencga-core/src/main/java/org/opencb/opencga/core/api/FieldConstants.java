@@ -45,7 +45,7 @@ public class FieldConstants {
     public static final String ORGANIZATION_ADMINS_DESCRIPTION = "Administrative users of the organization.";
     public static final String ORGANIZATION_PROJECTS_DESCRIPTION = "Projects the organization holds.";
     public static final String ORGANIZATION_NOTES_DESCRIPTION = "Notes of organization scope.";
-//    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
+    //    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
 //            + "contains all the configuration necessary to be able to communicate with the external authentication origins.";
     public static final String ORGANIZATION_CONFIGURATION_DESCRIPTION = "Organization configuration information.";
     public static final String ORGANIZATION_INTERNAL_DESCRIPTION = "Organization internal information.";
@@ -527,7 +527,7 @@ public class FieldConstants {
     public static final String HRDETECT_CNV_QUERY_DESCRIPTION = "CNV query";
     public static final String HRDETECT_INDEL_QUERY_DESCRIPTION = "INDEL query";
     public static final String HRDETECT_SNV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV3 input for"
-        + " HRDetect.";
+            + " HRDetect.";
     public static final String HRDETECT_SNV8_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV8 input for"
             + " HRDetect.";
     public static final String HRDETECT_SV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SV3 input for"
@@ -554,7 +554,7 @@ public class FieldConstants {
     public static final String COVERAGE_INDEX_BAM_FILE_ID_DESCRIPTION = "BAM file ID.";
     public static final String COVERAGE_INDEX_BAI_FILE_ID_DESCRIPTION = "BAI file ID.";
     public static final String COVERAGE_INDEX_OVERWRITE_DESCRIPTION = "Window size (i.e., the size of the bins, in bases, for the output"
-        + " of the BIGWIG file).";
+            + " of the BIGWIG file).";
 
     // Alignment QC analysis (asample-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
@@ -565,4 +565,16 @@ public class FieldConstants {
 
     // Exomiser
     public static final String EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION = "Clinical analysis type: SINGLE or FAMILY.";
+
+    // Liftover
+    public static final String LIFTOVER_GRCH38 = "GRCh38";
+    public static final String LIFTOVER_HG38 = "hg38";
+    public static final String LIFTOVER_VCF_INPUT_FOLDER = "OPENCCGA_VCF_INPUT_FOLDER";
+    public static final String LIFTOVER_FILES_DESCRIPTION = "List of VCF files to lift over";
+    public static final String LIFTOVER_TARGET_ASSEMBLY_DESCRIPTION = "Target assembly for lift over. Valid values: " + LIFTOVER_GRCH38
+            + " (for Ensembl) or " + LIFTOVER_HG38 + " (for NCBI)";
+    public static final String LIFTOVER_VCF_DESTINATION_DESCRIPTION = "Destination path where the lifted-over VCF files will be stored."
+            + " If left empty, the VCF files will be stored in the job folder. If the keyword " + LIFTOVER_VCF_INPUT_FOLDER
+            + " is used, they will be stored in the same folder as the input VCF files. Otherwise, they will be stored in the specified"
+            + " destination path";
 }

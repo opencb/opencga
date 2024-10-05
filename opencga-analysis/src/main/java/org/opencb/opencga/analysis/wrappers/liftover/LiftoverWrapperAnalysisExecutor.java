@@ -1,66 +1,122 @@
 package org.opencb.opencga.analysis.wrappers.liftover;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
+import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.*;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.apache.commons.io.FileUtils.readLines;
+import static org.opencb.opencga.core.api.FieldConstants.LIFTOVER_VCF_INPUT_FOLDER;
 
 @ToolExecutor(id = LiftoverWrapperAnalysisExecutor.ID,
         tool = LiftoverWrapperAnalysis.ID,
-        source = ToolExecutor.Source.FILE,
+        source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
 public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
 
     public final static String ID = LiftoverWrapperAnalysis.ID + "-local";
 
+    private final static String VIRTUAL_SCRIPT_FOLDER = "/script";
+    private final static String VIRTUAL_INPUT_FOLDER = "/input";
+    private final static String VIRTUAL_OUTPUT_FOLDER = "/output";
+    private final static String VIRTUAL_RESOURCES_FOLDER = "/" + LiftoverWrapperAnalysis.RESOURCES_FOLDER;
+
     private String study;
+    private Path liftoverPath;
+    private List<File> files;
+    private String targetAssembly;
+    private String vcfDest;
+    private Path resourcePath;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
     protected void run() throws Exception {
-        StringBuilder sb = initCommandLine();
+        Path outPath = (StringUtils.isEmpty(vcfDest) ? getOutDir() : Paths.get(vcfDest));
 
-        // 1. Wrapper analysis sets the path to the liftover executable
-        Object liftoverPath = getExecutorParams().get("liftoverPath");
-        if (StringUtils.isEmpty(liftoverPath.toString())) {
-            throw new IllegalArgumentException("Missing liftoverPath parameter");
+        int numFails = 0;
+        for (File file : files) {
+            try {
+                if (LIFTOVER_VCF_INPUT_FOLDER.equals(vcfDest)) {
+                    outPath = Paths.get(file.getParent());
+                }
+                runLiftover(file, outPath);
+            } catch (ToolExecutorException e) {
+                numFails++;
+                String msg = "Liftover failed for file '" + file.getName() + "'";
+                addWarning(msg);
+                logger.warn(msg, e);
+            }
         }
+        if (numFails == files.size()) {
+            throw new ToolExecutorException("Liftover failed for all input VCF files");
+        }
+    }
 
-        // 2. Copy liftover executable to the job output directory
-        FileUtils.copyFile(new File(liftoverPath.toString()), getOutDir().toFile());
+    private void runLiftover(File file, Path outPath) throws ToolExecutorException {
+        try {
+            // Input binding
+            List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
+            inputBindings.add(new AbstractMap.SimpleEntry<>(liftoverPath.toAbsolutePath().toString(), VIRTUAL_SCRIPT_FOLDER));
+            inputBindings.add(new AbstractMap.SimpleEntry<>(file.getParent(), VIRTUAL_INPUT_FOLDER));
+            inputBindings.add(new AbstractMap.SimpleEntry<>(resourcePath.toAbsolutePath().toString(), VIRTUAL_RESOURCES_FOLDER));
 
-        // 3. Append mounts
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(null,
-                PlinkWrapperAnalysis.FILE_PARAM_NAMES, getExecutorParams());
-        Map<String, String> mountMap = appendMounts(inputFilenames, sb);
+            // Output binding
+            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outPath.toAbsolutePath().toString(),
+                    VIRTUAL_OUTPUT_FOLDER);
 
-        // Append docker image, version and command
-        appendCommand("liftover.sh", sb);
+            // Main command line and params
+            String params = "bash " + VIRTUAL_SCRIPT_FOLDER + "/liftover.sh"
+                    + " " + Paths.get(VIRTUAL_INPUT_FOLDER).resolve(file.getName())
+                    + " " + targetAssembly
+                    + " " + VIRTUAL_OUTPUT_FOLDER
+                    + " " + VIRTUAL_RESOURCES_FOLDER;
 
-        // Append input file params
-        appendInputFiles(inputFilenames, mountMap, sb);
+            // Execute Pythong script in docker
+            String dockerImage = "opencb/opencga-ext-tools:" + GitRepositoryState.getInstance().getBuildVersion();
 
-        // Append output file params
-        List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("out", "")));
-        appendOutputFiles(outputFilenames, sb);
+            String dockerCli = buildCommandLine(dockerImage, inputBindings, outputBinding, params, null);
+            logger.info("Docker command line: {}", dockerCli);
+            runCommandLine(dockerCli);
 
-        // Append other params
-        Set<String> skipParams =  new HashSet<>(Arrays.asList("out", "noweb"));
-        skipParams.addAll(PlinkWrapperAnalysis.FILE_PARAM_NAMES);
-        appendOtherParams(skipParams, sb);
+            // Check result file
+            String outFilename;
+            if (file.getName().endsWith(".vcf.gz")) {
+                outFilename = file.getName().replace(".vcf.gz", "");
+            } else if (file.getName().endsWith(".vcf")) {
+                outFilename = file.getName().replace(".vcf", "");
+            } else {
+                throw new IllegalArgumentException("File " + file.getName() + " must end with .vcf or .vcf.gz");
+            }
+            outFilename += "." + targetAssembly + ".liftover.vcf.gz";
+            Path outFile = outPath.resolve(outFilename);
+            if (!Files.exists(outFile) || outFile.toFile().length() == 0) {
+                java.io.File stdoutFile = getOutDir().resolve(DockerWrapperAnalysisExecutor.STDOUT_FILENAME).toFile();
+                List<String> stdoutLines = readLines(stdoutFile, Charset.defaultCharset());
 
-        // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: {}", sb);
-        runCommandLine(sb.toString());
+                java.io.File stderrFile = getOutDir().resolve(DockerWrapperAnalysisExecutor.STDERR_FILENAME).toFile();
+                List<String> stderrLines = readLines(stderrFile, Charset.defaultCharset());
+
+                throw new ToolExecutorException("Error executing Liftover: the result file was not created.\nStdout messages: "
+                        + StringUtils.join("\n", stdoutLines) + "\nStderr messages: " + StringUtils.join("\n", stderrLines));
+            }
+        } catch (IOException | ToolException e) {
+            throw new ToolExecutorException(e);
+        }
     }
 
     public String getStudy() {
@@ -69,6 +125,51 @@ public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     public LiftoverWrapperAnalysisExecutor setStudy(String study) {
         this.study = study;
+        return this;
+    }
+
+    public Path getLiftoverPath() {
+        return liftoverPath;
+    }
+
+    public LiftoverWrapperAnalysisExecutor setLiftoverPath(Path liftoverPath) {
+        this.liftoverPath = liftoverPath;
+        return this;
+    }
+
+    public List<File> getFiles() {
+        return files;
+    }
+
+    public LiftoverWrapperAnalysisExecutor setFiles(List<File> files) {
+        this.files = files;
+        return this;
+    }
+
+    public String getTargetAssembly() {
+        return targetAssembly;
+    }
+
+    public LiftoverWrapperAnalysisExecutor setTargetAssembly(String targetAssembly) {
+        this.targetAssembly = targetAssembly;
+        return this;
+    }
+
+    public String getVcfDest() {
+        return vcfDest;
+    }
+
+    public LiftoverWrapperAnalysisExecutor setVcfDest(String vcfDest) {
+        this.vcfDest = vcfDest;
+        return this;
+    }
+
+    public Path getResourcePath() {
+        return resourcePath;
+    }
+
+    public LiftoverWrapperAnalysisExecutor setResourcePath(Path resourcePath) {
+        this.resourcePath = resourcePath;
         return this;
     }
 }

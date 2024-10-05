@@ -210,6 +210,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         Files.createDirectories(conf);
         Files.createDirectories(userHome);
+        Files.createDirectories(opencgaHome.resolve("analysis/resources"));
 
         catalogManagerExternalResource.getConfiguration().serialize(
                 new FileOutputStream(conf.resolve("configuration.yml").toFile()));
@@ -264,6 +265,11 @@ public class OpenCGATestExternalResource extends ExternalResource {
             inputStream = new FileInputStream("../opencga-app/app/analysis/exomiser/" + exomiserFile);
             Files.copy(inputStream, analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
         }
+
+        // Liftover analysis
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/liftover")).toAbsolutePath();
+        inputStream = new FileInputStream("../opencga-app/app/analysis/liftover/liftover.sh");
+        Files.copy(inputStream, analysisPath.resolve("liftover.sh"), StandardCopyOption.REPLACE_EXISTING);
 
         return opencgaHome;
     }

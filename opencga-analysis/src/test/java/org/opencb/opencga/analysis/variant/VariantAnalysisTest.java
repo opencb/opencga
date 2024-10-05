@@ -51,8 +51,10 @@ import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.liftover.LiftoverWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -104,11 +106,13 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.core.api.FieldConstants.LIFTOVER_VCF_INPUT_FOLDER;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 @RunWith(Parameterized.class)
@@ -180,7 +184,7 @@ public class VariantAnalysisTest {
             setUpCatalogManager();
 
             file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
-            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
+//            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
 
             for (int i = 0; i < file.getSampleIds().size(); i++) {
                 String id = file.getSampleIds().get(i);
@@ -1122,6 +1126,126 @@ public class VariantAnalysisTest {
         thrown.expect(StorageEngineException.class);
         thrown.expectMessage("The storage engine is in mode=READ_ONLY");
         variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration("https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "1", ""), false, null, token);
+    }
+
+    @Test
+    public void testLiftoverDestinationJobDir() throws IOException, ToolException, CatalogException {
+        // Run clinical analysis load task
+        Path liftOutdir = Paths.get(opencga.createTmpOutdir("_liftOutdir"));
+        System.out.println("Liftover outdir = " + liftOutdir);
+
+        prepareLiftoverResourcesIfLocal();
+
+        String basename = "NA12877_S1.1k";
+        File file = prepareLiftoverInputFile(basename + ".vcf.gz", "biofiles");
+
+        LiftoverWrapperParams params = new LiftoverWrapperParams()
+                .setFiles(Collections.singletonList(file.getName()))
+                .setTargetAssembly("hg38");
+
+        toolRunner.execute(LiftoverWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), liftOutdir, null, false, token);
+
+        Assert.assertTrue(Files.exists(liftOutdir.resolve(basename + ".hg38.liftover.vcf.gz")));
+        Assert.assertTrue(liftOutdir.resolve(basename + ".hg38.liftover.vcf.gz").toFile().length() > 0);
+    }
+
+    @Test
+    public void testLiftoverDestinationVcfInputFolder() throws IOException, ToolException, CatalogException {
+        // Run clinical analysis load task
+        Path liftOutdir = Paths.get(opencga.createTmpOutdir("_liftOutdir"));
+        System.out.println("Liftover outdir = " + liftOutdir);
+
+        prepareLiftoverResourcesIfLocal();
+
+        String basename = "NA12877_S1.1k";
+        File file = prepareLiftoverInputFile(basename + ".vcf.gz", "biofiles");
+
+        LiftoverWrapperParams params = new LiftoverWrapperParams()
+                .setFiles(Collections.singletonList(file.getName()))
+                .setTargetAssembly("hg38")
+                .setVcfDestination(LIFTOVER_VCF_INPUT_FOLDER);
+
+        toolRunner.execute(LiftoverWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), liftOutdir, null, false, token);
+
+        Assert.assertTrue(Files.exists(Paths.get(file.getUri().getPath()).getParent().resolve(basename + ".hg38.liftover.vcf.gz")));
+        Assert.assertTrue(Paths.get(file.getUri().getPath()).getParent().resolve(basename + ".hg38.liftover.vcf.gz").toFile().length() > 0);
+    }
+
+    @Test
+    public void testLiftoverDestinationUserFolder() throws IOException, ToolException, CatalogException {
+        // Run clinical analysis load task
+        Path liftOutdir = Paths.get(opencga.createTmpOutdir("_liftOutdir"));
+        System.out.println("Liftover outdir = " + liftOutdir);
+
+        prepareLiftoverResourcesIfLocal();
+
+        Path folderPath = Paths.get("custom", "folder");
+        File destCustomFolder = catalogManager.getFileManager().createFolder(STUDY, folderPath.toString(), true, null, QueryOptions.empty(),
+                token).first();
+        System.out.println("destCustomFolder = " + destCustomFolder);
+        catalogManager.getIoManagerFactory().get(destCustomFolder.getUri()).createDirectory(destCustomFolder.getUri(), true);
+
+        String basename = "NA12877_S1.1k";
+        File file = prepareLiftoverInputFile(basename + ".vcf.gz", "biofiles");
+
+        LiftoverWrapperParams params = new LiftoverWrapperParams()
+                .setFiles(Collections.singletonList(file.getName()))
+                .setTargetAssembly("hg38")
+                .setVcfDestination(destCustomFolder.getPath());
+
+        toolRunner.execute(LiftoverWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), liftOutdir, null, false, token);
+
+        Assert.assertTrue(Files.exists(Paths.get(destCustomFolder.getUri().getPath()).resolve(basename + ".hg38.liftover.vcf.gz")));
+        Assert.assertTrue(Paths.get(destCustomFolder.getUri().getPath()).resolve(basename + ".hg38.liftover.vcf.gz").toFile().length() > 0);
+    }
+
+    //-------------------------------------------------------------------------
+    // Utilities
+    //-------------------------------------------------------------------------
+
+    private File prepareLiftoverInputFile(String filename, String folder) throws IOException, CatalogException {
+        File file;
+        try {
+            file = catalogManager.getFileManager().get(STUDY, filename, QueryOptions.empty(), token).first();
+        } catch (CatalogException e) {
+            file = null;
+        }
+        if (file == null) {
+            try (InputStream stream = getClass().getResourceAsStream("/" + folder + "/" + filename)) {
+                file = catalogManager.getFileManager().upload(STUDY, stream, new File().setPath(folder + "/" + filename), false, true, false, token).first();
+            }
+        }
+        return file;
+    }
+
+    private void prepareLiftoverResourcesIfLocal() throws IOException {
+        Path resourcePath = opencga.getOpencgaHome().resolve("analysis").resolve("resources");
+        Path resourcesLocalPath = Paths.get("../../../data/opencga/resources/liftover").toAbsolutePath();
+        if (Files.exists(resourcesLocalPath)) {
+            if (!Files.exists(resourcePath.resolve("liftover"))) {
+                Files.createDirectories(resourcePath.resolve("liftover"));
+            }
+            if (resourcePath.resolve("liftover").toFile().listFiles().length != 2) {
+                for (java.io.File file : resourcesLocalPath.toFile().listFiles()) {
+                    java.io.File destFile = resourcePath.resolve("liftover").resolve(file.getName()).toFile();
+                    System.out.println("Copy from " + file + " to " + destFile.toPath());
+                    Files.copy(file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        }
+        resourcesLocalPath = Paths.get("../../../data/opencga/resources/reference-genome").toAbsolutePath();
+        if (Files.exists(resourcesLocalPath)) {
+            if (!Files.exists(resourcePath.resolve("reference-genome"))) {
+                Files.createDirectories(resourcePath.resolve("reference-genome"));
+            }
+            if (resourcePath.resolve("reference-genome").toFile().listFiles().length != 4) {
+                for (java.io.File file : resourcesLocalPath.toFile().listFiles()) {
+                    java.io.File destFile = resourcePath.resolve("reference-genome").resolve(file.getName()).toFile();
+                    System.out.println("Copy from " + file + " to " + destFile.toPath());
+                    Files.copy(file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        }
     }
 
     public void checkExecutionResult(ExecutionResult er) {
