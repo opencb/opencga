@@ -29,7 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
@@ -44,24 +44,44 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 @Api(value = "Analysis - Clinical", position = 4, description = "Methods for working with Clinical Interpretations")
 public class EnterpriseClinicalWebService extends ClinicalWebService {
 
-    protected CvdbSolrEngine cvdbEngine;
-    private ClinicalInterpretationManager clinicalInterpretationManager;
+    public static final AtomicReference<CvdbSolrEngine> cvdbEngineAtomicRef = new AtomicReference();
+    public static final AtomicReference<ClinicalInterpretationManager> clinicalInterpretationManagerAtomicRef = new AtomicReference<>();
 
-    private static AtomicBoolean eClinicalInitialized = new AtomicBoolean(false);
-
-    public EnterpriseClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public EnterpriseClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                                        @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
+    }
 
-        // Get enterprise configuration to set the CVDB engine
-        if (!eClinicalInitialized.get()) {
-            logger.info("Initializing CVDB Solr Engine");
-            EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
-            cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, new VariantStorageMetadataManager(
-                    new DummyVariantStorageMetadataDBAdaptorFactory()));
-            logger.info("cvdbEngine = {}", cvdbEngine);
-            clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory, opencgaHome);
-            eClinicalInitialized.set(true);
+    private CvdbSolrEngine getCvdbEngine() {
+        CvdbSolrEngine cvdbEngine = cvdbEngineAtomicRef.get();
+        if (cvdbEngine == null) {
+            synchronized(cvdbEngineAtomicRef) {
+                cvdbEngine = cvdbEngineAtomicRef.get();
+                if (cvdbEngine == null) {
+                    logger.info("Initializing CVDB Solr Engine");
+                    EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
+                    cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, new VariantStorageMetadataManager(
+                            new DummyVariantStorageMetadataDBAdaptorFactory()));
+                    cvdbEngineAtomicRef.set(cvdbEngine);
+                }
+            }
         }
+        return cvdbEngine;
+    }
+
+    private ClinicalInterpretationManager getClinicalInterpretationManager() throws IOException {
+        ClinicalInterpretationManager clinicalInterpretationManager = clinicalInterpretationManagerAtomicRef.get();
+        if (clinicalInterpretationManager == null) {
+            synchronized(clinicalInterpretationManagerAtomicRef) {
+                clinicalInterpretationManager = clinicalInterpretationManagerAtomicRef.get();
+                if (clinicalInterpretationManager == null) {
+                    logger.info("Initializing clinical interpretation manager");
+                    clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory, opencgaHome);
+                    clinicalInterpretationManagerAtomicRef.set(clinicalInterpretationManager);
+                }
+            }
+        }
+        return clinicalInterpretationManager;
     }
 
     //-------------------------------------------------------------------------
@@ -241,11 +261,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
 
-            logger.info("cvdbEngine = {}", cvdbEngine);
-            logger.info("query = {}", query);
-            logger.info("queryOptions = {}", queryOptions);
-            logger.info("token = {}", token);
-            return cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
+            return getCvdbEngine().searchClinicalAnalyses(query, queryOptions, token);
         });
     }
 
@@ -397,7 +413,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
 
-            return cvdbEngine.searchClinicalInterpretations(query, queryOptions, token);
+            return getCvdbEngine().searchClinicalInterpretations(query, queryOptions, token);
         });
     }
 
@@ -549,7 +565,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
 
-            return cvdbEngine.searchClinicalVariants(query, queryOptions, token);
+            return getCvdbEngine().searchClinicalVariants(query, queryOptions, token);
         });
     }
 
@@ -702,7 +718,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
 
-            return cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
+            return getCvdbEngine().searchClinicalVariantEvidences(query, queryOptions, token);
         });
     }
 
@@ -852,7 +868,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             queryOptions.put(QueryOptions.FACET, field);
 
-            return cvdbEngine.facetClinicalAnalyses(query, queryOptions, token);
+            return getCvdbEngine().facetClinicalAnalyses(query, queryOptions, token);
         });
     }
 
@@ -998,7 +1014,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             queryOptions.put(QueryOptions.FACET, field);
 
-            return cvdbEngine.facetClinicalInterpretations(query, queryOptions, token);
+            return getCvdbEngine().facetClinicalInterpretations(query, queryOptions, token);
         });
     }
 
@@ -1144,7 +1160,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             queryOptions.put(QueryOptions.FACET, field);
 
-            return cvdbEngine.facetClinicalVariants(query, queryOptions, token);
+            return getCvdbEngine().facetClinicalVariants(query, queryOptions, token);
         });
     }
 
@@ -1290,7 +1306,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             queryOptions.put(QueryOptions.FACET, field);
 
-            return cvdbEngine.facetClinicalVariantEvidences(query, queryOptions, token);
+            return getCvdbEngine().facetClinicalVariantEvidences(query, queryOptions, token);
         });
     }
 
@@ -1307,7 +1323,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiParam(value = CV_ID_DESCR, required = true) @QueryParam(CV_ID_NAME) String variantIds,
             @ApiParam(value = CI_STATUS_ID_DESCR) @QueryParam(CI_STATUS_ID_NAME) String interpretationStatusId) {
         return run(() -> {
-            return cvdbEngine.getClinicalVariantSummaryStats(variantIds, interpretationStatusId, projectId, studyId, token);
+            return getCvdbEngine().getClinicalVariantSummaryStats(variantIds, interpretationStatusId, projectId, studyId, token);
         });
     }
 
@@ -1419,7 +1435,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
                 }
             }
 
-            return CvdbUtils.getClinicalVariant(query, queryOptions, clinicalInterpretationManager, cvdbEngine, token);
+            return CvdbUtils.getClinicalVariant(query, queryOptions, getClinicalInterpretationManager(), getCvdbEngine(), token);
         });
     }
 }
