@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.tools;
 
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -79,6 +80,14 @@ public abstract class OpenCgaToolExecutor {
 
     protected final String getToken() {
         return getExecutorParams().getString("token");
+    }
+
+    protected void addParam(String key, Object value) throws ToolException {
+        arm.addParam(key, value);
+    }
+
+    protected final void addEvent(Event.Type type, String message) throws ToolException {
+        arm.addEvent(type, message);
     }
 
     protected final void addWarning(String warning) throws ToolException {

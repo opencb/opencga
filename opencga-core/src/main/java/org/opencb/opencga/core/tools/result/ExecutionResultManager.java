@@ -225,6 +225,10 @@ public class ExecutionResultManager {
         return params;
     }
 
+    public void addParam(String key, Object value) throws ToolException {
+        updateResult(result -> result.getExecutor().getParams().put(key, value));
+    }
+
     public void addEvent(Event.Type type, String message) throws ToolException {
         updateResult(result -> result.getEvents().add(new Event(type, message)));
     }
