@@ -102,7 +102,7 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
         return Arrays.asList(PREPARE_RESOURCES_STEP, ID);
     }
 
-    protected void run() throws ToolException {
+    protected void run() throws ToolException, IOException {
         // Download and copy liftover resource files in the job dir
         step(PREPARE_RESOURCES_STEP, this::prepareResources);
 
@@ -110,16 +110,23 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
         step(ID, this::runLiftover);
 
         // Do we have to clean the liftover resource folder
+//        Files.newDirectoryStream(resourcePath).forEach(file -> {
+//            try {
+//                Files.delete(file);
+//            } catch (IOException e) {
+//                logger.warn("Error deleting file '{}': {}", file, e.getMessage());
+//            }
+//        });
     }
 
 
-    protected void prepareResources() throws IOException, ToolException {
+    private void prepareResources() throws IOException, ToolException {
         // Create folder where the liftover resources will be saved (within the job dir, aka outdir)
         resourcePath = Files.createDirectories(getOutDir().resolve(RESOURCES_FOLDER));
 
         // Identify Liftover resources to download only the required ones
         Map<String, List<String>> mapResources = new HashMap<>();
-        switch (analysisParams.getTargetAssembly()) {
+        switch (analysisParams.getTargetAssembly().toUpperCase()) {
             case LIFTOVER_GRCH38: {
                 mapResources.put(ID, Collections.singletonList("GRCh37_to_GRCh38.chain.gz"));
                 mapResources.put("reference-genome", Arrays.asList("Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz",
@@ -148,7 +155,7 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    protected void runLiftover() throws Exception {
+    private void runLiftover() throws Exception {
         // Get executor
         LiftoverWrapperAnalysisExecutor executor = getToolExecutor(LiftoverWrapperAnalysisExecutor.class);
 

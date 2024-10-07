@@ -24,7 +24,7 @@ import java.util.List;
 
 public class LiftoverWrapperParams extends ToolParams {
 
-    public static final String DESCRIPTION = "BCFtools +liftover plugin parameterss";
+    public static final String DESCRIPTION = "BCFtools +liftover plugin parameters";
 
     @DataField(id = "files", description = FieldConstants.LIFTOVER_FILES_DESCRIPTION, required = true)
     private List<String> files;

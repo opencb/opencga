@@ -43,7 +43,7 @@ public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private String vcfDest;
     private Path resourcePath;
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+//    private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
     protected void run() throws Exception {
@@ -91,7 +91,7 @@ public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                     + " " + VIRTUAL_RESOURCES_FOLDER;
 
             // Execute Pythong script in docker
-            String dockerImage = "opencb/opencga-ext-tools:" + GitRepositoryState.getInstance().getBuildVersion();
+            String dockerImage = getDockerImageName() + GitRepositoryState.getInstance().getBuildVersion();
 
             String dockerCli = buildCommandLine(dockerImage, inputBindings, outputBinding, params, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
