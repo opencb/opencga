@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.wrappers.liftover;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -46,6 +47,9 @@ public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     @Override
     protected void run() throws Exception {
+        // Add parameters
+        addParameters();
+
         Path outPath = (StringUtils.isEmpty(vcfDest) ? getOutDir() : Paths.get(vcfDest));
 
         int numFails = 0;
@@ -90,6 +94,7 @@ public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             String dockerImage = "opencb/opencga-ext-tools:" + GitRepositoryState.getInstance().getBuildVersion();
 
             String dockerCli = buildCommandLine(dockerImage, inputBindings, outputBinding, params, null);
+            addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
             logger.info("Docker command line: {}", dockerCli);
             runCommandLine(dockerCli);
 
@@ -117,6 +122,14 @@ public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         } catch (IOException | ToolException e) {
             throw new ToolExecutorException(e);
         }
+    }
+
+    private void addParameters() throws ToolException {
+        addParam("liftoverPath", liftoverPath);
+        addParam("files", files);
+        addParam("targetAssembly", targetAssembly);
+        addParam("vcfDest", vcfDest);
+        addParam("resourcePath", resourcePath);
     }
 
     public String getStudy() {
