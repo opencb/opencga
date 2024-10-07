@@ -54,6 +54,7 @@ public class FieldConstants {
     public static final String NOTES_ID_DESCRIPTION = "Note unique identifier.";
     public static final String NOTES_SCOPE_DESCRIPTION = "Scope of the Note.";
     public static final String NOTES_STUDY_DESCRIPTION = "Study FQN if the Note scope is STUDY.";
+    public static final String NOTES_TYPE_DESCRIPTION = "Note type.";
     public static final String NOTES_TAGS_DESCRIPTION = "Note tags.";
     public static final String NOTES_USER_ID_DESCRIPTION = "User that wrote that Note.";
     public static final String NOTES_VISIBILITY_DESCRIPTION = "Visibility of the Note.";
@@ -62,6 +63,7 @@ public class FieldConstants {
 
     public static final String NOTES_ID_PARAM = "id";
     public static final String NOTES_SCOPE_PARAM = "scope";
+    public static final String NOTES_TYPE_PARAM = "type";
     public static final String NOTES_STUDY_PARAM = "study";
     public static final String NOTES_TAGS_PARAM = "tags";
     public static final String NOTES_USER_ID_PARAM = "userId";

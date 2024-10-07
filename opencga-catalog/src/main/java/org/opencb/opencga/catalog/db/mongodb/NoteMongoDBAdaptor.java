@@ -208,7 +208,7 @@ public class NoteMongoDBAdaptor extends CatalogMongoDBAdaptor implements NoteDBA
 //            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
 //        }
 
-        final String[] acceptedStringParams = {QueryParams.USER_ID.key(), QueryParams.VISIBILITY.key()};
+        final String[] acceptedStringParams = {QueryParams.USER_ID.key(), QueryParams.VISIBILITY.key(), QueryParams.TYPE.key()};
         filterStringParams(parameters, document.getSet(), acceptedStringParams);
 
         Object value = parameters.get(QueryParams.VALUE.key());
@@ -399,6 +399,7 @@ public class NoteMongoDBAdaptor extends CatalogMongoDBAdaptor implements NoteDBA
                         break;
                     case ID:
                     case UUID:
+                    case TYPE:
                     case SCOPE:
                     case USER_ID:
                     case TAGS:
