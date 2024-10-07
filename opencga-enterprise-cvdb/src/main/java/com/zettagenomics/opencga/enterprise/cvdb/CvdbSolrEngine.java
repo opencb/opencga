@@ -80,7 +80,8 @@ import java.util.stream.Collectors;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.*;
-import static org.opencb.commons.datastore.core.QueryOptions.*;
+import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
+import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 import static org.opencb.opencga.core.api.ParamConstants.ANONYMOUS_USER_ID;
 
 /**
@@ -801,7 +802,7 @@ public class CvdbSolrEngine {
                             throw new CvdbException("Invalid study ID '" + study.getId() + "' not found in project '" + project.getId()
                                     + "'");
                         }
-                        studyIds.add(study.getFqn());
+                        studyIds.add(study.getId());
                     }
                 } else {
                     throw new CvdbException("Invalid use of '" + ALL_STUDIES_VALUE + "' (to indicate all studies) because no project has"
@@ -829,7 +830,7 @@ public class CvdbSolrEngine {
                         }
                     }
                 }
-                studyIds.add(study.getFqn());
+                studyIds.add(study.getId());
             }
         }
 
