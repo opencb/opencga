@@ -58,6 +58,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
             cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, new VariantStorageMetadataManager(
                     new DummyVariantStorageMetadataDBAdaptorFactory()));
+            logger.info("cvdbEngine = {}", cvdbEngine);
             clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory, opencgaHome);
             eClinicalInitialized.set(true);
         }
@@ -240,6 +241,10 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
 
+            logger.info("cvdbEngine = {}", cvdbEngine);
+            logger.info("query = {}", query);
+            logger.info("queryOptions = {}", queryOptions);
+            logger.info("token = {}", token);
             return cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
         });
     }
