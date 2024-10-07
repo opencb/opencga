@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.12.3-SNAPSHOT</version>
+        <version>4.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -46,10 +46,6 @@
         <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-mongodb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-datastore-solr</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.biodata</groupId>
@@ -113,10 +109,6 @@
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
             <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-solrj</artifactId>
         </dependency>
         <dependency>
             <groupId>com.microsoft.azure</groupId>
@@ -193,11 +185,6 @@
             <artifactId>htsjdk</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
             <scope>test</scope>
@@ -214,26 +201,9 @@
             <artifactId>azure-client-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.microsoft.azure</groupId>
-            <artifactId>azure</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.microsoft.azure</groupId>
-            <artifactId>azure-batch</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
             <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-test-framework</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -263,6 +233,12 @@
                 <filtering>false</filtering>
                 <includes>
                     <include>template.zip</include>
+                </includes>
+            </testResource>
+            <testResource>
+                <directory>../opencga-core/src/test/resources</directory>
+                <includes>
+                    <include>log4j2-test.xml</include>
                 </includes>
             </testResource>
         </testResources>

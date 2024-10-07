@@ -8,6 +8,7 @@ import java.util.List;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CohortMetadata extends StudyResourceMetadata<CohortMetadata> {
+    public static final String INVALID_STATS_NUM_SAMPLES = "invalidStatsNumSamples";
 
 //    private int studyId;
 //    private int id;

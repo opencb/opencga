@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.variant.operations;
 import org.apache.solr.common.StringUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
+import org.opencb.opencga.core.models.operations.variant.VariantStudyDeleteParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -32,7 +32,7 @@ import java.net.URI;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Tool(id = VariantStudyDeleteOperationTool.ID, description = VariantStudyDeleteOperationTool.DESCRIPTION,
-        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantStudyDeleteOperationTool extends OperationTool {
 
     public static final String ID = "variant-study-delete";

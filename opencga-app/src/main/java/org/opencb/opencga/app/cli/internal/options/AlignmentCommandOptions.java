@@ -100,7 +100,7 @@ public class AlignmentCommandOptions {
         public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--file-id"}, description = FieldConstants.ALIGNMENT_BAM_FILE_ID_DESCRIPTION, required = true, arity = 1)
-        public String file;
+        public String fileId;
 
         @Parameter(names = {"--overwrite"}, description = FieldConstants.ALIGNMENT_OVERWRITE_DESCRIPTION, arity = 0)
         public boolean overwrite;
@@ -465,7 +465,7 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[organization@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--command"}, description = BWA_COMMAND_DESCRIPTION)
@@ -533,7 +533,7 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[organization@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--command"}, description = DEEPTOOLS_COMMAND_DESCRIPTION)

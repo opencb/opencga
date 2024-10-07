@@ -11,6 +11,7 @@ class RClientGenerator(RestClientGenerator):
         super().__init__(server_url, output_dir)
 
         self.categories = {
+        	'Organizations': 'Organization',
             'Users': 'User',
             'Projects': 'Project',
             'Studies': 'Study',
@@ -26,7 +27,7 @@ class RClientGenerator(RestClientGenerator):
             'Analysis - Clinical': 'Clinical',
             'Operations - Variant Storage': 'Operation',
             'Meta': 'Meta',
-            'Cva': 'Cva',
+            'Cvdb': 'Cvdb',
             'GA4GH': 'GA4GH',
             'Admin': 'Admin'
         }
@@ -74,6 +75,7 @@ class RClientGenerator(RestClientGenerator):
                                                        myEndpoint['path'],
                                                        ", ".join(endpoint_params)))
         path_params = set(class_path_params)
+        path_params = sorted(list(path_params))
         text.append("#'\n#' @md")
         text.append("#' @seealso \\url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation")
         text.append("#' \\url{http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/}")

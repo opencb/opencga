@@ -70,6 +70,7 @@ import static org.opencb.opencga.storage.core.metadata.models.TaskMetadata.Statu
 import static org.opencb.opencga.storage.core.metadata.models.TaskMetadata.Type;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.UNSUPPORTED_VARIANT_TYPE_SET;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
 /**
@@ -80,7 +81,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
 public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStoragePipeline {
 
     private final Logger logger = LoggerFactory.getLogger(HadoopLocalLoadVariantStoragePipeline.class);
-    private static final String OPERATION_NAME = "Load";
+    public static final String OPERATION_NAME = "Load";
     private int taskId;
     private HashSet<String> loadedGenotypes;
     private int sampleIndexVersion;
@@ -182,18 +183,32 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         final AtomicInteger ongoingLoads = new AtomicInteger(1); // this
         boolean resume = options.getBoolean(VariantStorageOptions.RESUME.key(), VariantStorageOptions.RESUME.defaultValue());
-        List<Integer> fileIds = Collections.singletonList(getFileId());
 
-        taskId = getMetadataManager()
-                .addRunningTask(studyId, OPERATION_NAME, fileIds, resume, Type.LOAD,
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        LinkedHashSet<Integer> sampleIdsFromFileId = metadataManager.getSampleIdsFromFileId(studyId, getFileId());
+        VariantStorageEngine.SplitData splitData = VariantStorageEngine.SplitData.from(options);
+
+        taskId = metadataManager
+                .addRunningTask(studyId, OPERATION_NAME, Collections.singletonList(getFileId()), resume, Type.LOAD,
                 operation -> {
                     if (operation.getName().equals(OPERATION_NAME)) {
-                        if (operation.currentStatus().equals(Status.ERROR)) {
+                        if (operation.currentStatus() == Status.ERROR) {
                             Integer fileId = operation.getFileIds().get(0);
-                            String fileName = getMetadataManager().getFileName(studyMetadata.getId(), fileId);
+                            String fileName = metadataManager.getFileName(studyMetadata.getId(), fileId);
                             logger.warn("Pending load operation for file " + fileName + " (" + fileId + ')');
                         } else {
                             ongoingLoads.incrementAndGet();
+                        }
+                        if (splitData != VariantStorageEngine.SplitData.CHROMOSOME && splitData != VariantStorageEngine.SplitData.REGION) {
+                            // Do not allow any concurrent load operation on files sharing samples
+                            for (Integer fileId : operation.getFileIds()) {
+                                Set<Integer> samples = metadataManager.getSampleIdsFromFileId(studyId, fileId);
+                                for (Integer sample : samples) {
+                                    if (sampleIdsFromFileId.contains(sample)) {
+                                        return false;
+                                    }
+                                }
+                            }
                         }
                         return true;
                     } else {
@@ -331,8 +346,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
-            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
+        this.largestVariantLength = largestVariantTask.getMaxLength();
     }
 
     protected void loadFromAvro(URI input, URI outdir, ArchiveTableHelper helper, ProgressLogger progressLogger)
@@ -390,13 +405,13 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             throw new StorageEngineException("Error loading file " + input, e);
         }
 
-        logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
         if (sampleIndexDBLoader != null) {
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
-            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
+        this.largestVariantLength = largestVariantTask.getMaxLength();
+        logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
     }
 
     protected void loadFromAvroWithoutArchive(URI input, URI outdir, ArchiveTableHelper helper, ProgressLogger progressLogger)
@@ -438,13 +453,13 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             throw new StorageEngineException("Error loading file " + input, e);
         }
 
-        logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
         if (sampleIndexDBLoader != null) {
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
-            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
+        this.largestVariantLength = largestVariantTask.getMaxLength();
+        logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
     }
 
     private void logLoadResults(VariantFileMetadata variantFileMetadata,
@@ -490,7 +505,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         if (skipped > 0) {
             logger.info("There were " + skipped + " skipped variants");
             for (VariantType type : VariantType.values()) {
-                if (!TARGET_VARIANT_TYPE_SET.contains(type)) {
+                if (UNSUPPORTED_VARIANT_TYPE_SET.contains(type)) {
                     Long countByType = variantFileMetadata.getStats().getTypeCount().get(type.toString());
                     if (countByType != null && countByType > 0) {
                         logger.info("  * Of which " + countByType + " are " + type.toString() + " variants.");

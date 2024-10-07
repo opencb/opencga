@@ -23,12 +23,111 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop</artifactId>
-        <version>2.12.3-SNAPSHOT</version>
+        <version>4.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-storage-hadoop-core</artifactId>
     <packaging>jar</packaging>
+
+    <!--
+         Special jetty dependencies for storage-hadoop tests to work.
+         This can't be moved to the main pom, as it would affect all the modules, and the final build would be incorrect.
+    -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-server</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-webapp</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-servlet</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-http</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty.http2</groupId>
+                <artifactId>http2-hpack</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-io</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util-ajax</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-xml</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-rewrite</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-security</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-client</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-project</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-alpn-client</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-alpn-java-client</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -50,14 +149,68 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
+            <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
+            <artifactId>${opencga-hadoop-shaded.artifactId}</artifactId>
+            <version>${opencga.hadoop.thirdparty.version}</version>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.yaml</groupId>
+                    <artifactId>snakeyaml</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <artifactId>opencga-storage-hadoop-compat-api</artifactId>
             <version>${project.parent.version}</version>
-            <classifier>shaded</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-hadoop-compat-${opencga-storage-hadoop-compat.id}</artifactId>
+            <version>${project.parent.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-solr</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-tools</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-formats</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-models</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.oskar</groupId>
+            <artifactId>oskar-analysis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.ga4gh</groupId>
+            <artifactId>ga4gh</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.cellbase</groupId>
+            <artifactId>cellbase-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.parquet</groupId>
@@ -71,32 +224,6 @@
             <groupId>org.glassfish.jersey.inject</groupId>
             <artifactId>jersey-hk2</artifactId>
         </dependency>
-
-        <!--Test dependencies-->
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-core</artifactId>
-            <version>${project.parent.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-            <version>${project.parent.version}</version>
-            <classifier>tests</classifier>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet</artifactId>
@@ -105,23 +232,20 @@
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-test-framework</artifactId>
-        </dependency>
 
-        <!-- Added dependencies -->
         <dependency>
-            <groupId>org.opencb.ga4gh</groupId>
-            <artifactId>ga4gh</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
+            <groupId>com.github.samtools</groupId>
+            <artifactId>htsjdk</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <!-- Added dependencies -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -132,61 +256,16 @@
             <artifactId>protobuf-java</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>biodata-formats</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.cellbase</groupId>
-            <artifactId>cellbase-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.parquet</groupId>
             <artifactId>parquet-hadoop</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.ant</groupId>
             <artifactId>ant</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.zookeeper</groupId>
-            <artifactId>zookeeper</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-lib</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-datastore-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.oskar</groupId>
-            <artifactId>oskar-analysis</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-core</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -200,7 +279,6 @@
             <groupId>org.apache.avro</groupId>
             <artifactId>avro-mapred</artifactId>
             <classifier>hadoop2</classifier>
-
         </dependency>
         <dependency>
             <groupId>commons-logging</groupId>
@@ -211,24 +289,102 @@
             <artifactId>parquet-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>biodata-tools</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>biodata-models</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.samtools</groupId>
-            <artifactId>htsjdk</artifactId>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
+        <!--Test dependencies-->
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+            <version>${project.parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
+            <artifactId>${opencga-hadoop-shaded.artifactId}</artifactId>
+            <version>${opencga.hadoop.thirdparty.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.yaml</groupId>
+                    <artifactId>snakeyaml</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-test-framework</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-auth</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-hdfs</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-hdfs-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.htrace</groupId>
+                    <artifactId>htrace-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpcore</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpmime</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -246,69 +402,50 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
+                            <ignoredNonTestScopedDependencies>
+                                <ignoredNonTestScopedDependency>
+                                    org.opencb.cellbase:cellbase-client
+                                </ignoredNonTestScopedDependency>
+                                <ignoredNonTestScopedDependency>
+                                    org.apache.zookeeper:zookeeper
+                                </ignoredNonTestScopedDependency>
+                                <ignoredNonTestScopedDependency>
+                                    org.apache.logging.log4j:log4j-api
+                                </ignoredNonTestScopedDependency>
+                                <ignoredNonTestScopedDependency>
+                                    commons-lang:commons-lang
+                                </ignoredNonTestScopedDependency>
+                                <ignoredNonTestScopedDependency>
+                                    org.opencb.opencga:opencga-storage-hadoop-compat-api
+                                </ignoredNonTestScopedDependency>
+                            </ignoredNonTestScopedDependencies>
+                            <ignoredUsedUndeclaredDependencies>
+                                <ignoredUsedUndeclaredDependency>
+                                    com.google.code.findbugs:jsr305
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    org.apache.zookeeper:zookeeper
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    commons-lang:commons-lang
+                                </ignoredUsedUndeclaredDependency>
+                            </ignoredUsedUndeclaredDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>storage-hadoop</id>
-            <activation>
-                <property>
-                    <name>storage-hadoop</name>
-                </property>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>3.2.0</version>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>src/assembly/src.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>make-assembly</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <version>3.6.0</version>
-                        <executions>
-                            <execution>
-                                <id>analyze</id>
-                                <goals>
-                                    <goal>analyze-only</goal>
-                                </goals>
-                                <configuration>
-                                    <failOnWarning>true</failOnWarning>
-                                    <ignoredUnusedDeclaredDependencies>
-                                        <ignoredUnusedDeclaredDependency>
-                                            *
-                                        </ignoredUnusedDeclaredDependency>
-                                    </ignoredUnusedDeclaredDependencies>
-                                    <ignoredNonTestScopedDependencies>
-                                        <ignoredNonTestScopedDependency>org.apache.logging.log4j:log4j-api</ignoredNonTestScopedDependency>
-                                        <ignoredNonTestScopedDependency>org.apache.logging.log4j:log4j-core</ignoredNonTestScopedDependency>
-                                        <ignoredNonTestScopedDependency>org.opencb.cellbase:cellbase-client</ignoredNonTestScopedDependency>
-                                        <ignoredNonTestScopedDependency>org.apache.zookeeper:zookeeper</ignoredNonTestScopedDependency>
-                                    </ignoredNonTestScopedDependencies>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
 </project>

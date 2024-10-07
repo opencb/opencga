@@ -15,6 +15,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,8 +46,10 @@ public class SampleIndexDBAdaptorTest {
         SampleIndexQuery query = new SampleIndexQuery(SampleIndexSchema.defaultSampleIndexSchema(), Collections.emptyList(), 0, null, "ST",
                 Collections.singletonMap(sampleName, Collections.singletonList("0/1")), Collections.emptySet(), null, Collections.emptyMap(),
                 Collections.emptyMap(), Collections.emptyMap(), new SampleAnnotationIndexQuery(SampleIndexSchema.defaultSampleIndexSchema()),
-                Collections.emptySet(), null, false, VariantQueryUtils.QueryOperation.AND);
-        new SampleIndexDBAdaptor(new HBaseManager(new Configuration()), null, metadataManager).parse(query.forSample(sampleName), null);
+                Collections.emptySet(), null, false, VariantQueryUtils.QueryOperation.AND, null);
+        new SampleIndexDBAdaptor(new HBaseManager(new Configuration()),
+                new HBaseVariantTableNameGenerator("default", "my_dbname"), metadataManager)
+                .parse(query.forSample(sampleName), null);
     }
 
     @Test

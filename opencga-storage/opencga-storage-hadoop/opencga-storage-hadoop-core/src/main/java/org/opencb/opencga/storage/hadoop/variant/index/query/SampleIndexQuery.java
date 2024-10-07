@@ -4,6 +4,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
@@ -49,6 +50,8 @@ public class SampleIndexQuery {
     private final Set<String> mendelianErrorSet;
     private final MendelianErrorType mendelianErrorType;
     private final boolean includeParentColumns;
+
+    private final Query uncoveredQuery;
     private final QueryOperation queryOperation;
 
     public enum MendelianErrorType {
@@ -73,6 +76,7 @@ public class SampleIndexQuery {
         this.mendelianErrorSet = query.mendelianErrorSet;
         this.mendelianErrorType = query.mendelianErrorType;
         this.includeParentColumns = query.includeParentColumns;
+        this.uncoveredQuery = query.uncoveredQuery;
         this.queryOperation = query.queryOperation;
     }
 
@@ -83,7 +87,7 @@ public class SampleIndexQuery {
                             Map<String, Values<SampleFileIndexQuery>> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
                             Set<String> mendelianErrorSet, MendelianErrorType mendelianErrorType, boolean includeParentColumns,
-                            QueryOperation queryOperation) {
+                            QueryOperation queryOperation, Query uncoveredQuery) {
         this.schema = schema;
         this.locusQueries = locusQueries;
         this.extendedFilteringRegion = extendedFilteringRegion;
@@ -100,6 +104,7 @@ public class SampleIndexQuery {
         this.mendelianErrorType = mendelianErrorType;
         this.includeParentColumns = includeParentColumns;
         this.queryOperation = queryOperation;
+        this.uncoveredQuery = uncoveredQuery;
     }
 
     public SampleIndexSchema getSchema() {
@@ -225,6 +230,10 @@ public class SampleIndexQuery {
 
     public boolean isIncludeParentColumns() {
         return includeParentColumns;
+    }
+
+    public Query getUncoveredQuery() {
+        return uncoveredQuery;
     }
 
     public QueryOperation getQueryOperation() {

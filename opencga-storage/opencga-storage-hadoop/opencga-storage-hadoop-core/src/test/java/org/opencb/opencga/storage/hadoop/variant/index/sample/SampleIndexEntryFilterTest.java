@@ -259,6 +259,7 @@ public class SampleIndexEntryFilterTest {
     private SingleSampleIndexQuery getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation op, RangeIndexFieldFilter... frequencyQuery) {
         SampleAnnotationIndexQuery annotationIndexQuery = new SampleAnnotationIndexQuery(
                 new byte[2],
+                null,
                 schema.getCtIndex().getField().noOpFilter(),
                 schema.getBiotypeIndex().getField().noOpFilter(),
                 schema.getTranscriptFlagIndexSchema().getField().noOpFilter(),
@@ -279,7 +280,7 @@ public class SampleIndexEntryFilterTest {
 
     private SingleSampleIndexQuery getSingleSampleIndexQuery(SampleAnnotationIndexQuery annotationIndexQuery, Map<String, Values<SampleFileIndexQuery>> fileFilterMap) {
         return new SampleIndexQuery(
-                schema, Collections.emptyList(), 0, null, "study", Collections.singletonMap("S1", Arrays.asList("0/1", "1/1")), Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(), fileFilterMap, annotationIndexQuery, Collections.emptySet(), null, false, VariantQueryUtils.QueryOperation.AND)
+                schema, Collections.emptyList(), 0, null, "study", Collections.singletonMap("S1", Arrays.asList("0/1", "1/1")), Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(), fileFilterMap, annotationIndexQuery, Collections.emptySet(), null, false, VariantQueryUtils.QueryOperation.AND, null)
                 .forSample("S1");
     }
 }

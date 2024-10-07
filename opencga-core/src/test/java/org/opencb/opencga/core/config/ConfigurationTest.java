@@ -20,9 +20,11 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
-import java.io.*;
-import java.net.URL;
-import java.nio.charset.Charset;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -32,34 +34,19 @@ import java.util.*;
 public class ConfigurationTest {
 
     @Test
-    public void testDefault() {
+    public void testDefault() throws IOException {
         Configuration configuration = new Configuration();
 
         configuration.setLogLevel("INFO");
 
         configuration.setWorkspace("/opt/opencga/sessions");
-
-        configuration.setAdmin(new Admin());
-
-        Authentication authentication = new Authentication();
-        configuration.setAuthentication(authentication);
-
         configuration.setMonitor(new Monitor());
         configuration.getAnalysis().setExecution(new Execution());
 
-        configuration.setHooks(Collections.singletonMap("user@project:study", Collections.singletonMap("file",
+        configuration.setHooks(Collections.singletonMap("organization@project:study", Collections.singletonMap("file",
                 Collections.singletonList(
                         new HookConfiguration("name", "~*SV*", HookConfiguration.Stage.CREATE, HookConfiguration.Action.ADD, "tags", "SV")
         ))));
-
-        List<AuthenticationOrigin> authenticationOriginList = new ArrayList<>();
-        authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.OPENCGA.toString(),
-                "localhost", Collections.emptyMap()));
-        Map<String, Object> myMap = new HashMap<>();
-        myMap.put("ou", "People");
-        authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.LDAP.toString(),
-                "ldap://10.10.0.20:389", myMap));
-        configuration.getAuthentication().setAuthenticationOrigins(authenticationOriginList);
 
         Email emailServer = new Email("localhost", "", "", "", "", false);
         configuration.setEmail(emailServer);
@@ -73,7 +60,7 @@ public class ConfigurationTest {
         configuration.setAudit(audit);
 
         ServerConfiguration serverConfiguration = new ServerConfiguration();
-        RestServerConfiguration rest = new RestServerConfiguration(1000, 100, 1000);
+        RestServerConfiguration rest = new RestServerConfiguration(1000);
         GrpcServerConfiguration grpc = new GrpcServerConfiguration(1001);
         serverConfiguration.setGrpc(grpc);
         serverConfiguration.setRest(rest);
@@ -92,11 +79,10 @@ public class ConfigurationTest {
 //        catalogConfiguration.getStorageEngines().add(storageEngineConfiguration1);
 //        catalogConfiguration.getStorageEngines().add(storageEngineConfiguration2);
 
-        try {
-            configuration.serialize(new FileOutputStream("/tmp/configuration-test.yml"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Path outdir = Paths.get("target/test-data", "junit-opencga-" +
+                new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss.SSS").format(new Date()));
+        Files.createDirectories(outdir);
+        configuration.serialize(Files.newOutputStream(outdir.resolve("configuration-test.yml").toFile().toPath()));
     }
 
     @Test

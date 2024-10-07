@@ -75,7 +75,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     private CohortConverter cohortConverter;
 
     public CohortMongoDBAdaptor(MongoDBCollection cohortCollection, MongoDBCollection deletedCohortCollection, Configuration configuration,
-                                MongoDBAdaptorFactory dbAdaptorFactory) {
+                                OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(CohortMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.cohortCollection = cohortCollection;
@@ -114,7 +114,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             CatalogParameterException, CatalogAuthorizationException {
         checkCohortIdExists(clientSession, studyId, cohort.getId());
 
-        long newId = getNewUid();
+        long newId = getNewUid(clientSession);
         cohort.setUid(newId);
         cohort.setStudyUid(studyId);
         if (StringUtils.isEmpty(cohort.getUuid())) {
@@ -235,22 +235,21 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     @Override
     public OpenCGAResult update(long cohortUid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Query query = new Query(QueryParams.UID.key(), cohortUid);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key(),
-                        QueryParams.SAMPLES.key() + "." + QueryParams.ID.key()));
-        OpenCGAResult<Cohort> documentResult = get(query, options);
-        if (documentResult.getNumResults() == 0) {
-            throw new CatalogDBException("Could not update cohort. Cohort uid '" + cohortUid + "' not found.");
-        }
-        String cohortId = documentResult.first().getId();
-
         try {
-            return runTransaction(clientSession -> privateUpdate(clientSession, documentResult.first(), parameters, variableSetList,
-                    queryOptions));
-        } catch (CatalogDBException e) {
-            logger.error("Could not update cohort {}: {}", cohortId, e.getMessage(), e);
-            throw new CatalogDBException("Could not update cohort " + cohortId + ": " + e.getMessage(), e.getCause());
+            return runTransaction(clientSession -> {
+                Query query = new Query(QueryParams.UID.key(), cohortUid);
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key(),
+                                QueryParams.SAMPLES.key() + "." + QueryParams.ID.key()));
+                OpenCGAResult<Cohort> documentResult = get(clientSession, query, options);
+                if (documentResult.getNumResults() == 0) {
+                    throw new CatalogDBException("Could not update cohort. Cohort uid '" + cohortUid + "' not found.");
+                }
+                return transactionalUpdate(clientSession, documentResult.first(), parameters, variableSetList, queryOptions);
+            });
+        } catch (Exception e) {
+            logger.error("Could not update cohort {}: {}", cohortUid, e.getMessage(), e);
+            throw new CatalogDBException("Could not update cohort " + cohortUid + ": " + e.getMessage(), e);
         }
     }
 
@@ -274,7 +273,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         while (iterator.hasNext()) {
             Cohort cohort = iterator.next();
             try {
-                result.append(runTransaction(clientSession -> privateUpdate(clientSession, cohort, parameters, variableSetList,
+                result.append(runTransaction(clientSession -> transactionalUpdate(clientSession, cohort, parameters, variableSetList,
                         queryOptions)));
             } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
                 logger.error("Could not update cohort {}: {}", cohort.getId(), e.getMessage(), e);
@@ -285,15 +284,17 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         return result;
     }
 
-    private OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Cohort cohort, ObjectMap parameters,
-                                                List<VariableSet> variableSetList, QueryOptions queryOptions)
+    @Override
+    OpenCGAResult<Cohort> transactionalUpdate(ClientSession clientSession, Cohort cohort, ObjectMap parameters,
+                                              List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         Query tmpQuery = new Query()
                 .append(QueryParams.STUDY_UID.key(), cohort.getStudyUid())
                 .append(QueryParams.UID.key(), cohort.getUid());
 
-        DataResult result = updateAnnotationSets(clientSession, cohort.getUid(), parameters, variableSetList, queryOptions, false);
+        DataResult result = updateAnnotationSets(clientSession, cohort.getStudyUid(), cohort.getUid(), parameters, variableSetList,
+                queryOptions, false);
         UpdateDocument parseUpdateDocument = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
         Document cohortUpdate = parseUpdateDocument.toFinalUpdateDocument();
 
@@ -337,6 +338,22 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         }
 
         return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    @Override
+    OpenCGAResult<Cohort> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        long tmpStartTime = startQuery();
+
+        Document cohortUpdate = updateDocument.toFinalUpdateDocument();
+        if (cohortUpdate.isEmpty()) {
+            throw new CatalogDBException("Nothing to be updated");
+        }
+
+        logger.debug("Cohort update: query : {}, update: {}", query.toBsonDocument(), cohortUpdate.toBsonDocument());
+        DataResult<?> result = cohortCollection.update(clientSession, query, cohortUpdate, null);
+        logger.debug("{} cohorts successfully updated", result.getNumUpdated());
+        return endWrite(tmpStartTime, result.getNumMatches(), result.getNumUpdated(), Collections.emptyList());
     }
 
     private void updateCohortReferenceInSamples(ClientSession clientSession, Cohort cohort, List<Sample> samples,
@@ -716,7 +733,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_COHORT_ANNOTATIONS.name(), CohortPermissions.VIEW_ANNOTATIONS.name());
 
         return new CohortCatalogMongoDBIterator<>(mongoCursor, clientSession, cohortConverter, iteratorFilter,
@@ -732,7 +749,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
         Document studyDocument = getStudyDocument(null, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_COHORT_ANNOTATIONS.name(), CohortPermissions.VIEW_ANNOTATIONS.name());
 
         return new CohortCatalogMongoDBIterator(mongoCursor, null, null, iteratorFilter, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
@@ -861,18 +878,19 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
+            boolean simplifyPermissions = simplifyPermissions();
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.COHORT, user,
-                        configuration));
+                        simplifyPermissions));
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            CohortPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.COHORT, configuration));
+                            CohortPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.COHORT, simplifyPermissions));
                 } else {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, CohortPermissions.VIEW.name(),
-                            Enums.Resource.COHORT, configuration));
+                            Enums.Resource.COHORT, simplifyPermissions));
                 }
             }
 

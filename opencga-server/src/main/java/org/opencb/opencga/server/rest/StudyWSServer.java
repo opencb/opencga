@@ -21,19 +21,22 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.notes.Note;
+import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
@@ -43,9 +46,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
@@ -328,8 +329,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new StudyAclUpdateParams());
             StudyAclParams aclParams = new StudyAclParams(params.getPermissions(), params.getTemplate());
-            List<String> idList = getIdList(params.getStudy(), false);
-            return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, action, token));
+            return createOkResponse(studyManager.updateAcl(params.getStudy(), memberId, aclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -365,40 +365,40 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{studies}/aggregationStats")
-    @ApiOperation(value = "Fetch catalog study stats", response = FacetField.class)
-    public Response getAggregationStats(
-            @ApiParam(value = "Comma separated list of studies [[user@]project:]study up to a maximum of 100", required = true)
-            @PathParam(ParamConstants.STUDIES_PARAM) String studies,
-            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
-            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
-            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
-            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
-            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
-            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields,
-            @ApiParam(value = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("jobFields") String jobFields) {
-        try {
-            if (defaultStats == null) {
-                defaultStats = true;
-            }
-            List<String> idList = getIdList(studies);
-            Map<String, Object> result = new HashMap<>();
-            for (String study : idList) {
-                result.put(study, catalogManager.getStudyManager().facet(study, fileFields, sampleFields, individualFields, cohortFields,
-                        familyFields, jobFields, defaultStats, token));
-            }
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/{studies}/aggregationStats")
+//    @ApiOperation(value = "Fetch catalog study stats", response = FacetField.class)
+//    public Response getAggregationStats(
+//            @ApiParam(value = "Comma separated list of studies [[organization@]project:]study up to a maximum of 100", required = true)
+//            @PathParam(ParamConstants.STUDIES_PARAM) String studies,
+//            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
+//            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
+//            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
+//            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
+//            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
+//            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields,
+//            @ApiParam(value = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("jobFields") String jobFields) {
+//        try {
+//            if (defaultStats == null) {
+//                defaultStats = true;
+//            }
+//            List<String> idList = getIdList(studies);
+//            Map<String, Object> result = new HashMap<>();
+//            for (String study : idList) {
+//                result.put(study, catalogManager.getStudyManager().facet(study, fileFields, sampleFields, individualFields, cohortFields,
+//                        familyFields, jobFields, defaultStats, token));
+//            }
+//            return createOkResponse(result);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{study}/variableSets/update")
@@ -423,9 +423,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                     fixVariable(variable);
                 }
 
-                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.getId(), params.getName(),
-                        params.getUnique(),
-                        params.getConfidential(), params.getDescription(), null, params.getVariables(), params.getEntities(), token);
+                VariableSet variableSet = params.toVariableSet();
+                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, variableSet, token);
             } else {
                 boolean force = ParamUtils.AddRemoveForceRemoveAction.FORCE_REMOVE.equals(action);
                 queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.getId(), force, token);
@@ -530,7 +529,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/templates/{templateId}/delete")
     @ApiOperation(value = "Delete template", response = Boolean.class)
     public Response delete(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Template id") @PathParam("templateId") String templateId) {
         try {
             return createOkResponse(studyManager.deleteTemplate(studyStr, templateId, token));
@@ -548,8 +547,95 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = TemplateParams.DESCRIPTION, required = true) TemplateParams params) {
-        return submitJob(TemplateRunner.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitJob(TemplateRunner.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+    }
+
+    @GET
+    @Path("/{study}/notes/search")
+    @ApiOperation(value = "Search for notes of scope STUDY", response = Note.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+    })
+    public Response noteSearch(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = FieldConstants.GENERIC_UUID_DESCRIPTION) @QueryParam("uuid") String uuid,
+            @ApiParam(value = FieldConstants.NOTES_USER_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_USER_ID_PARAM) String userId,
+            @ApiParam(value = FieldConstants.NOTES_TAGS_DESCRIPTION) @QueryParam(FieldConstants.NOTES_TAGS_PARAM) String tags,
+            @ApiParam(value = FieldConstants.NOTES_VISIBILITY_DESCRIPTION) @QueryParam(FieldConstants.NOTES_VISIBILITY_PARAM) String visibility,
+            @ApiParam(value = FieldConstants.GENERIC_VERSION_DESCRIPTION) @QueryParam("version") String version
+    ) {
+        try {
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().searchStudyNote(studyStr, query, queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/notes/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create a new note", response = Note.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
+    })
+    public Response createNote(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(value = "JSON containing the Note to be added.", required = true) NoteCreateParams parameters) {
+        try {
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().createStudyNote(studyStr, parameters, queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/notes/{id}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update a note", response = Note.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
+    })
+    public Response updateNote(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
+        try {
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().updateStudyNote(studyStr, noteId, parameters, queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @DELETE
+    @Path("/{study}/notes/{id}/delete")
+    @ApiOperation(value = "Delete note", response = Note.class)
+    public Response deleteNote(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult) {
+        try {
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().deleteStudyNote(studyStr, noteId, queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     private void fixVariable(Variable variable) {

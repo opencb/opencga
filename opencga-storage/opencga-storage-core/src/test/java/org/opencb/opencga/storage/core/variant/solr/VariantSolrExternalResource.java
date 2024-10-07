@@ -60,9 +60,7 @@ public class VariantSolrExternalResource extends ExternalResource {
     }
 
     @Override
-    protected void before() throws Throwable {
-        super.before();
-
+    public void before() throws Exception {
         Path rootDir = Paths.get("target/test-data", "junit-variant-solr-" + TimeUtils.getTimeMillis());
         Files.createDirectories(rootDir);
 
@@ -95,7 +93,7 @@ public class VariantSolrExternalResource extends ExternalResource {
     }
 
     @Override
-    protected void after() {
+    public void after() {
         super.after();
         try {
             if (embeded) {
@@ -120,6 +118,7 @@ public class VariantSolrExternalResource extends ExternalResource {
         VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
         variantSearchManager.setSolrManager(new SolrManager(solrClient, "localhost", "core",
                 variantStorageEngine.getConfiguration().getSearch().getTimeout()));
+        variantSearchManager.setSolrClient(solrClient);
         return variantSearchManager;
     }
 

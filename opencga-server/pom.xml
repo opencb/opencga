@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.12.3-SNAPSHOT</version>
+        <version>4.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -105,10 +105,6 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-mapper-asl</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -197,17 +193,14 @@
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-mongodb</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -378,9 +371,8 @@
             <id>storage-hadoop</id>
             <activation>
                 <property>
-                    <name>storage-hadoop</name>
+                    <name>!skipStorageHadoop</name>
                 </property>
-                <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>
@@ -390,9 +382,9 @@
                 </dependency>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+                    <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
                     <version>${project.parent.version}</version>
-                    <classifier>shaded</classifier>
+                    <optional>true</optional>
                 </dependency>
             </dependencies>
         </profile>
@@ -400,7 +392,9 @@
         <profile>
             <id>CodeGen</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>!skipCodeGen</name>
+                </property>
             </activation>
             <build>
                 <plugins>

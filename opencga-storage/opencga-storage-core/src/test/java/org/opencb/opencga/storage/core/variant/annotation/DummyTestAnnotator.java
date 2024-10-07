@@ -4,7 +4,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.Xref;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -29,6 +31,10 @@ public class DummyTestAnnotator extends VariantAnnotator {
         fail = options.getBoolean(FAIL, false);
     }
 
+    static String getRs(Variant variant) {
+        return "rs" + variant.toString().hashCode();
+    }
+
     @Override
     public List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException {
         if (fail) {
@@ -48,6 +54,7 @@ public class DummyTestAnnotator extends VariantAnnotator {
             ct.setExonOverlap(Collections.emptyList());
             ct.setTranscriptFlags(Collections.emptyList());
             a.setConsequenceTypes(Collections.singletonList(ct));
+            a.setXrefs(Collections.singletonList(new Xref(getRs(v), "dbSNP")));
             a.setAdditionalAttributes(
                     Collections.singletonMap(GROUP_NAME.key(),
                             new AdditionalAttribute(Collections.singletonMap(VARIANT_ID.key(), v.toString()))));

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.solr.common.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -32,7 +32,6 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.ClinicalPriorityValue;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.reflections.Reflections;
@@ -52,9 +51,9 @@ public class StudyManagerTest extends AbstractManagerTest {
     @Test
     public void testDefaultVariableSets() throws Exception {
         String fqn = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
-                null, null, null, new QueryOptions(), token).first().getFqn();
+                null, null, null, new QueryOptions(), ownerToken).first().getFqn();
 
-        Study study = catalogManager.getStudyManager().get(fqn, null, token).first();
+        Study study = catalogManager.getStudyManager().get(fqn, null, ownerToken).first();
 
         Set<String> s = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
 
@@ -104,37 +103,37 @@ public class StudyManagerTest extends AbstractManagerTest {
 
     @Test
     public void testCreateDuplicatedVariableSets() throws Exception {
-        Study study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+        Study study = catalogManager.getStudyManager().get(studyFqn, null, ownerToken).first();
 
         // Create a new variable set changing the id
         study.getVariableSets().get(0).setId("newId");
-        catalogManager.getStudyManager().createVariableSet(studyFqn, study.getVariableSets().get(0), token);
-        Study study2 = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+        catalogManager.getStudyManager().createVariableSet(studyFqn, study.getVariableSets().get(0), ownerToken);
+        Study study2 = catalogManager.getStudyManager().get(studyFqn, null, ownerToken).first();
         assertEquals(study.getVariableSets().size() + 1, study2.getVariableSets().size());
 
         // Replicate the first of the variable sets for creation
         thrown.expect(CatalogException.class);
         thrown.expectMessage("already exists");
-        catalogManager.getStudyManager().createVariableSet(studyFqn, study.getVariableSets().get(0), token);
+        catalogManager.getStudyManager().createVariableSet(studyFqn, study.getVariableSets().get(0), ownerToken);
     }
 
     @Test
     public void internalVariableSetTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
-                null, null, null, new QueryOptions(), token).first();
+                null, null, null, new QueryOptions(), ownerToken).first();
 
         Set<Variable> variables = new HashSet<>();
         variables.add(new Variable().setId("a").setType(Variable.VariableType.STRING));
         variables.add(new Variable().setId("b").setType(Variable.VariableType.MAP_INTEGER).setAllowedKeys(Arrays.asList("b1", "b2")));
         VariableSet variableSet = new VariableSet("myInternalVset", "", false, false, true, "", variables, null, 1, null);
 
-        OpenCGAResult<VariableSet> result = catalogManager.getStudyManager().createVariableSet(study.getId(), variableSet, token);
+        OpenCGAResult<VariableSet> result = catalogManager.getStudyManager().createVariableSet(study.getId(), variableSet, ownerToken);
         assertEquals(1, result.getNumUpdated());
         assertEquals(1, result.getNumResults());
         assertEquals(1, result.getResults().size());
 
         // An internal variable set should never be returned
-        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
+        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), ownerToken).first();
         for (VariableSet vset : study.getVariableSets()) {
             assertNotEquals(variableSet.getId(), vset.getId());
             assertFalse(vset.isInternal());
@@ -143,36 +142,36 @@ public class StudyManagerTest extends AbstractManagerTest {
         // But if I try to create another one with the same id, it should fail
         thrown.expect(CatalogException.class);
         thrown.expectMessage("exists");
-        catalogManager.getStudyManager().createVariableSet(study.getId(), variableSet, token);
+        catalogManager.getStudyManager().createVariableSet(study.getId(), variableSet, ownerToken);
     }
 
     @Test
     public void updateInternalRecessiveGene() throws CatalogException {
         Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
-                null, null, null, new QueryOptions(), token).first();
+                null, null, null, new QueryOptions(), ownerToken).first();
         assertEquals(RecessiveGeneSummaryIndex.Status.NOT_INDEXED, study.getInternal().getIndex().getRecessiveGene().getStatus());
 
         String date = TimeUtils.getTime();
         catalogManager.getStudyManager().updateSummaryIndex("newStudy",
-                new RecessiveGeneSummaryIndex(RecessiveGeneSummaryIndex.Status.INDEXED, date), token);
-        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
+                new RecessiveGeneSummaryIndex(RecessiveGeneSummaryIndex.Status.INDEXED, date), ownerToken);
+        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), ownerToken).first();
 
         assertEquals(RecessiveGeneSummaryIndex.Status.INDEXED, study.getInternal().getIndex().getRecessiveGene().getStatus());
         assertEquals(date, study.getInternal().getIndex().getRecessiveGene().getModificationDate());
 
         catalogManager.getStudyManager().updateGroup("newStudy", "members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user2")), token);
+                new GroupUpdateParams(Collections.singletonList(normalUserId1)), ownerToken);
 
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("admin");
         catalogManager.getStudyManager().updateSummaryIndex("newStudy",
-                new RecessiveGeneSummaryIndex(RecessiveGeneSummaryIndex.Status.INDEXED, date), sessionIdUser2);
+                new RecessiveGeneSummaryIndex(RecessiveGeneSummaryIndex.Status.INDEXED, date), normalToken1);
     }
 
     @Test
     public void updateClinicalConfiguration() throws CatalogException {
         Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
-                null, null, null, new QueryOptions(), token).first();
+                null, null, null, new QueryOptions(), ownerToken).first();
         assertNotNull(study.getInternal().getConfiguration());
         assertNotNull(study.getInternal().getConfiguration().getClinical());
         assertFalse(study.getInternal().getConfiguration().getClinical().getPriorities().isEmpty());
@@ -180,9 +179,9 @@ public class StudyManagerTest extends AbstractManagerTest {
         assertFalse(study.getInternal().getConfiguration().getClinical().getStatus().isEmpty());
 
         study.getInternal().getConfiguration().getClinical().setPriorities(Collections.singletonList(new ClinicalPriorityValue("bla", "bla", 1, true)));
-        catalogManager.getClinicalAnalysisManager().configureStudy("newStudy", study.getInternal().getConfiguration().getClinical(), token);
+        catalogManager.getClinicalAnalysisManager().configureStudy("newStudy", study.getInternal().getConfiguration().getClinical(), ownerToken);
 
-        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
+        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), ownerToken).first();
         assertNotNull(study.getInternal().getConfiguration());
         assertNotNull(study.getInternal().getConfiguration().getClinical());
         assertFalse(study.getInternal().getConfiguration().getClinical().getPriorities().isEmpty());
@@ -191,9 +190,9 @@ public class StudyManagerTest extends AbstractManagerTest {
         assertFalse(study.getInternal().getConfiguration().getClinical().getFlags().isEmpty());
         assertFalse(study.getInternal().getConfiguration().getClinical().getStatus().isEmpty());
 
-        catalogManager.getClinicalAnalysisManager().configureStudy("newStudy", ClinicalAnalysisStudyConfiguration.defaultConfiguration(), token);
+        catalogManager.getClinicalAnalysisManager().configureStudy("newStudy", ClinicalAnalysisStudyConfiguration.defaultConfiguration(), ownerToken);
 
-        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
+        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), ownerToken).first();
         assertNotNull(study.getInternal().getConfiguration());
         assertNotNull(study.getInternal().getConfiguration().getClinical());
         assertFalse(study.getInternal().getConfiguration().getClinical().getPriorities().isEmpty());
@@ -205,26 +204,26 @@ public class StudyManagerTest extends AbstractManagerTest {
 
     @Test
     public void testSetVariantEngineConfiguration() throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+        Study study = catalogManager.getStudyManager().get(studyFqn, null, ownerToken).first();
         System.out.println("getVariantEngineConfiguration() = "
                 + study.getInternal().getConfiguration().getVariantEngine());
 
-        catalogManager.getStudyManager().setVariantEngineConfigurationOptions(studyFqn, new ObjectMap("k1", "v1"), token);
-        study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+        catalogManager.getStudyManager().setVariantEngineConfigurationOptions(studyFqn, new ObjectMap("k1", "v1"), ownerToken);
+        study = catalogManager.getStudyManager().get(studyFqn, null, ownerToken).first();
         System.out.println("getVariantEngineConfiguration() = "
                 + study.getInternal().getConfiguration().getVariantEngine());
         assertEquals(new ObjectMap("k1", "v1"), study.getInternal().getConfiguration().getVariantEngine().getOptions());
 
-        catalogManager.getStudyManager().setVariantEngineConfigurationOptions(studyFqn, new ObjectMap("k2", "v2"), token);
-        study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+        catalogManager.getStudyManager().setVariantEngineConfigurationOptions(studyFqn, new ObjectMap("k2", "v2"), ownerToken);
+        study = catalogManager.getStudyManager().get(studyFqn, null, ownerToken).first();
         System.out.println("getVariantEngineConfiguration() = "
                 + study.getInternal().getConfiguration().getVariantEngine());
         assertEquals(new ObjectMap("k2", "v2"), study.getInternal().getConfiguration().getVariantEngine().getOptions());
 
         SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
         catalogManager.getStudyManager()
-                .setVariantEngineConfigurationSampleIndex(studyFqn, sampleIndexConfiguration, token);
-        study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+                .setVariantEngineConfigurationSampleIndex(studyFqn, sampleIndexConfiguration, ownerToken);
+        study = catalogManager.getStudyManager().get(studyFqn, null, ownerToken).first();
         System.out.println("getVariantEngineConfiguration() = "
                 + study.getInternal().getConfiguration().getVariantEngine());
         assertEquals(sampleIndexConfiguration, study.getInternal().getConfiguration().getVariantEngine().getSampleIndex());
@@ -234,40 +233,40 @@ public class StudyManagerTest extends AbstractManagerTest {
     @Test
     public void uploadTemplates() throws IOException, CatalogException {
         InputStream inputStream = getClass().getResource("/template.zip").openStream();
-        OpenCGAResult<String> result = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, token);
+        OpenCGAResult<String> result = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, ownerToken);
         assertFalse(StringUtils.isEmpty(result.first()));
         System.out.println(result.first());
 
         inputStream = getClass().getResource("/template.zip").openStream();
-        result = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, token);
+        result = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, ownerToken);
         System.out.println(result.first());
     }
 
     @Test
     public void deleteTemplates() throws IOException, CatalogException {
         InputStream inputStream = getClass().getResource("/template.zip").openStream();
-        String templateId = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, token).first();
+        String templateId = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, ownerToken).first();
 
-        Boolean deleted = catalogManager.getStudyManager().deleteTemplate(studyFqn, templateId, token).first();
+        Boolean deleted = catalogManager.getStudyManager().deleteTemplate(studyFqn, templateId, ownerToken).first();
         assertTrue(deleted);
 
         thrown.expectMessage("doesn't exist");
         thrown.expect(CatalogException.class);
-        catalogManager.getStudyManager().deleteTemplate(studyFqn, templateId, token);
+        catalogManager.getStudyManager().deleteTemplate(studyFqn, templateId, ownerToken);
     }
 
     @Test
     public void emptyGroupTest() throws CatalogException {
         // In the list of users we add it as null to test it properly
-        catalogManager.getStudyManager().createGroup(studyFqn, "@test", null, token);
-        Group first = catalogManager.getStudyManager().getGroup(studyFqn, "@test", token).first();
+        catalogManager.getStudyManager().createGroup(studyFqn, "@test", null, ownerToken);
+        Group first = catalogManager.getStudyManager().getGroup(studyFqn, "@test", ownerToken).first();
         assertNotNull(first.getUserIds());
 
-        catalogManager.getUserManager().create("dummy", "dummy", "dummy@mail.com", TestParamConstants.PASSWORD, "", 0L, Account.AccountType.GUEST, opencgaToken);
-        catalogManager.getStudyManager().createGroup(studyFqn, "@test2", Collections.singletonList("dummy"), token);
-        catalogManager.getStudyManager().updateAcl(studyFqn, "@test2", new StudyAclParams("", "view_only"), ParamUtils.AclAction.ADD, token);
+        catalogManager.getUserManager().create("dummy", "dummy", "dummy@mail.com", TestParamConstants.PASSWORD, organizationId, 0L, opencgaToken);
+        catalogManager.getStudyManager().createGroup(studyFqn, "@test2", Collections.singletonList("dummy"), ownerToken);
+        catalogManager.getStudyManager().updateAcl(studyFqn, "@test2", new StudyAclParams("", "view_only"), ParamUtils.AclAction.ADD, ownerToken);
 
-        String dummyToken = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
+        String dummyToken = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
         OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(), dummyToken);
         assertTrue(search.getNumResults() > 0);
     }

@@ -16,17 +16,16 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.VariableSet;
 
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -55,40 +54,41 @@ public class FamilyConverter extends AnnotableConverter<Family> {
     }
 
     public void validateDocumentToUpdate(Document document) {
-        List<Document> memberList = (List) document.get("members");
+        List<Document> memberList = document.getList("members", Document.class);
         if (memberList != null) {
             // We make sure we don't store duplicates
-            Map<Long, Individual> individualMap = new HashMap<>();
+            Set<Long> individualSet = new HashSet<>();
             for (Document individual : memberList) {
-                long id = individual.getInteger("uid").longValue();
-                int version = individual.getInteger("version");
-                if (id > 0) {
-                    Individual tmpIndividual = new Individual()
-                            .setVersion(version);
-                    tmpIndividual.setUid(id);
-                    individualMap.put(id, tmpIndividual);
+                long uid = individual.get("uid", Number.class).longValue();
+                if (uid <= 0) {
+                    throw new IllegalArgumentException("Missing uid value for member '" + individual.getString("id") + "'.");
+                }
+                boolean unique = individualSet.add(uid);
+                if (!unique) {
+                    throw new IllegalArgumentException("Duplicated member '" + individual.getString("id") + " (" + uid + ")' found.");
                 }
             }
 
             document.put("members",
-                    individualMap.entrySet().stream()
+                    memberList.stream()
                             .map(entry -> new Document()
-                                    .append("uid", entry.getValue().getUid())
-                                    .append("version", entry.getValue().getVersion()))
+                                    .append("uid", entry.get("uid", Number.class).longValue())
+                                    .append("version", entry.get("version", Number.class).intValue())
+                            )
                             .collect(Collectors.toList()));
         }
 
-        List<Document> disorderList = (List) document.get("disorders");
+        List<Document> disorderList = document.getList("disorders", Document.class);
         if (disorderList != null) {
             for (Document disorder : disorderList) {
-                fixPhenotypeFields((List) disorder.get("evidences"));
+                fixPhenotypeFields(disorder.getList("evidences", Document.class));
             }
         }
-        fixPhenotypeFields((List) document.get("phenotypes"));
+        fixPhenotypeFields(document.getList("phenotypes", Document.class));
     }
 
     private void fixPhenotypeFields(List<Document> phenotypeList) {
-        if (ListUtils.isNotEmpty(phenotypeList)) {
+        if (CollectionUtils.isNotEmpty(phenotypeList)) {
             for (Document phenotype : phenotypeList) {
                 phenotype.put("status", Phenotype.Status.UNKNOWN.name());
                 phenotype.put("ageOfOnset", "-1");

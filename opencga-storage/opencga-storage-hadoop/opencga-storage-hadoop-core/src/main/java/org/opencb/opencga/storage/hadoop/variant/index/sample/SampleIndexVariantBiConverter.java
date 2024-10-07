@@ -488,6 +488,11 @@ public class SampleIndexVariantBiConverter {
         public Variant next() {
             throw new NoSuchElementException("Empty iterator");
         }
+
+        @Override
+        public Variant nextVariant() {
+            throw new NoSuchElementException("Empty iterator");
+        }
     }
 
     private static final class CountSampleIndexGtEntryIterator extends SampleIndexGtEntryIterator {
@@ -522,6 +527,11 @@ public class SampleIndexVariantBiConverter {
         @Override
         public Variant next() {
             skip();
+            return DUMMY_VARIANT;
+        }
+
+        @Override
+        public Variant nextVariant() {
             return DUMMY_VARIANT;
         }
 
@@ -575,13 +585,19 @@ public class SampleIndexVariantBiConverter {
         public Variant next() {
             nextAnnotationIndexEntry(); // ensure read annotation
             increaseCounters();
+            Variant variant = nextVariant();
+            movePointer();
+            return variant;
+        }
+
+        @Override
+        public Variant nextVariant() {
             Variant variant;
             if (encodedRefAlt) {
                 variant = toVariantEncodedAlleles(chromosome, batchStart, bytes, currentOffset);
             } else {
                 variant = toVariant(chromosome, batchStart, bytes, currentOffset, referenceLength, alternateLength);
             }
-            movePointer();
             return variant;
         }
 
@@ -645,7 +661,7 @@ public class SampleIndexVariantBiConverter {
         String[] refAlt = AlleleCodec.decode(bytes[offset]);
         int start = batchStart + (read24bitInteger(bytes, offset) & 0x0F_FF_FF);
 
-        return VariantPhoenixKeyFactory.buildVariant(chromosome, start, refAlt[0], refAlt[1], null);
+        return VariantPhoenixKeyFactory.buildVariant(chromosome, start, refAlt[0], refAlt[1], null, null);
     }
 
     private Variant toVariant(String chromosome, int batchStart, byte[] bytes, int offset, int referenceLength, int alternateLength) {
@@ -655,7 +671,7 @@ public class SampleIndexVariantBiConverter {
         offset += referenceLength + SEPARATOR_LENGTH; // add reference, and separator
         String alternate = readString(bytes, offset, alternateLength);
 
-        return VariantPhoenixKeyFactory.buildVariant(chromosome, start, reference, alternate, null);
+        return VariantPhoenixKeyFactory.buildVariant(chromosome, start, reference, alternate, null, null);
     }
 
     private int readNextSeparator(byte[] bytes, int offset) {

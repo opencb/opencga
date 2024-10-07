@@ -26,7 +26,7 @@ import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -222,13 +222,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
         // ---------------- Annotate
-//        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
-//        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.1");
-//        variantStorageEngine.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-//            projectMetadata.setAssembly("grch38");
-//        });
-//        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
-//        this.variantStorageEngine.reloadCellbaseConfiguration();
         this.variantStorageEngine.annotate(outputUri, new QueryOptions());
         engine.familyIndex(STUDY_NAME_3, triosPlatinum, new ObjectMap());
 
@@ -376,8 +369,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     public VariantQueryResult<Variant> dbAdaptorQuery(Query query, QueryOptions options) {
-        query = variantStorageEngine.preProcessQuery(query, options);
-        return dbAdaptor.get(query, options);
+        ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
+        return dbAdaptor.get(variantQuery);
     }
 
     @Test
@@ -470,26 +463,26 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         VariantQuery query = new VariantQuery().study(STUDY_NAME_5).sample("NA19600");
 //        System.out.println("query = " + query.toJson());
         List<Variant> variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
-                .toDataResult().getResults();
+                .toList();
         assertEquals(2, variants.size());
 
         query.region("1:2000200-5500000");
 //        System.out.println("query = " + query.toJson());
         variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
-                .toDataResult().getResults();
+                .toList();
         assertEquals(2, variants.size());
 
         query.region("1:200-2500000");
 //        System.out.println("query = " + query.toJson());
         variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
-                .toDataResult().getResults();
+                .toList();
         assertEquals(1, variants.size());
         assertEquals("1:1000001-4000000:-:<DUP>", variants.get(0).toString());
 
         query.region("1:2000200-2500000");
 //        System.out.println("query = " + query.toJson());
         variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
-                .toDataResult().getResults();
+                .toList();
         assertEquals(1, variants.size());
         assertEquals("1:1000001-4000000:-:<DUP>", variants.get(0).toString());
     }
@@ -675,10 +668,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         SampleIndexQuery indexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(sampleIndexVariantQuery);
 //        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
 //                .count(indexQuery, "NA19600");
-        DataResult<Variant> result = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
-                .iterator(indexQuery).toDataResult();
+        List<Variant> result = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
+                .iterator(indexQuery).toList();
 //        System.out.println("result.getResults() = " + result.getResults());
-        List<String> onlyIndex = result.getResults().stream().map(Variant::toString).sorted().collect(toList());
+        List<String> onlyIndex = result.stream().map(Variant::toString).sorted().collect(toList());
 
         // Query SampleIndex+DBAdaptor
         System.out.println("#Query SampleIndex+DBAdaptor");
@@ -822,7 +815,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     System.out.println("Count = " + actualCount);
 
                     stopWatch = StopWatch.createStarted();
-                    long actualCountIterator = sampleIndexDBAdaptor.iterator(sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query))).toDataResult().getNumResults();
+                    long actualCountIterator = sampleIndexDBAdaptor.iterator(sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query))).toList().size();
                     System.out.println("---");
                     System.out.println("Count indexTable iterator " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
                     System.out.println("Count = " + actualCountIterator);
@@ -904,29 +897,54 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testAggregationCorrectnessTFBS() throws Exception {
-        testAggregationCorrectness(TF_BINDING_SITE_VARIANT, true);
+        // Special scenario. This CT might include intergenic values, so can't be used alone
+        testAggregationCorrectness(new Query(ANNOT_BIOTYPE.key(), "protein_coding"), TF_BINDING_SITE_VARIANT);
     }
 
     @Test
     public void testAggregationCorrectnessRegulatoryRegionVariant() throws Exception {
-        testAggregationCorrectness(REGULATORY_REGION_VARIANT);
+        // Special scenario. This CT might include intergenic values, so can't be used alone
+        testAggregationCorrectness(new Query(ANNOT_BIOTYPE.key(), "protein_coding"),
+                REGULATORY_REGION_VARIANT);
+    }
+
+    @Test
+    public void testAggregationByIntergenicQuery() throws Exception {
+        SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
+
+        Query baseQuery = new Query(STUDY.key(), STUDY_NAME_3)
+                .append(SAMPLE.key(), "NA12877");
+
+        assertFalse(executor.canUseThisExecutor(new Query(baseQuery)
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), REGULATORY_REGION_VARIANT), new QueryOptions(QueryOptions.FACET, "consequenceType")));
+        assertFalse(executor.canUseThisExecutor(new Query(baseQuery)
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), TF_BINDING_SITE_VARIANT), new QueryOptions(QueryOptions.FACET, "consequenceType")));
+
+        assertTrue(executor.canUseThisExecutor(new Query(baseQuery)
+                        .append(ANNOT_CONSEQUENCE_TYPE.key(), REGULATORY_REGION_VARIANT)
+                        .append(ANNOT_BIOTYPE.key(), "protein_coding"),
+                new QueryOptions(QueryOptions.FACET, "consequenceType")));
+        assertTrue(executor.canUseThisExecutor(new Query(baseQuery)
+                        .append(ANNOT_CONSEQUENCE_TYPE.key(), TF_BINDING_SITE_VARIANT)
+                        .append(ANNOT_BIOTYPE.key(), "protein_coding"),
+                new QueryOptions(QueryOptions.FACET, "consequenceType")));
     }
 
     private void testAggregationCorrectness(String ct) throws Exception {
-        testAggregationCorrectness(ct, false);
+        testAggregationCorrectness(new Query(), ct);
     }
 
-    private void testAggregationCorrectness(String ct, boolean sampleIndexMightBeMoreAccurate) throws Exception {
+    private void testAggregationCorrectness(Query baseQuery, String ct) throws Exception {
         SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
 
-        Query query = new Query(STUDY.key(), STUDY_NAME_3)
+        Query query = new Query(baseQuery)
+                .append(STUDY.key(), STUDY_NAME_3)
                 .append(SAMPLE.key(), "NA12877")
                 .append(ANNOT_CONSEQUENCE_TYPE.key(), ct);
         assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "consequenceType")));
-
         AtomicInteger count = new AtomicInteger(0);
         sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions()).forEachRemaining(v -> count.incrementAndGet());
-        FacetField facet = executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "consequenceType")).first();
+        FacetField facet = executor.aggregation(new Query(query), new QueryOptions(QueryOptions.FACET, "consequenceType")).first();
 
         assertEquals(count.get(), facet.getCount());
         FacetField.Bucket bucket = facet.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
@@ -941,11 +959,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             }
         } else {
             assertNotNull(msg, bucket);
-            if (sampleIndexMightBeMoreAccurate) {
-                assertThat(msg, count.get(), gte(bucket.getCount()));
-            } else {
-                assertEquals(msg, count.get(), bucket.getCount());
-            }
+            assertEquals(msg, count.get(), bucket.getCount());
         }
     }
 
@@ -1186,24 +1200,24 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected,
                                                          Function<Variant, Variant> mapper) {
-        VariantQueryExecutor variantQueryExecutor = variantStorageEngine.getVariantQueryExecutor(
-                query,
-                options);
-        assertEquals(expected, variantQueryExecutor.getClass());
-
         ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
 
+        VariantQueryExecutor variantQueryExecutor = variantStorageEngine.getVariantQueryExecutor(variantQuery);
+        assertEquals(expected, variantQueryExecutor.getClass());
+
+
         List<Variant> expectedVariants = new ArrayList<>(1000);
-        dbAdaptor.iterator(variantQuery, new QueryOptions(options))
+        dbAdaptor.iterator(variantQuery)
                 .forEachRemaining(expectedVariants::add);
 
         List<Variant> actualVariants = new ArrayList<>(1000);
-        variantQueryExecutor.iterator(variantQuery.getQuery(), options)
+        variantQueryExecutor.iterator(variantStorageEngine.parseQuery(variantQuery.getQuery(), options))
                 .forEachRemaining(actualVariants::add);
 
-        VariantQueryResult<Variant> result = variantQueryExecutor.get(variantQuery.getQuery(), new QueryOptions(options)
+        ParsedVariantQuery limitedQuery = variantStorageEngine.parseQuery(variantQuery.getQuery(), new QueryOptions(options)
                 .append(QueryOptions.LIMIT, 10)
                 .append(QueryOptions.COUNT, true));
+        VariantQueryResult<Variant> result = variantQueryExecutor.get(limitedQuery);
         assertEquals(10, result.getNumResults());
         assertEquals(10, result.getResults().size());
         long count = result.getNumMatches();

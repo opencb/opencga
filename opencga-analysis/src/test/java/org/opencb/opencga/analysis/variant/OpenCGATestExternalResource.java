@@ -61,7 +61,7 @@ import java.util.Map;
  */
 public class OpenCGATestExternalResource extends ExternalResource {
 
-    private CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
+    private final CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
     private Path opencgaHome;
     private String storageEngine;
     private boolean initiated = false;
@@ -214,8 +214,6 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.createDirectories(conf);
         Files.createDirectories(userHome);
 
-        catalogManagerExternalResource.getConfiguration().getAdmin().setSecretKey(null);
-        catalogManagerExternalResource.getConfiguration().getAdmin().setAlgorithm(null);
         catalogManagerExternalResource.getConfiguration().serialize(
                 new FileOutputStream(conf.resolve("configuration.yml").toFile()));
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");

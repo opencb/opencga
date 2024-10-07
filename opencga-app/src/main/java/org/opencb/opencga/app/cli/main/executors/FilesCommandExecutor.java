@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -38,6 +37,7 @@ import org.opencb.opencga.core.models.file.FileFetch;
 import org.opencb.opencga.core.models.file.FileLinkInternalParams;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileLinkToolParams;
+import org.opencb.opencga.core.models.file.FileMoveParams;
 import org.opencb.opencga.core.models.file.FileQualityControl;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileTree;
@@ -86,9 +86,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
-                break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
                 break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
@@ -153,6 +150,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             case "image":
                 queryResponse = image();
                 break;
+            case "move":
+                queryResponse = move();
+                break;
             case "refresh":
                 queryResponse = refresh();
                 break;
@@ -206,39 +206,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), FileAclUpdateParams.class);
         }
         return openCGAClient.getFileClient().updateAcl(commandOptions.members, commandOptions.action, fileAclUpdateParams, queryParams);
-    }
-
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Files command line");
-
-        FilesCommandOptions.AggregationStatsCommandOptions commandOptions = filesCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("name", commandOptions.name);
-        queryParams.putIfNotEmpty("type", commandOptions.type);
-        queryParams.putIfNotEmpty("format", commandOptions.format);
-        queryParams.putIfNotEmpty("bioformat", commandOptions.bioformat);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotNull("external", commandOptions.external);
-        queryParams.putIfNotEmpty("size", commandOptions.size);
-        queryParams.putIfNotEmpty("software", commandOptions.software);
-        queryParams.putIfNotEmpty("experiment", commandOptions.experiment);
-        queryParams.putIfNotEmpty("numSamples", commandOptions.numSamples);
-        queryParams.putIfNotEmpty("numRelatedFiles", commandOptions.numRelatedFiles);
-        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getFileClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
@@ -384,6 +351,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -471,6 +441,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -512,6 +485,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -693,12 +669,10 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), FileUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
-            putNestedIfNotEmpty(beanParams, "checksum",commandOptions.checksum, true);
             putNestedIfNotNull(beanParams, "format",commandOptions.format, true);
             putNestedIfNotNull(beanParams, "bioformat",commandOptions.bioformat, true);
             putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
@@ -720,7 +694,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "experiment.description",commandOptions.experimentDescription, true);
             putNestedIfNotNull(beanParams, "experiment.attributes",commandOptions.experimentAttributes, true);
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-            putNestedIfNotNull(beanParams, "size",commandOptions.size, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
@@ -820,6 +793,40 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getFileClient().image(commandOptions.file, queryParams);
+    }
+
+    private RestResponse<File> move() throws Exception {
+        logger.debug("Executing move in Files command line");
+
+        FilesCommandOptions.MoveCommandOptions commandOptions = filesCommandOptions.moveCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        FileMoveParams fileMoveParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<File> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/{file}/move"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            fileMoveParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FileMoveParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+
+            fileMoveParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), FileMoveParams.class);
+        }
+        return openCGAClient.getFileClient().move(commandOptions.file, fileMoveParams, queryParams);
     }
 
     private RestResponse<File> refresh() throws Exception {

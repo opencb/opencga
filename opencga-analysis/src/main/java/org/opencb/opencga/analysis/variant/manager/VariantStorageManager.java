@@ -46,7 +46,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.ProjectManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.common.ExceptionUtils;
@@ -54,6 +56,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
@@ -68,9 +71,8 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
-import org.opencb.opencga.core.models.variant.VariantPruneParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -114,11 +116,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public VariantStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
         super(catalogManager, storageEngineFactory);
         catalogUtils = new VariantCatalogQueryUtils(catalogManager);
-    }
-
-    public void clearCache(String studyId, String type, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-
     }
 
     // -------------------------//
@@ -408,7 +405,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             List<Trio> trios = new LinkedList<>();
-            List<Event> events = new LinkedList<>();
             VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
             VariantCatalogQueryUtils catalogUtils = new VariantCatalogQueryUtils(catalogManager);
             if (familiesStr.size() == 1 && familiesStr.get(0).equals(VariantQueryUtils.ALL)) {
@@ -425,7 +421,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             }
             DataResult<Trio> dataResult = engine.familyIndex(study, trios, params);
             getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
-                    .flatMap(t->t.toList().stream())
+                    .flatMap(t -> t.toList().stream())
                     .collect(Collectors.toList()), token);
             return dataResult;
         });
@@ -441,11 +437,29 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             Collection<String> thisSamples = samples;
+            boolean allSamples;
             if (CollectionUtils.size(thisSamples) == 1 && thisSamples.iterator().next().equals(ParamConstants.ALL)) {
                 thisSamples = getIndexedSamples(study, token);
+                allSamples = true;
+            } else {
+                allSamples = false;
             }
 
             List<Trio> trios = catalogUtils.getTriosFromSamples(study, engine.getMetadataManager(), thisSamples, token);
+            if (trios.isEmpty()) {
+                String msg;
+                if (thisSamples.size() > 6) {
+                    msg = "No trios found for " + thisSamples.size() + " samples";
+                } else {
+                    msg = "No trios found for samples " + thisSamples;
+                }
+                if (allSamples) {
+                    logger.info(msg);
+                    return new DataResult<>(0, Collections.singletonList(new Event(Event.Type.INFO, msg)), 0, Collections.emptyList(), 0);
+                } else {
+                    throw new StorageEngineException(msg);
+                }
+            }
             DataResult<Trio> dataResult = engine.familyIndex(study, trios, params);
             getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
                     .flatMap(t -> t.toList().stream())
@@ -549,7 +563,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     /**
      * Update Cellbase configuration.
      *
-     * @param project               Study identifier
+     * @param project               Project identifier
      * @param cellbaseConfiguration New cellbase configuration
      * @param annotate              Launch variant annotation if needed
      * @param annotationSaveId      Save previous variant annotation before annotating
@@ -630,6 +644,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     @SuppressWarnings("unchecked")
     public <T> VariantQueryResult<T> get(Query query, QueryOptions queryOptions, String token, Class<T> clazz)
             throws CatalogException, IOException, StorageEngineException {
+
         VariantQueryResult<Variant> result = get(query, queryOptions, token);
         List<T> variants;
         if (clazz == Variant.class) {
@@ -643,16 +658,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         } else {
             throw new IllegalArgumentException("Unknown variant format " + clazz);
         }
-        return new VariantQueryResult<>(
-                result.getTime(),
-                result.getNumResults(),
-                result.getNumMatches(),
-                result.getEvents(),
-                variants,
-                result.getSamples(),
-                result.getSource(),
-                result.getApproximateCount(),
-                result.getApproximateCountSamplingSize(), null);
+        return new VariantQueryResult<>(result, variants);
 
     }
 
@@ -831,7 +837,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                             numReadSamples += samplesInResult.size();
 
                             StopWatch checkPermissionsStopWatch = StopWatch.createStarted();
-                            String userId = catalogManager.getUserManager().getUserId(token);
+                            String userId = catalogManager.getUserManager().validateToken(token).getUserId();
                             List<String> validSamples = catalogManager.getSampleManager()
                                     .search(study,
                                             new Query(SampleDBAdaptor.QueryParams.ID.key(), samplesInResult)
@@ -883,7 +889,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
                         VariantQueryResult<Variant> result = new VariantQueryResult<>(
                                 ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)),
-                                1, 1, new ArrayList<>(), Collections.singletonList(variantResult), null, null)
+                                1, 1, new ArrayList<>(), Collections.singletonList(variantResult), engine.getStorageEngineId())
                                 .setNumSamples(sampleEntries.size());
                         if (exactNumSamples) {
                             result.setApproximateCount(false);
@@ -969,12 +975,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 .first();
 
         DataStore dataStore = getDataStore(study.getFqn(), token);
-        VariantStorageEngine variantStorageEngine = storageEngineFactory
-                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName(), study.getFqn());
-        setCellbaseConfiguration(variantStorageEngine, getProjectFqn(null, studyStr, token), token);
-        if (dataStore.getOptions() != null) {
-            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
-        }
+        String projectFqn = getProjectFqn(null, studyStr, token);
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngineByDatastore(dataStore, study.getFqn(), projectFqn, token);
         if (study.getInternal() != null
                 && study.getInternal().getConfiguration() != null
                 && study.getInternal().getConfiguration().getVariantEngine() != null
@@ -999,15 +1001,24 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     protected VariantStorageEngine getVariantStorageEngineByProject(String project, ObjectMap params, String token)
             throws StorageEngineException, CatalogException {
-        DataStore dataStore = getDataStoreByProjectId(project, token);
-        VariantStorageEngine variantStorageEngine = storageEngineFactory
-                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        setCellbaseConfiguration(variantStorageEngine, project, token);
-        if (dataStore.getOptions() != null) {
-            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
-        }
+        String projectFqn = getProjectFqn(project, Collections.emptyList(), token);
+        DataStore dataStore = getDataStoreByProjectId(projectFqn, token);
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngineByDatastore(dataStore, null, projectFqn, token);
         if (params != null) {
             variantStorageEngine.getOptions().putAll(params);
+        }
+        return variantStorageEngine;
+    }
+
+    private VariantStorageEngine getVariantStorageEngineByDatastore(DataStore dataStore, String alias, String projectFqnStr, String token) throws StorageEngineException, CatalogException {
+        VariantStorageEngine variantStorageEngine = storageEngineFactory
+                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName(), alias);
+        CatalogFqn projectFqn = CatalogFqn.fromProjectFqn(projectFqnStr);
+        variantStorageEngine.getOptions().put("catalog.organization", projectFqn.getOrganizationId());
+        variantStorageEngine.getOptions().put("catalog.project", projectFqn.getProjectId());
+        setCellbaseConfiguration(variantStorageEngine, projectFqnStr, token);
+        if (dataStore.getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
         }
         return variantStorageEngine;
     }
@@ -1221,7 +1232,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 // deprecated
                 .append("operationName", toolId);
         R result = null;
-        String userId = catalogManager.getUserManager().getUserId(token);
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
         Exception exception = null;
         StopWatch totalStopWatch = StopWatch.createStarted();
 
@@ -1258,7 +1269,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             }
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
-            catalogManager.getAuditManager().audit(userId, Enums.Action.VARIANT_STORAGE_OPERATION, Enums.Resource.VARIANT,
+            String organizationId = variantStorageEngine.getOptions().getString("catalog.organization");
+            String userId = payload.getUserId(organizationId);
+            catalogManager.getAuditManager().audit(organizationId, userId, Enums.Action.VARIANT_STORAGE_OPERATION, Enums.Resource.VARIANT,
                     "", "", "", "",
                     params,
                     status,
@@ -1282,13 +1295,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 .append("query", new Query(query))
                 .append("queryOptions", new QueryOptions(queryOptions));
         R result = null;
-        String userId = catalogManager.getUserManager().getUserId(token);
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
         Exception exception = null;
         StopWatch totalStopWatch = StopWatch.createStarted();
         StopWatch storageStopWatch = null;
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
         try {
-            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
-
             StopWatch stopWatch = StopWatch.createStarted();
             query = catalogUtils.parseQuery(query, queryOptions, variantStorageEngine.getCellBaseUtils(), token);
             auditAttributes.append("catalogParseQueryTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
@@ -1331,7 +1343,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             logger.debug("storageTimeMillis = " + auditAttributes.getInt("storageTimeMillis"));
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
-            catalogManager.getAuditManager().audit(userId, auditAction, Enums.Resource.VARIANT, "", "", "", "", new ObjectMap(),
+            String organizationId = variantStorageEngine.getOptions().getString("catalog.organization");
+            String userId = payload.getUserId(organizationId);
+            catalogManager.getAuditManager().audit(organizationId, userId, auditAction, Enums.Resource.VARIANT, "", "", "", "", new ObjectMap(),
                     status, auditAttributes);
         }
     }
@@ -1352,7 +1366,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                                       Enums.Action auditAction, String token)
             throws CatalogException {
         final Map<String, List<String>> samplesMap = new HashMap<>();
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().validateToken(token).getUserId();
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
         if (auditAction == Enums.Action.FACET) {
             if (VariantQueryProjectionParser.isIncludeNoSamples(query, VariantField.all())) {
@@ -1480,13 +1494,17 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private void checkStudyPermissions(String study, String userId, String token) throws CatalogException {
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(study, payload);
+        String organizationId = studyFqn.getOrganizationId();
+
         long studyUid = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getUid();
         CatalogAuthorizationException exception = null;
 
         // Check VIEW_AGGREGATED_VARIANTS
         try {
             catalogManager.getAuthorizationManager()
-                    .checkStudyPermission(studyUid, userId, StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS);
+                    .checkStudyPermission(organizationId, studyUid, userId, StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS);
             return;
         } catch (CatalogAuthorizationException e) {
             exception = e;
@@ -1495,7 +1513,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         // Check VIEW_SAMPLE_VARIANTS
         try {
             catalogManager.getAuthorizationManager()
-                    .checkStudyPermission(studyUid, userId, StudyPermissions.Permissions.VIEW_SAMPLE_VARIANTS);
+                    .checkStudyPermission(organizationId, studyUid, userId, StudyPermissions.Permissions.VIEW_SAMPLE_VARIANTS);
             return;
         } catch (CatalogAuthorizationException e) {
             // Ignore this exception. Throw exception of missing VIEW_AGGREGATED_VARIANTS
@@ -1630,15 +1648,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private String getProjectFqn(String projectStr, List<String> studies, String token) throws CatalogException {
-        if (CollectionUtils.isEmpty(studies) && StringUtils.isEmpty(projectStr)) {
-            List<Project> projects = catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).getResults();
-            if (projects.size() == 1) {
-                projectStr = projects.get(0).getFqn();
-            } else {
-                throw new IllegalArgumentException("Expected either studies or project to annotate");
-            }
-        }
-
+        final String projectFqn;
         if (CollectionUtils.isNotEmpty(studies)) {
             // Ensure all studies are valid. Convert to FQN
             studies = catalogManager.getStudyManager()
@@ -1648,7 +1658,11 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     .map(Study::getFqn)
                     .collect(Collectors.toList());
 
-            projectStr = catalogManager.getStudyManager().getProjectFqn(studies.get(0));
+            if (StringUtils.isEmpty(projectStr)) {
+                projectFqn = catalogManager.getStudyManager().getProjectFqn(studies.get(0));
+            } else {
+                projectFqn = catalogManager.getProjectManager().get(projectStr, ProjectManager.INCLUDE_PROJECT_IDS, token).first().getFqn();
+            }
 
             if (studies.size() > 1) {
                 for (String studyStr : studies) {
@@ -1657,8 +1671,22 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     }
                 }
             }
+        } else if (StringUtils.isNotEmpty(projectStr)) {
+            projectFqn = catalogManager.getProjectManager().get(projectStr, ProjectManager.INCLUDE_PROJECT_IDS, token).first().getFqn();
+        } else {
+            // Extract organization from token
+            JwtPayload jwtPayload = new JwtPayload(token);
+            String organizationId = jwtPayload.getOrganization();
+            // Look for projects from own organization
+            List<Project> projects = catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token)
+                    .getResults();
+            if (projects.size() == 1) {
+                projectFqn = projects.get(0).getFqn();
+            } else {
+                throw new IllegalArgumentException("Expected either studies or project to annotate");
+            }
         }
-        return projectStr;
+        return projectFqn;
     }
 
     public DataStore getDataStore(String study, String token) throws CatalogException {
@@ -1693,7 +1721,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         }
 
         if (dataStore == null) { //get default datastore
-            dataStore = defaultDataStore(catalogManager, project, token);
+            dataStore = defaultDataStore(catalogManager, project);
         }
         if (dataStore.getOptions() == null) {
             dataStore.setOptions(new ObjectMap());
@@ -1702,24 +1730,22 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return dataStore;
     }
 
-    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project, String token) throws CatalogException {
-        return defaultDataStore(catalogManager, project, catalogManager.getConfiguration().getDatabasePrefix(), token);
+    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project) throws CatalogException {
+        return defaultDataStore(catalogManager.getConfiguration().getDatabasePrefix(), project.getFqn());
     }
 
-    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project, String databasePrefix, String token)
+    public static DataStore defaultDataStore(String databasePrefix, String projectFqnStr)
             throws CatalogException {
-        DataStore dataStore;
-        //Must use the UserByStudyId instead of the file owner.
-        String userId = catalogManager.getProjectManager().getOwner(project.getUid());
-        // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
-        userId = userId.replace('.', '_');
+        CatalogFqn projectFqn = CatalogFqn.extractFqnFromProjectFqn(projectFqnStr);
 
-        String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
-        dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
-        return dataStore;
+        String dbName = buildDatabaseName(databasePrefix, projectFqn.getOrganizationId(), projectFqn.getProjectId());
+        return new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
     }
 
-    public static String buildDatabaseName(String databasePrefix, String userId, String projectId) {
+    public static String buildDatabaseName(String databasePrefix, String organizationId, String projectId) {
+        // Replace possible dots at the organization. Usually a special character in almost all databases. See #532
+        organizationId = organizationId.replace('.', '_');
+
         String prefix;
         if (StringUtils.isNotEmpty(databasePrefix)) {
             prefix = databasePrefix;
@@ -1729,14 +1755,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         } else {
             prefix = "opencga_";
         }
-        // Project id might contain the userId:
-        // userId@projectId
+        // Project id might contain the organization:
+        // organization@projectId
         int idx = projectId.indexOf('@');
         if (idx >= 0) {
             projectId = projectId.substring(idx + 1);
         }
 
-        return prefix + userId + '_' + projectId;
+        return prefix + organizationId + '_' + projectId;
     }
 
 }

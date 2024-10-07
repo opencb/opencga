@@ -1,8 +1,8 @@
 package org.opencb.opencga.storage.hadoop.app;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.Admin;
@@ -258,9 +258,9 @@ public class HBaseMain extends AbstractMain {
         engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "");
 
         MRExecutor mrExecutor = engine.getMRExecutor();
-        int exitError = mrExecutor.run(tool, args.toArray(new String[0]));
-        if (exitError != 0) {
-            throw new Exception("Exec failed with exit number '" + exitError + "'");
+        MRExecutor.Result result = mrExecutor.run(tool, args.toArray(new String[0]));
+        if (result.getExitValue() != 0) {
+            throw new Exception("Exec failed with exit number '" + result.getExitValue() + "'");
         }
     }
 
@@ -318,7 +318,7 @@ public class HBaseMain extends AbstractMain {
             engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "");
 
             MRExecutor mrExecutor = engine.getMRExecutor();
-            int exitError = mrExecutor.run("hbase", args.toArray(new String[0]));
+            int exitError = mrExecutor.run("hbase", args.toArray(new String[0])).getExitValue();
             if (exitError != 0) {
                 throw new Exception("ExportSnapshot failed with exit number '" + exitError + "'");
             }

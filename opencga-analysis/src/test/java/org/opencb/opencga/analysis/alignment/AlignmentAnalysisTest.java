@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.analysis.alignment;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -37,9 +34,14 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
+import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
+import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.file.FileRelatedFile;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -47,9 +49,11 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -58,6 +62,7 @@ import static org.junit.Assert.assertEquals;
 @Category(MediumTests.class)
 public class AlignmentAnalysisTest {
 
+    public static final String ORGANIZATION = "test";
     public static final String USER = "user";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
@@ -65,7 +70,7 @@ public class AlignmentAnalysisTest {
     public static final String PHENOTYPE_NAME = "myPhenotype";
     public static final Phenotype PHENOTYPE = new Phenotype(PHENOTYPE_NAME, PHENOTYPE_NAME, "mySource")
             .setStatus(Phenotype.Status.OBSERVED);
-    public static final String DB_NAME = "opencga_test_" + USER + "_" + PROJECT;
+    public static final String DB_NAME = VariantStorageManager.buildDatabaseName("opencga_test", ORGANIZATION, PROJECT);
     private ToolRunner toolRunner;
     private static String father = "NA19661";
     private static String mother = "NA19660";
@@ -209,7 +214,7 @@ public class AlignmentAnalysisTest {
         catalogManager = opencga.getCatalogManager();
         variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
     }
 
     @AfterClass
@@ -220,9 +225,13 @@ public class AlignmentAnalysisTest {
         opencga.after();
     }
 
-    public void setUpCatalogManager() throws IOException, CatalogException {
-        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+    public void setUpCatalogManager() throws CatalogException {
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId("test"), null, opencga.getAdminToken());
+        catalogManager.getUserManager().create(new User().setId(USER).setName("User Name").setEmail("mail@ebi.ac.uk").setOrganization("test"),
+                PASSWORD, opencga.getAdminToken());
+        catalogManager.getOrganizationManager().update("test", new OrganizationUpdateParams().setOwner(USER), null, opencga.getAdminToken());
+
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
@@ -252,7 +261,6 @@ public class AlignmentAnalysisTest {
 //        assertEquals(2, individual.getSamples().size());
     }
 
-
     @Test
     public void geneCoverageStatsTest() throws IOException, ToolException, CatalogException {
         Path outdir = Paths.get(opencga.createTmpOutdir("_genecoveragestats"));
@@ -270,12 +278,156 @@ public class AlignmentAnalysisTest {
         String geneName = "BRCA2";
         params.setGenes(Arrays.asList(geneName));
 
-        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, "coverage-job-id", false, token);
 
         bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
                 null, null), false, token).first();
         assertEquals(1, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
         assertEquals(geneName, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getGeneName());
         assertEquals(10, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getStats().size());
+    }
+
+    @Test
+    public void testNonReadOnlyAlignmentIndex() throws Exception {
+        Path nonReadOnlyDir = Paths.get(opencga.createTmpOutdir("_non_readonly_alignment_index"));
+        Path bamPath = Paths.get(opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").getPath());
+        String bamFilename = "NonReadOnlyAligmentIndex_" + bamPath.getFileName();
+        Files.copy(bamPath, nonReadOnlyDir.resolve(bamFilename));
+
+        File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(nonReadOnlyDir.resolve(bamFilename).toAbsolutePath().toString(), "non_readonly_alignment_index", "", "", null, null, null,
+                null, null), true, token).first();
+
+        // Run alignment index
+        AlignmentIndexParams params = new AlignmentIndexParams();
+        params.setFileId(bamFile.getId());
+        Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
+        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-non-readonly-coverage-index", false, token);
+
+        // Checking BAI file
+        Path baiPath = nonReadOnlyDir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
+        Assert.assertTrue(Files.exists(baiPath));
+
+        // Checking BAI file is registered in the BAM file internals
+        File baiFile = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bamFilename + AlignmentConstants.BAI_EXTENSION), QueryOptions.empty(), true, token).first();
+        bamFile = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bamFile.getId()), QueryOptions.empty(), true, token).first();
+        Assert.assertEquals(baiFile.getId(), bamFile.getInternal().getAlignment().getIndex().getFileId());
+    }
+
+    @Test
+    public void testReadOnlyAlignmentIndex() throws Exception {
+        Path readOnlyDir = Paths.get(opencga.createTmpOutdir("_readonly_for_alignment_index"));
+        Path bamPath = Paths.get(opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").getPath());
+        String bamFilename = "ReadOnlyAligmentIndex_" + bamPath.getFileName();
+        Files.copy(bamPath, readOnlyDir.resolve(bamFilename));
+
+        // Make read-only
+        Runtime.getRuntime().exec("chmod 555 " + readOnlyDir.toAbsolutePath());
+
+        File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(readOnlyDir.resolve(bamFilename).toAbsolutePath().toString(), "readonly_alignment_index", "", "", null, null, null,
+                null, null), true, token).first();
+
+        // Run alignment index
+        AlignmentIndexParams params = new AlignmentIndexParams();
+        params.setFileId(bamFile.getId());
+        Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
+        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", false, token);
+
+        // Checking BAI file
+        Path baiPath = alignmentIndexOutdir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
+        Assert.assertTrue(Files.exists(baiPath));
+
+        // Checking BAI file is registered in the BAM file internals
+        File baiFile = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bamFilename + AlignmentConstants.BAI_EXTENSION), QueryOptions.empty(), true, token).first();
+        bamFile = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bamFile.getId()), QueryOptions.empty(), true, token).first();
+        Assert.assertEquals(baiFile.getId(), bamFile.getInternal().getAlignment().getIndex().getFileId());
+
+        Runtime.getRuntime().exec("chmod 777 " + readOnlyDir.toAbsolutePath());
+    }
+
+    @Test
+    public void testNonReadOnlyCoverageIndex() throws Exception {
+        Path nonReadOnlyDir = Paths.get(opencga.createTmpOutdir("_non_readonly_for_coverage_index"));
+        Path bamPath = Paths.get(opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").getPath());
+        String bamFilename = "NonReadOnlyCoverageIndex_" + bamPath.getFileName();
+        Files.copy(bamPath, nonReadOnlyDir.resolve(bamFilename));
+
+        File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(nonReadOnlyDir.resolve(bamFilename).toAbsolutePath().toString(), "non_readonly_alignment_coverage_index", "", "", null, null, null,
+                null, null), true, token).first();
+
+        // Run alignment index
+        AlignmentIndexParams indexParams = new AlignmentIndexParams();
+        indexParams.setFileId(bamFile.getId());
+        Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
+        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-non-readonly-alignment-coverage-index", false, token);
+
+        // Checking BAI file
+        Path baiPath = nonReadOnlyDir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
+        Assert.assertTrue(Files.exists(baiPath));
+
+        // Checking BAI file is registered in the BAM file internals
+        File baiFile = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bamFilename + AlignmentConstants.BAI_EXTENSION), QueryOptions.empty(), true, token).first();
+        bamFile = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bamFile.getId()), QueryOptions.empty(), true, token).first();
+        Assert.assertEquals(baiFile.getId(), bamFile.getInternal().getAlignment().getIndex().getFileId());
+
+        // Run coverage index
+        CoverageIndexParams coverageOarams = new CoverageIndexParams();
+        coverageOarams.setFileId(bamFile.getId());
+        Path coverageIndexOutdir = Paths.get(opencga.createTmpOutdir("_coverage_index"));
+        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", false, token);
+
+        // Checking BW file
+        Path bwPath = nonReadOnlyDir.resolve(bamFilename + AlignmentConstants.BIGWIG_EXTENSION);
+        Assert.assertTrue(Files.exists(bwPath));
+
+        // Checking BAM file is registered in the related files of BW file
+        File bwFile = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bwPath.getFileName().toString()), QueryOptions.empty(), true, token).first();
+        Assert.assertEquals(bamFile.getId(), bwFile.getRelatedFiles().get(0).getFile().getId());
+        Assert.assertEquals(FileRelatedFile.Relation.ALIGNMENT, bwFile.getRelatedFiles().get(0).getRelation());
+    }
+
+    @Test
+    public void testReadOnlyCoverageIndex() throws Exception {
+        Path readOnlyDir = Paths.get(opencga.createTmpOutdir("_readonly_for_coverage_index"));
+        Path bamPath = Paths.get(opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").getPath());
+        String bamFilename = "ReadOnlyCoverageIndex_" + bamPath.getFileName();
+        Files.copy(bamPath, readOnlyDir.resolve(bamFilename));
+
+        File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(readOnlyDir.resolve(bamFilename).toAbsolutePath().toString(), "readonly_alignment_coverage_index", "", "", null, null, null,
+                null, null), true, token).first();
+
+        // Run alignment index
+        AlignmentIndexParams indexParams = new AlignmentIndexParams();
+        indexParams.setFileId(bamFile.getId());
+        Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
+        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", false, token);
+
+        // Checking BAI file
+        Path baiPath = readOnlyDir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
+        Assert.assertTrue(Files.exists(baiPath));
+
+        // Checking BAI file is registered in the BAM file internals
+        File baiFile = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bamFilename + AlignmentConstants.BAI_EXTENSION), QueryOptions.empty(), true, token).first();
+        bamFile = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bamFile.getId()), QueryOptions.empty(), true, token).first();
+        Assert.assertEquals(baiFile.getId(), bamFile.getInternal().getAlignment().getIndex().getFileId());
+
+        // Make read-only
+        Runtime.getRuntime().exec("chmod 555 " + readOnlyDir.toAbsolutePath());
+
+        // Run coverage index
+        CoverageIndexParams coverageOarams = new CoverageIndexParams();
+        coverageOarams.setFileId(bamFile.getId());
+        Path coverageIndexOutdir = Paths.get(opencga.createTmpOutdir("_coverage_index"));
+        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", false, token);
+
+        // Checking BW file
+        Path bwPath = coverageIndexOutdir.resolve(bamFilename + AlignmentConstants.BIGWIG_EXTENSION);
+        Assert.assertTrue(Files.exists(bwPath));
+
+        // Checking BAM file is registered in the related files of BW file
+        File bwFile = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bwPath.getFileName().toString()), QueryOptions.empty(), true, token).first();
+        Assert.assertEquals(bamFile.getId(), bwFile.getRelatedFiles().get(0).getFile().getId());
+        Assert.assertEquals(FileRelatedFile.Relation.ALIGNMENT, bwFile.getRelatedFiles().get(0).getRelation());
+
+        Runtime.getRuntime().exec("chmod 777 " + readOnlyDir.toAbsolutePath());
     }
 }

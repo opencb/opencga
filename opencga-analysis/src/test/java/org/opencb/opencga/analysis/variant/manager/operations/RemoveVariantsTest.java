@@ -124,7 +124,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
     private void removeFile(List<File> files, QueryOptions options) throws Exception {
         List<String> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
 
-        Study study = catalogManager.getFileManager().getStudy(files.get(0), sessionId);
+        Study study = catalogManager.getFileManager().getStudy(ORGANIZATION, files.get(0), sessionId);
         String studyId = study.getFqn();
 
         Path outdir = Paths.get(opencga.createTmpOutdir(studyId, "_REMOVE_", sessionId));

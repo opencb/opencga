@@ -9,6 +9,7 @@ public class Optimizations {
     private boolean simplifyPermissions;
 
     public Optimizations() {
+        this(false);
     }
 
     public Optimizations(boolean simplifyPermissions) {

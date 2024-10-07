@@ -9,7 +9,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
@@ -124,9 +124,8 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
 
             // Loop
             long numMatches = 0;
-            int count = 0;
             while (sampleVariantIndexEntryIterator.hasNext()) {
-                count++;
+                numMatches++;
                 SampleVariantIndexEntry entry = sampleVariantIndexEntryIterator.next();
                 for (int i = 0; i < accumulators.size(); i++) {
                     FacetFieldAccumulator<SampleVariantIndexEntry> accumulator = accumulators.get(i);
@@ -134,7 +133,6 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                     accumulator.accumulate(field, entry);
                 }
             }
-            numMatches += count;
 
             // Tear down and clean up results.
             for (int i = 0; i < accumulators.size(); i++) {
@@ -144,7 +142,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
             }
 
             return new VariantQueryResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), 1, numMatches, Collections.emptyList(),
-                    fields, null, SampleIndexVariantQueryExecutor.SAMPLE_INDEX_TABLE_SOURCE);
+                    fields, SampleIndexVariantQueryExecutor.SAMPLE_INDEX_TABLE_SOURCE);
         }
     }
 

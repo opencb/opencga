@@ -47,15 +47,12 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
+import org.opencb.opencga.core.models.operations.variant.*;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
-import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -78,22 +75,22 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 @Category(LongTests.class)
 public class VariantOperationsTest {
 
+    public static final String ORGANIZATION = "test";
     public static final String USER = "user";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
     public static final String STUDY = "study";
+    public static final String STUDY_FQN = ORGANIZATION + '@' + PROJECT + ':' + STUDY;
     public static final String PHENOTYPE_NAME = "myPhenotype";
     public static final Phenotype PHENOTYPE = new Phenotype(PHENOTYPE_NAME, PHENOTYPE_NAME, "mySource")
             .setStatus(Phenotype.Status.OBSERVED);
-    public static final String DB_NAME = "opencga_test_" + USER + "_" + PROJECT;
+    public static final String DB_NAME = VariantStorageManager.buildDatabaseName("opencga_test", ORGANIZATION, PROJECT);
     private static String father = "NA19661";
     private static String mother = "NA19660";
     private static String son = "NA19685";
@@ -125,7 +122,6 @@ public class VariantOperationsTest {
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
     public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource;
 
-    @ClassRule
     public static VariantSolrExternalResource solrExternalResource = new VariantSolrExternalResource();
 
     private static String storageEngine;
@@ -148,7 +144,7 @@ public class VariantOperationsTest {
 //        catalogManager = opencga.getCatalogManager();
 //        variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
 //        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
     }
 
     @After
@@ -169,12 +165,22 @@ public class VariantOperationsTest {
         }
     }
 
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            solrExternalResource.before();
+        }
+    }
+
     @AfterClass
     public static void afterClass() {
         opencga.after();
         if (hadoopExternalResource != null) {
             hadoopExternalResource.after();
             hadoopExternalResource = null;
+        }
+        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            solrExternalResource.after();
         }
     }
 
@@ -193,7 +199,11 @@ public class VariantOperationsTest {
         }
 
         catalogManager = opencga.getCatalogManager();
-        variantStorageManager = opencga.getVariantStorageManager(solrExternalResource);
+        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            variantStorageManager = opencga.getVariantStorageManager(solrExternalResource);
+        } else {
+            variantStorageManager = opencga.getVariantStorageManager();
+        }
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager);
 
         opencga.clearStorageDB(DB_NAME);
@@ -209,9 +219,10 @@ public class VariantOperationsTest {
         }
 
         setUpCatalogManager();
+        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
         solrExternalResource.configure(variantStorageManager.getVariantStorageEngine(STUDY, token));
-        solrExternalResource.configure(variantStorageManager.getVariantStorageEngineForStudyOperation(STUDY, new ObjectMap(), token));
-
+            solrExternalResource.configure(variantStorageManager.getVariantStorageEngineForStudyOperation(STUDY, new ObjectMap(), token));
+        }
 
         file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
 //            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
@@ -220,10 +231,10 @@ public class VariantOperationsTest {
                         .setFile(file.getId())
                         .setAnnotate(false)
                         .setLoadHomRef(YesNoAuto.YES.name()),
-                Paths.get(opencga.createTmpOutdir("_index")), "index", token);
+                Paths.get(opencga.createTmpOutdir("_index")), "index", false, token);
         toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY,
                 new VariantAnnotationIndexParams(),
-                Paths.get(opencga.createTmpOutdir("_annotation-index")), "index", token);
+                Paths.get(opencga.createTmpOutdir("_annotation-index")), "index", false, token);
 
         for (int i = 0; i < file.getSampleIds().size(); i++) {
             if (i % 2 == 0) {
@@ -275,8 +286,13 @@ public class VariantOperationsTest {
     }
 
     public void setUpCatalogManager() throws Exception {
-        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(),
+                opencga.getAdminToken());
+        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, ORGANIZATION, null, opencga.getAdminToken());
+        catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList("user")),
+                null,
+                opencga.getAdminToken());
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
@@ -300,7 +316,7 @@ public class VariantOperationsTest {
                     new VariantIndexParams()
                             .setForceReload(false)
                             .setFile(file.getId()),
-                    Paths.get(opencga.createTmpOutdir()), "index_reload", token);
+                    Paths.get(opencga.createTmpOutdir()), "index_reload", false, token);
             fail("Should have thrown an exception");
         } catch (ToolException e) {
             assertEquals(StorageEngineException.class, e.getCause().getClass());
@@ -311,13 +327,13 @@ public class VariantOperationsTest {
                 new VariantIndexParams()
                         .setForceReload(true)
                         .setFile(file.getId()),
-                Paths.get(opencga.createTmpOutdir()), "index_reload", token);
+                Paths.get(opencga.createTmpOutdir()), "index_reload", false, token);
 
     }
 
     @Test
     public void testVariantSecondaryAnnotationIndex() throws Exception {
-
+        Assume.assumeTrue(HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable());
         for (String sample : samples) {
             SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
             assertEquals(IndexStatus.NONE, index.getStatus().getId());
@@ -326,7 +342,7 @@ public class VariantOperationsTest {
 
         toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, STUDY,
                 new VariantSecondaryAnnotationIndexParams(),
-                Paths.get(opencga.createTmpOutdir()), "annotation_index", token);
+                Paths.get(opencga.createTmpOutdir()), "annotation_index", false, token);
 
         for (String sample : samples) {
             SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
@@ -349,12 +365,25 @@ public class VariantOperationsTest {
             assertEquals(sample, 1, sampleIndex.getVersion().intValue());
         }
 
+        try {
+            toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, STUDY,
+                    new VariantSecondarySampleIndexParams()
+                            .setFamilyIndex(true)
+                            .setSample(Arrays.asList(mother)),
+                    Paths.get(opencga.createTmpOutdir()), "index", false, token);
+            fail("Expected to fail");
+        } catch (ToolException e) {
+            assertEquals("Exception from step 'familyIndex'", e.getMessage());
+            assertEquals("No trios found for samples [" + mother + "]", e.getCause().getMessage());
+        }
+
         // Run family index. The family index status should be READY on offspring
-        toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, STUDY,
+        ExecutionResult result = toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, STUDY,
                 new VariantSecondarySampleIndexParams()
                         .setFamilyIndex(true)
                         .setSample(Arrays.asList(ParamConstants.ALL)),
-                Paths.get(opencga.createTmpOutdir()), "index", token);
+                Paths.get(opencga.createTmpOutdir()), "index", false, token);
+        assertEquals(0, result.getEvents().size());
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
@@ -371,8 +400,8 @@ public class VariantOperationsTest {
 
         // Initially nothing should change, even after running a manual synchronization
         toolRunner.execute(VariantStorageMetadataSynchronizeOperationTool.class,
-                new VariantStorageMetadataSynchronizeParams().setStudy(STUDY),
-                Paths.get(opencga.createTmpOutdir()), "", catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken());
+                new VariantStorageMetadataSynchronizeParams().setStudy(STUDY_FQN),
+                Paths.get(opencga.createTmpOutdir()), "", false, catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken());
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token)
@@ -390,7 +419,8 @@ public class VariantOperationsTest {
 
         // Everything should look the same, but with newer version
         for (String sample : samples) {
-            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager()
+                    .get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
             assertEquals(IndexStatus.READY, sampleIndex.getStatus().getId());
             if (sample.equals(daughter) || sample.equals(son)) {
                 assertEquals(sample, IndexStatus.READY, sampleIndex.getFamilyStatus().getId());
@@ -443,7 +473,7 @@ public class VariantOperationsTest {
                 new VariantSecondarySampleIndexParams()
                         .setFamilyIndex(true)
                         .setSample(Arrays.asList(daughter)),
-                Paths.get(opencga.createTmpOutdir()), "index", token);
+                Paths.get(opencga.createTmpOutdir()), "index", false, token);
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
@@ -466,7 +496,7 @@ public class VariantOperationsTest {
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_index"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", false, token);
 
         List<Sample> samples = catalogManager.getSampleManager().get(STUDY, file.getSampleIds().subList(0, 2), QueryOptions.empty(), token).getResults();
         catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(samples), new QueryOptions(), token);
@@ -503,12 +533,19 @@ public class VariantOperationsTest {
 
         String newCellbase = "https://uk.ws.zettagenomics.com/cellbase/";
         String newCellbaseVersion = "v5.2";
+        String newCellbaseDataRelease = "1";
 
         assertNotEquals(newCellbase, cellBaseUtils.getURL());
         assertNotEquals(newCellbaseVersion, cellBaseUtils.getVersion());
+        assertNotEquals(newCellbaseDataRelease, cellBaseUtils.getDataRelease());
 
-        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase, newCellbaseVersion, "1", ""), false, null, token);
+        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase, newCellbaseVersion, newCellbaseDataRelease, ""), false, null, token);
         CellBaseConfiguration cellbaseConfiguration = catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getCellbase();
+
+        assertEquals(newCellbase, cellbaseConfiguration.getUrl());
+        assertEquals(newCellbaseVersion, cellbaseConfiguration.getVersion());
+        assertEquals(newCellbaseDataRelease, cellbaseConfiguration.getDataRelease());
+
 //        assertTrue(family.getPedigreeGraph() != null);
     }
 

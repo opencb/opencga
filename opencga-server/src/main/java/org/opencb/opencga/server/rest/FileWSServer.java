@@ -98,9 +98,12 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(name = "body", value = "Fetch parameters", required = true) FileFetch fetchParams) {
-        return submitJob(FetchAndRegisterTask.ID, studyStr, fetchParams, jobId, jobDescription, dependsOn, jobTags);
+        return submitJob(FetchAndRegisterTask.ID, studyStr, fetchParams, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET
@@ -400,7 +403,7 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
         try {
             ParamUtils.checkIsSingleID(folder);
-            DataResult<File> result = catalogManager.getFileManager().getFilesFromFolder(folder, studyStr, queryOptions, token);
+            DataResult<File> result = catalogManager.getFileManager().getFilesFromFolder(studyStr, folder, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -575,6 +578,27 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/{file}/move")
+    @ApiOperation(value = "Move file to a different path", response = File.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
+    public Response move(
+            @ApiParam(value = "File id, UUID or name.") @PathParam(value = "file") String fileIdStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(name = "body", value = "Parameters to modify", required = true) FileMoveParams moveParams) {
+        try {
+            DataResult<File> queryResult = fileManager.move(studyStr, fileIdStr, moveParams.getPath(), queryOptions, token);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     //    @JsonIgnoreProperties({"status"})
 //    public static class FileUpdateParams extends org.opencb.opencga.core.models.file.FileUpdateParams {
 //    }
@@ -688,8 +712,11 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "File parameters", required = true) PostLinkToolParams params) {
-        return submitJob(PostLinkSampleAssociation.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
+        return submitJob(PostLinkSampleAssociation.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -701,8 +728,11 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "File parameters", required = true) FileLinkToolParams params) {
-        return submitJob(FileLinkTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
+        return submitJob(FileLinkTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @DELETE
@@ -860,7 +890,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     files = Collections.singletonList(file);
                 }
             } else {
-                List<File> result = catalogManager.getFileManager().getFilesFromFolder(fileIdStr, studyStr, null, token).getResults();
+                List<File> result = catalogManager.getFileManager().getFilesFromFolder(studyStr, fileIdStr, null, token).getResults();
                 files = new ArrayList<>(result.size());
                 for (File f : result) {
                     File file1 = fileMetadataReader.updateMetadataInformation(studyStr, f, token);
@@ -883,7 +913,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //                    + " RECOVERED)", dataType = "boolean", defaultValue = "false", paramType = "query")
 //    })
 //    public Response delete(
-//            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+//            @ApiParam(value = "Study [[organization@]project:]study where study and project can be either the id or alias")
 //            @QueryParam("study") String studyStr,
 //            @ApiParam(value = "Comma separated list of file names") @QueryParam("name") String name,
 //            @ApiParam(value = "Comma separated list of paths") @QueryParam("path") String path,
@@ -994,44 +1024,44 @@ public class FileWSServer extends OpenCGAWSServer {
 //        }
 //    }
 
-    @GET
-    @Path("/aggregationStats")
-    @ApiOperation(value = "Fetch catalog file stats", response = FacetField.class)
-    public Response getAggregationStats(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Name") @QueryParam("name") String name,
-            @ApiParam(value = "Type") @QueryParam("type") String type,
-            @ApiParam(value = "Format") @QueryParam("format") String format,
-            @ApiParam(value = "Bioformat") @QueryParam("bioformat") String bioformat,
-            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-            @ApiParam(value = "Status") @QueryParam("status") String status,
-            @ApiParam(value = "Release") @QueryParam("release") String release,
-            @ApiParam(value = "External") @QueryParam("external") Boolean external,
-            @ApiParam(value = "Size") @QueryParam("size") String size,
-            @ApiParam(value = "Software") @QueryParam("software") String software,
-            @ApiParam(value = "Experiment") @QueryParam("experiment") String experiment,
-            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
-            @ApiParam(value = "Number of related files") @QueryParam("numRelatedFiles") String numRelatedFiles,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-
-            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: " +
-                    "studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("field");
-
-            queryOptions.put(QueryOptions.FACET, facet);
-
-            DataResult<FacetField> queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/aggregationStats")
+//    @ApiOperation(value = "Fetch catalog file stats", response = FacetField.class)
+//    public Response getAggregationStats(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+//            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Name") @QueryParam("name") String name,
+//            @ApiParam(value = "Type") @QueryParam("type") String type,
+//            @ApiParam(value = "Format") @QueryParam("format") String format,
+//            @ApiParam(value = "Bioformat") @QueryParam("bioformat") String bioformat,
+//            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
+//            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
+//            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
+//            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
+//            @ApiParam(value = "Status") @QueryParam("status") String status,
+//            @ApiParam(value = "Release") @QueryParam("release") String release,
+//            @ApiParam(value = "External") @QueryParam("external") Boolean external,
+//            @ApiParam(value = "Size") @QueryParam("size") String size,
+//            @ApiParam(value = "Software") @QueryParam("software") String software,
+//            @ApiParam(value = "Experiment") @QueryParam("experiment") String experiment,
+//            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
+//            @ApiParam(value = "Number of related files") @QueryParam("numRelatedFiles") String numRelatedFiles,
+//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+//
+//            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
+//
+//            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: " +
+//                    "studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//            query.remove("field");
+//
+//            queryOptions.put(QueryOptions.FACET, facet);
+//
+//            DataResult<FacetField> queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, token);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 }

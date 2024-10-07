@@ -44,12 +44,11 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.File;
@@ -140,8 +139,11 @@ public class ClinicalInterpretationAnalysisTest {
                 .setConfig(config);
 
         ExecutionResult result = customAnalysis.start();
-
-        checkInterpretation(238, result);
+        int expected = opencga.getVariantStorageManager().get(new VariantQuery(query),
+                        new QueryOptions(QueryOptions.LIMIT, 500), clinicalTest.token)
+                .getResults().size();
+        assertNotEquals(0, expected);
+        checkInterpretation(expected, result);
     }
 
     @Test
