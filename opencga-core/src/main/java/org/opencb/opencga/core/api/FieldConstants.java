@@ -289,7 +289,8 @@ public class FieldConstants {
     public static final String FILE_CHECKSUM = "The checksum of the file.";
     public static final String FILE_PATH = "The path of the file.";
     public static final String FILE_URI = "The uri of the file.";
-    public static final String FILE_EXTERNAL = "Indicates the file is external or not.";
+    public static final String FILE_EXTERNAL = "Indicates whether the file comes from an external path or not.";
+    public static final String FILE_RESOURCE = "Indicates the file is treated as a resource.";
     public static final String FILE_SIZE = "The size of the file.";
     public static final String FILE_SOFTWARE = "Software related with file.";
     public static final String FILE_EXPERIMENT = "File experiment.";
