@@ -1486,10 +1486,10 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--files"}, description = "List of VCF files to lift over", required = false, arity = 1)
         public String files;
     
-        @Parameter(names = {"--target-assembly"}, description = "Target assembly for lift over. Valid values: GRCh38 (for Ensembl) or hg38 (for NCBI)", required = false, arity = 1)
+        @Parameter(names = {"--target-assembly"}, description = "Target assembly for lift over. Valid values: GRCH38 (for Ensembl) or HG38 (for NCBI)", required = false, arity = 1)
         public String targetAssembly;
     
-        @Parameter(names = {"--vcf-destination"}, description = "Destination path where the lifted-over VCF files will be stored. If left empty, the VCF files will be stored in the job folder. If the keyword OPENCGA_VCF_INPUT_FOLDER is used, they will be stored in the same folder as the input VCF files. Otherwise, they will be stored in the specified destination path", required = false, arity = 1)
+        @Parameter(names = {"--vcf-destination"}, description = "Destination path where the lifted-over VCF files will be stored. If left empty, the VCF files will be stored in the job folder. If the keyword OPENCGA_VCF_INPUT_FOLDER is used, then VCF files be stored in the same folder as the input VCF files. Otherwise, they will be stored in the specified destination path", required = false, arity = 1)
         public String vcfDestination;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
