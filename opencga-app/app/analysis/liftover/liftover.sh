@@ -21,7 +21,7 @@ TARGET_ASSEMBLY=$2  ## Values accepted are: GRCh38, hg38
 OUTPUT_DIR=$3
 LOCAL_RESOURCES_DIR=$4
 
-if [ -z "$INPUT_FILE" ] || [ -z "$TARGET_ASSEMBLY" ] || [ -z "$OUTPUT_DIR" ] || [ -z "$RESOURCES_DIR" ]; then
+if [ -z "$INPUT_FILE" ] || [ -z "$TARGET_ASSEMBLY" ] || [ -z "$OUTPUT_DIR" ] || [ -z "$LOCAL_RESOURCES_DIR" ]; then
     echo "Usage: $0 <vcf_file> <target_assembly> <output_dir> <resources_dir>"
     exit 1
 fi
@@ -57,8 +57,8 @@ if [ $TARGET_ASSEMBLY == "GRCh38" ]; then
     gunzip ${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
     TARGET_REFERENCE_FILE="${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
 
-    CHAIN_FILE="${RESOURCES_DIR}/GRCh37_to_GRCh38.chain.gz"
-    wget http://ftp.ensembl.org/pub/assembly_mapping/homo_sapiens/GRCh37_to_GRCh38.chain.gz -o $CHAIN_FILE
+    CHAIN_FILE="${LOCA_RESOURCES_DIR}/GRCh37_to_GRCh38.chain.gz"
+    wget http://ftp.ensembl.org/pub/assembly_mapping/homo_sapiens/GRCh37_to_GRCh38.chain.gz -O $CHAIN_FILE
 elif [ $TARGET_ASSEMBLY == "hg38" ]; then
     echo "Liftover from hg19 to $TARGET_ASSEMBLY"
 #
@@ -79,8 +79,8 @@ elif [ $TARGET_ASSEMBLY == "hg38" ]; then
     gunzip ${LOCAL_RESOURCES_DIR}/hg38.fa.gz
     TARGET_REFERENCE_FILE="${LOCAL_RESOURCES_DIR}/hg38.fa"
 
-    CHAIN_FILE="${RESOURCES_DIR}/hg19ToHg38.over.chain.gz"
-    wget http://hgdownload.cse.ucsc.edu/goldenpath/hg19/liftOver/hg19ToHg38.over.chain.gz -o $CHAIN_FILE
+    CHAIN_FILE="${LOCAL_RESOURCES_DIR}/hg19ToHg38.over.chain.gz"
+    wget http://hgdownload.cse.ucsc.edu/goldenpath/hg19/liftOver/hg19ToHg38.over.chain.gz -O $CHAIN_FILE
 else
     echo "Unsupported target assembly $TARGET_ASSEMBLY"
     exit 1
@@ -90,7 +90,7 @@ fi
 echo "bcftools +liftover --no-version -Oz $INPUT_FILE -- -s $SOURCE_REFERENCE_FILE -f $TARGET_REFERENCE_FILE -c $CHAIN_FILE --reject ${OUTPUT_DIR}/${basename}.${TARGET_ASSEMBLY}.liftover.rejected.vcf --reject-type v --write-reject --write-src > ${OUTPUT_DIR}/${basename}.${TARGET_ASSEMBLY}.liftover.vcf.gz"
 bcftools +liftover --no-version -Oz $INPUT_FILE -- -s $SOURCE_REFERENCE_FILE -f $TARGET_REFERENCE_FILE -c $CHAIN_FILE --reject ${OUTPUT_DIR}/${basename}.${TARGET_ASSEMBLY}.liftover.rejected.vcf --reject-type v --write-reject --write-src > ${OUTPUT_DIR}/${basename}.${TARGET_ASSEMBLY}.liftover.vcf.gz
 
-## Clean folders
+## Resources are cleaned by the Liftover wrapper executor after saving them as attributes in the result
 #rm *.fa
 #rm *.fai
-rm $CHAIN_FILE
+#rm $CHAIN_FILE
