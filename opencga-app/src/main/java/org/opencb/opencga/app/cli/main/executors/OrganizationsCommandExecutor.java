@@ -12,6 +12,7 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.OrganizationsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -126,12 +127,12 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), OrganizationCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotEmpty(beanParams, "configuration.defaultUserExpirationDate",commandOptions.configurationDefaultUserExpirationDate, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "configuration.defaultUserExpirationDate", commandOptions.configurationDefaultUserExpirationDate, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             organizationCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -162,10 +163,10 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), NoteCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-            putNestedIfNotNull(beanParams, "visibility",commandOptions.visibility, true);
-            putNestedIfNotNull(beanParams, "valueType",commandOptions.valueType, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
+            putNestedIfNotNull(beanParams, "valueType", commandOptions.valueType, true);
 
             noteCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -214,6 +215,7 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("tagsAction", commandOptions.tagsAction);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
@@ -228,8 +230,8 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), NoteUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-            putNestedIfNotNull(beanParams, "visibility",commandOptions.visibility, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
 
             noteUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -261,7 +263,7 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), UserStatusUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "status",commandOptions.status, true);
+            putNestedIfNotEmpty(beanParams, "status", commandOptions.status, true);
 
             userStatusUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -293,14 +295,13 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), OrganizationUserUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-            putNestedIfNotNull(beanParams, "quota.diskUsage",commandOptions.quotaDiskUsage, true);
-            putNestedIfNotNull(beanParams, "quota.cpuUsage",commandOptions.quotaCpuUsage, true);
-            putNestedIfNotNull(beanParams, "quota.maxDisk",commandOptions.quotaMaxDisk, true);
-            putNestedIfNotNull(beanParams, "quota.maxCpu",commandOptions.quotaMaxCpu, true);
-            putNestedIfNotEmpty(beanParams, "account.expirationDate",commandOptions.accountExpirationDate, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "email", commandOptions.email, true);
+            putNestedIfNotNull(beanParams, "quota.diskUsage", commandOptions.quotaDiskUsage, true);
+            putNestedIfNotNull(beanParams, "quota.cpuUsage", commandOptions.quotaCpuUsage, true);
+            putNestedIfNotNull(beanParams, "quota.maxDisk", commandOptions.quotaMaxDisk, true);
+            putNestedIfNotNull(beanParams, "quota.maxCpu", commandOptions.quotaMaxCpu, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             organizationUserUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -332,11 +333,11 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), OrganizationConfiguration.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "defaultUserExpirationDate",commandOptions.defaultUserExpirationDate, true);
-            putNestedIfNotNull(beanParams, "optimizations.simplifyPermissions",commandOptions.optimizationsSimplifyPermissions, true);
-            putNestedIfNotEmpty(beanParams, "token.algorithm",commandOptions.tokenAlgorithm, true);
-            putNestedIfNotEmpty(beanParams, "token.secretKey",commandOptions.tokenSecretKey, true);
-            putNestedIfNotNull(beanParams, "token.expiration",commandOptions.tokenExpiration, true);
+            putNestedIfNotEmpty(beanParams, "defaultUserExpirationDate", commandOptions.defaultUserExpirationDate, true);
+            putNestedIfNotNull(beanParams, "optimizations.simplifyPermissions", commandOptions.optimizationsSimplifyPermissions, true);
+            putNestedIfNotEmpty(beanParams, "token.algorithm", commandOptions.tokenAlgorithm, true);
+            putNestedIfNotEmpty(beanParams, "token.secretKey", commandOptions.tokenSecretKey, true);
+            putNestedIfNotNull(beanParams, "token.expiration", commandOptions.tokenExpiration, true);
 
             organizationConfiguration = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -380,12 +381,12 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), OrganizationUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "owner",commandOptions.owner, true);
-            putNestedIfNotNull(beanParams, "admins",commandOptions.admins, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "owner", commandOptions.owner, true);
+            putNestedIfNotNull(beanParams, "admins", commandOptions.admins, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             organizationUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

@@ -188,6 +188,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     public boolean open() {
         super.open();
         dbAdaptor.createTableIfNeeded(studyId, schema.getVersion(), options);
+        dbAdaptor.expandTableIfNeeded(studyId, schema.getVersion(), sampleIds, options);
         return true;
     }
 

@@ -119,7 +119,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     @Override
     public OpenCGAResult insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+            throws CatalogException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
@@ -197,7 +197,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting individual '{}' ({})...", individual.getId(), individual.getUid());
-        versionedMongoDBAdaptor.insert(clientSession, individualDocument, individual.getRelease());
+        versionedMongoDBAdaptor.insert(clientSession, individualDocument);
         logger.debug("Individual '{}' successfully inserted", individual.getId());
 
         if (individual.getSamples() != null && !individual.getSamples().isEmpty()) {
@@ -329,7 +329,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         try {
             return runTransaction(clientSession -> transactionalUpdate(clientSession, individualUid, parameters, variableSetList,
                     queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             throw new CatalogDBException("Could not update individual: " + e.getMessage(), e.getCause());
         }
     }
@@ -363,7 +363,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             try {
                 result.append(runTransaction(clientSession -> transactionalUpdate(clientSession, individual, parameters, variableSetList,
                         queryOptions)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update individual {}: {}", individual.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, individual.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -1051,7 +1051,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 throw new CatalogDBException("Could not find individual " + individual.getId() + " with uid " + individual.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete individual {}: {}", individual.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete individual " + individual.getId() + ": " + e.getMessage(), e);
         }
@@ -1068,7 +1068,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             String individualId = individual.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, individual)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete individual {}: {}", individualId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, individualId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);

@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.PanelConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -87,8 +88,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
     }
 
     @Override
-    public OpenCGAResult insert(long studyUid, List<Panel> panelList) throws CatalogDBException, CatalogParameterException,
-            CatalogAuthorizationException {
+    public OpenCGAResult insert(long studyUid, List<Panel> panelList) throws CatalogException {
         if (panelList == null || panelList.isEmpty()) {
             throw new CatalogDBException("Missing panel list");
         }
@@ -108,8 +108,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
     }
 
     @Override
-    public OpenCGAResult insert(long studyUid, Panel panel, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult insert(long studyUid, Panel panel, QueryOptions options) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting insert transaction of panel id '{}'", panel.getId());
@@ -135,7 +134,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
         logger.debug("Inserting panel '{}' ({})", panel.getId(), panel.getUid());
 
         Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, studyUid);
-        versionedMongoDBAdaptor.insert(clientSession, panelDocument, panel.getRelease());
+        versionedMongoDBAdaptor.insert(clientSession, panelDocument);
         logger.info("Panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
     }
 
@@ -291,7 +290,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
 
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, dataResult.first(), parameters, queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update panel {}: {}", dataResult.first().getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not update panel '" + dataResult.first().getId() + "': " + e.getMessage(), e.getCause());
         }
@@ -317,7 +316,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
             Panel panel = iterator.next();
             try {
                 result.append(runTransaction(clientSession -> privateUpdate(clientSession, panel, parameters, queryOptions)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update panel {}: {}", panel.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, panel.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -464,7 +463,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
                 throw new CatalogDBException("Could not find panel " + panel.getId() + " with uid " + panel.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete panel {}: {}", panel.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete panel '" + panel.getId() + "': " + e.getMessage(), e.getCause());
         }
@@ -480,7 +479,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
             String panelId = panel.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, panel)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete panel {}: {}", panelId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, panelId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);

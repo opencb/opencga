@@ -45,7 +45,7 @@ public class FieldConstants {
     public static final String ORGANIZATION_ADMINS_DESCRIPTION = "Administrative users of the organization.";
     public static final String ORGANIZATION_PROJECTS_DESCRIPTION = "Projects the organization holds.";
     public static final String ORGANIZATION_NOTES_DESCRIPTION = "Notes of organization scope.";
-//    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
+    //    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
 //            + "contains all the configuration necessary to be able to communicate with the external authentication origins.";
     public static final String ORGANIZATION_CONFIGURATION_DESCRIPTION = "Organization configuration information.";
     public static final String ORGANIZATION_INTERNAL_DESCRIPTION = "Organization internal information.";
@@ -464,9 +464,16 @@ public class FieldConstants {
     public static final String USER_ACCOUNT = "User account.";
 
     //Account
-    public static final String ACCOUNT_TYPE = "User account type can have the values GUEST, FULL and ADMINISTRATOR.";
-    public static final String ACCOUNT_EXPIRATION_DATE_DESCRIPTION = "Date the account expires.";
-    public static final String ACCOUNT_AUTHENTICATION = "How the account is authenticated";
+    public static final String INTERNAL_ACCOUNT_EXPIRATION_DATE_DESCRIPTION = "Date the account expires.";
+    public static final String INTERNAL_ACCOUNT_FAILED_ATTEMPTS_DESCRIPTION = "Number of consecutive failed attempts. When the user logs"
+            + " in successfully, this field is automatically reset to 0.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_DESCRIPTION = "Object containing the last time the password was changed and the"
+            + " expiration date.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED_DESCRIPTION = "Date the user's password was last changed. This "
+            + "field will be null if the user account origin is different from OpenCGA.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE_DESCRIPTION = "Date the user's password expires. This field will"
+            + " be null if the user account origin is different from OpenCGA and the passwordExpiration feature is disabled.";
+    public static final String INTERNAL_ACCOUNT_AUTHENTICATION = "How the account is authenticated";
     public static final String USER_QUOTA = "User quota";
     public static final String USER_PROJECTS = "A List with related projects.";
     public static final String USER_SHARED_PROJECTS = "A List with shared projects.";
@@ -527,7 +534,7 @@ public class FieldConstants {
     public static final String HRDETECT_CNV_QUERY_DESCRIPTION = "CNV query";
     public static final String HRDETECT_INDEL_QUERY_DESCRIPTION = "INDEL query";
     public static final String HRDETECT_SNV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV3 input for"
-        + " HRDetect.";
+            + " HRDetect.";
     public static final String HRDETECT_SNV8_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV8 input for"
             + " HRDetect.";
     public static final String HRDETECT_SV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SV3 input for"
@@ -564,5 +571,10 @@ public class FieldConstants {
     public static final String ALIGNMENT_QC_OVERWRITE_DESCRIPTION = "To overwrite the QC metrics already computed.";
 
     // Exomiser
+    public static final String EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION = "Clinical analysis ID.";
+    public static final String EXOMISER_SAMPLE_DESCRIPTION = "Sample ID.";
     public static final String EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION = "Clinical analysis type: SINGLE or FAMILY.";
+    public static final String EXOMISER_VERSION_DESCRIPTION = "Exomiser version in the format X.Y where X is the major version and Y the"
+            + " minor version, e.g.: 14.0. If the version is not specified, the default version will be used. Refer to the configuration"
+            + " file to view all installed Exomiser versions and identify the default version.";
 }

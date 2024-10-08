@@ -136,13 +136,16 @@ public class SnapshotVersionedMongoDBAdaptor {
                 throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
     }
 
-    protected void insert(ClientSession session, Document document, int release) {
-        String uuid = getClientSessionUuid(session);
+    protected void insert(ClientSession session, Document document) {
+        // Versioning private parameters
         document.put(VERSION, 1);
+        document.put(RELEASE_FROM_VERSION, Collections.singletonList(document.getInteger(RELEASE)));
         document.put(LAST_OF_VERSION, true);
         document.put(LAST_OF_RELEASE, true);
-        document.put(RELEASE_FROM_VERSION, Collections.singletonList(release));
+
+        String uuid = getClientSessionUuid(session);
         document.put(PRIVATE_TRANSACTION_ID, uuid);
+
         collection.insert(session, document, QueryOptions.empty());
         archiveCollection.insert(session, document, QueryOptions.empty());
     }
@@ -356,12 +359,17 @@ public class SnapshotVersionedMongoDBAdaptor {
         return document;
     }
 
-    protected void delete(ClientSession session, Bson query) {
+    protected void delete(ClientSession session, Bson query) throws CatalogDBException {
         // Remove any old documents from the "delete" collection matching the criteria
         deletedCollection.remove(session, query, QueryOptions.empty());
 
         // Remove document from main collection
-        collection.remove(session, query, QueryOptions.empty());
+        DataResult<?> remove = collection.remove(session, query, QueryOptions.empty());
+        if (remove.getNumDeleted() == 0) {
+            logger.error("Delete operation for '{}' could not be performed. Num matches: {}", query.toBsonDocument(),
+                    remove.getNumMatches());
+            throw new CatalogDBException("Delete operation could not be performed");
+        }
 
         // Add versioned documents to "delete" collection
         InternalStatus internalStatus = new InternalStatus(InternalStatus.DELETED);

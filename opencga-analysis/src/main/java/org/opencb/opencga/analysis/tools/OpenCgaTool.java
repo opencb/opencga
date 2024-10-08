@@ -564,7 +564,7 @@ public abstract class OpenCgaTool {
                 toolExecutor.getSource(),
                 toolExecutor.getFramework()));
 
-        toolExecutor.setUp(erm, executorParams, outDir);
+        toolExecutor.setUp(erm, executorParams, outDir, configuration);
         return toolExecutor;
     }
 
