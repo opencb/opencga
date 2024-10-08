@@ -35,8 +35,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -114,7 +112,7 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
         return Arrays.asList(PREPARE_RESOURCES_STEP, ID, CLEAN_RESOURCES_STEP);
     }
 
-    protected void run() throws ToolException {
+    protected void run() throws ToolException, IOException {
         // Download and copy liftover resource files in the job dir
         step(PREPARE_RESOURCES_STEP, this::prepareResources);
 

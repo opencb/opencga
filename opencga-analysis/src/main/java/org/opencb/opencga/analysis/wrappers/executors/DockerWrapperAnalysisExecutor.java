@@ -20,6 +20,9 @@ import java.util.*;
 
 public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor {
 
+//    protected String study;
+    protected Logger logger;
+
     public final static String DOCKER_INPUT_PATH = "/data/input";
     public final static String DOCKER_OUTPUT_PATH = "/data/output";
 
@@ -27,6 +30,10 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
     public static final String STDERR_FILENAME = "stderr.txt";
 
     public static final String DOCKER_CLI_MSG = "Docker CLI: ";
+
+    public DockerWrapperAnalysisExecutor() {
+        logger = LoggerFactory.getLogger(this.getClass());
+    }
 
     public String getDockerImageName() {
         return "opencb/opencga-ext-tools";

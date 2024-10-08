@@ -19,7 +19,7 @@
 INPUT_FILE=$1
 TARGET_ASSEMBLY=$2  ## Values accepted are: GRCh38, hg38
 OUTPUT_DIR=$3
-RESOURCES_DIR=$4
+LOCAL_RESOURCES_DIR=$4
 
 if [ -z "$INPUT_FILE" ] || [ -z "$TARGET_ASSEMBLY" ] || [ -z "$OUTPUT_DIR" ] || [ -z "$RESOURCES_DIR" ]; then
     echo "Usage: $0 <vcf_file> <target_assembly> <output_dir> <resources_dir>"
@@ -39,23 +39,23 @@ fi
 
 if [ $TARGET_ASSEMBLY == "GRCh38" ]; then
     echo "Liftover from GRCh37 to $TARGET_ASSEMBLY"
-#
-#    ## Prepare GRCh37 and GRCh38 reference genomes
-#    if [ ! -f Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz ]; then
+
+    ## Prepare GRCh37 and GRCh38 reference genomes
+#    if [ ! -f "${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz" ]; then
 #      wget --no-check-certificate https://resources.opencb.org/opencb/opencga/analysis/commons/reference-genomes/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz
 #    fi
 #
 #    if [ ! -f Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz ]; then
 #      wget --no-check-certificate https://resources.opencb.org/opencb/opencga/analysis/commons/reference-genomes/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
 #    fi
-#
-    echo "gunzip ${RESOURCES_DIR}/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
-    gunzip ${RESOURCES_DIR}/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz
-    SOURCE_REFERENCE_FILE="${RESOURCES_DIR}/Homo_sapiens.GRCh37.dna.primary_assembly.fa"
 
-    echo "gunzip ${RESOURCES_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
-    gunzip ${RESOURCES_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
-    TARGET_REFERENCE_FILE="${RESOURCES_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
+    echo "gunzip ${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
+    gunzip ${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz
+    SOURCE_REFERENCE_FILE="${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh37.dna.primary_assembly.fa"
+
+    echo "gunzip ${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+    gunzip ${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
+    TARGET_REFERENCE_FILE="${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
 
     CHAIN_FILE="${RESOURCES_DIR}/GRCh37_to_GRCh38.chain.gz"
     wget http://ftp.ensembl.org/pub/assembly_mapping/homo_sapiens/GRCh37_to_GRCh38.chain.gz -o $CHAIN_FILE
@@ -71,13 +71,13 @@ elif [ $TARGET_ASSEMBLY == "hg38" ]; then
 #      wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
 #    fi
 #
-    echo "gunzip ${RESOURCES_DIR}/hg19.fa.gz"
-    gunzip ${RESOURCES_DIR}/hg19.fa.gz
-    SOURCE_REFERENCE_FILE="${RESOURCES_DIR}/hg19.fa"
+    echo "gunzip ${LOCAL_RESOURCES_DIR}/hg19.fa.gz"
+    gunzip ${LOCAL_RESOURCES_DIR}/hg19.fa.gz
+    SOURCE_REFERENCE_FILE="${LOCAL_RESOURCES_DIR}/hg19.fa"
 
-    echo "gunzip ${RESOURCES_DIR}/hg38.fa.gz"
-    gunzip ${RESOURCES_DIR}/hg38.fa.gz
-    TARGET_REFERENCE_FILE="${RESOURCES_DIR}/hg38.fa"
+    echo "gunzip ${LOCAL_RESOURCES_DIR}/hg38.fa.gz"
+    gunzip ${LOCAL_RESOURCES_DIR}/hg38.fa.gz
+    TARGET_REFERENCE_FILE="${LOCAL_RESOURCES_DIR}/hg38.fa"
 
     CHAIN_FILE="${RESOURCES_DIR}/hg19ToHg38.over.chain.gz"
     wget http://hgdownload.cse.ucsc.edu/goldenpath/hg19/liftOver/hg19ToHg38.over.chain.gz -o $CHAIN_FILE
