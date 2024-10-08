@@ -567,8 +567,8 @@ public class FieldConstants {
     public static final String EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION = "Clinical analysis type: SINGLE or FAMILY.";
 
     // Liftover
-    public static final String LIFTOVER_GRCH38 = "GRCH38";
-    public static final String LIFTOVER_HG38 = "HG38";
+    public static final String LIFTOVER_GRCH38 = "GRCh38";
+    public static final String LIFTOVER_HG38 = "hg38";
     public static final String LIFTOVER_VCF_INPUT_FOLDER = "OPENCGA_VCF_INPUT_FOLDER";
     public static final String LIFTOVER_FILES_DESCRIPTION = "List of VCF files to lift over";
     public static final String LIFTOVER_TARGET_ASSEMBLY_DESCRIPTION = "Target assembly for lift over. Valid values: " + LIFTOVER_GRCH38

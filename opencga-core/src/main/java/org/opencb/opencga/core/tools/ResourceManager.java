@@ -33,9 +33,9 @@ public class ResourceManager  {
     public static final String RESOURCES_TXT_FILENAME = "resources.txt";
     public static final String CONFIGURATION_FILENAME = "configuration.yml";
 
-    public static final String CONF_FOLDER_NAME = "conf";
-    public static final String ANALYSIS_FOLDER_NAME = "analysis";
-    public static final String RESOURCES_FOLDER_NAME = "resources";
+    public static final String CONF_DIRNAME = "conf";
+    public static final String ANALYSIS_DIRNAME = "analysis";
+    public static final String RESOURCES_DIRNAME = "resources";
 
 
     protected static Logger logger = LoggerFactory.getLogger(ResourceManager.class);
@@ -65,7 +65,7 @@ public class ResourceManager  {
 
             if (lockAcquired) {
                 // Create the analysis resources directory if it doesn't exist
-                Path analysisResourcesPath = openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME).resolve(analysisId);
+                Path analysisResourcesPath = openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME).resolve(analysisId);
                 if (!Files.exists(analysisResourcesPath)) {
                     logger.info("Creating folder for '{}' resources: {}", analysisId, analysisResourcesPath);
                     Files.createDirectories(analysisResourcesPath);
@@ -96,7 +96,7 @@ public class ResourceManager  {
         loadConfiguration();
 
         // Get resource filenames for the input analysis
-        Path resourcesTxt = openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(analysisId).resolve(RESOURCES_TXT_FILENAME);
+        Path resourcesTxt = openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(analysisId).resolve(RESOURCES_TXT_FILENAME);
         List<String> filenames = readAllLines(resourcesTxt);
 
         List<File> downloadedFiles = new ArrayList<>();
@@ -113,7 +113,7 @@ public class ResourceManager  {
 
     private void loadConfiguration() throws IOException {
         if (configuration == null) {
-            this.configuration = Configuration.load(new FileInputStream(openCgaHome.resolve(CONF_FOLDER_NAME)
+            this.configuration = Configuration.load(new FileInputStream(openCgaHome.resolve(CONF_DIRNAME)
                     .resolve(CONFIGURATION_FILENAME).toFile()));
             // Set base URL from configuration, if not set
 //            if (baseurl == null) {

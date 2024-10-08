@@ -39,8 +39,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.api.FieldConstants.*;
-import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_FOLDER_NAME;
-import static org.opencb.opencga.core.tools.ResourceManager.RESOURCES_FOLDER_NAME;
+import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
+import static org.opencb.opencga.core.tools.ResourceManager.RESOURCES_DIRNAME;
 
 @Tool(id = LiftoverWrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = LiftoverWrapperAnalysis.DESCRIPTION)
 public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
@@ -125,9 +125,7 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
 
     protected void prepareResources() throws IOException, ToolException {
         // Create folder where the liftover resources will be saved (within the job dir, aka outdir)
-//        FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"));
-//        resourcePath = Files.createDirectories(getOutDir().resolve(RESOURCES_FOLDER_NAME), permissions);
-        resourcePath = Files.createDirectories(getOutDir().resolve(RESOURCES_FOLDER_NAME));
+        resourcePath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
 
         // Identify Liftover resources to download only the required ones
         Map<String, List<String>> mapResources = new HashMap<>();
@@ -171,7 +169,7 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         // Set parameters and execute
         executor.setStudy(study)
-                .setLiftoverPath(getOpencgaHome().resolve(ANALYSIS_FOLDER_NAME).resolve(ID))
+                .setLiftoverPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(ID))
                 .setFiles(files)
                 .setTargetAssembly(targetAssembly)
                 .setVcfDest(vcfDest)

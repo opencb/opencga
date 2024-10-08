@@ -15,16 +15,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.opencb.opencga.core.tools.ResourceManager.RESOURCES_DIRNAME;
 
 public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor {
 
-//    protected String study;
     protected Logger logger;
 
-    public final static String DOCKER_INPUT_PATH = "/data/input";
-    public final static String DOCKER_OUTPUT_PATH = "/data/output";
+    public static final String DOCKER_INPUT_PATH = "/data/input";
+    public static final String DOCKER_OUTPUT_PATH = "/data/output";
+
+    protected static final String SCRIPT_VIRTUAL_PATH = "/script";
+    protected static final String INPUT_VIRTUAL_PATH = "/input";
+    protected static final String OUTPUT_VIRTUAL_PATH = "/output";
+    protected static final String RESOURCES_VIRTUAL_PATH = "/" + RESOURCES_DIRNAME;
+
+    protected static final String RESOURCES_ATTR_KEY = "resources";
 
     public static final String STDOUT_FILENAME = "stdout.txt";
     public static final String STDERR_FILENAME = "stderr.txt";
@@ -283,5 +293,16 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
                 return true;
         }
         return false;
+    }
+
+    protected void addParameters(ObjectMap params) throws ToolException {
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            addParam(entry.getKey(), entry.getValue());
+        }
+    }
+
+    protected void addResources(Path resourcePath) throws ToolException {
+        List<String> resourceNames = Arrays.stream(resourcePath.toFile().listFiles()).map(File::getName).collect(Collectors.toList());
+        addAttribute(RESOURCES_ATTR_KEY, resourceNames);
     }
 }
