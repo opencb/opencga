@@ -17,8 +17,8 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -36,19 +36,13 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.server.generator.models.RestCategory;
-import org.opencb.opencga.server.generator.models.RestEndpoint;
-import org.opencb.opencga.server.generator.models.RestParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created on 27/05/16.
@@ -266,18 +260,22 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         return res;
     }
 
-    public Object putNestedIfNotNull(ObjectMap map, String key, Object value, boolean parents) {
+    public void putNestedIfNotNull(ObjectMap map, String key, Object value, boolean parents) {
         if (value != null) {
             map.putNested(key, value, parents);
         }
-        return null;
     }
 
-    public Object putNestedIfNotEmpty(ObjectMap map, String key, String value, boolean parents) {
+    public void putNestedIfNotEmpty(ObjectMap map, String key, String value, boolean parents) {
         if (StringUtils.isNotEmpty(value)) {
             map.putNested(key, value, parents);
         }
-        return null;
+    }
+
+    public void putNestedMapIfNotEmpty(ObjectMap map, String key, Map<String, ?> value, boolean parents) {
+        if (MapUtils.isNotEmpty(value)) {
+            map.putNested(key, value, parents);
+        }
     }
 
     public boolean checkExpiredSession(String[] args) {

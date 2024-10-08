@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v2_12_5.storage;
+package org.opencb.opencga.app.migrations.v2.v2_12_5.storage;
 
 import org.opencb.opencga.app.migrations.StorageMigrationTool;
 import org.opencb.opencga.catalog.migration.Migration;
@@ -11,7 +11,7 @@ public class AddAllelesColumnToPhoenix extends StorageMigrationTool {
 
     @Override
     protected void run() throws Exception {
-        for (String project : getVariantStorageProjects(organizationId)) {
+        for (String project : getVariantStorageProjects()) {
             VariantStorageEngine engine = getVariantStorageEngineByProject(project);
             if (engine.getStorageEngineId().equals("hadoop")) {
                 logger.info("Adding missing columns (if any) for project " + project);

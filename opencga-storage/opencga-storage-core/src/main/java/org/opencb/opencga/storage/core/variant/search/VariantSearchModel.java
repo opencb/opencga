@@ -17,11 +17,14 @@
 package org.opencb.opencga.storage.core.variant.search;
 
 import org.apache.solr.client.solrj.beans.Field;
+import org.opencb.biodata.models.variant.Variant;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.HASH_PREFIX;
 
 /**
  * Created by wasim on 09/11/16.
@@ -140,6 +143,9 @@ public class VariantSearchModel {
     @Field("fileInfo_*")
     private Map<String, String> fileInfo;
 
+    @Field("attr_*")
+    private Map<String, Object> attr;
+
 
     public static final double MISSING_VALUE = -100.0;
 
@@ -171,6 +177,7 @@ public class VariantSearchModel {
         this.qual = new HashMap<>();
         this.filter = new HashMap<>();
         this.fileInfo = new HashMap<>();
+        this.attr = new HashMap<>();
     }
 
     public VariantSearchModel(VariantSearchModel init) {
@@ -210,6 +217,7 @@ public class VariantSearchModel {
         this.qual = init.getQual();
         this.filter = init.getFilter();
         this.fileInfo = init.getFileInfo();
+        this.attr = init.getAttr();
     }
 
     @Override
@@ -251,12 +259,24 @@ public class VariantSearchModel {
         sb.append(", qual=").append(qual);
         sb.append(", filter=").append(filter);
         sb.append(", fileInfo=").append(fileInfo);
+        sb.append(", attr=").append(attr);
         sb.append('}');
         return sb.toString();
     }
 
     public String getId() {
         return id;
+    }
+
+    public Variant toVariantSimple() {
+        String variantId = getId();
+        if (variantId.startsWith(HASH_PREFIX)) {
+            Object o = getAttr().get("attr_id");
+            variantId = o instanceof String ? (String) o : ((List<String>) o).get(0);
+        }
+        Variant variant = new Variant(variantId);
+        variant.setId(variantId);
+        return variant;
     }
 
     public VariantSearchModel setId(String id) {
@@ -579,4 +599,12 @@ public class VariantSearchModel {
         return this;
     }
 
+    public Map<String, Object> getAttr() {
+        return attr;
+    }
+
+    public VariantSearchModel setAttr(Map<String, Object> attr) {
+        this.attr = attr;
+        return this;
+    }
 }

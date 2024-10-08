@@ -124,6 +124,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     public CatalogManager resetCatalogManager() throws CatalogException {
         catalogManager.close();
         catalogManager = new CatalogManager(configuration);
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
         return catalogManager;
     }
 

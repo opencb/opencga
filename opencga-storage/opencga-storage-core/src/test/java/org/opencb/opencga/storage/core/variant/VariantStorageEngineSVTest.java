@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -7,7 +8,6 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.Query;
@@ -20,6 +20,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -53,21 +57,24 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
     public void before() throws Exception {
         if (!loaded) {
             clearDB(DB_NAME);
+        }
+        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
+        variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(ParamConstants.CELLBASE_DATA_RELEASE_GRCH38);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
+        variantStorageEngine.getOptions().put(VariantStorageOptions.NORMALIZATION_EXTENSIONS.key(), ParamConstants.NONE);
+        variantStorageEngine.reloadCellbaseConfiguration();
+
+        if (!loaded) {
             loadFiles();
             loaded = true;
         }
     }
 
     protected void loadFiles() throws Exception {
-        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
-        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("3");
-        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
-        variantStorageEngine.reloadCellbaseConfiguration();
 
         input1 = getResourceUri("variant-test-sv.vcf");
         studyMetadata = new StudyMetadata(1, "s1");
-        variantStorageEngine.getOptions().append(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key(), "expression,clinical");
         pipelineResult1 = runDefaultETL(input1, variantStorageEngine, studyMetadata, new QueryOptions()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
@@ -104,6 +111,19 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
                 ;
         int count = variantStorageEngine.count(new VariantQuery().study(studyMetadata.getName())).first().intValue();
         assertEquals(expected, count);
+    }
+
+    @Test
+    public void checkSecondaryAnnotationIndex() throws Exception {
+        Assume.assumeTrue(variantStorageEngine.secondaryAnnotationIndexActiveAndAlive());
+        VariantQueryExecutor variantQueryExecutor = variantStorageEngine.getVariantQueryExecutor(SearchIndexVariantQueryExecutor.class);
+        for (Variant variant : variantStorageEngine) {
+            ParsedVariantQuery query = variantStorageEngine
+                    .parseQuery(new Query(VariantQueryParam.ID.key(), variant.toString()), new QueryOptions());
+            VariantQueryResult<Variant> result = variantQueryExecutor.get(query);
+            assertEquals(1, result.getNumResults());
+            assertEquals(variant.toString(), result.first().toString());
+        }
     }
 
     @Test
@@ -149,12 +169,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
             actualStudyEntry.getFiles().get(0).setFileId("");
             assertEquals(expectedStudyEntry.getFiles().get(0), actualStudyEntry.getFiles().get(0));
 
-
-            if (actual.getAlternate().equals("<DEL:ME:ALU>") || actual.getType().equals(VariantType.BREAKEND)) {
-                System.err.println("WARN: Variant " + actual + (actual.getAnnotation() == null ? " without annotation" : " with annotation"));
-            } else {
-                assertNotNull(actual.toString(), actual.getAnnotation());
-            }
+            assertNotNull(actual.toString(), actual.getAnnotation());
         }
     }
 

@@ -163,7 +163,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
     OpenCGAResult nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
 
     OpenCGAResult insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+            throws CatalogException;
 
     OpenCGAResult<Individual> get(long individualId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
