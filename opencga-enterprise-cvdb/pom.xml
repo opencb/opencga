@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.zettagenomics.opencga-enterprise</groupId>
         <artifactId>opencga-enterprise</artifactId>
-        <version>2.2.2-SNAPSHOT</version>
+        <version>2.2.2</version>
     </parent>
 
     <artifactId>opencga-enterprise-cvdb</artifactId>
