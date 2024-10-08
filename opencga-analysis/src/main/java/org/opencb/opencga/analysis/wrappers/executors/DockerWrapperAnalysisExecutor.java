@@ -8,7 +8,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
@@ -16,8 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -158,6 +155,12 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
     protected String buildCommandLine(String image, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
                                       AbstractMap.SimpleEntry<String, String> outputBinding, String cmdParams,
                                       Map<String, String> dockerParams) throws IOException {
+        return buildCommandLine(image, inputBindings, null, outputBinding, cmdParams, dockerParams);
+    }
+
+    protected String buildCommandLine(String image, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+                                      Set<String> readOnlyInputBindings, AbstractMap.SimpleEntry<String, String> outputBinding,
+                                      String cmdParams, Map<String, String> dockerParams) throws IOException {
         // Sanity check
         if (outputBinding == null) {
             throw new IllegalArgumentException("Missing output binding");
@@ -186,8 +189,12 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
         if (inputBindings != null) {
             // Mount management (bindings)
             for (AbstractMap.SimpleEntry<String, String> binding : inputBindings) {
-                commandLine.append("--mount type=bind,source=\"").append(binding.getKey()).append("\",target=\"").append(binding.getValue())
-                        .append("\" ");
+                commandLine.append("--mount type=bind,source=\"").append(binding.getKey()).append("\",target=\"")
+                        .append(binding.getValue()).append("\"");
+                if (CollectionUtils.isNotEmpty(readOnlyInputBindings) && readOnlyInputBindings.contains(binding.getValue())) {
+                    commandLine.append(",readonly");
+                }
+                commandLine.append(" ");
             }
         }
         commandLine.append("--mount type=bind,source=\"").append(outputBinding.getKey()).append("\",target=\"")

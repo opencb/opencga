@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.wrappers.liftover;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
@@ -16,12 +15,11 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.apache.commons.io.FileUtils.readLines;
 import static org.opencb.opencga.core.api.FieldConstants.LIFTOVER_VCF_INPUT_FOLDER;
+import static org.opencb.opencga.core.tools.ResourceManager.RESOURCES_FOLDER_NAME;
 
 @ToolExecutor(id = LiftoverWrapperAnalysisExecutor.ID,
         tool = LiftoverWrapperAnalysis.ID,
@@ -29,12 +27,13 @@ import static org.opencb.opencga.core.api.FieldConstants.LIFTOVER_VCF_INPUT_FOLD
         framework = ToolExecutor.Framework.LOCAL)
 public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
 
-    public final static String ID = LiftoverWrapperAnalysis.ID + "-local";
+    public static final String ID = LiftoverWrapperAnalysis.ID + "-local";
 
-    private final static String VIRTUAL_SCRIPT_FOLDER = "/script";
-    private final static String VIRTUAL_INPUT_FOLDER = "/input";
-    private final static String VIRTUAL_OUTPUT_FOLDER = "/output";
-    private final static String VIRTUAL_RESOURCES_FOLDER = "/" + LiftoverWrapperAnalysis.RESOURCES_FOLDER;
+    private static final String LIFTOVER_SCRIPT = "liftover.sh";
+    private static final String VIRTUAL_SCRIPT_FOLDER = "/script";
+    private static final String VIRTUAL_INPUT_FOLDER = "/input";
+    private static final String VIRTUAL_OUTPUT_FOLDER = "/output";
+    private static final String VIRTUAL_RESOURCES_FOLDER = "/" + RESOURCES_FOLDER_NAME;
 
     private String study;
     private Path liftoverPath;
@@ -73,41 +72,41 @@ public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     private void runLiftover(File file, Path outPath) throws ToolExecutorException {
         try {
-            // Input binding
+            // Input bindings
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-            inputBindings.add(new AbstractMap.SimpleEntry<>(liftoverPath.toAbsolutePath().toString(), VIRTUAL_SCRIPT_FOLDER));
-            inputBindings.add(new AbstractMap.SimpleEntry<>(file.getParent(), VIRTUAL_INPUT_FOLDER));
+            Path virtualScriptPath = Paths.get(VIRTUAL_SCRIPT_FOLDER).resolve(LIFTOVER_SCRIPT);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(liftoverPath.resolve(LIFTOVER_SCRIPT).toAbsolutePath().toString(),
+                    virtualScriptPath.toString()));
+            Path virtualVcfPath = Paths.get(VIRTUAL_INPUT_FOLDER).resolve(file.getName());
+            inputBindings.add(new AbstractMap.SimpleEntry<>(file.getAbsolutePath(), virtualVcfPath.toString()));
             inputBindings.add(new AbstractMap.SimpleEntry<>(resourcePath.toAbsolutePath().toString(), VIRTUAL_RESOURCES_FOLDER));
+
+            // Read only input bindings
+            Set<String> readOnlyInputBindings = new HashSet<>();
+            readOnlyInputBindings.add(virtualScriptPath.toString());
+            readOnlyInputBindings.add(virtualVcfPath.toString());
 
             // Output binding
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outPath.toAbsolutePath().toString(),
                     VIRTUAL_OUTPUT_FOLDER);
 
             // Main command line and params
-            String params = "bash " + VIRTUAL_SCRIPT_FOLDER + "/liftover.sh"
-                    + " " + Paths.get(VIRTUAL_INPUT_FOLDER).resolve(file.getName())
+            String params = "bash " + virtualScriptPath
+                    + " " + virtualVcfPath
                     + " " + targetAssembly
                     + " " + VIRTUAL_OUTPUT_FOLDER
                     + " " + VIRTUAL_RESOURCES_FOLDER;
 
             // Execute Pythong script in docker
-            String dockerImage = "opencb/opencga-ext-tools:" + GitRepositoryState.getInstance().getBuildVersion();
+            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
 
-            String dockerCli = buildCommandLine(dockerImage, inputBindings, outputBinding, params, null);
+            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
             logger.info("Docker command line: {}", dockerCli);
             runCommandLine(dockerCli);
 
             // Check result file
-            String outFilename;
-            if (file.getName().endsWith(".vcf.gz")) {
-                outFilename = file.getName().replace(".vcf.gz", "");
-            } else if (file.getName().endsWith(".vcf")) {
-                outFilename = file.getName().replace(".vcf", "");
-            } else {
-                throw new IllegalArgumentException("File " + file.getName() + " must end with .vcf or .vcf.gz");
-            }
-            outFilename += "." + targetAssembly + ".liftover.vcf.gz";
+            String outFilename = LiftoverWrapperAnalysis.getLiftoverFilename(file.getName(), targetAssembly);
             Path outFile = outPath.resolve(outFilename);
             if (!Files.exists(outFile) || outFile.toFile().length() == 0) {
                 java.io.File stdoutFile = getOutDir().resolve(DockerWrapperAnalysisExecutor.STDOUT_FILENAME).toFile();

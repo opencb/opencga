@@ -57,8 +57,8 @@ if [ $TARGET_ASSEMBLY == "GRCh38" ]; then
     gunzip ${RESOURCES_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
     TARGET_REFERENCE_FILE="${RESOURCES_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
 
-#    wget http://ftp.ensembl.org/pub/assembly_mapping/homo_sapiens/GRCh37_to_GRCh38.chain.gz
     CHAIN_FILE="${RESOURCES_DIR}/GRCh37_to_GRCh38.chain.gz"
+    wget http://ftp.ensembl.org/pub/assembly_mapping/homo_sapiens/GRCh37_to_GRCh38.chain.gz -o $CHAIN_FILE
 elif [ $TARGET_ASSEMBLY == "hg38" ]; then
     echo "Liftover from hg19 to $TARGET_ASSEMBLY"
 #
@@ -79,8 +79,8 @@ elif [ $TARGET_ASSEMBLY == "hg38" ]; then
     gunzip ${RESOURCES_DIR}/hg38.fa.gz
     TARGET_REFERENCE_FILE="${RESOURCES_DIR}/hg38.fa"
 
-#    wget http://hgdownload.cse.ucsc.edu/goldenpath/hg19/liftOver/hg19ToHg38.over.chain.gz
     CHAIN_FILE="${RESOURCES_DIR}/hg19ToHg38.over.chain.gz"
+    wget http://hgdownload.cse.ucsc.edu/goldenpath/hg19/liftOver/hg19ToHg38.over.chain.gz -o $CHAIN_FILE
 else
     echo "Unsupported target assembly $TARGET_ASSEMBLY"
     exit 1
@@ -93,4 +93,4 @@ bcftools +liftover --no-version -Oz $INPUT_FILE -- -s $SOURCE_REFERENCE_FILE -f 
 ## Clean folders
 #rm *.fa
 #rm *.fai
-#rm *.chain.gz
+rm $CHAIN_FILE

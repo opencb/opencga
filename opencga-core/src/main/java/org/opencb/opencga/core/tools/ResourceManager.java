@@ -32,9 +32,11 @@ public class ResourceManager  {
 
     public static final String RESOURCES_TXT_FILENAME = "resources.txt";
     public static final String CONFIGURATION_FILENAME = "configuration.yml";
+
     public static final String CONF_FOLDER_NAME = "conf";
     public static final String ANALYSIS_FOLDER_NAME = "analysis";
     public static final String RESOURCES_FOLDER_NAME = "resources";
+
 
     protected static Logger logger = LoggerFactory.getLogger(ResourceManager.class);
 
