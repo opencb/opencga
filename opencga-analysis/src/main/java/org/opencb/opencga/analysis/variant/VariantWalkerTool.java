@@ -23,7 +23,7 @@ import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.variant.VariantExportParams;
+import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -35,32 +35,26 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@Tool(id = VariantExportTool.ID, description = VariantExportTool.DESCRIPTION,
+@Tool(id = VariantWalkerTool.ID, description = VariantWalkerTool.DESCRIPTION,
         scope = Tool.Scope.PROJECT, resource = Enums.Resource.VARIANT)
-public class VariantExportTool extends OpenCgaTool {
-    public static final String ID = "variant-export";
-    public static final String DESCRIPTION = "Filter and export variants from the variant storage to a file";
+public class VariantWalkerTool extends OpenCgaTool {
+    public static final String ID = "variant-walk";
+    public static final String DESCRIPTION = "Filter and walk variants from the variant storage to produce a file";
 
     @ToolParams
-    protected VariantExportParams toolParams = new VariantExportParams();
+    protected VariantWalkerParams toolParams = new VariantWalkerParams();
 
-    private VariantWriterFactory.VariantOutputFormat outputFormat;
+    private VariantWriterFactory.VariantOutputFormat format;
 
     @Override
     protected void check() throws Exception {
         super.check();
 
-        if (StringUtils.isEmpty(toolParams.getOutputFileFormat())) {
-            toolParams.setOutputFileFormat(VariantWriterFactory.VariantOutputFormat.VCF.toString());
-        }
-        if (toolParams.getLimit() != null && toolParams.getLimit() == 0) {
-            toolParams.setLimit(null);
+        if (StringUtils.isEmpty(toolParams.getFileFormat())) {
+            toolParams.setFileFormat(VariantWriterFactory.VariantOutputFormat.VCF.toString());
         }
 
-        outputFormat = VariantWriterFactory.toOutputFormat(toolParams.getOutputFileFormat(), toolParams.getOutputFileName());
-        if (outputFormat.isPlain()) {
-            outputFormat = outputFormat.withGzip();
-        }
+        format = VariantWriterFactory.toOutputFormat(toolParams.getOutputFileName(), toolParams.getOutputFileName());
     }
 
     @Override
@@ -84,9 +78,8 @@ public class VariantExportTool extends OpenCgaTool {
             for (VariantQueryParam param : VariantQueryParam.values()) {
                 queryOptions.remove(param.key());
             }
-            uris.addAll(variantStorageManager.exportData(outputFile,
-                    outputFormat,
-                    toolParams.getVariantsFile(), query, queryOptions, token));
+            uris.addAll(variantStorageManager.walkData(outputFile,
+                    format, query, queryOptions, toolParams.getDockerImage(), toolParams.getCommandLine(), token));
         });
         step("move-files", () -> {
             // Move files to final directory

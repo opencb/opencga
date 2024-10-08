@@ -59,6 +59,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
@@ -94,6 +95,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexBuilder
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
+import org.opencb.opencga.storage.hadoop.variant.mr.StreamVariantDriver;
 import org.opencb.opencga.storage.hadoop.variant.prune.VariantPruneManager;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
@@ -312,6 +314,23 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
         return new HadoopVariantExporter(this, metadataFactory, getMRExecutor(), ioConnectorProvider);
+    }
+
+    @Override
+    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format,
+                              Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
+        ParsedVariantQuery variantQuery = parseQuery(query, queryOptions);
+        int studyId = variantQuery.getStudyQuery().getDefaultStudy().getId();
+        getMRExecutor().run(StreamVariantDriver.class, StreamVariantDriver.buildArgs(
+                null,
+                getVariantTableName(), studyId, null,
+                new ObjectMap().appendAll(variantQuery.getQuery()).appendAll(variantQuery.getInputOptions())
+                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, 1024 * 10)
+                        .append(StreamVariantDriver.COMMAND_LINE_BASE64_PARAM, Base64.getEncoder().encodeToString(commandLine.getBytes()))
+                        .append(StreamVariantDriver.INPUT_FORMAT_PARAM, format.toString())
+                        .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)
+        ), "");
+        return null;
     }
 
     @Override

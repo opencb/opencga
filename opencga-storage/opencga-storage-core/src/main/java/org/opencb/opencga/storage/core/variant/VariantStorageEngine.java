@@ -34,7 +34,6 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.models.variant.VariantSetupParams;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -57,9 +56,11 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -283,6 +284,48 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         ParsedVariantQuery parsedVariantQuery = parseQuery(query, queryOptions);
         return exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
+
+    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions,
+                              String dockerImage, String commandLine)
+            throws IOException, StorageEngineException {
+        if (format == VariantWriterFactory.VariantOutputFormat.VCF || format == VariantWriterFactory.VariantOutputFormat.VCF_GZ) {
+            if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
+                query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
+            }
+        }
+        commandLine = commandLine.replace("'", "'\"'\"'");
+
+        String memory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
+        String cpu = getOptions().getString(WALKER_DOCKER_CPU.key(), WALKER_DOCKER_CPU.defaultValue());
+        String user = getOptions().getString(WALKER_DOCKER_USER.key(), WALKER_DOCKER_USER.defaultValue());
+        String envs = getOptions().getString(WALKER_DOCKER_ENV.key(), WALKER_DOCKER_ENV.defaultValue());
+        String volume = getOptions().getString(WALKER_DOCKER_MOUNT.key(), WALKER_DOCKER_MOUNT.defaultValue());
+        String opts = getOptions().getString(WALKER_DOCKER_OPTS.key(), WALKER_DOCKER_OPTS.defaultValue());
+
+        String dockerCommandLine = "docker run --rm -i "
+                + "--memory " + memory + " "
+                + "--cpus " + cpu + " "
+                + "--user " + user + " ";
+
+        if (StringUtils.isNotEmpty(volume)) {
+            dockerCommandLine += "-v " + volume + ":/data ";
+        }
+
+        if (StringUtils.isNotEmpty(envs)) {
+            for (String s : envs.split(",")) {
+                dockerCommandLine += "--env " + s + " ";
+            }
+        }
+        dockerCommandLine = dockerCommandLine
+                + opts
+                + dockerImage + " bash -ce '" + commandLine + "'";
+        return walkData(outputFile, format, query, queryOptions, dockerCommandLine);
+    }
+
+
+    public abstract List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
+                                       String commandLine)
+            throws StorageEngineException;
 
     /**
      * Creates a new {@link VariantExporter} for the current backend.

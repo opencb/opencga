@@ -29,10 +29,7 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -41,6 +38,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.core.common.IOUtils.humanReadableByteCount;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_EXECUTOR_SSH_PASSWORD;
@@ -469,16 +468,28 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             LOGGER.info(" Source : " + mrOutdir.toUri());
             LOGGER.info(" Target : " + localOutput.toUri());
             LOGGER.info(" ---- ");
-            try (FSDataOutputStream os = localOutput.getFileSystem(getConf()).create(localOutput)) {
+            try (FSDataOutputStream fsOs = localOutput.getFileSystem(getConf()).create(localOutput)) {
+                boolean isGzip = paths.get(0).getName().endsWith(".gz");
+                OutputStream os;
+                if (isGzip) {
+                    os = new GZIPOutputStream(fsOs);
+                } else {
+                    os = fsOs;
+                }
                 for (int i = 0; i < paths.size(); i++) {
                     Path path = paths.get(i);
                     LOGGER.info("Concat file : '{}' {} ", path.toUri(),
                             humanReadableByteCount(fileSystem.getFileStatus(path).getLen(), false));
                     try (FSDataInputStream fsIs = fileSystem.open(path)) {
-                        BufferedReader br;
-                        br = new BufferedReader(new InputStreamReader(fsIs));
                         InputStream is;
+                        if (isGzip) {
+                            is = new GZIPInputStream(fsIs);
+                        } else {
+                            is = fsIs;
+                        }
+                        // Remove extra headers from all files but the first
                         if (removeExtraHeaders && i != 0) {
+                            BufferedReader br = new BufferedReader(new InputStreamReader(is));
                             String line;
                             do {
                                 br.mark(10 * 1024 * 1024); //10MB
@@ -486,8 +497,6 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                             } while (line != null && line.startsWith("#"));
                             br.reset();
                             is = new ReaderInputStream(br, Charset.defaultCharset());
-                        } else {
-                            is = fsIs;
                         }
 
                         IOUtils.copyBytes(is, os, getConf(), false);

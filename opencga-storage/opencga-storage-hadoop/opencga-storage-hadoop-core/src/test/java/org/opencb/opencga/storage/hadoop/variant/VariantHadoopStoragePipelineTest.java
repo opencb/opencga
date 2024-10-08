@@ -40,6 +40,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
@@ -282,6 +283,54 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         URI outDir = newOutputUri();
         System.out.println("print variants at = " + outDir);
         VariantHbaseTestUtils.printVariants(studyMetadata, dbAdaptor, outDir);
+    }
+
+
+    @Test
+    public void exportCommand() throws Exception {
+        URI outdir = newOutputUri();
+        List<String> cmdList = Arrays.asList(
+                "export NUM_VARIANTS=0 ;",
+                "function setup() {",
+                "    echo \"#SETUP\" ;",
+                "    echo '## Something in single quotes' ; ",
+                "} ;",
+                "function map() {",
+//                "    echo \"[$NUM_VARIANTS] $1\" 1>&2 ;",
+                "    echo \"[$NUM_VARIANTS] \" 1>&2 ;",
+                "    echo \"$1\" | jq .id ;",
+                "    NUM_VARIANTS=$((NUM_VARIANTS+1)) ;",
+                "};",
+                "function cleanup() {",
+                "    echo \"CLEANUP\" ;",
+                "    echo \"NumVariants = $NUM_VARIANTS\" ;",
+                "};",
+                "setup;",
+                "while read -r i ; do ",
+                "    map \"$i\" ; ",
+                "done; ",
+                "cleanup;");
+
+        // TODO: Add docker prune
+
+        //        String cmd = "bash -c '" + String.join("\n", cmdList) + "'";
+        String cmd = String.join("\n", cmdList);
+        String cmdBash = "bash -ce '" + cmd.replace("'", "'\"'\"'") + "'";
+        String cmdDocker = "docker run --rm -i opencb/opencga-base bash -ce '" + cmd.replace("'", "'\"'\"'") + "'";
+        String cmdPython1 = "python variant_walker.py walker_example Cut --length 30";
+//        String cmdPython2 = "python /home/jacobo/appl/opencga/opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core/src/main/python/* opencga-storage-hadoop-walker-example MyWalker --length 30";
+
+
+//        variantStorageEngine.walkData(outdir.resolve("variant3.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdDocker);
+//        variantStorageEngine.walkData(outdir.resolve("variant2.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdBash);
+//        variantStorageEngine.walkData(outdir.resolve("variant1.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmd);
+//        variantStorageEngine.walkData(outdir.resolve("variant5.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdPython1);
+//        variantStorageEngine.walkData(outdir.resolve("variant8.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdPython2);
+//        variantStorageEngine.walkData(outdir.resolve("variant6.txt.gz"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(), new QueryOptions(), cmdPython);
+//        variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), "opencb/opencga-base", cmd);
+//        variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), "opencb/opencga-base", cmdPython1);
+        variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), "my-python-app:latest", cmdPython1);
+
     }
 
 }

@@ -37,6 +37,7 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.VariantWalkerTool;
 import org.opencb.opencga.analysis.variant.manager.operations.*;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
@@ -184,6 +185,32 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             checkSamplesPermissions(finalQuery, queryOptions, token);
             return new VariantExportOperationManager(this, engine)
                     .export(outputFile, outputFormat, variantsFile, finalQuery, queryOptions, token);
+        });
+    }
+
+    /**
+     * Exports the result of the given query and the associated metadata.
+     *
+     * @param outputFile   Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param format       Variant Output format.
+     * @param query        Query with the variants to export
+     * @param queryOptions Query options
+     * @param dockerImage  Docker image to use
+     * @param commandLine  Command line to use
+     * @param token        User's session id
+     * @throws CatalogException       if there is any error with Catalog
+     * @throws StorageEngineException If there is any error exporting variants
+     * @return generated files
+     */
+    public List<URI> walkData(String outputFile, VariantOutputFormat format,
+                              Query query, QueryOptions queryOptions, String dockerImage, String commandLine, String token)
+            throws CatalogException, StorageEngineException {
+        String anyStudy = catalogUtils.getAnyStudy(query, token);
+        return secureAnalysis(VariantWalkerTool.ID, anyStudy, queryOptions, token, engine -> {
+            Query finalQuery = catalogUtils.parseQuery(query, queryOptions, engine.getCellBaseUtils(), token);
+            checkSamplesPermissions(finalQuery, queryOptions, token);
+            URI outputUri = new VariantExportOperationManager(this, engine).getOutputUri(outputFile, format, finalQuery, token);
+            return engine.walkData(outputUri, format, finalQuery, queryOptions, dockerImage, commandLine);
         });
     }
 
@@ -506,6 +533,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public ObjectMap configureProject(String projectStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
         return secureOperationByProject("configure", projectStr, params, token, engine -> {
+            validateNewConfiguration(engine, params);
+
             DataStore dataStore = getDataStoreByProjectId(projectStr, token);
 
             dataStore.getOptions().putAll(params);
@@ -517,6 +546,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public ObjectMap configureStudy(String studyStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
         return secureOperation("configure", studyStr, params, token, engine -> {
+            validateNewConfiguration(engine, params);
             Study study = catalogManager.getStudyManager()
                     .get(studyStr,
                             new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE_OPTIONS.key()),
@@ -538,6 +568,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 //            engine.getConfigurationManager().configureStudy(studyFqn, params);
             return options;
         });
+    }
+
+    private void validateNewConfiguration(VariantStorageEngine engine, ObjectMap params) throws StorageEngineException {
+        for (VariantStorageOptions option : VariantStorageOptions.values()) {
+            if (option.isProtected() && params.get(option.key()) != null) {
+                throw new StorageEngineException("Unable to update protected option '" + option.key() + "'");
+            }
+        }
     }
 
     /**

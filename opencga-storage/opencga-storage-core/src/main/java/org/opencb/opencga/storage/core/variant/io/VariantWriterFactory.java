@@ -122,6 +122,14 @@ public class VariantWriterFactory {
             return extension.endsWith(".snappy");
         }
 
+        public VariantOutputFormat inPlan() {
+            if (!isPlain()) {
+                return VariantOutputFormat.valueOf(name().replace("_GZ", "").replace("_SNAPPY", ""));
+            } else {
+                return this;
+            }
+        }
+
         public VariantOutputFormat withGzip() {
             try {
                 if (isGzip()) {

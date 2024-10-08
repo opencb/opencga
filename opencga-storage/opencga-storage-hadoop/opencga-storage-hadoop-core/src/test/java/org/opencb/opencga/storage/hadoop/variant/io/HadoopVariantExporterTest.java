@@ -176,7 +176,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportJson() throws Exception {
         String fileName = "variants.json";
         URI uri = getOutputUri(fileName);
-        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.JSON, null, new Query(STUDY.key(), study1), new QueryOptions());
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.JSON, null, new VariantQuery().study(study1).includeSampleAll(), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
