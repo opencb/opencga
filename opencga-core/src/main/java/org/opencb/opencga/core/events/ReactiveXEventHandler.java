@@ -3,6 +3,7 @@ package org.opencb.opencga.core.events;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.functions.Consumer;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.models.event.CatalogEvent;
 import org.opencb.opencga.core.models.event.EventSubscriber;
 import org.slf4j.Logger;
@@ -11,10 +12,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 public class ReactiveXEventHandler implements IEventHandler {
 
-    private Consumer<CatalogEvent> preEventObserver;
+    private Consumer<CatalogEvent>  preEventObserver;
     private Consumer<CatalogEvent> postEventObserver;
 
     private BiConsumer<CatalogEvent, OpenCgaObserver> onComplete;
@@ -64,79 +66,142 @@ public class ReactiveXEventHandler implements IEventHandler {
         return observer.getResource().name() + ":" + eventId;
     }
 
+//    @Override
+//    public void notify(CatalogEvent event) {
+//        List<OpenCgaObserver> eventObservers = getEventObservers(event);
+//        List<EventSubscriber> eventSubscriberList = eventObservers.stream()
+//                .filter(o -> !o.isEphemeral())
+//                .map(o -> new EventSubscriber(o.getResource().name(), false, 0))
+//                .collect(Collectors.toList());
+//
+//        // Fill subscribers in CatalogEvent
+//        event.setSubscribers(eventSubscriberList);
+//
+//        CompositeDisposable compositeDisposable = new CompositeDisposable();
+//        Single<CatalogEvent> single = Single.just(event);
+//
+//        // Process preEventObserver
+//        if (preEventObserver != null) {
+//            compositeDisposable.add(single.subscribe(preEventObserver));
+//        }
+//        notifyListeners(event, eventObservers, compositeDisposable, single);
+//
+//        compositeDisposable.dispose();
+//    }
+
     @Override
-    public void notify(CatalogEvent event) {
+    public void notify(CatalogEvent event, Exception e) {
+        List<OpenCgaObserver> eventObservers = getEventObservers(event);
+        List<EventSubscriber> eventSubscriberList = eventObservers.stream()
+                .filter(o -> !o.isEphemeral())
+                .map(o -> new EventSubscriber(o.getResource().name(), false, 0))
+                .collect(Collectors.toList());
+
+        // Fill subscribers in CatalogEvent
+        event.setSubscribers(eventSubscriberList);
+
+        CompositeDisposable compositeDisposable = new CompositeDisposable();
+        Single<CatalogEvent> single = e != null
+                ? Single.error(e)
+                : Single.just(event);
+
+        // Process preEventObserver
+        if (preEventObserver != null) {
+            compositeDisposable.add(single.subscribe(preEventObserver, throwable -> {}));
+        }
+        notifyListeners(event, eventObservers, compositeDisposable, single);
+
+        compositeDisposable.dispose();
+    }
+
+    @Override
+    public void retry(CatalogEvent event) {
+        List<OpenCgaObserver> eventObservers = getEventObservers(event);
+
+        Set<String> uniqueObserverIds = new HashSet<>();
+        for (EventSubscriber subscriber : event.getSubscribers()) {
+            if (!subscriber.isSuccessful()) {
+                uniqueObserverIds.add(subscriber.getId());
+            }
+        }
+
+        if (uniqueObserverIds.isEmpty()) {
+            logger.warn("No subscribers to retry for event '{}'", event.getId());
+            return;
+        }
+
+        List<OpenCgaObserver> filteredObservers = eventObservers.stream()
+                .filter(o -> uniqueObserverIds.contains(o.getResource().name()))
+                .collect(Collectors.toList());
+        if (filteredObservers.isEmpty()) {
+            logger.warn("No subscribers to retry for event '{}'. Could not find subscribers '{}'.", event.getId(),
+                    StringUtils.join(uniqueObserverIds, ", "));
+            return;
+        }
+
+        CompositeDisposable compositeDisposable = new CompositeDisposable();
+        Single<CatalogEvent> single = Single.just(event);
+
+        notifyListeners(event, filteredObservers, compositeDisposable, single);
+        compositeDisposable.dispose();
+    }
+
+    private List<OpenCgaObserver> getEventObservers(CatalogEvent event) {
+        Set<String> uniqueObserverIds = new HashSet<>();
         List<String> possibleKeys = getPossibleKeys(event.getId());
-        Map<String, OpenCgaObserver> tmpObserverMap = new HashMap<>();
-        List<EventSubscriber> subscriberList = new LinkedList<>();
+        List<OpenCgaObserver> observerList = new LinkedList<>();
         for (String possibleKey : possibleKeys) {
             if (eventSubscriberMap.containsKey(possibleKey)) {
                 List<OpenCgaObserver> openCgaObservers = eventSubscriberMap.get(possibleKey);
                 for (OpenCgaObserver openCgaObserver : openCgaObservers) {
                     String uniqueObserverId = getUniqueObserverId(event.getId(), openCgaObserver);
-                    if (tmpObserverMap.containsKey(uniqueObserverId)) {
+                    if (uniqueObserverIds.contains(uniqueObserverId)) {
                         logger.warn("Observer '{}' is already subscribed to event '{}'. It will be notified just once.",
                                 openCgaObserver.getResource(), event.getId());
                     } else {
-                        tmpObserverMap.put(uniqueObserverId, openCgaObserver);
-                        subscriberList.add(new EventSubscriber(openCgaObserver.getResource().name(), false, 0));
+                        uniqueObserverIds.add(uniqueObserverId);
+                        observerList.add(openCgaObserver);
                     }
                 }
             }
         }
-        // Fill subscribers in CatalogEvent
-        event.setSubscribers(subscriberList);
+        return observerList;
+    }
 
-        CompositeDisposable compositeDisposable = new CompositeDisposable();
-        Single<CatalogEvent> single = Single.just(event);
-
-        if (preEventObserver != null) {
-            compositeDisposable.add(single.subscribe(preEventObserver));
-        }
-
-        Queue<Map.Entry<OpenCgaObserver, Integer>> queue = new LinkedList<>();
-        for (OpenCgaObserver value : tmpObserverMap.values()) {
-            queue.add(new AbstractMap.SimpleEntry<>(value, 1));
-        }
-
-        if (!tmpObserverMap.isEmpty()) {
-            while (!queue.isEmpty()) {
-                Map.Entry<OpenCgaObserver, Integer> poll = queue.poll();
-                OpenCgaObserver observer = poll.getKey();
-                Integer numAttempts = poll.getValue();
-
-                compositeDisposable.add(single.subscribe(onSuccess -> {
-                            try {
-                                observer.getOnNext().accept(onSuccess.getEvent());
-                            } catch (RuntimeException e) {
-                                logger.error("Error notifying observer '{}'", observer.getResource(), e);
-                                if (onError != null) {
-                                    onError.accept(event, observer);
-                                }
-
-                                // Retry 3 times
-                                if (numAttempts < MAX_NUM_ATTEMPTS) {
-                                    queue.add(new AbstractMap.SimpleEntry<>(observer, numAttempts + 1));
-                                }
-
-                                return;
-                            }
-                            if (onComplete != null) {
-                                onComplete.accept(event, observer);
-                            }
-                        },
-                        throwable -> {
-                            if (onError != null) {
+    private void notifyListeners(CatalogEvent event, List<OpenCgaObserver> observerList, CompositeDisposable compositeDisposable,
+                                 Single<CatalogEvent> single) {
+        // Process subscribers
+        for (OpenCgaObserver observer : observerList) {
+            compositeDisposable.add(single.subscribe(onSuccess -> {
+                        try {
+                            logger.info("Notifying observer '{}' of event '{}'", observer.getResource(), event.getId());
+                            observer.getOnNext().accept(onSuccess.getEvent());
+                            logger.info("Observer '{}' successfully reacted to event '{}'", observer.getResource(), event.getId());
+                        } catch (RuntimeException e) {
+                            logger.error("Observer '{}' did not react successfully to event '{}'", observer.getResource(), event.getId());
+                            if (!observer.isEphemeral() && onError != null) {
                                 onError.accept(event, observer);
                             }
-                            observer.getOnError().accept(throwable, event.getEvent());
-                        }));
-            }
+                            return;
+                        }
+                        if (!observer.isEphemeral() && onComplete != null) {
+                            onComplete.accept(event, observer);
+                        }
+                    },
+                    throwable -> {
+                        if (!observer.isEphemeral() && onError != null) {
+                            onError.accept(event, observer);
+                        }
+                        logger.info("Notifying observer '{}' of error in event '{}'", observer.getResource(), event.getId());
+                        observer.getOnError().accept(throwable, event.getEvent());
+                        logger.info("Observer '{}' successfully reacted to error in event '{}'", observer.getResource(), event.getId());
+                    }));
         }
+
+        // Process postEventObserver
         if (postEventObserver != null) {
-            compositeDisposable.add(single.subscribe(postEventObserver));
+            compositeDisposable.add(single.subscribe(postEventObserver, throwable -> {}));
         }
-        compositeDisposable.dispose();
     }
 
     private List<String> getPossibleKeys(String eventId) {

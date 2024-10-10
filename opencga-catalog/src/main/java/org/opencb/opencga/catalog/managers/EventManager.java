@@ -1,25 +1,36 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.EventDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.events.EventFactory;
 import org.opencb.opencga.core.events.IEventHandler;
 import org.opencb.opencga.core.events.OpenCgaObserver;
+import org.opencb.opencga.core.events.OpencgaEvent;
+import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.models.event.CatalogEvent;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.function.Supplier;
 
-public final class EventManager implements Closeable {
+public final class EventManager extends AbstractManager implements Closeable {
 
     private static volatile EventManager eventManager;
 
@@ -27,17 +38,25 @@ public final class EventManager implements Closeable {
     private final DBAdaptorFactory dbAdaptorFactory;
     private final Logger logger = LoggerFactory.getLogger(EventManager.class);
 
-    private EventManager(DBAdaptorFactory dbAdaptorFactory) {
-        this(dbAdaptorFactory, null, null, null);
+    private EventManager(CatalogManager catalogManager, DBAdaptorFactory dbAdaptorFactory) {
+        this(catalogManager, dbAdaptorFactory, null, null);
     }
 
-    private EventManager(DBAdaptorFactory dbAdaptorFactory, java.util.function.Consumer<CatalogEvent> preEventObserver,
-                         java.util.function.Consumer<CatalogEvent> postEventObserver, Configuration configuration) {
-        // TODO: Read configuration to get the event handler class
+    private EventManager(CatalogManager catalogManager, DBAdaptorFactory dbAdaptorFactory,
+                         java.util.function.Consumer<CatalogEvent> preEventObserver,
+                         java.util.function.Consumer<CatalogEvent> postEventObserver) {
+        super(null, null, catalogManager, dbAdaptorFactory, catalogManager.getConfiguration());
         this.eventHandler = EventFactory.buildEventHandler();
         this.dbAdaptorFactory = dbAdaptorFactory;
 
         initEventHandler(preEventObserver, postEventObserver);
+    }
+
+    public static EventManager getInstance() {
+        if (eventManager == null) {
+            throw new IllegalStateException("EventManager is not yet initialised.");
+        }
+        return eventManager;
     }
 
     private void initEventHandler(java.util.function.Consumer<CatalogEvent> preEventObserver,
@@ -67,7 +86,7 @@ public final class EventManager implements Closeable {
         });
 
         this.eventHandler.addOnCompleteConsumer((event, observer) -> {
-            logger.info("Event '{}' was properly processed by observer '{}'. Marking as successful.", event, observer);
+            logger.info("Event '{}' was properly processed by observer '{}'. Marking as successful.", event, observer.getResource());
             try {
                 dbAdaptorFactory.getEventDBAdaptor(event.getEvent().getOrganizationId())
                         .updateSubscriber(event, observer.getResource(), true);
@@ -76,7 +95,7 @@ public final class EventManager implements Closeable {
             }
         });
         this.eventHandler.addOnErrorConsumer((event, observer) -> {
-            logger.info("Event '{}' was not properly processed by observer '{}'. Marking as unsuccessful.", event, observer);
+            logger.info("Event '{}' was not properly processed by observer '{}'. Marking as unsuccessful.", event, observer.getResource());
             try {
                 dbAdaptorFactory.getEventDBAdaptor(event.getEvent().getOrganizationId())
                         .updateSubscriber(event, observer.getResource(), false);
@@ -86,32 +105,26 @@ public final class EventManager implements Closeable {
         });
     }
 
-    public static void configure(DBAdaptorFactory dbAdaptorFactory) {
+    public static void configure(CatalogManager catalogManager, DBAdaptorFactory dbAdaptorFactory) {
         if (eventManager == null) {
             synchronized (EventManager.class) {
                 if (eventManager == null) {
-                    eventManager = new EventManager(dbAdaptorFactory);
+                    eventManager = new EventManager(catalogManager, dbAdaptorFactory);
                 }
             }
         }
     }
 
-    public static void configure(DBAdaptorFactory dbAdaptorFactory, java.util.function.Consumer<CatalogEvent> preObserver,
-                                 java.util.function.Consumer<CatalogEvent> postObserver, Configuration configuration) {
+    public static void configure(CatalogManager catalogManager, DBAdaptorFactory dbAdaptorFactory,
+                                 java.util.function.Consumer<CatalogEvent> preObserver,
+                                 java.util.function.Consumer<CatalogEvent> postObserver) {
         if (eventManager == null) {
             synchronized (EventManager.class) {
                 if (eventManager == null) {
-                    eventManager = new EventManager(dbAdaptorFactory, preObserver, postObserver, configuration);
+                    eventManager = new EventManager(catalogManager, dbAdaptorFactory, preObserver, postObserver);
                 }
             }
         }
-    }
-
-    public static EventManager getInstance() {
-        if (eventManager == null) {
-            throw new IllegalStateException("EventManager is not yet initialised.");
-        }
-        return eventManager;
     }
 
     public void subscribe(String eventId, OpenCgaObserver observer) {
@@ -124,6 +137,105 @@ public final class EventManager implements Closeable {
         eventHandler.notify(event);
     }
 
+    public CatalogEvent notify(String eventId, String organizationId, Supplier<Study> studySupplier, @Nullable EntryParam entryParam,
+                               String userId, QueryOptions queryOptions, ObjectMap params, JwtPayload payload,
+                               ExecuteOperation<?> executeOperation)
+            throws CatalogException {
+        CatalogEvent catalogEvent = new CatalogEvent(eventId, new OpencgaEvent(eventId, params, organizationId, userId,
+                payload.getToken()));
+        validateNewEvent(catalogEvent);
+        try {
+            // Obtain study
+            Study study = studySupplier.get();
+            catalogEvent.getEvent().setStudyUuid(study.getUuid());
+            catalogEvent.getEvent().setStudyFqn(study.getFqn());
+
+            if (entryParam != null) {
+                catalogEvent.getEvent().setResourceId(entryParam.getId());
+                catalogEvent.getEvent().setResourceUuid(entryParam.getUuid());
+            }
+            logger.info("Executing '{}' event", eventId);
+            OpenCGAResult<?> execute = executeOperation.execute(organizationId, study, userId, queryOptions, payload);
+            // Do it again because it may have been filled after execution
+            if (entryParam != null) {
+                catalogEvent.getEvent().setResourceId(entryParam.getId());
+                catalogEvent.getEvent().setResourceUuid(entryParam.getUuid());
+            }
+
+            catalogEvent.getEvent().setResult(execute);
+        } catch (Exception e) {
+            eventHandler.notify(catalogEvent, e);
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException ex) {
+                throw new RuntimeException(ex);
+            }
+            throw new CatalogException(e.getMessage(), e);
+        }
+
+        logger.info("Notifying of event '{}'.", eventId);
+        eventHandler.notify(catalogEvent);
+        return catalogEvent;
+    }
+
+//    public CatalogEvent notify(String eventId, String organizationId, Study study, @Nullable String id, String userId,
+//                               QueryOptions queryOptions, ObjectMap params, JwtPayload payload, ExecuteOperation<?> executeOperation)
+//            throws CatalogException {
+//        CatalogEvent catalogEvent = new CatalogEvent(eventId, new OpencgaEvent(organizationId, eventId, params, userId, study.getFqn(),
+//        id, payload.getToken(), null));
+//        validateNewEvent(catalogEvent);
+//        try {
+//            logger.info("Executing '{}' event", eventId);
+//            OpenCGAResult<?> execute = executeOperation.execute(organizationId, study, userId, queryOptions, payload);
+//            catalogEvent.getEvent().setResult(execute);
+//        } catch (Exception e) {
+//            eventHandler.notify(catalogEvent, e);
+//            throw new CatalogException(e.getMessage(), e);
+//        }
+//
+//        logger.info("Notifying of event '{}'.", eventId);
+//        eventHandler.notify(catalogEvent);
+//        return catalogEvent;
+//    }
+
+    public OpenCGAResult<CatalogEvent> search(String organizationId, Query query, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String userId = tokenPayload.getUserId(organizationId);
+        catalogManager.getAuthorizationManager().checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+
+        return dbAdaptorFactory.getEventDBAdaptor(organizationId).get(query, QueryOptions.empty());
+    }
+
+    public OpenCGAResult<CatalogEvent> archiveEvent(String organizationId, String eventId, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String userId = tokenPayload.getUserId(organizationId);
+        catalogManager.getAuthorizationManager().checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+
+        Query query = new Query(EventDBAdaptor.QueryParams.UUID.key(), eventId);
+        OpenCGAResult<CatalogEvent> eventResult = dbAdaptorFactory.getEventDBAdaptor(organizationId).get(query, QueryOptions.empty());
+        if (eventResult.getNumResults() == 0) {
+            throw new CatalogException("Event '" + eventId + "' not found");
+        }
+
+        dbAdaptorFactory.getEventDBAdaptor(organizationId).archiveEvent(eventResult.first());
+        return eventResult;
+    }
+
+    public OpenCGAResult<CatalogEvent> retryEvent(String organizationId, String eventId, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String userId = tokenPayload.getUserId(organizationId);
+        catalogManager.getAuthorizationManager().checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+
+        Query query = new Query(EventDBAdaptor.QueryParams.UUID.key(), eventId);
+        OpenCGAResult<CatalogEvent> eventResult = dbAdaptorFactory.getEventDBAdaptor(organizationId).get(query, QueryOptions.empty());
+        if (eventResult.getNumResults() == 0) {
+            throw new CatalogException("Event '" + eventId + "' not found");
+        }
+
+        notify(eventResult.first());
+        return eventResult;
+    }
+
     private void validateNewEvent(CatalogEvent event) throws CatalogParameterException {
         ParamUtils.checkObj(event, "CatalogEvent");
         ParamUtils.checkObj(event.getId(), "CatalogEvent.id");
@@ -131,10 +243,7 @@ public final class EventManager implements Closeable {
         ParamUtils.checkParameter(event.getEvent().getEventId(), "CatalogEvent.event.id");
         ParamUtils.checkParameter(event.getEvent().getOrganizationId(), "CatalogEvent.event.organizationId");
         ParamUtils.checkParameter(event.getEvent().getToken(), "CatalogEvent.event.token");
-        ParamUtils.checkParameter(event.getEvent().getId(), "CatalogEvent.event.id");
         ParamUtils.checkParameter(event.getEvent().getUserId(), "CatalogEvent.event.userId");
-        ParamUtils.checkParameter(event.getEvent().getStudy(), "CatalogEvent.event.study");
-        ParamUtils.checkObj(event.getEvent().getResult(), "CatalogEvent.event.result");
 
         event.setCreationDate(TimeUtils.getTime());
         event.setModificationDate(TimeUtils.getTime());

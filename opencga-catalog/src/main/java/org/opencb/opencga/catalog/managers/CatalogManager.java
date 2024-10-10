@@ -132,7 +132,7 @@ public class CatalogManager implements AutoCloseable {
 
     private void configureManagers(Configuration configuration) throws CatalogException {
         initializeAdmin(configuration);
-        EventManager.configure(catalogDBAdaptorFactory);
+        EventManager.configure(this, catalogDBAdaptorFactory);
 
         for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
             QueryOptions options = new QueryOptions(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);

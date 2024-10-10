@@ -68,22 +68,21 @@ public class AuditManager {
         this.auditRecordMap = new HashMap<>();
 
         EventManager.getInstance().subscribe("*.*", new OpenCgaObserver(Enums.Resource.AUDIT, opencgaEvent -> {
-            logger.info("Completed '{}' action with success.", opencgaEvent.getEventId());
             String[] split = opencgaEvent.getEventId().split("\\.");
             Enums.Resource resource = Enums.Resource.valueOf(split[0].toUpperCase());
             Enums.Action action = Enums.Action.valueOf(split[1].toUpperCase());
-            audit(opencgaEvent.getToken(), opencgaEvent.getUserId(), action, resource, opencgaEvent.getId(), null, opencgaEvent.getStudy(),
-                    null, opencgaEvent.getInputParams(), new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, opencgaEvent.getResourceId(),
+                    opencgaEvent.getResourceUuid(), opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(),
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         }, (throwable, opencgaEvent) -> {
-            logger.error("Action '{}' ended with error '{}'", opencgaEvent.getEventId(), throwable.getMessage());
             String[] split = opencgaEvent.getEventId().split("\\.");
             Enums.Resource resource = Enums.Resource.valueOf(split[0].toUpperCase());
             Enums.Action action = Enums.Action.valueOf(split[1].toUpperCase());
-            audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, opencgaEvent.getId(), null,
-                    opencgaEvent.getStudy(), null, opencgaEvent.getInputParams(),
+            audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, opencgaEvent.getResourceId(),
+                    opencgaEvent.getResourceUuid(), opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(),
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                             new Error(0, throwable.getMessage(), throwable.getLocalizedMessage())));
-        }));
+        }, true));
     }
 
     public void audit(String organizationId, AuditRecord auditRecord) throws CatalogException {

@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -19,7 +20,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.events.IEventHandler;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.event.CatalogEvent;
 import org.opencb.opencga.core.models.event.EventSubscriber;
@@ -45,6 +45,12 @@ public class EventMongoDBAdaptor extends MongoDBAdaptor implements EventDBAdapto
         this.archiveCollection = archiveCollection;
 
         this.eventConverter = new OpenCgaMongoConverter<>(CatalogEvent.class);
+    }
+
+    @Override
+    public OpenCGAResult<CatalogEvent> get(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        throw new NotImplementedException("Yet to implement");
     }
 
     @Override
@@ -89,27 +95,38 @@ public class EventMongoDBAdaptor extends MongoDBAdaptor implements EventDBAdapto
             CatalogEvent catalogEvent = eventConverter.convertToDataModelType(eventDoc);
 
             // Check all subscribers performed successfully their action
-            boolean archive = true;
-            boolean isSuccessful = true;
             for (EventSubscriber subscriber : catalogEvent.getSubscribers()) {
                 if (!subscriber.isSuccessful()) {
-                    isSuccessful = false;
-                    if (subscriber.getNumAttempts() < IEventHandler.MAX_NUM_ATTEMPTS) {
-                        archive = false;
-                    }
+                    // One of the subscribers failed, so it won't be archived
+                    return null;
                 }
             }
 
-            if (archive) {
-                // Move to different collection
-                eventDoc.put(QueryParams.SUCCESSFUL.key(), isSuccessful);
-                archiveCollection.insert(session, eventDoc, QueryOptions.empty());
-                Bson bsonQuery = parseQuery(query);
-                eventCollection.remove(session, bsonQuery, QueryOptions.empty());
-            }
-
+            eventDoc.put(QueryParams.SUCCESSFUL.key(), true);
+            archiveEvent(session, eventDoc);
             return null;
         });
+    }
+
+    @Override
+    public void archiveEvent(CatalogEvent opencgaEvent)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        runTransaction(session -> {
+            Query query = new Query(QueryParams.UID.key(), opencgaEvent.getUid());
+            Document eventDoc = nativeGet(session, query, QueryOptions.empty()).first();
+            archiveEvent(session, eventDoc);
+            return null;
+        });
+    }
+
+    private void archiveEvent(ClientSession session, Document eventDoc) throws CatalogDBException {
+        // Insert in archive collection
+        archiveCollection.insert(session, eventDoc, QueryOptions.empty());
+
+        // Build query to remove from main collection
+        Query query = new Query(QueryParams.UID.key(), eventDoc.get(QueryParams.UID.key(), Number.class).longValue());
+        Bson bsonQuery = parseQuery(query);
+        eventCollection.remove(session, bsonQuery, QueryOptions.empty());
     }
 
     OpenCGAResult<CatalogEvent> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {

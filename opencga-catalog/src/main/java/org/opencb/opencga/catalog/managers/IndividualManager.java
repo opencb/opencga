@@ -34,13 +34,11 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogRuntimeException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.events.OpenCgaObserver;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -108,22 +106,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
-
-        logger.info(Thread.currentThread().getName());
-
-        IndividualManager individualManager = this;
-        EventManager.getInstance().subscribe("sample.create", new OpenCgaObserver(Enums.Resource.INDIVIDUAL, opencgaEvent -> {
-            logger.info("IndividualManager notified of sample '{}' creation.", opencgaEvent.getId());
-            logger.info(Thread.currentThread().getName());
-            try {
-                individualManager.create(opencgaEvent.getStudy(), new Individual().setId(opencgaEvent.getId()),
-                        Collections.singletonList(opencgaEvent.getId()), QueryOptions.empty(), opencgaEvent.getToken());
-                throw new CatalogException("HELLOOOO");
-            } catch (CatalogException e) {
-                throw new CatalogRuntimeException(e);
-            }
-//            logger.info("Individual created '{}'", opencgaEvent.getId());
-        }));
     }
 
     @Override

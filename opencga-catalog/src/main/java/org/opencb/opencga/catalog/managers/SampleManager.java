@@ -40,17 +40,12 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.events.OpencgaEvent;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.ExternalSource;
-import org.opencb.opencga.core.models.common.RgaIndex;
-import org.opencb.opencga.core.models.event.CatalogEvent;
+import org.opencb.opencga.core.models.common.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
@@ -224,49 +219,32 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Override
     public OpenCGAResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String token) throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("sample", sample)
                 .append("options", options)
                 .append("token", token);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        String studyId = studyFqn.getStudyId();
-        String studyUuid = studyFqn.getStudyUuid();
-        try {
-            Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
-            studyId = study.getId();
-            studyUuid = study.getUuid();
 
-            // 1. We check everything can be done
-            authorizationManager.checkStudyPermission(organizationId, study.getUid(), tokenPayload,
-                    StudyPermissions.Permissions.WRITE_SAMPLES);
+        EntryParam entryParam = new EntryParam(sample.getId(), null);
+        return run(auditParams, Enums.Resource.SAMPLE, Enums.Action.CREATE, studyStr, entryParam, token, options, null,
+                (organizationId, study, userId, queryOptions, payload) -> {
+                    // 1. We check everything can be done
+                    authorizationManager.checkStudyPermission(organizationId, study.getUid(), payload,
+                            StudyPermissions.Permissions.WRITE_SAMPLES);
 
-            validateNewSample(organizationId, study, sample, userId);
+                    validateNewSample(organizationId, study, sample, userId);
+                    entryParam.setUuid(sample.getUuid());
 
-            // We create the sample
-            OpenCGAResult<Sample> insert = getSampleDBAdaptor(organizationId).insert(study.getUid(), sample, study.getVariableSets(),
-                    options);
-            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                // Fetch created sample
-                OpenCGAResult<Sample> result = getSample(organizationId, study.getUid(), sample.getUuid(), options);
-                insert.setResults(result.getResults());
-            }
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            EventManager.getInstance().notify(new CatalogEvent("sample.create", new OpencgaEvent(organizationId, "sample.create",
-                    auditParams, userId, study.getFqn(), sample.getId(), token, insert)));
-            return insert;
-        } catch (CatalogException e) {
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.SAMPLE, sample.getId(), "", studyId, studyUuid, auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+                    // We create the sample
+                    OpenCGAResult<Sample> insert = getSampleDBAdaptor(organizationId).insert(study.getUid(), sample,
+                            study.getVariableSets(), queryOptions);
+                    if (queryOptions.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                        // Fetch created sample
+                        OpenCGAResult<Sample> result = getSample(organizationId, study.getUid(), sample.getUuid(), queryOptions);
+                        insert.setResults(result.getResults());
+                    }
+                    return insert;
+        });
     }
 
     @Override
