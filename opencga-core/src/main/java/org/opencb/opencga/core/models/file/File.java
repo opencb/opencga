@@ -121,9 +121,11 @@ public class File extends Annotable {
             description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-    @DataField(id = "external",
-            description = FieldConstants.FILE_EXTERNAL)
+    @DataField(id = "external", description = FieldConstants.FILE_EXTERNAL)
     private boolean external;
+
+    @DataField(id = "resource", description = FieldConstants.FILE_RESOURCE)
+    private boolean resource;
 
     @DataField(id = "size",
             description = FieldConstants.FILE_SIZE)
@@ -262,6 +264,7 @@ public class File extends Annotable {
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", external=").append(external);
+        sb.append(", resource=").append(resource);
         sb.append(", size=").append(size);
         sb.append(", software=").append(software);
         sb.append(", experiment=").append(experiment);
@@ -416,6 +419,15 @@ public class File extends Annotable {
 
     public File setExternal(boolean external) {
         this.external = external;
+        return this;
+    }
+
+    public boolean isResource() {
+        return resource;
+    }
+
+    public File setResource(boolean resource) {
+        this.resource = resource;
         return this;
     }
 
