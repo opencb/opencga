@@ -308,7 +308,7 @@ function build_opencga_enterprise() {
       local pwd=$(pwd)
       echo "${pwd} opencga-enterprise" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
       mvn clean install -B surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress
+      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} -Dopencga.war.name=opencga --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise test FAILED!!!!!"
         print_log_summary
