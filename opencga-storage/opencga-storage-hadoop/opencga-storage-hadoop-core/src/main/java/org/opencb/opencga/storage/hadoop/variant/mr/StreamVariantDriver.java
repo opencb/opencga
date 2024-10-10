@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
 import java.util.Map;
 
 public class StreamVariantDriver extends VariantDriver {
@@ -28,11 +29,13 @@ public class StreamVariantDriver extends VariantDriver {
     public static final String COMMAND_LINE_PARAM = "commandLine";
     public static final String COMMAND_LINE_BASE64_PARAM = "commandLineBase64";
     public static final String MAX_BYTES_PER_MAP_PARAM = "maxBytesPerMap";
+    public static final String ENVIRONMENT_VARIABLES = "envVars";
 
     private VariantWriterFactory.VariantOutputFormat format;
     private int maxBytesPerMap;
     private static Logger logger = LoggerFactory.getLogger(StreamVariantDriver.class);
     private String commandLine;
+    private Map<String, String> envVars;
 
     private Class<? extends VariantMapper> mapperClass;
     private Class<? extends Reducer> reducerClass;
@@ -76,6 +79,20 @@ public class StreamVariantDriver extends VariantDriver {
             commandLine = new String(java.util.Base64.getDecoder().decode(commandLineBase64));
         }
 
+        envVars = new HashMap<>();
+        String envVarsStr = getParam(ENVIRONMENT_VARIABLES);
+        if (StringUtils.isNotEmpty(envVarsStr)) {
+            String[] split = envVarsStr.split(",");
+            for (String s : split) {
+                String[] split1 = s.split("=");
+                if (split1.length != 2) {
+                    throw new IllegalArgumentException("Invalid environment variable '" + s + "'");
+                }
+                envVars.put(split1[0], split1[1]);
+            }
+        }
+
+
         String outdirStr = getParam(OUTPUT_PARAM);
         if (StringUtils.isEmpty(outdirStr)) {
             throw new IllegalArgumentException("Missing argument " + OUTPUT_PARAM);
@@ -115,6 +132,7 @@ public class StreamVariantDriver extends VariantDriver {
         StreamVariantMapper.setCommandLine(job, commandLine);
         StreamVariantMapper.setVariantFormat(job, format);
         StreamVariantMapper.setMaxInputBytesPerProcess(job, maxBytesPerMap);
+        StreamVariantMapper.setEnvironment(job, envVars);
 
         reducerClass = Reducer.class;
 

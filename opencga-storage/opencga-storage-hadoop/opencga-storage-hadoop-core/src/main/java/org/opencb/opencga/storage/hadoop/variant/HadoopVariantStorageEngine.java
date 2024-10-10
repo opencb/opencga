@@ -317,20 +317,38 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format,
+    public URI walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format,
                               Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
         ParsedVariantQuery variantQuery = parseQuery(query, queryOptions);
         int studyId = variantQuery.getStudyQuery().getDefaultStudy().getId();
+        ObjectMap params = new ObjectMap(getOptions()).appendAll(variantQuery.getQuery()).appendAll(variantQuery.getInputOptions());
+        params.remove(StreamVariantDriver.COMMAND_LINE_PARAM);
+
+        String memory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
+        int memoryBytes;
+        if (memory.endsWith("M") || memory.endsWith("m")) {
+            memoryBytes = Integer.parseInt(memory.substring(0, memory.length() - 1)) * 1024 * 1024;
+        } else if (memory.endsWith("G") || memory.endsWith("g")) {
+            memoryBytes = Integer.parseInt(memory.substring(0, memory.length() - 1)) * 1024 * 1024 * 1024;
+        } else {
+            memoryBytes = Integer.parseInt(memory);
+        }
+
+        String dockerHost = getOptions().getString(MR_STREAM_DOCKER_HOST.key(), MR_STREAM_DOCKER_HOST.defaultValue());
+        if (StringUtils.isNotEmpty(dockerHost)) {
+            params.put(StreamVariantDriver.ENVIRONMENT_VARIABLES, "DOCKER_HOST=" + dockerHost);
+        }
+
         getMRExecutor().run(StreamVariantDriver.class, StreamVariantDriver.buildArgs(
                 null,
                 getVariantTableName(), studyId, null,
-                new ObjectMap().appendAll(variantQuery.getQuery()).appendAll(variantQuery.getInputOptions())
-                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, 1024 * 10)
+                params
+                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, memoryBytes / 2)
                         .append(StreamVariantDriver.COMMAND_LINE_BASE64_PARAM, Base64.getEncoder().encodeToString(commandLine.getBytes()))
                         .append(StreamVariantDriver.INPUT_FORMAT_PARAM, format.toString())
                         .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)
-        ), "");
-        return null;
+        ), "Walk data");
+        return outputFile;
     }
 
     @Override
@@ -1332,6 +1350,17 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         } catch (Exception e) {
             logger.error("Connection to database '" + dbName + "' failed", e);
             throw new StorageEngineException("HBase Database connection test failed", e);
+        }
+    }
+
+    @Override
+    public void validateNewConfiguration(ObjectMap params) throws StorageEngineException {
+        super.validateNewConfiguration(params);
+
+        for (HadoopVariantStorageOptions option : HadoopVariantStorageOptions.values()) {
+            if (option.isProtected() && params.get(option.key()) != null) {
+                throw new StorageEngineException("Unable to update protected option '" + option.key() + "'");
+            }
         }
     }
 

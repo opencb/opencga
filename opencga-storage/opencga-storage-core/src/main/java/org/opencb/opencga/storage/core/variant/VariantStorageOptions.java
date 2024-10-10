@@ -102,7 +102,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     WALKER_DOCKER_MEMORY("walker.docker.memory", "512m", true),
     WALKER_DOCKER_CPU("walker.docker.cpu", "1", true),
-    WALKER_DOCKER_USER("walker.docker.user", "root", true),
+    WALKER_DOCKER_USER("walker.docker.user", "", true),
     WALKER_DOCKER_ENV("walker.docker.env", "", true),
     WALKER_DOCKER_MOUNT("walker.docker.mount", "", true),
     WALKER_DOCKER_OPTS("walker.docker.opts", "", true),

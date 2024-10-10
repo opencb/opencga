@@ -122,7 +122,7 @@ public class VariantWriterFactory {
             return extension.endsWith(".snappy");
         }
 
-        public VariantOutputFormat inPlan() {
+        public VariantOutputFormat inPlain() {
             if (!isPlain()) {
                 return VariantOutputFormat.valueOf(name().replace("_GZ", "").replace("_SNAPPY", ""));
             } else {

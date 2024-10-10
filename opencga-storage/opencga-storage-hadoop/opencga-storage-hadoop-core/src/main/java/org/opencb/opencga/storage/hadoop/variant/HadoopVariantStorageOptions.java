@@ -60,6 +60,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     MR_EXECUTOR_SSH_HADOOP_SCP_BIN("storage.hadoop.mr.executor.ssh.hadoop-scp.bin", "misc/scripts/hadoop-scp.sh"),
     MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS("storage.hadoop.mr.executor.ssh.terminationGracePeriodSeconds", 120),
 
+    MR_STREAM_DOCKER_HOST("storage.hadoop.mr.stream.docker.host", "", true),
+
     /////////////////////////
     // Variant table configuration
     /////////////////////////
@@ -134,6 +136,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
 
     private final String key;
     private final Object value;
+    private final boolean isProtected;
 
     HadoopVariantStorageOptions(String key) {
         this(key, null);
@@ -142,6 +145,13 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     HadoopVariantStorageOptions(String key, Object value) {
         this.key = key;
         this.value = value;
+        this.isProtected = false;
+    }
+
+    HadoopVariantStorageOptions(String key, Object value, boolean isProtected) {
+        this.key = key;
+        this.value = value;
+        this.isProtected = isProtected;
     }
 
     @Override
@@ -157,4 +167,11 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     public <T> T defaultValue() {
         return (T) value;
     }
+
+    @Override
+    public boolean isProtected() {
+        return isProtected;
+    }
+
+
 }

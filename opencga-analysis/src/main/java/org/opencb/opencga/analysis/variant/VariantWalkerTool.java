@@ -26,7 +26,6 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 
 import java.net.URI;
@@ -55,6 +54,15 @@ public class VariantWalkerTool extends OpenCgaTool {
         }
 
         format = VariantWriterFactory.toOutputFormat(toolParams.getOutputFileName(), toolParams.getOutputFileName());
+        if (!format.isPlain()) {
+            format = format.inPlain();
+        }
+
+        if (StringUtils.isEmpty(toolParams.getOutputFileName())) {
+            toolParams.setOutputFileName("output." + format.toString().toLowerCase() + ".gz");
+        } else if (!toolParams.getOutputFileName().endsWith(".gz")) {
+            toolParams.setOutputFileName(toolParams.getOutputFileName() + ".gz");
+        }
     }
 
     @Override
@@ -70,15 +78,11 @@ public class VariantWalkerTool extends OpenCgaTool {
             // The scratch directory is expected to be faster than the final directory
             // This also avoids moving files to final directory if the tool fails
             Path outDir = getScratchDir();
-            String outputFile = StringUtils.isEmpty(toolParams.getOutputFileName())
-                    ? outDir.toString()
-                    : outDir.resolve(toolParams.getOutputFileName()).toString();
+            String outputFile = outDir.resolve(toolParams.getOutputFileName()).toString();
             Query query = toolParams.toQuery();
-            QueryOptions queryOptions = new QueryOptions(params);
-            for (VariantQueryParam param : VariantQueryParam.values()) {
-                queryOptions.remove(param.key());
-            }
-            uris.addAll(variantStorageManager.walkData(outputFile,
+            QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, toolParams.getInclude())
+                    .append(QueryOptions.EXCLUDE, toolParams.getExclude());
+            uris.add(variantStorageManager.walkData(outputFile,
                     format, query, queryOptions, toolParams.getDockerImage(), toolParams.getCommandLine(), token));
         });
         step("move-files", () -> {

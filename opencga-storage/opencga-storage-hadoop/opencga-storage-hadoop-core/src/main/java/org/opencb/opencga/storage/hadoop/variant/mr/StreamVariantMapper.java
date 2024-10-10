@@ -18,10 +18,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.*;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
@@ -30,8 +27,9 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
 
     private static final int BUFFER_SIZE = 128 * 1024;
     public static final String MAX_INPUT_BYTES_PER_PROCESS = "stream.maxInputBytesPerProcess";
-    public static final String VARIANT_FORMAT = "stream.variant.format";
-    public static final String STREAMPROCESSOR = "stream.map.streamprocessor";
+    public static final String VARIANT_FORMAT = "opencga.variant.stream.format";
+    public static final String COMMANDLINE_BASE64 = "opencga.variant.commandline_base64";
+    public static final String ADDENVIRONMENT_PARAM = "opencga.variant.addenvironment";
 
     private final boolean verboseStdout = false;
     private static final long REPORTER_OUT_DELAY = 10 * 1000L;
@@ -61,13 +59,13 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     private int processedBytes = 0;
     private long numRecordsRead = 0;
     private long numRecordsWritten = 0;
-    protected final AtomicReference<Throwable> throwable = new AtomicReference<>();
+    protected final List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
 
     private volatile boolean processProvidedStatus_ = false;
 
     public static void setCommandLine(Job job, String commandLine) {
         String commandLineBase64 = Base64.getEncoder().encodeToString(commandLine.getBytes());
-        job.getConfiguration().set(STREAMPROCESSOR, commandLineBase64);
+        job.getConfiguration().set(COMMANDLINE_BASE64, commandLineBase64);
     }
 
     public static void setVariantFormat(Job job, VariantWriterFactory.VariantOutputFormat format) {
@@ -82,16 +80,15 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         Configuration conf = context.getConfiguration();
-        commandLine = new String(Base64.getDecoder().decode(conf.get(STREAMPROCESSOR)));
+        commandLine = new String(Base64.getDecoder().decode(conf.get(COMMANDLINE_BASE64)));
         maxInputBytesPerProcess = conf.getInt(MAX_INPUT_BYTES_PER_PROCESS, 1024 * 1024 * 1024);
         format = VariantWriterFactory.toOutputFormat(conf.get(VARIANT_FORMAT), "");
         if (!format.isPlain()) {
-            format = format.inPlan();
+            format = format.inPlain();
         }
 
-
         envs = new HashMap<>();
-        addEnvironment(envs, conf.get("stream.addenvironment"));
+        addEnvironment(envs, conf);
         // add TMPDIR environment variable with the value of java.io.tmpdir
         envs.put("TMPDIR", System.getProperty("java.io.tmpdir"));
 
@@ -135,24 +132,33 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     }
 
     private boolean hasExceptions() {
-        return throwable.get() != null;
+        return !throwables.isEmpty();
     }
 
     private void setException(Throwable th) {
-        if (!throwable.compareAndSet(null, th)) {
-            synchronized (throwable) {
-                // addSuppressed is not thread safe
-                throwable.get().addSuppressed(th);
-            }
-        }
+        throwables.add(th);
         LOG.warn("{}", th);
     }
 
     private void throwExceptionIfAny() throws IOException {
         if (hasExceptions()) {
-            Throwable cause = throwable.get();
-            throwable.set(null);
-            throw new IOException("MROutput/MRErrThread failed:", cause);
+            String message = "StreamVariantMapper failed:";
+            if (stderrThread != null) {
+                String stderr = String.join("\n", stderrThread.stderrBuffer);
+                message += "\nSTDERR: " + stderr;
+            }
+            if (throwables.size() == 1) {
+                Throwable cause = throwables.get(0);
+                throwables.clear();
+                throw new IOException(message, cause);
+            } else {
+                IOException exception = new IOException(message);
+                for (int i = 1; i < throwables.size(); i++) {
+                    exception.addSuppressed(throwables.get(i));
+                }
+                throwables.clear();
+                throw exception;
+            }
         }
     }
 
@@ -247,7 +253,6 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         processedBytes = 0;
         numRecordsRead = 0;
         numRecordsWritten = 0;
-        throwable.set(null);
 
         variantDataWriter.open();
         variantDataWriter.pre();
@@ -255,7 +260,30 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
 
     }
 
-    void addEnvironment(Map<String, String> env, String nameVals) {
+    public static void setEnvironment(Job job, Map<String, String> env) {
+        if (env == null || env.isEmpty()) {
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> entry : env.entrySet()) {
+            if (entry.getKey().contains(" ") || entry.getValue().contains(" ")) {
+                throw new IllegalArgumentException("Environment variables cannot contain spaces: "
+                        + "'" + entry.getKey() + "' = '" + entry.getValue() + "'");
+            }
+            if (entry.getKey().contains("=") || entry.getValue().contains("=")) {
+                throw new IllegalArgumentException("Environment variables cannot contain '=': "
+                        + "'" + entry.getKey() + "' = '" + entry.getValue() + "'");
+            }
+            if (sb.length() > 0) {
+                sb.append(" ");
+            }
+            sb.append(entry.getKey()).append("=").append(entry.getValue());
+        }
+        job.getConfiguration().set(ADDENVIRONMENT_PARAM, sb.toString());
+    }
+
+    public static void addEnvironment(Map<String, String> env, Configuration conf) {
+        String nameVals = conf.get(ADDENVIRONMENT_PARAM);
         // encoding "a=b c=d" from StreamJob
         if (nameVals == null) {
             return;
@@ -264,7 +292,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         for (int i = 0; i < nv.length; i++) {
             String[] pair = nv[i].split("=", 2);
             if (pair.length != 2) {
-                LOG.info("Skip env entry:" + nv[i]);
+                throw new IllegalArgumentException("Invalid name=value: " + nv[i]);
             } else {
                 env.put(pair[0], pair[1]);
             }
@@ -319,6 +347,9 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         private final String reporterPrefix;
         private final String counterPrefix;
         private final String statusPrefix;
+        private final LinkedList<String> stderrBuffer = new LinkedList<>();
+        private int stderrBufferSize = 0;
+        private static final int STDERR_BUFFER_CAPACITY = 10 * 1024;
 
         MRErrorThread(Context context) {
             this.context = context;
@@ -345,6 +376,12 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                             LOG.warn("Cannot parse reporter line: " + lineStr);
                         }
                     } else {
+                        // Store STDERR in a circular buffer (just the last 10KB), and include it in case of exception
+                        stderrBuffer.add(lineStr);
+                        stderrBufferSize += lineStr.length();
+                        while (stderrBufferSize > STDERR_BUFFER_CAPACITY && stderrBuffer.size() > 3) {
+                            stderrBufferSize -= stderrBuffer.remove().length();
+                        }
                         LOG.info("[STDERR] - " + lineStr);
 //                        System.err.println(lineStr);
                     }

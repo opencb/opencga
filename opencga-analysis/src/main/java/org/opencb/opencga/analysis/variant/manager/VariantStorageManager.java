@@ -88,6 +88,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
@@ -98,6 +99,7 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResu
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -202,14 +204,19 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
      * @throws StorageEngineException If there is any error exporting variants
      * @return generated files
      */
-    public List<URI> walkData(String outputFile, VariantOutputFormat format,
+    public URI walkData(String outputFile, VariantOutputFormat format,
                               Query query, QueryOptions queryOptions, String dockerImage, String commandLine, String token)
             throws CatalogException, StorageEngineException {
         String anyStudy = catalogUtils.getAnyStudy(query, token);
         return secureAnalysis(VariantWalkerTool.ID, anyStudy, queryOptions, token, engine -> {
             Query finalQuery = catalogUtils.parseQuery(query, queryOptions, engine.getCellBaseUtils(), token);
             checkSamplesPermissions(finalQuery, queryOptions, token);
-            URI outputUri = new VariantExportOperationManager(this, engine).getOutputUri(outputFile, format, finalQuery, token);
+            URI outputUri;
+            try {
+                outputUri = UriUtils.createUri(outputFile);
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(e);
+            }
             return engine.walkData(outputUri, format, finalQuery, queryOptions, dockerImage, commandLine);
         });
     }
@@ -533,7 +540,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public ObjectMap configureProject(String projectStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
         return secureOperationByProject("configure", projectStr, params, token, engine -> {
-            validateNewConfiguration(engine, params);
+            validateNewConfiguration(engine, params, token);
 
             DataStore dataStore = getDataStoreByProjectId(projectStr, token);
 
@@ -546,7 +553,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public ObjectMap configureStudy(String studyStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
         return secureOperation("configure", studyStr, params, token, engine -> {
-            validateNewConfiguration(engine, params);
+            validateNewConfiguration(engine, params, token);
             Study study = catalogManager.getStudyManager()
                     .get(studyStr,
                             new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE_OPTIONS.key()),
@@ -570,12 +577,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-    private void validateNewConfiguration(VariantStorageEngine engine, ObjectMap params) throws StorageEngineException {
-        for (VariantStorageOptions option : VariantStorageOptions.values()) {
-            if (option.isProtected() && params.get(option.key()) != null) {
-                throw new StorageEngineException("Unable to update protected option '" + option.key() + "'");
-            }
+    private void validateNewConfiguration(VariantStorageEngine engine, ObjectMap params, String token)
+            throws StorageEngineException, CatalogException {
+        if (catalogManager.getAuthorizationManager().isOpencgaAdministrator(catalogManager.getUserManager().validateToken(token))) {
+            logger.info("Skip configuration validation. User is an admin.");
+            return;
         }
+        engine.validateNewConfiguration(params);
     }
 
     /**

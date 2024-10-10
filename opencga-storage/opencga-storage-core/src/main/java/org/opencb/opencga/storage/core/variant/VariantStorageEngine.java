@@ -285,7 +285,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
-    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions,
+    public URI walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions,
                               String dockerImage, String commandLine)
             throws IOException, StorageEngineException {
         if (format == VariantWriterFactory.VariantOutputFormat.VCF || format == VariantWriterFactory.VariantOutputFormat.VCF_GZ) {
@@ -304,8 +304,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         String dockerCommandLine = "docker run --rm -i "
                 + "--memory " + memory + " "
-                + "--cpus " + cpu + " "
-                + "--user " + user + " ";
+                + "--cpus " + cpu + " ";
+
+        if (StringUtils.isNotEmpty(user)) {
+            dockerCommandLine += "--user " + user + " ";
+        }
 
         if (StringUtils.isNotEmpty(volume)) {
             dockerCommandLine += "-v " + volume + ":/data ";
@@ -323,7 +326,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
 
-    public abstract List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
+    public abstract URI walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
                                        String commandLine)
             throws StorageEngineException;
 
@@ -1201,6 +1204,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     @Override
     public abstract void testConnection() throws StorageEngineException;
+
+    public void validateNewConfiguration(ObjectMap params) throws StorageEngineException {
+        for (VariantStorageOptions option : VariantStorageOptions.values()) {
+            if (option.isProtected() && params.get(option.key()) != null) {
+                throw new StorageEngineException("Unable to update protected option '" + option.key() + "'");
+            }
+        }
+    }
 
     public void reloadCellbaseConfiguration() {
         cellBaseUtils = null;
