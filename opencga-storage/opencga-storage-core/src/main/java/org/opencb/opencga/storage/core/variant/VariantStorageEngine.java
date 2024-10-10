@@ -793,6 +793,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     protected SolrInputDocumentDataWriter newVariantSearchDataWriter(String collection) throws StorageEngineException {
+        logger.info("Using SolrClient with a write timeout of {} ms", configuration.getSearch().getWriteTimeout());
         return new SolrInputDocumentDataWriter(collection,
                 getVariantSearchManager().getSolrManager().newSolrClient(configuration.getSearch().getWriteTimeout()), true,
                 getVariantSearchManager().getInsertBatchSize());
