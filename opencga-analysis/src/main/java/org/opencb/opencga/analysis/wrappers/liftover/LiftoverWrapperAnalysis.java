@@ -104,11 +104,15 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
         } else if (!LIFTOVER_VCF_INPUT_FOLDER.equals(vcfDest)) {
             File opencgaFile = getCatalogManager().getFileManager().get(study, analysisParams.getVcfDestination(), QueryOptions.empty(),
                     token).first();
-            vcfDest = Paths.get(opencgaFile.getUri().getPath()).toAbsolutePath().toString();
-            if (!Files.exists(Paths.get(vcfDest))) {
-                throw new ToolException("Liftover 'vcfDestination' parameter (" + analysisParams.getVcfDestination() + ") with folder ("
-                        + vcfDest + ") does not exist");
+            Path path = Paths.get(opencgaFile.getUri().getPath()).toAbsolutePath();
+            if (!Files.exists(path)) {
+                getCatalogManager().getIoManagerFactory().get(path.toUri()).createDirectory(path.toUri(), true);
             }
+            if (!Files.exists(path)) {
+                throw new ToolException("Liftover 'vcfDestination' parameter (" + analysisParams.getVcfDestination() + ") but folder ("
+                        + path + ") does not exist");
+            }
+            vcfDest = path.toString();
         }
     }
 
@@ -204,7 +208,8 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
             StopWatch stopWatch = StopWatch.createStarted();
             FileLinkParams linkParams = new FileLinkParams().setUri(uri.toString());
             logger.info("Linking file {}", uri);
-            OpenCGAResult<File> result = catalogManager.getFileManager().link(getStudy(), linkParams, false, getToken());
+            // Link 'parents' to true to ensure the directory is created
+            OpenCGAResult<File> result = catalogManager.getFileManager().link(getStudy(), linkParams, true, getToken());
             if (result.getEvents().stream().anyMatch(e -> e.getMessage().equals(ParamConstants.FILE_ALREADY_LINKED))) {
                 logger.info("File already linked - SKIP");
             } else {
