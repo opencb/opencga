@@ -34,7 +34,6 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.models.variant.VariantSetupParams;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -60,6 +59,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -793,8 +793,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     protected SolrInputDocumentDataWriter newVariantSearchDataWriter(String collection) throws StorageEngineException {
+        logger.info("Using SolrClient with a write timeout of {} ms", configuration.getSearch().getWriteTimeout());
         return new SolrInputDocumentDataWriter(collection,
-                getVariantSearchManager().getSolrClient(),
+                getVariantSearchManager().getSolrManager().newSolrClient(configuration.getSearch().getWriteTimeout()), true,
                 getVariantSearchManager().getInsertBatchSize());
     }
 
