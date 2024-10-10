@@ -11,7 +11,10 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,6 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ResourceManager  {
 
     private Path openCgaHome;
+    private String baseUrl;
     private Configuration configuration;
     private VersionUtils.Version version;
 
@@ -38,11 +42,16 @@ public class ResourceManager  {
     protected static Logger logger = LoggerFactory.getLogger(ResourceManager.class);
 
     public ResourceManager(Path openCgaHome) {
+        this(openCgaHome, null);
+    }
+
+    public ResourceManager(Path openCgaHome, String baseurl) {
         this.openCgaHome = openCgaHome;
+        this.baseUrl = baseurl;
         this.version = new VersionUtils.Version(GitRepositoryState.getInstance().getBuildVersion());
     }
 
-    public File getResourceFile(String analysisId, String resourceName) throws IOException {
+    public File getResourceFile(String analysisId, String resourceName) throws IOException, NoSuchAlgorithmException {
         loadConfiguration();
 
         // Create a lock for the analysis if not present, and get it for the input analysis
@@ -63,7 +72,7 @@ public class ResourceManager  {
                 }
 
                 // Download each file
-                return downloadFile(configuration.getAnalysis().getResourceUrl(), analysisId, resourceName, analysisResourcesPath).toFile();
+                return downloadFile(baseUrl, analysisId, resourceName, analysisResourcesPath).toFile();
             } else {
                 String msg = "Could not acquire lock for analysis '" + analysisId + "' within " + LOCK_TIMEOUT + " hours. Skipping...";
                 logger.error(msg);
@@ -83,7 +92,7 @@ public class ResourceManager  {
         }
     }
 
-    public List<File> getResourceFiles(String analysisId) throws IOException {
+    public List<File> getResourceFiles(String analysisId) throws IOException, NoSuchAlgorithmException {
         loadConfiguration();
 
         // Get resource filenames for the input analysis
@@ -106,6 +115,10 @@ public class ResourceManager  {
         if (configuration == null) {
             this.configuration = Configuration.load(new FileInputStream(openCgaHome.resolve(CONF_FOLDER_NAME)
                     .resolve(CONFIGURATION_FILENAME).toFile()));
+
+            if (baseUrl == null) {
+                baseUrl = configuration.getAnalysis().getResourceUrl();
+            }
         }
     }
 
@@ -125,7 +138,8 @@ public class ResourceManager  {
         return lines;
     }
 
-    private Path downloadFile(String baseUrl, String analysisId, String filename, Path localPath) throws IOException {
+    private Path downloadFile(String baseUrl, String analysisId, String filename, Path localPath)
+            throws IOException, NoSuchAlgorithmException {
         String fileUrl = baseUrl + analysisId + "/" + filename;
         Path localFile = localPath.resolve(filename);
 
@@ -135,9 +149,28 @@ public class ResourceManager  {
             return localFile;
         }
 
+        // Download resource file
         logger.info("Downloading resource file '{}' for analysis '{}'...", filename, analysisId);
-        try (BufferedInputStream in = new BufferedInputStream(new URL(fileUrl).openStream());
-             FileOutputStream fileOutputStream = new FileOutputStream(localFile.toFile())) {
+        donwloadFile(new URL(fileUrl), localFile);
+        logger.info("Done: '{}' downloaded", filename);
+
+        // Download MD5 for the resource file
+        final String md5Ext = ".md5";
+        String md5Filename = filename + md5Ext;
+        logger.info("Downloading MD5, '{}' ...", md5Filename);
+        donwloadFile(new URL(fileUrl + md5Ext), localPath.resolve(md5Filename));
+        logger.info("Done: '{}' MD5 downloaded", md5Filename);
+
+        // Checking MD5
+        validateMD5(localPath.resolve(filename), localPath.resolve(md5Filename));
+
+        return localFile;
+    }
+
+    private void donwloadFile(URL url, Path downloadedPath) throws IOException {
+        logger.info("Downloading '{}' to '{}' ...", url, downloadedPath);
+        try (BufferedInputStream in = new BufferedInputStream(url.openStream());
+             FileOutputStream fileOutputStream = new FileOutputStream(downloadedPath.toFile())) {
             byte[] dataBuffer = new byte[1024];
             int bytesRead;
             while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
@@ -145,16 +178,42 @@ public class ResourceManager  {
             }
         }
 
-        if (!Files.exists(localFile)) {
-            String msg = "Something wrong happened, file '" + filename + "' + does not exist after downloading at '" + fileUrl + "'";
+        if (!Files.exists(downloadedPath)) {
+            String msg = "Something wrong happened downloading '" + url + "'";
             logger.error(msg);
             throw new IOException(msg);
         }
-        logger.info("Done: '{}' downloaded", filename);
-
-        return localFile;
+        logger.info("Downloading done");
     }
 
+    private void validateMD5(Path filePath, Path md5filePath) throws IOException, NoSuchAlgorithmException, InputMismatchException {
+        String expectedMD5 = new String(Files.readAllBytes(md5filePath));
+        String actualMD5 = computeMD5(filePath);
+        if (!expectedMD5.equals(actualMD5)) {
+            throw new InputMismatchException("MD5 checksum mismatch! File may be corrupted.");
+        }
+    }
+
+    public static String computeMD5(Path filePath) throws IOException, NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        try (FileInputStream fis = new FileInputStream(filePath.toString())) {
+            byte[] dataBytes = new byte[1024];
+            int bytesRead;
+
+            while ((bytesRead = fis.read(dataBytes)) != -1) {
+                md.update(dataBytes, 0, bytesRead);
+            }
+        }
+        byte[] mdBytes = md.digest();
+
+        // Convert byte array to hex string
+        StringBuilder sb = new StringBuilder();
+        for (byte b : mdBytes) {
+            sb.append(String.format("%02x", b));
+        }
+
+        return sb.toString();
+    }
     //-------------------------------------------------------------------------
     //  T O     S T R I N G
     //-------------------------------------------------------------------------

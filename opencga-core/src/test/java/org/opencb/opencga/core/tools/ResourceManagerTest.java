@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.NoSuchAlgorithmException;
 
 import static org.opencb.opencga.core.tools.ResourceManager.*;
 
@@ -49,10 +50,10 @@ public class ResourceManagerTest {
 
 
     @Test
-    public void testDonwloadRelatednessResource() throws IOException {
-        ResourceManager resourceManager = new ResourceManager(openCgaHome);
-        String analysisId = "relatedness";
-        String resourceName = "variants.prune.in";
+    public void testDonwloadRelatednessResource() throws IOException, NoSuchAlgorithmException {
+        ResourceManager resourceManager = new ResourceManager(openCgaHome, "http://resources.opencb.org/task-6766/");
+        String analysisId = "qc"; //""relatedness";
+        String resourceName = "relatedness_thresholds.tsv"; //""variants.prune.in";
 
         Assert.assertFalse(Files.exists(analysisResourcePath.resolve(analysisId).resolve(resourceName)));
 
