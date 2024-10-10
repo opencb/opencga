@@ -19,19 +19,24 @@ package org.opencb.opencga.analysis.wrappers.liftover;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.variant.LiftoverWrapperParams;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ResourceManager;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -98,7 +103,7 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
                     getOutDir());
         } else if (!LIFTOVER_VCF_INPUT_FOLDER.equals(vcfDest)) {
             File opencgaFile = getCatalogManager().getFileManager().get(study, analysisParams.getVcfDestination(), QueryOptions.empty(),
-                            token).first();
+                    token).first();
             vcfDest = Paths.get(opencgaFile.getUri().getPath()).toAbsolutePath().toString();
             if (!Files.exists(Paths.get(vcfDest))) {
                 throw new ToolException("Liftover 'vcfDestination' parameter (" + analysisParams.getVcfDestination() + ") with folder ("
@@ -193,10 +198,21 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    private void linkOutFile(Path outFile) throws CatalogException {
+    private void linkOutFile(Path outFile) throws CatalogException, ToolException {
         if (Files.exists(outFile)) {
-            FileLinkParams linkParams = new FileLinkParams().setUri(outFile.toUri().toString());
-            catalogManager.getFileManager().link(getStudy(), linkParams, false, getToken());
+            URI uri = outFile.toUri();
+            StopWatch stopWatch = StopWatch.createStarted();
+            FileLinkParams linkParams = new FileLinkParams().setUri(uri.toString());
+            logger.info("Linking file {}", uri);
+            OpenCGAResult<File> result = catalogManager.getFileManager().link(getStudy(), linkParams, false, getToken());
+            if (result.getEvents().stream().anyMatch(e -> e.getMessage().equals(ParamConstants.FILE_ALREADY_LINKED))) {
+                logger.info("File already linked - SKIP");
+            } else {
+                String duration = TimeUtils.durationToString(stopWatch);
+                logger.info("File link took {}", duration);
+                File file = result.first();
+                addGeneratedFile(file);
+            }
         }
     }
 
