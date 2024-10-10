@@ -117,13 +117,24 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                     map(context.getCurrentKey(), context.getCurrentValue(), context);
                 } while (!hasExceptions() && context.nextKeyValue());
             } catch (Throwable th) {
-                setException(th);
+                Object currentKey = context.getCurrentKey();
+                if (currentKey != null) {
+                    String keyStr;
+                    if (currentKey instanceof ImmutableBytesWritable) {
+                        keyStr = Bytes.toStringBinary(((ImmutableBytesWritable) currentKey).get());
+                    } else {
+                        keyStr = currentKey.toString();
+                    }
+                    addException("Exception in mapper for key: " + keyStr, th);
+                } else {
+                    addException(th);
+                }
             }
             try {
                 // Always call cleanup, even if there was an exception
                 cleanup(context);
             } catch (Throwable th) {
-                setException(th);
+                addException(th);
             }
         } else {
             context.getCounter(COUNTER_GROUP_NAME, "EMPTY_INPUT_SPLIT").increment(1);
@@ -135,9 +146,30 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         return !throwables.isEmpty();
     }
 
-    private void setException(Throwable th) {
+    private void addException(String message, Throwable th) {
+        addException(new Exception(message, th));
+    }
+
+    private void addException(Throwable th) {
         throwables.add(th);
         LOG.warn("{}", th);
+        if (th instanceof OutOfMemoryError) {
+            try {
+                // Print the current memory status in multiple lines
+                Runtime runtime = Runtime.getRuntime();
+                LOG.warn("Catch OutOfMemoryError!");
+                LOG.warn("Free memory: " + runtime.freeMemory());
+                LOG.warn("Total memory: " + runtime.totalMemory());
+                LOG.warn("Max memory: " + runtime.maxMemory());
+                th.addSuppressed(new Exception(
+                        "Free memory: " + runtime.freeMemory() + ", "
+                        + "Total memory: " + runtime.totalMemory() + ", "
+                        + "Max memory: " + runtime.maxMemory()));
+            } catch (Throwable t) {
+                // Ignore any exception while printing the memory status
+                LOG.warn("Error printing memory status", t);
+            }
+        }
     }
 
     private void throwExceptionIfAny() throws IOException {
@@ -201,7 +233,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                 process = null;
             }
         } catch (Throwable th) {
-            setException(th);
+            addException(th);
         }
 
         try {
@@ -211,7 +243,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                 stdout = null;
             }
         } catch (Throwable th) {
-            setException(th);
+            addException(th);
         }
         try {
             if (stderr != null) {
@@ -220,7 +252,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                 stderr = null;
             }
         } catch (Throwable th) {
-            setException(th);
+            addException(th);
         }
 //        drainStdout(context);
     }
@@ -231,6 +263,9 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
 
         // Start the process
         ProcessBuilder builder = new ProcessBuilder("bash", "-ce", commandLine);
+//        System.getenv().forEach((k, v) -> LOG.info("SYSTEM ENV: " + k + "=" + v));
+//        builder.environment().forEach((k, v) -> LOG.info("ProcessBuilder ENV: " + k + "=" + v));
+//        envs.forEach((k, v) -> LOG.info("Config ENV: " + k + "=" + v));
         builder.environment().putAll(envs);
         process = builder.start();
 
@@ -334,7 +369,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                     }
                 }
             } catch (Throwable th) {
-                setException(th);
+                addException(th);
             }
         }
     }
@@ -383,7 +418,6 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                             stderrBufferSize -= stderrBuffer.remove().length();
                         }
                         LOG.info("[STDERR] - " + lineStr);
-//                        System.err.println(lineStr);
                     }
                     long now = System.currentTimeMillis();
                     if (now - lastStderrReport > REPORTER_ERR_DELAY) {
@@ -393,7 +427,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                     line.clear();
                 }
             } catch (Throwable th) {
-                setException(th);
+                addException(th);
             }
         }
 
