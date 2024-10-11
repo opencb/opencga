@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -50,7 +49,10 @@ public class EventMongoDBAdaptor extends MongoDBAdaptor implements EventDBAdapto
     @Override
     public OpenCGAResult<CatalogEvent> get(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        throw new NotImplementedException("Yet to implement");
+        long startTime = startQuery();
+        try (DBIterator<CatalogEvent> dbIterator = iterator(null, query, options)) {
+            return endQuery(startTime, dbIterator);
+        }
     }
 
     @Override
@@ -196,6 +198,7 @@ public class EventMongoDBAdaptor extends MongoDBAdaptor implements EventDBAdapto
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case EVENT_STUDY_FQN:
                     case SUCCESSFUL:
                     case ID:
                     case UUID:

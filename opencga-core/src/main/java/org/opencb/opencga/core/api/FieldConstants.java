@@ -50,6 +50,12 @@ public class FieldConstants {
     public static final String ORGANIZATION_CONFIGURATION_DESCRIPTION = "Organization configuration information.";
     public static final String ORGANIZATION_INTERNAL_DESCRIPTION = "Organization internal information.";
 
+    // Events
+    public static final String EVENT_ID_PARAM = "eventId";
+    public static final String EVENT_ID_DESCRIPTION = "Event id.";
+    public static final String EVENT_SUCCESSFUL_PARAM = "successful";
+    public static final String EVENT_SUCCESSFUL_DESCRIPTION = "Boolean indicating if the event was successful or not.";
+
     // Notes
     public static final String NOTES_ID_DESCRIPTION = "Note unique identifier.";
     public static final String NOTES_SCOPE_DESCRIPTION = "Scope of the Note.";

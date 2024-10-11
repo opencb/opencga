@@ -24,7 +24,8 @@ public interface EventDBAdaptor {
         SUBSCRIBERS("subscribers", OBJECT, ""),
         SUCCESSFUL("successful", BOOLEAN, ""),
         CREATION_DATE("creationDate", STRING, ""),
-        MODIFICATION_DATE("modificationDate", STRING, "");
+        MODIFICATION_DATE("modificationDate", STRING, ""),
+        EVENT_STUDY_FQN("event.studyFqn", STRING, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
         static {

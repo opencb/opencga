@@ -27,6 +27,9 @@
 #' | userUpdateStatus | /{apiVersion}/organizations/user/{user}/status/update | include, exclude, user[*], organization, includeResult, body[*] |
 #' | updateUser | /{apiVersion}/organizations/user/{user}/update | include, exclude, user[*], organization, includeResult, body[*] |
 #' | updateConfiguration | /{apiVersion}/organizations/{organization}/configuration/update | include, exclude, organization[*], includeResult, authenticationOriginsAction, body[*] |
+#' | queryEvents | /{apiVersion}/organizations/{organization}/events/query | organization[*], study, creationDate, modificationDate, successful |
+#' | archiveEvents | /{apiVersion}/organizations/{organization}/events/{eventId}/archive | organization[*], eventId[*] |
+#' | retryEvents | /{apiVersion}/organizations/{organization}/events/{eventId}/retry | organization[*], eventId[*] |
 #' | info | /{apiVersion}/organizations/{organization}/info | include, exclude, organization[*] |
 #' | update | /{apiVersion}/organizations/{organization}/update | include, exclude, organization[*], includeResult, adminsAction, body[*] |
 #'
@@ -36,7 +39,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("organizationClient", "OpencgaR", function(OpencgaR, id, organization, user, endpointName, params=NULL, ...) {
+setMethod("organizationClient", "OpencgaR", function(OpencgaR, eventId, id, organization, user, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/organizations/create:
@@ -123,6 +126,33 @@ setMethod("organizationClient", "OpencgaR", function(OpencgaR, id, organization,
         #' @param data JSON containing the params to be updated.
         updateConfiguration=fetchOpenCGA(object=OpencgaR, category="organizations", categoryId=organization,
                 subcategory="configuration", subcategoryId=NULL, action="update", params=params, httpMethod="POST",
+                as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/organizations/{organization}/events/query:
+        #' Search events.
+        #' @param organization Organization id.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param successful Boolean indicating if the event was successful or not.
+        queryEvents=fetchOpenCGA(object=OpencgaR, category="organizations", categoryId=organization,
+                subcategory="events", subcategoryId=NULL, action="query", params=params, httpMethod="GET",
+                as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/organizations/{organization}/events/{eventId}/archive:
+        #' Archive an event.
+        #' @param organization Organization id.
+        #' @param eventId Event id.
+        archiveEvents=fetchOpenCGA(object=OpencgaR, category="organizations", categoryId=organization,
+                subcategory="events", subcategoryId=eventId, action="archive", params=params, httpMethod="POST",
+                as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/organizations/{organization}/events/{eventId}/retry:
+        #' Retry unsuccessful event.
+        #' @param organization Organization id.
+        #' @param eventId Event id.
+        retryEvents=fetchOpenCGA(object=OpencgaR, category="organizations", categoryId=organization,
+                subcategory="events", subcategoryId=eventId, action="retry", params=params, httpMethod="POST",
                 as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/organizations/{organization}/info:

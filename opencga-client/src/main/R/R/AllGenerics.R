@@ -1,6 +1,6 @@
 # ##############################################################################
 ## OrganizationClient
-setGeneric("organizationClient", function(OpencgaR, id, organization, user, endpointName, params=NULL, ...)
+setGeneric("organizationClient", function(OpencgaR, eventId, id, organization, user, endpointName, params=NULL, ...)
     standardGeneric("organizationClient"))
 
 # ##############################################################################

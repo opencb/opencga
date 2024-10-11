@@ -16,6 +16,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.models.event.CatalogEvent;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
@@ -88,6 +89,15 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "configuration-update":
                 queryResponse = updateConfiguration();
+                break;
+            case "events-query":
+                queryResponse = queryEvents();
+                break;
+            case "events-archive":
+                queryResponse = archiveEvents();
+                break;
+            case "events-retry":
+                queryResponse = retryEvents();
                 break;
             case "info":
                 queryResponse = info();
@@ -343,6 +353,37 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), OrganizationConfiguration.class);
         }
         return openCGAClient.getOrganizationClient().updateConfiguration(commandOptions.organization, organizationConfiguration, queryParams);
+    }
+
+    private RestResponse<CatalogEvent> queryEvents() throws Exception {
+        logger.debug("Executing queryEvents in Organizations command line");
+
+        OrganizationsCommandOptions.QueryEventsCommandOptions commandOptions = organizationsCommandOptions.queryEventsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotNull("successful", commandOptions.successful);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getOrganizationClient().queryEvents(commandOptions.organization, queryParams);
+    }
+
+    private RestResponse<CatalogEvent> archiveEvents() throws Exception {
+        logger.debug("Executing archiveEvents in Organizations command line");
+
+        OrganizationsCommandOptions.ArchiveEventsCommandOptions commandOptions = organizationsCommandOptions.archiveEventsCommandOptions;
+        return openCGAClient.getOrganizationClient().archiveEvents(commandOptions.organization, commandOptions.eventId);
+    }
+
+    private RestResponse<CatalogEvent> retryEvents() throws Exception {
+        logger.debug("Executing retryEvents in Organizations command line");
+
+        OrganizationsCommandOptions.RetryEventsCommandOptions commandOptions = organizationsCommandOptions.retryEventsCommandOptions;
+        return openCGAClient.getOrganizationClient().retryEvents(commandOptions.organization, commandOptions.eventId);
     }
 
     private RestResponse<Organization> info() throws Exception {

@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -9,8 +10,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.events.EventFactory;
 import org.opencb.opencga.core.events.IEventHandler;
@@ -177,32 +180,23 @@ public final class EventManager extends AbstractManager implements Closeable {
         return catalogEvent;
     }
 
-//    public CatalogEvent notify(String eventId, String organizationId, Study study, @Nullable String id, String userId,
-//                               QueryOptions queryOptions, ObjectMap params, JwtPayload payload, ExecuteOperation<?> executeOperation)
-//            throws CatalogException {
-//        CatalogEvent catalogEvent = new CatalogEvent(eventId, new OpencgaEvent(organizationId, eventId, params, userId, study.getFqn(),
-//        id, payload.getToken(), null));
-//        validateNewEvent(catalogEvent);
-//        try {
-//            logger.info("Executing '{}' event", eventId);
-//            OpenCGAResult<?> execute = executeOperation.execute(organizationId, study, userId, queryOptions, payload);
-//            catalogEvent.getEvent().setResult(execute);
-//        } catch (Exception e) {
-//            eventHandler.notify(catalogEvent, e);
-//            throw new CatalogException(e.getMessage(), e);
-//        }
-//
-//        logger.info("Notifying of event '{}'.", eventId);
-//        eventHandler.notify(catalogEvent);
-//        return catalogEvent;
-//    }
-
     public OpenCGAResult<CatalogEvent> search(String organizationId, Query query, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String userId = tokenPayload.getUserId(organizationId);
         catalogManager.getAuthorizationManager().checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+        fixQueryObject(query, tokenPayload);
 
         return dbAdaptorFactory.getEventDBAdaptor(organizationId).get(query, QueryOptions.empty());
+    }
+
+    void fixQueryObject(Query query, JwtPayload tokenPayload) throws CatalogException {
+        String studyParam = query.getString(ParamConstants.STUDY_PARAM);
+        if (StringUtils.isNotEmpty(studyParam)) {
+            CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyParam, tokenPayload);
+            Study study = catalogManager.getStudyManager().resolveId(catalogFqn, QueryOptions.empty(), tokenPayload);
+            query.put(EventDBAdaptor.QueryParams.EVENT_STUDY_FQN.key(), study.getFqn());
+            query.remove(ParamConstants.STUDY_PARAM);
+        }
     }
 
     public OpenCGAResult<CatalogEvent> archiveEvent(String organizationId, String eventId, String token) throws CatalogException {

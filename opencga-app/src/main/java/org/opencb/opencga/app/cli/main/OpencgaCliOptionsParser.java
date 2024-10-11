@@ -276,6 +276,9 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         organizationsSubCommands.addCommand("update-status-user", organizationsCommandOptions.userUpdateStatusCommandOptions);
         organizationsSubCommands.addCommand("user-update", organizationsCommandOptions.updateUserCommandOptions);
         organizationsSubCommands.addCommand("configuration-update", organizationsCommandOptions.updateConfigurationCommandOptions);
+        organizationsSubCommands.addCommand("events-query", organizationsCommandOptions.queryEventsCommandOptions);
+        organizationsSubCommands.addCommand("events-archive", organizationsCommandOptions.archiveEventsCommandOptions);
+        organizationsSubCommands.addCommand("events-retry", organizationsCommandOptions.retryEventsCommandOptions);
         organizationsSubCommands.addCommand("info", organizationsCommandOptions.infoCommandOptions);
         organizationsSubCommands.addCommand("update", organizationsCommandOptions.updateCommandOptions);
 

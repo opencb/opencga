@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.models.event.CatalogEvent;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
@@ -191,6 +192,46 @@ public class OrganizationClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("organizations", organization, "configuration", null, "update", params, POST, OrganizationConfiguration.class);
+    }
+
+    /**
+     * Search events.
+     * @param organization Organization id.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       successful: Boolean indicating if the event was successful or not.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<CatalogEvent> queryEvents(String organization, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("organizations", organization, "events", null, "query", params, GET, CatalogEvent.class);
+    }
+
+    /**
+     * Archive an event.
+     * @param organization Organization id.
+     * @param eventId Event id.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<CatalogEvent> archiveEvents(String organization, String eventId) throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("organizations", organization, "events", eventId, "archive", params, POST, CatalogEvent.class);
+    }
+
+    /**
+     * Retry unsuccessful event.
+     * @param organization Organization id.
+     * @param eventId Event id.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<CatalogEvent> retryEvents(String organization, String eventId) throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("organizations", organization, "events", eventId, "retry", params, POST, CatalogEvent.class);
     }
 
     /**

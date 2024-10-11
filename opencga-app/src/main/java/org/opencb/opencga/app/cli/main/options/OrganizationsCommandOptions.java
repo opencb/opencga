@@ -41,6 +41,9 @@ public class OrganizationsCommandOptions {
         public UserUpdateStatusCommandOptions userUpdateStatusCommandOptions;
         public UpdateUserCommandOptions updateUserCommandOptions;
         public UpdateConfigurationCommandOptions updateConfigurationCommandOptions;
+        public QueryEventsCommandOptions queryEventsCommandOptions;
+        public ArchiveEventsCommandOptions archiveEventsCommandOptions;
+        public RetryEventsCommandOptions retryEventsCommandOptions;
         public InfoCommandOptions infoCommandOptions;
         public UpdateCommandOptions updateCommandOptions;
 
@@ -57,6 +60,9 @@ public class OrganizationsCommandOptions {
         this.userUpdateStatusCommandOptions = new UserUpdateStatusCommandOptions();
         this.updateUserCommandOptions = new UpdateUserCommandOptions();
         this.updateConfigurationCommandOptions = new UpdateConfigurationCommandOptions();
+        this.queryEventsCommandOptions = new QueryEventsCommandOptions();
+        this.archiveEventsCommandOptions = new ArchiveEventsCommandOptions();
+        this.retryEventsCommandOptions = new RetryEventsCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
     
@@ -351,6 +357,69 @@ public class OrganizationsCommandOptions {
     
         @Parameter(names = {"--token-expiration"}, description = "The body web service expiration parameter", required = false, arity = 1)
         public Long tokenExpiration;
+    
+    }
+
+    @Parameters(commandNames = {"events-query"}, commandDescription ="Search events")
+    public class QueryEventsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = true, arity = 1)
+        public String organization; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--successful"}, description = "Boolean indicating if the event was successful or not.", required = false, arity = 1)
+        public Boolean successful; 
+    
+    }
+
+    @Parameters(commandNames = {"events-archive"}, commandDescription ="Archive an event")
+    public class ArchiveEventsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = true, arity = 1)
+        public String organization; 
+    
+        @Parameter(names = {"--event-id"}, description = "Event id.", required = true, arity = 1)
+        public String eventId; 
+    
+    }
+
+    @Parameters(commandNames = {"events-retry"}, commandDescription ="Retry unsuccessful event")
+    public class RetryEventsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = true, arity = 1)
+        public String organization; 
+    
+        @Parameter(names = {"--event-id"}, description = "Event id.", required = true, arity = 1)
+        public String eventId; 
     
     }
 

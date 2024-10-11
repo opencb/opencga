@@ -18,11 +18,13 @@ package org.opencb.opencga.server.rest;
 
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
+import org.opencb.opencga.catalog.managers.EventManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.event.CatalogEvent;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
@@ -33,7 +35,6 @@ import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.user.OrganizationUserUpdateParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserStatusUpdateParams;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -62,14 +63,8 @@ public class OrganizationWSServer extends OpenCGAWSServer {
                     dataType = "string", paramType = "query"),
     })
     public Response getInfo(
-            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION, required = true) @PathParam(ParamConstants.ORGANIZATION) String organizationId
-    ) {
-        try {
-            OpenCGAResult<Organization> result = catalogManager.getOrganizationManager().get(organizationId, queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION, required = true) @PathParam(ParamConstants.ORGANIZATION) String organizationId) {
+        return run(() -> catalogManager.getOrganizationManager().get(organizationId, queryOptions, token));
     }
 
     @POST
@@ -86,18 +81,14 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Action to be performed if the array of admins is being updated.", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
                 @QueryParam("adminsAction") ParamUtils.AddRemoveAction adminsAction,
             @ApiParam(value = "JSON containing the params to be updated.", required = true) OrganizationUpdateParams parameters) {
-        try {
-            if (adminsAction == null) {
-                adminsAction = ParamUtils.AddRemoveAction.ADD;
+        return run(() -> {
+            if (adminsAction != null) {
+                Map<String, Object> actionMap = new HashMap<>();
+                actionMap.put(OrganizationDBAdaptor.QueryParams.ADMINS.key(), adminsAction);
+                queryOptions.put(Constants.ACTIONS, actionMap);
             }
-            Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(OrganizationDBAdaptor.QueryParams.ADMINS.key(), adminsAction);
-            queryOptions.put(Constants.ACTIONS, actionMap);
-            OpenCGAResult<Organization> result = catalogManager.getOrganizationManager().update(organizationId, parameters, queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+            return catalogManager.getOrganizationManager().update(organizationId, parameters, queryOptions, token);
+        });
     }
 
     @POST
@@ -114,18 +105,14 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Action to be performed if the array of authenticationOrigins is being updated.",
                     allowableValues = "ADD,REMOVE,SET,REPLACE", defaultValue = "ADD") @QueryParam("authenticationOriginsAction") ParamUtils.UpdateAction authOriginsAction,
             @ApiParam(value = "JSON containing the params to be updated.", required = true) OrganizationConfiguration parameters) {
-        try {
-            if (authOriginsAction == null) {
-                authOriginsAction = ParamUtils.UpdateAction.ADD;
+        return run(() -> {
+            if (authOriginsAction != null) {
+                Map<String, Object> actionMap = new HashMap<>();
+                actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, authOriginsAction);
+                queryOptions.put(Constants.ACTIONS, actionMap);
             }
-            Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, authOriginsAction);
-            queryOptions.put(Constants.ACTIONS, actionMap);
-            OpenCGAResult<OrganizationConfiguration> result = catalogManager.getOrganizationManager().updateConfiguration(organizationId, parameters, queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+            return catalogManager.getOrganizationManager().updateConfiguration(organizationId, parameters, queryOptions, token);
+        });
     }
 
     @POST
@@ -139,12 +126,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
     public Response create(
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the organization to be created.", required = true) OrganizationCreateParams parameters) {
-        try {
-            OpenCGAResult<Organization> result = catalogManager.getOrganizationManager().create(parameters, queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> catalogManager.getOrganizationManager().create(parameters, queryOptions, token));
     }
 
     @GET
@@ -167,12 +149,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = FieldConstants.NOTES_TAGS_DESCRIPTION) @QueryParam(FieldConstants.NOTES_TAGS_PARAM) String tags,
             @ApiParam(value = FieldConstants.GENERIC_VERSION_DESCRIPTION) @QueryParam("version") String version
     ) {
-        try {
-            OpenCGAResult<Note> result = catalogManager.getNotesManager().searchOrganizationNote(query, queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> catalogManager.getNotesManager().searchOrganizationNote(query, queryOptions, token));
     }
 
     @POST
@@ -186,12 +163,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
     public Response createNote(
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the Note to be added.", required = true) NoteCreateParams parameters) {
-        try {
-            OpenCGAResult<Note> result = catalogManager.getNotesManager().createOrganizationNote(parameters, queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> catalogManager.getNotesManager().createOrganizationNote(parameters, queryOptions, token));
     }
 
     @POST
@@ -206,12 +178,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
-        try {
-            OpenCGAResult<Note> result = catalogManager.getNotesManager().updateOrganizationNote(noteId, parameters, queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> catalogManager.getNotesManager().updateOrganizationNote(noteId, parameters, queryOptions, token));
     }
 
     @DELETE
@@ -220,12 +187,40 @@ public class OrganizationWSServer extends OpenCGAWSServer {
     public Response deleteNote(
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult) {
-        try {
-            OpenCGAResult<Note> result = catalogManager.getNotesManager().deleteOrganizationNote(noteId, queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> catalogManager.getNotesManager().deleteOrganizationNote(noteId, queryOptions, token));
+    }
+
+    @GET
+    @Path("/{organization}/events/query")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Search events", response = CatalogEvent.class)
+    public Response searchEvents(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION, required = true) @PathParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = FieldConstants.EVENT_SUCCESSFUL_DESCRIPTION) @QueryParam(FieldConstants.EVENT_SUCCESSFUL_PARAM) Boolean successful) {
+        return run(() -> EventManager.getInstance().search(organizationId, query, token));
+    }
+
+    @POST
+    @Path("/{organization}/events/{eventId}/archive")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Archive an event", response = CatalogEvent.class)
+    public Response archiveEvent(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION, required = true) @PathParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = FieldConstants.EVENT_ID_DESCRIPTION) @PathParam(FieldConstants.EVENT_ID_PARAM) String eventId) {
+        return run(() -> EventManager.getInstance().archiveEvent(organizationId, eventId, token));
+    }
+
+    @POST
+    @Path("/{organization}/events/{eventId}/retry")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Retry unsuccessful event", response = CatalogEvent.class)
+    public Response retryEvent(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION, required = true) @PathParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = FieldConstants.EVENT_ID_DESCRIPTION) @PathParam(FieldConstants.EVENT_ID_PARAM) String eventId) {
+        return run(() -> EventManager.getInstance().retryEvent(organizationId, eventId, token));
     }
 
     @POST
@@ -241,12 +236,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the User fields to be updated.", required = true) OrganizationUserUpdateParams parameters) {
-        try {
-            OpenCGAResult<User> result = catalogManager.getOrganizationManager().updateUser(organizationId, userId, parameters, queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> catalogManager.getOrganizationManager().updateUser(organizationId, userId, parameters, queryOptions, token));
     }
 
     @POST
@@ -262,12 +252,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the User fields to be updated.", required = true) UserStatusUpdateParams parameters) {
-        try {
-            OpenCGAResult<User> result = catalogManager.getUserManager().changeStatus(organizationId, userId, parameters.getStatus(), queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> catalogManager.getUserManager().changeStatus(organizationId, userId, parameters.getStatus(), queryOptions, token));
     }
 
 
