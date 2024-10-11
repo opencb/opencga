@@ -226,8 +226,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("token", token);
 
         EntryParam entryParam = new EntryParam(sample.getId(), null);
-        return run(auditParams, Enums.Resource.SAMPLE, Enums.Action.CREATE, studyStr, entryParam, token, options, null,
-                (organizationId, study, userId, queryOptions, payload) -> {
+        return run(auditParams, Enums.Resource.SAMPLE, Enums.Action.CREATE, studyStr, entryParam, token, null,
+                (organizationId, study, userId, payload) -> {
                     // 1. We check everything can be done
                     authorizationManager.checkStudyPermission(organizationId, study.getUid(), payload,
                             StudyPermissions.Permissions.WRITE_SAMPLES);
@@ -236,6 +236,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     entryParam.setUuid(sample.getUuid());
 
                     // We create the sample
+                    QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
                     OpenCGAResult<Sample> insert = getSampleDBAdaptor(organizationId).insert(study.getUid(), sample,
                             study.getVariableSets(), queryOptions);
                     if (queryOptions.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {

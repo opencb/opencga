@@ -335,8 +335,7 @@ public abstract class AbstractManager {
     }
 
     public interface ExecuteOperation<T> {
-        OpenCGAResult<T> execute(String organizationId, Study study, String userId, QueryOptions queryOptions, JwtPayload tokenPayload)
-                throws CatalogException;
+        OpenCGAResult<T> execute(String organizationId, Study study, String userId, JwtPayload tokenPayload) throws CatalogException;
     }
 //
 //    public interface ExecuteBatchOperation<T> {
@@ -356,7 +355,7 @@ public abstract class AbstractManager {
 //    }
 
     protected <T> OpenCGAResult<T> run(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
-                                       @Nullable EntryParam entryParam, String token, QueryOptions options, QueryOptions studyIncludeList,
+                                       @Nullable EntryParam entryParam, String token, QueryOptions studyIncludeList,
                                        ExecuteOperation<T> body) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
@@ -371,7 +370,7 @@ public abstract class AbstractManager {
                 throw new CatalogRuntimeException(e);
             }
         };
-        CatalogEvent notify = EventManager.getInstance().notify(eventId, organizationId, studySupplier, entryParam, userId, options, params,
+        CatalogEvent notify = EventManager.getInstance().notify(eventId, organizationId, studySupplier, entryParam, userId, params,
                 tokenPayload, body);
         OpenCGAResult<T> result = (OpenCGAResult<T>) notify.getEvent().getResult();
         return result;

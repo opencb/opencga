@@ -138,8 +138,7 @@ public final class EventManager extends AbstractManager implements Closeable {
     }
 
     public CatalogEvent notify(String eventId, String organizationId, Supplier<Study> studySupplier, @Nullable EntryParam entryParam,
-                               String userId, QueryOptions queryOptions, ObjectMap params, JwtPayload payload,
-                               ExecuteOperation<?> executeOperation)
+                               String userId, ObjectMap params, JwtPayload payload, ExecuteOperation<?> executeOperation)
             throws CatalogException {
         CatalogEvent catalogEvent = new CatalogEvent(eventId, new OpencgaEvent(eventId, params, organizationId, userId,
                 payload.getToken()));
@@ -155,7 +154,7 @@ public final class EventManager extends AbstractManager implements Closeable {
                 catalogEvent.getEvent().setResourceUuid(entryParam.getUuid());
             }
             logger.info("Executing '{}' event", eventId);
-            OpenCGAResult<?> execute = executeOperation.execute(organizationId, study, userId, queryOptions, payload);
+            OpenCGAResult<?> execute = executeOperation.execute(organizationId, study, userId, payload);
             // Do it again because it may have been filled after execution
             if (entryParam != null) {
                 catalogEvent.getEvent().setResourceId(entryParam.getId());
