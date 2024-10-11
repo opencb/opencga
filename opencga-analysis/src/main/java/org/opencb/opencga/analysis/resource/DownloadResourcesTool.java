@@ -18,8 +18,8 @@ import java.security.NoSuchAlgorithmException;
         priority = Enums.Priority.HIGH)
 public class DownloadResourcesTool extends OpenCgaTool {
 
-    public static final String ID = "resource-download-all";
-    public static final String DESCRIPTION = "Download all resources";
+    public static final String ID = "resource-downloader";
+    public static final String DESCRIPTION = "Download all resources from the server";
 
     @ToolParams
     protected final DownloadResourcesToolParams analysisParams = new DownloadResourcesToolParams();
@@ -31,7 +31,7 @@ public class DownloadResourcesTool extends OpenCgaTool {
     }
 
     private void downloadResources() throws IOException, NoSuchAlgorithmException {
-        ResourceManager resourceManager = new ResourceManager(getOpencgaHome(), analysisParams.getBaseurl());
+        ResourceManager resourceManager = new ResourceManager(getOpencgaHome(), analysisParams.getBaseUrl());
         resourceManager.downloadAllResources(Boolean.TRUE.equals(analysisParams.getOverwrite()));
     }
 }

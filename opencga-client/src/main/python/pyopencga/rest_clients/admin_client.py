@@ -67,7 +67,7 @@ class Admin(_ParentRestClient):
 
     def download_all_resource(self, data=None, **options):
         """
-        Download all resources.
+        Download all resources from the server.
         PATH: /{apiVersion}/admin/resource/downloadAll
 
         :param dict data: Download-resources tool parameters. (REQUIRED)
