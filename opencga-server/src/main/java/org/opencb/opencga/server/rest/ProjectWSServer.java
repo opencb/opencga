@@ -18,7 +18,10 @@ package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -32,13 +35,10 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
@@ -107,7 +107,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query")
     })
     public Response searchProjects(
-            @ApiParam(value = "Owner of the project") @QueryParam("owner") String owner,
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam("id") String id,
             @ApiParam(value = "Project name") @QueryParam("name") String name,
             @ApiParam(value = "Project fqn") @QueryParam("fqn") String fqn,
@@ -121,51 +121,46 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes) {
         try {
-            if (StringUtils.isNotEmpty(owner)) {
-                query.remove("owner");
-                query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), owner);
-            }
-
-            DataResult<Project> queryResult = catalogManager.getProjectManager().search(query, queryOptions, token);
+            DataResult<Project> queryResult = catalogManager.getProjectManager().search(organizationId, query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    @GET
-    @Path("/{projects}/aggregationStats")
-    @ApiOperation(value = "Fetch catalog project stats", response = FacetField.class)
-    public Response getAggregationStats(
-            @ApiParam(value = ParamConstants.PROJECTS_DESCRIPTION, required = true) @PathParam("projects") String projects,
-            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
-            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
-            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
-            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
-            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
-            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields,
-            @ApiParam(value = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("jobFields") String jobFields) {
-        try {
-            if (defaultStats == null) {
-                defaultStats = true;
-            }
-            List<String> idList = getIdList(projects);
-            Map<String, Object> result = new HashMap<>();
-            for (String project : idList) {
-                result.put(project, catalogManager.getProjectManager().facet(project, fileFields, sampleFields, individualFields,
-                        cohortFields, familyFields, jobFields, defaultStats, token));
-            }
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/{projects}/aggregationStats")
+//    @ApiOperation(value = "Fetch catalog project stats", response = FacetField.class)
+//    public Response getAggregationStats(
+//            @ApiParam(value = ParamConstants.PROJECTS_DESCRIPTION, required = true) @PathParam("projects") String projects,
+//            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
+//            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
+//            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
+//            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
+//            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
+//            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields,
+//            @ApiParam(value = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("jobFields") String jobFields) {
+//        try {
+//            if (defaultStats == null) {
+//                defaultStats = true;
+//            }
+//            List<String> idList = getIdList(projects);
+//            Map<String, Object> result = new HashMap<>();
+//            for (String project : idList) {
+//                result.put(project, catalogManager.getProjectManager().facet(project, fileFields, sampleFields, individualFields,
+//                        cohortFields, familyFields, jobFields, defaultStats, token));
+//            }
+//            return createOkResponse(result);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{project}/incRelease")

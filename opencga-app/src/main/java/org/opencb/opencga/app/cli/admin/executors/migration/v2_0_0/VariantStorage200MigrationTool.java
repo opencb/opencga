@@ -1,8 +1,6 @@
 package org.opencb.opencga.app.cli.admin.executors.migration.v2_0_0;
 
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -13,7 +11,8 @@ import org.opencb.opencga.core.tools.migration.v2_0_0.VariantStorage200Migration
         resource = Enums.Resource.VARIANT,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.PROJECT,
-        description = VariantStorage200MigrationTool.DESCRIPTION)
+        description = VariantStorage200MigrationTool.DESCRIPTION,
+        priority = Enums.Priority.HIGH)
 public class VariantStorage200MigrationTool extends OpenCgaTool {
 
     public static final String ID = "variant-storage-migration-2.0.0";
@@ -26,10 +25,8 @@ public class VariantStorage200MigrationTool extends OpenCgaTool {
     protected void check() throws Exception {
         super.check();
 
-        String userId = getCatalogManager().getUserManager().getUserId(getToken());
-        if (!userId.equals(ParamConstants.OPENCGA_USER_ID)) {
-            throw new CatalogAuthenticationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' can run this operation!");
-        }
+        getCatalogManager().getAuthorizationManager().checkIsOpencgaAdministrator(
+                catalogManager.getUserManager().validateToken(getToken()));
     }
 
     @Override

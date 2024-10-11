@@ -5,12 +5,15 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.IOException;
 
+@Category(ShortTests.class)
 public class CellBaseValidatorTest {
 
     @Rule

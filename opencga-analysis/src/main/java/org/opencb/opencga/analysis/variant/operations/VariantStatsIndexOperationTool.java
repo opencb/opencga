@@ -26,7 +26,6 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -40,7 +39,7 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
  * Created by jacobo on 06/03/15.
  */
 @Tool(id = VariantStatsIndexOperationTool.ID, resource = Enums.Resource.VARIANT, type = Tool.Type.OPERATION,
-        description = VariantStatsIndexOperationTool.DESCRIPTION)
+        description = VariantStatsIndexOperationTool.DESCRIPTION, priority = Enums.Priority.HIGH)
 public class VariantStatsIndexOperationTool extends OperationTool {
 
     public final static String ID = "variant-stats-index";

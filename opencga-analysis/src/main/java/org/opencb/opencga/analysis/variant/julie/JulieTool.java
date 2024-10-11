@@ -7,6 +7,7 @@ import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.user.User;
@@ -24,7 +25,8 @@ import java.util.Map;
         resource = Enums.Resource.VARIANT,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.PROJECT,
-        description = JulieTool.DESCRIPTION)
+        description = JulieTool.DESCRIPTION,
+        priority = Enums.Priority.HIGH)
 public class JulieTool extends OpenCgaTool {
 
     public static final String ID = "julie";
@@ -39,8 +41,10 @@ public class JulieTool extends OpenCgaTool {
         String project = getParams().getString(ParamConstants.PROJECT_PARAM);
 
         if (StringUtils.isEmpty(project)) {
-            String userId = getCatalogManager().getUserManager().getUserId(getToken());
-            User user = catalogManager.getUserManager().get(userId, null, getToken()).first();
+            JwtPayload payload = getCatalogManager().getUserManager().validateToken(getToken());
+            String organizationId = payload.getOrganization();
+            String userId = payload.getUserId();
+            User user = catalogManager.getUserManager().get(organizationId, userId, null, getToken()).first();
             if (CollectionUtils.isEmpty(user.getProjects()) || user.getProjects().size() > 1) {
                 throw new CatalogException("Missing '" + ParamConstants.PROJECT_PARAM + "' parameter");
             } else {

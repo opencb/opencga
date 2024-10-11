@@ -79,7 +79,7 @@ public class VariantAnnotationJsonDataReader implements DataReader<VariantAnnota
         jsonObjectMapper.addMixIn(ConsequenceType.class, ConsequenceTypeMixin.class);
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         try {
-            parser = factory.createParser(inputStream);
+            parser = jsonObjectMapper.createParser(inputStream);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

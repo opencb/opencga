@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +29,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.core.models.JwtPayload.AUTH_ORIGIN;
 
 public class JwtManager {
 
@@ -83,19 +87,21 @@ public class JwtManager {
         return this;
     }
 
-    public String createJWTToken(String userId, long expiration) {
-        return createJWTToken(userId, Collections.emptyMap(), expiration);
-    }
-
-    public String createJWTToken(String userId, Map<String, Object> claims, long expiration) {
+    public String createJWTToken(String organizationId, AuthenticationOrigin.AuthenticationType type, String userId,
+                                 Map<String, Object> claims, long expiration) {
         long currentTime = System.currentTimeMillis();
 
         JwtBuilder jwtBuilder = Jwts.builder();
         if (claims != null && !claims.isEmpty()) {
             jwtBuilder.setClaims(claims);
         }
+        if (type != null) {
+            jwtBuilder.addClaims(Collections.singletonMap(AUTH_ORIGIN, type));
+        }
+
         jwtBuilder.setSubject(userId)
-                .setAudience("OpenCGA users")
+                .setAudience(organizationId)
+                .setIssuer("OpenCGA")
                 .setIssuedAt(new Date(currentTime))
                 .signWith(privateKey, algorithm);
 
@@ -113,6 +119,27 @@ public class JwtManager {
 
     public void validateToken(String token, Key publicKey) throws CatalogAuthenticationException {
         parseClaims(token, publicKey);
+    }
+
+    public JwtPayload getPayload(String token) throws CatalogAuthenticationException {
+        Claims body = parseClaims(token, publicKey).getBody();
+        return new JwtPayload(body.getSubject(), body.getAudience(), getAuthOrigin(body), body.getIssuer(), body.getIssuedAt(),
+                body.getExpiration(), token);
+    }
+
+    public JwtPayload getPayload(String token, Key publicKey) throws CatalogAuthenticationException {
+        Claims body = parseClaims(token, publicKey).getBody();
+        return new JwtPayload(body.getSubject(), body.getAudience(), getAuthOrigin(body), body.getIssuer(), body.getIssuedAt(),
+                body.getExpiration(), token);
+    }
+
+    private AuthenticationOrigin.AuthenticationType getAuthOrigin(Claims claims) {
+        String o = claims.get(AUTH_ORIGIN, String.class);
+        if (o != null) {
+            return AuthenticationOrigin.AuthenticationType.valueOf(o);
+        } else {
+            return null;
+        }
     }
 
     public String getAudience(String token) throws CatalogAuthenticationException {

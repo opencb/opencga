@@ -9,7 +9,7 @@ import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.PanelMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -40,14 +40,15 @@ public class InterpretationCatalogMongoDBIterator<E> extends CatalogMongoDBItera
     private static final String UID_VERSION_SEP = "___";
 
     public InterpretationCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                                GenericDocumentComplexConverter<E> converter, MongoDBAdaptorFactory dbAdaptorFactory,
-                                                QueryOptions options) {
+                                                GenericDocumentComplexConverter<E> converter,
+                                                OrganizationMongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
         this(mongoCursor, clientSession, converter, dbAdaptorFactory, 0, null, options);
     }
 
     public InterpretationCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                                GenericDocumentComplexConverter<E> converter, MongoDBAdaptorFactory dbAdaptorFactory,
-                                                long studyUid, String user, QueryOptions options) {
+                                                GenericDocumentComplexConverter<E> converter,
+                                                OrganizationMongoDBAdaptorFactory dbAdaptorFactory, long studyUid, String user,
+                                                QueryOptions options) {
         super(mongoCursor, clientSession, converter, null);
 
         this.user = user;

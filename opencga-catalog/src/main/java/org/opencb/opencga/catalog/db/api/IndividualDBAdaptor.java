@@ -93,8 +93,6 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         KARYOTYPIC_SEX("karyotypicSex", TEXT, ""),
         LIFE_STATUS("lifeStatus", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
@@ -165,7 +163,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
     OpenCGAResult nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
 
     OpenCGAResult insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+            throws CatalogException;
 
     OpenCGAResult<Individual> get(long individualId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

@@ -23,9 +23,14 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+
 import org.opencb.opencga.catalog.managers.CatalogManager;
+
+import org.opencb.opencga.catalog.utils.CatalogFqn;
+
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
@@ -83,6 +88,19 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         // Set default inferred sex method, if empty
         if (StringUtils.isEmpty(inferredSexMethod)) {
             inferredSexMethod = COVERAGE_RATIO_INFERRED_SEX_METHOD;
+        }
+
+        // Check permissions
+        try {
+            Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
+
+            JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
+            String organizationId = studyFqn.getOrganizationId();
+            String userId = jwtPayload.getUserId(organizationId);
+            catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, study.getUid(), userId, WRITE_INDIVIDUALS);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
         }
 
         // Main check (this function is shared with the endpoint individual/qc/run)
@@ -239,8 +257,11 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         // Check permissions
         try {
             Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
-            String userId = catalogManager.getUserManager().getUserId(token);
-            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_INDIVIDUALS);
+            JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
+            String organizationId = studyFqn.getOrganizationId();
+            String userId = jwtPayload.getUserId(organizationId);
+            catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, study.getUid(), userId, WRITE_INDIVIDUALS);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

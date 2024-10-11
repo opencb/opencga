@@ -21,6 +21,7 @@ public class TemplateConfiguration {
     private String version;
     private String baseUrl;
     private boolean index;
+    private String organizationId;
     private String projectId;
 
     @Override
@@ -29,6 +30,7 @@ public class TemplateConfiguration {
         sb.append("version='").append(version).append('\'');
         sb.append(", baseUrl='").append(baseUrl).append('\'');
         sb.append(", index=").append(index);
+        sb.append(", organizationId='").append(organizationId).append('\'');
         sb.append(", projectId='").append(projectId).append('\'');
         sb.append('}');
         return sb.toString();
@@ -56,6 +58,15 @@ public class TemplateConfiguration {
 
     public void setIndex(boolean index) {
         this.index = index;
+    }
+
+    public String getOrganizationId() {
+        return organizationId;
+    }
+
+    public TemplateConfiguration setOrganizationId(String organizationId) {
+        this.organizationId = organizationId;
+        return this;
     }
 
     public String getProjectId() {

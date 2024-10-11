@@ -19,9 +19,9 @@ package org.opencb.opencga.storage.hadoop.variant.transform;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.variant.converters.proto.VariantToProtoVcfRecord;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.io.DataReader;
-import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -210,7 +210,27 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
 
 
     private long[] getCoveredSlicePositions(Variant var) {
-        return VariantHbaseTransformTask.getCoveredSlicePositions(var.getStart(), var.getEnd(), chunkSize);
+        return getCoveredSlicePositions(var.getStart(), var.getEnd(), chunkSize);
     }
+
+    public static long[] getCoveredSlicePositions(long start, long end, int chunkSize) {
+        long startChunk = VariantToProtoVcfRecord.getSlicePosition((int) start, chunkSize);
+        long endChunk = VariantToProtoVcfRecord.getSlicePosition((int) end, chunkSize);
+        if (endChunk == startChunk) {
+            return new long[]{startChunk};
+        } else if (endChunk < startChunk) {
+            // This may happen in insertions starting in a chunk
+            long aux = endChunk;
+            endChunk = startChunk;
+            startChunk = aux;
+        }
+        int len = (int) ((endChunk - startChunk) / chunkSize) + 1;
+        long[] ret = new long[len];
+        for (int i = 0; i < len; ++i) {
+            ret[i] = startChunk + (((long) i) * chunkSize);
+        }
+        return ret;
+    }
+
 
 }

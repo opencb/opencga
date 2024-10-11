@@ -401,9 +401,11 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                     String javaCommandOptionsField = "commandOptions." + getJavaFieldName(restParameter);
                     String label = StringUtils.isEmpty(restParameter.getParentName()) ? restParameter.getName() : restParameter.getParentName() + "." + restParameter.getName();
                     if (restParameter.getTypeClass().equals("java.lang.String;")) {
-                        sb.append("            putNestedIfNotEmpty(beanParams, \"" + label.replaceAll("body_", "") + "\"," + javaCommandOptionsField + ", true);\n");
+                        sb.append("            putNestedIfNotEmpty(beanParams, \"" + label.replaceAll("body_", "") + "\", " + javaCommandOptionsField + ", true);\n");
+                    } else if (isValidMap(restParameter)) {
+                        sb.append("            putNestedMapIfNotEmpty(beanParams, \"" + label.replaceAll("body_", "") + "\", " + javaCommandOptionsField + ", true);\n");
                     } else {
-                        sb.append("            putNestedIfNotNull(beanParams, \"" + label.replaceAll("body_", "") + "\"," + javaCommandOptionsField + ", true);\n");
+                        sb.append("            putNestedIfNotNull(beanParams, \"" + label.replaceAll("body_", "") + "\", " + javaCommandOptionsField + ", true);\n");
                     }
                 }
             }

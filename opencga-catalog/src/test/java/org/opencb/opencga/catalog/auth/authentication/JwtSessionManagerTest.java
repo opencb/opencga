@@ -42,6 +42,7 @@ public class JwtSessionManagerTest extends GenericTest {
 
     private JwtManager jwtSessionManager;
     private String jwtToken;
+    private String organizationId = "test_org";
 
     @Before
     public void setUp() throws Exception  {
@@ -52,7 +53,7 @@ public class JwtSessionManagerTest extends GenericTest {
 
     @Test
     public void testCreateJWTToken() throws Exception {
-        jwtToken = jwtSessionManager.createJWTToken("testUser", Collections.emptyMap(), 60L);
+        jwtToken = jwtSessionManager.createJWTToken(organizationId, null, "testUser", Collections.emptyMap(), 60L);
     }
 
     @Test
@@ -80,7 +81,7 @@ public class JwtSessionManagerTest extends GenericTest {
 
     @Test
     public void testNonExpiringToken() throws CatalogException {
-        String nonExpiringToken = jwtSessionManager.createJWTToken("System", null, -1L);
+        String nonExpiringToken = jwtSessionManager.createJWTToken(organizationId, null, "System", null, -1L);
         assertEquals(jwtSessionManager.getUser(nonExpiringToken), "System");
         assertNull(jwtSessionManager.getExpiration(nonExpiringToken));
     }

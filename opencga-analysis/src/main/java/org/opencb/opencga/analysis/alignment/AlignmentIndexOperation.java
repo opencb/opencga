@@ -128,7 +128,7 @@ public class AlignmentIndexOperation extends OpenCgaToolScopeStudy {
             // Update BAM file internal in order to set the alignment index (BAI)
             FileInternalAlignmentIndex fileAlignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.READY),
                     baiCatalogFile.getId(), "HTSJDK library");
-            catalogManager.getFileManager().updateFileInternalAlignmentIndex(inputCatalogFile, fileAlignmentIndex, token);
+            catalogManager.getFileManager().updateFileInternalAlignmentIndex(study, inputCatalogFile, fileAlignmentIndex, token);
         });
     }
 }

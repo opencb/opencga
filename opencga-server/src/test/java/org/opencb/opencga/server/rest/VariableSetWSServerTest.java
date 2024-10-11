@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
@@ -74,8 +74,6 @@ public class VariableSetWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        variableSetId = OpenCGAWSServer.catalogManager.getStudyManager().searchVariableSets(studyId, null,null, sessionId)
-                .first().getUid();
 
     }
 

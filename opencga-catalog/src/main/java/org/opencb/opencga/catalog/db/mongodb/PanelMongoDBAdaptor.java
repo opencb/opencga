@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.PanelConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -61,18 +62,18 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
     private final MongoDBCollection panelArchiveCollection;
     private final MongoDBCollection deletedPanelCollection;
     private final PanelConverter panelConverter;
-    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBCollection panelArchiveCollection,
                                MongoDBCollection deletedPanelCollection, Configuration configuration,
-                               MongoDBAdaptorFactory dbAdaptorFactory) {
+                               OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(PanelMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
         this.panelArchiveCollection = panelArchiveCollection;
         this.deletedPanelCollection = deletedPanelCollection;
         this.panelConverter = new PanelConverter();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(panelCollection, panelArchiveCollection, deletedPanelCollection);
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(panelCollection, panelArchiveCollection, deletedPanelCollection);
     }
 
     /**
@@ -87,8 +88,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
     }
 
     @Override
-    public OpenCGAResult insert(long studyUid, List<Panel> panelList) throws CatalogDBException, CatalogParameterException,
-            CatalogAuthorizationException {
+    public OpenCGAResult insert(long studyUid, List<Panel> panelList) throws CatalogException {
         if (panelList == null || panelList.isEmpty()) {
             throw new CatalogDBException("Missing panel list");
         }
@@ -108,8 +108,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
     }
 
     @Override
-    public OpenCGAResult insert(long studyUid, Panel panel, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult insert(long studyUid, Panel panel, QueryOptions options) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting insert transaction of panel id '{}'", panel.getId());
@@ -291,7 +290,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
 
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, dataResult.first(), parameters, queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update panel {}: {}", dataResult.first().getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not update panel '" + dataResult.first().getId() + "': " + e.getMessage(), e.getCause());
         }
@@ -317,7 +316,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
             Panel panel = iterator.next();
             try {
                 result.append(runTransaction(clientSession -> privateUpdate(clientSession, panel, parameters, queryOptions)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update panel {}: {}", panel.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, panel.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -464,7 +463,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
                 throw new CatalogDBException("Could not find panel " + panel.getId() + " with uid " + panel.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete panel {}: {}", panel.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete panel '" + panel.getId() + "': " + e.getMessage(), e.getCause());
         }
@@ -480,7 +479,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
             String panelId = panel.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, panel)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete panel {}: {}", panelId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, panelId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -722,14 +721,15 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+            boolean simplifyPermissions = simplifyPermissions();
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.DISEASE_PANEL, user,
-                        configuration));
+                        simplifyPermissions));
             } else {
                 // Get the document query needed to check the permissions as well
                 andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, PanelPermissions.VIEW.name(),
-                        Enums.Resource.DISEASE_PANEL, configuration));
+                        Enums.Resource.DISEASE_PANEL, simplifyPermissions));
             }
 
             query.remove(ParamConstants.ACL_PARAM);

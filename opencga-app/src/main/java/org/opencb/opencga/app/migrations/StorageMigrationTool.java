@@ -64,7 +64,7 @@ public abstract class StorageMigrationTool extends MigrationTool {
     protected final List<String> getVariantStorageStudies() throws Exception {
         Set<String> studies = new LinkedHashSet<>();
         VariantStorageManager variantStorageManager = getVariantStorageManager();
-        for (Study study : catalogManager.getStudyManager().search(new Query(), new QueryOptions(QueryOptions.INCLUDE,
+        for (Study study : catalogManager.getStudyManager().searchInOrganization(organizationId, new Query(), new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList("fqn")), token).getResults()) {
             if (variantStorageManager.exists(study.getFqn(), token)) {
                 studies.add(study.getFqn());
