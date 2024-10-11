@@ -882,7 +882,12 @@ public class OpenCGAWSServer {
                                            String jobDescription, String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime,
                                            String jobPriority, Boolean dryRun)
             throws CatalogException {
-        Map<String, Object> paramsMap = bodyParams.toParams();
+        Map<String, Object> paramsMap;
+        if (bodyParams != null) {
+            paramsMap = bodyParams.toParams();
+        } else {
+            paramsMap = new HashMap<>();
+        }
         if (StringUtils.isNotEmpty(study)) {
             paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
         }
