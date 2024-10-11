@@ -53,13 +53,13 @@ public class VariantWalkerTool extends OpenCgaTool {
             toolParams.setFileFormat(VariantWriterFactory.VariantOutputFormat.VCF.toString());
         }
 
-        format = VariantWriterFactory.toOutputFormat(toolParams.getOutputFileName(), toolParams.getOutputFileName());
+        format = VariantWriterFactory.toOutputFormat(toolParams.getFileFormat(), toolParams.getOutputFileName());
         if (!format.isPlain()) {
             format = format.inPlain();
         }
 
         if (StringUtils.isEmpty(toolParams.getOutputFileName())) {
-            toolParams.setOutputFileName("output." + format.toString().toLowerCase() + ".gz");
+            toolParams.setOutputFileName("output.txt.gz");
         } else if (!toolParams.getOutputFileName().endsWith(".gz")) {
             toolParams.setOutputFileName(toolParams.getOutputFileName() + ".gz");
         }
