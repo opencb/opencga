@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.events.OpencgaEvent;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.EntryParam;
@@ -362,7 +363,6 @@ public abstract class AbstractManager {
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
 
-        String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
         Supplier<Study> studySupplier = () -> {
             try {
                 return catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
@@ -370,10 +370,42 @@ public abstract class AbstractManager {
                 throw new CatalogRuntimeException(e);
             }
         };
-        CatalogEvent notify = EventManager.getInstance().notify(eventId, organizationId, studySupplier, entryParam, userId, params,
-                tokenPayload, body);
-        OpenCGAResult<T> result = (OpenCGAResult<T>) notify.getEvent().getResult();
-        return result;
+
+        return notify(resource, action, organizationId, studySupplier, entryParam, userId, params, tokenPayload, body);
+    }
+
+    private <T> OpenCGAResult<T> notify(Enums.Resource resource, Enums.Action action, String organizationId, Supplier<Study> studySupplier,
+                                        @Nullable EntryParam entryParam, String userId, ObjectMap params, JwtPayload payload,
+                                        ExecuteOperation<T> executeOperation) throws CatalogException {
+        String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
+
+        String resourceId = entryParam != null ? entryParam.getId() : "";
+        String resourceUuid = entryParam != null ? entryParam.getUuid() : "";
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, resourceId, resourceUuid, userId,
+                payload.getToken());
+        CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
+        try {
+            // Get study
+            Study study = studySupplier.get();
+            opencgaEvent.setStudyFqn(study.getFqn());
+            opencgaEvent.setStudyUuid(study.getUuid());
+
+            // Execute code
+            OpenCGAResult<T> execute = executeOperation.execute(organizationId, study, userId, payload);
+            if (entryParam != null) {
+                // In case the id and uuid have been populated after the execution
+                opencgaEvent.setResourceId(entryParam.getId());
+                opencgaEvent.setResourceUuid(entryParam.getUuid());
+            }
+
+            // Notify event
+            EventManager.getInstance().notify(catalogEvent);
+
+            return execute;
+        } catch (Exception e) {
+            EventManager.getInstance().notify(catalogEvent, e);
+            throw e;
+        }
     }
 
 //    protected <T, S extends ObjectMap> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String operationUuid,

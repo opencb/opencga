@@ -18,10 +18,10 @@ public class OpencgaEvent {
     private String token;
     private OpenCGAResult<?> result;
 
-    public OpencgaEvent() {
+    private OpencgaEvent() {
     }
 
-    public OpencgaEvent(String eventId, ObjectMap inputParams, String organizationId, String userId, String token) {
+    private OpencgaEvent(String eventId, ObjectMap inputParams, String organizationId, String userId, String token) {
         this.eventId = eventId;
         this.inputParams = inputParams;
         this.organizationId = organizationId;
@@ -29,7 +29,7 @@ public class OpencgaEvent {
         this.token = token;
     }
 
-    public OpencgaEvent(String eventId, ObjectMap inputParams, String organizationId, String resourceId, String resourceUuid,
+    private OpencgaEvent(String eventId, ObjectMap inputParams, String organizationId, String resourceId, String resourceUuid,
                         String studyFqn, String studyUuid, String userId, String token, OpenCGAResult<?> result) {
         this.eventId = eventId;
         this.inputParams = inputParams;
@@ -41,6 +41,20 @@ public class OpencgaEvent {
         this.userId = userId;
         this.token = token;
         this.result = result;
+    }
+
+    public static OpencgaEvent build(String eventId, ObjectMap inputParams, String organizationId, String userId, String token) {
+        return new OpencgaEvent(eventId, inputParams, organizationId, userId, token);
+    }
+
+    public static OpencgaEvent build(String eventId, ObjectMap inputParams, String organizationId, String resourceId, String resourceUuid,
+                                     String studyFqn, String studyUuid, String userId, String token, OpenCGAResult<?> result) {
+        return new OpencgaEvent(eventId, inputParams, organizationId, resourceId, resourceUuid, studyFqn, studyUuid, userId, token, result);
+    }
+
+    public static OpencgaEvent build(String eventId, ObjectMap inputParams, String organizationId, String resourceId, String resourceUuid,
+                                     String userId, String token) {
+        return new OpencgaEvent(eventId, inputParams, organizationId, resourceId, resourceUuid, "", "", userId, token, null);
     }
 
     @Override

@@ -1,8 +1,10 @@
 package org.opencb.opencga.core.models.event;
 
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.events.OpencgaEvent;
 import org.opencb.opencga.core.models.PrivateFields;
 
+import java.util.Collections;
 import java.util.List;
 
 public class CatalogEvent extends PrivateFields {
@@ -18,12 +20,7 @@ public class CatalogEvent extends PrivateFields {
 
     private OpencgaEvent event;
 
-    public CatalogEvent() {
-    }
-
-    public CatalogEvent(String id, OpencgaEvent event) {
-        this.id = id;
-        this.event = event;
+    private CatalogEvent() {
     }
 
     public CatalogEvent(String id, List<EventSubscriber> subscribers, boolean successful, String creationDate, String modificationDate,
@@ -34,6 +31,10 @@ public class CatalogEvent extends PrivateFields {
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.event = event;
+    }
+
+    public static CatalogEvent build(OpencgaEvent event) {
+        return new CatalogEvent(event.getEventId(), Collections.emptyList(), false, TimeUtils.getTime(), TimeUtils.getTime(), event);
     }
 
     @Override
