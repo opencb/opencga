@@ -21,6 +21,8 @@ import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.common.Enums.Resource;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.resource.DownloadResourcesToolParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.User;
@@ -70,6 +72,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "catalog-jwt":
                 queryResponse = jwtCatalog();
+                break;
+            case "resource-download-all":
+                queryResponse = downloadAllResource();
                 break;
             case "users-create":
                 queryResponse = createUsers();
@@ -168,6 +173,43 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), JWTParams.class);
         }
         return openCGAClient.getAdminClient().jwtCatalog(jWTParams, queryParams);
+    }
+
+    private RestResponse<Job> downloadAllResource() throws Exception {
+        logger.debug("Executing downloadAllResource in Admin command line");
+
+        AdminCommandOptions.DownloadAllResourceCommandOptions commandOptions = adminCommandOptions.downloadAllResourceCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+
+
+        DownloadResourcesToolParams downloadResourcesToolParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/resource/downloadAll"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            downloadResourcesToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), DownloadResourcesToolParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "baseurl", commandOptions.baseurl, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+
+            downloadResourcesToolParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), DownloadResourcesToolParams.class);
+        }
+        return openCGAClient.getAdminClient().downloadAllResource(downloadResourcesToolParams, queryParams);
     }
 
     private RestResponse<User> createUsers() throws Exception {

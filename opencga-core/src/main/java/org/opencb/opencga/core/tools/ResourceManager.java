@@ -1,9 +1,13 @@
 package org.opencb.opencga.core.tools;
 
-import org.apache.commons.collections4.CollectionUtils;
+import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.VersionUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.resource.AnalysisResource;
+import org.opencb.opencga.core.models.resource.ResourceMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +15,8 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.InvalidParameterException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -27,17 +33,17 @@ public class ResourceManager  {
     private Path openCgaHome;
     private String baseUrl;
     private Configuration configuration;
-    private VersionUtils.Version version;
 
     // Locking mechanism to prevent concurrent downloads for the same analysis
     private static final Map<String, Lock> analysisLocks = new ConcurrentHashMap<>();
     private static final long LOCK_TIMEOUT = 2; // Timeout of 2 hours
 
-    public static final String RESOURCES_TXT_FILENAME = "resources.txt";
     public static final String CONFIGURATION_FILENAME = "configuration.yml";
     public static final String CONF_FOLDER_NAME = "conf";
     public static final String ANALYSIS_FOLDER_NAME = "analysis";
     public static final String RESOURCES_FOLDER_NAME = "resources";
+    public static final String RELEASES_FOLDER_NAME = "releases";
+    public static final String DATA_FOLDER_NAME = "data";
 
     protected static Logger logger = LoggerFactory.getLogger(ResourceManager.class);
 
@@ -48,63 +54,66 @@ public class ResourceManager  {
     public ResourceManager(Path openCgaHome, String baseurl) {
         this.openCgaHome = openCgaHome;
         this.baseUrl = baseurl;
-        this.version = new VersionUtils.Version(GitRepositoryState.getInstance().getBuildVersion());
     }
 
-    public File getResourceFile(String analysisId, String resourceName) throws IOException, NoSuchAlgorithmException {
+    public void downloadAllResources(boolean overwrite) throws IOException, NoSuchAlgorithmException {
         loadConfiguration();
 
-        // Create a lock for the analysis if not present, and get it for the input analysis
-        analysisLocks.putIfAbsent(analysisId, new ReentrantLock());
-        Lock lock = analysisLocks.get(analysisId);
-
-        boolean lockAcquired = false;
-        try {
-            // Try to acquire the lock within the specified timeout
-            lockAcquired = lock.tryLock(LOCK_TIMEOUT, TimeUnit.HOURS);
-
-            if (lockAcquired) {
-                // Create the analysis resources directory if it doesn't exist
-                Path analysisResourcesPath = openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME).resolve(analysisId);
-                if (!Files.exists(analysisResourcesPath)) {
-                    logger.info("Creating folder for '{}' resources: {}", analysisId, analysisResourcesPath);
-                    Files.createDirectories(analysisResourcesPath);
-                }
-
-                // Download each file
-                return downloadFile(baseUrl, analysisId, resourceName, analysisResourcesPath).toFile();
-            } else {
-                String msg = "Could not acquire lock for analysis '" + analysisId + "' within " + LOCK_TIMEOUT + " hours. Skipping...";
-                logger.error(msg);
-                throw new RuntimeException(msg);
-            }
-        } catch (InterruptedException e) {
-            // Restore interrupt status
-            Thread.currentThread().interrupt();
-            String msg = "Interrupted while trying to acquire lock for analysis '" + analysisId + "' resources";
-            logger.error(msg);
-            throw new RuntimeException(msg, e);
-        } finally {
-            if (lockAcquired) {
-                // Release the lock
-                lock.unlock();
-            }
+        ResourceMetadata metadata = getResourceMetadata(true);
+        for (AnalysisResource analysisResources : metadata.getAnalysisResources()) {
+            getResourceFiles(analysisResources, overwrite);
         }
     }
 
     public List<File> getResourceFiles(String analysisId) throws IOException, NoSuchAlgorithmException {
         loadConfiguration();
 
-        // Get resource filenames for the input analysis
-        Path resourcesTxt = openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(analysisId).resolve(RESOURCES_TXT_FILENAME);
-        List<String> filenames = readAllLines(resourcesTxt);
-
-        List<File> downloadedFiles = new ArrayList<>();
-        for (String filename : filenames) {
-            downloadedFiles.add(getResourceFile(analysisId, filename));
+        // Sanity check
+        if (StringUtils.isEmpty(analysisId)) {
+            throw new InvalidParameterException("Analysis ID is empty");
         }
 
-        return downloadedFiles;
+        ResourceMetadata metadata = getResourceMetadata(false);
+        for (AnalysisResource analysisResource : metadata.getAnalysisResources()) {
+            if (analysisId.equalsIgnoreCase(analysisResource.getId())) {
+                return getResourceFiles(analysisResource, false);
+            }
+        }
+        throw new InvalidParameterException("Analysis ID '" + analysisId + "' not found in resource repository");
+    }
+
+    public File getResourceFile(String analysisId, String resourceName) throws IOException, NoSuchAlgorithmException {
+        loadConfiguration();
+
+        // Sanity check
+        if (StringUtils.isEmpty(analysisId)) {
+            throw new InvalidParameterException("Analysis ID is empty");
+        }
+        if (StringUtils.isEmpty(resourceName)) {
+            throw new InvalidParameterException("Resource name is empty");
+        }
+
+        ResourceMetadata metadata = getResourceMetadata(false);
+        for (AnalysisResource analysisResource : metadata.getAnalysisResources()) {
+            if (analysisId.equalsIgnoreCase(analysisResource.getId())) {
+                for (String resource : analysisResource.getResources()) {
+                    String name = Paths.get(resource).getFileName().toString();
+                    if (resourceName.equals(name)) {
+                        Path analysisResourcesPath = openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME)
+                                .resolve(analysisId);
+                        if (!Files.exists(analysisResourcesPath)) {
+                            logger.info("Creating folder for '{}' resources: {}", analysisId, analysisResourcesPath);
+                            Files.createDirectories(analysisResourcesPath);
+                        }
+                        return downloadFile(baseUrl, Paths.get(DATA_FOLDER_NAME, resource).toString(), analysisResourcesPath, false)
+                                .toFile();
+                    }
+                }
+                throw new InvalidParameterException("Resource '" + resourceName + "' for '" + analysisId + "' not found in resource"
+                        + " repository");
+            }
+        }
+        throw new InvalidParameterException("Analysis ID '" + analysisId + "' not found in resource repository");
     }
 
     //-------------------------------------------------------------------------
@@ -122,53 +131,86 @@ public class ResourceManager  {
         }
     }
 
-    private List<String> readAllLines(Path path) throws IOException {
-        List<String> lines;
-        if (!Files.exists(path)) {
-            String msg = "Filename '" + path + "' does not exist";
-            logger.error(msg);
-            throw new IOException(msg);
+    private List<File> getResourceFiles(AnalysisResource analysisResource, boolean overwrite) throws IOException, NoSuchAlgorithmException {
+        List<File> downloadedFiles = new ArrayList<>();
+
+        String analysisId = analysisResource.getId();
+        Path analysisResourcesPath = openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME).resolve(analysisId);
+        if (!Files.exists(analysisResourcesPath)) {
+            logger.info("Creating folder for '{}' resources: {}", analysisId, analysisResourcesPath);
+            Files.createDirectories(analysisResourcesPath);
         }
-        lines = Files.readAllLines(path);
-        if (CollectionUtils.isEmpty(lines)) {
-            String msg = "Filename '" + path + "' is empty";
-            logger.error(msg);
-            throw new IOException(msg);
+        for (String resource : analysisResource.getResources()) {
+            Path downloadedPath = downloadFile(baseUrl, Paths.get(DATA_FOLDER_NAME, resource).toString(), analysisResourcesPath, overwrite);
+            downloadedFiles.add(downloadedPath.toFile());
         }
-        return lines;
+        return downloadedFiles;
     }
 
-    private Path downloadFile(String baseUrl, String analysisId, String filename, Path localPath)
+    private Path downloadFile(String baseUrl, String filename, Path localPath, boolean overwrite)
             throws IOException, NoSuchAlgorithmException {
-        String fileUrl = baseUrl + analysisId + "/" + filename;
-        Path localFile = localPath.resolve(filename);
+        return downloadFile(baseUrl, null, filename, localPath, overwrite);
+    }
+
+    private Path downloadFile(String baseUrl, String analysisId, String resourceName, Path localPath, boolean overwrite)
+            throws IOException, NoSuchAlgorithmException {
+        String fileUrl = baseUrl + (StringUtils.isEmpty(analysisId) ? "" : analysisId + "/") + resourceName;
+        String cleanName = resourceName;
+        if (resourceName.startsWith(RELEASES_FOLDER_NAME)) {
+            cleanName = resourceName.substring(RELEASES_FOLDER_NAME.length() + 1);
+        } else if (resourceName.startsWith(DATA_FOLDER_NAME)) {
+            cleanName = resourceName.substring(DATA_FOLDER_NAME.length() + 1);
+        }
+        Path localFile = localPath.resolve(cleanName);
 
         // Check if the file already exists
-        if (Files.exists(localFile)) {
-            logger.info("Resource file '{}' for analysis '{}' already exists, skipping download", filename, analysisId);
+        if (!overwrite && Files.exists(localFile)) {
+            logger.info("Resource file '{}' already downloaded, skipping download", resourceName);
             return localFile;
         }
 
-        // Download resource file
-        logger.info("Downloading resource file '{}' for analysis '{}'...", filename, analysisId);
-        donwloadFile(new URL(fileUrl), localFile);
-        logger.info("Done: '{}' downloaded", filename);
+        // Create a lock for the analysis if not present, and get it for the input analysis
+        analysisLocks.putIfAbsent(fileUrl, new ReentrantLock());
+        Lock lock = analysisLocks.get(fileUrl);
 
-        // Download MD5 for the resource file
-        final String md5Ext = ".md5";
-        String md5Filename = filename + md5Ext;
-        logger.info("Downloading MD5, '{}' ...", md5Filename);
-        donwloadFile(new URL(fileUrl + md5Ext), localPath.resolve(md5Filename));
-        logger.info("Done: '{}' MD5 downloaded", md5Filename);
+        boolean lockAcquired = false;
+        try {
+            // Try to acquire the lock within the specified timeout
+            lockAcquired = lock.tryLock(LOCK_TIMEOUT, TimeUnit.HOURS);
 
-        // Checking MD5
-        validateMD5(localPath.resolve(filename), localPath.resolve(md5Filename));
+            if (lockAcquired) {
+                // Download resource file
+                logger.info("Downloading resource file '{}' ...", resourceName);
+                donwloadFile(new URL(fileUrl), localFile);
+                logger.info("Done: '{}' downloaded", resourceName);
+
+                // Download MD5 for the resource file
+                final String md5Ext = ".md5";
+                String md5Filename = cleanName + md5Ext;
+                logger.info("Downloading MD5, '{}' ...", md5Filename);
+                donwloadFile(new URL(fileUrl + md5Ext), localPath.resolve(md5Filename));
+                logger.info("Done: '{}' MD5 downloaded", md5Filename);
+
+                // Checking MD5
+                validateMD5(localFile, localPath.resolve(md5Filename));
+            }
+        } catch (InterruptedException e) {
+            // Restore interrupt status
+            Thread.currentThread().interrupt();
+            String msg = "Interrupted while trying to acquire lock for resource '" + fileUrl + "'";
+            logger.error(msg);
+            throw new RuntimeException(msg, e);
+        } finally {
+            if (lockAcquired) {
+                // Release the lock
+                lock.unlock();
+            }
+        }
 
         return localFile;
     }
 
     private void donwloadFile(URL url, Path downloadedPath) throws IOException {
-        logger.info("Downloading '{}' to '{}' ...", url, downloadedPath);
         try (BufferedInputStream in = new BufferedInputStream(url.openStream());
              FileOutputStream fileOutputStream = new FileOutputStream(downloadedPath.toFile())) {
             byte[] dataBuffer = new byte[1024];
@@ -183,18 +225,17 @@ public class ResourceManager  {
             logger.error(msg);
             throw new IOException(msg);
         }
-        logger.info("Downloading done");
     }
 
-    private void validateMD5(Path filePath, Path md5filePath) throws IOException, NoSuchAlgorithmException, InputMismatchException {
-        String expectedMD5 = new String(Files.readAllBytes(md5filePath));
+    public void validateMD5(Path filePath, Path md5filePath) throws IOException, NoSuchAlgorithmException, InputMismatchException {
+        String expectedMD5 = new String(Files.readAllBytes(md5filePath)).trim();
         String actualMD5 = computeMD5(filePath);
         if (!expectedMD5.equals(actualMD5)) {
             throw new InputMismatchException("MD5 checksum mismatch! File may be corrupted.");
         }
     }
 
-    public static String computeMD5(Path filePath) throws IOException, NoSuchAlgorithmException {
+    private static String computeMD5(Path filePath) throws IOException, NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("MD5");
         try (FileInputStream fis = new FileInputStream(filePath.toString())) {
             byte[] dataBytes = new byte[1024];
@@ -214,6 +255,21 @@ public class ResourceManager  {
 
         return sb.toString();
     }
+
+    private ResourceMetadata getResourceMetadata(boolean overwrite) throws IOException, NoSuchAlgorithmException {
+        String version = getVersion();
+        String resourceName = String.format("%s/release-%s.json", RELEASES_FOLDER_NAME, version);
+        Path analysisResourcesPath = openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME);
+        Path path = downloadFile(baseUrl, resourceName, analysisResourcesPath, overwrite);
+        ObjectReader objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(ResourceMetadata.class);
+        return objectReader.readValue(path.toFile());
+    }
+
+    public String getVersion() {
+        VersionUtils.Version version = new VersionUtils.Version(GitRepositoryState.getInstance().getBuildVersion());
+        return String.format("%d.%d.%d", version.getMajor(), version.getMinor(), version.getPatch());
+    }
+
     //-------------------------------------------------------------------------
     //  T O     S T R I N G
     //-------------------------------------------------------------------------
@@ -222,7 +278,6 @@ public class ResourceManager  {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ResourceManager{");
         sb.append("configuration=").append(configuration);
-        sb.append(", version=").append(version);
         sb.append('}');
         return sb.toString();
     }
@@ -233,9 +288,5 @@ public class ResourceManager  {
 
     public Configuration getConfiguration() {
         return configuration;
-    }
-
-    public VersionUtils.Version getVersion() {
-        return version;
     }
 }
