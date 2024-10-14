@@ -33,7 +33,6 @@ MAJOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 1)
 MINOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 2)
 PATCH=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 3)
 
-
 if [ $PATCH -gt 0 ]; then
   echo "release-$MAJOR.$MINOR.x"
   exit 0

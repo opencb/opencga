@@ -103,10 +103,7 @@ function manage_dependency() {
       exit 1
    fi
   fi
-
   git checkout "$BRANCH_NAME"
-
-
   local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
   if [ "$VERSION" == "$REPO_VERSION" ];then
     log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
@@ -114,7 +111,7 @@ function manage_dependency() {
     log_version_summary "$REPO,$VERSION,$BRANCH_NAME"
     if [ "$COMMAND" == "build" ];then
       log "Building $REPO branch $BRANCH_NAME."
-      mvn clean install -T 2 -DskipTests --no-transfer-progress
+      mvn clean install -B -T 2 -DskipTests --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
       else
@@ -126,9 +123,9 @@ function manage_dependency() {
       echo "${pwd} $REPO" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
       if [ "$REPO" == "cellbase" ]; then
         log "mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress"
-        mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress
+        mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress
       else
-        mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress
+        mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress
       fi
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $VERSION in $BRANCH_NAME FAILED!!!!!"
@@ -164,11 +161,11 @@ function print_usage() {
   echo "Usage:   $(basename $0) <command> [options]"
   echo ""
   echo "  Options:"
-  echo "     -o     --opencga-home        STRING         Opencga project repo directory. By default, ./opencga-home"
-  echo "     -H     --storage-hadoop      STRING         Hadoop flavour. hdp3.1, hdi5.1, emr6.1, emr6.13 ..."
+  echo "     -o     --opencga-home        STRING         OpenCGA project repo directory [./opencga-home]"
+  echo "     -H     --storage-hadoop      STRING         Hadoop flavour. hdp3.1, hdi5.1, emr6.1, emr6.13 ... [hdp3.1]"
   echo "     -T     --task                STRING         Task ID used for building and testing dependencies, this will serve as a reference for checkouts"
   echo "     -l     --test-level          STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
-  echo "     -t     --test                FLAG           Execute the Xetabase tests by default only buid"
+  echo "     -t     --test                FLAG           Execute the XetaBase tests by default only build"
   echo "     -f     --test-fail-never     FLAG           The process executes all tests even if some fail."
   echo "     -b     --prepare-branches    FLAG           Previous to run, it will download and compile all branches of the dependencies."
   echo "     -s     --test-save-reports   FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
@@ -275,7 +272,7 @@ function build_opencga() {
   elif [ "$COMMAND" == "test" ];then
       local pwd=$(pwd -P)
       echo "${pwd} opencga" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
+      mvn clean install -B surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga test FAILED!!!!!"
         print_log_summary
@@ -310,8 +307,8 @@ function build_opencga_enterprise() {
   elif [ "$COMMAND" == "test" ]; then
       local pwd=$(pwd)
       echo "${pwd} opencga-enterprise" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      mvn clean install -B verify surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress
+      mvn clean install -B surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} -Dopencga.war.name=opencga --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise test FAILED!!!!!"
         print_log_summary
@@ -331,22 +328,77 @@ function build_opencga_enterprise() {
 function publish_reports() {
   if [ "$SAVE_REPORTS" == "true" ];then
     ## Move to opencga-enterprise to build or test
-#    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-#    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
-#    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
-#    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/reports/opencga-enterprise/$VERSION_FOLDER/ --recursive
-#    azcopy copy "$LOG_FILE" https://zettatest.blob.core.windows.net/reports/opencga-enterprise/$VERSION_FOLDER/ --recursive
-#    if [[ "$?" -ne 0 ]] ; then
-#      log_summary "[ERROR] AZ_COPY FAILED!!!!!"
-#    else
-#      log_summary "Test reports uploaded correctly to /$VERSION_FOLDER/"
-#    fi
-    log_summary "AZ_COPY upload test reports disabled."
+    echo "Move to opencga-enterprise to build or test"
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    echo "Preparing destination path"
+    local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+
+    # Define the local directory to compress and the output file
+    FILE_TO_SEND="$OPENCGA_ENTERPRISE_HOME_DIR/reports/$VERSION/"
+    echo "The reports are in $FILE_TO_SEND"
+
+    echo "Xetabase tested is $VERSION"
+    mv "$OPENCGA_ENTERPRISE_HOME_DIR/reports/test/" "$FILE_TO_SEND"
+
+    DESTINATION_PATH="/var/www/html/reports/xetabase"
+    if [[ $TASK_REFERENCE == TASK* ]]; then
+      DESTINATION_PATH="$DESTINATION_PATH/$TASK_REFERENCE"
+    fi
+    echo "Destination path: $DESTINATION_PATH"
+
+    COMPRESSED_FILE="tests.tar.gz"
+
+    tar -czf "$COMPRESSED_FILE" -C "$OPENCGA_ENTERPRISE_HOME_DIR/reports/" "$VERSION"
+
+    # Create the destination directory on the remote server
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p $DESTINATION_PATH"
+
+    # Send the compressed file to the remote server using scp
+    sshpass -p "$SSH_PASS" scp -P "$SSH_PORT" "$COMPRESSED_FILE" "$SSH_USER@$SSH_HOST:$DESTINATION_PATH/$COMPRESSED_FILE"
+
+    # Connect to the remote server and decompress the file
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "tar -xzf $DESTINATION_PATH/$COMPRESSED_FILE -C $DESTINATION_PATH"
+
+    # Optional: remove the compressed file after decompressing it on the remote server
+    sshpass -p "$SSH_PASS" ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "rm $DESTINATION_PATH/$COMPRESSED_FILE"
+
+    if [ $? -eq 0 ]; then
+      echo "Uploaded test report to $DESTINATION_PATH"
+    else
+      echo "Error transferring file to $SSH_HOST"
+      exit 1
+    fi
   fi
 }
 
+## Function to upload the docker of Oopencga-enterprise to https://hub.docker.com/repositories/zettagenomics
+#function publish_dockers() {
+#  if [ "$DOCKER" == "true" ];then
+#    upload_docker_opencga
+#    upload_docker_enterprise
+#  fi
+#}
+
+#function upload_docker_opencga() {
+#  if [ "$DOCKER" == "true" ];then
+#    ## Move to opencga-enterprise to build or test
+#    cd "$OPENCGA_OPENCGA_HOME_DIR" || exit 2
+#    if [[ -n $TASK_REFERENCE ]]; then
+#      TAG=$TASK_REFERENCE
+#    else
+#      TAG="$(mvn help:evaluate --file "${OPENCGA_OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
+#    fi
+#    python3 ./build/cloud/docker/docker-build.py push --org opencb --images base,init --tag "$TAG"
+#    if [[ "$?" -ne 0 ]] ; then
+#      log_summary "[ERROR] OPENCGA DOCKER UPLOAD FAILED!!!!!"
+#    else
+#      log_summary "Opencga docker uploaded correctly with tag $TAG"
+#    fi
+#  fi
+#}
+
 # Function to upload the docker of Oopencga-enterprise to https://hub.docker.com/repositories/zettagenomics
-function publish_docker() {
+function publish_dockers() {
   if [ "$DOCKER" == "true" ];then
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
@@ -357,12 +409,16 @@ function publish_docker() {
     fi
     python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag "$TAG"
     if [[ "$?" -ne 0 ]] ; then
-      log_summary "[ERROR] DOCKER UPLOAD FAILED!!!!!"
+      log_summary "[ERROR] OPENCGA ENTERPRISE DOCKER UPLOAD FAILED!!!!!"
     else
-      log_summary "Docker uploaded correctly with tag $TAG"
+      log_summary "Opencga-enterprise docker uploaded correctly with tag $TAG"
     fi
   fi
 }
+
+
+## FUNCTIONS TO MANAGE LOGS AND PRINTS ##
+
 
 # Function to add messages to the log summary
 function log_summary() {
@@ -372,7 +428,7 @@ function log_summary() {
   LOG_SUMMARY="$LOG_SUMMARY""INFO: $(date +"%Y-%m-%d %H:%M:%S")  $@"
 }
 
-# Function to add messages to the log summary
+# Function to add messages to the version summary
 function log_version_summary() {
   if [ -n "$VERSION_SUMMARY" ]; then
     VERSION_SUMMARY="$VERSION_SUMMARY""\n"
@@ -381,7 +437,7 @@ function log_version_summary() {
 }
 
 
-# Function to add messages to the log summary
+# Function to add messages to the time summary
 function log_time_summary() {
   if [ -n "$TIME_SUMMARY" ]; then
     TIME_SUMMARY="$TIME_SUMMARY""\n"
@@ -389,7 +445,7 @@ function log_time_summary() {
   TIME_SUMMARY="$TIME_SUMMARY""$@"
 }
 
-# Function to add messages to the log summary
+# Function to add messages to the param summary
 function log_param_summary() {
   if [ -n "$PARAM_SUMMARY" ]; then
     PARAM_SUMMARY="$PARAM_SUMMARY""\n"
@@ -397,7 +453,7 @@ function log_param_summary() {
   PARAM_SUMMARY="$PARAM_SUMMARY""$@"
 }
 
-# Función para calcular y registrar el tiempo de ejecución
+# Function to log the execution time
 function log_execution_time() {
     local END_TIME=$(date +%s)
     local END_DATE=$(date +"%Y-%m-%d %H:%M:%S")
@@ -462,7 +518,7 @@ function log_initial_state() {
     log_param_summary "DOCKER,$(yes_no "$DOCKER")"
 }
 
-# Función para imprimir el resumen de versiones en formato de tabla
+# Function to print the version summary
 function print_version_summary() {
     echo ""  >> "$LOG_FILE"
     printf "%-25s %-20s %-20s\n" "Repository" "Version" "Branch" >> "$LOG_FILE"
@@ -472,10 +528,10 @@ function print_version_summary() {
     done
 }
 
-# Función para imprimir el resumen de versiones en formato de tabla
+# Function to print the parameters summary
 function print_param_summary() {
     echo ""  >> "$LOG_FILE"
-    printf "%-25s %-20s \n" "Repository" "Version" >> "$LOG_FILE"
+    printf "%-25s %-20s \n" "Parameter" "Value" >> "$LOG_FILE"
     printf "%-25s %-20s \n" "---------" "-------" >> "$LOG_FILE"
     echo -e "$PARAM_SUMMARY" | while IFS=',' read -r param value; do
         printf "%-25s %-20s \n" "$param" "$value" >> "$LOG_FILE"
@@ -537,6 +593,49 @@ function generate_version_table() {
     echo "$table_html"
 }
 
+
+# Function to generate the final HTML report
+function generate_html_report() {
+
+    # Generate the html report log
+    local param_summary=$(generate_param_table)
+    local version_summary=$(generate_version_table)
+    local execution_time=$(echo -e "$TIME_SUMMARY")
+    local template_file="reports/build.html.template"
+    local output_file="reports/test/summary.html"
+
+    # Read the template content
+    local template_content=$(<"$template_file")
+
+    # Replace placeholders with actual content
+    template_content="${template_content//#PARAM_SUMMARY/$param_summary}"
+    template_content="${template_content//#VERSION_SUMMARY/$version_summary}"
+    template_content="${template_content//#EXECUTION_TIME/$execution_time}"
+
+    # Ensure the output directory exists
+    mkdir -p "$(dirname "$output_file")"
+
+    # Write the final content to the output file
+    echo "$template_content" > "$output_file"
+}
+
+
+function print_log() {
+  # Print log parameters
+  print_param_summary
+  # Print log summary
+  print_log_summary
+  # Print version table summary
+  print_version_summary
+  # Log execution time
+  log_execution_time
+  print_time_summary
+  # Generate html log file
+  generate_html_report
+  #Print in console the log file
+  cat "$LOG_FILE"
+}
+
 ###################################
 ####### Script starts here  #######
 ###################################
@@ -559,6 +658,8 @@ COMMAND="build"
 SAVE_REPORTS="false"
 VERSION_SUMMARY=""
 PARAM_SUMMARY=""
+
+###################################
 
 ## 2. Read and parse CLI options
 while [[ $# -gt 0 ]]; do
@@ -617,7 +718,7 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     ;;
   -f | --test-fail-never)
-    FAIL_NEVER="--fail-never"
+    FAIL_NEVER="--fail-never -Dmaven.test.failure.ignore=true -Dsurefire.testFailureIgnore=true"
     COMMAND="test"
     shift # past argument
     ;;
@@ -658,47 +759,6 @@ if [ "$DEBUG" == "true" ];then
   log_summary "SKIP_TESTS $SKIP_TESTS"
 fi
 
-# Function to generate the final HTML report
-function generate_html_report() {
-
-    # Generate the html report log
-    local param_summary=$(generate_param_table)
-    local version_summary=$(generate_version_table)
-    local execution_time=$(echo -e "$TIME_SUMMARY")
-    local template_file="reports/build.html.template"
-    local output_file="reports/test/summary.html"
-
-    # Read the template content
-    local template_content=$(<"$template_file")
-
-    # Replace placeholders with actual content
-    template_content="${template_content//#PARAM_SUMMARY/$param_summary}"
-    template_content="${template_content//#VERSION_SUMMARY/$version_summary}"
-    template_content="${template_content//#EXECUTION_TIME/$execution_time}"
-
-    # Ensure the output directory exists
-    mkdir -p "$(dirname "$output_file")"
-
-    # Write the final content to the output file
-    echo "$template_content" > "$output_file"
-}
-
-
-function print_log() {
-  # Print log parameters
-  print_param_summary
-  # Print log summary
-  print_log_summary
-  # Print version table summary
-  print_version_summary
-  # Log execution time
-  log_execution_time
-  print_time_summary
-  # Generate html log file
-  generate_html_report
-  #Print in console the log file
-  cat "$LOG_FILE"
-}
 
 ## 5. Sequential call to functions so that the script does everything it should do based on the parameters received
 
@@ -717,11 +777,11 @@ build_opencga
 # Build opencga-enterprise
 build_opencga_enterprise
 
-# Publish test reports
-publish_reports
-
 # Publish Docker images
-publish_docker
+publish_dockers
 
 # Print final log summary
 print_log
+
+# Publish test reports as last step because we need finished log file with all information
+publish_reports
