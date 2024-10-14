@@ -4,7 +4,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.resource.AnalysisResource;
 import org.opencb.opencga.core.models.resource.ResourceMetadata;
@@ -34,8 +33,8 @@ public class ResourceManagerTest {
 
     @Before
     public void before() throws IOException {
-        openCgaHome = createDir();
-        scratchDir = createDir();
+        openCgaHome = createDir("home");
+        scratchDir = createDir("scratchdir");
 
         Path folderConf = Files.createDirectories(openCgaHome.resolve(CONF_FOLDER_NAME));
         BufferedInputStream inputStream = (BufferedInputStream) ResourceManager.class.getClassLoader().getResourceAsStream(CONFIGURATION_FILENAME);
@@ -76,7 +75,9 @@ public class ResourceManagerTest {
     @Test
     public void testDownloadAllResources() throws IOException, NoSuchAlgorithmException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
-        resourceManager.downloadAllResources(true);
+        Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
+        System.out.println("outDir = " + outDir.toAbsolutePath());
+        resourceManager.downloadAllResources(outDir, true);
         for (AnalysisResource analysisResource : resourceMetadata.getAnalysisResources()) {
             for (String resource : analysisResource.getResources()) {
                 Assert.assertTrue(Files.exists(analysisResourcePath.resolve(analysisResource.getId()).resolve(resource)));
@@ -87,7 +88,9 @@ public class ResourceManagerTest {
     @Test
     public void testDownloadResourcesForAGivenAnalysis() throws IOException, NoSuchAlgorithmException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
-        resourceManager.downloadAllResources(true);
+        Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
+        System.out.println("outDir = " + outDir.toAbsolutePath());
+        resourceManager.downloadAllResources(outDir, true);
 
         String analysisId = "qc";
         AnalysisResource analysisResource = null;
@@ -109,7 +112,9 @@ public class ResourceManagerTest {
     @Test
     public void testDownloadAGivenResource() throws IOException, NoSuchAlgorithmException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
-        resourceManager.downloadAllResources(true);
+        Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
+        System.out.println("outDir = " + outDir.toAbsolutePath());
+        resourceManager.downloadAllResources(outDir, true);
 
         String analysisId = "liftover";
         String resourceName = "chain.frq";
@@ -148,11 +153,11 @@ public class ResourceManagerTest {
         return resourceMetadata;
     }
 
-    private Path createDir() throws IOException {
+    private Path createDir(String name) throws IOException {
         Path path;
         int c = 0;
         do {
-            path = Paths.get("target/test-data").resolve("junit_opencga_" + TimeUtils.getTimeMillis() + (c > 0 ? "_" + c : ""));
+            path = Paths.get("target/test-data").resolve("junit_opencga_" + name + "_"+ TimeUtils.getTimeMillis() + (c > 0 ? "_" + c : ""));
             c++;
         } while (path.toFile().exists());
 
