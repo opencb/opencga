@@ -214,23 +214,47 @@ public class HBaseLockManagerTest extends VariantStorageBaseTest implements Hado
     @Test
     public void testGetCurrent() {
         long e = System.currentTimeMillis() + 1000;
-        String s;
+        HBaseLockManager.LockToken s;
+
+        // null token
+        s = HBaseLockManager.parseLockToken(null);
+        assertTrue(s.isEmpty());
+        assertFalse(s.isTaken());
+        assertEquals(null, s.getType());
+        assertArrayEquals(new byte[0], s.getLockValue());
+
+        // Empty token
+        s = HBaseLockManager.parseLockToken(Bytes.toBytes(""));
+        assertTrue(s.isEmpty());
+        assertFalse(s.isTaken());
+        assertEquals(null, s.getType());
+        assertArrayEquals(new byte[0], s.getLockValue());
 
         // Expired current token
-        s = HBaseLockManager.parseValidLockToken(Bytes.toBytes("CURRENT-abc:123"));
-        assertNull(s);
+        s = HBaseLockManager.parseLockToken(Bytes.toBytes("CURRENT-abc:123"));
+        assertFalse(s.isEmpty());
+        assertEquals("CURRENT", s.getType());
 
         // Valid current token
-        s = HBaseLockManager.parseValidLockToken(Bytes.toBytes("CURRENT-abc:" + e));
-        assertEquals("abc", s);
+        s = HBaseLockManager.parseLockToken(Bytes.toBytes("CURRENT-abc:" + e));
+        assertEquals("abc", s.token);
+        assertEquals("CURRENT", s.getType());
+        assertFalse(s.isExpired());
+        assertTrue(s.isTaken());
 
         // Current expired, first refresh valid
-        s = HBaseLockManager.parseValidLockToken(Bytes.toBytes("REFRESH-abc:" + e));
-        assertEquals("abc", s);
+        s = HBaseLockManager.parseLockToken(Bytes.toBytes("REFRESH-abc:" + e));
+        assertEquals("abc", s.token);
+        assertEquals("REFRESH", s.getType());
+        assertFalse(s.isExpired());
+        assertTrue(s.isTaken());
 
         // Expired refresh
-        s = HBaseLockManager.parseValidLockToken(Bytes.toBytes("REFRESH-abc:200"));
-        assertNull(s);
+        s = HBaseLockManager.parseLockToken(Bytes.toBytes("REFRESH-abc:200"));
+        assertEquals("abc", s.token);
+        assertEquals("REFRESH", s.getType());
+        assertTrue(s.isExpired());
+        assertFalse(s.isTaken());
     }
 
 }

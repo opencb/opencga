@@ -104,19 +104,19 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), ProjectCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
-            putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
-            putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
-            putNestedIfNotEmpty(beanParams, "cellbase.url",commandOptions.cellbaseUrl, true);
-            putNestedIfNotEmpty(beanParams, "cellbase.version",commandOptions.cellbaseVersion, true);
-            putNestedIfNotEmpty(beanParams, "cellbase.dataRelease",commandOptions.cellbaseDataRelease, true);
-            putNestedIfNotEmpty(beanParams, "cellbase.apiKey",commandOptions.cellbaseApiKey, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "organism.scientificName", commandOptions.organismScientificName, true);
+            putNestedIfNotEmpty(beanParams, "organism.commonName", commandOptions.organismCommonName, true);
+            putNestedIfNotEmpty(beanParams, "organism.assembly", commandOptions.organismAssembly, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.url", commandOptions.cellbaseUrl, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.version", commandOptions.cellbaseVersion, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.dataRelease", commandOptions.cellbaseDataRelease, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.apiKey", commandOptions.cellbaseApiKey, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             projectCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -208,14 +208,14 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), ProjectUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
-            putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
-            putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "organism.scientificName", commandOptions.organismScientificName, true);
+            putNestedIfNotEmpty(beanParams, "organism.commonName", commandOptions.organismCommonName, true);
+            putNestedIfNotEmpty(beanParams, "organism.assembly", commandOptions.organismAssembly, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             projectUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

@@ -133,8 +133,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     OpenCGAResult nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options) throws CatalogException;
 
     OpenCGAResult<Cohort> get(long cohortId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

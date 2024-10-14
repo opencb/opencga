@@ -81,10 +81,15 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
 
         List<Scan> scans;
         if (!regions.isEmpty()) {
-            scans = new ArrayList<>(regions.size() / 2);
+            LOGGER.info("Delete rows from {} table ranges (start - end)", regions.size());
+            scans = new ArrayList<>(regions.size());
             for (Pair<byte[], byte[]> region : regions) {
                 Scan scan = new Scan(templateScan);
                 scans.add(scan);
+                LOGGER.info(" - [ '"
+                        + Bytes.toStringBinary(region.getFirst()) + "' , '"
+                        + Bytes.toStringBinary(region.getSecond())
+                        + "' )");
                 if (region.getFirst() != null && region.getFirst().length != 0) {
                     scan.setStartRow(region.getFirst());
                 }

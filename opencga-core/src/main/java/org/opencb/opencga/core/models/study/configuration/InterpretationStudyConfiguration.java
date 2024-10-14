@@ -1,6 +1,5 @@
 package org.opencb.opencga.core.models.study.configuration;
 
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 
 import java.util.List;
@@ -8,16 +7,16 @@ import java.util.Map;
 
 public class InterpretationStudyConfiguration {
 
-    private Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status;
+    private List<ClinicalStatusValue> status;
     private List<InterpretationVariantCallerConfiguration> variantCallers;
+    @Deprecated
     private Map<String, Object> defaultFilter;
     private List<VariantInclusionQueryConfiguration> inclusion;
 
     public InterpretationStudyConfiguration() {
     }
 
-    public InterpretationStudyConfiguration(Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status,
-                                            List<InterpretationVariantCallerConfiguration> variantCallers,
+    public InterpretationStudyConfiguration(List<ClinicalStatusValue> status, List<InterpretationVariantCallerConfiguration> variantCallers,
                                             Map<String, Object> defaultFilter, List<VariantInclusionQueryConfiguration> inclusion) {
         this.status = status;
         this.variantCallers = variantCallers;
@@ -36,11 +35,11 @@ public class InterpretationStudyConfiguration {
         return sb.toString();
     }
 
-    public Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> getStatus() {
+    public List<ClinicalStatusValue> getStatus() {
         return status;
     }
 
-    public InterpretationStudyConfiguration setStatus(Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status) {
+    public InterpretationStudyConfiguration setStatus(List<ClinicalStatusValue> status) {
         this.status = status;
         return this;
     }
@@ -54,10 +53,12 @@ public class InterpretationStudyConfiguration {
         return this;
     }
 
+    @Deprecated
     public Map<String, Object> getDefaultFilter() {
         return defaultFilter;
     }
 
+    @Deprecated
     public InterpretationStudyConfiguration setDefaultFilter(Map<String, Object> defaultFilter) {
         this.defaultFilter = defaultFilter;
         return this;
