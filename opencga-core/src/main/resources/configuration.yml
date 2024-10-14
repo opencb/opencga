@@ -74,6 +74,7 @@ analysis:
   scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"
   # Default URL for downloading analysis resources.
   resourceUrl: "http://resources.opencb.org/opencb/opencga/analysis/"
+  fetchResourcesOnInit: true
   # Docker used by OpenCGA analysis and containing external tools such as samtools, bcftools, tabix, fastqc, plink1.9, bwa and r-base
   # You can indicate the version, e.g: opencb/opencga-ext-tools:2.12.0, otherwise the current OpenCGA version will be used
   opencgaExtTools: "opencb/opencga-ext-tools"

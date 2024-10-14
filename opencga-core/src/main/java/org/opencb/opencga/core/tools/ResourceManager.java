@@ -120,6 +120,15 @@ public class ResourceManager  {
         throw new InvalidParameterException("Analysis ID '" + analysisId + "' not found in resource repository");
     }
 
+    public static String getVersion() {
+        VersionUtils.Version version = new VersionUtils.Version(GitRepositoryState.getInstance().getBuildVersion());
+        return String.format("%d.%d.%d", version.getMajor(), version.getMinor(), version.getPatch());
+    }
+
+    public static String getResourceMetaFilename() {
+        return String.format("release-%s.json", getVersion());
+    }
+
     //-------------------------------------------------------------------------
     //  P R I V A T E      M E T H O D S
     //-------------------------------------------------------------------------
@@ -201,19 +210,19 @@ public class ResourceManager  {
 
             if (lockAcquired) {
                 // Download resource file
-                logger.info("Downloading resource file '{}' ...", resourceName);
+                logger.info("Downloading resource file '{}' to '{}' ...", resourceName, tmpFile.toAbsolutePath());
                 donwloadFile(new URL(fileUrl), tmpFile);
                 logger.info("Done: '{}' downloaded", resourceName);
 
                 // Download MD5 for the resource file
                 final String md5Ext = ".md5";
-                String md5Filename = cleanName + md5Ext;
-                logger.info("Downloading MD5, '{}' ...", md5Filename);
-                donwloadFile(new URL(fileUrl + md5Ext), downloadedPath.resolve(md5Filename));
-                logger.info("Done: '{}' MD5 downloaded", md5Filename);
+                Path md5File = Paths.get(tmpFile.toAbsolutePath() + md5Ext);
+                logger.info("Downloading MD5, '{}' ...", md5File.getFileName());
+                donwloadFile(new URL(fileUrl + md5Ext), md5File);
+                logger.info("Done: '{}' MD5 downloaded", md5File.getFileName());
 
                 // Checking MD5
-                validateMD5(tmpFile, downloadedPath.resolve(md5Filename));
+                validateMD5(tmpFile, md5File);
             }
         } catch (InterruptedException e) {
             // Restore interrupt status
@@ -278,20 +287,14 @@ public class ResourceManager  {
     }
 
     private ResourceMetadata getResourceMetadata(boolean overwrite) throws IOException, NoSuchAlgorithmException {
-        String version = getVersion();
-        String resourceName = String.format("%s/release-%s.json", RELEASES_FOLDER_NAME, version);
+        String resourceName = String.format("%s/%s", RELEASES_FOLDER_NAME, getResourceMetaFilename());
         Path analysisResourcesPath = openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME);
         Path path = downloadFile(baseUrl, resourceName, analysisResourcesPath, overwrite);
         ObjectReader objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(ResourceMetadata.class);
         return objectReader.readValue(path.toFile());
     }
 
-    public String getVersion() {
-        VersionUtils.Version version = new VersionUtils.Version(GitRepositoryState.getInstance().getBuildVersion());
-        return String.format("%d.%d.%d", version.getMajor(), version.getMinor(), version.getPatch());
-    }
-
-    public static void move(Path sourceDir, Path targetDir) throws IOException {
+    private void move(Path sourceDir, Path targetDir) throws IOException {
         // Ensure the target directory exists
         if (!Files.exists(targetDir)) {
             logger.info("Creating directory {} ...", targetDir.toAbsolutePath());

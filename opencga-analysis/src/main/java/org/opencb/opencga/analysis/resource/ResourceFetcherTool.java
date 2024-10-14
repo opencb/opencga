@@ -22,8 +22,8 @@ import static org.opencb.opencga.core.tools.ResourceManager.RESOURCES_FOLDER_NAM
         priority = Enums.Priority.HIGH)
 public class ResourceFetcherTool extends OpenCgaTool {
 
-    public static final String ID = "resource-downloader";
-    public static final String DESCRIPTION = "Download all resources from the server";
+    public static final String ID = "resource-fetcher";
+    public static final String DESCRIPTION = "Fetch all resources from the public server and save them into the OpenCGA local installation";
 
     private Path resourcePath;
 

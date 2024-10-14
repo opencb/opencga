@@ -27,6 +27,7 @@ public class Analysis {
 
     private String scratchDir;
     private String resourceUrl;
+    private Boolean fetchResourcesOnInit;
 
     private String opencgaExtTools;
     private List<AnalysisTool> tools;
@@ -66,6 +67,15 @@ public class Analysis {
 
     public Analysis setResourceUrl(String resourceUrl) {
         this.resourceUrl = resourceUrl;
+        return this;
+    }
+
+    public Boolean getFetchResourcesOnInit() {
+        return fetchResourcesOnInit;
+    }
+
+    public Analysis setFetchResourcesOnInit(Boolean fetchResourcesOnInit) {
+        this.fetchResourcesOnInit = fetchResourcesOnInit;
         return this;
     }
 
