@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.resource.DownloadResourcesTool;
+import org.opencb.opencga.analysis.resource.ResourceFetcherTool;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -30,7 +30,7 @@ import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.resource.DownloadResourcesToolParams;
+import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -362,7 +362,7 @@ public class AdminWSServer extends AnalysisWebService { //OpenCGAWSServer {
 
     @POST
     @Path("/resource/downloadAll")
-    @ApiOperation(value = DownloadResourcesTool.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = ResourceFetcherTool.DESCRIPTION, response = Job.class)
     public Response downloadAllResources(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -371,7 +371,7 @@ public class AdminWSServer extends AnalysisWebService { //OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = DownloadResourcesToolParams.DESCRIPTION, required = true) DownloadResourcesToolParams params) {
-        return submitJob(DownloadResourcesTool.ID, null, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            @ApiParam(value = ResourceFetcherToolParams.DESCRIPTION, required = true) ResourceFetcherToolParams params) {
+        return submitJob(ResourceFetcherTool.ID, null, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 }

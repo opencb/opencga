@@ -27,7 +27,7 @@ import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.resource.DownloadResourcesToolParams;
+import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.User;
@@ -117,7 +117,7 @@ public class AdminClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> downloadAllResource(DownloadResourcesToolParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> downloadAllResource(ResourceFetcherToolParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("admin", null, "resource", null, "downloadAll", params, POST, Job.class);

@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.resource;
 
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.resource.DownloadResourcesToolParams;
+import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.core.tools.ResourceManager;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -14,13 +14,13 @@ import java.security.NoSuchAlgorithmException;
 
 import static org.opencb.opencga.core.tools.ResourceManager.RESOURCES_FOLDER_NAME;
 
-@Tool(id= DownloadResourcesTool.ID,
+@Tool(id= ResourceFetcherTool.ID,
         resource = Enums.Resource.RESOURCE,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.GLOBAL,
-        description = DownloadResourcesTool.DESCRIPTION,
+        description = ResourceFetcherTool.DESCRIPTION,
         priority = Enums.Priority.HIGH)
-public class DownloadResourcesTool extends OpenCgaTool {
+public class ResourceFetcherTool extends OpenCgaTool {
 
     public static final String ID = "resource-downloader";
     public static final String DESCRIPTION = "Download all resources from the server";
@@ -28,7 +28,7 @@ public class DownloadResourcesTool extends OpenCgaTool {
     private Path resourcePath;
 
     @ToolParams
-    protected final DownloadResourcesToolParams analysisParams = new DownloadResourcesToolParams();
+    protected final ResourceFetcherToolParams analysisParams = new ResourceFetcherToolParams();
 
     @Override
     protected void check() throws Exception {
@@ -44,12 +44,11 @@ public class DownloadResourcesTool extends OpenCgaTool {
     @Override
     protected void run() throws Exception {
         // Download all resources
-        step(ID, this::downloadResources);
+        step(ID, this::fetchResources);
     }
 
-    private void downloadResources() throws IOException, NoSuchAlgorithmException {
+    private void fetchResources() throws IOException, NoSuchAlgorithmException {
         ResourceManager resourceManager = new ResourceManager(getOpencgaHome(), analysisParams.getBaseUrl());
-        resourceManager.downloadAllResources(getOutDir().resolve(RESOURCES_FOLDER_NAME),
-                Boolean.TRUE.equals(analysisParams.getOverwrite()));
+        resourceManager.fetchAllResources(getOutDir().resolve(RESOURCES_FOLDER_NAME), Boolean.TRUE.equals(analysisParams.getOverwrite()));
     }
 }

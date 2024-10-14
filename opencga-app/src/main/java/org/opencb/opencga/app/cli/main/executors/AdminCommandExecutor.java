@@ -22,7 +22,7 @@ import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.common.Enums.Resource;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.resource.DownloadResourcesToolParams;
+import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.User;
@@ -190,25 +190,25 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
 
 
-        DownloadResourcesToolParams downloadResourcesToolParams = null;
+        ResourceFetcherToolParams resourceFetcherToolParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/resource/downloadAll"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            downloadResourcesToolParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), DownloadResourcesToolParams.class);
+            resourceFetcherToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ResourceFetcherToolParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "baseUrl", commandOptions.baseUrl, true);
             putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
-            downloadResourcesToolParams = JacksonUtils.getDefaultObjectMapper().copy()
+            resourceFetcherToolParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), DownloadResourcesToolParams.class);
+                    .readValue(beanParams.toJson(), ResourceFetcherToolParams.class);
         }
-        return openCGAClient.getAdminClient().downloadAllResource(downloadResourcesToolParams, queryParams);
+        return openCGAClient.getAdminClient().downloadAllResource(resourceFetcherToolParams, queryParams);
     }
 
     private RestResponse<User> createUsers() throws Exception {

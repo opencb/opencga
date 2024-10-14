@@ -56,7 +56,7 @@ public class ResourceManager  {
         this.baseUrl = baseurl;
     }
 
-    public void downloadAllResources(Path tmpPath, boolean overwrite) throws IOException, NoSuchAlgorithmException {
+    public void fetchAllResources(Path tmpPath, boolean overwrite) throws IOException, NoSuchAlgorithmException {
         loadConfiguration();
 
         // Download resources

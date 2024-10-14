@@ -57,7 +57,7 @@ public class ResourceManagerTest {
 
 
     @Test
-    public void testDonwloadRelatednessResource() throws IOException, NoSuchAlgorithmException {
+    public void testFetchRelatednessResource() throws IOException, NoSuchAlgorithmException {
         String analysisId = "qc"; //""relatedness";
         String resourceName = "relatedness_thresholds.tsv"; //""variants.prune.in";
 
@@ -73,11 +73,11 @@ public class ResourceManagerTest {
     }
 
     @Test
-    public void testDownloadAllResources() throws IOException, NoSuchAlgorithmException {
+    public void testFetchAllResources() throws IOException, NoSuchAlgorithmException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.downloadAllResources(outDir, true);
+        resourceManager.fetchAllResources(outDir, true);
         for (AnalysisResource analysisResource : resourceMetadata.getAnalysisResources()) {
             for (String resource : analysisResource.getResources()) {
                 Assert.assertTrue(Files.exists(analysisResourcePath.resolve(analysisResource.getId()).resolve(resource)));
@@ -86,11 +86,26 @@ public class ResourceManagerTest {
     }
 
     @Test
-    public void testDownloadResourcesForAGivenAnalysis() throws IOException, NoSuchAlgorithmException {
+    public void testFetchAllResourcesNoOverwrite() throws IOException, NoSuchAlgorithmException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.downloadAllResources(outDir, true);
+        resourceManager.fetchAllResources(outDir, true);
+        for (AnalysisResource analysisResource : resourceMetadata.getAnalysisResources()) {
+            for (String resource : analysisResource.getResources()) {
+                Assert.assertTrue(Files.exists(analysisResourcePath.resolve(analysisResource.getId()).resolve(resource)));
+            }
+        }
+
+        resourceManager.fetchAllResources(outDir, false);
+    }
+
+    @Test
+    public void testFetchResourcesForAGivenAnalysis() throws IOException, NoSuchAlgorithmException {
+        System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
+        Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
+        System.out.println("outDir = " + outDir.toAbsolutePath());
+        resourceManager.fetchAllResources(outDir, true);
 
         String analysisId = "qc";
         AnalysisResource analysisResource = null;
@@ -110,11 +125,11 @@ public class ResourceManagerTest {
     }
 
     @Test
-    public void testDownloadAGivenResource() throws IOException, NoSuchAlgorithmException {
+    public void testFetchAGivenResource() throws IOException, NoSuchAlgorithmException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.downloadAllResources(outDir, true);
+        resourceManager.fetchAllResources(outDir, true);
 
         String analysisId = "liftover";
         String resourceName = "chain.frq";

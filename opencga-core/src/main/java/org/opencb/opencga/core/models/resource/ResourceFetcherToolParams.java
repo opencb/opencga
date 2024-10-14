@@ -20,7 +20,7 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-public class DownloadResourcesToolParams extends ToolParams {
+public class ResourceFetcherToolParams extends ToolParams {
 
     public static final String DESCRIPTION = "Download-resources tool parameters";
 
@@ -30,10 +30,10 @@ public class DownloadResourcesToolParams extends ToolParams {
     @DataField(id = "overwrite", description = FieldConstants.DOWNLOAD_ALL_RESOURCES_OVERWRITE_DESCRIPTION)
     private Boolean overwrite;
 
-    public DownloadResourcesToolParams() {
+    public ResourceFetcherToolParams() {
     }
 
-    public DownloadResourcesToolParams(String baseUrl, Boolean overwrite) {
+    public ResourceFetcherToolParams(String baseUrl, Boolean overwrite) {
         this.baseUrl = baseUrl;
         this.overwrite = overwrite;
     }
@@ -51,7 +51,7 @@ public class DownloadResourcesToolParams extends ToolParams {
         return baseUrl;
     }
 
-    public DownloadResourcesToolParams setBaseUrl(String baseUrl) {
+    public ResourceFetcherToolParams setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
         return this;
     }
@@ -60,7 +60,7 @@ public class DownloadResourcesToolParams extends ToolParams {
         return overwrite;
     }
 
-    public DownloadResourcesToolParams setOverwrite(Boolean overwrite) {
+    public ResourceFetcherToolParams setOverwrite(Boolean overwrite) {
         this.overwrite = overwrite;
         return this;
     }
