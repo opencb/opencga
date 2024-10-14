@@ -137,7 +137,7 @@ public class AdminCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"resource-download-all"}, commandDescription ="Download all resources from the server")
+    @Parameters(commandNames = {"resource-download-all"}, commandDescription ="Fetch all resources from the public server and save them into the OpenCGA local installation")
     public class DownloadAllResourceCommandOptions {
     
         @ParametersDelegate
