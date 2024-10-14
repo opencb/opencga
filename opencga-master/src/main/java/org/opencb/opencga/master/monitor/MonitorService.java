@@ -33,14 +33,11 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
-import org.opencb.opencga.core.tools.ResourceManager;
 import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 
@@ -212,21 +209,16 @@ public class MonitorService {
     }
 
     private void fetchResources(String token) {
-        Path metaPath = Paths.get(appHome).resolve(ResourceManager.ANALYSIS_FOLDER_NAME).resolve(ResourceManager.RESOURCES_FOLDER_NAME)
-                .resolve(ResourceManager.getResourceMetaFilename());
+        ResourceFetcherToolParams params = new ResourceFetcherToolParams();
+        params.setBaseUrl("http://resources.opencb.org/task-6766/");
+//        params.setOverwrite(true);
 
-        if (!Files.exists(metaPath)) {
-            ResourceFetcherToolParams params = new ResourceFetcherToolParams();
-//            params.setBaseUrl("http://resources.opencb.org/task-6766/");
-            params.setOverwrite(true);
-
-            try {
-                catalogManager.getJobManager()
-                        .submit(null, ResourceFetcherTool.ID, Enums.Priority.URGENT, params.toParams(), null, null, null, null, null, null,
-                                false, token);
-            } catch (CatalogException e) {
-                logger.error("Error submitting job '" + ResourceFetcherTool.ID + "'", e);
-            }
+        try {
+            catalogManager.getJobManager()
+                    .submit(null, ResourceFetcherTool.ID, Enums.Priority.URGENT, params.toParams(), null, null, null, null, null, null,
+                            false, token);
+        } catch (CatalogException e) {
+            logger.error("Error submitting job '" + ResourceFetcherTool.ID + "'", e);
         }
     }
 }

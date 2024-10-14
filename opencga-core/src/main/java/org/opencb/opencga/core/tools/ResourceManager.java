@@ -30,6 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ResourceManager  {
 
     public static final String OK = "Ok";
+    public static final String MD5_EXT = ".md5";
     private Path openCgaHome;
     private String baseUrl;
     private Configuration configuration;
@@ -193,12 +194,6 @@ public class ResourceManager  {
             tmpFile = downloadedPath.resolve(analysisId).resolve(cleanName);
         }
 
-        // Check if the file already exists
-        if (!overwrite && Files.exists(installationFile)) {
-            logger.info("Resource file '{}' already downloaded, skipping download", resourceName);
-            return tmpFile;
-        }
-
         // Create a lock for the analysis if not present, and get it for the input analysis
         analysisLocks.putIfAbsent(fileUrl, new ReentrantLock());
         Lock lock = analysisLocks.get(fileUrl);
@@ -209,17 +204,29 @@ public class ResourceManager  {
             lockAcquired = lock.tryLock(LOCK_TIMEOUT, TimeUnit.HOURS);
 
             if (lockAcquired) {
-                // Download resource file
-                logger.info("Downloading resource file '{}' to '{}' ...", resourceName, tmpFile.toAbsolutePath());
-                donwloadFile(new URL(fileUrl), tmpFile);
-                logger.info("Done: '{}' downloaded", resourceName);
-
                 // Download MD5 for the resource file
-                final String md5Ext = ".md5";
-                Path md5File = Paths.get(tmpFile.toAbsolutePath() + md5Ext);
-                logger.info("Downloading MD5, '{}' ...", md5File.getFileName());
-                donwloadFile(new URL(fileUrl + md5Ext), md5File);
-                logger.info("Done: '{}' MD5 downloaded", md5File.getFileName());
+                Path md5File = Paths.get(tmpFile.toAbsolutePath() + MD5_EXT);
+//                logger.info("Downloading MD5, '{}' ...", md5File.getFileName());
+                donwloadFile(new URL(fileUrl + MD5_EXT), md5File);
+//                logger.info(OK);
+
+                // Check if the file already exists
+                if (!overwrite && Files.exists(installationFile)) {
+                    try {
+                        validateMD5(installationFile, md5File);
+                        logger.info("Resource '{}' has already been downloaded and MD5 validation passed: skipping download",
+                                Paths.get(resourceName).getFileName());
+                        return installationFile;
+                    } catch (Exception e) {
+                        logger.warn("Resource '{}' has already been downloaded but MD5 validation failed: it will be downloaded again",
+                                Paths.get(resourceName).getFileName());
+                    }
+                }
+
+                // Download resource file
+                logger.info("Downloading resource '{}' to '{}' ...", Paths.get(resourceName).getFileName(), tmpFile.toAbsolutePath());
+                donwloadFile(new URL(fileUrl), tmpFile);
+                logger.info(OK);
 
                 // Checking MD5
                 validateMD5(tmpFile, md5File);
