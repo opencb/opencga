@@ -20,46 +20,39 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-import java.util.List;
-
 public class DownloadResourcesToolParams extends ToolParams {
 
     public static final String DESCRIPTION = "Download-resources tool parameters";
 
-    @DataField(id = "baseurl", description = FieldConstants.DOWNLOAD_ALL_RESOURCES_BASEURL_DESCRIPTION)
-    private String baseurl;
+    @DataField(id = "baseUrl", description = FieldConstants.DOWNLOAD_ALL_RESOURCES_BASEURL_DESCRIPTION)
+    private String baseUrl;
 
     @DataField(id = "overwrite", description = FieldConstants.DOWNLOAD_ALL_RESOURCES_OVERWRITE_DESCRIPTION)
     private Boolean overwrite;
 
-    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
-    private String outdir;
-
     public DownloadResourcesToolParams() {
     }
 
-    public DownloadResourcesToolParams(String baseurl, Boolean overwrite, String outdir) {
-        this.baseurl = baseurl;
+    public DownloadResourcesToolParams(String baseUrl, Boolean overwrite) {
+        this.baseUrl = baseUrl;
         this.overwrite = overwrite;
-        this.outdir = outdir;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("DownloadResourcesToolParams{");
-        sb.append("baseurl='").append(baseurl).append('\'');
+        final StringBuilder sb = new StringBuilder("DownloadResourcesParams{");
+        sb.append("baseUrl='").append(baseUrl).append('\'');
         sb.append(", overwrite=").append(overwrite);
-        sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getBaseurl() {
-        return baseurl;
+    public String getBaseUrl() {
+        return baseUrl;
     }
 
-    public DownloadResourcesToolParams setBaseurl(String baseurl) {
-        this.baseurl = baseurl;
+    public DownloadResourcesToolParams setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
         return this;
     }
 
@@ -69,15 +62,6 @@ public class DownloadResourcesToolParams extends ToolParams {
 
     public DownloadResourcesToolParams setOverwrite(Boolean overwrite) {
         this.overwrite = overwrite;
-        return this;
-    }
-
-    public String getOutdir() {
-        return outdir;
-    }
-
-    public DownloadResourcesToolParams setOutdir(String outdir) {
-        this.outdir = outdir;
         return this;
     }
 }
