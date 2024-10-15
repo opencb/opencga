@@ -1,7 +1,11 @@
 package org.opencb.opencga.core.events;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.response.OpenCGAResult;
+
+import java.util.Collections;
+import java.util.List;
 
 public class OpencgaEvent {
 
@@ -9,35 +13,36 @@ public class OpencgaEvent {
     private ObjectMap inputParams;
 
     private String organizationId;
-    private String resourceId;
-    private String resourceUuid;
     private String studyFqn;
     private String studyUuid;
 
+    private List<EntryParam> entries;
+
     private String userId;
     private String token;
+
     private OpenCGAResult<?> result;
 
     private OpencgaEvent() {
     }
 
     private OpencgaEvent(String eventId, ObjectMap inputParams, String organizationId, String userId, String token) {
-        this.eventId = eventId;
-        this.inputParams = inputParams;
-        this.organizationId = organizationId;
-        this.userId = userId;
-        this.token = token;
+        this(eventId, inputParams, organizationId, "", "", Collections.emptyList(), userId, token, null);
     }
 
-    private OpencgaEvent(String eventId, ObjectMap inputParams, String organizationId, String resourceId, String resourceUuid,
-                        String studyFqn, String studyUuid, String userId, String token, OpenCGAResult<?> result) {
+    private OpencgaEvent(String eventId, ObjectMap inputParams, String organizationId,  String studyFqn, String studyUuid, String userId,
+                         String token) {
+        this(eventId, inputParams, organizationId, studyFqn, studyUuid, Collections.emptyList(), userId, token, null);
+    }
+
+    public OpencgaEvent(String eventId, ObjectMap inputParams, String organizationId, String studyFqn, String studyUuid,
+                        List<EntryParam> entries, String userId, String token, OpenCGAResult<?> result) {
         this.eventId = eventId;
         this.inputParams = inputParams;
         this.organizationId = organizationId;
-        this.resourceId = resourceId;
-        this.resourceUuid = resourceUuid;
         this.studyFqn = studyFqn;
         this.studyUuid = studyUuid;
+        this.entries = entries;
         this.userId = userId;
         this.token = token;
         this.result = result;
@@ -47,14 +52,9 @@ public class OpencgaEvent {
         return new OpencgaEvent(eventId, inputParams, organizationId, userId, token);
     }
 
-    public static OpencgaEvent build(String eventId, ObjectMap inputParams, String organizationId, String resourceId, String resourceUuid,
-                                     String studyFqn, String studyUuid, String userId, String token, OpenCGAResult<?> result) {
-        return new OpencgaEvent(eventId, inputParams, organizationId, resourceId, resourceUuid, studyFqn, studyUuid, userId, token, result);
-    }
-
-    public static OpencgaEvent build(String eventId, ObjectMap inputParams, String organizationId, String resourceId, String resourceUuid,
+    public static OpencgaEvent build(String eventId, ObjectMap inputParams, String organizationId, String studyFqn, String studyUuid,
                                      String userId, String token) {
-        return new OpencgaEvent(eventId, inputParams, organizationId, resourceId, resourceUuid, "", "", userId, token, null);
+        return new OpencgaEvent(eventId, inputParams, organizationId, studyFqn, studyUuid, userId, token);
     }
 
     @Override
@@ -63,10 +63,9 @@ public class OpencgaEvent {
         sb.append("eventId='").append(eventId).append('\'');
         sb.append(", inputParams=").append(inputParams);
         sb.append(", organizationId='").append(organizationId).append('\'');
-        sb.append(", resourceId='").append(resourceId).append('\'');
-        sb.append(", resourceUuid='").append(resourceUuid).append('\'');
         sb.append(", studyFqn='").append(studyFqn).append('\'');
         sb.append(", studyUuid='").append(studyUuid).append('\'');
+        sb.append(", entries=").append(entries);
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", token='").append(token).append('\'');
         sb.append(", result=").append(result);
@@ -101,21 +100,12 @@ public class OpencgaEvent {
         return this;
     }
 
-    public String getResourceId() {
-        return resourceId;
+    public List<EntryParam> getEntries() {
+        return entries;
     }
 
-    public OpencgaEvent setResourceId(String resourceId) {
-        this.resourceId = resourceId;
-        return this;
-    }
-
-    public String getResourceUuid() {
-        return resourceUuid;
-    }
-
-    public OpencgaEvent setResourceUuid(String resourceUuid) {
-        this.resourceUuid = resourceUuid;
+    public OpencgaEvent setEntries(List<EntryParam> entries) {
+        this.entries = entries;
         return this;
     }
 

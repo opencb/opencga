@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -69,6 +69,11 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     InternalGetDataResult<R> internalGet(String organizationId, long studyUid, List<String> entryList, QueryOptions options, String user,
                                          boolean ignoreException) throws CatalogException {
         return internalGet(organizationId, studyUid, entryList, null, options, user, ignoreException);
+    }
+
+    InternalGetDataResult<R> internalGet(String organizationId, long studyUid, String entry, @Nullable Query query,
+                                                  QueryOptions options, String user, boolean ignoreException) throws CatalogException {
+        return internalGet(organizationId, studyUid, Collections.singletonList(entry), query, options, user, ignoreException);
     }
 
     abstract InternalGetDataResult<R> internalGet(String organizationId, long studyUid, List<String> entryList, @Nullable Query query,
@@ -345,7 +350,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      */
     public OpenCGAResult<R> endResult(OpenCGAResult<R> result, boolean ignoreException) throws CatalogException {
         if (!ignoreException) {
-            if (ListUtils.isNotEmpty(result.getEvents())) {
+            if (CollectionUtils.isNotEmpty(result.getEvents())) {
                 List<String> errors = new ArrayList<>();
                 for (Event event : result.getEvents()) {
                     if (event.getType() == Event.Type.ERROR) {

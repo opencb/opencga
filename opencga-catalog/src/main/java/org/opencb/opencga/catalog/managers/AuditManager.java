@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -36,6 +37,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.events.OpenCgaObserver;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
+import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -71,19 +73,53 @@ public class AuditManager {
             String[] split = opencgaEvent.getEventId().split("\\.");
             Enums.Resource resource = Enums.Resource.valueOf(split[0].toUpperCase());
             Enums.Action action = Enums.Action.valueOf(split[1].toUpperCase());
-            audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, opencgaEvent.getResourceId(),
-                    opencgaEvent.getResourceUuid(), opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(),
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            if (CollectionUtils.isNotEmpty(opencgaEvent.getEntries())) {
+                auditBatchOperation(opencgaEvent.getOrganizationId(), operationUuid -> {
+                    for (EntryParam entry : opencgaEvent.getEntries()) {
+                        audit(opencgaEvent.getOrganizationId(), operationUuid, opencgaEvent.getUserId(), action, resource, entry.getId(),
+                                entry.getUuid(), opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(),
+                                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                    }
+                });
+            } else {
+                audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, "", "", opencgaEvent.getStudyFqn(),
+                        opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(),
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            }
         }, (throwable, opencgaEvent) -> {
             String[] split = opencgaEvent.getEventId().split("\\.");
             Enums.Resource resource = Enums.Resource.valueOf(split[0].toUpperCase());
             Enums.Action action = Enums.Action.valueOf(split[1].toUpperCase());
-            audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, opencgaEvent.getResourceId(),
-                    opencgaEvent.getResourceUuid(), opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(),
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                            new Error(0, throwable.getMessage(), throwable.getLocalizedMessage())));
+
+            if (CollectionUtils.isNotEmpty(opencgaEvent.getEntries())) {
+                auditBatchOperation(opencgaEvent.getOrganizationId(), operationUuid -> {
+                    for (EntryParam entry : opencgaEvent.getEntries()) {
+                        audit(opencgaEvent.getOrganizationId(), operationUuid, opencgaEvent.getUserId(), action, resource,
+                                entry.getId(), entry.getUuid(), opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(),
+                                opencgaEvent.getInputParams(), new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                        new Error(0, throwable.getMessage(), throwable.getLocalizedMessage())));
+                    }
+                });
+            } else {
+                audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, "", "", opencgaEvent.getStudyFqn(),
+                        opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(), new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                new Error(0, throwable.getMessage(), throwable.getLocalizedMessage())));
+            }
+
         }, true));
     }
+
+    private interface AuditBatchOperation {
+        void execute(String operationUuid);
+    }
+
+    private void auditBatchOperation(String organizationId, AuditBatchOperation operation) {
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        initAuditBatch(operationUuid);
+        operation.execute(operationUuid);
+        finishAuditBatch(organizationId, operationUuid);
+    }
+
 
     public void audit(String organizationId, AuditRecord auditRecord) throws CatalogException {
         dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId).insertAuditRecord(auditRecord);
@@ -99,9 +135,9 @@ public class AuditManager {
         this.auditRecordMap.put(operationId, new LinkedList<>());
     }
 
-    public void finishAuditBatch(String organizationId, String operationId) throws CatalogException {
+    public void finishAuditBatch(String organizationId, String operationId) {
         if (!this.auditRecordMap.containsKey(operationId)) {
-            throw new CatalogException("Cannot audit. Operation id '" + operationId + "' not found.");
+            logger.error("Cannot audit. Operation id '{}' not found.", operationId);
         }
         try {
             if (!this.auditRecordMap.get(operationId).isEmpty()) {

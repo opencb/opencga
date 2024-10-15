@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -82,6 +84,12 @@ public interface AuthorizationManager {
 
     static EnumSet<StudyPermissions.Permissions> getLockedAcls() {
         return EnumSet.noneOf(StudyPermissions.Permissions.class);
+    }
+
+    default void buildAclCheckQuery(String userId, String permission, Query query) {
+        if (StringUtils.isNotEmpty(userId) && StringUtils.isNotEmpty(permission) && query != null) {
+            query.put(ParamConstants.ACL_PARAM, userId + ":" + permission);
+        }
     }
 
     void checkCanViewOrganization(String organizationId, String userId) throws CatalogException;

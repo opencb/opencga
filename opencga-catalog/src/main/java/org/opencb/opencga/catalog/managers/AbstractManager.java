@@ -17,13 +17,18 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -40,10 +45,8 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Created by hpccoll1 on 12/05/15.
@@ -339,9 +342,6 @@ public abstract class AbstractManager {
         }
     }
 
-    public interface ExecuteOperation<T> {
-        OpenCGAResult<T> execute(String organizationId, Study study, String userId, JwtPayload tokenPayload) throws CatalogException;
-    }
 //
 //    public interface ExecuteBatchOperation<T> {
 //        T execute(Study study, String userId, QueryOptions queryOptions, String auditOperationUuid) throws CatalogException, IOException;
@@ -359,48 +359,59 @@ public abstract class AbstractManager {
 //        return run(params, resource, action, studyStr, null, token, options, studyIncludeList, body);
 //    }
 
-    protected <T> OpenCGAResult<T> run(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
-                                       @Nullable EntryParam entryParam, String token, QueryOptions studyIncludeList,
-                                       ExecuteOperation<T> body) throws CatalogException {
+
+
+    /**
+     * Interface to execute an operation over a single element.
+     * @param <T> Type of the element that will be processed.
+     */
+    public interface ExecuteOperationForSingleEntry<T> {
+        OpenCGAResult<T> execute(String organizationId, Study study, String userId, EntryParam entryParam) throws CatalogException;
+    }
+
+    protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                     String token, ExecuteOperationForSingleEntry<T> execution) throws CatalogException {
+        return runForSingleEntry(params, resource, action, studyStr, token, QueryOptions.empty(), execution, null);
+    }
+
+    protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                     String token, ExecuteOperationForSingleEntry<T> execution, String errorMessage)
+            throws CatalogException {
+        return runForSingleEntry(params, resource, action, studyStr, token, QueryOptions.empty(), execution, errorMessage);
+    }
+
+    protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                     String token, QueryOptions studyIncludeList,
+                                                     ExecuteOperationForSingleEntry<T> execution) throws CatalogException {
+        return runForSingleEntry(params, resource, action, studyStr, token, studyIncludeList, execution, null);
+    }
+
+    protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                     String token, QueryOptions studyIncludeList,
+                                                     ExecuteOperationForSingleEntry<T> execution, String errorMessage)
+            throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
 
-        Supplier<Study> studySupplier = () -> {
-            try {
-                return catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
-            } catch (CatalogException e) {
-                throw new CatalogRuntimeException(e);
-            }
-        };
-
-        return notify(resource, action, organizationId, studySupplier, entryParam, userId, params, tokenPayload, body);
-    }
-
-    private <T> OpenCGAResult<T> notify(Enums.Resource resource, Enums.Action action, String organizationId, Supplier<Study> studySupplier,
-                                        @Nullable EntryParam entryParam, String userId, ObjectMap params, JwtPayload payload,
-                                        ExecuteOperation<T> executeOperation) throws CatalogException {
         String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
 
-        String resourceId = entryParam != null ? entryParam.getId() : "";
-        String resourceUuid = entryParam != null ? entryParam.getUuid() : "";
-        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, resourceId, resourceUuid, userId,
-                payload.getToken());
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, userId, tokenPayload.getToken());
         CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
         try {
             // Get study
-            Study study = studySupplier.get();
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
             opencgaEvent.setStudyFqn(study.getFqn());
             opencgaEvent.setStudyUuid(study.getUuid());
 
             // Execute code
-            OpenCGAResult<T> execute = executeOperation.execute(organizationId, study, userId, payload);
-            if (entryParam != null) {
-                // In case the id and uuid have been populated after the execution
-                opencgaEvent.setResourceId(entryParam.getId());
-                opencgaEvent.setResourceUuid(entryParam.getUuid());
-            }
+            EntryParam entryParam = new EntryParam();
+            OpenCGAResult<T> execute = execution.execute(organizationId, study, userId, entryParam);
+
+            // Fill missing OpencgaEvent entries
+            opencgaEvent.setResult(execute);
+            opencgaEvent.setEntries(Collections.singletonList(entryParam));
 
             // Notify event
             EventManager.getInstance().notify(catalogEvent);
@@ -408,10 +419,332 @@ public abstract class AbstractManager {
             return execute;
         } catch (Exception e) {
             EventManager.getInstance().notify(catalogEvent, e);
-            throw e;
+            if (StringUtils.isNotEmpty(errorMessage)) {
+                throw new CatalogException(errorMessage, e);
+            } else {
+                throw e;
+            }
         }
     }
 
+
+
+
+    /**
+     * Interface to execute a query operation. No particular elements are provided by the user.
+     * @param <T> Type of the element that will be processed.
+     */
+    public interface ExecuteQueryOperation<T> {
+        OpenCGAResult<T> execute(String organizationId, Study study, String userId) throws CatalogException;
+    }
+
+    protected <T> OpenCGAResult<T> runForQueryOperation(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                     String token, ExecuteQueryOperation<T> execution) throws CatalogException {
+        return runForQueryOperation(params, resource, action, studyStr, token, QueryOptions.empty(), execution, null);
+    }
+
+    protected <T> OpenCGAResult<T> runForQueryOperation(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                     String token, ExecuteQueryOperation<T> execution, String errorMessage)
+            throws CatalogException {
+        return runForQueryOperation(params, resource, action, studyStr, token, QueryOptions.empty(), execution, errorMessage);
+    }
+
+    protected <T> OpenCGAResult<T> runForQueryOperation(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                     String token, QueryOptions studyIncludeList,
+                                                     ExecuteQueryOperation<T> execution) throws CatalogException {
+        return runForQueryOperation(params, resource, action, studyStr, token, studyIncludeList, execution, null);
+    }
+
+    protected <T> OpenCGAResult<T> runForQueryOperation(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                     String token, QueryOptions studyIncludeList,
+                                                     ExecuteQueryOperation<T> execution, String errorMessage)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
+
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, userId, tokenPayload.getToken());
+        CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
+        try {
+            // Get study
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
+            opencgaEvent.setStudyFqn(study.getFqn());
+            opencgaEvent.setStudyUuid(study.getUuid());
+
+            // Execute code
+            OpenCGAResult<T> execute = execution.execute(organizationId, study, userId);
+
+            // Fill missing OpencgaEvent entries
+            opencgaEvent.setResult(execute);
+
+            // Notify event
+            EventManager.getInstance().notify(catalogEvent);
+
+            return execute;
+        } catch (Exception e) {
+            EventManager.getInstance().notify(catalogEvent, e);
+            if (StringUtils.isNotEmpty(errorMessage)) {
+                throw new CatalogException(errorMessage, e);
+            } else {
+                throw e;
+            }
+        }
+    }
+
+
+
+    /**
+     * Interface to execute a multi operation. The user will execute the multi operation in a single call and will provide the list of
+     * elements that are processed.
+     * @param <T> Type of the elements that will be processed.
+     */
+    public interface ExecuteMultiOperation<T> {
+        OpenCGAResult<T> execute(String organizationId, Study study, String userId, List<EntryParam> entryParamList)
+                throws CatalogException;
+    }
+
+    protected <T> OpenCGAResult<T> runForMultiOperation(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                        String token, ExecuteMultiOperation<T> execution) throws CatalogException {
+        return runForMultiOperation(params, resource, action, studyStr, token, QueryOptions.empty(), execution, null);
+    }
+
+    protected <T> OpenCGAResult<T> runForMultiOperation(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                        String token, ExecuteMultiOperation<T> execution, String errorMessage)
+            throws CatalogException {
+        return runForMultiOperation(params, resource, action, studyStr, token, QueryOptions.empty(), execution, errorMessage);
+    }
+
+    protected <T> OpenCGAResult<T> runForMultiOperation(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                        String token, QueryOptions studyIncludeList,
+                                                        ExecuteMultiOperation<T> execution) throws CatalogException {
+        return runForMultiOperation(params, resource, action, studyStr, token, studyIncludeList, execution, null);
+    }
+
+    protected <T> OpenCGAResult<T> runForMultiOperation(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                        String token, QueryOptions studyIncludeList,
+                                                        ExecuteMultiOperation<T> execution, String errorMessage)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
+
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, userId, tokenPayload.getToken());
+        CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
+        try {
+            // Get study
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
+            opencgaEvent.setStudyFqn(study.getFqn());
+            opencgaEvent.setStudyUuid(study.getUuid());
+
+            // Execute code
+            List<EntryParam> entryParamList = new LinkedList<>();
+            OpenCGAResult<T> execute = execution.execute(organizationId, study, userId, entryParamList);
+
+            // Fill missing OpencgaEvent entries
+            opencgaEvent.setResult(execute);
+            opencgaEvent.setEntries(entryParamList);
+
+            // Notify event
+            EventManager.getInstance().notify(catalogEvent);
+
+            return execute;
+        } catch (Exception e) {
+            EventManager.getInstance().notify(catalogEvent, e);
+            if (StringUtils.isNotEmpty(errorMessage)) {
+                throw new CatalogException(errorMessage, e);
+            } else {
+                throw e;
+            }
+        }
+    }
+
+
+    /**
+     * Interface to obtain an iterator of the elements that will be processed.
+     * @param <T> Type of the elements that will be processed.
+     */
+    public interface ExecuteOperationIterator<T> {
+        DBIterator<T> iterator(String organizationId, Study study, String userId) throws CatalogException;
+    }
+
+    /**
+     * Interface to execute a batch operation over the elements. This always goes together with the {@link ExecuteOperationIterator}.
+     * The {@link ExecuteOperationIterator} will provide the elements to be processed and this interface will execute the operation over
+     * each of the elements.
+     * @param <T> Type of the elements that will be processed.
+     */
+    public interface ExecuteBatchOperation<T> {
+        OpenCGAResult<T> execute(String organizationId, Study study, String userId, EntryParam entryParam, T entry) throws CatalogException;
+    }
+
+    protected <T> OpenCGAResult<T> runIterator(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                               String token, ExecuteOperationIterator<T> iteratorSupplier,
+                                               ExecuteBatchOperation<T> execution) throws CatalogException {
+        return runIterator(params, resource, action, studyStr, token, QueryOptions.empty(), iteratorSupplier, execution, null);
+    }
+
+    protected <T> OpenCGAResult<T> runIterator(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                               String token, QueryOptions studyIncludeList, ExecuteOperationIterator<T> operationIterator,
+                                               ExecuteBatchOperation<T> execution, String errorMessage) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
+
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, userId, tokenPayload.getToken());
+        CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
+        Study study;
+        try {
+            // Get study
+            study = catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
+        } catch (Exception e) {
+            EventManager.getInstance().notify(catalogEvent, e);
+            if (StringUtils.isNotEmpty(errorMessage)) {
+                throw new CatalogException(errorMessage, e);
+            } else {
+                throw e;
+            }
+        }
+
+        DBIterator<T> iterator;
+        try {
+            iterator = operationIterator.iterator(organizationId, study, userId);
+        } catch (Exception e) {
+            EventManager.getInstance().notify(catalogEvent, e);
+            if (StringUtils.isNotEmpty(errorMessage)) {
+                throw new CatalogException(errorMessage, e);
+            } else {
+                throw e;
+            }
+        }
+
+        // Execute code
+        OpenCGAResult<T> result = OpenCGAResult.empty();
+        while (iterator.hasNext()) {
+            T object = iterator.next();
+
+            opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, study.getFqn(), study.getUuid(), userId,
+                    tokenPayload.getToken());
+            catalogEvent = CatalogEvent.build(opencgaEvent);
+            EntryParam entryParam = new EntryParam();
+            try {
+                OpenCGAResult<T> execute = execution.execute(organizationId, study, userId, entryParam, object);
+                result.append(execute);
+
+                // Fill missing OpencgaEvent entries
+                opencgaEvent.setResult(execute);
+                opencgaEvent.setEntries(Collections.singletonList(entryParam));
+
+                // Notify event
+                EventManager.getInstance().notify(catalogEvent);
+            } catch (Exception e) {
+                // Add error event to the main result object
+                Event event = new Event(Event.Type.ERROR, entryParam.getId(), e.getMessage());
+                result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
+
+                // Notify error and continue processing
+                EventManager.getInstance().notify(catalogEvent, e);
+            }
+        }
+        iterator.close();
+
+        return result;
+    }
+
+
+    protected <T> OpenCGAResult<T> runList(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                           List<String> idList, String token, ExecuteOperationForSingleEntry<T> execution)
+            throws CatalogException {
+        return runList(params, resource, action, studyStr, idList, token, QueryOptions.empty(), execution);
+    }
+
+    protected <T> OpenCGAResult<T> runList(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                           List<String> idList, String token, QueryOptions studyIncludeList,
+                                           ExecuteOperationForSingleEntry<T> execution) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
+
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, userId, tokenPayload.getToken());
+        CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
+        Study study;
+        try {
+            // Get study
+            study = catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
+        } catch (Exception e) {
+            EventManager.getInstance().notify(catalogEvent, e);
+            throw e;
+        }
+
+        // Execute code
+        OpenCGAResult<T> result = OpenCGAResult.empty();
+        for (String id : idList) {
+            opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, study.getFqn(), study.getUuid(), userId,
+                    tokenPayload.getToken());
+            catalogEvent = CatalogEvent.build(opencgaEvent);
+            try {
+                EntryParam entryParam = new EntryParam().setId(id);
+                OpenCGAResult<T> execute = execution.execute(organizationId, study, userId, entryParam);
+                result.append(execute);
+
+                // Fill missing OpenCGAEvent fields
+                opencgaEvent.setResult(execute);
+                opencgaEvent.setEntries(Collections.singletonList(entryParam));
+
+                // Notify event
+                EventManager.getInstance().notify(catalogEvent);
+            } catch (Exception e) {
+                // Add error event to the main result object
+                Event event = new Event(Event.Type.ERROR, id, e.getMessage());
+                result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
+
+                // Notify error and continue processing
+                EventManager.getInstance().notify(catalogEvent, e);
+            }
+        }
+
+        return result;
+    }
+
+//    protected <T> OpenCGAResult<T> run(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+//                                       List<String> ids, String token, ExecuteBatchOperation<T> body) throws CatalogException {
+//        return run(params, resource, action, studyStr, ids, token, QueryOptions.empty(), body);
+//    }
+
+    //    protected <T> OpenCGAResult<T> run(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+//                                       List<String> ids, String token, QueryOptions studyIncludeList, ExecuteBatchOperation<T> body)
+//            throws CatalogException {
+//        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+//        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+//        String organizationId = studyFqn.getOrganizationId();
+//        String userId = tokenPayload.getUserId(organizationId);
+//
+//        Supplier<Study> studySupplier = () -> {
+//            try {
+//                return catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
+//            } catch (CatalogException e) {
+//                throw new CatalogRuntimeException(e);
+//            }
+//        };
+//
+//        for (String id : ids) {
+//            return notify(resource, action, organizationId, studySupplier, userId, params, tokenPayload, body);
+//        }
+//    }
+//
 //    protected <T, S extends ObjectMap> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String operationUuid,
 //                                             Study study, String userId, S options, ExecuteOperation<T> body) throws CatalogException {
 //        StopWatch totalStopWatch = StopWatch.createStarted();
