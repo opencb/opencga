@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.NoteDBAdaptor;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.managers.EventManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -79,7 +80,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION, required = true) @PathParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "Action to be performed if the array of admins is being updated.", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("adminsAction") ParamUtils.AddRemoveAction adminsAction,
+            @QueryParam("adminsAction") ParamUtils.AddRemoveAction adminsAction,
             @ApiParam(value = "JSON containing the params to be updated.", required = true) OrganizationUpdateParams parameters) {
         return run(() -> {
             if (adminsAction != null) {
@@ -176,9 +177,18 @@ public class OrganizationWSServer extends OpenCGAWSServer {
     })
     public Response updateNote(
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,REMOVE,SET", defaultValue = "ADD")
+            @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
-        return run(() -> catalogManager.getNotesManager().updateOrganizationNote(noteId, parameters, queryOptions, token));
+        return run(() -> {
+            if (tagsAction != null) {
+                Map<String, Object> actionMap = new HashMap<>();
+                actionMap.put(NoteDBAdaptor.QueryParams.TAGS.key(), tagsAction);
+                queryOptions.put(Constants.ACTIONS, actionMap);
+            }
+            return catalogManager.getNotesManager().updateOrganizationNote(noteId, parameters, queryOptions, token);
+        });
     }
 
     @DELETE

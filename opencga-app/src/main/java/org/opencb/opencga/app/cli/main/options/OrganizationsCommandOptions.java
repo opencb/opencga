@@ -220,6 +220,9 @@ public class OrganizationsCommandOptions {
         @Parameter(names = {"--id"}, description = "Note unique identifier.", required = true, arity = 1)
         public String id; 
     
+        @Parameter(names = {"--tags-action"}, description = "Action to be performed if the array of tags is being updated.", required = false, arity = 1)
+        public String tagsAction = "ADD"; 
+    
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     
@@ -307,9 +310,6 @@ public class OrganizationsCommandOptions {
     
         @Parameter(names = {"--quota-max-cpu"}, description = "The body web service maxCpu parameter", required = false, arity = 1)
         public Integer quotaMaxCpu;
-    
-        @Parameter(names = {"--account-expiration-date"}, description = "The body web service expirationDate parameter", required = false, arity = 1)
-        public String accountExpirationDate;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;

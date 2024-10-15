@@ -153,11 +153,9 @@ public interface PanelDBAdaptor extends CoreDBAdaptor<Panel> {
         }
     }
 
-    OpenCGAResult insert(long studyUid, List<Panel> panelList)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult insert(long studyUid, List<Panel> panelList) throws CatalogException;
 
-    OpenCGAResult insert(long studyId, Panel panel, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult insert(long studyId, Panel panel, QueryOptions options) throws CatalogException;
 
     OpenCGAResult<Panel> get(long panelId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

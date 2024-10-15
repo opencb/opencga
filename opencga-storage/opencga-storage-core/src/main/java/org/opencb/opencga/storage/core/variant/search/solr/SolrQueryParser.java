@@ -25,7 +25,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
@@ -35,7 +34,10 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.Values;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.slf4j.Logger;
@@ -79,7 +81,7 @@ public class SolrQueryParser {
     static {
         includeMap = new HashMap<>();
 
-        includeMap.put("id", "id,variantId");
+        includeMap.put("id", "id,variantId,attr_id");
         includeMap.put("chromosome", "chromosome");
         includeMap.put("start", "start");
         includeMap.put("end", "end");
@@ -477,7 +479,9 @@ public class SolrQueryParser {
         genes.addAll(variantQueryXref.getGenes());
         xrefs.addAll(variantQueryXref.getIds());
         xrefs.addAll(variantQueryXref.getOtherXrefs());
-        xrefs.addAll(variantQueryXref.getVariants().stream().map(Variant::toString).collect(Collectors.toList()));
+        xrefs.addAll(variantQueryXref.getVariants().stream()
+                .map(VariantSearchToVariantConverter::getVariantId)
+                .collect(Collectors.toList()));
 
         // Regions
         if (StringUtils.isNotEmpty(query.getString(REGION.key()))) {
@@ -492,7 +496,7 @@ public class SolrQueryParser {
         // Consequence types (cts)
         String ctLogicalOperator = " OR ";
         if (StringUtils.isNotEmpty(query.getString(ANNOT_CONSEQUENCE_TYPE.key(), ""))) {
-            consequenceTypes = Arrays.asList(query.getString(ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
+            consequenceTypes = parseConsequenceTypes(Arrays.asList(query.getString(ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]")));
             if (query.getString(ANNOT_CONSEQUENCE_TYPE.key()).contains(";")) {
                 ctLogicalOperator = " AND ";
                 // TODO This must be removed as soon as we have the Query procesing in use
@@ -1616,15 +1620,12 @@ public class SolrQueryParser {
             return new String[0];
         }
 
-        String[] mandatoryIncludeFields  = new String[]{"id", "chromosome", "start", "end", "type"};
-        String[] includeWithMandatory = new String[includes.length + mandatoryIncludeFields.length];
-        for (int i = 0; i < includes.length; i++) {
-            includeWithMandatory[i] = includes[i];
-        }
-        for (int i = 0; i < mandatoryIncludeFields.length; i++) {
-            includeWithMandatory[includes.length + i] = mandatoryIncludeFields[i];
-        }
-        return includeWithMandatory;
+        Set<String> mandatoryIncludeFields = new HashSet<>(Arrays.asList("id", "attr_id", "chromosome", "start", "end", "type"));
+        Set<String> includeWithMandatory = new LinkedHashSet<>(includes.length + mandatoryIncludeFields.size());
+
+        includeWithMandatory.addAll(Arrays.asList(includes));
+        includeWithMandatory.addAll(mandatoryIncludeFields);
+        return includeWithMandatory.toArray(new String[0]);
     }
 
     /**

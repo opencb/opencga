@@ -48,7 +48,6 @@ import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -282,7 +281,7 @@ public class CatalogManager implements AutoCloseable {
                         organizationConfiguration, null),
                 QueryOptions.empty(), null);
 
-        User user = new User(OPENCGA, new Account().setExpirationDate(""))
+        User user = new User(OPENCGA)
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
                 .setOrganization(ADMIN_ORGANIZATION);
         userManager.create(user, password, null);

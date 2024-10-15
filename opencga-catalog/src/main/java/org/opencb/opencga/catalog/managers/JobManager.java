@@ -422,7 +422,7 @@ public class JobManager extends ResourceManager<Job> {
             }
 
             ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_KILL_JOB_REQUESTED.key(), true);
-            OpenCGAResult<Job> update = catalogDBAdaptorFactory.getCatalogJobDBAdaptor(organizationId).update(job.getUid(), params,
+            OpenCGAResult<Job> update = getCatalogDBAdaptorFactory().getCatalogJobDBAdaptor(organizationId).update(job.getUid(), params,
                     QueryOptions.empty());
 
             auditManager.audit(organizationId, userId, Enums.Action.KILL_JOB, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -817,7 +817,7 @@ public class JobManager extends ResourceManager<Job> {
     public OpenCGAResult countInOrganization(String organizationId, Query query, String token) throws CatalogException {
         JwtPayload jwtPayload = userManager.validateToken(token);
         authorizationManager.checkIsOpencgaAdministrator(jwtPayload);
-        return catalogDBAdaptorFactory.getCatalogJobDBAdaptor(organizationId).count(query);
+        return getCatalogDBAdaptorFactory().getCatalogJobDBAdaptor(organizationId).count(query);
     }
 
     @Override

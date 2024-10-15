@@ -5,6 +5,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.event.CatalogEvent;
@@ -117,13 +118,13 @@ public interface EventDBAdaptor {
     OpenCGAResult<CatalogEvent> get(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    void insert(CatalogEvent event) throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException;
+    void insert(CatalogEvent event) throws CatalogException;
 
     void updateSubscriber(CatalogEvent event, Enums.Resource resource, boolean successful)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+            throws CatalogException;
 
-    void finishEvent(CatalogEvent opencgaEvent) throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException;
+    void finishEvent(CatalogEvent opencgaEvent) throws CatalogException;
 
-    void archiveEvent(CatalogEvent opencgaEvent) throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException;
+    void archiveEvent(CatalogEvent opencgaEvent) throws CatalogException;
 
 }

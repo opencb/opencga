@@ -25,7 +25,6 @@ import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -43,6 +42,7 @@ import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -51,10 +51,7 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.FlagAnnotation;
-import org.opencb.opencga.core.models.common.FlagValue;
+import org.opencb.opencga.core.models.common.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyCreateParams;
 import org.opencb.opencga.core.models.file.File;
@@ -277,7 +274,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
 
             List<Event> events = new LinkedList<>();
 
-            clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), Status::new));
+            clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), ClinicalStatus::new));
             clinicalAnalysis.setInternal(ClinicalAnalysisInternal.init());
             clinicalAnalysis.setDisorder(ParamUtils.defaultObject(clinicalAnalysis.getDisorder(),
                     new Disorder("", "", "", Collections.emptyMap(), "", Collections.emptyList())));
@@ -591,10 +588,10 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             validateCustomPriorityParameters(clinicalAnalysis, clinicalConfiguration);
             validateCustomFlagParameters(clinicalAnalysis, clinicalConfiguration);
             validateCustomConsentParameters(clinicalAnalysis, clinicalConfiguration);
-            validateStatusParameter(clinicalAnalysis, clinicalConfiguration);
+            validateStatusParameter(clinicalAnalysis, clinicalConfiguration, userId, true);
 
             if (StringUtils.isNotEmpty(clinicalAnalysis.getStatus().getId())) {
-                List<ClinicalStatusValue> clinicalStatusValues = clinicalConfiguration.getStatus().get(clinicalAnalysis.getType());
+                List<ClinicalStatusValue> clinicalStatusValues = clinicalConfiguration.getStatus();
                 for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
                     if (clinicalAnalysis.getStatus().getId().equals(clinicalStatusValue.getId())) {
                         if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
@@ -802,17 +799,15 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         responsible.setEmail(ParamUtils.defaultString(responsible.getEmail(), result.first().getEmail()));
     }
 
-    private void validateStatusParameter(ClinicalAnalysis clinicalAnalysis, ClinicalAnalysisStudyConfiguration clinicalConfiguration)
-            throws CatalogException {
+    private void validateStatusParameter(ClinicalAnalysis clinicalAnalysis, ClinicalAnalysisStudyConfiguration clinicalConfiguration,
+                                         String userId, boolean initIfUndefined) throws CatalogException {
         // Status
-        if (clinicalConfiguration.getStatus() == null
-                || CollectionUtils.isEmpty(clinicalConfiguration.getStatus().get(clinicalAnalysis.getType()))) {
-            throw new CatalogException("Missing status configuration in study for type '" + clinicalAnalysis.getType()
-                    + "'. Please add a proper set of valid statuses.");
+        if (CollectionUtils.isEmpty(clinicalConfiguration.getStatus())) {
+            throw new CatalogException("Missing status configuration in study. Please add a proper set of valid statuses.");
         }
         if (StringUtils.isNotEmpty(clinicalAnalysis.getStatus().getId())) {
             Map<String, ClinicalStatusValue> statusMap = new HashMap<>();
-            for (ClinicalStatusValue status : clinicalConfiguration.getStatus().get(clinicalAnalysis.getType())) {
+            for (ClinicalStatusValue status : clinicalConfiguration.getStatus()) {
                 statusMap.put(status.getId(), status);
             }
             if (!statusMap.containsKey(clinicalAnalysis.getStatus().getId())) {
@@ -821,10 +816,26 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             }
             ClinicalStatusValue clinicalStatusValue = statusMap.get(clinicalAnalysis.getStatus().getId());
             clinicalAnalysis.getStatus().setDescription(clinicalStatusValue.getDescription());
-            clinicalAnalysis.getStatus().setDate(TimeUtils.getTime());
+            clinicalAnalysis.getStatus().setType(clinicalStatusValue.getType());
         } else if (clinicalAnalysis.getStatus().getId() == null) {
-            clinicalAnalysis.getStatus().setId("");
+            if (initIfUndefined) {
+                // Look for first status of type NOT_STARTED
+                for (ClinicalStatusValue status : clinicalConfiguration.getStatus()) {
+                    if (status.getType() == ClinicalStatusValue.ClinicalStatusType.NOT_STARTED) {
+                        clinicalAnalysis.getStatus().setId(status.getId());
+                        clinicalAnalysis.getStatus().setDescription(status.getDescription());
+                        clinicalAnalysis.getStatus().setType(status.getType());
+                        break;
+                    }
+                }
+            } else {
+                throw new CatalogException("Missing status id in clinical analysis");
+            }
         }
+        clinicalAnalysis.getStatus().setDate(TimeUtils.getTime());
+        clinicalAnalysis.getStatus().setVersion(GitRepositoryState.getInstance().getBuildVersion());
+        clinicalAnalysis.getStatus().setCommit(GitRepositoryState.getInstance().getCommitId());
+        clinicalAnalysis.getStatus().setAuthor(userId);
     }
 
     private void validateCustomConsentParameters(ClinicalAnalysis clinicalAnalysis,
@@ -879,12 +890,11 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             throws CatalogException {
         // Flag definition
         if (CollectionUtils.isNotEmpty(clinicalAnalysis.getFlags())) {
-            if (CollectionUtils.isEmpty(clinicalConfiguration.getFlags().get(clinicalAnalysis.getType()))) {
-                throw new CatalogException("Missing flags configuration in study for type '" + clinicalAnalysis.getType()
-                        + "'. Please add a proper set of valid priorities.");
+            if (CollectionUtils.isEmpty(clinicalConfiguration.getFlags())) {
+                throw new CatalogException("Missing flags configuration. Please add a proper set of valid flags.");
             }
             Map<String, FlagValue> supportedFlags = new HashMap<>();
-            for (FlagValue flagValue : clinicalConfiguration.getFlags().get(clinicalAnalysis.getType())) {
+            for (FlagValue flagValue : clinicalConfiguration.getFlags()) {
                 supportedFlags.put(flagValue.getId(), flagValue);
             }
 
@@ -898,8 +908,8 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                     flag.setDescription(supportedFlags.get(flag.getId()).getDescription());
                     flag.setDate(TimeUtils.getTime());
                 } else {
-                    throw new CatalogException("Flag '" + flag.getId() + "' not supported. Supported flags for Clinical Analyses of "
-                            + "type '" + clinicalAnalysis.getType() + "' are: '" + String.join(", ", supportedFlags.keySet()) + "'.");
+                    throw new CatalogException("Flag '" + flag.getId() + "' not supported. Supported flags for Clinical Analyses are: '"
+                            + String.join(", ", supportedFlags.keySet()) + "'.");
                 }
             }
             clinicalAnalysis.setFlags(new ArrayList<>(flagMap.values()));
@@ -1393,15 +1403,65 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         }
         ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
 
+        // Get the clinical status that are CLOSED and DONE
+        Set<String> closedStatus = new HashSet<>();
+        Set<String> doneStatus = new HashSet<>();
+        for (ClinicalStatusValue clinicalStatusValue : clinicalConfiguration.getStatus()) {
+            if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.CLOSED)) {
+                closedStatus.add(clinicalStatusValue.getId());
+            } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.DONE)) {
+                doneStatus.add(clinicalStatusValue.getId());
+            }
+        }
+
+        // If the current clinical analysis:
+        // - is locked or panelLocked
+        // - the user wants to update the locked or panelLocked status
+        // - the user wants to update the status to/from a done|closed status
+        boolean adminPermissionsChecked = false;
+        if (clinicalAnalysis.isLocked() || clinicalAnalysis.isPanelLocked()
+                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
+                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.DONE
+                || updateParamsClone.getLocked() != null
+                || updateParams.getPanelLocked() != null
+                || (updateParams.getStatus() != null && (closedStatus.contains(updateParams.getStatus().getId())
+                || doneStatus.contains(updateParams.getStatus().getId())))) {
+            authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
+                    ClinicalAnalysisPermissions.ADMIN);
+
+            // Current status is of type CLOSED
+            if (clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+                // The only allowed action is to remove the CLOSED status
+                if (updateParams.getStatus() == null || StringUtils.isEmpty(updateParams.getStatus().getId())) {
+                    throw new CatalogException("Cannot update a ClinicalAnalysis with a " + ClinicalStatusValue.ClinicalStatusType.CLOSED
+                            + " status. You need to remove the " + ClinicalStatusValue.ClinicalStatusType.CLOSED + " status to be able "
+                            + "to perform further updates on the ClinicalAnalysis.");
+                } else if (closedStatus.contains(updateParams.getStatus().getId())) {
+                    // Users should be able to change from one CLOSED status to a different one but we should still control that no further
+                    // modifications are made
+                    if (parameters.size() > 1) {
+                        throw new CatalogException("Cannot update a ClinicalAnalysis with a "
+                                + ClinicalStatusValue.ClinicalStatusType.CLOSED + " status. You need to remove the "
+                                + ClinicalStatusValue.ClinicalStatusType.CLOSED + " status to be able to perform further updates on "
+                                + "the ClinicalAnalysis.");
+                    } else if (clinicalAnalysis.getStatus().getId().equals(updateParams.getStatus().getId())) {
+                        throw new CatalogException("ClinicalAnalysis already have the status '" + clinicalAnalysis.getStatus().getId()
+                                + "' of type " + ClinicalStatusValue.ClinicalStatusType.CLOSED);
+                    }
+                }
+            }
+
+            adminPermissionsChecked = true;
+        }
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
-        if (updateParamsClone.getAnnotationSets() != null) {
+        if (!adminPermissionsChecked && updateParamsClone.getAnnotationSets() != null) {
             authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
                     ClinicalAnalysisPermissions.WRITE_ANNOTATIONS);
         }
         // Only check update permissions if the user wants to update anything apart from the annotation sets
-        if ((parameters.size() == 1 && !parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                || parameters.size() > 1) {
+        if (!adminPermissionsChecked && ((parameters.size() == 1
+                && !parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) || parameters.size() > 1)) {
             authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
                     ClinicalAnalysisPermissions.WRITE);
         }
@@ -1533,13 +1593,14 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), clinicalAnalysis.getFiles());
         }
 
-        if (CollectionUtils.isNotEmpty(updateParamsClone.getPanels()) && updateParamsClone.getPanelLock() != null
-                && updateParamsClone.getPanelLock()) {
-            throw new CatalogException("Updating the list of panels and setting 'panelLock' to true at the same time is not allowed.");
+        if (CollectionUtils.isNotEmpty(updateParamsClone.getPanels()) && updateParamsClone.getPanelLocked() != null
+                && updateParamsClone.getPanelLocked()) {
+            throw new CatalogException("Updating the list of panels and setting '"
+                    + ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key() + "' to true at the same time is not allowed.");
         }
 
         if (CollectionUtils.isNotEmpty(updateParamsClone.getPanels())) {
-            if (clinicalAnalysis.isPanelLock() && (updateParamsClone.getPanelLock() == null || updateParamsClone.getPanelLock())) {
+            if (clinicalAnalysis.isPanelLocked() && (updateParamsClone.getPanelLocked() == null || updateParamsClone.getPanelLocked())) {
                 throw new CatalogException("Cannot update panels from ClinicalAnalysis '" + clinicalAnalysis.getId() + "'. "
                         + "'panelLocked' field from ClinicalAnalysis is set to true.");
             }
@@ -1556,15 +1617,17 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelResult.getResults());
         }
 
-        if (updateParamsClone.getPanelLock() != null && updateParamsClone.getPanelLock() && !clinicalAnalysis.isPanelLock()) {
+        if (updateParamsClone.getPanelLocked() != null && updateParamsClone.getPanelLocked() && !clinicalAnalysis.isPanelLocked()) {
             // if user wants to set panelLock to true
             // We need to check if the CA has interpretations. If so, the interpretations should contain at least one of the case panels
             // in order to set panelLock to true. Otherwise, that action is not allowed.
             Set<String> panelIds = clinicalAnalysis.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
             String exceptionMsgPrefix = "The interpretation '";
-            String exceptionMsgSuffix = "' does not contain any of the case panels. 'panelLock' can only be set to true if all"
+            String exceptionMsgSuffix = "' does not contain any of the case panels. '"
+                    + ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key() + "' can only be set to true if all"
                     + " all Interpretations contains a non-empty subset of the panels used by the case.";
-            String alternativeExceptionMsgSuffix = "' is using a panel not defined by the case. 'panelLock' can only be set to true if all"
+            String alternativeExceptionMsgSuffix = "' is using a panel not defined by the case. '"
+                    + ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key() + "' can only be set to true if all"
                     + " all Interpretations contains a non-empty subset of the panels used by the case.";
             if (clinicalAnalysis.getInterpretation() != null) {
                 if (CollectionUtils.isEmpty(clinicalAnalysis.getInterpretation().getPanels())) {
@@ -1614,8 +1677,8 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
 
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS.key())) {
             Map<String, Object> status = (Map<String, Object>) parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS.key());
-            if (!(status instanceof Map) || StringUtils.isEmpty(String.valueOf(status.get("name")))
-                    || !ClinicalAnalysisStatus.isValid(String.valueOf(status.get("name")))) {
+            if (!(status instanceof Map) || StringUtils.isEmpty(String.valueOf(status.get("id")))
+                    || !InternalStatus.isValid(String.valueOf(status.get("id")))) {
                 throw new CatalogException("Missing or invalid status");
             }
         }
@@ -1659,12 +1722,12 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.CONSENT.key(), clinicalAnalysis.getConsent());
         }
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key())) {
-            clinicalAnalysis.setStatus(updateParamsClone.getStatus().toStatus());
-            validateStatusParameter(clinicalAnalysis, clinicalConfiguration);
+            clinicalAnalysis.setStatus(updateParamsClone.getStatus().toClinicalStatus());
+            validateStatusParameter(clinicalAnalysis, clinicalConfiguration, userId, false);
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key(), clinicalAnalysis.getStatus());
 
             if (StringUtils.isNotEmpty(updateParamsClone.getStatus().getId())) {
-                List<ClinicalStatusValue> clinicalStatusValues = clinicalConfiguration.getStatus().get(clinicalAnalysis.getType());
+                List<ClinicalStatusValue> clinicalStatusValues = clinicalConfiguration.getStatus();
                 for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
                     if (updateParamsClone.getStatus().getId().equals(clinicalStatusValue.getId())) {
                         if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
@@ -2636,23 +2699,29 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         }
     }
 
-    private void validateClinicalStatus(Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status, String field)
+    private void validateClinicalStatus(List<ClinicalStatusValue> status, String field)
             throws CatalogException {
-        if (status == null) {
+        if (CollectionUtils.isEmpty(status)) {
             throw CatalogParameterException.isNull(field);
         }
-        for (ClinicalAnalysis.Type value : ClinicalAnalysis.Type.values()) {
-            if (!status.containsKey(value)) {
-                throw new CatalogParameterException(field + ": Missing status values for ClinicalAnalysis type '" + value + "'");
+        // Ensure there's at least one status id per status type
+        Map<ClinicalStatusValue.ClinicalStatusType, Boolean> presentMap = new HashMap<>();
+        for (ClinicalStatusValue.ClinicalStatusType value : ClinicalStatusValue.ClinicalStatusType.values()) {
+            // Init map
+            presentMap.put(value, false);
+        }
+        for (ClinicalStatusValue clinicalStatusValue : status) {
+            if (StringUtils.isEmpty(clinicalStatusValue.getId())) {
+                throw CatalogParameterException.isNull(field + ".id");
             }
-            List<ClinicalStatusValue> statuses = status.get(value);
-            for (ClinicalStatusValue clinicalStatusValue : statuses) {
-                if (StringUtils.isEmpty(clinicalStatusValue.getId())) {
-                    throw CatalogParameterException.isNull(field + ".{" + value + "}.id");
-                }
-                if (clinicalStatusValue.getType() == null) {
-                    throw CatalogParameterException.isNull(field + ".{" + value + "}.type");
-                }
+            if (clinicalStatusValue.getType() == null) {
+                throw CatalogParameterException.isNull(field + ".type");
+            }
+            presentMap.put(clinicalStatusValue.getType(), true);
+        }
+        for (Map.Entry<ClinicalStatusValue.ClinicalStatusType, Boolean> entry : presentMap.entrySet()) {
+            if (!entry.getValue()) {
+                throw new CatalogException("Missing status values for ClinicalStatus type '" + entry.getKey() + "'");
             }
         }
     }

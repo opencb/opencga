@@ -16,6 +16,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.OpenCgaMongoConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -56,7 +57,7 @@ public class EventMongoDBAdaptor extends MongoDBAdaptor implements EventDBAdapto
     }
 
     @Override
-    public void insert(CatalogEvent event) throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+    public void insert(CatalogEvent event) throws CatalogException {
         runTransaction(session -> {
             long uid = getNewUid(session);
             event.setUid(uid);
@@ -71,8 +72,7 @@ public class EventMongoDBAdaptor extends MongoDBAdaptor implements EventDBAdapto
     }
 
     @Override
-    public void updateSubscriber(CatalogEvent event, Enums.Resource resource, boolean successful)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public void updateSubscriber(CatalogEvent event, Enums.Resource resource, boolean successful) throws CatalogException {
         runTransaction(session -> {
             Bson query = Filters.and(
                     Filters.eq(PRIVATE_UID, event.getUid()),
@@ -90,7 +90,7 @@ public class EventMongoDBAdaptor extends MongoDBAdaptor implements EventDBAdapto
     }
 
     @Override
-    public void finishEvent(CatalogEvent opencgaEvent) throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+    public void finishEvent(CatalogEvent opencgaEvent) throws CatalogException {
         runTransaction(session -> {
             Query query = new Query(QueryParams.UID.key(), opencgaEvent.getUid());
             Document eventDoc = nativeGet(session, query, QueryOptions.empty()).first();
@@ -111,8 +111,7 @@ public class EventMongoDBAdaptor extends MongoDBAdaptor implements EventDBAdapto
     }
 
     @Override
-    public void archiveEvent(CatalogEvent opencgaEvent)
-            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+    public void archiveEvent(CatalogEvent opencgaEvent) throws CatalogException {
         runTransaction(session -> {
             Query query = new Query(QueryParams.UID.key(), opencgaEvent.getUid());
             Document eventDoc = nativeGet(session, query, QueryOptions.empty()).first();

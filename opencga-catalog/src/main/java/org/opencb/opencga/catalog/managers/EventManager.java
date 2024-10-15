@@ -5,7 +5,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.EventDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.exceptions.CatalogRuntimeException;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -64,7 +66,7 @@ public final class EventManager extends AbstractManager implements Closeable {
             // Register event in database
             try {
                 dbAdaptorFactory.getEventDBAdaptor(event.getEvent().getOrganizationId()).insert(event);
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Internal error: Could not write in database.", e);
             }
             if (preEventObserver != null) {
@@ -76,7 +78,7 @@ public final class EventManager extends AbstractManager implements Closeable {
             // Register end of event in database
             try {
                 dbAdaptorFactory.getEventDBAdaptor(event.getEvent().getOrganizationId()).finishEvent(event);
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Internal error: Could not write in database.", e);
             }
             if (postEventObserver != null) {
@@ -89,7 +91,7 @@ public final class EventManager extends AbstractManager implements Closeable {
             try {
                 dbAdaptorFactory.getEventDBAdaptor(event.getEvent().getOrganizationId())
                         .updateSubscriber(event, observer.getResource(), true);
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Internal error: Could not write in database.", e);
             }
         });
@@ -98,7 +100,7 @@ public final class EventManager extends AbstractManager implements Closeable {
             try {
                 dbAdaptorFactory.getEventDBAdaptor(event.getEvent().getOrganizationId())
                         .updateSubscriber(event, observer.getResource(), false);
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Internal error: Could not write in database.", e);
             }
         });
