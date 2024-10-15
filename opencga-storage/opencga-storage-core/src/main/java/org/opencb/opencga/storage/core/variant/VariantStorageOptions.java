@@ -100,7 +100,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     QUERY_SAMPLE_LIMIT_DEFAULT("query.sample.limit.default", 100),
     QUERY_SAMPLE_LIMIT_MAX("query.sample.limit.max", 1000),
 
-    WALKER_DOCKER_MEMORY("walker.docker.memory", "512m", true),
+    WALKER_DOCKER_MEMORY("walker.docker.memory", "1024m", true),
     WALKER_DOCKER_CPU("walker.docker.cpu", "1", true),
     WALKER_DOCKER_USER("walker.docker.user", "", true),
     WALKER_DOCKER_ENV("walker.docker.env", "", true),

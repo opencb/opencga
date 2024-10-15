@@ -11,6 +11,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
@@ -80,6 +81,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         addJobConf(job, MRJobConfig.JOB_RUNNING_MAP_LIMIT);
         addJobConf(job, MRJobConfig.JOB_RUNNING_REDUCE_LIMIT);
         addJobConf(job, MRJobConfig.TASK_TIMEOUT);
+        VariantMapReduceUtil.configureTaskJavaHeap(((JobConf) job.getConfiguration()), getClass());
         return job;
     }
 
@@ -171,10 +173,15 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         } else {
             LOGGER.info("   * Mapper        : " + job.getMapperClass().getName());
         }
-        LOGGER.info("     - memory (MB) : " + job.getConfiguration().getInt(MRJobConfig.MAP_MEMORY_MB, -1));
+        JobConf jobConf = (JobConf) job.getConfiguration();
+        LOGGER.info("     - memory required (MB) : " + jobConf.getMemoryRequired(TaskType.MAP));
+        LOGGER.info("     - java-heap (MB) : " + JobConf.parseMaximumHeapSizeMB(jobConf.getTaskJavaOpts(TaskType.MAP)));
+        LOGGER.info("     - java-opts : " + jobConf.getTaskJavaOpts(TaskType.MAP));
         if (job.getNumReduceTasks() > 0) {
             LOGGER.info("   * Reducer       : " + job.getNumReduceTasks() + "x " + job.getReducerClass().getName());
-            LOGGER.info("     - memory (MB) : " + job.getConfiguration().getInt(MRJobConfig.REDUCE_MEMORY_MB, -1));
+            LOGGER.info("     - memory required (MB) : " + jobConf.getMemoryRequired(TaskType.REDUCE));
+            LOGGER.info("     - java-heap (MB) : " + JobConf.parseMaximumHeapSizeMB(jobConf.getTaskJavaOpts(TaskType.REDUCE)));
+            LOGGER.info("     - java-opts : " + jobConf.getTaskJavaOpts(TaskType.REDUCE));
         } else {
             LOGGER.info("   * Reducer       : (no reducer)");
         }

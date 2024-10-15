@@ -128,12 +128,12 @@ variant:
     search.intersect.always: false          # Force intersect queries
     search.intersect.params.threshold: 3    # Minimum number of QueryParams in the query to intersect
 
-    walker.docker.memory: "512m" # Memory limit for the docker executor
-    walker.docker.cpu: "1"       # CPU limit for the docker executor
-    walker.docker.user: ""       # User to run the docker executor
-    walker.docker.env: ""        # Environment variables to be passed to the docker executor. e.g. key=value,key2=value2
-    walker.docker.mount: ""      # Volumes to be mounted in the docker executor
-    walker.docker.opts: ""       # Additional docker options
+    walker.docker.memory: "1024m" # Memory limit for the docker executor
+#    walker.docker.cpu: "1"        # CPU limit for the docker executor
+#    walker.docker.user: ""        # User to run the docker executor
+#    walker.docker.env: ""         # Environment variables to be passed to the docker executor. e.g. key=value,key2=value2
+#    walker.docker.mount: ""       # Volumes to be mounted in the docker executor
+#    walker.docker.opts: ""        # Additional docker options
 
   ## The following section defines all available storage engine plugins installed
   engines:
@@ -191,16 +191,16 @@ variant:
         DeleteHBaseColumnDriver:
           storage.hadoop.write.mappers.limit.factor: 4
         DiscoverPendingVariantsDriver:
-          mapreduce.map.memory.mb: 750
+          mapreduce.map.memory.mb: 2048
         VariantStatsDriver:
           mapreduce.map.memory.mb: 2048
+        StreamVariantDriver:
+          mapreduce.map.memory.mb: 3072
         SampleIndexDriver:
           mapreduce.map.memory.mb: 4096
           max-columns-per-scan: 8000
         SampleIndexAnnotationLoaderDriver:
           mapreduce.map.memory.mb: 4096
-        VariantMigration200Driver:
-          mapreduce.map.memory.mb: 1024
 
 
 ## PENDING

@@ -61,6 +61,17 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS("storage.hadoop.mr.executor.ssh.terminationGracePeriodSeconds", 120),
 
     MR_STREAM_DOCKER_HOST("storage.hadoop.mr.stream.docker.host", "", true),
+    MR_HEAP_MIN_MB("storage.hadoop.mr.heap.min-mb", 512),  // Min heap size for the JVM
+    MR_HEAP_MAX_MB("storage.hadoop.mr.heap.max-mb", 2048), // Max heap size for the JVM
+    MR_HEAP_MAP_OTHER_MB("storage.hadoop.mr.heap.map.other-mb", 0), // Other reserved memory. Not used by the JVM heap.
+    MR_HEAP_REDUCE_OTHER_MB("storage.hadoop.mr.heap.reduce.other-mb", 0), // Other reserved memory. Not used by the JVM heap.
+    MR_HEAP_MEMORY_MB_RATIO("storage.hadoop.mr.heap.memory-mb.ratio", 0.6), // Ratio of the memory to use for the JVM heap.
+    // Heap size for the map and reduce tasks.
+    // If not set, it will be calculated as:
+    //      (REQUIRED_MEMORY - MR_HEAP_OTHER_MB) * MR_HEAP_MEMORY_MB_RATIO
+    //      then caped between MR_HEAP_MIN_MB and MR_HEAP_MAX_MB
+    MR_HEAP_MAP_MB("storage.hadoop.mr.heap.map.mb"),
+    MR_HEAP_REDUCE_MB("storage.hadoop.mr.heap.reduce.mb"),
 
     /////////////////////////
     // Variant table configuration

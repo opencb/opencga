@@ -60,15 +60,15 @@ class VariantWalker(ABC):
         """
         print(value)
 
-    def jsonHeaderToVcfHeader(self, jsonHeader):
-        """
-        Convert a JSON header to a VCF header.
-
-        Args:
-            jsonHeader (dict): The JSON header to convert.
-        """
-        # TODO: Implement this method
-        return ""
+    # def jsonHeaderToVcfHeader(self, jsonHeader):
+    #     """
+    #     Convert a JSON header to a VCF header.
+    #
+    #     Args:
+    #         jsonHeader (dict): The JSON header to convert.
+    #     """
+    #     # TODO: Implement this method
+    #     return ""
 
 
     def getTmpdir(self):
@@ -130,16 +130,19 @@ def main(module_name, class_name, *args):
         if not header_read:
             if line.startswith("#") or num_entries == 1:
                 header.append(line)
-                continue
             else:
                 header_read = True
-                walker.header(header)
-
-        try:
-            walker.map(line)
-        except Exception as e:
-            print(f"An error occurred while processing the line: {e}", file=sys.stderr)
-            raise
+                try:
+                    walker.header(header)
+                except Exception as e:
+                    print(f"An error occurred while processing the header: {e}", file=sys.stderr)
+                    raise
+        else:
+            try:
+                walker.map(line)
+            except Exception as e:
+                print(f"An error occurred while processing a line: {e}", file=sys.stderr)
+                raise
 
     walker.count("num_entries", num_entries)
     walker.count("size_entries", size_entries)

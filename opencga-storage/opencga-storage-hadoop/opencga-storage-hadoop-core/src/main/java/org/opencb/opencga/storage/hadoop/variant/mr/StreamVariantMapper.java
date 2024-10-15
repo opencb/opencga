@@ -147,7 +147,14 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     }
 
     private void addException(String message, Throwable th) {
-        addException(new Exception(message, th));
+        th.addSuppressed(new AnnotationException(message));
+        addException(th);
+    }
+
+    public static class AnnotationException extends RuntimeException {
+        public AnnotationException(String message) {
+            super(message);
+        }
     }
 
     private void addException(Throwable th) {
@@ -156,15 +163,21 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         if (th instanceof OutOfMemoryError) {
             try {
                 // Print the current memory status in multiple lines
-                Runtime runtime = Runtime.getRuntime();
+                Runtime rt = Runtime.getRuntime();
                 LOG.warn("Catch OutOfMemoryError!");
-                LOG.warn("Free memory: " + runtime.freeMemory());
-                LOG.warn("Total memory: " + runtime.totalMemory());
-                LOG.warn("Max memory: " + runtime.maxMemory());
-                th.addSuppressed(new Exception(
-                        "Free memory: " + runtime.freeMemory() + ", "
-                        + "Total memory: " + runtime.totalMemory() + ", "
-                        + "Max memory: " + runtime.maxMemory()));
+                LOG.warn("Free memory: " + rt.freeMemory());
+                LOG.warn("Total memory: " + rt.totalMemory());
+                LOG.warn("Max memory: " + rt.maxMemory());
+
+                double mb = 1024 * 1024;
+                th.addSuppressed(new AnnotationException(String.format("Memory usage. MaxMemory: %.2f MiB"
+                                + " TotalMemory: %.2f MiB"
+                                + " FreeMemory: %.2f MiB"
+                                + " UsedMemory: %.2f MiB",
+                        rt.maxMemory() / mb,
+                        rt.totalMemory() / mb,
+                        rt.freeMemory() / mb,
+                        (rt.totalMemory() - rt.freeMemory()) / mb)));
             } catch (Throwable t) {
                 // Ignore any exception while printing the memory status
                 LOG.warn("Error printing memory status", t);

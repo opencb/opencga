@@ -324,15 +324,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         ObjectMap params = new ObjectMap(getOptions()).appendAll(variantQuery.getQuery()).appendAll(variantQuery.getInputOptions());
         params.remove(StreamVariantDriver.COMMAND_LINE_PARAM);
 
-        String memory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
-        int memoryBytes;
-        if (memory.endsWith("M") || memory.endsWith("m")) {
-            memoryBytes = Integer.parseInt(memory.substring(0, memory.length() - 1)) * 1024 * 1024;
-        } else if (memory.endsWith("G") || memory.endsWith("g")) {
-            memoryBytes = Integer.parseInt(memory.substring(0, memory.length() - 1)) * 1024 * 1024 * 1024;
-        } else {
-            memoryBytes = Integer.parseInt(memory);
-        }
+        String dockerMemory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
+        long dockerMemoryBytes = IOUtils.fromHumanReadableToByte(dockerMemory, true);
 
         String dockerHost = getOptions().getString(MR_STREAM_DOCKER_HOST.key(), MR_STREAM_DOCKER_HOST.defaultValue());
         if (StringUtils.isNotEmpty(dockerHost)) {
@@ -343,7 +336,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 null,
                 getVariantTableName(), studyId, null,
                 params
-                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, memoryBytes / 2)
+                        .append(MR_HEAP_MAP_OTHER_MB.key(), dockerMemoryBytes / 1024 / 1204)
+                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, dockerMemoryBytes / 2)
                         .append(StreamVariantDriver.COMMAND_LINE_BASE64_PARAM, Base64.getEncoder().encodeToString(commandLine.getBytes()))
                         .append(StreamVariantDriver.INPUT_FORMAT_PARAM, format.toString())
                         .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)
