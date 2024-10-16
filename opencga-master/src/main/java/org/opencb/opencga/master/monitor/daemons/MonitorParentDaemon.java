@@ -89,7 +89,7 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
     }
 
-    public abstract void apply() throws Exception;
+    protected abstract void apply() throws Exception;
 
     @Override
     public void close() throws IOException {

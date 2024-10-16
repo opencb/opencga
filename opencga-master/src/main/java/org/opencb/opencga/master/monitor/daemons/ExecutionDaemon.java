@@ -290,10 +290,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     @Override
-    public void apply() throws Exception {
+    protected void apply() throws Exception {
         checkJobs();
     }
-
 
     @Override
     public void close() throws IOException {
