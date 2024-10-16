@@ -329,7 +329,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
 //        variantStorageEngine.walkData(outdir.resolve("variant6.txt.gz"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(), new QueryOptions(), cmdPython);
 //        variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), "opencb/opencga-base", cmd);
 //        variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), "opencb/opencga-base", cmdPython1);
-        variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), "my-python-app:latest", cmdPython1);
+        variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), "jcoll/my-python-app:latest", cmdPython1);
 
     }
 

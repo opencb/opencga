@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -10,9 +12,13 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.util.LineReader;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.exec.Command;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
@@ -62,6 +68,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     protected final List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
 
     private volatile boolean processProvidedStatus_ = false;
+    private VariantMetadata metadata;
 
     public static void setCommandLine(Job job, String commandLine) {
         String commandLineBase64 = Base64.getEncoder().encodeToString(commandLine.getBytes());
@@ -125,7 +132,16 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                     } else {
                         keyStr = currentKey.toString();
                     }
-                    addException("Exception in mapper for key: " + keyStr, th);
+                    String message = "Exception in mapper for key: '" + keyStr + "'";
+                    try {
+                        Variant currentValue = context.getCurrentValue();
+                        if (currentValue != null) {
+                            message += " value: '" + currentValue + "'";
+                        }
+                    } catch (Throwable t) {
+                        th.addSuppressed(t);
+                    }
+                    addException(message, th);
                 } else {
                     addException(th);
                 }
@@ -210,7 +226,28 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     @Override
     protected void cleanup(Mapper<Object, Variant, ImmutableBytesWritable, Text>.Context context) throws IOException, InterruptedException {
         closeProcess(context);
+        dockerPruneImages();
         super.cleanup(context);
+    }
+
+    private void dockerPruneImages() {
+        try {
+            LOG.info("Pruning docker images");
+            int maxImages = 5;
+            Command command = new Command(new String[]{"bash", "-c", "[ $(docker image ls  --format json | wc -l) -gt " + maxImages + " ] "
+                    + "&& echo 'Run docker image prune' && docker image prune -f -a "
+                    + "|| echo 'Skipping docker image prune. Less than " + maxImages + " images.'"}, Collections.emptyMap());
+            command.run();
+            int ecode = command.getExitValue();
+
+            // Throw exception if the process failed
+            if (ecode != 0) {
+                throw new IOException("Error executing 'docker image prune -f -a'. Exit code: " + ecode);
+            }
+            LOG.info("Docker images pruned");
+        } catch (IOException e) {
+            addException(e);
+        }
     }
 
     @Override
@@ -270,7 +307,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
 //        drainStdout(context);
     }
 
-    private void startProcess(Context context) throws IOException {
+    private void startProcess(Context context) throws IOException, StorageEngineException {
         LOG.info("bash -ce '" + commandLine + "'");
         context.getCounter(COUNTER_GROUP_NAME, "START_PROCESS").increment(1);
 
@@ -297,6 +334,16 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         stdoutThread.start();
 
         variantDataWriter = writerFactory.newDataWriter(format, stdin, new Query(query), new QueryOptions(options));
+
+
+        if (format.inPlain() == VariantWriterFactory.VariantOutputFormat.JSON) {
+            if (metadata == null) {
+                VariantMetadataFactory metadataFactory = new VariantMetadataFactory(metadataManager);
+                metadata = metadataFactory.makeVariantMetadata(query, options);
+            }
+            ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+            objectMapper.writeValue((DataOutput) stdin, metadata);
+        }
 
         processedBytes = 0;
         numRecordsRead = 0;
