@@ -84,7 +84,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
@@ -296,8 +295,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw VariantQueryException.internalException(e);
             }
         }).iterator();
-        long ts = getMetadataManager().getProjectMetadata().getAttributes()
-                .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+        long ts = getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndexLastTimestamp();
         HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(ts)
                 .setAnnotationIds(getMetadataManager().getProjectMetadata().getAnnotation())
                 .setIncludeFields(selectElements.getFields());

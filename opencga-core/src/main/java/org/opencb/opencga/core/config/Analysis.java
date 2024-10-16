@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.core.config;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,12 +36,16 @@ public class Analysis {
 
     private Execution execution;
 
+    @DataField(id = "operations", description = FieldConstants.CONFIGURATION_ANALYSIS_OPERATIONS)
+    private OperationConfig operations;
+
     private List<FrameworkConfiguration> frameworks;
 
     public Analysis() {
         packages = new ArrayList<>();
         tools = new ArrayList<>();
         execution = new Execution();
+        operations = new OperationConfig();
         frameworks = new ArrayList<>();
     }
 
@@ -48,6 +55,15 @@ public class Analysis {
 
     public Analysis setPackages(List<String> packages) {
         this.packages = packages;
+        return this;
+    }
+
+    public OperationConfig getOperations() {
+        return operations;
+    }
+
+    public Analysis setOperations(OperationConfig operations) {
+        this.operations = operations;
         return this;
     }
 

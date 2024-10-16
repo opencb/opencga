@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.metadata.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.opencb.cellbase.core.models.DataRelease;
@@ -13,7 +14,15 @@ import java.util.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class ProjectMetadata {
+public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
+
+    private static final String FILE_INDEX_LAST_TIMESTAMP = "file.index.last.timestamp";
+    @Deprecated
+    // This value was used by opencga-storage-hadoop internally for the same purpose. It is not used anymore.
+    private static final String LAST_LOADED_FILE_TS = "lastLoadedFileTs";
+    private static final String STATS_INDEX_LAST_TIMESTAMP = "stats.index.last.timestamp";
+    private static final String ANNOTATION_INDEX_LAST_TIMESTAMP = "annotation.index.last.timestamp";
+    private static final String SEARCH_INDEX_LAST_TIMESTAMP = "search.index.last.timestamp";
 
     private String species;
     private String assembly;
@@ -24,8 +33,6 @@ public class ProjectMetadata {
     private VariantAnnotationSets annotation;
 
     private Map<String, Integer> counters;
-
-    private ObjectMap attributes;
 
     public static class VariantAnnotationSets {
         private VariantAnnotationMetadata current;
@@ -235,7 +242,7 @@ public class ProjectMetadata {
         dataRelease = "";
         annotation = new VariantAnnotationSets();
         counters = new HashMap<>();
-        attributes = new ObjectMap();
+        setAttributes(new ObjectMap());
     }
 
     public ProjectMetadata(String species, String assembly, int release) {
@@ -248,14 +255,15 @@ public class ProjectMetadata {
         this.assembly = assembly;
         this.dataRelease = dataRelease;
         this.release = release;
-        this.attributes = attributes != null ? attributes : new ObjectMap();
+        setAttributes(attributes != null ? attributes : new ObjectMap());
         this.annotation = annotation != null ? annotation : new VariantAnnotationSets();
         this.counters = counters != null ? counters : new HashMap<>();
     }
 
     public ProjectMetadata copy() {
-        return new ProjectMetadata(species, assembly, dataRelease, release, new ObjectMap(attributes), new HashMap<>(counters),
-                annotation);
+        return new ProjectMetadata(species, assembly, dataRelease, release, new ObjectMap(getAttributes()), new HashMap<>(counters),
+                annotation)
+                .setStatus(new HashMap<>(getStatus()));
     }
 
     public String getSpecies() {
@@ -312,13 +320,73 @@ public class ProjectMetadata {
         return this;
     }
 
-    public ObjectMap getAttributes() {
-        return attributes;
+    @JsonIgnore
+    public TaskMetadata.Status getAnnotationIndexStatus() {
+        return getStatus("annotation");
     }
 
-    public ProjectMetadata setAttributes(ObjectMap attributes) {
-        this.attributes = attributes;
+    @JsonIgnore
+    public ProjectMetadata setAnnotationIndexStatus(TaskMetadata.Status annotationStatus) {
+        return setStatus("annotation", annotationStatus);
+    }
+
+    @JsonIgnore
+    public TaskMetadata.Status getSecondaryAnnotationIndexStatus() {
+        return getStatus("secondaryAnnotationIndex");
+    }
+
+    @JsonIgnore
+    public ProjectMetadata setSecondaryAnnotationIndexStatus(TaskMetadata.Status annotationStatus) {
+        return setStatus("secondaryAnnotationIndex", annotationStatus);
+    }
+
+    @JsonIgnore
+    public ProjectMetadata setVariantIndexLastTimestamp() {
+        getAttributes().put(FILE_INDEX_LAST_TIMESTAMP, System.currentTimeMillis());
         return this;
+    }
+
+    @JsonIgnore
+    public long getVariantIndexLastTimestamp() {
+        long ts = getAttributes().getLong(FILE_INDEX_LAST_TIMESTAMP, 0);
+        if (ts == 0) {
+            // Old versions of the metadata may still use the old field
+            return getAttributes().getLong(LAST_LOADED_FILE_TS, 0);
+        }
+        return ts;
+    }
+
+    @JsonIgnore
+    public ProjectMetadata setAnnotationIndexLastTimestamp(long annotationStartTimestamp) {
+        getAttributes().put(ANNOTATION_INDEX_LAST_TIMESTAMP, annotationStartTimestamp);
+        return this;
+    }
+
+    @JsonIgnore
+    public long getAnnotationIndexLastTimestamp() {
+        return getAttributes().getLong(ANNOTATION_INDEX_LAST_TIMESTAMP, 0);
+    }
+
+    @JsonIgnore
+    public ProjectMetadata setSecondaryAnnotationIndexLastTimestamp(long timestamp) {
+        getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP, timestamp);
+        return this;
+    }
+
+    @JsonIgnore
+    public long getSecondaryAnnotationIndexLastTimestamp() {
+        return getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP, 0);
+    }
+
+    @JsonIgnore
+    public ProjectMetadata setStatsIndexLastTimestamp(long timeMillis) {
+        getAttributes().put(STATS_INDEX_LAST_TIMESTAMP, timeMillis);
+        return this;
+    }
+
+    @JsonIgnore
+    public long getStatsLastTimestamp() {
+        return getAttributes().getLong(STATS_INDEX_LAST_TIMESTAMP, 0);
     }
 
 }

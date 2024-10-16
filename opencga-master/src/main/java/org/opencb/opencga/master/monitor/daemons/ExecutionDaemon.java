@@ -105,6 +105,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.Status;
+import org.opencb.opencga.master.monitor.executors.BatchExecutor;
+import org.opencb.opencga.master.monitor.executors.ExecutorFactory;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 import org.opencb.opencga.master.monitor.schedulers.JobScheduler;
 
@@ -148,6 +150,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     private final FileManager fileManager;
     private final Map<String, Long> jobsCountByType = new HashMap<>();
     private final Map<String, Long> retainedLogsTime = new HashMap<>();
+    protected BatchExecutor batchExecutor;
 
     private List<String> packages;
 
@@ -253,6 +256,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                            String appHome, List<String> packages) throws CatalogDBException {
         super(interval, token, catalogManager);
 
+        ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
+        this.batchExecutor = executorFactory.getExecutor();
+
         this.jobManager = catalogManager.getJobManager();
         this.fileManager = catalogManager.getFileManager();
         this.storageConfiguration = storageConfiguration;
@@ -278,8 +284,13 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         logger.info("Packages where to find tools/analyses: " + StringUtils.join(this.packages, ", "));
     }
 
+    public MonitorParentDaemon setBatchExecutor(BatchExecutor batchExecutor) {
+        this.batchExecutor = batchExecutor;
+        return this;
+    }
+
     @Override
-    public void apply() throws Exception {
+    protected void apply() throws Exception {
         checkJobs();
     }
 

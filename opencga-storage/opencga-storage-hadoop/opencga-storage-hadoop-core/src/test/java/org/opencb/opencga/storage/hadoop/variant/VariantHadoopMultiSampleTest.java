@@ -56,7 +56,6 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTest;
 
 import java.io.IOException;
@@ -93,8 +92,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void setUp() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         clearDB(variantStorageManager.getDBName());
-        //Force HBaseConverter to fail if something goes wrong
-        HBaseToVariantConverter.setFailOnWrongVariants(true);
     }
 
     @After

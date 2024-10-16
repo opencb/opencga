@@ -17,8 +17,6 @@
 package org.opencb.opencga.master.monitor.daemons;
 
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.master.monitor.executors.BatchExecutor;
-import org.opencb.opencga.master.monitor.executors.ExecutorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +30,6 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
     protected final int interval;
     protected final CatalogManager catalogManager;
-    protected BatchExecutor batchExecutor;
 
     private volatile boolean exit = false;
 
@@ -44,8 +41,6 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
         this.catalogManager = catalogManager;
         this.token = token;
         logger = LoggerFactory.getLogger(this.getClass());
-        ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
-        this.batchExecutor = executorFactory.getExecutor();
     }
 
     public boolean isExit() {
@@ -56,6 +51,7 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
         this.exit = exit;
     }
 
+    @Override
     public void run() {
         try {
             init();
@@ -93,5 +89,9 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
     }
 
-    public abstract void apply() throws Exception;
+    protected abstract void apply() throws Exception;
+
+    @Override
+    public void close() throws IOException {
+    }
 }

@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.analysis.tools;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.core.config.Analysis;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.reflections.Reflections;
@@ -38,6 +40,19 @@ public class ToolFactory {
     private static List<Class<? extends OpenCgaTool>> toolsList;
 
     public static final String DEFAULT_PACKAGE = "org.opencb.opencga";
+
+//    public ToolFactory(Analysis analysisConf) {
+//
+//    }
+
+    private static void loadTools(Analysis analysisConf) {
+        if (analysisConf != null
+                && CollectionUtils.isNotEmpty(analysisConf.getPackages())) {
+            loadTools(analysisConf.getPackages());
+        } else {
+            loadTools(Collections.singletonList(DEFAULT_PACKAGE));
+        }
+    }
 
     private static synchronized Map<String, Class<? extends OpenCgaTool>> loadTools(List<String> packages) {
         if (toolsCache == null) {
@@ -137,6 +152,10 @@ public class ToolFactory {
         return aClass;
     }
 
+    @Deprecated
+    /*
+     * Should use the version with "packages" list
+     */
     public Tool getTool(String toolId) throws ToolException {
         return getTool(toolId, Collections.singletonList(DEFAULT_PACKAGE));
     }
@@ -165,13 +184,8 @@ public class ToolFactory {
         }
     }
 
-    public Collection<Class<? extends OpenCgaTool>> getTools() {
-        loadTools(Collections.singletonList(DEFAULT_PACKAGE));
-        return toolsList;
-    }
-
-    public Collection<Class<? extends OpenCgaTool>> getTools(List<String> packages) {
-        loadTools(packages);
+    public Collection<Class<? extends OpenCgaTool>> getTools(Analysis analysisConf) {
+        loadTools(analysisConf);
         return toolsList;
     }
 
