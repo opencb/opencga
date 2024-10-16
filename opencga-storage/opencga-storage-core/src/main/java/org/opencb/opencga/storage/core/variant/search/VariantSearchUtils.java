@@ -280,7 +280,9 @@ public class VariantSearchUtils {
                 Set<String> samples = new HashSet<>();
                 if (isValidParam(query, VariantQueryParam.SAMPLE)) {
                     String value = query.getString(VariantQueryParam.SAMPLE.key());
-                    samples.addAll(splitValue(value).getValue());
+                    for (String sample : splitValue(value).getValue()) {
+                        samples.add(sample.split(IS)[0]);
+                    }
                 }
                 if (isValidParam(query, VariantQueryParam.GENOTYPE)) {
                     HashMap<Object, List<String>> map = new HashMap<>();

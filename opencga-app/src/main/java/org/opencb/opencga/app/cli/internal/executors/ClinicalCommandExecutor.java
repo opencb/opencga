@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -39,33 +38,14 @@ import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
-import org.opencb.opencga.catalog.managers.SampleManager;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.*;
-import org.opencb.opencga.core.models.family.FamilyCreateParams;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
-import org.opencb.opencga.core.models.panel.Panel;
-import org.opencb.opencga.core.models.panel.PanelCreateParams;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleCreateParams;
-import org.opencb.opencga.core.models.sample.SampleReferenceParam;
-import org.opencb.opencga.core.response.RestResponse;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.CancerTieringCommandOptions.CANCER_TIERING_INTERPRETATION_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.ExomiserInterpretationCommandOptions.EXOMISER_INTERPRETATION_RUN_COMMAND;
@@ -74,8 +54,6 @@ import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.TeamCommandOptions.TEAM_INTERPRETATION_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.TieringCommandOptions.TIERING_INTERPRETATION_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.ZettaCommandOptions.ZETTA_INTERPRETATION_RUN_COMMAND;
-import static org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs.PRIMARY;
-import static org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs.SECONDARY;
 
 /**
  * Created on 01/04/20
@@ -137,7 +115,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         ObjectMap params = new RgaAnalysisParams(options.file)
                 .toObjectMap(options.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, options.study);
-        toolRunner.execute(RgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.commonOptions.token);
+        toolRunner.execute(RgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.jobOptions.dryRun, options.commonOptions.token);
     }
 
     private void auxRgaIndex() throws ToolException {
@@ -147,7 +125,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         ObjectMap params = new ObjectMap()
                 .appendAll(options.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, options.study);
-        toolRunner.execute(AuxiliarRgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.commonOptions.token);
+        toolRunner.execute(AuxiliarRgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.jobOptions.dryRun, options.commonOptions.token);
     }
 
     private void tiering() throws Exception {
@@ -339,7 +317,8 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         ExomiserInterpretationAnalysis exomiserInterpretationAnalysis = new ExomiserInterpretationAnalysis();
         exomiserInterpretationAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
         exomiserInterpretationAnalysis.setStudyId(cliOptions.study)
-                .setClinicalAnalysisId(cliOptions.clinicalAnalysis);
+                .setClinicalAnalysisId(cliOptions.clinicalAnalysis)
+                .setExomiserVersion(cliOptions.exomiserVersion);
 //        exomiserInterpretationAnalysis.setPrimary(cliOptions.primary);
         exomiserInterpretationAnalysis.start();
     }

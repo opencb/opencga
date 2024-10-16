@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.NoteDBAdaptor;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -30,6 +31,9 @@ import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.user.OrganizationUserUpdateParams;
+import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserStatusUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 
@@ -201,9 +205,17 @@ public class OrganizationWSServer extends OpenCGAWSServer {
     })
     public Response updateNote(
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,REMOVE,SET", defaultValue = "ADD")
+                @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
         try {
+            if (tagsAction == null) {
+                tagsAction = ParamUtils.BasicUpdateAction.ADD;
+            }
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(NoteDBAdaptor.QueryParams.TAGS.key(), tagsAction);
+            queryOptions.put(Constants.ACTIONS, actionMap);
             OpenCGAResult<Note> result = catalogManager.getNotesManager().updateOrganizationNote(noteId, parameters, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -224,5 +236,48 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
+
+    @POST
+    @Path("/user/{user}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update the user information", response = User.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
+    })
+    public Response updateUserInformation(
+            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(value = "JSON containing the User fields to be updated.", required = true) OrganizationUserUpdateParams parameters) {
+        try {
+            OpenCGAResult<User> result = catalogManager.getOrganizationManager().updateUser(organizationId, userId, parameters, queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/user/{user}/status/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update the user status", response = User.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
+    })
+    public Response updateUserStatus(
+            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(value = "JSON containing the User fields to be updated.", required = true) UserStatusUpdateParams parameters) {
+        try {
+            OpenCGAResult<User> result = catalogManager.getUserManager().changeStatus(organizationId, userId, parameters.getStatus(), queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
 
 }

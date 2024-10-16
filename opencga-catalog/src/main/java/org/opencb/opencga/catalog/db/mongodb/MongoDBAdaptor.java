@@ -28,10 +28,12 @@ import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 
@@ -58,6 +60,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     public static final String PRIVATE_STUDY_UID = "studyUid";
     public static final String VERSION = "version";
+    public static final String RELEASE = "release";
 
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
     static final String FILTER_ROUTE_COHORTS = "projects.studies.cohorts.";
@@ -91,16 +94,15 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     public interface TransactionBodyWithException<T> {
-        T execute(ClientSession session) throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+        T execute(ClientSession session) throws CatalogException;
     }
 
-    protected <T> T runTransaction(TransactionBodyWithException<T> body)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    protected <T> T runTransaction(TransactionBodyWithException<T> body) throws CatalogException {
         return runTransaction(body, null);
     }
 
     protected <T> T runTransaction(TransactionBodyWithException<T> inputBody, Consumer<CatalogException> onException)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+            throws CatalogException {
         ClientSession session = dbAdaptorFactory.getMongoDataStore().startSession();
         try {
             TransactionBodyWithException<T> body;
@@ -122,7 +124,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
             return session.withTransaction(() -> {
                 try {
                     return body.execute(session);
-                } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
+                } catch (CatalogException e) {
                     throw new CatalogDBRuntimeException(e);
                 }
             });
@@ -141,6 +143,12 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
                 throw cause;
             } else if (e.getCause() instanceof CatalogParameterException) {
                 CatalogParameterException cause = (CatalogParameterException) e.getCause();
+                if (onException != null) {
+                    onException.accept(cause);
+                }
+                throw cause;
+            } else if (e.getCause() instanceof CatalogAuthenticationException) {
+                CatalogAuthenticationException cause = (CatalogAuthenticationException) e.getCause();
                 if (onException != null) {
                     onException.accept(cause);
                 }
@@ -701,6 +709,24 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
             throw new CatalogDBException("Study " + studyUid + " not found");
         }
         return dataResult.first();
+    }
+
+    /**
+     * Method to obtain whether permissions should be simplified or not.
+     *
+     * @return true if permissions should be simplified, false otherwise.
+     * @throws CatalogDBException if there is any error obtaining the organization configuration.
+     */
+    protected boolean simplifyPermissions() throws CatalogDBException {
+        Organization organization = dbAdaptorFactory.getCatalogOrganizationDBAdaptor()
+                .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
+        if (organization.getConfiguration().getOptimizations() != null) {
+            return organization.getConfiguration().getOptimizations().isSimplifyPermissions();
+        } else {
+            logger.warn("Organization '{}' configuration does not contain the 'optimizations.simplifyPermissions' field. Defaulting"
+                    + " to false", organization.getId());
+            return false;
+        }
     }
 
     public class NestedArrayUpdateDocument {

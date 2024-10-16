@@ -20,13 +20,19 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Analysis {
 
     private List<String> packages;
 
     private String scratchDir;
+    private String resourceUrl;
+
+    private String opencgaExtTools;
+    private List<AnalysisTool> tools;
 
     private Execution execution;
 
@@ -37,6 +43,7 @@ public class Analysis {
 
     public Analysis() {
         packages = new ArrayList<>();
+        tools = new ArrayList<>();
         execution = new Execution();
         operations = new OperationConfig();
         frameworks = new ArrayList<>();
@@ -66,6 +73,33 @@ public class Analysis {
 
     public Analysis setScratchDir(String scratchDir) {
         this.scratchDir = scratchDir;
+        return this;
+    }
+
+    public String getResourceUrl() {
+        return resourceUrl;
+    }
+
+    public Analysis setResourceUrl(String resourceUrl) {
+        this.resourceUrl = resourceUrl;
+        return this;
+    }
+
+    public String getOpencgaExtTools() {
+        return opencgaExtTools;
+    }
+
+    public Analysis setOpencgaExtTools(String opencgaExtTools) {
+        this.opencgaExtTools = opencgaExtTools;
+        return this;
+    }
+
+    public List<AnalysisTool> getTools() {
+        return tools;
+    }
+
+    public Analysis setTools(List<AnalysisTool> tools) {
+        this.tools = tools;
         return this;
     }
 

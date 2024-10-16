@@ -12,6 +12,7 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.OrganizationsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -24,6 +25,10 @@ import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.organizations.TokenConfiguration;
+import org.opencb.opencga.core.models.user.OrganizationUserUpdateParams;
+import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserQuota;
+import org.opencb.opencga.core.models.user.UserStatusUpdateParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -76,6 +81,12 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
             case "notes-update":
                 queryResponse = updateNotes();
                 break;
+            case "update-status-user":
+                queryResponse = userUpdateStatus();
+                break;
+            case "user-update":
+                queryResponse = updateUser();
+                break;
             case "configuration-update":
                 queryResponse = updateConfiguration();
                 break;
@@ -116,11 +127,12 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), OrganizationCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "configuration.defaultUserExpirationDate", commandOptions.configurationDefaultUserExpirationDate, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             organizationCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -151,10 +163,10 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), NoteCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-            putNestedIfNotNull(beanParams, "visibility",commandOptions.visibility, true);
-            putNestedIfNotNull(beanParams, "valueType",commandOptions.valueType, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
+            putNestedIfNotNull(beanParams, "valueType", commandOptions.valueType, true);
 
             noteCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -203,6 +215,7 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("tagsAction", commandOptions.tagsAction);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
@@ -217,14 +230,84 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), NoteUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-            putNestedIfNotNull(beanParams, "visibility",commandOptions.visibility, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
 
             noteUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), NoteUpdateParams.class);
         }
         return openCGAClient.getOrganizationClient().updateNotes(commandOptions.id, noteUpdateParams, queryParams);
+    }
+
+    private RestResponse<User> userUpdateStatus() throws Exception {
+        logger.debug("Executing userUpdateStatus in Organizations command line");
+
+        OrganizationsCommandOptions.UserUpdateStatusCommandOptions commandOptions = organizationsCommandOptions.userUpdateStatusCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+
+
+        UserStatusUpdateParams userStatusUpdateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<User> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/organizations/user/{user}/status/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            userStatusUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), UserStatusUpdateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "status", commandOptions.status, true);
+
+            userStatusUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), UserStatusUpdateParams.class);
+        }
+        return openCGAClient.getOrganizationClient().userUpdateStatus(commandOptions.user, userStatusUpdateParams, queryParams);
+    }
+
+    private RestResponse<User> updateUser() throws Exception {
+        logger.debug("Executing updateUser in Organizations command line");
+
+        OrganizationsCommandOptions.UpdateUserCommandOptions commandOptions = organizationsCommandOptions.updateUserCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+
+
+        OrganizationUserUpdateParams organizationUserUpdateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<User> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/organizations/user/{user}/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            organizationUserUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), OrganizationUserUpdateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "email", commandOptions.email, true);
+            putNestedIfNotNull(beanParams, "quota.diskUsage", commandOptions.quotaDiskUsage, true);
+            putNestedIfNotNull(beanParams, "quota.cpuUsage", commandOptions.quotaCpuUsage, true);
+            putNestedIfNotNull(beanParams, "quota.maxDisk", commandOptions.quotaMaxDisk, true);
+            putNestedIfNotNull(beanParams, "quota.maxCpu", commandOptions.quotaMaxCpu, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
+
+            organizationUserUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), OrganizationUserUpdateParams.class);
+        }
+        return openCGAClient.getOrganizationClient().updateUser(commandOptions.user, organizationUserUpdateParams, queryParams);
     }
 
     private RestResponse<OrganizationConfiguration> updateConfiguration() throws Exception {
@@ -250,10 +333,11 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), OrganizationConfiguration.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "optimizations.simplifyPermissions",commandOptions.optimizationsSimplifyPermissions, true);
-            putNestedIfNotEmpty(beanParams, "token.algorithm",commandOptions.tokenAlgorithm, true);
-            putNestedIfNotEmpty(beanParams, "token.secretKey",commandOptions.tokenSecretKey, true);
-            putNestedIfNotNull(beanParams, "token.expiration",commandOptions.tokenExpiration, true);
+            putNestedIfNotEmpty(beanParams, "defaultUserExpirationDate", commandOptions.defaultUserExpirationDate, true);
+            putNestedIfNotNull(beanParams, "optimizations.simplifyPermissions", commandOptions.optimizationsSimplifyPermissions, true);
+            putNestedIfNotEmpty(beanParams, "token.algorithm", commandOptions.tokenAlgorithm, true);
+            putNestedIfNotEmpty(beanParams, "token.secretKey", commandOptions.tokenSecretKey, true);
+            putNestedIfNotNull(beanParams, "token.expiration", commandOptions.tokenExpiration, true);
 
             organizationConfiguration = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -297,12 +381,12 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), OrganizationUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "owner",commandOptions.owner, true);
-            putNestedIfNotNull(beanParams, "admins",commandOptions.admins, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "owner", commandOptions.owner, true);
+            putNestedIfNotNull(beanParams, "admins", commandOptions.admins, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             organizationUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

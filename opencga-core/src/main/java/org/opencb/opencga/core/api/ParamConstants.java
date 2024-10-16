@@ -80,9 +80,9 @@ public class ParamConstants {
     private static final String UP_TO_100 = " up to a maximum of 100";
 
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
-    public static final String CELLBASE_VERSION = "v5.2";
-    public static final String CELLBASE_DATA_RELEASE = "3";
-    public static final String CELLBASE_APIKEY = "";
+    public static final String CELLBASE_VERSION = "v5.8";
+    public static final String CELLBASE_DATA_RELEASE_GRCH38 = "7";
+    public static final String CELLBASE_APIKEY = null;
 
     public static final String POP_FREQ_1000G_CB_V4 = "1kG_phase3";
     public static final String POP_FREQ_1000G_CB_V5 = "1000G";
@@ -437,6 +437,9 @@ public class ParamConstants {
     public static final String CLINICAL_RELEASE_PARAM = RELEASE_PARAM;
     public static final String CLINICAL_STATUS_PARAM = STATUS_PARAM;
     public static final String CLINICAL_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
+    public static final String CLINICAL_VERSION_PARAM = "version";
+    public static final String CLINICAL_VERSION_DESCRIPTION = "Comma separated list of clinical versions. 'all' to get all the clinical"
+            + " versions. Not supported if multiple clinical ids are provided";
     public static final String CLINICAL_TYPE_DESCRIPTION = "Clinical Analysis type";
     public static final String CLINICAL_DISORDER_DESCRIPTION = "Clinical Analysis disorder" + REGEX_SUPPORT;
     public static final String CLINICAL_FILES_DESCRIPTION = "Clinical Analysis files";
@@ -467,6 +470,7 @@ public class ParamConstants {
             + "Interpretation object is passed.";
     public static final String INTERPRETATION_ID_PARAM = "id";
     public static final String INTERPRETATION_UUID_PARAM = "uuid";
+    public static final String INTERPRETATION_NAME_PARAM = "name";
     public static final String INTERPRETATION_CLINICAL_ANALYSIS_ID_PARAM = "clinicalAnalysisId";
     public static final String INTERPRETATION_ANALYST_ID_PARAM = "analystId";
     public static final String INTERPRETATION_METHOD_NAME_PARAM = "methodName";
@@ -560,6 +564,7 @@ public class ParamConstants {
     public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";
+    public static final String SUBMIT_JOB_PRIORITY_PARAM = "jobPriority";
     public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";
     public static final String JOB_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
     public static final String JOB_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
@@ -570,6 +575,12 @@ public class ParamConstants {
     public static final String JOB_TAGS = "jobTags";
     public static final String JOB_TAGS_PARAM = "tags";
     public static final String JOB_TAGS_DESCRIPTION = "Job tags";
+    public static final String JOB_SCHEDULED_START_TIME_DESCRIPTION = FieldConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION;
+    public static final String JOB_SCHEDULED_START_TIME = FieldConstants.JOB_SCHEDULED_START_TIME;
+    public static final String JOB_DRY_RUN = "jobDryRun";
+    public static final String JOB_DRY_RUN_DESCRIPTION = "Flag indicating that the job will be executed in dry-run mode. In this mode,"
+            + " OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will"
+            + " not actually run.";
 
     // ---------------------------------------------
     public static final String JOB_INPUT_FILES_PARAM = "input";
@@ -1512,6 +1523,7 @@ public class ParamConstants {
     public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
     public static final String INTERPRETATION_ID_DESCRIPTION = "Comma separated list of Interpretation IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String INTERPRETATION_UUID_DESCRIPTION = "Comma separated list of Interpretation UUIDs" + UP_TO_100;
+    public static final String INTERPRETATION_NAME_DESCRIPTION = "Comma separated list of Interpretation names" + UP_TO_100;
     public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of clinical interpretation IDs " + UP_TO_100;
     public static final String PANEL_ID_DESCRIPTION = "Comma separated list of panel IDs " + UP_TO_100 + REGEX_SUPPORT;
     public static final String PANEL_UUID_DESCRIPTION = "Comma separated list of panel UUIDs " + UP_TO_100;

@@ -17,6 +17,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.OrganizationConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.OrganizationCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -52,8 +53,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
     }
 
     @Override
-    public OpenCGAResult<Organization> insert(Organization organization, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Organization> insert(Organization organization, QueryOptions options) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting organization insert transaction for organization id '{}'", organization.getId());
@@ -124,7 +124,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         try {
             QueryOptions options = queryOptions != null ? new QueryOptions(queryOptions) : QueryOptions.empty();
             return runTransaction(clientSession -> privateUpdate(clientSession, organizationId, parameters, options));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update organization {}: {}", organizationId, e.getMessage(), e);
             throw new CatalogDBException("Could not update organization " + organizationId + ": " + e.getMessage(),
                     e.getCause());
@@ -405,9 +405,6 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         }
         qOptions = filterQueryOptionsToIncludeKeys(qOptions,
                 OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
-        if (!qOptions.getBoolean(IS_ORGANIZATION_ADMIN_OPTION)) {
-            qOptions = filterQueryOptionsToExcludeKeys(qOptions, Arrays.asList(QueryParams.CONFIGURATION.key()));
-        }
 
         return organizationCollection.iterator(clientSession, new Document(), null, null, qOptions);
     }

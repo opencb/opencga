@@ -6,9 +6,7 @@ databasePrefix: "opencga_test"
 workspace: "/tmp/opencga/sessions"
 
 jobDir: "/tmp/opencga/JOBS"
-
-admin:
-  secretKey: "asidnadh19rh230qncfascd1.rffzasf.asd.ad.12ddeASDAsd12e1d.adsx"
+maxLoginAttempts: 5
 
 audit:
   manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
@@ -19,6 +17,25 @@ analysis:
   packages: # List of packages where to find analysis tools
     - "org.opencb.opencga"
   scratchDir: "/tmp/"    # Scratch folder for the analysis.
+  # Default URL for downloading analysis resources.
+  resourceUrl: "http://resources.opencb.org/opencb/opencga/analysis/"
+  # Docker used by OpenCGA analysis and containing external tools such as samtools, bcftools, tabix, fastqc, plink1.9, bwa and r-base
+  # You can indicate the version, e.g: opencb/opencga-ext-tools:2.12.0, otherwise the current OpenCGA version will be used
+  opencgaExtTools: "opencb/opencga-ext-tools"
+  tools:
+    - id: "exomiser"
+      version: "13.1"
+      dockerId: "exomiser/exomiser-cli:13.1.0"
+      resources:
+        HG38: "exomiser/2109_hg38.zip"
+        PHENOTYPE: "exomiser/2109_phenotype.zip"
+    - id: "exomiser"
+      version: "14.0"
+      defaultVersion: true
+      dockerId: "exomiser/exomiser-cli:14.0.0"
+      resources:
+        HG38: "exomiser/2402_hg38.zip"
+        PHENOTYPE: "exomiser/2402_phenotype.zip"
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
@@ -72,29 +89,6 @@ catalog:
     password: ""
     options:
       authenticationDatabase: ""
-  searchEngine:   ## Solr configuration, by default is the same than storage
-    hosts:
-    - "http://localhost:8983/solr/"
-    user: ""
-    password: ""
-    options:
-      mode: "core"
-      timeout: 30000
-      insertBatchSize: 2000
-
-authentication:
-  expiration: 1000
-#LDAP configuration example
-#  authenticationOrigins:
-#  - id: ldap            # Any id
-#    type: LDAP          # At the moment, we only support LDAP
-#    host: ldap://localhost:9000
-#    options:
-#      usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
-#      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
-
-optimizations:
-  simplifyPermissions: false
 
 server:
   rest:

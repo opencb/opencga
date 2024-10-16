@@ -9,14 +9,21 @@ import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecu
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
-import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
-
 
 @Category(LongTests.class)
 public class HadoopVariantQueryExecutorTest extends VariantQueryExecutorTest implements HadoopVariantStorageTest {
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
+
+    @Override
+    public void initSolr() throws Exception {
+        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            super.initSolr();
+        } else {
+            System.out.println("Solr testing not available");
+        }
+    }
 
     @Override
     @Before

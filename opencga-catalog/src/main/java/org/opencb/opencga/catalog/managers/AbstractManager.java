@@ -73,68 +73,72 @@ public abstract class AbstractManager {
         logger = LoggerFactory.getLogger(this.getClass());
     }
 
+    protected DBAdaptorFactory getCatalogDBAdaptorFactory() {
+        return catalogDBAdaptorFactory;
+    }
+
     protected MigrationDBAdaptor getMigrationDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getMigrationDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getMigrationDBAdaptor(organization);
     }
 
     protected MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogMetaDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogMetaDBAdaptor(organization);
     }
 
     protected OrganizationDBAdaptor getOrganizationDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogOrganizationDBAdaptor(organization);
     }
 
     protected UserDBAdaptor getUserDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogUserDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogUserDBAdaptor(organization);
     }
 
     protected ProjectDBAdaptor getProjectDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogProjectDbAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogProjectDbAdaptor(organization);
     }
 
     protected StudyDBAdaptor getStudyDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogStudyDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogStudyDBAdaptor(organization);
     }
 
     protected FileDBAdaptor getFileDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogFileDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogFileDBAdaptor(organization);
     }
 
     protected SampleDBAdaptor getSampleDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogSampleDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogSampleDBAdaptor(organization);
     }
 
     protected IndividualDBAdaptor getIndividualDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogIndividualDBAdaptor(organization);
     }
 
     protected JobDBAdaptor getJobDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogJobDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogJobDBAdaptor(organization);
     }
 
     protected AuditDBAdaptor getAuditDbAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogAuditDbAdaptor(organization);
     }
 
     protected CohortDBAdaptor getCohortDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogCohortDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogCohortDBAdaptor(organization);
     }
 
     protected PanelDBAdaptor getPanelDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogPanelDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogPanelDBAdaptor(organization);
     }
 
     protected FamilyDBAdaptor getFamilyDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getCatalogFamilyDBAdaptor(organization);
     }
 
     protected ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getClinicalAnalysisDBAdaptor(organization);
     }
 
     protected InterpretationDBAdaptor getInterpretationDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getInterpretationDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getInterpretationDBAdaptor(organization);
     }
 
     protected void fixQueryObject(Query query) {

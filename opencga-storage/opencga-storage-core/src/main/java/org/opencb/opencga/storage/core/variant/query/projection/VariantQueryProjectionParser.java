@@ -71,7 +71,14 @@ public class VariantQueryProjectionParser {
         }
 
         Map<Integer, List<Integer>> sampleIdsMap = getIncludeSampleIds(query, options, includeStudies, metadataManager);
-        int numTotalSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
+        int numTotalSamples;
+        if (isValidParam(query, NUM_TOTAL_SAMPLES)) {
+            // NUM_TOTAL_SAMPLES might have been defined in the PreProcess step.
+            // This implies that the current query has the samples already paginated.
+            numTotalSamples = query.getInt(NUM_TOTAL_SAMPLES.key());
+        } else {
+            numTotalSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
+        }
         skipAndLimitSamples(query, sampleIdsMap);
         int numSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
 

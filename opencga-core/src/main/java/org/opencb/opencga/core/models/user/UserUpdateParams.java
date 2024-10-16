@@ -16,21 +16,17 @@
 
 package org.opencb.opencga.core.models.user;
 
-import java.util.Map;
-
 public class UserUpdateParams {
 
     private String name;
     private String email;
-    private Map<String, Object> attributes;
 
     public UserUpdateParams() {
     }
 
-    public UserUpdateParams(String name, String email, Map<String, Object> attributes) {
+    public UserUpdateParams(String name, String email) {
         this.name = name;
         this.email = email;
-        this.attributes = attributes;
     }
 
     @Override
@@ -38,7 +34,6 @@ public class UserUpdateParams {
         final StringBuilder sb = new StringBuilder("UserUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", email='").append(email).append('\'');
-        sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
@@ -61,12 +56,4 @@ public class UserUpdateParams {
         return this;
     }
 
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public UserUpdateParams setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
-        return this;
-    }
 }

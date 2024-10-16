@@ -1,9 +1,10 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.ConfigurationOption;
+
+import java.util.Arrays;
 
 public enum VariantStorageOptions implements ConfigurationOption {
 
@@ -26,7 +27,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     TRANSFORM_ISOLATE("transform.isolate", false), // Do not store file in metadata
     NORMALIZATION_SKIP("normalization.skip", false), // Do not run normalization
     NORMALIZATION_REFERENCE_GENOME("normalization.referenceGenome"),
-    NORMALIZATION_EXTENSIONS("normalization.extensions", ParamConstants.NONE),
+    NORMALIZATION_EXTENSIONS("normalization.extensions", Arrays.asList("VAF", "SV", "CUSTOM")),
 
     DEDUPLICATION_POLICY("deduplication.policy", "maxQual"),
     DEDUPLICATION_BUFFER_SIZE("deduplication.bufferSize", 100),
@@ -80,11 +81,15 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD("annotator.cellbase.variantLengthThreshold", Integer.MAX_VALUE),
     ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS("annotator.cellbase.impreciseVariants", true),
     ANNOTATOR_CELLBASE_STAR_ALTERNATE("annotator.cellbase.starAlternate", false),
+    ANNOTATOR_EXTENSION_PREFIX("annotator.extension."),
+    ANNOTATOR_EXTENSION_LIST("annotator.extension.list"),
+    ANNOTATOR_EXTENSION_COSMIC_FILE("annotator.extension.cosmic.file"),
+    ANNOTATOR_EXTENSION_COSMIC_VERSION("annotator.extension.cosmic.version"),
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.
 
-    METADATA_LOCK_DURATION("metadata.lock.duration", 5000),
-    METADATA_LOCK_TIMEOUT("metadata.lock.timeout", 60000),
+    METADATA_LOCK_DURATION("metadata.lock.duration", 60000),
+    METADATA_LOCK_TIMEOUT("metadata.lock.timeout", 600000),
     METADATA_LOAD_BATCH_SIZE("metadata.load.batchSize", 10),
     METADATA_LOAD_THREADS("metadata.load.numThreads", 4),
 

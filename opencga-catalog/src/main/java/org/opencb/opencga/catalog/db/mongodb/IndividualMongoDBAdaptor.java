@@ -119,7 +119,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     @Override
     public OpenCGAResult insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+            throws CatalogException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
@@ -329,7 +329,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         try {
             return runTransaction(clientSession -> transactionalUpdate(clientSession, individualUid, parameters, variableSetList,
                     queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             throw new CatalogDBException("Could not update individual: " + e.getMessage(), e.getCause());
         }
     }
@@ -363,7 +363,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             try {
                 result.append(runTransaction(clientSession -> transactionalUpdate(clientSession, individual, parameters, variableSetList,
                         queryOptions)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update individual {}: {}", individual.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, individual.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -1051,7 +1051,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 throw new CatalogDBException("Could not find individual " + individual.getId() + " with uid " + individual.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete individual {}: {}", individual.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete individual " + individual.getId() + ": " + e.getMessage(), e);
         }
@@ -1068,7 +1068,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             String individualId = individual.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, individual)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete individual {}: {}", individualId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, individualId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -1405,17 +1405,18 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+            boolean simplifyPermissions = simplifyPermissions();
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.INDIVIDUAL, user,
-                        configuration));
+                        simplifyPermissions));
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL, configuration));
+                            IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL, simplifyPermissions));
                 } else {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, IndividualPermissions.VIEW.name(),
-                            Enums.Resource.INDIVIDUAL, configuration));
+                            Enums.Resource.INDIVIDUAL, simplifyPermissions));
                 }
             }
 

@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.ProjectCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -82,8 +83,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
     }
 
     @Override
-    public OpenCGAResult<Project> insert(Project project, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Project> insert(Project project, QueryOptions options) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting project insert transaction for project id '{}'", project.getId());
@@ -201,7 +201,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
 
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, projectDataResult.first(), parameters));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update project {}: {}", projectDataResult.first().getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not update project '" + projectDataResult.first().getId() + "': " + e.getMessage(),
                     e.getCause());
@@ -220,7 +220,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
             Project project = iterator.next();
             try {
                 result.append(runTransaction(clientSession -> privateUpdate(clientSession, project, parameters)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update project {}: {}", project.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, project.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -384,7 +384,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
     public OpenCGAResult delete(Project project) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> privateDelete(clientSession, project));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete project {}: {}", project.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete project '" + project.getId() + "': " + e.getMessage(), e.getCause());
         }
@@ -413,7 +413,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
 
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, project)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete project {}: {}", project.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, project.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
