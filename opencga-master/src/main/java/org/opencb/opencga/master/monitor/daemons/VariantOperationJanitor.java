@@ -170,7 +170,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
             paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
             catalogManager.getJobManager().submit(studyFqns.get(0), toolId, Enums.Priority.HIGH, paramsMap, null,
                     generateJobDescription(config, operationChore, attributes), null,
-                    Collections.singletonList(TAG), attributes, token);
+                    Collections.singletonList(TAG), null, null, null, attributes, token);
         }
     }
 
@@ -206,7 +206,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
             paramsMap.put(ParamConstants.STUDY_PARAM, study.getFqn());
             catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.HIGH, paramsMap, null,
                     generateJobDescription(config, operationChore, attributes), null,
-                    Collections.singletonList(TAG), attributes, token);
+                    Collections.singletonList(TAG), null, null, null, attributes, token);
         }
     }
 
