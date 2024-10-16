@@ -14,7 +14,7 @@ public class OperationIndexStatus extends IndexStatus {
 
     public OperationIndexStatus(String status, String message) {
         if (isValid(status)) {
-            init(status, status, message);
+            init(status, message);
         } else {
             throw new IllegalArgumentException("Unknown status " + status);
         }
