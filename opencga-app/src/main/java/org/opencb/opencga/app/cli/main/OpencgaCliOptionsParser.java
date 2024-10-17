@@ -215,6 +215,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);
         usersSubCommands.addCommand("search", usersCommandOptions.searchCommandOptions);
+        usersSubCommands.addCommand("sync", usersCommandOptions.syncCommandOptions);
         usersSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
         usersSubCommands.addCommand("configs", usersCommandOptions.configsCommandOptions);
         usersSubCommands.addCommand("configs-update", usersCommandOptions.updateConfigsCommandOptions);

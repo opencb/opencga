@@ -25,6 +25,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.admin.GroupSyncParams;
+import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
@@ -110,6 +112,39 @@ public class UserWSServer extends OpenCGAWSServer {
             List<String> userList = getIdList(userIds);
             OpenCGAResult<User> result = catalogManager.getUserManager().get(organizationId, userList, queryOptions, token);
             return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/sync")
+    @ApiOperation(value = "Synchronise a group of users from an authentication origin with a group in a study from catalog", response = Group.class,
+            notes = "Mandatory fields: <b>authOriginId</b>, <b>study</b><br>"
+                    + "<ul>"
+                    + "<li><b>authOriginId</b>: Authentication origin id defined in the main Catalog configuration.</li>"
+                    + "<li><b>study</b>: Study [[organization@]project:]study where the list of users will be associated to.</li>"
+                    + "<li><b>from</b>: Group defined in the authenticated origin to be synchronised.</li>"
+                    + "<li><b>to</b>: Group in a study that will be synchronised.</li>"
+                    + "<li><b>syncAll</b>: Flag indicating whether to synchronise all the groups present in the study with"
+                    + " their corresponding authenticated groups automatically. --from and --to parameters will not be needed when the flag"
+                    + "is active..</li>"
+                    + "<li><b>force</b>: Boolean to force the synchronisation with already existing Catalog groups that are not yet "
+                    + "synchronised with any other group.</li>"
+                    + "</ul>"
+    )
+    public Response externalSync(
+            @ApiParam(value = "JSON containing the parameters", required = true) GroupSyncParams syncParams
+    ) {
+        try {
+            // TODO: These two methods should return an OpenCGAResult containing at least the number of changes
+            if (syncParams.isSyncAll()) {
+                catalogManager.getUserManager().syncAllUsersOfExternalGroup(syncParams.getStudy(), syncParams.getAuthenticationOriginId(), token);
+            } else {
+                catalogManager.getUserManager().importRemoteGroupOfUsers(syncParams.getAuthenticationOriginId(), syncParams.getFrom(),
+                        syncParams.getTo(), syncParams.getStudy(), true, token);
+            }
+            return createOkResponse(OpenCGAResult.empty(Group.class));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

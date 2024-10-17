@@ -69,7 +69,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> usersList = asList( "anonymous","create","login","password","search","info","configs","configs-update","filters","password-reset","update")
+    private List<Candidate> usersList = asList( "anonymous","create","login","password","search","sync","info","configs","configs-update","filters","password-reset","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());

@@ -180,9 +180,10 @@ public class AdminWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     @POST
     @Path("/users/sync")
-    @ApiOperation(value = "Synchronise a group of users from an authentication origin with a group in a study from catalog", response = Group.class,
+    @ApiOperation(value = "[DEPRECATED] Synchronise a group of users from an authentication origin with a group in a study from catalog", response = Group.class,
             notes = "Mandatory fields: <b>authOriginId</b>, <b>study</b><br>"
                     + "<ul>"
                     + "<li><b>authOriginId</b>: Authentication origin id defined in the main Catalog configuration.</li>"
