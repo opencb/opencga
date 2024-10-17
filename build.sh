@@ -41,6 +41,7 @@ function error() {
   log "=========================="
 }
 
+
 # Function to calculate the branch for dependencies
 function calculate_branch() {
   local EXISTS=""
@@ -64,9 +65,19 @@ function calculate_branch() {
       local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
       if [ $PATCH -gt 0 ]; then ## It's a hotfix
         echo "release-$MAJOR.$MINOR.x"
-      elif [ $MINOR -eq 0 ]; then ## It's a develop branch
+      elif [ $MINOR -eq  0 ]; then ## It's a develop branch
         echo "develop"
       else  ## It's a release branch
+        echo "release-$MAJOR.x.x"
+      fi
+    elif [[ "$CURRENT_BRANCH" == "release"* ]]; then
+      local VERSION=$(echo "$1" | cut -d "-" -f 1)
+      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
+      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
+      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
+      if [ $PATCH -gt 0 ]; then
+        echo "release-$MAJOR.$MINOR.x"
+      else
         echo "release-$MAJOR.x.x"
       fi
     else
