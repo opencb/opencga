@@ -259,6 +259,7 @@ export default class File extends OpenCGAParentClass {
     *     ANNOTATION_GENEVSANNOTATION OTHER_NEWICK OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF OTHER_PED VCF4 VARIANT
     *     ALIGNMENT COVERAGE SEQUENCE PEDIGREE REFERENCE_GENOME NONE UNKNOWN"} [params.bioformat] - File bioformat.
     * @param {String} [params.checksum] - Expected MD5 file checksum.
+    * @param {Boolean} [params.resource] - File resource.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @param {String} [params.relativeFilePath] - Path within catalog where the file will be located (default: root folder).
     * @param {String} [params.description] - description.

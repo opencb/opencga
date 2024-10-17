@@ -100,15 +100,12 @@ public class FileManager extends AnnotationSetManager<File> {
     static {
         INCLUDE_FILE_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
-                FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
-        INCLUDE_FILE_URI = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
-                FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
-                FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
-        INCLUDE_FILE_URI_PATH = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
-                FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
-                FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
-                FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.EXTERNAL.key(),
-                FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
+                FileDBAdaptor.QueryParams.RESOURCE.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(),
+                FileDBAdaptor.QueryParams.TYPE.key()));
+        INCLUDE_FILE_URI = keepFieldInQueryOptions(INCLUDE_FILE_IDS, FileDBAdaptor.QueryParams.URI.key());
+        INCLUDE_FILE_URI_PATH = keepFieldsInQueryOptions(INCLUDE_FILE_URI, Arrays.asList(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
+                FileDBAdaptor.QueryParams.FORMAT.key(), FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(),
+                FileDBAdaptor.QueryParams.EXTERNAL.key()));
         EXCLUDE_FILE_ATTRIBUTES = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
                 FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), FileDBAdaptor.QueryParams.STATS.key()));
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
@@ -583,9 +580,14 @@ public class FileManager extends AnnotationSetManager<File> {
             ParamUtils.checkParameter(createParams.getPath(), "path");
             ParamUtils.checkObj(createParams.getType(), "type");
 
+            boolean isResource = createParams.getResource() != null && createParams.getResource();
+
             String path = createParams.getPath();
             if (path.startsWith("/")) {
                 path = path.substring(1);
+            }
+            if (isResource) {
+                path = getResourcesPath(path);
             }
 
             if (createParams.getType().equals(File.Type.FILE)) {
@@ -613,9 +615,15 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             OpenCGAResult<File> parentResult = getParents(organizationId, study.getUid(), path, false, FileManager.INCLUDE_FILE_URI_PATH);
-            // Check user can write in path
-            authorizationManager.checkFilePermission(organizationId, study.getUid(), parentResult.first().getUid(), userId,
-                    FilePermissions.WRITE);
+
+            if (isResource) {
+                // Check if the user is an study admin
+                authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+            } else {
+                // Check user can write in path
+                authorizationManager.checkFilePermission(organizationId, study.getUid(), parentResult.first().getUid(), userId,
+                        FilePermissions.WRITE);
+            }
 
             // Check available path
             Query pathQuery = new Query()
@@ -651,7 +659,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
             }
             File file = new File("", createParams.getType(), createParams.getFormat(), createParams.getBioformat(), null, path, "",
-                    createParams.getCreationDate(), createParams.getModificationDate(), createParams.getDescription(), false, 0,
+                    createParams.getCreationDate(), createParams.getModificationDate(), createParams.getDescription(), false, isResource, 0,
                     createParams.getSoftware(), null, createParams.getSampleIds(), null, createParams.getJobId(), 1, createParams.getTags(),
                     null, null, null, createParams.getStatus() != null ? createParams.getStatus().toStatus() : null, null, null);
             List<Event> eventList = validateNewFile(organizationId, study, file, false);
@@ -703,6 +711,21 @@ public class FileManager extends AnnotationSetManager<File> {
             throw e;
         }
 
+    }
+
+    private String getResourcesPath(String path) {
+        Path resourcesPath = Paths.get("RESOURCES/");
+        if (StringUtils.isEmpty(path)) {
+            return resourcesPath.toString();
+        } else if (path.startsWith("RESOURCES/")) {
+            return path;
+        } else {
+            return resourcesPath.resolve(path).toString();
+        }
+    }
+
+    private boolean isResourcesPath(String path) {
+        return path.startsWith("RESOURCES/");
     }
 
     List<Event> validateNewFile(String organizationId, Study study, File file, boolean overwrite) throws CatalogException {
@@ -769,6 +792,12 @@ public class FileManager extends AnnotationSetManager<File> {
         if (file.getType() == File.Type.FILE && file.getPath().endsWith("/")) {
             file.setPath(file.getPath().substring(0, file.getPath().length() - 1));
         }
+        if (file.isResource()) {
+            file.setPath(getResourcesPath(file.getPath()));
+        } else if (isResourcesPath(file.getPath())) {
+            throw new CatalogException("RESOURCES path can only be used for resource files.");
+        }
+
         file.setName(Paths.get(file.getPath()).getFileName().toString());
         file.setId(file.getPath().replace("/", ":"));
 
@@ -834,7 +863,8 @@ public class FileManager extends AnnotationSetManager<File> {
             if (parents) {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "", FileInternal.init(),
-                        0, Collections.emptyList(), null, "", new FileQualityControl(), Collections.emptyMap(), Collections.emptyMap());
+                        file.isResource(), 0, Collections.emptyList(), null, "", new FileQualityControl(), Collections.emptyMap(),
+                        Collections.emptyMap());
                 validateNewFile(organizationId, study, parentFile, false);
                 parentFileId = register(organizationId, study, parentFile, Collections.emptyList(), Collections.emptyList(), parents,
                         options, tokenPayload).first().getUid();
@@ -849,7 +879,11 @@ public class FileManager extends AnnotationSetManager<File> {
         } else {
             if (!newParent) {
                 //If parent has been created, for sure we have permissions to create the new file.
-                authorizationManager.checkFilePermission(organizationId, studyId, parentFileId, userId, FilePermissions.WRITE);
+                if (file.isResource()) {
+                    authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
+                } else {
+                    authorizationManager.checkFilePermission(organizationId, studyId, parentFileId, userId, FilePermissions.WRITE);
+                }
             }
         }
 
@@ -1143,12 +1177,13 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param fileSource    Current location of the file (file system).
      * @param folderDestiny Directory where the file needs to be moved (file system).
      * @param path          Directory in catalog where the file will be registered (catalog).
+     * @param isResource    Flag indicating whether the file to be moved is a resource or not.
      * @param token         Token of the user.
      * @return An OpenCGAResult with the file registry after moving it to the final destination.
      * @throws CatalogException CatalogException.
      */
     public OpenCGAResult<File> moveAndRegister(String studyStr, Path fileSource, @Nullable Path folderDestiny, @Nullable String path,
-                                               String token) throws CatalogException {
+                                               boolean isResource, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -1160,6 +1195,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("fileSource", fileSource)
                 .append("folderDestiny", folderDestiny)
                 .append("path", path)
+                .append("isResource", isResource)
                 .append("token", token);
 
         try {
@@ -1178,6 +1214,9 @@ public class FileManager extends AnnotationSetManager<File> {
             if (folderDestiny == null) {
                 if (path.startsWith("/")) {
                     path = path.substring(1);
+                }
+                if (isResource) {
+                    path = getResourcesPath(path);
                 }
                 File parentFolder = getParents(organizationId, study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
 
@@ -1203,9 +1242,14 @@ public class FileManager extends AnnotationSetManager<File> {
                     path = Paths.get(study.getUri().getPath()).relativize(folderDestiny).toString();
                 }
 
-                File parentFolder = getParents(organizationId, study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
-                authorizationManager.checkFilePermission(organizationId, study.getUid(), parentFolder.getUid(), userId,
-                        FilePermissions.WRITE);
+                if (isResource) {
+                    // Check if the user is an study admin
+                    authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+                } else {
+                    File parentFolder = getParents(organizationId, study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
+                    authorizationManager.checkFilePermission(organizationId, study.getUid(), parentFolder.getUid(), userId,
+                            FilePermissions.WRITE);
+                }
             } else {
                 // It will be moved to an external folder. Only admins can move to that directory
                 long studyId = study.getUid();
@@ -1259,6 +1303,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
                 File file = new File()
                         .setPath(filePath)
+                        .setResource(isResource)
                         .setType(File.Type.FILE);
                 validateNewFile(organizationId, study, file, false);
 
@@ -3306,20 +3351,21 @@ public class FileManager extends AnnotationSetManager<File> {
      *                         catalog)
      * @param checkPermissions Boolean indicating whether to check if the user has permissions to create a folder in the first directory
      *                         that is available in catalog.
+     * @return the parent folder.
      * @throws CatalogDBException
      */
-    private void createParents(String organizationId, Study study, String userId, URI studyURI, Path path, boolean checkPermissions)
-            throws CatalogException {
+    private OpenCGAResult<File> createParents(String organizationId, Study study, String userId, URI studyURI, Path path,
+                                              boolean checkPermissions) throws CatalogException {
         if (path == null) {
             if (checkPermissions) {
                 authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_FILES);
             }
-            return;
+            return null;
         }
 
         String stringPath = path.toString();
         if (("/").equals(stringPath)) {
-            return;
+            return null;
         }
 
         logger.debug("Path: {}", stringPath);
@@ -3337,14 +3383,21 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                 .append(FileDBAdaptor.QueryParams.PATH.key(), stringPath);
 
+        boolean isResource = false;
         if (getFileDBAdaptor(organizationId).count(query).getNumMatches() == 0) {
-            createParents(organizationId, study, userId, studyURI, path.getParent(), checkPermissions);
+            File tmpFile = createParents(organizationId, study, userId, studyURI, path.getParent(), checkPermissions).first();
+            isResource = tmpFile.isResource();
         } else {
             if (checkPermissions) {
-                long fileId = getFileDBAdaptor(organizationId).getId(study.getUid(), stringPath);
-                authorizationManager.checkFilePermission(organizationId, study.getUid(), fileId, userId, FilePermissions.WRITE);
+                File tmpFile = getFileDBAdaptor(organizationId).get(query, INCLUDE_FILE_IDS).first();
+                if (tmpFile.isResource()) {
+                    authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+                } else {
+                    authorizationManager.checkFilePermission(organizationId, study.getUid(), tmpFile.getUid(), userId,
+                            FilePermissions.WRITE);
+                }
             }
-            return;
+            return null;
         }
 
         String parentPath = getParentPath(stringPath);
@@ -3357,7 +3410,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // Create the folder in catalog
         File folder = new File(path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
-                stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", false, 0, null, new FileExperiment(),
+                stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", false, isResource, 0, null, new FileExperiment(),
                 Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study),
                 Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), null, new Status(), FileInternal.init(), null);
         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
@@ -3370,6 +3423,7 @@ public class FileManager extends AnnotationSetManager<File> {
             authorizationManager.replicateAcls(organizationId, Collections.singletonList(queryResult.first().getUid()),
                     allFileAcls.getResults().get(0), Enums.Resource.FILE);
         }
+        return queryResult;
     }
 
     private OpenCGAResult<File> privateLink(String organizationId, Study study, FileLinkParams params, boolean parents,
@@ -3423,6 +3477,10 @@ public class FileManager extends AnnotationSetManager<File> {
                 params.setPath(params.getPath() + "/");
             }
         }
+        if (isResourcesPath(params.getPath())) {
+            throw new CatalogException("Linked files cannot be stored in the RESOURCES folder.");
+        }
+
         String externalPathDestinyStr;
         if (Paths.get(normalizedUri).toFile().isDirectory()) {
             externalPathDestinyStr = Paths.get(params.getPath()).resolve(Paths.get(normalizedUri).getFileName()).toString() + "/";
@@ -3565,7 +3623,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
                         File folder = new File(Paths.get(dir).getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                 File.Bioformat.NONE, dir, destinyPath, null, creationDate, modificationDate,
-                                params.getDescription(), true, 0, new Software(), new FileExperiment(),
+                                params.getDescription(), true, false, 0, new Software(), new FileExperiment(),
                                 Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study),
                                 Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toStatus() : new Status(),
@@ -3624,7 +3682,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
                         File subfile = new File(Paths.get(fileUri).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                 File.Bioformat.NONE, fileUri, destinyPath, null, creationDate, modificationDate,
-                                params.getDescription(), true, size, new Software(), new FileExperiment(),
+                                params.getDescription(), true, false, size, new Software(), new FileExperiment(),
                                 Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study),
                                 Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toStatus() : new Status(), internal,
@@ -3775,8 +3833,10 @@ public class FileManager extends AnnotationSetManager<File> {
 
         File.Format format = org.opencb.opencga.catalog.managers.FileUtils.detectFormat(fileUri);
         File.Bioformat bioformat = org.opencb.opencga.catalog.managers.FileUtils.detectBioformat(fileUri);
+        boolean isExternal = isExternal(study, filePath, fileUri);
+        boolean isResource = isResourcesPath(filePath);
         File subfile = new File(Paths.get(filePath).getFileName().toString(), type, format, bioformat, fileUri, filePath, "",
-                TimeUtils.getTime(), TimeUtils.getTime(), "", isExternal(study, filePath, fileUri), size, new Software(),
+                TimeUtils.getTime(), TimeUtils.getTime(), "", isExternal, isResource, size, new Software(),
                 new FileExperiment(), Collections.emptyList(), Collections.emptyList(), jobId, studyManager.getCurrentRelease(study),
                 Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(), new Status(),
                 FileInternal.init(), Collections.emptyMap());

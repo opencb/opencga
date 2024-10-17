@@ -199,26 +199,26 @@ public class File extends Annotable {
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, URI uri, String description, FileInternal internal,
-                long size, int release) {
+                boolean resource, long size, int release) {
         this(name, type, format, bioformat, uri, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                false, size, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", release,
+                false, resource, size, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", release,
                 Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(), new Status(),
                 internal, Collections.emptyMap());
     }
 
-    public File(Type type, Format format, Bioformat bioformat, String path, String description, FileInternal internal, long size,
-                List<String> sampleIds, Software software, String jobId, FileQualityControl qualityControl, Map<String, Object> stats,
-                Map<String, Object> attributes) {
+    public File(Type type, Format format, Bioformat bioformat, String path, String description, FileInternal internal, boolean resource,
+                long size, List<String> sampleIds, Software software, String jobId, FileQualityControl qualityControl,
+                Map<String, Object> stats, Map<String, Object> attributes) {
         this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                false, size, software, new FileExperiment(), sampleIds, Collections.emptyList(), jobId, -1, Collections.emptyList(),
-                Collections.emptyList(), qualityControl, stats, new Status(), internal, attributes);
+                false, resource, size, software, new FileExperiment(), sampleIds, Collections.emptyList(), jobId, -1,
+                Collections.emptyList(), Collections.emptyList(), qualityControl, stats, new Status(), internal, attributes);
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum, String creationDate,
-                String modificationDate, String description, boolean external, long size, Software software, FileExperiment experiment,
-                List<String> sampleIds, List<FileRelatedFile> relatedFiles, String jobId, int release, List<String> tags,
-                List<AnnotationSet> annotationSets, FileQualityControl qualityControl, Map<String, Object> stats, Status status,
-                FileInternal internal, Map<String, Object> attributes) {
+                String modificationDate, String description, boolean external, boolean resource, long size, Software software,
+                FileExperiment experiment, List<String> sampleIds, List<FileRelatedFile> relatedFiles, String jobId, int release,
+                List<String> tags, List<AnnotationSet> annotationSets, FileQualityControl qualityControl, Map<String, Object> stats,
+                Status status, FileInternal internal, Map<String, Object> attributes) {
         id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
         this.type = type;
@@ -232,6 +232,7 @@ public class File extends Annotable {
         this.description = description;
         this.release = release;
         this.external = external;
+        this.resource = resource;
         this.internal = internal;
         this.size = size;
         this.software = software;

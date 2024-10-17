@@ -72,6 +72,8 @@ public class CustomFilesCommandOptions {
                 + "removed", arity = 0)
         public boolean replace;
 
+        @Parameter(names = {"--resource"}, description = "File resource", arity = 1)
+        public Boolean resource;
 //        @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", arity = 0)
 //        public boolean checksum;
 

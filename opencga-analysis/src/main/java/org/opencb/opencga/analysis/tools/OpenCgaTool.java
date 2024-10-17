@@ -510,10 +510,11 @@ public abstract class OpenCgaTool {
         erm.addAttribute(key, value);
     }
 
-    protected final void moveFile(String study, Path source, Path destiny, String catalogDirectoryPath, String token) throws ToolException {
+    protected final void moveFile(String study, Path source, Path destiny, String catalogDirectoryPath, boolean isResource, String token)
+            throws ToolException {
         File file;
         try {
-            file = catalogManager.getFileManager().moveAndRegister(study, source, destiny, catalogDirectoryPath, token).first();
+            file = catalogManager.getFileManager().moveAndRegister(study, source, destiny, catalogDirectoryPath, isResource, token).first();
         } catch (Exception e) {
             throw new ToolException("Error moving file from " + source + " to " + destiny, e);
         }

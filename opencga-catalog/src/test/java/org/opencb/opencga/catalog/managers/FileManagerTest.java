@@ -2318,7 +2318,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Path studyPath = Paths.get(study.getUri());
         // Register in workspace folder
-        OpenCGAResult<File> result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), "myFolder", ownerToken);
+        OpenCGAResult<File> result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), "myFolder", false, ownerToken);
         assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(),
                 Paths.get(result.first().getUri()).toString());
@@ -2332,7 +2332,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Files.copy(sourcePath, copy);
 
         // Register without passing the path
-        result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), null, ownerToken);
+        result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), null, false, ownerToken);
         assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz")));
@@ -2345,7 +2345,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Files.copy(sourcePath, copy);
 
         // Register without passing the destiny path
-        result = fileManager.moveAndRegister(studyFqn, copy, null, "myFolder", ownerToken);
+        result = fileManager.moveAndRegister(studyFqn, copy, null, "myFolder", false, ownerToken);
         assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz")));
@@ -2359,7 +2359,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Register to an incorrect path
         try {
-            fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), "otherFolder", ownerToken);
+            fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), "otherFolder", false, ownerToken);
             fail("The method should have raised an error saying the path does not match the one corresponding to the uri. It should both "
                     + "point to myFolder or to otherFolder, but not to different paths.");
         } catch (CatalogException e) {
@@ -2372,7 +2372,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Now, instead of moving it to the user's workspace, we will move it to an external path
         try {
-            fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", normalToken2);
+            fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", false, normalToken2);
             fail("user2 should not have permissions to move to an external folder");
         } catch (CatalogAuthorizationException e) {
             assertTrue(e.getMessage().contains("owners or administrative users"));
@@ -2383,7 +2383,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 new GroupUpdateParams(Collections.singletonList(normalUserId2)), ownerToken);
 
         // and try the same action again
-        result = fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", normalToken2);
+        result = fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", false, normalToken2);
         assertEquals("a/b/c/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals("/tmp/other/variant-test-file.vcf.gz", Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(Paths.get("/tmp/other/variant-test-file.vcf.gz")));

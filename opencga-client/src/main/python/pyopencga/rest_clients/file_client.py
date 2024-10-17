@@ -345,6 +345,7 @@ class File(_ParentRestClient):
             OTHER_PED VCF4 VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE
             REFERENCE_GENOME NONE UNKNOWN']
         :param str checksum: Expected MD5 file checksum.
+        :param bool resource: File resource.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param str relative_file_path: Path within catalog where the file will
