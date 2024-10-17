@@ -161,7 +161,7 @@ public class AdminClient extends AbstractParentClient {
     }
 
     /**
-     * [DEPRECATED] Synchronise a group of users from an authentication origin with a group in a study from catalog.
+     * [DEPRECATED] Moved to /users/sync.
      * @param data JSON containing the parameters.
      * @param params Map containing any of the following optional parameters.
      *       organization: Organization id.

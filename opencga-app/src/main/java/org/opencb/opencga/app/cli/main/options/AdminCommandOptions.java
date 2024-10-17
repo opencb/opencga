@@ -248,7 +248,7 @@ public class AdminCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"users-sync"}, commandDescription ="[DEPRECATED] Synchronise a group of users from an authentication origin with a group in a study from catalog")
+    @Parameters(commandNames = {"users-sync"}, commandDescription ="[DEPRECATED] Moved to /users/sync")
     public class SyncUsersCommandOptions {
     
         @ParametersDelegate
