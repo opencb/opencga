@@ -77,7 +77,7 @@ public class CustomUsersCommandExecutor extends CustomCommandExecutor {
                 String token = session.getSession().getToken();
                 String errorMsg = "Missing password. ";
                 if (StringUtils.isNotEmpty(token)) {
-                    errorMsg += "Active token detected ";
+                    errorMsg += "Active token detected. Please logout first.";
                 }
                 CommandLineUtils.error(errorMsg);
             }
