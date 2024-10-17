@@ -41,6 +41,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
+import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_FOLDER_NAME;
+import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_FOLDER_NAME;
+
 /**
  * Created on 05/05/16
  *
@@ -89,13 +92,20 @@ public class CatalogManagerExternalResource extends ExternalResource {
         } while (opencgaHome.toFile().exists());
         Files.createDirectories(opencgaHome);
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
+        Path confPath = Files.createDirectories(opencgaHome.resolve("conf"));
+        Files.copy(getClass().getResource("/configuration-test.yml").openStream(), confPath.resolve("configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
         configuration.setJobDir(opencgaHome.resolve("JOBS").toAbsolutePath().toString());
 
+        Path analysisPath = opencgaHome.resolve(ANALYSIS_FOLDER_NAME);
+        Files.createDirectories(analysisPath.resolve(RESOURCES_FOLDER_NAME));
+
         // Pedigree graph analysis
-        Path analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
+        Path pedAnalysisPath = Files.createDirectories(analysisPath.resolve("pedigree-graph")).toAbsolutePath();
         FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
-        Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(inputStream, pedAnalysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
+
         return opencgaHome;
     }
 

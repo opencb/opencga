@@ -1,11 +1,14 @@
-package org.opencb.opencga.core.tools;
+package org.opencb.opencga.catalog.utils;
 
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.VersionUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.resource.AnalysisResource;
 import org.opencb.opencga.core.models.resource.ResourceMetadata;
 import org.slf4j.Logger;
@@ -35,8 +38,10 @@ public class ResourceManager  {
     private String baseUrl;
     private Configuration configuration;
 
+    // Flag to track if all resources are fetching
+    private boolean isFetchingAll = false;
     // Locking mechanism to prevent concurrent downloads for the same analysis
-    private static final Map<String, Lock> analysisLocks = new ConcurrentHashMap<>();
+    private static final Map<String, Lock> ANALYSIS_LOCKS = new ConcurrentHashMap<>();
     private static final long LOCK_TIMEOUT = 2; // Timeout of 2 hours
 
     public static final String CONFIGURATION_FILENAME = "configuration.yml";
@@ -57,17 +62,34 @@ public class ResourceManager  {
         this.baseUrl = baseurl;
     }
 
-    public void fetchAllResources(Path tmpPath, boolean overwrite) throws IOException, NoSuchAlgorithmException {
-        loadConfiguration();
-
-        // Download resources
-        ResourceMetadata metadata = getResourceMetadata(true);
-        for (AnalysisResource analysisResources : metadata.getAnalysisResources()) {
-            getResourceFiles(analysisResources, tmpPath, overwrite);
+    public synchronized void fetchAllResources(Path tmpPath, boolean overwrite, CatalogManager catalogManager, String token)
+            throws IOException, NoSuchAlgorithmException, CatalogException {
+        // Check if the resource is already being downloaded
+        if (isFetchingAll) {
+            throw new IOException("Resources are already being fetched");
         }
 
-        // Move resources to installation folder
-        move(tmpPath, openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME));
+        // Mark fetching as started
+        try {
+            isFetchingAll = true;
+            loadConfiguration();
+
+            // Only installation administrators can fetch all resources
+            JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+            catalogManager.getAuthorizationManager().checkIsOpencgaAdministrator(jwtPayload, "fetch all resources");
+
+            // Download resources
+            ResourceMetadata metadata = getResourceMetadata(true);
+            for (AnalysisResource analysisResources : metadata.getAnalysisResources()) {
+                getResourceFiles(analysisResources, tmpPath, overwrite);
+            }
+
+            // Move resources to installation folder
+            move(tmpPath, openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME));
+        } finally {
+            // Reset the flag after fetch completes or fails
+            isFetchingAll = false;
+        }
     }
 
     public List<File> getResourceFiles(String analysisId) throws IOException, NoSuchAlgorithmException {
@@ -195,8 +217,8 @@ public class ResourceManager  {
         }
 
         // Create a lock for the analysis if not present, and get it for the input analysis
-        analysisLocks.putIfAbsent(fileUrl, new ReentrantLock());
-        Lock lock = analysisLocks.get(fileUrl);
+        ANALYSIS_LOCKS.putIfAbsent(fileUrl, new ReentrantLock());
+        Lock lock = ANALYSIS_LOCKS.get(fileUrl);
 
         boolean lockAcquired = false;
         try {

@@ -1,26 +1,28 @@
-package org.opencb.opencga.core.tools;
+package org.opencb.opencga.catalog.managers;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.resource.AnalysisResource;
 import org.opencb.opencga.core.models.resource.ResourceMetadata;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
-import static org.opencb.opencga.core.tools.ResourceManager.*;
+import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_FOLDER_NAME;
+import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_FOLDER_NAME;
 
-public class ResourceManagerTest {
+public class ResourceManagerTest extends AbstractManagerTest {
 
     Path openCgaHome;
     Path scratchDir;
@@ -32,16 +34,14 @@ public class ResourceManagerTest {
     String BASEURL = "http://resources.opencb.org/task-6766/";
 
     @Before
-    public void before() throws IOException {
-        openCgaHome = createDir("home");
+    public void setUp() throws Exception {
+        super.setUp();
+
+        openCgaHome = catalogManagerResource.getOpencgaHome();
         scratchDir = createDir("scratchdir");
 
-        Path folderConf = Files.createDirectories(openCgaHome.resolve(CONF_FOLDER_NAME));
-        BufferedInputStream inputStream = (BufferedInputStream) ResourceManager.class.getClassLoader().getResourceAsStream(CONFIGURATION_FILENAME);
-        Files.copy(inputStream, folderConf.resolve(CONFIGURATION_FILENAME), StandardCopyOption.REPLACE_EXISTING);
-
-        analysisPath = Files.createDirectories(openCgaHome.resolve(ANALYSIS_FOLDER_NAME));
-        analysisResourcePath = Files.createDirectories(analysisPath.resolve(RESOURCES_FOLDER_NAME));
+        analysisPath = openCgaHome.resolve(ANALYSIS_FOLDER_NAME);
+        analysisResourcePath = analysisPath.resolve(RESOURCES_FOLDER_NAME);
 
         resourceManager = new ResourceManager(openCgaHome, BASEURL);
 
@@ -73,11 +73,11 @@ public class ResourceManagerTest {
     }
 
     @Test
-    public void testFetchAllResources() throws IOException, NoSuchAlgorithmException {
+    public void testFetchAllResources() throws IOException, NoSuchAlgorithmException, CatalogException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, true);
+        resourceManager.fetchAllResources(outDir, true, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
         for (AnalysisResource analysisResource : resourceMetadata.getAnalysisResources()) {
             for (String resource : analysisResource.getResources()) {
                 Assert.assertTrue(Files.exists(analysisResourcePath.resolve(analysisResource.getId()).resolve(resource)));
@@ -85,27 +85,33 @@ public class ResourceManagerTest {
         }
     }
 
+    @Test(expected = CatalogAuthorizationException.class)
+    public void testFetchAllResourcesNoAdmin() throws IOException, NoSuchAlgorithmException, CatalogException {
+        resourceManager.fetchAllResources(null, true, catalogManagerResource.getCatalogManager(), normalToken1);
+    }
+
     @Test
-    public void testFetchAllResourcesNoOverwrite() throws IOException, NoSuchAlgorithmException {
+    public void testFetchAllResourcesNoOverwrite() throws IOException, NoSuchAlgorithmException, CatalogException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, true);
+        resourceManager.fetchAllResources(outDir, true, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
         for (AnalysisResource analysisResource : resourceMetadata.getAnalysisResources()) {
             for (String resource : analysisResource.getResources()) {
                 Assert.assertTrue(Files.exists(analysisResourcePath.resolve(analysisResource.getId()).resolve(resource)));
             }
         }
 
-        resourceManager.fetchAllResources(outDir, false);
+        resourceManager.fetchAllResources(outDir, false, catalogManagerResource.getCatalogManager(),
+                catalogManagerResource.getAdminToken());
     }
 
     @Test
-    public void testFetchResourcesForAGivenAnalysis() throws IOException, NoSuchAlgorithmException {
+    public void testFetchResourcesForAGivenAnalysis() throws IOException, NoSuchAlgorithmException, CatalogException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, true);
+        resourceManager.fetchAllResources(outDir, true, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
 
         String analysisId = "qc";
         AnalysisResource analysisResource = null;
@@ -125,11 +131,11 @@ public class ResourceManagerTest {
     }
 
     @Test
-    public void testFetchAGivenResource() throws IOException, NoSuchAlgorithmException {
+    public void testFetchAGivenResource() throws IOException, NoSuchAlgorithmException, CatalogException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, true);
+        resourceManager.fetchAllResources(outDir, true, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
 
         String analysisId = "liftover";
         String resourceName = "chain.frq";
