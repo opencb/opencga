@@ -207,6 +207,8 @@ public final class Enums {
         CHANGE_PERMISSION,
         REVERT,
         REUSE,
+        GROUP_BY,
+        RANK,
 
         LOGIN,
         REFRESH_TOKEN,

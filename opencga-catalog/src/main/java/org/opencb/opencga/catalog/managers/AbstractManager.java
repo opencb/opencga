@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.events.OpencgaEvent;
@@ -397,7 +398,8 @@ public abstract class AbstractManager {
 
         String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
 
-        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, userId, tokenPayload.getToken());
+        String eventUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EVENT);
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, userId, tokenPayload.getToken());
         CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
         try {
             // Get study
@@ -466,7 +468,8 @@ public abstract class AbstractManager {
 
         String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
 
-        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, userId, tokenPayload.getToken());
+        String eventUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EVENT);
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, userId, tokenPayload.getToken());
         CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
         try {
             // Get study
@@ -534,7 +537,8 @@ public abstract class AbstractManager {
 
         String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
 
-        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, userId, tokenPayload.getToken());
+        String eventUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EVENT);
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, userId, tokenPayload.getToken());
         CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
         try {
             // Get study
@@ -599,7 +603,8 @@ public abstract class AbstractManager {
 
         String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
 
-        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, userId, tokenPayload.getToken());
+        String eventUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EVENT);
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, userId, tokenPayload.getToken());
         CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
         Study study;
         try {
@@ -631,7 +636,7 @@ public abstract class AbstractManager {
         while (iterator.hasNext()) {
             T object = iterator.next();
 
-            opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, study.getFqn(), study.getUuid(), userId,
+            opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, study.getFqn(), study.getUuid(), userId,
                     tokenPayload.getToken());
             catalogEvent = CatalogEvent.build(opencgaEvent);
             EntryParam entryParam = new EntryParam();
@@ -677,7 +682,8 @@ public abstract class AbstractManager {
 
         String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
 
-        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, userId, tokenPayload.getToken());
+        String eventUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EVENT);
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, userId, tokenPayload.getToken());
         CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
         Study study;
         try {
@@ -691,7 +697,7 @@ public abstract class AbstractManager {
         // Execute code
         OpenCGAResult<T> result = OpenCGAResult.empty();
         for (String id : idList) {
-            opencgaEvent = OpencgaEvent.build(eventId, params, organizationId, study.getFqn(), study.getUuid(), userId,
+            opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, study.getFqn(), study.getUuid(), userId,
                     tokenPayload.getToken());
             catalogEvent = CatalogEvent.build(opencgaEvent);
             try {

@@ -74,16 +74,14 @@ public class AuditManager {
             Enums.Resource resource = Enums.Resource.valueOf(split[0].toUpperCase());
             Enums.Action action = Enums.Action.valueOf(split[1].toUpperCase());
             if (CollectionUtils.isNotEmpty(opencgaEvent.getEntries())) {
-                auditBatchOperation(opencgaEvent.getOrganizationId(), operationUuid -> {
-                    for (EntryParam entry : opencgaEvent.getEntries()) {
-                        audit(opencgaEvent.getOrganizationId(), operationUuid, opencgaEvent.getUserId(), action, resource, entry.getId(),
-                                entry.getUuid(), opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(),
-                                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-                    }
-                });
+                for (EntryParam entry : opencgaEvent.getEntries()) {
+                    audit(opencgaEvent.getOrganizationId(), opencgaEvent.getOperationId(), opencgaEvent.getUserId(), action, resource,
+                            entry.getId(), entry.getUuid(), opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(),
+                            opencgaEvent.getInputParams(), new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                }
             } else {
-                audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, "", "", opencgaEvent.getStudyFqn(),
-                        opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(),
+                audit(opencgaEvent.getOrganizationId(), opencgaEvent.getOperationId(), opencgaEvent.getUserId(), action, resource, "", "",
+                        opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(),
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             }
         }, (throwable, opencgaEvent) -> {
@@ -92,34 +90,21 @@ public class AuditManager {
             Enums.Action action = Enums.Action.valueOf(split[1].toUpperCase());
 
             if (CollectionUtils.isNotEmpty(opencgaEvent.getEntries())) {
-                auditBatchOperation(opencgaEvent.getOrganizationId(), operationUuid -> {
-                    for (EntryParam entry : opencgaEvent.getEntries()) {
-                        audit(opencgaEvent.getOrganizationId(), operationUuid, opencgaEvent.getUserId(), action, resource,
-                                entry.getId(), entry.getUuid(), opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(),
-                                opencgaEvent.getInputParams(), new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                                        new Error(0, throwable.getMessage(), throwable.getLocalizedMessage())));
-                    }
-                });
+                for (EntryParam entry : opencgaEvent.getEntries()) {
+                    audit(opencgaEvent.getOrganizationId(), opencgaEvent.getOperationId(), opencgaEvent.getUserId(), action, resource,
+                            entry.getId(), entry.getUuid(), opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(),
+                            opencgaEvent.getInputParams(), new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                    new Error(0, throwable.getMessage(), throwable.getLocalizedMessage())));
+                }
             } else {
-                audit(opencgaEvent.getOrganizationId(), opencgaEvent.getUserId(), action, resource, "", "", opencgaEvent.getStudyFqn(),
-                        opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(), new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                audit(opencgaEvent.getOrganizationId(), opencgaEvent.getOperationId(), opencgaEvent.getUserId(), action, resource, "", "",
+                        opencgaEvent.getStudyFqn(), opencgaEvent.getStudyUuid(), opencgaEvent.getInputParams(),
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                 new Error(0, throwable.getMessage(), throwable.getLocalizedMessage())));
             }
 
         }, true));
     }
-
-    private interface AuditBatchOperation {
-        void execute(String operationUuid);
-    }
-
-    private void auditBatchOperation(String organizationId, AuditBatchOperation operation) {
-        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-        initAuditBatch(operationUuid);
-        operation.execute(operationUuid);
-        finishAuditBatch(organizationId, operationUuid);
-    }
-
 
     public void audit(String organizationId, AuditRecord auditRecord) throws CatalogException {
         dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId).insertAuditRecord(auditRecord);
