@@ -17,13 +17,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class FileDataIndexSchema extends DataSchema {
+public class FileDataSchema extends DataSchema {
 
     private final DataFieldWithContext<Variant, OriginalCall> originalCallField;
     private final DataFieldWithContext<Variant, List<AlternateCoordinate>> secondaryAlternatesField;
     private final SampleIndexConfiguration.FileDataConfiguration fileDataConfiguration;
 
-    public FileDataIndexSchema(SampleIndexConfiguration.FileDataConfiguration fileDataConfiguration) {
+    public FileDataSchema(SampleIndexConfiguration.FileDataConfiguration fileDataConfiguration) {
         this.fileDataConfiguration = fileDataConfiguration;
         if (fileDataConfiguration.isIncludeOriginalCall()) {
             originalCallField = new VarBinaryDataField(

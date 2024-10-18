@@ -20,8 +20,23 @@ import java.util.*;
 import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
 
 /**
- * Define RowKey, column names, and fields. Used to build the sample index.
+ * Define RowKey, column names, and individual schemas. Used to build the sample index.
  *
+ * {@link SampleIndexEntry}: HBase row. Contains all the information from a sample in a specific region.
+ * {@link SampleIndexEntry.SampleIndexGtEntry}: HBase columns grouped by genotype.
+ * {@link SampleIndexEntryIterator}: Iterator over the variants of a {@link SampleIndexEntry}
+ * {@link SampleVariantIndexEntry}: Logical view over an entry for a specific variant and corresponding keys
+ * <p>
+ * - Row : {SAMPLE_ID}_{CHROMOSOME}_{BATCH_START}
+ *   - Variants columns:          {GT} -> [{variant1}, {variant2}, {variant3}, ...]
+ *   - Genotype columns:   _{key}_{GT} -> [{doc1}, {doc2}, {doc3}, ...]
+ *                                      - doc1 = [{fieldValue1}, {fieldValue2}, {fieldValue3}, ...]
+ *                                      - doc2 = [{fieldValue1}, {fieldValue2}, {fieldValue3}, ...]
+ *   - Meta columns:       _{key}      -> [{doc1}, {doc2}, {doc3}, ...]
+ * <p>
+ * Documents from genotype columns are ordered as the variants in the variants cell.
+ * Each variant is associated with a list of documents from each
+ * <p>
  * Created on 11/04/19.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -131,7 +146,7 @@ public final class SampleIndexSchema {
     private final int version;
     private final SampleIndexConfiguration configuration;
     private final FileIndexSchema fileIndex;
-    private final FileDataIndexSchema fileData;
+    private final FileDataSchema fileData;
     private final PopulationFrequencyIndexSchema popFreqIndex;
     private final ConsequenceTypeIndexSchema ctIndex;
     private final BiotypeIndexSchema biotypeIndex;
@@ -144,7 +159,7 @@ public final class SampleIndexSchema {
         this.version = version;
         this.configuration = configuration;
         fileIndex = new FileIndexSchema(configuration.getFileIndexConfiguration());
-        fileData = new FileDataIndexSchema(configuration.getFileDataConfiguration());
+        fileData = new FileDataSchema(configuration.getFileDataConfiguration());
 //        annotationSummaryIndexSchema = new AnnotationSummaryIndexSchema();
         ctIndex = new ConsequenceTypeIndexSchema(configuration.getAnnotationIndexConfiguration().getConsequenceType());
         biotypeIndex = new BiotypeIndexSchema(configuration.getAnnotationIndexConfiguration().getBiotype());
@@ -208,7 +223,7 @@ public final class SampleIndexSchema {
         return fileIndex;
     }
 
-    public FileDataIndexSchema getFileData() {
+    public FileDataSchema getFileData() {
         return fileData;
     }
 

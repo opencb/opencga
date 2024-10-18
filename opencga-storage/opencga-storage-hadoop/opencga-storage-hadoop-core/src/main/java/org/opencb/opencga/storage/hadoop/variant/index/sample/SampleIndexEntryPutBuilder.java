@@ -25,7 +25,7 @@ public class SampleIndexEntryPutBuilder {
     private static final byte[] COLUMN_FAMILY = GenomeHelper.COLUMN_FAMILY_BYTES;
     private final SampleIndexSchema schema;
     private final FileIndexSchema fileIndexSchema;
-    private final FileDataIndexSchema fileDataIndexSchema;
+    private final FileDataSchema fileDataSchema;
     private final SampleVariantIndexEntry.SampleVariantIndexEntryComparator comparator;
     private final boolean orderedInput;
     private final boolean multiFileSample;
@@ -58,7 +58,7 @@ public class SampleIndexEntryPutBuilder {
         variantConverter = new SampleIndexVariantBiConverter(schema);
         this.schema = schema;
         fileIndexSchema = this.schema.getFileIndex();
-        fileDataIndexSchema = this.schema.getFileData();
+        fileDataSchema = this.schema.getFileData();
         comparator = new SampleVariantIndexEntry.SampleVariantIndexEntryComparator(schema);
     }
 
@@ -170,7 +170,7 @@ public class SampleIndexEntryPutBuilder {
                 }
                 offset = fileIndexBuffer.setBitBuffer(gtEntry.getFileIndex(), offset);
                 if (!gtEntry.getFileData().isEmpty()) {
-                    fileDataIndexSchema.writeEntry(fileDataIndexBuffer, gtEntry.getFileData().get(0));
+                    fileDataSchema.writeDocument(fileDataIndexBuffer, gtEntry.getFileData().get(0));
                 }
                 prev = gtEntry;
             }
@@ -407,7 +407,7 @@ public class SampleIndexEntryPutBuilder {
                 offset += fileIndexSchema.getBitsLength();
                 prev = gtEntry;
                 if (!gtEntry.getFileData().isEmpty()) {
-                    fileDataIndexSchema.writeEntry(fileDataBuffer, gtEntry.getFileData().get(0));
+                    fileDataSchema.writeDocument(fileDataBuffer, gtEntry.getFileData().get(0));
                 }
             }
 

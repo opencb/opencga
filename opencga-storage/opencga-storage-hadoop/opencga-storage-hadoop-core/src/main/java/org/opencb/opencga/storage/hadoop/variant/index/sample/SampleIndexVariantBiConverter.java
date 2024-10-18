@@ -302,11 +302,11 @@ public class SampleIndexVariantBiConverter {
         }
 
         private BitBuffer getFileIndex(int i) {
-            return schema.getFileIndex().readEntry(fileIndex, i);
+            return schema.getFileIndex().readDocument(fileIndex, i);
         }
 
         private ByteBuffer getFileDataIndex(int i) {
-            return schema.getFileData().readEntry(fileDataIndex, i);
+            return schema.getFileData().readDocument(fileDataIndex, i);
         }
 
         @Override
@@ -374,7 +374,7 @@ public class SampleIndexVariantBiConverter {
                 if (clinical) {
                     int nextClinical = nextClinicalIndex();
                     // TODO: Reuse BitBuffer
-                    annotationIndexEntry.setClinicalIndex(schema.getClinicalIndexSchema().readEntry(clinicalIndex, nextClinical));
+                    annotationIndexEntry.setClinicalIndex(schema.getClinicalIndexSchema().readDocument(clinicalIndex, nextClinical));
                 }
             }
 

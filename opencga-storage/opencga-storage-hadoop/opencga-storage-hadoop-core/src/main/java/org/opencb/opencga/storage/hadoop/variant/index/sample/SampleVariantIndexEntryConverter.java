@@ -21,7 +21,7 @@ import java.util.function.IntFunction;
 public class SampleVariantIndexEntryConverter {
 
     private final FileIndexSchema fileIndex;
-    private final FileDataIndexSchema fileDataSchema;
+    private final FileDataSchema fileDataSchema;
 
     public SampleVariantIndexEntryConverter(SampleIndexSchema configuration) {
         fileIndex = configuration.getFileIndex();

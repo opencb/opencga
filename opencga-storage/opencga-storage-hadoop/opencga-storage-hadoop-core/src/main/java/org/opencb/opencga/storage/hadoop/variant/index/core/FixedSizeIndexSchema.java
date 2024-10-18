@@ -30,21 +30,21 @@ public abstract class FixedSizeIndexSchema extends IndexSchema {
     }
 
     /**
-     * Read index element from the bit input stream.
+     * Read index document from the bit input stream.
      * @param buffer BitBuffer
-     * @param i element position
+     * @param i document position
      * @return BitBuffer containing all fields from the index.
      */
-    public BitBuffer readEntry(BitBuffer buffer, int i) {
+    public BitBuffer readDocument(BitBuffer buffer, int i) {
         return buffer.getBitBuffer(i * indexSizeBits, indexSizeBits);
     }
 
     /**
-     * Read next index element from the bit input stream.
+     * Read next index document from the bit input stream.
      * @param stream BitBuffer
      * @return BitBuffer containing all fields from the index.
      */
-    public BitBuffer readEntry(BitInputStream stream) {
+    public BitBuffer readDocument(BitInputStream stream) {
         return stream.readBitBuffer(getBitsLength());
     }
 

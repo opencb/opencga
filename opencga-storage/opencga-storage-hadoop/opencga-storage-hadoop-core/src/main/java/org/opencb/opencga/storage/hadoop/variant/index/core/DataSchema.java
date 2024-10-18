@@ -13,159 +13,156 @@ import java.util.List;
  * This class contains the schema of the data stored in the index. The schema is defined by a set of fields.
  * <p>
  * The generated data is stored in a ByteBuffer, and this class is used to read and write the data.
- * The ByteBuffer contains a set of entries, each entry contains a set of fields.
+ * The ByteBuffer contains a list of documents, each document contains a set of fieldValues.
  * <p>
- * The fields of each entry are stored in the same order as they are added to the schema.
+ * The fields of each document are stored in the same order as they are added to the schema.
  * <p>
  *  - ByteBuffer
- *    - Entry 1
- *      - Entry length
- *      - Field 1
+ *    - Doc 1
+ *      - Doc length
+ *      - FieldValue 1
  *      - ...
- *      - Field n
+ *      - FieldValue n
  *    - ...
- *    - Entry n
+ *    - Doc n
  */
-public abstract class DataSchema {
+public abstract class DataSchema extends AbstractSchema<DataFieldBase<?>> {
 
     private final List<DataFieldBase<?>> fields;
-    protected final DataField<Integer> entryLengthField;
-    private ByteBuffer defaultEntry;
+    protected final DataField<Integer> documentLengthField;
+    private ByteBuffer defaultDocument;
 
 //    private boolean sparse = false;
 
     public DataSchema() {
         fields = new ArrayList<>();
-        entryLengthField = new VarIntDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "ENTRY_LENGTH", null));
-        defaultEntry = ByteBuffer.allocate(0);
+        documentLengthField = new VarIntDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "DOC_LENGTH", null));
+        defaultDocument = ByteBuffer.allocate(0);
     }
 
     protected void addField(DataFieldBase<?> field) {
         fields.add(field);
-        ExposedByteArrayOutputStream defaultEntryStream = new ExposedByteArrayOutputStream();
+        ExposedByteArrayOutputStream defaultDocumentStream = new ExposedByteArrayOutputStream();
         for (DataFieldBase<?> dataField : fields) {
-            writeDefaultValue(dataField, defaultEntryStream);
+            writeDefaultValue(dataField, defaultDocumentStream);
         }
-        defaultEntry = defaultEntryStream.toByteByffer().asReadOnlyBuffer();
+        defaultDocument = defaultDocumentStream.toByteByffer().asReadOnlyBuffer();
     }
 
-    private static <T> void writeDefaultValue(DataFieldBase<T> dataField, ByteArrayOutputStream defaultEntry) {
+    private static <T> void writeDefaultValue(DataFieldBase<T> dataField, ByteArrayOutputStream documentStream) {
         T defaultValue = dataField.getDefault();
-        dataField.write(defaultValue, defaultEntry);
+        dataField.write(defaultValue, documentStream);
     }
 
-    public DataFieldBase<?> getField(IndexFieldConfiguration.Source source, String key) {
-        return fields.stream().filter(i -> i.getSource() == source && i.getKey().equals(key)).findFirst().orElse(null);
-    }
-
+    @Override
     public List<DataFieldBase<?>> getFields() {
         return fields;
     }
 
-    public void writeEntry(ByteBuffer buffer, ByteBuffer entryBuffer) {
-        entryBuffer.rewind();
-        if (isDefaultEntry(entryBuffer)) {
-            // This is the default entry
-            entryLengthField.write(0, buffer);
+    public void writeDocument(ByteBuffer buffer, ByteBuffer docBuffer) {
+        docBuffer.rewind();
+        if (isDefaultDocument(docBuffer)) {
+            // This is the default document
+            documentLengthField.write(0, buffer);
             return;
         }
-        int entryLength = entryBuffer.limit();
-        entryLengthField.write(entryLength, buffer);
-        buffer.put(entryBuffer.array(), buffer.arrayOffset(), entryLength);
+        int documentLength = docBuffer.limit();
+        documentLengthField.write(documentLength, buffer);
+        buffer.put(docBuffer.array(), buffer.arrayOffset(), documentLength);
     }
 
 
-    public void writeEntry(ByteArrayOutputStream stream, ByteBuffer entryBuffer) {
-        entryBuffer.rewind();
-        if (isDefaultEntry(entryBuffer)) {
-            // This is the default entry
-            entryLengthField.write(0, stream);
+    public void writeDocument(ByteArrayOutputStream stream, ByteBuffer docBuffer) {
+        docBuffer.rewind();
+        if (isDefaultDocument(docBuffer)) {
+            // This is the default document
+            documentLengthField.write(0, stream);
             return;
         }
-        int entryLength = entryBuffer.limit();
-        entryLengthField.write(entryLength, stream);
-        stream.write(entryBuffer.array(), entryBuffer.arrayOffset(), entryLength);
+        int docLength = docBuffer.limit();
+        documentLengthField.write(docLength, stream);
+        stream.write(docBuffer.array(), docBuffer.arrayOffset(), docLength);
     }
 
-    private boolean isDefaultEntry(ByteBuffer entryBuffer) {
-        return defaultEntry.limit() == entryBuffer.limit()
-                && defaultEntry.compareTo(entryBuffer) == 0;
+    private boolean isDefaultDocument(ByteBuffer docBuffer) {
+        return defaultDocument.limit() == docBuffer.limit()
+                && defaultDocument.compareTo(docBuffer) == 0;
     }
 
-    public ByteBuffer readEntry(ByteBuffer buffer, int entryPosition) {
+    public ByteBuffer readDocument(ByteBuffer buffer, int docPosition) {
         try {
             buffer.rewind();
-            for (int i = 0; i < entryPosition; i++) {
+            for (int i = 0; i < docPosition; i++) {
                 if (!buffer.hasRemaining()) {
                     return ByteBuffer.allocate(0);
                 }
-                int entryLength = entryLengthField.readAndDecode(buffer);
-                buffer.position(buffer.position() + entryLength);
+                int docLength = documentLengthField.readAndDecode(buffer);
+                buffer.position(buffer.position() + docLength);
             }
-            return readNextEntry(buffer);
+            return readNextDocument(buffer);
         } catch (Exception e) {
             throw e;
         }
     }
 
-    public ByteBuffer readNextEntry(ByteBuffer buffer) {
+    public ByteBuffer readNextDocument(ByteBuffer buffer) {
         try {
             if (!buffer.hasRemaining()) {
                 return ByteBuffer.allocate(0);
             }
-            int entryLength = entryLengthField.readAndDecode(buffer);
-            if (entryLength == 0) {
-                return defaultEntry;
+            int docLength = documentLengthField.readAndDecode(buffer);
+            if (docLength == 0) {
+                return defaultDocument;
             }
-            ByteBuffer elementBuffer = ByteBuffer.allocate(entryLength);
-            buffer.get(elementBuffer.array(), elementBuffer.arrayOffset(), entryLength);
-            elementBuffer.rewind();
-            return elementBuffer;
+            ByteBuffer docBuffer = ByteBuffer.allocate(docLength);
+            buffer.get(docBuffer.array(), docBuffer.arrayOffset(), docLength);
+            docBuffer.rewind();
+            return docBuffer;
         } catch (Exception e) {
             throw e;
         }
     }
 
-    public <T> T readFieldAndDecode(ByteBuffer buffer, DataField<T> field) {
-        buffer.rewind();
+    public <T> T readFieldAndDecode(ByteBuffer docBuffer, DataField<T> field) {
+        docBuffer.rewind();
         for (DataFieldBase<?> thisField : fields) {
-            if (thisField == entryLengthField) {
-                // Skip entry length field
+            if (thisField == documentLengthField) {
+                // Skip document length field
                 continue;
             } else if (thisField == field) {
-                return field.readAndDecode(buffer);
+                return field.readAndDecode(docBuffer);
             } else {
-                thisField.move(buffer);
+                thisField.move(docBuffer);
             }
         }
         throw new IllegalArgumentException("Unknown field " + field);
     }
 
-    public <C, T> T readFieldAndDecode(ByteBuffer buffer, DataFieldWithContext<C, T> field, C context) {
-        buffer.rewind();
+    public <C, T> T readFieldAndDecode(ByteBuffer docBuffer, DataFieldWithContext<C, T> field, C context) {
+        docBuffer.rewind();
         for (DataFieldBase<?> thisField : fields) {
-            if (thisField == entryLengthField) {
-                // Skip entry length field
+            if (thisField == documentLengthField) {
+                // Skip document length field
                 continue;
             } else if (thisField == field) {
-                return field.readAndDecode(context, buffer);
+                return field.readAndDecode(context, docBuffer);
             } else {
-                thisField.move(buffer);
+                thisField.move(docBuffer);
             }
         }
         throw new IllegalArgumentException("Unknown field " + field);
     }
 
-    public ByteBuffer readField(ByteBuffer buffer, DataFieldBase<?> field) {
-        buffer.rewind();
+    public ByteBuffer readField(ByteBuffer docBuffer, DataFieldBase<?> field) {
+        docBuffer.rewind();
         for (DataFieldBase<?> thisField : fields) {
-            if (thisField == entryLengthField) {
-                // Skip entry length field
+            if (thisField == documentLengthField) {
+                // Skip document length field
                 continue;
             } else if (thisField == field) {
-                return field.read(buffer);
+                return field.read(docBuffer);
             } else {
-                thisField.move(buffer);
+                thisField.move(docBuffer);
             }
         }
         throw new IllegalArgumentException("Unknown field " + field);

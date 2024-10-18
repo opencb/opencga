@@ -42,7 +42,7 @@ public class DataSchemaTest {
         ByteBuffer byteByffer = stream.toByteByffer();
 
         ExposedByteArrayOutputStream stream2 = new ExposedByteArrayOutputStream();
-        dataSchema.writeEntry(stream2, byteByffer);
+        dataSchema.writeDocument(stream2, byteByffer);
         Assert.assertEquals(1, stream2.toByteByffer().limit());
         Assert.assertEquals(0, stream2.toByteByffer().get());
     }
@@ -50,71 +50,68 @@ public class DataSchemaTest {
     @Test
     public void readWrite() {
 
-        ByteBuffer bbEntry1 = ByteBuffer.allocate(100);
-        ByteBuffer bbEntry2 = ByteBuffer.allocate(100);
+        ByteBuffer bbDoc1 = ByteBuffer.allocate(100);
+        ByteBuffer bbDoc2 = ByteBuffer.allocate(100);
         ByteBuffer bb = ByteBuffer.allocate(100);
 
-        key1.write("key1_value", bbEntry1);
-        key2.write("key2_value", bbEntry1);
-        key3.write(1234255, bbEntry1);
-        key4.write("key4_value", bbEntry1);
-        bbEntry1.limit(bbEntry1.position());
+        key1.write("key1_value", bbDoc1);
+        key2.write("key2_value", bbDoc1);
+        key3.write(1234255, bbDoc1);
+        key4.write("key4_value", bbDoc1);
+        bbDoc1.limit(bbDoc1.position());
 
-        key1.write("key1_value", bbEntry2);
-        key2.write("key2_value", bbEntry2);
-        key3.write(32, bbEntry2);
-        key4.write("key4_value", bbEntry2);
-        bbEntry2.limit(bbEntry2.position());
+        key1.write("key1_value", bbDoc2);
+        key2.write("key2_value", bbDoc2);
+        key3.write(32, bbDoc2);
+        key4.write("key4_value", bbDoc2);
+        bbDoc2.limit(bbDoc2.position());
 
-        dataSchema.writeEntry(bb, bbEntry1);
-        dataSchema.writeEntry(bb, bbEntry2);
+        dataSchema.writeDocument(bb, bbDoc1);
+        dataSchema.writeDocument(bb, bbDoc2);
 
-        bbEntry1.rewind();
-        bbEntry2.rewind();
+        bbDoc1.rewind();
+        bbDoc2.rewind();
         bb.rewind();
 
-//        System.out.println("Bytes.toStringBinary(bbEntry) = " + Bytes.toStringBinary(bbEntry));
-//        System.out.println("Bytes.toStringBinary(bbEntry) = " + Bytes.toStringBinary(bb));
-
         // Read entries sequentially
-        ByteBuffer readEntry = dataSchema.readNextEntry(bb);
-        checkEntry(bbEntry1, readEntry, 1234255);
+        ByteBuffer readDoc = dataSchema.readNextDocument(bb);
+        checkDocument(bbDoc1, readDoc, 1234255);
 
-        ByteBuffer readEntry2 = dataSchema.readNextEntry(bb);
-        checkEntry(bbEntry2, readEntry2, 32);
+        ByteBuffer readDoc2 = dataSchema.readNextDocument(bb);
+        checkDocument(bbDoc2, readDoc2, 32);
 
         // Read entries random
-        readEntry2 = dataSchema.readEntry(bb, 1);
-        checkEntry(bbEntry2, readEntry2, 32);
+        readDoc2 = dataSchema.readDocument(bb, 1);
+        checkDocument(bbDoc2, readDoc2, 32);
 
-        readEntry = dataSchema.readEntry(bb, 0);
-        checkEntry(bbEntry1, readEntry, 1234255);
+        readDoc = dataSchema.readDocument(bb, 0);
+        checkDocument(bbDoc1, readDoc, 1234255);
     }
 
-    private void checkEntry(ByteBuffer expected, ByteBuffer readEntry, int key3NumberValue) {
-        Assert.assertEquals(expected, readEntry);
-//        System.out.println("Bytes.toStringBinary(readEntry) = " + Bytes.toStringBinary(readEntry));
+    private void checkDocument(ByteBuffer expected, ByteBuffer readDoc, int key3NumberValue) {
+        Assert.assertEquals(expected, readDoc);
+//        System.out.println("Bytes.toStringBinary(readDoc) = " + Bytes.toStringBinary(readDoc));
 
         // Sequential field read order
-        Assert.assertEquals("key1_value", key1.readAndDecode(readEntry));
-        Assert.assertEquals("key2_value", key2.readAndDecode(readEntry));
-        Assert.assertEquals(key3NumberValue, key3.readAndDecode(readEntry).intValue());
-        Assert.assertEquals("key4_value", key4.readAndDecode(readEntry));
+        Assert.assertEquals("key1_value", key1.readAndDecode(readDoc));
+        Assert.assertEquals("key2_value", key2.readAndDecode(readDoc));
+        Assert.assertEquals(key3NumberValue, key3.readAndDecode(readDoc).intValue());
+        Assert.assertEquals("key4_value", key4.readAndDecode(readDoc));
 
-        readEntry.rewind();
+        readDoc.rewind();
 
         // Wrong order.
-        Assert.assertEquals("key1_value", key4.readAndDecode(readEntry));
-        Assert.assertEquals("key2_value", key1.readAndDecode(readEntry));
-        Assert.assertEquals(key3NumberValue, key3.readAndDecode(readEntry).intValue());
-        Assert.assertEquals("key4_value", key2.readAndDecode(readEntry));
+        Assert.assertEquals("key1_value", key4.readAndDecode(readDoc));
+        Assert.assertEquals("key2_value", key1.readAndDecode(readDoc));
+        Assert.assertEquals(key3NumberValue, key3.readAndDecode(readDoc).intValue());
+        Assert.assertEquals("key4_value", key2.readAndDecode(readDoc));
 
-        readEntry.rewind();
+        readDoc.rewind();
 
         // Random field access order
-        Assert.assertEquals("key4_value", dataSchema.readFieldAndDecode(readEntry, key4));
-        Assert.assertEquals("key1_value", dataSchema.readFieldAndDecode(readEntry, key1));
-        Assert.assertEquals(key3NumberValue, dataSchema.readFieldAndDecode(readEntry, key3).intValue());
-        Assert.assertEquals("key2_value", dataSchema.readFieldAndDecode(readEntry, key2));
+        Assert.assertEquals("key4_value", dataSchema.readFieldAndDecode(readDoc, key4));
+        Assert.assertEquals("key1_value", dataSchema.readFieldAndDecode(readDoc, key1));
+        Assert.assertEquals(key3NumberValue, dataSchema.readFieldAndDecode(readDoc, key3).intValue());
+        Assert.assertEquals("key2_value", dataSchema.readFieldAndDecode(readDoc, key2));
     }
 }

@@ -28,7 +28,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
     private final SampleIndexVariantBiConverter converter;
     private final SampleIndexSchema schema;
     private final FileIndexSchema fileIndexSchema;
-    private final FileDataIndexSchema fileDataSchema;
+    private final FileDataSchema fileDataSchema;
 
     public HBaseToSampleIndexConverter(SampleIndexSchema schema) {
         this.schema = schema;
@@ -164,12 +164,12 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
             for (Variant variant : map.get(gt)) {
                 BitBuffer fileIndexEntry;
                 do {
-                    fileIndexEntry = fileIndexSchema.readEntry(fileIndexStream);
+                    fileIndexEntry = fileIndexSchema.readDocument(fileIndexStream);
                     ByteBuffer fileDataEntry;
                     if (fileDataBuffer == null) {
                         fileDataEntry = null;
                     } else {
-                        fileDataEntry = fileDataSchema.readNextEntry(fileDataBuffer);
+                        fileDataEntry = fileDataSchema.readNextDocument(fileDataBuffer);
                     }
                     values.add(new SampleVariantIndexEntry(variant, fileIndexEntry, fileDataEntry));
                 } while (this.fileIndexSchema.isMultiFile(fileIndexEntry));

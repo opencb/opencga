@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
 import static org.junit.Assert.*;
 
 @Category(ShortTests.class)
-public class FileDataIndexSchemaTest {
+public class FileDataSchemaTest {
 
     @Before
     public void setUp() throws Exception {
@@ -34,7 +34,7 @@ public class FileDataIndexSchemaTest {
     }
 
     private static void testOriginalCallEncoding(Variant variant, OriginalCall expected) {
-        FileDataIndexSchema.VariantOriginalCallToBytesConverter cpair = new FileDataIndexSchema.VariantOriginalCallToBytesConverter();
+        FileDataSchema.VariantOriginalCallToBytesConverter cpair = new FileDataSchema.VariantOriginalCallToBytesConverter();
 
         Pair<Variant, ByteBuffer> pair = cpair.to(Pair.of(variant, expected));
         System.out.println("Bytes2 length : " + pair.getValue().limit());

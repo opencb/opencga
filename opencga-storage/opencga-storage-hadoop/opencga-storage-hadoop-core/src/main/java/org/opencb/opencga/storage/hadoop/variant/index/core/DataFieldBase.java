@@ -15,32 +15,10 @@ import java.util.Objects;
  *     The ByteBuffer contains a set of entries, each entry contains a set of fields.
  * @param <T>
  */
-public abstract class DataFieldBase<T> {
-
-    private final IndexFieldConfiguration configuration;
+public abstract class DataFieldBase<T> extends AbstractField {
 
     public DataFieldBase(IndexFieldConfiguration configuration) {
-        this.configuration = configuration;
-    }
-
-    public String getId() {
-        return configuration.getId();
-    }
-
-    public IndexFieldConfiguration.Source getSource() {
-        return configuration.getSource();
-    }
-
-    public String getKey() {
-        return configuration.getKey();
-    }
-
-    public IndexFieldConfiguration getConfiguration() {
-        return configuration;
-    }
-
-    public IndexFieldConfiguration.Type getType() {
-        return configuration.getType();
+        super(configuration);
     }
 
     public void move(ByteBuffer bb) {
