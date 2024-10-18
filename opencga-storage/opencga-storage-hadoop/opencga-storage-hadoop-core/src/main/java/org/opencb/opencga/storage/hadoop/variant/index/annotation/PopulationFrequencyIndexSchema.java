@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.core.FixedSizeIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
@@ -21,7 +21,7 @@ public class PopulationFrequencyIndexSchema extends FixedSizeIndexSchema {
         this.populationFrequencyIndexConfiguration = populationFrequencyIndexConfiguration;
         populations = new HashMap<>();
         int bitOffset = 0;
-        for (IndexFieldConfiguration configuration : populationFrequencyIndexConfiguration.toIndexFieldConfiguration()) {
+        for (FieldConfiguration configuration : populationFrequencyIndexConfiguration.toIndexFieldConfiguration()) {
             IndexField<Double> field;
             switch (configuration.getType()) {
                 case RANGE_LT:

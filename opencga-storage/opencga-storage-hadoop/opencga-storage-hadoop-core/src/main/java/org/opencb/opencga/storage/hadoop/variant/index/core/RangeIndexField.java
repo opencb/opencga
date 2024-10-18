@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.storage.core.variant.query.OpValue;
 import org.opencb.opencga.storage.core.variant.query.executors.accumulators.Range;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
@@ -23,11 +23,11 @@ public class RangeIndexField extends IndexField<Double> {
     private final IndexCodec<Double> codec;
     private int numRanges;
 
-    public RangeIndexField(IndexFieldConfiguration configuration, int bitOffset) {
+    public RangeIndexField(FieldConfiguration configuration, int bitOffset) {
         this(configuration, bitOffset, Double.MIN_VALUE, MAX);
     }
 
-    public RangeIndexField(IndexFieldConfiguration configuration, int bitOffset, double minValue, double max) {
+    public RangeIndexField(FieldConfiguration configuration, int bitOffset, double minValue, double max) {
         super(configuration, bitOffset);
         this.thresholds = getConfiguration().getThresholds().clone();
         min = minValue;
@@ -42,7 +42,7 @@ public class RangeIndexField extends IndexField<Double> {
             codec = new NonNullableRangeCodec();
         }
         bitLength = Math.max(1, IndexUtils.log2(numRanges - 1) + 1);
-        if (configuration.getType().equals(IndexFieldConfiguration.Type.RANGE_GT)) {
+        if (configuration.getType().equals(FieldConfiguration.Type.RANGE_GT)) {
             // Add one DELTA to each value to invert ranges from [s, e) to (s, e], therefore the operation ">" is exact
             for (int i = 0; i < thresholds.length; i++) {
                 thresholds[i] += DELTA;

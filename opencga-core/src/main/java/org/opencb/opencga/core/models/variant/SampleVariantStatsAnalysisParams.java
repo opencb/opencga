@@ -27,7 +27,7 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
             + "Use sample=all to compute sample stats of all samples in the variant storage.";
     private List<String> sample;
     private List<String> individual;
-    private VariantQueryParams variantQuery = new VariantQueryParams();
+    private VariantQueryParamsForSampleVariantStats variantQuery = new VariantQueryParamsForSampleVariantStats();
     private String outdir;
     private boolean index;
     private boolean indexOverwrite;
@@ -35,14 +35,14 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
     private String indexDescription;
     private Integer batchSize;
 
-    public static class VariantQueryParams extends AnnotationVariantQueryParams {
+    public static class VariantQueryParamsForSampleVariantStats extends AnnotationVariantQueryParams {
         public String sampleData;
         public String fileData;
 
-        public VariantQueryParams() {
+        public VariantQueryParamsForSampleVariantStats() {
         }
 
-        public VariantQueryParams(Query query) {
+        public VariantQueryParamsForSampleVariantStats(Query query) {
             super(query);
         }
 
@@ -50,7 +50,7 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
             return sampleData;
         }
 
-        public VariantQueryParams setSampleData(String sampleData) {
+        public VariantQueryParamsForSampleVariantStats setSampleData(String sampleData) {
             this.sampleData = sampleData;
             return this;
         }
@@ -59,7 +59,7 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
             return fileData;
         }
 
-        public VariantQueryParams setFileData(String fileData) {
+        public VariantQueryParamsForSampleVariantStats setFileData(String fileData) {
             this.fileData = fileData;
             return this;
         }
@@ -72,19 +72,19 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
                                             boolean indexOverwrite, String indexId, String indexDescription, Integer batchSize,
                                             AnnotationVariantQueryParams variantQuery) {
         this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, batchSize,
-                variantQuery == null ? null : new VariantQueryParams(variantQuery.toQuery()));
+                variantQuery == null ? null : new VariantQueryParamsForSampleVariantStats(variantQuery.toQuery()));
     }
 
     public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, String outdir, boolean index,
                                             boolean indexOverwrite, String indexId, String indexDescription, Integer batchSize,
                                             Query variantQuery) {
         this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, batchSize,
-                variantQuery == null ? null : new VariantQueryParams(variantQuery));
+                variantQuery == null ? null : new VariantQueryParamsForSampleVariantStats(variantQuery));
     }
 
     public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, String outdir, boolean index,
                                             boolean indexOverwrite, String indexId, String indexDescription, Integer batchSize,
-                                            VariantQueryParams variantQuery) {
+                                            VariantQueryParamsForSampleVariantStats variantQuery) {
         this.sample = sample;
         this.individual = individual;
         this.variantQuery = variantQuery;
@@ -114,11 +114,11 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
         return this;
     }
 
-    public VariantQueryParams getVariantQuery() {
+    public VariantQueryParamsForSampleVariantStats getVariantQuery() {
         return variantQuery;
     }
 
-    public SampleVariantStatsAnalysisParams setVariantQuery(VariantQueryParams variantQuery) {
+    public SampleVariantStatsAnalysisParams setVariantQuery(VariantQueryParamsForSampleVariantStats variantQuery) {
         this.variantQuery = variantQuery;
         return this;
     }

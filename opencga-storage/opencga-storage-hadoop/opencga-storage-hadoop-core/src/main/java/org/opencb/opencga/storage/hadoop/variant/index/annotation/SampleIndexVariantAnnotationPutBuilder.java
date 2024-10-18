@@ -7,7 +7,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.io.ByteArrayOutputStream;
 
-public class AnnotationIndexPutBuilder {
+public class SampleIndexVariantAnnotationPutBuilder {
 
     private final ByteArrayOutputStream annotation;
     private final BitOutputStream biotype;
@@ -19,11 +19,11 @@ public class AnnotationIndexPutBuilder {
     private final SampleIndexSchema indexSchema;
     private int numVariants;
 
-    public AnnotationIndexPutBuilder(SampleIndexSchema indexSchema) {
+    public SampleIndexVariantAnnotationPutBuilder(SampleIndexSchema indexSchema) {
         this(indexSchema, 50);
     }
 
-    public AnnotationIndexPutBuilder(SampleIndexSchema indexSchema, int size) {
+    public SampleIndexVariantAnnotationPutBuilder(SampleIndexSchema indexSchema, int size) {
         this.indexSchema = indexSchema;
         this.annotation = new ByteArrayOutputStream(size);
         this.biotype = new BitOutputStream(size / 4);
@@ -35,7 +35,7 @@ public class AnnotationIndexPutBuilder {
         numVariants = 0;
     }
 
-    public AnnotationIndexPutBuilder add(AnnotationIndexEntry indexEntry) {
+    public SampleIndexVariantAnnotationPutBuilder add(SampleIndexVariantAnnotation indexEntry) {
         numVariants++;
         annotation.write(indexEntry.getSummaryIndex());
 

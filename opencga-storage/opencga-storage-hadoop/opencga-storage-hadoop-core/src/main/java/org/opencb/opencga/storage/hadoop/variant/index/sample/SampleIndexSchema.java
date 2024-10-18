@@ -20,8 +20,23 @@ import java.util.*;
 import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
 
 /**
- * Define RowKey, column names, and fields. Used to build the sample index.
+ * Define RowKey, column names, and individual schemas. Used to build the sample index.
  *
+ * {@link SampleIndexEntry}: HBase row. Contains all the information from a sample in a specific region.
+ * {@link SampleIndexEntry.SampleIndexGtEntry}: HBase columns grouped by genotype.
+ * {@link SampleIndexEntryIterator}: Iterator over the variants of a {@link SampleIndexEntry}
+ * {@link SampleIndexVariant}: Logical view over an entry for a specific variant and corresponding keys
+ * <p>
+ * - Row : {SAMPLE_ID}_{CHROMOSOME}_{BATCH_START}
+ *   - Variants columns:          {GT} -> [{variant1}, {variant2}, {variant3}, ...]
+ *   - Genotype columns:   _{key}_{GT} -> [{doc1}, {doc2}, {doc3}, ...]
+ *                                      - doc1 = [{fieldValue1}, {fieldValue2}, {fieldValue3}, ...]
+ *                                      - doc2 = [{fieldValue1}, {fieldValue2}, {fieldValue3}, ...]
+ *   - Meta columns:       _{key}      -> [{doc1}, {doc2}, {doc3}, ...]
+ * <p>
+ * Documents from genotype columns are ordered as the variants in the variants cell.
+ * Each variant is associated with a list of documents from each
+ * <p>
  * Created on 11/04/19.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -89,6 +104,8 @@ public final class SampleIndexSchema {
     static final byte[] PARENTS_PREFIX_BYTES = Bytes.toBytes(PARENTS_PREFIX);
     static final String FILE_PREFIX = META_PREFIX + "F_";
     static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
+    static final String FILE_DATA_PREFIX = META_PREFIX + "FD_";
+    static final byte[] FILE_DATA_PREFIX_BYTES = Bytes.toBytes(FILE_DATA_PREFIX);
     static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
     static final byte[] GENOTYPE_COUNT_PREFIX_BYTES = Bytes.toBytes(GENOTYPE_COUNT_PREFIX);
     static final String GENOTYPE_DISCREPANCY_COUNT = META_PREFIX + "DC";
@@ -129,6 +146,7 @@ public final class SampleIndexSchema {
     private final int version;
     private final SampleIndexConfiguration configuration;
     private final FileIndexSchema fileIndex;
+    private final FileDataSchema fileData;
     private final PopulationFrequencyIndexSchema popFreqIndex;
     private final ConsequenceTypeIndexSchema ctIndex;
     private final BiotypeIndexSchema biotypeIndex;
@@ -141,6 +159,7 @@ public final class SampleIndexSchema {
         this.version = version;
         this.configuration = configuration;
         fileIndex = new FileIndexSchema(configuration.getFileIndexConfiguration());
+        fileData = new FileDataSchema(configuration.getFileDataConfiguration());
 //        annotationSummaryIndexSchema = new AnnotationSummaryIndexSchema();
         ctIndex = new ConsequenceTypeIndexSchema(configuration.getAnnotationIndexConfiguration().getConsequenceType());
         biotypeIndex = new BiotypeIndexSchema(configuration.getAnnotationIndexConfiguration().getBiotype());
@@ -160,7 +179,7 @@ public final class SampleIndexSchema {
      * @return Default schema
      */
     public static SampleIndexSchema defaultSampleIndexSchema() {
-        SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
+        SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration(false);
         return new SampleIndexSchema(sampleIndexConfiguration, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION);
     }
 
@@ -204,12 +223,17 @@ public final class SampleIndexSchema {
         return fileIndex;
     }
 
+    public FileDataSchema getFileData() {
+        return fileData;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleIndexSchema{");
         sb.append("version=").append(version);
         sb.append(", configuration=").append(configuration);
         sb.append(", fileIndex=").append(fileIndex);
+        sb.append(", fileData=").append(fileData);
         sb.append(", popFreqIndex=").append(popFreqIndex);
         sb.append(", ctIndex=").append(ctIndex);
         sb.append(", biotypeIndex=").append(biotypeIndex);
@@ -362,6 +386,10 @@ public final class SampleIndexSchema {
 
     public static byte[] toFileIndexColumn(String genotype) {
         return Bytes.toBytes(FILE_PREFIX + genotype);
+    }
+
+    public static byte[] toFileDataColumn(String genotype) {
+        return Bytes.toBytes(FILE_DATA_PREFIX + genotype);
     }
 
     public static String getGt(Cell cell, byte[] prefix) {

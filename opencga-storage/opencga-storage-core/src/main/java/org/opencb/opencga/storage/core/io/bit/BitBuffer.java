@@ -2,6 +2,8 @@ package org.opencb.opencga.storage.core.io.bit;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.ByteArrayOutputStream;
+
 public class BitBuffer {
 
     private final byte[] buffer;
@@ -31,6 +33,12 @@ public class BitBuffer {
 
     public BitBuffer(byte[] buffer) {
         this.buffer = buffer;
+        this.bitOffset = 0;
+        this.bitLength = buffer.length * Byte.SIZE;
+    }
+
+    public BitBuffer(ByteArrayOutputStream stream) {
+        this.buffer = stream.toByteArray();
         this.bitOffset = 0;
         this.bitLength = buffer.length * Byte.SIZE;
     }
@@ -135,7 +143,7 @@ public class BitBuffer {
         setBytePartial(value, bitOffset, Byte.SIZE);
     }
 
-    public void setBitBuffer(BitBuffer value, int bitOffset) {
+    public int setBitBuffer(BitBuffer value, int bitOffset) {
         if (value.getBitLength() + bitOffset > this.bitLength) {
             throw new IndexOutOfBoundsException("Bit offset request: " + bitOffset
                     + ", bit length request: " + value.getBitLength()
@@ -151,6 +159,7 @@ public class BitBuffer {
         if (bits != 0) {
             setBytePartial(value.getBytePartial(bytes * Byte.SIZE, bits), bytes * Byte.SIZE + bitOffset, bits);
         }
+        return bitOffset + value.getBitLength();
     }
 
     public void setBytePartial(byte value, int bitOffset, int length) {

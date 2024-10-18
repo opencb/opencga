@@ -65,6 +65,15 @@ public class BitInputStream extends BitBuffer {
     }
 
     /**
+     * Read 32 bits (one int).
+     *
+     * @return read value
+     */
+    public int readInt() {
+        return readIntPartial(Integer.SIZE);
+    }
+
+    /**
      * Read up to 8 bits (one byte).
      *
      * @param length Number of bits to read.

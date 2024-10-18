@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import htsjdk.variant.vcf.VCFConstants;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -33,7 +33,7 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
                 fileIndexConfiguration.isFixedFieldsFirst());
     }
 
-    public FileIndexSchema(List<IndexFieldConfiguration> customFieldConfigurations, int filePositionSizeBits, boolean fixedFieldsFirst) {
+    public FileIndexSchema(List<FieldConfiguration> customFieldConfigurations, int filePositionSizeBits, boolean fixedFieldsFirst) {
         if (fixedFieldsFirst) {
             multiFileIndex = buildMultiFile(null);
             filePositionIndex = buildFilePositionIndexField(multiFileIndex, filePositionSizeBits);
@@ -60,13 +60,13 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
         this.fields.addAll(fixedFields);
         this.fields.addAll(customFields);
         customFieldsSourceSample = customFields.stream()
-                .filter(c -> c.getSource().equals(IndexFieldConfiguration.Source.SAMPLE))
+                .filter(c -> c.getSource().equals(FieldConfiguration.Source.SAMPLE))
                 .collect(Collectors.toList());
 
         updateIndexSizeBits();
     }
 
-    public IndexField<String> getCustomField(IndexFieldConfiguration.Source source, String key) {
+    public IndexField<String> getCustomField(FieldConfiguration.Source source, String key) {
         return customFields.stream().filter(i -> i.getSource().equals(source) && i.getKey().equals(key)).findFirst().orElse(null);
     }
 
@@ -125,7 +125,7 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
 
     protected CategoricalIndexField<Boolean> buildMultiFile(IndexField<?> prevIndex) {
         return new CategoricalIndexField<>(
-                new IndexFieldConfiguration(IndexFieldConfiguration.Source.FILE, "multiFile", IndexFieldConfiguration.Type.CATEGORICAL)
+                new FieldConfiguration(FieldConfiguration.Source.FILE, "multiFile", FieldConfiguration.Type.CATEGORICAL)
                 .setNullable(false),
                 prevIndex == null ? 0 : (prevIndex.getBitOffset() + prevIndex.getBitLength()),
                 new Boolean[]{false, true});
@@ -133,8 +133,8 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
 
     private CategoricalIndexField<VariantType> buildVariantTypeIndexField(IndexField<?> prevIndex) {
         return new CategoricalIndexField<>(
-                new IndexFieldConfiguration(IndexFieldConfiguration.Source.VARIANT, TYPE_KEY,
-                        IndexFieldConfiguration.Type.CATEGORICAL),
+                new FieldConfiguration(FieldConfiguration.Source.VARIANT, TYPE_KEY,
+                        FieldConfiguration.Type.CATEGORICAL),
                 prevIndex == null ? 0 : (prevIndex.getBitOffset() + prevIndex.getBitLength()),
                 VariantTypeIndexCodec.TYPE_NUM_VALUES, new VariantTypeIndexCodec());
     }
@@ -142,8 +142,8 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
     private static CategoricalIndexField<Integer> buildFilePositionIndexField(IndexField<?> prevIndex, int filePositionSize) {
         int maxValues = (1 << filePositionSize) - 1;
         return new CategoricalIndexField<>(
-                new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, FILE_POSITION_KEY,
-                        IndexFieldConfiguration.Type.CATEGORICAL),
+                new FieldConfiguration(FieldConfiguration.Source.META, FILE_POSITION_KEY,
+                        FieldConfiguration.Type.CATEGORICAL),
                 prevIndex == null ? 0 : (prevIndex.getBitOffset() + prevIndex.getBitLength()), maxValues,
                 new IndexCodec<Integer>() {
                     @Override
@@ -168,7 +168,7 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
     }
 
     private static List<IndexField<String>> buildCustomIndexFields(List<IndexField<?>> fixedIndexFields,
-                                                                   List<IndexFieldConfiguration> configurations) {
+                                                                   List<FieldConfiguration> configurations) {
         int bitOffset = 0;
         for (IndexField<?> indexField : fixedIndexFields) {
             if (indexField.getBitOffset() != bitOffset) {
@@ -179,7 +179,7 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
         }
 
         List<IndexField<String>> list = new ArrayList<>();
-        for (IndexFieldConfiguration conf : configurations) {
+        for (FieldConfiguration conf : configurations) {
             IndexField<String> stringIndexField = buildCustomIndexField(conf, bitOffset);
             list.add(stringIndexField);
             bitOffset += stringIndexField.getBitLength();
@@ -187,7 +187,7 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
         return list;
     }
 
-    private static IndexField<String> buildCustomIndexField(IndexFieldConfiguration conf, int bitOffset) {
+    private static IndexField<String> buildCustomIndexField(FieldConfiguration conf, int bitOffset) {
         switch (conf.getType()) {
             case RANGE_LT:
             case RANGE_GT:
@@ -205,7 +205,7 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
             case CATEGORICAL:
                 return new CategoricalIndexField<>(conf, bitOffset, conf.getValues());
             case CATEGORICAL_MULTI_VALUE:
-                if (conf.getSource() == IndexFieldConfiguration.Source.FILE && conf.getKey().equals(StudyEntry.FILTER)) {
+                if (conf.getSource() == FieldConfiguration.Source.FILE && conf.getKey().equals(StudyEntry.FILTER)) {
                     return new CategoricalMultiValuedIndexField<>(conf, bitOffset, conf.getValues())
                             .from(s -> {
                                 if (s == null || s.isEmpty() || s.equals(VCFConstants.MISSING_VALUE_v4)) {

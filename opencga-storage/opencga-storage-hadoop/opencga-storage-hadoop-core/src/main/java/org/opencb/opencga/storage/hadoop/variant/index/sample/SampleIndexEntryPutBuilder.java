@@ -5,8 +5,10 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.io.bit.BitOutputStream;
+import org.opencb.opencga.storage.core.io.bit.ExposedByteArrayOutputStream;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
@@ -22,8 +24,9 @@ public class SampleIndexEntryPutBuilder {
     private final SampleIndexVariantBiConverter variantConverter;
     private static final byte[] COLUMN_FAMILY = GenomeHelper.COLUMN_FAMILY_BYTES;
     private final SampleIndexSchema schema;
-    private final FileIndexSchema fileIndex;
-    private final SampleVariantIndexEntry.SampleVariantIndexEntryComparator comparator;
+    private final FileIndexSchema fileIndexSchema;
+    private final FileDataSchema fileDataSchema;
+    private final SampleIndexVariant.SampleIndexVariantComparator comparator;
     private final boolean orderedInput;
     private final boolean multiFileSample;
 
@@ -54,20 +57,21 @@ public class SampleIndexEntryPutBuilder {
         gts = new HashMap<>();
         variantConverter = new SampleIndexVariantBiConverter(schema);
         this.schema = schema;
-        fileIndex = this.schema.getFileIndex();
-        comparator = new SampleVariantIndexEntry.SampleVariantIndexEntryComparator(schema);
+        fileIndexSchema = this.schema.getFileIndex();
+        fileDataSchema = this.schema.getFileData();
+        comparator = new SampleIndexVariant.SampleIndexVariantComparator(schema);
     }
 
     public SampleIndexEntryPutBuilder(int sampleId, String chromosome, int position, SampleIndexSchema schema,
-                                      Map<String, TreeSet<SampleVariantIndexEntry>> map) {
+                                      Map<String, TreeSet<SampleIndexVariant>> map) {
         // As there is already present data, this won't be an ordered input.
         this(sampleId, chromosome, position, schema, false, true);
-        for (Map.Entry<String, TreeSet<SampleVariantIndexEntry>> entry : map.entrySet()) {
+        for (Map.Entry<String, TreeSet<SampleIndexVariant>> entry : map.entrySet()) {
             gts.put(entry.getKey(), new SampleIndexGtEntryBuilderTreeSet(entry.getKey(), entry.getValue()));
         }
     }
 
-    public boolean add(String gt, SampleVariantIndexEntry variantIndexEntry) {
+    public boolean add(String gt, SampleIndexVariant variantIndexEntry) {
         return get(gt).add(variantIndexEntry);
     }
 
@@ -79,7 +83,7 @@ public class SampleIndexEntryPutBuilder {
         );
     }
 
-    public boolean containsVariant(SampleVariantIndexEntry variantIndexEntry) {
+    public boolean containsVariant(SampleIndexVariant variantIndexEntry) {
         for (Map.Entry<String, SampleIndexGtEntryBuilder> entry : gts.entrySet()) {
 
             if (entry.getValue().containsVariant(variantIndexEntry)) {
@@ -136,32 +140,38 @@ public class SampleIndexEntryPutBuilder {
             return gt;
         }
 
-        public abstract Collection<SampleVariantIndexEntry> getEntries();
+        public abstract Collection<SampleIndexVariant> getEntries();
 
-        public abstract boolean add(SampleVariantIndexEntry variantIndexEntry);
+        public abstract boolean add(SampleIndexVariant variantIndexEntry);
 
-        public abstract boolean containsVariant(SampleVariantIndexEntry variantIndexEntry);
+        public abstract boolean containsVariant(SampleIndexVariant variantIndexEntry);
 
         public abstract int containsVariants(SampleIndexGtEntryBuilder entries);
 
         public void build(Put put) {
-            Collection<SampleVariantIndexEntry> gtEntries = getEntries();
+            Collection<SampleIndexVariant> gtEntries = getEntries();
 
-            BitBuffer fileIndexBuffer = new BitBuffer(fileIndex.getBitsLength() * gtEntries.size());
+            BitBuffer fileIndexBuffer = new BitBuffer(fileIndexSchema.getBitsLength() * gtEntries.size());
+            ByteBuffer fileDataIndexBuffer = ByteBuffer.allocate(gtEntries.stream()
+                    .mapToInt(SampleIndexVariant::getFileDataIndexBytes)
+                    .map(i -> i + 4)
+                    .sum());
             int offset = 0;
 
-            SampleVariantIndexEntry prev = null;
+            SampleIndexVariant prev = null;
             List<Variant> variants = new ArrayList<>(gtEntries.size());
-            for (SampleVariantIndexEntry gtEntry : gtEntries) {
+            for (SampleIndexVariant gtEntry : gtEntries) {
                 Variant variant = gtEntry.getVariant();
                 if (prev == null || !prev.getVariant().sameGenomicVariant(variant)) {
                     variants.add(variant);
                 } else {
                     // Mark previous variant as MultiFile
-                    fileIndex.setMultiFile(fileIndexBuffer, offset - fileIndex.getBitsLength());
+                    fileIndexSchema.setMultiFile(fileIndexBuffer, offset - fileIndexSchema.getBitsLength());
                 }
-                fileIndexBuffer.setBitBuffer(gtEntry.getFileIndex(), offset);
-                offset += fileIndex.getBitsLength();
+                offset = fileIndexBuffer.setBitBuffer(gtEntry.getFileIndex(), offset);
+                if (!gtEntry.getFileData().isEmpty()) {
+                    fileDataSchema.writeDocument(fileDataIndexBuffer, gtEntry.getFileData().get(0));
+                }
                 prev = gtEntry;
             }
 
@@ -170,39 +180,46 @@ public class SampleIndexEntryPutBuilder {
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toGenotypeColumn(gt), variantsBytes);
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toFileIndexColumn(gt), fileIndexBuffer.getBuffer());
+            int position = fileDataIndexBuffer.position();
+            if (position > 0) {
+                fileDataIndexBuffer.rewind();
+                fileDataIndexBuffer.limit(position);
+                put.addColumn(COLUMN_FAMILY, ByteBuffer.wrap(SampleIndexSchema.toFileDataColumn(gt)), put.getTimestamp(),
+                        fileDataIndexBuffer);
+            }
         }
     }
 
     private class SampleIndexGtEntryBuilderTreeSet extends SampleIndexGtEntryBuilder {
-        private final TreeSet<SampleVariantIndexEntry> entries;
+        private final TreeSet<SampleIndexVariant> entries;
 
         SampleIndexGtEntryBuilderTreeSet(String gt) {
             super(gt);
             entries = new TreeSet<>(comparator);
         }
 
-        SampleIndexGtEntryBuilderTreeSet(String gt, TreeSet<SampleVariantIndexEntry> entries) {
+        SampleIndexGtEntryBuilderTreeSet(String gt, TreeSet<SampleIndexVariant> entries) {
             super(gt);
             this.entries = entries;
         }
 
         @Override
-        public Collection<SampleVariantIndexEntry> getEntries() {
+        public Collection<SampleIndexVariant> getEntries() {
             return entries;
         }
 
         @Override
-        public boolean add(SampleVariantIndexEntry variantIndexEntry) {
+        public boolean add(SampleIndexVariant variantIndexEntry) {
             return entries.add(variantIndexEntry);
         }
 
         @Override
-        public boolean containsVariant(SampleVariantIndexEntry variantIndexEntry) {
-            SampleVariantIndexEntry lower = entries.lower(variantIndexEntry);
+        public boolean containsVariant(SampleIndexVariant variantIndexEntry) {
+            SampleIndexVariant lower = entries.lower(variantIndexEntry);
             if (lower != null && lower.getVariant().sameGenomicVariant(variantIndexEntry.getVariant())) {
                 return true;
             }
-            SampleVariantIndexEntry ceiling = entries.ceiling(variantIndexEntry);
+            SampleIndexVariant ceiling = entries.ceiling(variantIndexEntry);
             if (ceiling != null && ceiling.getVariant().sameGenomicVariant(variantIndexEntry.getVariant())) {
                 return true;
             }
@@ -212,7 +229,7 @@ public class SampleIndexEntryPutBuilder {
         @Override
         public int containsVariants(SampleIndexGtEntryBuilder other) {
             int c = 0;
-            for (SampleVariantIndexEntry entry : other.getEntries()) {
+            for (SampleIndexVariant entry : other.getEntries()) {
                 if (containsVariant(entry)) {
                     c++;
                 }
@@ -222,8 +239,8 @@ public class SampleIndexEntryPutBuilder {
     }
 
     private class SampleIndexGtEntryBuilderAssumeOrdered extends SampleIndexGtEntryBuilder {
-        protected final ArrayDeque<SampleVariantIndexEntry> entries;
-        protected SampleVariantIndexEntry lastEntry;
+        protected final ArrayDeque<SampleIndexVariant> entries;
+        protected SampleIndexVariant lastEntry;
 
         SampleIndexGtEntryBuilderAssumeOrdered(String gt) {
             super(gt);
@@ -231,12 +248,12 @@ public class SampleIndexEntryPutBuilder {
         }
 
         @Override
-        public Collection<SampleVariantIndexEntry> getEntries() {
+        public Collection<SampleIndexVariant> getEntries() {
             return entries;
         }
 
         @Override
-        public boolean add(SampleVariantIndexEntry variantIndexEntry) {
+        public boolean add(SampleIndexVariant variantIndexEntry) {
             if (lastEntry != null && comparator.compare(lastEntry, variantIndexEntry) >= 0) {
                 // Small out-of-order is expected in duplicated variants.
                 //   The order regarding the comparator will depend not only on the "variant", but
@@ -250,7 +267,7 @@ public class SampleIndexEntryPutBuilder {
                 }
                 // Insert ordered. Take out values into a Deque to find the position where the entry
                 // should be placed.
-                ArrayDeque<SampleVariantIndexEntry> removedEntries = new ArrayDeque<>(1);
+                ArrayDeque<SampleIndexVariant> removedEntries = new ArrayDeque<>(1);
                 do {
                     // Add first to preserve order
                     removedEntries.addFirst(entries.removeLast());
@@ -265,8 +282,8 @@ public class SampleIndexEntryPutBuilder {
         }
 
         @Override
-        public boolean containsVariant(SampleVariantIndexEntry variantIndexEntry) {
-            for (SampleVariantIndexEntry entry : entries) {
+        public boolean containsVariant(SampleIndexVariant variantIndexEntry) {
+            for (SampleIndexVariant entry : entries) {
                 if (entry.getVariant().sameGenomicVariant(variantIndexEntry.getVariant())) {
                     return true;
                 }
@@ -276,7 +293,7 @@ public class SampleIndexEntryPutBuilder {
 
         @Override
         public int containsVariants(SampleIndexGtEntryBuilder other) {
-            TreeSet<SampleVariantIndexEntry> tree = new TreeSet<>(comparator);
+            TreeSet<SampleIndexVariant> tree = new TreeSet<>(comparator);
             tree.addAll(this.entries);
             return new SampleIndexGtEntryBuilderTreeSet(getGt(), tree).containsVariants(other);
         }
@@ -285,11 +302,12 @@ public class SampleIndexEntryPutBuilder {
     private class SampleIndexGtEntryBuilderWithPartialBuilds extends SampleIndexGtEntryBuilderAssumeOrdered {
         private final int lowerThreshold;
         private final int upperThreshold;
-        private SampleVariantIndexEntry prev = null;
+        private SampleIndexVariant prev = null;
         // Variants is a shared object. No problem for the GC.
         private final ArrayList<Variant> variants = new ArrayList<>(0);
         // This is the real issue. This might produce the "too many objects" problem. Need to run "partial builds" from time to time.
         private final BitOutputStream fileIndexBuffer = new BitOutputStream();
+        private final ExposedByteArrayOutputStream fileDataBuffer = new ExposedByteArrayOutputStream();
 
         SampleIndexGtEntryBuilderWithPartialBuilds(String gt) {
             this(gt, 10, 100);
@@ -302,7 +320,7 @@ public class SampleIndexEntryPutBuilder {
         }
 
         @Override
-        public boolean add(SampleVariantIndexEntry variantIndexEntry) {
+        public boolean add(SampleIndexVariant variantIndexEntry) {
             boolean add = super.add(variantIndexEntry);
             if (entries.size() >= upperThreshold) {
                 partialBuild(false);
@@ -312,7 +330,7 @@ public class SampleIndexEntryPutBuilder {
         }
 
         @Override
-        public boolean containsVariant(SampleVariantIndexEntry variantIndexEntry) {
+        public boolean containsVariant(SampleIndexVariant variantIndexEntry) {
             return containsVariant(variantIndexEntry.getVariant());
         }
 
@@ -322,7 +340,7 @@ public class SampleIndexEntryPutBuilder {
                     return true;
                 }
             }
-            for (SampleVariantIndexEntry entry : entries) {
+            for (SampleIndexVariant entry : entries) {
                 if (entry.getVariant().sameGenomicVariant(variant)) {
                     return true;
                 }
@@ -335,7 +353,7 @@ public class SampleIndexEntryPutBuilder {
             // Build a temporary TreeSet for fast searching.
             TreeSet<Variant> set = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
             set.addAll(variants);
-            for (SampleVariantIndexEntry entry : entries) {
+            for (SampleIndexVariant entry : entries) {
                 set.add(entry.getVariant());
             }
 
@@ -347,7 +365,7 @@ public class SampleIndexEntryPutBuilder {
                     }
                 }
             }
-            for (SampleVariantIndexEntry otherEntry : other.getEntries()) {
+            for (SampleIndexVariant otherEntry : other.getEntries()) {
                 if (set.contains(otherEntry.getVariant())) {
                     c++;
                 }
@@ -357,13 +375,13 @@ public class SampleIndexEntryPutBuilder {
 
         private void partialBuild(boolean flush) {
             int entriesToProcess = flush ? entries.size() : entries.size() - lowerThreshold;
-            BitBuffer fileIndexBuffer = new BitBuffer(fileIndex.getBitsLength() * entries.size());
+            BitBuffer fileIndexBuffer = new BitBuffer(fileIndexSchema.getBitsLength() * entries.size());
             int offset = 0;
 
             variants.ensureCapacity(variants.size() + entries.size());
             int processedEntries = 0;
             while (!entries.isEmpty()) {
-                SampleVariantIndexEntry gtEntry = entries.removeFirst();
+                SampleIndexVariant gtEntry = entries.removeFirst();
                 Variant variant = gtEntry.getVariant();
                 // This if-statement won't be executed in "flush==true"
                 if (processedEntries >= entriesToProcess) {
@@ -383,15 +401,18 @@ public class SampleIndexEntryPutBuilder {
                     variants.add(variant);
                 } else {
                     // Mark previous variant as MultiFile
-                    fileIndex.setMultiFile(fileIndexBuffer, offset - fileIndex.getBitsLength());
+                    fileIndexSchema.setMultiFile(fileIndexBuffer, offset - fileIndexSchema.getBitsLength());
                 }
-                fileIndexBuffer.setBitBuffer(gtEntry.getFileIndex(), offset);
-                offset += fileIndex.getBitsLength();
+                fileIndexBuffer.setBitBuffer(gtEntry.getFilesIndex().get(0), offset);
+                offset += fileIndexSchema.getBitsLength();
                 prev = gtEntry;
+                if (!gtEntry.getFileData().isEmpty()) {
+                    fileDataSchema.writeDocument(fileDataBuffer, gtEntry.getFileData().get(0));
+                }
             }
 
             // Do not write the whole buffer, but only the corresponding to the processed entries.
-            this.fileIndexBuffer.write(fileIndexBuffer.getBitBuffer(0, fileIndex.getBitsLength() * processedEntries));
+            this.fileIndexBuffer.write(fileIndexBuffer.getBitBuffer(0, fileIndexSchema.getBitsLength() * processedEntries));
         }
 
         @Override
@@ -405,6 +426,10 @@ public class SampleIndexEntryPutBuilder {
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toGenotypeColumn(gt), variantsBuffer);
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variantsCount));
             put.addColumn(COLUMN_FAMILY, SampleIndexSchema.toFileIndexColumn(gt), fileIndexBuffer.toByteArray());
+            if (fileDataBuffer.size() > 0) {
+                put.addColumn(COLUMN_FAMILY, ByteBuffer.wrap(SampleIndexSchema.toFileDataColumn(gt)),
+                        put.getTimestamp(), fileDataBuffer.toByteByffer());
+            }
         }
     }
 

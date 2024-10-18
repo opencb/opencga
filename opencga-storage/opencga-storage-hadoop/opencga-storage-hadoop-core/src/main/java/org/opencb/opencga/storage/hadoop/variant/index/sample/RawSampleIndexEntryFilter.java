@@ -6,7 +6,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQu
 
 import java.util.Comparator;
 
-public class RawSampleIndexEntryFilter extends AbstractSampleIndexEntryFilter<SampleVariantIndexEntry> {
+public class RawSampleIndexEntryFilter extends AbstractSampleIndexEntryFilter<SampleIndexVariant> {
 
     public RawSampleIndexEntryFilter(SingleSampleIndexQuery query) {
         super(query);
@@ -17,22 +17,22 @@ public class RawSampleIndexEntryFilter extends AbstractSampleIndexEntryFilter<Sa
     }
 
     @Override
-    protected SampleVariantIndexEntry getNext(SampleIndexEntryIterator variants) {
-        return variants.nextSampleVariantIndexEntry();
+    protected SampleIndexVariant getNext(SampleIndexEntryIterator variants) {
+        return variants.nextSampleIndexVariant();
     }
 
     @Override
-    protected Variant toVariant(SampleVariantIndexEntry v) {
+    protected Variant toVariant(SampleIndexVariant v) {
         return v.getVariant();
     }
 
     @Override
-    protected boolean sameGenomicVariant(SampleVariantIndexEntry v1, SampleVariantIndexEntry v2) {
+    protected boolean sameGenomicVariant(SampleIndexVariant v1, SampleIndexVariant v2) {
         return v1.getVariant().sameGenomicVariant(v2.getVariant());
     }
 
     @Override
-    protected Comparator<SampleVariantIndexEntry> getComparator() {
-        return Comparator.comparing(SampleVariantIndexEntry::getVariant, SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+    protected Comparator<SampleIndexVariant> getComparator() {
+        return Comparator.comparing(SampleIndexVariant::getVariant, SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR);
     }
 }

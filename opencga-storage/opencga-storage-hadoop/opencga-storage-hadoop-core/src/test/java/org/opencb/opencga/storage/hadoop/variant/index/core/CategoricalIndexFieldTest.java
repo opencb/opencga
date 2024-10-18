@@ -4,7 +4,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
-import static org.opencb.opencga.core.config.storage.IndexFieldConfiguration.Source.FILE;
-import static org.opencb.opencga.core.config.storage.IndexFieldConfiguration.Source.SAMPLE;
+import static org.opencb.opencga.core.config.storage.FieldConfiguration.Source.FILE;
+import static org.opencb.opencga.core.config.storage.FieldConfiguration.Source.SAMPLE;
 
 @Category(ShortTests.class)
 public class CategoricalIndexFieldTest {
@@ -26,20 +26,20 @@ public class CategoricalIndexFieldTest {
     @Test
     public void testLength() {
         boolean nullable = false;
-        assertEquals(1, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1").setNullable(nullable), 0).getBitLength());
-        assertEquals(1, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1", "2").setNullable(nullable), 0).getBitLength());
-        assertEquals(2, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1", "2", "3").setNullable(nullable), 0).getBitLength());
-        assertEquals(2, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4").setNullable(nullable), 0).getBitLength());
-        assertEquals(3, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4", "5").setNullable(nullable), 0).getBitLength());
-        assertEquals(3, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4", "5", "6").setNullable(nullable), 0).getBitLength());
+        assertEquals(1, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1").setNullable(nullable), 0).getBitLength());
+        assertEquals(1, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1", "2").setNullable(nullable), 0).getBitLength());
+        assertEquals(2, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1", "2", "3").setNullable(nullable), 0).getBitLength());
+        assertEquals(2, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4").setNullable(nullable), 0).getBitLength());
+        assertEquals(3, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4", "5").setNullable(nullable), 0).getBitLength());
+        assertEquals(3, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4", "5", "6").setNullable(nullable), 0).getBitLength());
 
         nullable = true;
-        assertEquals(1, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1").setNullable(nullable), 0).getBitLength());
-        assertEquals(2, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1", "2").setNullable(nullable), 0).getBitLength());
-        assertEquals(2, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1", "2", "3").setNullable(nullable), 0).getBitLength());
-        assertEquals(3, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4").setNullable(nullable), 0).getBitLength());
-        assertEquals(3, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4", "5").setNullable(nullable), 0).getBitLength());
-        assertEquals(3, CategoricalIndexField.create(new IndexFieldConfiguration(SAMPLE, "K", IndexFieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4", "5", "6").setNullable(nullable), 0).getBitLength());
+        assertEquals(1, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1").setNullable(nullable), 0).getBitLength());
+        assertEquals(2, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1", "2").setNullable(nullable), 0).getBitLength());
+        assertEquals(2, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1", "2", "3").setNullable(nullable), 0).getBitLength());
+        assertEquals(3, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4").setNullable(nullable), 0).getBitLength());
+        assertEquals(3, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4", "5").setNullable(nullable), 0).getBitLength());
+        assertEquals(3, CategoricalIndexField.create(new FieldConfiguration(SAMPLE, "K", FieldConfiguration.Type.CATEGORICAL, "1", "2", "3", "4", "5", "6").setNullable(nullable), 0).getBitLength());
     }
 
     @Test
@@ -67,7 +67,7 @@ public class CategoricalIndexFieldTest {
     public void testEncodeDecodeFilter() {
         SampleIndexConfiguration indexConfiguration = SampleIndexConfiguration.defaultConfiguration();
         indexConfiguration.getFileIndexConfiguration().getCustomField(FILE, StudyEntry.FILTER)
-                .setType(IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
+                .setType(FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
                 .setValues("PASS", "noPass");
         SampleIndexSchema indexSchema = new SampleIndexSchema(indexConfiguration, 0);
         IndexField<String> field = indexSchema.getFileIndex().getCustomField(FILE, StudyEntry.FILTER);

@@ -29,8 +29,9 @@ public class SamplesSearchIndexVariantQueryExecutor extends AbstractSearchIndexV
     }
 
     @Override
-    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery) throws StorageEngineException {
         VariantQuery query = variantQuery.getQuery();
+        QueryOptions options = variantQuery.getInputOptions();
         String samplesCollection = inferSpecificSearchIndexSamplesCollection(query, options, getMetadataManager(), dbName);
         return samplesCollection != null && searchActiveAndAlive(samplesCollection);
     }

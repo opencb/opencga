@@ -41,7 +41,7 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
     }
 
     @Override
-    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery) throws StorageEngineException {
         VariantQuery query = variantQuery.getQuery();
         return query.getString(VariantQueryParam.TYPE.key()).equals(VariantType.BREAKEND.name())
                 && VariantQueryUtils.isValidParam(query, VariantQueryParam.GENOTYPE);

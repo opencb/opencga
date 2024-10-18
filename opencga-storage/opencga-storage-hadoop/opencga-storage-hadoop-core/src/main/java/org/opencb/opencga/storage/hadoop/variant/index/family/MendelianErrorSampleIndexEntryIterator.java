@@ -3,9 +3,10 @@ package org.opencb.opencga.storage.hadoop.variant.index.family;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotation;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariantBiConverter.split;
@@ -53,8 +54,19 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     }
 
     @Override
+    public boolean hasFileDataIndex() {
+        SampleIndexEntryIterator it = getGtIterator();
+        return it != null && it.hasFileDataIndex();
+    }
+
+    @Override
     public BitBuffer nextFileIndexEntry() {
         return getGtIterator().nextFileIndexEntry();
+    }
+
+    @Override
+    public ByteBuffer getFileDataEntry() {
+        return getGtIterator().getFileDataEntry();
     }
 
     @Override
@@ -79,7 +91,7 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     }
 
     @Override
-    public AnnotationIndexEntry nextAnnotationIndexEntry() {
+    public SampleIndexVariantAnnotation nextAnnotationIndexEntry() {
         SampleIndexEntryIterator it = getGtIterator();
         return it == null ? null : it.nextAnnotationIndexEntry();
     }
@@ -129,13 +141,20 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     }
 
     @Override
-    public SampleVariantIndexEntry nextSampleVariantIndexEntry() {
-        AnnotationIndexEntry annotationIndexEntry = nextAnnotationIndexEntry();
+    public SampleIndexVariant nextSampleIndexVariant() {
+        SampleIndexVariantAnnotation annotationIndex = nextAnnotationIndexEntry();
         List<BitBuffer> filesIndex = new ArrayList<>();
+        List<ByteBuffer> filesDataIndex = new ArrayList<>();
         if (hasFileIndex()) {
             filesIndex.add(nextFileIndexEntry());
+            if (hasFileDataIndex()) {
+                filesDataIndex.add(getFileDataEntry());
+            }
             while (isMultiFileIndex()) {
                 filesIndex.add(nextMultiFileIndexEntry());
+                if (hasFileDataIndex()) {
+                    filesDataIndex.add(getFileDataEntry());
+                }
             }
         }
         String genotype = nextGenotype();
@@ -145,7 +164,7 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
             parentsCode = nextParentsIndexEntry();
         }
         Variant variant = next();
-        return new SampleVariantIndexEntry(variant, filesIndex, genotype, annotationIndexEntry, parentsCode, meCode);
+        return new SampleIndexVariant(variant, filesIndex, filesDataIndex, genotype, annotationIndex, parentsCode, meCode);
     }
 
     @Override

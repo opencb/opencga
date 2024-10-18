@@ -4,6 +4,7 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
+import org.opencb.commons.utils.VersionUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 
 import java.beans.ConstructorProperties;
@@ -15,149 +16,21 @@ public class SampleIndexConfiguration {
 
     public static final int DEFAULT_FILE_POSITION_SIZE_BITS = 3;
     private static final double[] QUAL_THRESHOLDS = new double[]{10, 20, 30};
-    private static final double[] DP_THRESHOLDS = new double[]{5, 10, 15, 20, 30, 40, 50};
     private static final double[] DP_THRESHOLDS_NULLABLE = new double[]{5, 10, 15, 20, 30, 50};
+
     private final FileIndexConfiguration fileIndexConfiguration = new FileIndexConfiguration();
+    private final FileDataConfiguration fileDataConfiguration = new FileDataConfiguration();
     private final AnnotationIndexConfiguration annotationIndexConfiguration = new AnnotationIndexConfiguration();
 
-    public static SampleIndexConfiguration backwardCompatibleConfiguration() {
-        double[] backwardCompatibleThresholds = new double[]{0.001, 0.005, 0.01};
-        SampleIndexConfiguration sampleIndexConfiguration = new SampleIndexConfiguration()
-                .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.FILE,
-                        StudyEntry.FILTER,
-                        IndexFieldConfiguration.Type.CATEGORICAL,
-                        VCFConstants.PASSES_FILTERS_v4))
-                .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL, QUAL_THRESHOLDS).setNullable(false))
-                .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY, DP_THRESHOLDS).setNullable(false));
-        sampleIndexConfiguration.getAnnotationIndexConfiguration().getPopulationFrequency()
-                .addPopulation(new Population(ParamConstants.POP_FREQ_1000G_CB_V4, "ALL"))
-                .addPopulation(new Population(ParamConstants.POP_FREQ_GNOMAD_GENOMES, "ALL"))
-                .setThresholds(backwardCompatibleThresholds);
 
-        sampleIndexConfiguration.getFileIndexConfiguration().setFilePositionBits(4);
-
-        // Ensure backward compatibility with these two params:
-        sampleIndexConfiguration.addFileIndexField(new IndexFieldConfiguration(
-                IndexFieldConfiguration.Source.SAMPLE, "padding", IndexFieldConfiguration.Type.CATEGORICAL,
-                "add_two_extra_bits", "to_allow_backward", "compatibility"));
-        sampleIndexConfiguration.getFileIndexConfiguration().setFixedFieldsFirst(false);
-
-        IndexFieldConfiguration biotypeConfiguration = new IndexFieldConfiguration(IndexFieldConfiguration.Source.ANNOTATION,
-                "biotype",
-                IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
-                .setValues(
-                        NONSENSE_MEDIATED_DECAY,
-                        LINCRNA,
-                        MIRNA,
-                        RETAINED_INTRON,
-                        SNRNA,
-                        SNORNA,
-                        "other_non_pseudo_gene",
-//                        "other",
-                        PROTEIN_CODING
-                ).setValuesMapping(new HashMap<>());
-        biotypeConfiguration.getValuesMapping().put(LINCRNA, Arrays.asList(
-                "lncRNA",
-                NON_CODING,
-                LINCRNA,
-                "macro_lncRNA",
-                ANTISENSE,
-                SENSE_INTRONIC,
-                SENSE_OVERLAPPING,
-                THREEPRIME_OVERLAPPING_NCRNA,
-                "bidirectional_promoter_lncRNA"));
-        biotypeConfiguration.getValuesMapping().put("other_non_pseudo_gene", Arrays.asList(
-                PROCESSED_TRANSCRIPT,
-                NON_STOP_DECAY,
-                MISC_RNA,
-                RRNA,
-                MT_RRNA,
-                MT_TRNA,
-                IG_C_GENE,
-                IG_D_GENE,
-                IG_J_GENE,
-                IG_V_GENE,
-                TR_C_GENE,
-                TR_D_GENE,
-                TR_J_GENE,
-                TR_V_GENE,
-                NMD_TRANSCRIPT_VARIANT,
-                TRANSCRIBED_UNPROCESSED_PSEUDGENE,
-                AMBIGUOUS_ORF,
-                KNOWN_NCRNA,
-                RETROTRANSPOSED,
-                LRG_GENE
-        ));
-        biotypeConfiguration.setNullable(false);
-
-        sampleIndexConfiguration.getAnnotationIndexConfiguration().setBiotype(biotypeConfiguration);
-        IndexFieldConfiguration consequenceType = new IndexFieldConfiguration(
-                IndexFieldConfiguration.Source.ANNOTATION,
-                "consequenceType",
-                IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
-                .setValues(
-                        SPLICE_DONOR_VARIANT,
-                        TRANSCRIPT_ABLATION,
-                        TRANSCRIPT_AMPLIFICATION,
-                        INITIATOR_CODON_VARIANT,
-                        SPLICE_REGION_VARIANT,
-                        INCOMPLETE_TERMINAL_CODON_VARIANT,
-                        "utr",
-                        "mirna_tfbs",
-                        MISSENSE_VARIANT,
-                        FRAMESHIFT_VARIANT,
-                        INFRAME_DELETION,
-                        INFRAME_INSERTION,
-                        START_LOST,
-                        STOP_GAINED,
-                        STOP_LOST,
-                        SPLICE_ACCEPTOR_VARIANT
-                ).setValuesMapping(new HashMap<>());
-        consequenceType.getValuesMapping().put("mirna_tfbs", Arrays.asList(
-                TF_BINDING_SITE_VARIANT,
-                MATURE_MIRNA_VARIANT));
-        consequenceType.getValuesMapping().put("utr", Arrays.asList(
-                THREE_PRIME_UTR_VARIANT,
-                FIVE_PRIME_UTR_VARIANT));
-        consequenceType.setNullable(false);
-
-        sampleIndexConfiguration.getAnnotationIndexConfiguration().setConsequenceType(consequenceType);
-
-        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptFlagIndexConfiguration(
-                new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.ANNOTATION,
-                        "transcriptFlag",
-                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
-                        "do_not_use"
-                ).setNullable(false));
-        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptCombination(false);
-
-        sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
-                new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.ANNOTATION, "clinicalSource",
-                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE, "cosmic")
-                        .setNullable(false));
-        sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSignificance(
-                new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.ANNOTATION, "clinicalSignificance",
-                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
-                        ClinicalSignificance.likely_benign.toString(),
-                        ClinicalSignificance.uncertain_significance.toString(),
-                        ClinicalSignificance.likely_pathogenic.toString(),
-                        ClinicalSignificance.pathogenic.toString(),
-                        "unused_target_drug",
-                        "unused_pgx",
-                        "unused_bit8"
-                ).setNullable(false));
-
-        return sampleIndexConfiguration;
-    }
-
+    // Test only
+    @Deprecated
     public static SampleIndexConfiguration defaultConfiguration() {
         return defaultConfiguration(false);
+    }
+
+    public static SampleIndexConfiguration defaultConfiguration(String cellbaseVersion) {
+        return defaultConfiguration(new VersionUtils.Version(cellbaseVersion).getMajor() == 4);
     }
 
     public static SampleIndexConfiguration defaultConfiguration(boolean cellbaseV4) {
@@ -166,22 +39,25 @@ public class SampleIndexConfiguration {
                         ? ParamConstants.POP_FREQ_1000G_CB_V4
                         : ParamConstants.POP_FREQ_1000G_CB_V5, "ALL"))
                 .addPopulation(new Population(ParamConstants.POP_FREQ_GNOMAD_GENOMES, "ALL"))
-                .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.FILE,
+                .addFileIndexField(new FieldConfiguration(
+                        FieldConfiguration.Source.FILE,
                         StudyEntry.FILTER,
-                        IndexFieldConfiguration.Type.CATEGORICAL,
+                        FieldConfiguration.Type.CATEGORICAL,
                         VCFConstants.PASSES_FILTERS_v4))
-                .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL, QUAL_THRESHOLDS).setNullable(false))
-                .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY, DP_THRESHOLDS_NULLABLE).setNullable(true));
+                .addFileIndexField(new FieldConfiguration(
+                        FieldConfiguration.Source.FILE, StudyEntry.QUAL, QUAL_THRESHOLDS).setNullable(false))
+                .addFileIndexField(new FieldConfiguration(
+                        FieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY, DP_THRESHOLDS_NULLABLE).setNullable(true));
 
         sampleIndexConfiguration.getFileIndexConfiguration()
                 .setFilePositionBits(DEFAULT_FILE_POSITION_SIZE_BITS);
+        sampleIndexConfiguration.getFileDataConfiguration()
+                .setIncludeOriginalCall(true)
+                .setIncludeSecondaryAlternates(true);
 
-        IndexFieldConfiguration biotypeConfiguration = new IndexFieldConfiguration(IndexFieldConfiguration.Source.ANNOTATION,
+        FieldConfiguration biotypeConfiguration = new FieldConfiguration(FieldConfiguration.Source.ANNOTATION,
                 "biotype",
-                IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
+                FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
                 .setValues(
                         NONSENSE_MEDIATED_DECAY,
                         LINCRNA,
@@ -227,10 +103,10 @@ public class SampleIndexConfiguration {
         ));
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setBiotype(biotypeConfiguration);
-        IndexFieldConfiguration consequenceType = new IndexFieldConfiguration(
-                IndexFieldConfiguration.Source.ANNOTATION,
+        FieldConfiguration consequenceType = new FieldConfiguration(
+                FieldConfiguration.Source.ANNOTATION,
                 "consequenceType",
-                IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
+                FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
                 .setValues(
                         MISSENSE_VARIANT,
                         FRAMESHIFT_VARIANT,
@@ -261,10 +137,10 @@ public class SampleIndexConfiguration {
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setConsequenceType(consequenceType);
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptFlagIndexConfiguration(
-                new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.ANNOTATION,
+                new FieldConfiguration(
+                        FieldConfiguration.Source.ANNOTATION,
                         "transcriptFlag",
-                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                        FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "canonical",
                         "MANE Select",
                         "MANE Plus Clinical",
@@ -277,18 +153,18 @@ public class SampleIndexConfiguration {
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptCombination(true);
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
-                new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.ANNOTATION, "clinicalSource",
-                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                new FieldConfiguration(
+                        FieldConfiguration.Source.ANNOTATION, "clinicalSource",
+                        FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "clinvar",
                         "cosmic")
                         .setNullable(false)
         );
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSignificance(
-                new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.ANNOTATION, "clinicalSignificance",
-                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                new FieldConfiguration(
+                        FieldConfiguration.Source.ANNOTATION, "clinicalSignificance",
+                        FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "clinvar_" + ClinicalSignificance.benign.toString(),
                         "clinvar_" + ClinicalSignificance.likely_benign.toString(),
                         "clinvar_" + ClinicalSignificance.uncertain_significance.toString(),
@@ -312,17 +188,13 @@ public class SampleIndexConfiguration {
         return sampleIndexConfiguration;
     }
 
-    public void validate() {
-        validate(null);
-    }
-
     public void validate(String cellbaseVersion) {
-        addMissingValues(defaultConfiguration("v4".equalsIgnoreCase(cellbaseVersion)));
+        addMissingValues(defaultConfiguration(cellbaseVersion));
 
-        for (IndexFieldConfiguration customField : fileIndexConfiguration.getCustomFields()) {
+        for (FieldConfiguration customField : fileIndexConfiguration.getCustomFields()) {
             customField.validate();
         }
-        for (IndexFieldConfiguration configuration : annotationIndexConfiguration.getPopulationFrequency().toIndexFieldConfiguration()) {
+        for (FieldConfiguration configuration : annotationIndexConfiguration.getPopulationFrequency().toIndexFieldConfiguration()) {
             configuration.validate();
         }
         annotationIndexConfiguration.biotype.validate();
@@ -336,6 +208,13 @@ public class SampleIndexConfiguration {
         if (fileIndexConfiguration.getCustomFields().isEmpty()) {
             fileIndexConfiguration.getCustomFields().addAll(defaultConfiguration.fileIndexConfiguration.customFields);
         }
+        if (fileDataConfiguration.includeOriginalCall == null) {
+            fileDataConfiguration.includeOriginalCall = defaultConfiguration.fileDataConfiguration.includeOriginalCall;
+        }
+        if (fileDataConfiguration.includeSecondaryAlternates == null) {
+            fileDataConfiguration.includeSecondaryAlternates = defaultConfiguration.fileDataConfiguration.includeSecondaryAlternates;
+        }
+
         if (annotationIndexConfiguration.getPopulationFrequency() == null) {
             annotationIndexConfiguration.setPopulationFrequency(defaultConfiguration.annotationIndexConfiguration.populationFrequency);
         }
@@ -368,9 +247,56 @@ public class SampleIndexConfiguration {
         }
     }
 
+    public static class FileDataConfiguration {
+        private Boolean includeOriginalCall;
+        private Boolean includeSecondaryAlternates;
+
+        public FileDataConfiguration() {
+            // By default, left as null.
+            // The defaultConfiguration will set it to true when constructed.
+            this.includeOriginalCall = null;
+            this.includeSecondaryAlternates = null;
+        }
+
+        public Boolean getIncludeOriginalCall() {
+            return includeOriginalCall;
+        }
+
+        public FileDataConfiguration setIncludeOriginalCall(Boolean includeOriginalCall) {
+            this.includeOriginalCall = includeOriginalCall;
+            return this;
+        }
+
+        public boolean isIncludeOriginalCall() {
+            return includeOriginalCall != null && includeOriginalCall;
+        }
+
+        public Boolean getIncludeSecondaryAlternates() {
+            return includeSecondaryAlternates;
+        }
+
+        public FileDataConfiguration setIncludeSecondaryAlternates(Boolean includeSecondaryAlternates) {
+            this.includeSecondaryAlternates = includeSecondaryAlternates;
+            return this;
+        }
+
+        public boolean isIncludeSecondaryAlternates() {
+            return includeSecondaryAlternates != null && includeSecondaryAlternates;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("FileDataConfiguration{");
+            sb.append("includeOriginalCall=").append(includeOriginalCall);
+            sb.append(", includeSecondaryAlternates=").append(includeSecondaryAlternates);
+            sb.append('}');
+            return sb.toString();
+        }
+    }
+
     public static class FileIndexConfiguration {
 
-        private final List<IndexFieldConfiguration> customFields = new ArrayList<>();
+        private final List<FieldConfiguration> customFields = new ArrayList<>();
         private int filePositionBits = DEFAULT_FILE_POSITION_SIZE_BITS;
         private boolean fixedFieldsFirst = true;
 
@@ -382,12 +308,12 @@ public class SampleIndexConfiguration {
             this.fixedFieldsFirst = fixedFieldsFirst;
         }
 
-        public List<IndexFieldConfiguration> getCustomFields() {
+        public List<FieldConfiguration> getCustomFields() {
             return customFields;
         }
 
-        public IndexFieldConfiguration getCustomField(IndexFieldConfiguration.Source source, String key) {
-            for (IndexFieldConfiguration s : customFields) {
+        public FieldConfiguration getCustomField(FieldConfiguration.Source source, String key) {
+            for (FieldConfiguration s : customFields) {
                 if (s.getKey().equals(key) && s.getSource() == source) {
                     return s;
                 }
@@ -445,11 +371,11 @@ public class SampleIndexConfiguration {
 
     public static class AnnotationIndexConfiguration {
         private PopulationFrequencyIndexConfiguration populationFrequency = new PopulationFrequencyIndexConfiguration();
-        private IndexFieldConfiguration biotype;
-        private IndexFieldConfiguration consequenceType;
-        private IndexFieldConfiguration clinicalSource;
-        private IndexFieldConfiguration clinicalSignificance;
-        private IndexFieldConfiguration transcriptFlagIndexConfiguration;
+        private FieldConfiguration biotype;
+        private FieldConfiguration consequenceType;
+        private FieldConfiguration clinicalSource;
+        private FieldConfiguration clinicalSignificance;
+        private FieldConfiguration transcriptFlagIndexConfiguration;
         private Boolean transcriptCombination;
 
         public PopulationFrequencyIndexConfiguration getPopulationFrequency() {
@@ -461,46 +387,46 @@ public class SampleIndexConfiguration {
             return this;
         }
 
-        public IndexFieldConfiguration getBiotype() {
+        public FieldConfiguration getBiotype() {
             return biotype;
         }
 
-        public AnnotationIndexConfiguration setBiotype(IndexFieldConfiguration biotype) {
+        public AnnotationIndexConfiguration setBiotype(FieldConfiguration biotype) {
             this.biotype = biotype;
             return this;
         }
 
-        public IndexFieldConfiguration getConsequenceType() {
+        public FieldConfiguration getConsequenceType() {
             return consequenceType;
         }
 
-        public AnnotationIndexConfiguration setConsequenceType(IndexFieldConfiguration consequenceType) {
+        public AnnotationIndexConfiguration setConsequenceType(FieldConfiguration consequenceType) {
             this.consequenceType = consequenceType;
             return this;
         }
 
-        public IndexFieldConfiguration getTranscriptFlagIndexConfiguration() {
+        public FieldConfiguration getTranscriptFlagIndexConfiguration() {
             return transcriptFlagIndexConfiguration;
         }
 
-        public void setTranscriptFlagIndexConfiguration(IndexFieldConfiguration transcriptFlagIndexConfiguration) {
+        public void setTranscriptFlagIndexConfiguration(FieldConfiguration transcriptFlagIndexConfiguration) {
             this.transcriptFlagIndexConfiguration = transcriptFlagIndexConfiguration;
         }
 
-        public IndexFieldConfiguration getClinicalSource() {
+        public FieldConfiguration getClinicalSource() {
             return clinicalSource;
         }
 
-        public AnnotationIndexConfiguration setClinicalSource(IndexFieldConfiguration clinicalSource) {
+        public AnnotationIndexConfiguration setClinicalSource(FieldConfiguration clinicalSource) {
             this.clinicalSource = clinicalSource;
             return this;
         }
 
-        public IndexFieldConfiguration getClinicalSignificance() {
+        public FieldConfiguration getClinicalSignificance() {
             return clinicalSignificance;
         }
 
-        public AnnotationIndexConfiguration setClinicalSignificance(IndexFieldConfiguration clinicalSignificance) {
+        public AnnotationIndexConfiguration setClinicalSignificance(FieldConfiguration clinicalSignificance) {
             this.clinicalSignificance = clinicalSignificance;
             return this;
         }
@@ -576,17 +502,17 @@ public class SampleIndexConfiguration {
             return this;
         }
 
-        public List<IndexFieldConfiguration> toIndexFieldConfiguration() {
-            List<IndexFieldConfiguration> indexFieldConfigurations = new ArrayList<>(populations.size());
+        public List<FieldConfiguration> toIndexFieldConfiguration() {
+            List<FieldConfiguration> fieldConfigurations = new ArrayList<>(populations.size());
             for (Population population : populations) {
-                indexFieldConfigurations.add(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.ANNOTATION,
+                fieldConfigurations.add(new FieldConfiguration(
+                        FieldConfiguration.Source.ANNOTATION,
                         population.getKey(),
-                        IndexFieldConfiguration.Type.RANGE_LT)
+                        FieldConfiguration.Type.RANGE_LT)
                         .setNullable(false)
                         .setThresholds(thresholds));
             }
-            return indexFieldConfigurations;
+            return fieldConfigurations;
         }
 
         @Override
@@ -687,8 +613,11 @@ public class SampleIndexConfiguration {
         return fileIndexConfiguration;
     }
 
+    public FileDataConfiguration getFileDataConfiguration() {
+        return fileDataConfiguration;
+    }
 
-    public SampleIndexConfiguration addFileIndexField(IndexFieldConfiguration fileIndex) {
+    public SampleIndexConfiguration addFileIndexField(FieldConfiguration fileIndex) {
         if (fileIndexConfiguration.getCustomFields().contains(fileIndex)) {
             throw new IllegalArgumentException("Duplicated file index '"
                     + fileIndex.getKey() + "' in SampleIndexConfiguration");
@@ -719,6 +648,7 @@ public class SampleIndexConfiguration {
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleIndexConfiguration{");
         sb.append("fileIndexConfiguration=").append(fileIndexConfiguration);
+        sb.append("fileDataConfiguration=").append(fileDataConfiguration);
         sb.append(", annotationIndexConfiguration=").append(annotationIndexConfiguration);
         sb.append('}');
         return sb.toString();

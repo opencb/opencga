@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.storage.core.variant.query.OpValue;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
@@ -22,15 +22,15 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
     private final int bitLength;
     private final IndexCodec<T> codec;
 
-    public static CategoricalIndexField<String> create(IndexFieldConfiguration configuration, int bitOffset) {
+    public static CategoricalIndexField<String> create(FieldConfiguration configuration, int bitOffset) {
         return new CategoricalIndexField<>(configuration, bitOffset, configuration.getValues(), configuration.getValuesMapping());
     }
 
-    public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values) {
+    public CategoricalIndexField(FieldConfiguration configuration, int bitOffset, T[] values) {
         this(configuration, bitOffset, values, null);
     }
 
-    public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values, Map<T, List<T>> valuesMapping) {
+    public CategoricalIndexField(FieldConfiguration configuration, int bitOffset, T[] values, Map<T, List<T>> valuesMapping) {
         super(configuration, bitOffset);
         int numValues;
         if (configuration.getNullable()) {
@@ -43,7 +43,7 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
         this.bitLength = Math.max(1, IndexUtils.log2(numValues - 1) + 1);
     }
 
-    public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, int numValues, IndexCodec<T> codec) {
+    public CategoricalIndexField(FieldConfiguration configuration, int bitOffset, int numValues, IndexCodec<T> codec) {
         super(configuration, bitOffset);
         this.bitLength = IndexUtils.log2(numValues - 1) + 1;
         this.codec = codec;

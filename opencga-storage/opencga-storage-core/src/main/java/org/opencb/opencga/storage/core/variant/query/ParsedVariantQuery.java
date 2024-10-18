@@ -39,6 +39,7 @@ public class ParsedVariantQuery {
     private List<Region> regions;
     private List<List<String>> clinicalCombination;
     private List<String> clinicalCombinationList;
+    private VariantQuerySource source;
     //    private VariantAnnotationQuery annotationQuery;
 
 
@@ -71,6 +72,7 @@ public class ParsedVariantQuery {
         this.regions = new ArrayList<>(other.regions);
         this.clinicalCombination = new ArrayList<>(other.clinicalCombination);
         this.clinicalCombinationList = new ArrayList<>(other.clinicalCombinationList);
+        this.source = other.source;
     }
 
     public Query getInputQuery() {
@@ -236,6 +238,15 @@ public class ParsedVariantQuery {
 
     public ParsedVariantQuery setClinicalCombinationList(List<String> clinicalCombinationList) {
         this.clinicalCombinationList = clinicalCombinationList;
+        return this;
+    }
+
+    public VariantQuerySource getSource() {
+        return source;
+    }
+
+    public ParsedVariantQuery setSource(VariantQuerySource source) {
+        this.source = source;
         return this;
     }
 
