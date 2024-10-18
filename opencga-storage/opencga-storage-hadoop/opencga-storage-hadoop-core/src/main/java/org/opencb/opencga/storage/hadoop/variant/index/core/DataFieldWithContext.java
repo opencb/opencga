@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -13,7 +13,7 @@ import java.nio.ByteBuffer;
  * @param <T> Value type
  */
 public abstract class DataFieldWithContext<C, T> extends DataFieldBase<Pair<C, T>> {
-    public DataFieldWithContext(IndexFieldConfiguration configuration) {
+    public DataFieldWithContext(FieldConfiguration configuration) {
         super(configuration);
     }
 

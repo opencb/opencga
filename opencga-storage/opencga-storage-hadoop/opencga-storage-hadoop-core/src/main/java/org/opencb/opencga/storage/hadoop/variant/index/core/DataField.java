@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.core;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.tools.commons.BiConverter;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -15,7 +15,7 @@ import java.util.function.Function;
  */
 public abstract class DataField<T> extends DataFieldBase<T> {
 
-    public DataField(IndexFieldConfiguration configuration) {
+    public DataField(FieldConfiguration configuration) {
         super(configuration);
     }
 

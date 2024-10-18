@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.storage.core.io.bit.ExposedByteArrayOutputStream;
 
 import java.io.ByteArrayOutputStream;
@@ -36,7 +36,7 @@ public abstract class DataSchema extends AbstractSchema<DataFieldBase<?>> {
 
     public DataSchema() {
         fields = new ArrayList<>();
-        documentLengthField = new VarIntDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "DOC_LENGTH", null));
+        documentLengthField = new VarIntDataField(new FieldConfiguration(FieldConfiguration.Source.META, "DOC_LENGTH", null));
         defaultDocument = ByteBuffer.allocate(0);
     }
 

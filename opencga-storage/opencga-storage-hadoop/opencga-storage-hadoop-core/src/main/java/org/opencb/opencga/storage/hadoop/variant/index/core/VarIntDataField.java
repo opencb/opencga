@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -14,7 +14,7 @@ public class VarIntDataField extends VariableWidthDataField<Integer> {
     private static final int VALUE_MASK = 0b0111_1111;
     private static final int CONTINUATION_BIT_MASK = 0b1000_0000;
 
-    public VarIntDataField(IndexFieldConfiguration configuration) {
+    public VarIntDataField(FieldConfiguration configuration) {
         super(configuration);
     }
 

@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -9,7 +9,7 @@ public class VarBinaryDataField extends VariableWidthDataField<ByteBuffer> {
 
     private final VarIntDataField lengthField;
 
-    public VarBinaryDataField(IndexFieldConfiguration configuration) {
+    public VarBinaryDataField(FieldConfiguration configuration) {
         super(configuration);
         lengthField = new VarIntDataField(configuration);
     }

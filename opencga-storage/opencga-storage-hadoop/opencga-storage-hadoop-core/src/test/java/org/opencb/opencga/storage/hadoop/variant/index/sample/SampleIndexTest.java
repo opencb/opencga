@@ -23,7 +23,7 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -156,7 +156,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
 
         SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration()
-                .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.SAMPLE, "DS", new double[]{0, 1, 2}));
+                .addFileIndexField(new FieldConfiguration(FieldConfiguration.Source.SAMPLE, "DS", new double[]{0, 1, 2}));
         configuration.getFileDataConfiguration()
                 .setIncludeOriginalCall(null)
                 .setIncludeSecondaryAlternates(null);
@@ -177,8 +177,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         // Study 3 - platinum
         metadataManager.addSampleIndexConfiguration(STUDY_NAME_3, SampleIndexConfiguration.defaultConfiguration()
-                .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.FILE, "culprit",
-                        IndexFieldConfiguration.Type.CATEGORICAL, "DP", "FS", "MQ", "QD").setNullable(true)), true);
+                .addFileIndexField(new FieldConfiguration(FieldConfiguration.Source.FILE, "culprit",
+                        FieldConfiguration.Type.CATEGORICAL, "DP", "FS", "MQ", "QD").setNullable(true)), true);
 
         params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_3)
@@ -210,7 +210,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         // Study 6, multiallelic
         SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
-        sampleIndexConfiguration.getFileIndexConfiguration().getCustomField(IndexFieldConfiguration.Source.FILE, "FILTER")
+        sampleIndexConfiguration.getFileIndexConfiguration().getCustomField(FieldConfiguration.Source.FILE, "FILTER")
                 .setValues("PASS", "noPass", "noPass2");
         engine.getMetadataManager().addSampleIndexConfiguration(STUDY_NAME_6, sampleIndexConfiguration, true);
 
@@ -885,7 +885,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(STUDY_NAME_3);
 
         CategoricalMultiValuedIndexField<String> field = schema.getCtIndex().getField();
-        IndexFieldConfiguration ctConf = field.getConfiguration();
+        FieldConfiguration ctConf = field.getConfiguration();
         List<String> cts = new ArrayList<>();
         for (String ct : ctConf.getValues()) {
             if (!field.ambiguous(Collections.singletonList(ct))) {

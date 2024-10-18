@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
  */
 public class VarSIntDataField extends VarIntDataField {
 
-    public VarSIntDataField(IndexFieldConfiguration configuration) {
+    public VarSIntDataField(FieldConfiguration configuration) {
         super(configuration);
     }
 

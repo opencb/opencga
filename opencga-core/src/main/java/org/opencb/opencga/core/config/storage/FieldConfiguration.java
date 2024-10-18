@@ -7,7 +7,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.beans.ConstructorProperties;
 import java.util.*;
 
-public class IndexFieldConfiguration {
+public class FieldConfiguration {
     protected final Source source;
     protected final String key;
     protected Type type;
@@ -16,7 +16,7 @@ public class IndexFieldConfiguration {
     protected Map<String, List<String>> valuesMapping;
     protected boolean nullable = true;
 
-    public IndexFieldConfiguration(IndexFieldConfiguration other) {
+    public FieldConfiguration(FieldConfiguration other) {
         this.source = other.source;
         this.key = other.key;
         this.type = other.type;
@@ -26,17 +26,17 @@ public class IndexFieldConfiguration {
     }
 
     @ConstructorProperties({"source", "key", "type"})
-    protected IndexFieldConfiguration(Source source, String key, Type type) {
+    protected FieldConfiguration(Source source, String key, Type type) {
         this.source = source;
         this.key = key;
         this.type = type;
     }
 
-    public IndexFieldConfiguration(Source source, String key, double[] thresholds) {
+    public FieldConfiguration(Source source, String key, double[] thresholds) {
         this(source, key, thresholds, Type.RANGE_LT);
     }
 
-    public IndexFieldConfiguration(Source source, String key, double[] thresholds, Type rangeType) {
+    public FieldConfiguration(Source source, String key, double[] thresholds, Type rangeType) {
         this.key = key;
         this.source = source;
         this.type = rangeType;
@@ -44,7 +44,7 @@ public class IndexFieldConfiguration {
         this.values = null;
     }
 
-    public IndexFieldConfiguration(Source source, String key, Type type, String... values) {
+    public FieldConfiguration(Source source, String key, Type type, String... values) {
         this.key = key;
         this.source = source;
         this.type = type;
@@ -69,7 +69,7 @@ public class IndexFieldConfiguration {
         return type;
     }
 
-    public IndexFieldConfiguration setType(Type type) {
+    public FieldConfiguration setType(Type type) {
         this.type = type;
         return this;
     }
@@ -78,7 +78,7 @@ public class IndexFieldConfiguration {
         return thresholds;
     }
 
-    public IndexFieldConfiguration setThresholds(double[] thresholds) {
+    public FieldConfiguration setThresholds(double[] thresholds) {
         this.thresholds = thresholds;
         return this;
     }
@@ -87,7 +87,7 @@ public class IndexFieldConfiguration {
         return values;
     }
 
-    public IndexFieldConfiguration setValues(String... values) {
+    public FieldConfiguration setValues(String... values) {
         this.values = values;
         return this;
     }
@@ -96,7 +96,7 @@ public class IndexFieldConfiguration {
         return valuesMapping;
     }
 
-    public IndexFieldConfiguration setValuesMapping(Map<String, List<String>> valuesMapping) {
+    public FieldConfiguration setValuesMapping(Map<String, List<String>> valuesMapping) {
         this.valuesMapping = valuesMapping;
         return this;
     }
@@ -105,7 +105,7 @@ public class IndexFieldConfiguration {
         return nullable;
     }
 
-    public IndexFieldConfiguration setNullable(boolean nullable) {
+    public FieldConfiguration setNullable(boolean nullable) {
         this.nullable = nullable;
         return this;
     }
@@ -223,7 +223,7 @@ public class IndexFieldConfiguration {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        IndexFieldConfiguration that = (IndexFieldConfiguration) o;
+        FieldConfiguration that = (FieldConfiguration) o;
         return source == that.source
                 && Objects.equals(key, that.key)
                 && type == that.type

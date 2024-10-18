@@ -6,7 +6,7 @@ import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.tools.commons.BiConverter;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.io.bit.ExposedByteArrayOutputStream;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
@@ -27,7 +27,7 @@ public class FileDataSchema extends DataSchema {
         this.fileDataConfiguration = fileDataConfiguration;
         if (fileDataConfiguration.isIncludeOriginalCall()) {
             originalCallField = new VarBinaryDataField(
-                    new IndexFieldConfiguration(IndexFieldConfiguration.Source.FILE, "ORIGINAL_CALL", null))
+                    new FieldConfiguration(FieldConfiguration.Source.FILE, "ORIGINAL_CALL", null))
                     .fromWithContext(new VariantOriginalCallToBytesConverter());
             addField(originalCallField);
         } else {
@@ -35,7 +35,7 @@ public class FileDataSchema extends DataSchema {
         }
         if (fileDataConfiguration.isIncludeOriginalCall()) {
             secondaryAlternatesField = new VarBinaryDataField(
-                    new IndexFieldConfiguration(IndexFieldConfiguration.Source.STUDY, "SECONDARY_ALTERNATES", null))
+                    new FieldConfiguration(FieldConfiguration.Source.STUDY, "SECONDARY_ALTERNATES", null))
                     .fromWithContext(new AlternateCoordinateToBytesConverter());
             addField(secondaryAlternatesField);
         } else {

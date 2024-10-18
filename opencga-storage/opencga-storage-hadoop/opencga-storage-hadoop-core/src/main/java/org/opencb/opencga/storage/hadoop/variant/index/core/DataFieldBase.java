@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -17,7 +17,7 @@ import java.util.Objects;
  */
 public abstract class DataFieldBase<T> extends AbstractField {
 
-    public DataFieldBase(IndexFieldConfiguration configuration) {
+    public DataFieldBase(FieldConfiguration configuration) {
         super(configuration);
     }
 

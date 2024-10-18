@@ -8,7 +8,7 @@ import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 
@@ -106,9 +106,9 @@ public class SampleVariantIndexEntryConverter {
         for (IndexField<String> fileDataIndexField : fileIndex.getCustomFields()) {
             String key = fileDataIndexField.getKey();
             String value;
-            if (fileDataIndexField.getSource() == IndexFieldConfiguration.Source.FILE) {
+            if (fileDataIndexField.getSource() == FieldConfiguration.Source.FILE) {
                 value = fileAttributes.apply(key);
-            } else if (fileDataIndexField.getSource() == IndexFieldConfiguration.Source.SAMPLE) {
+            } else if (fileDataIndexField.getSource() == FieldConfiguration.Source.SAMPLE) {
                 value = sampleData.apply(key);
             } else {
                 throw new IllegalArgumentException("Unable to build file index with index source "

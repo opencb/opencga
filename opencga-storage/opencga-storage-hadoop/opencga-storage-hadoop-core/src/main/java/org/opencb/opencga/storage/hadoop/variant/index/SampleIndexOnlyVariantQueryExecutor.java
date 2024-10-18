@@ -18,7 +18,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -402,9 +402,9 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
 
                 if (includeAll) {
                     filterField = schema.getFileIndex()
-                            .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.FILTER);
+                            .getCustomField(FieldConfiguration.Source.FILE, StudyEntry.FILTER);
                     qualField = schema.getFileIndex()
-                            .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL);
+                            .getCustomField(FieldConfiguration.Source.FILE, StudyEntry.QUAL);
                 } else {
                     filterField = null;
                     qualField = null;

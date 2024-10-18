@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.query.OpValue;
 import org.opencb.opencga.storage.core.variant.query.Values;
@@ -21,7 +21,7 @@ public abstract class IndexField<T> extends AbstractField {
 
     private final int bitOffset;
 
-    public IndexField(IndexFieldConfiguration configuration, int bitOffset) {
+    public IndexField(FieldConfiguration configuration, int bitOffset) {
         super(configuration);
         this.bitOffset = bitOffset;
     }

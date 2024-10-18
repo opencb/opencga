@@ -14,7 +14,7 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
@@ -78,8 +78,8 @@ public class SampleIndexQueryParserTest {
 
         schema = new SampleIndexSchema(configuration, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION);
         fileIndex = schema.getFileIndex();
-        qualThresholds = fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL).getConfiguration().getThresholds();
-        dpThresholds = fileIndex.getCustomField(IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY).getConfiguration().getThresholds();
+        qualThresholds = fileIndex.getCustomField(FieldConfiguration.Source.FILE, StudyEntry.QUAL).getConfiguration().getThresholds();
+        dpThresholds = fileIndex.getCustomField(FieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY).getConfiguration().getThresholds();
 
         DummyVariantStorageMetadataDBAdaptorFactory.clear();
         mm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
@@ -358,7 +358,7 @@ public class SampleIndexQueryParserTest {
     }
 
     protected void checkQualFilter(String message, double minValueInclusive, double maxValueExclusive, SampleFileIndexQuery fileQuery) {
-        RangeIndexFieldFilter qualQuery = (RangeIndexFieldFilter) fileQuery.getFilter(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL);
+        RangeIndexFieldFilter qualQuery = (RangeIndexFieldFilter) fileQuery.getFilter(FieldConfiguration.Source.FILE, StudyEntry.QUAL);
 
         assertEquals(message, minValueInclusive, qualQuery.getMinValueInclusive(), 0);
         assertEquals(message, maxValueExclusive, qualQuery.getMaxValueExclusive(), 0);
@@ -399,7 +399,7 @@ public class SampleIndexQueryParserTest {
 
     protected void checkDPFilter(String message, double minValueInclusive, double maxValueExclusive, SampleFileIndexQuery fileQuery) {
         RangeIndexFieldFilter dpFilter = getDPFilter(fileQuery);
-        IndexField<String> dpField = fileIndex.getCustomField(IndexFieldConfiguration.Source.SAMPLE, "DP");
+        IndexField<String> dpField = fileIndex.getCustomField(FieldConfiguration.Source.SAMPLE, "DP");
 
         assertEquals(message, minValueInclusive, dpFilter.getMinValueInclusive(), 0);
         assertEquals(message, maxValueExclusive, dpFilter.getMaxValueExclusive(), 0);
@@ -408,7 +408,7 @@ public class SampleIndexQueryParserTest {
     }
 
     private RangeIndexFieldFilter getDPFilter(SampleFileIndexQuery fileQuery) {
-        return (RangeIndexFieldFilter) fileQuery.getFilter(IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY);
+        return (RangeIndexFieldFilter) fileQuery.getFilter(FieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY);
     }
 
     @Test
@@ -1018,7 +1018,7 @@ public class SampleIndexQueryParserTest {
 
         assertEquals(1, fileQueriesS1.size());
         assertNotNull(fileQueriesS1.get(0).getVariantTypeFilter());
-        assertFalse(fileQueriesS1.get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isNoOp());
+        assertFalse(fileQueriesS1.get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isNoOp());
         assertNull(fileQueriesS1.get(0).getFilePositionFilter());
 
         assertNull(sampleIndexQuery.getVariantTypes());
@@ -1043,13 +1043,13 @@ public class SampleIndexQueryParserTest {
         assertEquals(2, fileQueriesS1.get(0).getFilters().size());
         assertFalse(fileQueriesS1.get(0).getVariantTypeFilter().isNoOp());
         assertNull(fileQueriesS1.get(0).getFilePositionFilter());
-        assertFalse(fileQueriesS1.get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isNoOp());
+        assertFalse(fileQueriesS1.get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isNoOp());
 
         assertEquals(1, fileQueriesS2.size());
         assertEquals(2, fileQueriesS2.get(0).getFilters().size());
         assertFalse(fileQueriesS1.get(0).getVariantTypeFilter().isNoOp());
         assertNull(fileQueriesS2.get(0).getFilePositionFilter());
-        assertFalse(fileQueriesS2.get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isNoOp());
+        assertFalse(fileQueriesS2.get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isNoOp());
 
         assertNull(sampleIndexQuery.getVariantTypes());
     }
@@ -1073,16 +1073,16 @@ public class SampleIndexQueryParserTest {
         assertEquals(2, fileQueriesS1.get(0).getFilters().size());
         assertNotNull(fileQueriesS1.get(0).getVariantTypeFilter());
         assertNull(fileQueriesS1.get(0).getFilePositionFilter());
-        assertFalse(fileQueriesS1.get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isNoOp());
-        assertEquals(7, ((RangeIndexFieldFilter) fileQueriesS1.get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP")).getMinValueInclusive(), 0.000001);
+        assertFalse(fileQueriesS1.get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isNoOp());
+        assertEquals(7, ((RangeIndexFieldFilter) fileQueriesS1.get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP")).getMinValueInclusive(), 0.000001);
 
         Values<SampleFileIndexQuery> fileQueriesS2 = sampleIndexQuery.getSampleFileIndexQuery("S2");
         assertEquals(1, fileQueriesS2.size());
         assertEquals(2, fileQueriesS2.get(0).getFilters().size());
         assertNotNull(fileQueriesS1.get(0).getVariantTypeFilter());
         assertNull(fileQueriesS2.get(0).getFilePositionFilter());
-        assertFalse(fileQueriesS2.get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isNoOp());
-        assertEquals(12, ((RangeIndexFieldFilter) fileQueriesS2.get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP")).getMinValueInclusive(), 0.000001);
+        assertFalse(fileQueriesS2.get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isNoOp());
+        assertEquals(12, ((RangeIndexFieldFilter) fileQueriesS2.get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP")).getMinValueInclusive(), 0.000001);
 
         assertNull(sampleIndexQuery.getVariantTypes());
     }
@@ -1102,13 +1102,13 @@ public class SampleIndexQueryParserTest {
         Values<SampleFileIndexQuery> fileQueriesS1 = sampleIndexQuery.getSampleFileIndexQuery("S1");
         assertEquals(1, fileQueriesS1.size());
         assertNotNull(fileQueriesS1.get(0).getVariantTypeFilter());
-        assertFalse(fileQueriesS1.get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isNoOp());
+        assertFalse(fileQueriesS1.get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isNoOp());
         assertNull(fileQueriesS1.get(0).getFilePositionFilter());
 
         Values<SampleFileIndexQuery> fileQueriesS2 = sampleIndexQuery.getSampleFileIndexQuery("S2");
         assertEquals(1, fileQueriesS2.size());
         assertNotNull(fileQueriesS2.get(0).getVariantTypeFilter());
-        assertFalse(fileQueriesS2.get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isNoOp());
+        assertFalse(fileQueriesS2.get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isNoOp());
         assertNull(fileQueriesS2.get(0).getFilePositionFilter());
 
         assertNull(sampleIndexQuery.getVariantTypes());
@@ -1213,9 +1213,9 @@ public class SampleIndexQueryParserTest {
         assertEquals(new HashSet<>(Arrays.asList("fam1_child", "fam1_father", "fam1_mother")), indexQuery.getSamplesMap().keySet());
         // Still using parent's filter
         assertEquals(1, indexQuery.getFatherFilterMap().size());
-        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
-        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_father").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
-        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_mother").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_father").get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_mother").get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
         assertEquals("", query.getString(SAMPLE_DATA.key()));
     }
 
@@ -1233,8 +1233,8 @@ public class SampleIndexQueryParserTest {
         assertEquals(new HashSet<>(Arrays.asList("fam1_child", "fam1_father")), indexQuery.getSamplesMap().keySet());
         // Still using parent's filter
         assertEquals(1, indexQuery.getFatherFilterMap().size());
-        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
-        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_father").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_father").get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
         assertEquals("", query.getString(SAMPLE_DATA.key()));
     }
 
@@ -1254,8 +1254,8 @@ public class SampleIndexQueryParserTest {
         assertEquals(new HashSet<>(Arrays.asList("fam1_child", "fam1_father")), indexQuery.getSamplesMap().keySet());
         // Still using parent's filter
         assertEquals(1, indexQuery.getFatherFilterMap().size());
-        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
-        assertFalse(indexQuery.getSampleFileIndexQuery("fam1_father").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertFalse(indexQuery.getSampleFileIndexQuery("fam1_father").get(0).getFilter(FieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
         assertEquals("fam1_father:DP>18", query.getString(SAMPLE_DATA.key()));
     }
 

@@ -1,12 +1,12 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 
 public abstract class AbstractField {
 
-    protected final IndexFieldConfiguration configuration;
+    protected final FieldConfiguration configuration;
 
-    protected AbstractField(IndexFieldConfiguration configuration) {
+    protected AbstractField(FieldConfiguration configuration) {
         this.configuration = configuration;
     }
 
@@ -14,7 +14,7 @@ public abstract class AbstractField {
         return configuration.getId();
     }
 
-    public IndexFieldConfiguration.Source getSource() {
+    public FieldConfiguration.Source getSource() {
         return configuration.getSource();
     }
 
@@ -22,11 +22,11 @@ public abstract class AbstractField {
         return configuration.getKey();
     }
 
-    public IndexFieldConfiguration getConfiguration() {
+    public FieldConfiguration getConfiguration() {
         return configuration;
     }
 
-    public IndexFieldConfiguration.Type getType() {
+    public FieldConfiguration.Type getType() {
         return configuration.getType();
     }
 

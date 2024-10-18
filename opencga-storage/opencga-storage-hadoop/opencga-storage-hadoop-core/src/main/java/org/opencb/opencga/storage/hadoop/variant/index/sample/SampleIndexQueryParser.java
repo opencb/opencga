@@ -8,7 +8,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -329,7 +329,7 @@ public class SampleIndexQueryParser {
                             // SampleData filter exists for this sample!
                             // Check if ANY filter is covered by the index
                             for (KeyOpValue<String, String> entry : sampleDataFilter.getValues()) {
-                                if (schema.getFileIndex().getField(IndexFieldConfiguration.Source.SAMPLE, entry.getKey()) != null) {
+                                if (schema.getFileIndex().getField(FieldConfiguration.Source.SAMPLE, entry.getKey()) != null) {
                                     // This key is covered by the sample index. Do not discard this parent!
                                     discardParent = false;
                                     break;
@@ -1082,7 +1082,7 @@ public class SampleIndexQueryParser {
 
         if (isValidParam(query, FILTER)) {
             IndexField<String> filterIndexField = schema.getFileIndex()
-                    .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.FILTER);
+                    .getCustomField(FieldConfiguration.Source.FILE, StudyEntry.FILTER);
             if (filterIndexField != null) {
                 Values<String> filterValues = splitValue(query, FILTER);
                 IndexFieldFilter indexFieldFilter = filterIndexField.buildFilter(filterValues.getOperation(), filterValues.getValues());
@@ -1095,7 +1095,7 @@ public class SampleIndexQueryParser {
 
         if (isValidParam(query, QUAL)) {
             IndexField<String> qualIndexField = schema.getFileIndex()
-                    .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL);
+                    .getCustomField(FieldConfiguration.Source.FILE, StudyEntry.QUAL);
             if (qualIndexField != null) {
                 OpValue<String> opValue = parseOpValue(query.getString(QUAL.key()));
                 IndexFieldFilter indexFieldFilter = qualIndexField.buildFilter(opValue);
@@ -1128,7 +1128,7 @@ public class SampleIndexQueryParser {
                     }
                     for (KeyOpValue<String, String> keyOpValue : keyValues.getValues()) {
                         IndexField<String> fileDataIndexField = schema.getFileIndex()
-                                .getCustomField(IndexFieldConfiguration.Source.FILE, keyOpValue.getKey());
+                                .getCustomField(FieldConfiguration.Source.FILE, keyOpValue.getKey());
                         if (fileDataIndexField == null) {
                             // Unknown key
                             fileDataCovered = false;
@@ -1159,7 +1159,7 @@ public class SampleIndexQueryParser {
             if (!sampleDataFilter.isEmpty() && sampleDataOp != QueryOperation.OR) {
                 for (KeyOpValue<String, String> keyOpValue : sampleDataFilter) {
                     IndexField<String> sampleDataIndexField = schema.getFileIndex()
-                            .getCustomField(IndexFieldConfiguration.Source.SAMPLE, keyOpValue.getKey());
+                            .getCustomField(FieldConfiguration.Source.SAMPLE, keyOpValue.getKey());
                     if (sampleDataIndexField != null) {
                         IndexFieldFilter indexFieldFilter = sampleDataIndexField.buildFilter(keyOpValue);
                         filtersList.add(indexFieldFilter);

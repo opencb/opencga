@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 
 public class IntegerDataField extends DataField<Integer> {
 
-    public IntegerDataField(IndexFieldConfiguration configuration) {
+    public IntegerDataField(FieldConfiguration configuration) {
         super(configuration);
     }
 

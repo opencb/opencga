@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -16,7 +16,7 @@ public class VarCharDataField extends VariableWidthDataField<String> {
 
     protected static final byte FIELD_SEPARATOR = (byte) 0;
 
-    public VarCharDataField(IndexFieldConfiguration configuration) {
+    public VarCharDataField(FieldConfiguration configuration) {
         super(configuration);
     }
 

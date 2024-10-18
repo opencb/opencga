@@ -39,15 +39,15 @@ public class SampleIndexConfiguration {
                         ? ParamConstants.POP_FREQ_1000G_CB_V4
                         : ParamConstants.POP_FREQ_1000G_CB_V5, "ALL"))
                 .addPopulation(new Population(ParamConstants.POP_FREQ_GNOMAD_GENOMES, "ALL"))
-                .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.FILE,
+                .addFileIndexField(new FieldConfiguration(
+                        FieldConfiguration.Source.FILE,
                         StudyEntry.FILTER,
-                        IndexFieldConfiguration.Type.CATEGORICAL,
+                        FieldConfiguration.Type.CATEGORICAL,
                         VCFConstants.PASSES_FILTERS_v4))
-                .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL, QUAL_THRESHOLDS).setNullable(false))
-                .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY, DP_THRESHOLDS_NULLABLE).setNullable(true));
+                .addFileIndexField(new FieldConfiguration(
+                        FieldConfiguration.Source.FILE, StudyEntry.QUAL, QUAL_THRESHOLDS).setNullable(false))
+                .addFileIndexField(new FieldConfiguration(
+                        FieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY, DP_THRESHOLDS_NULLABLE).setNullable(true));
 
         sampleIndexConfiguration.getFileIndexConfiguration()
                 .setFilePositionBits(DEFAULT_FILE_POSITION_SIZE_BITS);
@@ -55,9 +55,9 @@ public class SampleIndexConfiguration {
                 .setIncludeOriginalCall(true)
                 .setIncludeSecondaryAlternates(true);
 
-        IndexFieldConfiguration biotypeConfiguration = new IndexFieldConfiguration(IndexFieldConfiguration.Source.ANNOTATION,
+        FieldConfiguration biotypeConfiguration = new FieldConfiguration(FieldConfiguration.Source.ANNOTATION,
                 "biotype",
-                IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
+                FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
                 .setValues(
                         NONSENSE_MEDIATED_DECAY,
                         LINCRNA,
@@ -103,10 +103,10 @@ public class SampleIndexConfiguration {
         ));
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setBiotype(biotypeConfiguration);
-        IndexFieldConfiguration consequenceType = new IndexFieldConfiguration(
-                IndexFieldConfiguration.Source.ANNOTATION,
+        FieldConfiguration consequenceType = new FieldConfiguration(
+                FieldConfiguration.Source.ANNOTATION,
                 "consequenceType",
-                IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
+                FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
                 .setValues(
                         MISSENSE_VARIANT,
                         FRAMESHIFT_VARIANT,
@@ -137,10 +137,10 @@ public class SampleIndexConfiguration {
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setConsequenceType(consequenceType);
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptFlagIndexConfiguration(
-                new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.ANNOTATION,
+                new FieldConfiguration(
+                        FieldConfiguration.Source.ANNOTATION,
                         "transcriptFlag",
-                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                        FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "canonical",
                         "MANE Select",
                         "MANE Plus Clinical",
@@ -153,18 +153,18 @@ public class SampleIndexConfiguration {
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptCombination(true);
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
-                new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.ANNOTATION, "clinicalSource",
-                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                new FieldConfiguration(
+                        FieldConfiguration.Source.ANNOTATION, "clinicalSource",
+                        FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "clinvar",
                         "cosmic")
                         .setNullable(false)
         );
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSignificance(
-                new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.ANNOTATION, "clinicalSignificance",
-                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                new FieldConfiguration(
+                        FieldConfiguration.Source.ANNOTATION, "clinicalSignificance",
+                        FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "clinvar_" + ClinicalSignificance.benign.toString(),
                         "clinvar_" + ClinicalSignificance.likely_benign.toString(),
                         "clinvar_" + ClinicalSignificance.uncertain_significance.toString(),
@@ -191,10 +191,10 @@ public class SampleIndexConfiguration {
     public void validate(String cellbaseVersion) {
         addMissingValues(defaultConfiguration(cellbaseVersion));
 
-        for (IndexFieldConfiguration customField : fileIndexConfiguration.getCustomFields()) {
+        for (FieldConfiguration customField : fileIndexConfiguration.getCustomFields()) {
             customField.validate();
         }
-        for (IndexFieldConfiguration configuration : annotationIndexConfiguration.getPopulationFrequency().toIndexFieldConfiguration()) {
+        for (FieldConfiguration configuration : annotationIndexConfiguration.getPopulationFrequency().toIndexFieldConfiguration()) {
             configuration.validate();
         }
         annotationIndexConfiguration.biotype.validate();
@@ -296,7 +296,7 @@ public class SampleIndexConfiguration {
 
     public static class FileIndexConfiguration {
 
-        private final List<IndexFieldConfiguration> customFields = new ArrayList<>();
+        private final List<FieldConfiguration> customFields = new ArrayList<>();
         private int filePositionBits = DEFAULT_FILE_POSITION_SIZE_BITS;
         private boolean fixedFieldsFirst = true;
 
@@ -308,12 +308,12 @@ public class SampleIndexConfiguration {
             this.fixedFieldsFirst = fixedFieldsFirst;
         }
 
-        public List<IndexFieldConfiguration> getCustomFields() {
+        public List<FieldConfiguration> getCustomFields() {
             return customFields;
         }
 
-        public IndexFieldConfiguration getCustomField(IndexFieldConfiguration.Source source, String key) {
-            for (IndexFieldConfiguration s : customFields) {
+        public FieldConfiguration getCustomField(FieldConfiguration.Source source, String key) {
+            for (FieldConfiguration s : customFields) {
                 if (s.getKey().equals(key) && s.getSource() == source) {
                     return s;
                 }
@@ -371,11 +371,11 @@ public class SampleIndexConfiguration {
 
     public static class AnnotationIndexConfiguration {
         private PopulationFrequencyIndexConfiguration populationFrequency = new PopulationFrequencyIndexConfiguration();
-        private IndexFieldConfiguration biotype;
-        private IndexFieldConfiguration consequenceType;
-        private IndexFieldConfiguration clinicalSource;
-        private IndexFieldConfiguration clinicalSignificance;
-        private IndexFieldConfiguration transcriptFlagIndexConfiguration;
+        private FieldConfiguration biotype;
+        private FieldConfiguration consequenceType;
+        private FieldConfiguration clinicalSource;
+        private FieldConfiguration clinicalSignificance;
+        private FieldConfiguration transcriptFlagIndexConfiguration;
         private Boolean transcriptCombination;
 
         public PopulationFrequencyIndexConfiguration getPopulationFrequency() {
@@ -387,46 +387,46 @@ public class SampleIndexConfiguration {
             return this;
         }
 
-        public IndexFieldConfiguration getBiotype() {
+        public FieldConfiguration getBiotype() {
             return biotype;
         }
 
-        public AnnotationIndexConfiguration setBiotype(IndexFieldConfiguration biotype) {
+        public AnnotationIndexConfiguration setBiotype(FieldConfiguration biotype) {
             this.biotype = biotype;
             return this;
         }
 
-        public IndexFieldConfiguration getConsequenceType() {
+        public FieldConfiguration getConsequenceType() {
             return consequenceType;
         }
 
-        public AnnotationIndexConfiguration setConsequenceType(IndexFieldConfiguration consequenceType) {
+        public AnnotationIndexConfiguration setConsequenceType(FieldConfiguration consequenceType) {
             this.consequenceType = consequenceType;
             return this;
         }
 
-        public IndexFieldConfiguration getTranscriptFlagIndexConfiguration() {
+        public FieldConfiguration getTranscriptFlagIndexConfiguration() {
             return transcriptFlagIndexConfiguration;
         }
 
-        public void setTranscriptFlagIndexConfiguration(IndexFieldConfiguration transcriptFlagIndexConfiguration) {
+        public void setTranscriptFlagIndexConfiguration(FieldConfiguration transcriptFlagIndexConfiguration) {
             this.transcriptFlagIndexConfiguration = transcriptFlagIndexConfiguration;
         }
 
-        public IndexFieldConfiguration getClinicalSource() {
+        public FieldConfiguration getClinicalSource() {
             return clinicalSource;
         }
 
-        public AnnotationIndexConfiguration setClinicalSource(IndexFieldConfiguration clinicalSource) {
+        public AnnotationIndexConfiguration setClinicalSource(FieldConfiguration clinicalSource) {
             this.clinicalSource = clinicalSource;
             return this;
         }
 
-        public IndexFieldConfiguration getClinicalSignificance() {
+        public FieldConfiguration getClinicalSignificance() {
             return clinicalSignificance;
         }
 
-        public AnnotationIndexConfiguration setClinicalSignificance(IndexFieldConfiguration clinicalSignificance) {
+        public AnnotationIndexConfiguration setClinicalSignificance(FieldConfiguration clinicalSignificance) {
             this.clinicalSignificance = clinicalSignificance;
             return this;
         }
@@ -502,17 +502,17 @@ public class SampleIndexConfiguration {
             return this;
         }
 
-        public List<IndexFieldConfiguration> toIndexFieldConfiguration() {
-            List<IndexFieldConfiguration> indexFieldConfigurations = new ArrayList<>(populations.size());
+        public List<FieldConfiguration> toIndexFieldConfiguration() {
+            List<FieldConfiguration> fieldConfigurations = new ArrayList<>(populations.size());
             for (Population population : populations) {
-                indexFieldConfigurations.add(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.ANNOTATION,
+                fieldConfigurations.add(new FieldConfiguration(
+                        FieldConfiguration.Source.ANNOTATION,
                         population.getKey(),
-                        IndexFieldConfiguration.Type.RANGE_LT)
+                        FieldConfiguration.Type.RANGE_LT)
                         .setNullable(false)
                         .setThresholds(thresholds));
             }
-            return indexFieldConfigurations;
+            return fieldConfigurations;
         }
 
         @Override
@@ -617,7 +617,7 @@ public class SampleIndexConfiguration {
         return fileDataConfiguration;
     }
 
-    public SampleIndexConfiguration addFileIndexField(IndexFieldConfiguration fileIndex) {
+    public SampleIndexConfiguration addFileIndexField(FieldConfiguration fileIndex) {
         if (fileIndexConfiguration.getCustomFields().contains(fileIndex)) {
             throw new IllegalArgumentException("Duplicated file index '"
                     + fileIndex.getKey() + "' in SampleIndexConfiguration");

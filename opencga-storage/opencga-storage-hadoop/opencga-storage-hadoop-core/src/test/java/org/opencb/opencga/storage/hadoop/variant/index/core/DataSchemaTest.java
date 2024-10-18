@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.core;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.storage.core.io.bit.ExposedByteArrayOutputStream;
 
 import java.nio.ByteBuffer;
@@ -19,10 +19,10 @@ public class DataSchemaTest {
 
     @Before
     public void setUp() throws Exception {
-        key1 = new VarCharDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "key1", null));
-        key2 = new VarCharDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "key2", null));
-        key3 = new IntegerDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "key3", null));
-        key4 = new VarCharDataField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "key4", null));
+        key1 = new VarCharDataField(new FieldConfiguration(FieldConfiguration.Source.META, "key1", null));
+        key2 = new VarCharDataField(new FieldConfiguration(FieldConfiguration.Source.META, "key2", null));
+        key3 = new IntegerDataField(new FieldConfiguration(FieldConfiguration.Source.META, "key3", null));
+        key4 = new VarCharDataField(new FieldConfiguration(FieldConfiguration.Source.META, "key4", null));
         dataSchema = new DataSchema() {
             {
                 addField(key1);
