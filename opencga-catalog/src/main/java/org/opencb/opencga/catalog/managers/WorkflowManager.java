@@ -192,13 +192,14 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             studyId = study.getId();
             studyUuid = study.getUuid();
 
-            // 1. Check permissions
-            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
-
             Workflow workflow = internalGet(organizationId, study.getUid(), Collections.singletonList(workflowId), null,
                     INCLUDE_WORKFLOW_IDS, userId, false).first();
             id = workflow.getId();
             uuid = workflow.getUuid();
+
+            // Check permission
+            authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), workflow.getUid(), userId,
+                    WorkflowPermissions.WRITE);
 
             if (updateParams == null) {
                 throw new CatalogException("Missing parameters to update the workflow.");
