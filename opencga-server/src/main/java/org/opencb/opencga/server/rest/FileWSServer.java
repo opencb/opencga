@@ -177,6 +177,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "File format") @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
             @ApiParam(value = "File bioformat") @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,
             @ApiParam(value = "Expected MD5 file checksum") @DefaultValue("") @FormDataParam("checksum") String expectedChecksum,
+            @ApiParam(value = "File resource") @FormDataParam("resource") Boolean resource,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Path within catalog where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
             @ApiParam(value = "description") @DefaultValue("") @FormDataParam("description")
@@ -205,9 +206,11 @@ public class FileWSServer extends OpenCGAWSServer {
             }
             long expectedSize = fileMetaData.getSize();
 
+            boolean isResource = resource != null && resource;
             File file = new File()
                     .setName(fileName)
                     .setPath(relativeFilePath + fileName)
+                    .setResource(isResource)
                     .setFormat(fileFormat)
                     .setBioformat(bioformat);
             return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true,

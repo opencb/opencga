@@ -99,7 +99,8 @@ public class FileCommandExecutor extends InternalCommandExecutor {
 
         Path outDir = Paths.get(options.outDir);
 
-        toolRunner.execute(FetchAndRegisterTask.class, new FileFetch(options.url, options.path), outDir, null, false, options.commonOptions.token);
+        toolRunner.execute(FetchAndRegisterTask.class, new FileFetch(options.url, options.path, options.resource), outDir, null, false,
+                options.commonOptions.token);
     }
 
     private void tsvLoad() throws ToolException {

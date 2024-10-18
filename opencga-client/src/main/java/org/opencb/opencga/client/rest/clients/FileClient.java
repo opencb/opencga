@@ -321,6 +321,7 @@ public class FileClient extends AbstractParentClient {
      *       fileFormat: File format.
      *       bioformat: File bioformat.
      *       checksum: Expected MD5 file checksum.
+     *       resource: File resource.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       relativeFilePath: Path within catalog where the file will be located (default: root folder).
      *       description: description.

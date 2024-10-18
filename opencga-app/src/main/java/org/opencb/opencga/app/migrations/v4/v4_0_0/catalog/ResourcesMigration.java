@@ -54,9 +54,9 @@ public class ResourcesMigration extends MigrationTool {
                             int release = fileDoc.get("release", Number.class).intValue();
 
                             // Create the RESOURCES folder
-                            File file = new File("RESOURCES", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "RESOURCES/",
-                                    Paths.get(studyUri).resolve("RESOURCES").toUri(), "Default resources folder", FileInternal.init(), 0,
-                                    release).setResource(true);
+                            File file = new File("RESOURCES", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN,
+                                    "RESOURCES/", Paths.get(studyUri).resolve("RESOURCES").toUri(), "Default resources folder",
+                                    FileInternal.init(), true, 0, release);
                             try {
                                 dbAdaptorFactory.getCatalogFileDBAdaptor(organizationId).insert(studyUid, file, Collections.emptyList(),
                                         Collections.emptyList(), Collections.emptyList(), QueryOptions.empty());
