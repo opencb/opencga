@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -54,7 +53,7 @@ public class DBAdaptorVariantQueryExecutor extends VariantQueryExecutor {
     }
 
     @Override
-    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery) throws StorageEngineException {
         for (QueryParam unsupportedParam : UNSUPPORTED_PARAMS) {
             if (VariantQueryUtils.isValidParam(variantQuery.getQuery(), unsupportedParam)) {
                 logger.warn("Unsupported variant query param {} in {}",

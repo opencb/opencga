@@ -91,8 +91,9 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     }
 
     @Override
-    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery) {
         VariantQuery query = variantQuery.getQuery();
+        QueryOptions options = variantQuery.getInputOptions();
         if (variantQuery.getSource() == VariantQuerySource.SECONDARY_SAMPLE_INDEX) {
             if (SampleIndexQueryParser.validSampleIndexQuery(query) && isQueryCovered(query)) {
                 return true;

@@ -69,8 +69,8 @@ public abstract class VariantQueryExecutor {
      * @return         True if this variant query executor is valid for the query
      * @throws StorageEngineException if there is an error
      */
-    public final boolean canUseThisExecutor(ParsedVariantQuery variantQuery) throws StorageEngineException {
-        boolean canUseThisExecutor = canUseThisExecutor(variantQuery, variantQuery.getInputOptions());
+    public final boolean acceptsQuery(ParsedVariantQuery variantQuery) throws StorageEngineException {
+        boolean canUseThisExecutor = canUseThisExecutor(variantQuery);
         if (canUseThisExecutor) {
             if (variantQuery.getSource().isSecondary()) {
                 // Querying for a secondary index source. This executor can only be used if the source is the same
@@ -84,12 +84,12 @@ public abstract class VariantQueryExecutor {
 
     /**
      * Internal method to determine if this VariantQueryExecutor can run the given query.
-     * @param variantQuery    Query to execute
-     * @param options  Options for the query
-     * @return         True if this variant query executor is valid for the query
+     *
+     * @param variantQuery Query to execute
+     * @return True if this variant query executor is valid for the query
      * @throws StorageEngineException if there is an error
      */
-    protected abstract boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException;
+    protected abstract boolean canUseThisExecutor(ParsedVariantQuery variantQuery) throws StorageEngineException;
 
     protected abstract Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) throws StorageEngineException;
 

@@ -61,7 +61,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
     }
 
     @Override
-    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery) throws StorageEngineException {
         return isValidParam(variantQuery.getQuery(), VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS);
     }
 
