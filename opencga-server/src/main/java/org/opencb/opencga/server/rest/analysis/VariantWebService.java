@@ -1334,7 +1334,7 @@ public class VariantWebService extends AnalysisWebService {
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
             executorParams.put("token", token);
-            executor.setUp(null, executorParams, outDir.toPath());
+            executor.setUp(null, executorParams, outDir.toPath(), null);
 
             // Run Circos executor
             StopWatch watch = StopWatch.createStarted();

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 
@@ -149,7 +150,7 @@ public class CellBaseValidator {
         String inputVersion = getVersion();
         CellBaseDataResponse<SpeciesProperties> species;
         try {
-            species = cellBaseClient.getMetaClient().species();
+            species = retryMetaSpecies();
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'", e);
         }
@@ -158,7 +159,7 @@ public class CellBaseValidator {
                 // Version might be missing the starting "v"
                 cellBaseConfiguration.setVersion("v" + cellBaseConfiguration.getVersion());
                 cellBaseClient = newCellBaseClient(cellBaseConfiguration, getSpecies(), getAssembly());
-                species = cellBaseClient.getMetaClient().species();
+                species = retryMetaSpecies();
             }
         }
         if (species == null || species.firstResult() == null) {
@@ -318,7 +319,7 @@ public class CellBaseValidator {
     public String getVersionFromServer() throws IOException {
         if (serverVersion == null) {
             synchronized (this) {
-                ObjectMap result = retryMetaAbout(3);
+                ObjectMap result = retryMetaAbout();
                 if (result == null) {
                     throw new IOException("Unable to get version from server for cellbase " + toString());
                 }
@@ -332,12 +333,43 @@ public class CellBaseValidator {
         return serverVersion;
     }
 
-    private ObjectMap retryMetaAbout(int retries) throws IOException {
-        ObjectMap result = cellBaseClient.getMetaClient().about().firstResult();
-        if (result == null && retries > 0) {
-            // Retry
-            logger.warn("Unable to get version from server for cellbase " + toString() + ". Retrying...");
-            result = retryMetaAbout(retries - 1);
+    private ObjectMap retryMetaAbout() throws IOException {
+        return retry(3, () -> cellBaseClient.getMetaClient().about().firstResult());
+    }
+
+    private CellBaseDataResponse<SpeciesProperties> retryMetaSpecies() throws IOException {
+        return retry(3, () -> cellBaseClient.getMetaClient().species());
+    }
+
+    private <T> T retry(int retries, Callable<T> function) throws IOException {
+        if (retries <= 0) {
+            return null;
+        }
+        T result = null;
+        Exception e = null;
+        try {
+            result = function.call();
+        } catch (Exception e1) {
+            e = e1;
+        }
+        if (result == null) {
+            try {
+                // Retry
+                logger.warn("Unable to get reach cellbase " + toString() + ". Retrying...");
+                result = retry(retries - 1, function);
+            } catch (Exception e1) {
+                if (e == null) {
+                    e = e1;
+                } else {
+                    e.addSuppressed(e1);
+                }
+                if (e instanceof IOException) {
+                    throw (IOException) e;
+                } else {
+                    throw new IOException("Error reading from cellbase " + toString(), e);
+                }
+            }
+
         }
         return result;
     }

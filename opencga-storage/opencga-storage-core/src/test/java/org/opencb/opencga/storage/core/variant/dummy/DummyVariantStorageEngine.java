@@ -84,6 +84,10 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
         }
     }
 
+    public static VariantStorageMetadataManager getVariantMetadataManager() {
+        return new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+    }
+
     @Override
     public String getStorageEngineId() {
         return STORAGE_ENGINE_ID;

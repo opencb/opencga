@@ -1074,7 +1074,11 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         .append(QueryOptions.LIMIT, 10)
                         .append(QueryOptions.COUNT, true));
 
-        System.out.println(result.getResults().stream().map(Variant::getAnnotation).flatMap(v -> v.getConsequenceTypes().stream()).map(ConsequenceType::getGeneName).collect(Collectors.toSet()));
+        System.out.println(result.getResults().stream()
+                .map(Variant::getAnnotation)
+                .flatMap(v -> v.getConsequenceTypes().stream())
+                .map(ConsequenceType::getGeneName)
+                .collect(Collectors.toSet()));
 
         result = variantStorageEngine.get(
                 new Query()
@@ -1088,7 +1092,11 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         .append(QueryOptions.LIMIT, 10)
                         .append(QueryOptions.COUNT, true));
 
-        System.out.println(result.getResults().stream().map(Variant::getAnnotation).flatMap(v -> v.getConsequenceTypes().stream()).map(ConsequenceType::getGeneName).collect(Collectors.toSet()));
+        System.out.println(result.getResults().stream()
+                .map(Variant::getAnnotation)
+                .flatMap(v -> v.getConsequenceTypes().stream())
+                .map(ConsequenceType::getGeneName)
+                .collect(Collectors.toSet()));
     }
 
     @Test

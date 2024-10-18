@@ -183,7 +183,9 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
 
                 DataResult<VariantSearchModel> nativeResult = searchManager
                         .nativeQuery(dbName, searchEngineQuery, queryOptions);
-                List<String> variantIds = nativeResult.getResults().stream().map(VariantSearchModel::getId).collect(Collectors.toList());
+                List<Variant> variantIds = nativeResult.getResults().stream()
+                        .map(VariantSearchModel::toVariantSimple)
+                        .collect(Collectors.toList());
                 // Adjust numSamples if the results from SearchManager is smaller than numSamples
                 // If this happens, the count is not approximated
                 if (variantIds.size() < sampling) {
@@ -262,6 +264,10 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             intersect = true;
         } else {
             if (options.getBoolean(QueryOptions.COUNT)) {
+                // The SearchIndex is better than anyone in terms of counting
+                intersect = true;
+            } else if (options.getInt(QueryOptions.SKIP, 0) > 500) {
+                // Large "skip" queries should use SearchIndex when possible
                 intersect = true;
             } else {
                 // TODO: Improve this heuristic
@@ -283,12 +289,12 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         return intersect;
     }
 
-    protected Iterator<String> variantIdIteratorFromSearch(Query query) {
+    protected Iterator<Variant> variantIdIteratorFromSearch(Query query) {
         return variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, null);
     }
 
-    protected Iterator<String> variantIdIteratorFromSearch(Query query, int limit, int skip, AtomicLong numTotalResults) {
-        Iterator<String> variantsIterator;
+    protected Iterator<Variant> variantIdIteratorFromSearch(Query query, int limit, int skip, AtomicLong numTotalResults) {
+        Iterator<Variant> variantsIterator;
         QueryOptions queryOptions = new QueryOptions()
                 .append(QueryOptions.LIMIT, limit)
                 .append(QueryOptions.SKIP, skip)
@@ -302,14 +308,14 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 }
                 variantsIterator = nativeResult.getResults()
                         .stream()
-                        .map(VariantSearchModel::getId)
+                        .map(VariantSearchModel::toVariantSimple)
                         .iterator();
             } else {
                 SolrNativeIterator nativeIterator = searchManager.nativeIterator(dbName, query, queryOptions);
                 if (numTotalResults != null) {
                     numTotalResults.set(nativeIterator.getNumFound());
                 }
-                variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
+                variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::toVariantSimple);
             }
         } catch (VariantSearchException | IOException e) {
             throw new VariantQueryException("Error querying " + VariantSearchManager.SEARCH_ENGINE_ID, e);

@@ -16,7 +16,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -29,7 +28,7 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     private static Map<String, Integer> counters = new HashMap<>();
 
     @Override
-    public Lock lockProject(long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+    public Lock lockProject(long lockDuration, long timeout, String lockName) {
         return new Lock(0) {
             @Override
             public void unlock0() {
@@ -44,16 +43,11 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     }
 
     @Override
-    public void unLockProject(long lockId) {
-    }
-
-    @Override
     public synchronized DataResult<ProjectMetadata> getProjectMetadata() {
         final DataResult<ProjectMetadata> result = new DataResult<>();
-        if (projectMetadata == null) {
-            projectMetadata = new ProjectMetadata("hsapiens", "grch37", 1);
+        if (projectMetadata != null) {
+            result.setResults(Collections.singletonList(projectMetadata.copy()));
         }
-        result.setResults(Collections.singletonList(projectMetadata.copy()));
         return result;
     }
 

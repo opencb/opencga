@@ -68,7 +68,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
     @Override
     protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) {
         Trio trio = getCompHetTrio(variantQuery.getQuery());
-        String study = variantQuery.getStudyQuery().getStudyOrFail();
+        String study = variantQuery.getStudyQuery().getDefaultStudyOrFail().getName();
         return getOrIterator(study, trio.getChild(), trio.getFather(), trio.getMother(),
                 variantQuery, iterator);
     }

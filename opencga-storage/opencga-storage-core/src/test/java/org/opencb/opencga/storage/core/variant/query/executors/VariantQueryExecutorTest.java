@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -87,6 +88,9 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
             numVariants = getExpectedNumLoadedVariants(fileMetadata);
             fileIndexed = true;
             Integer indexedFileId = metadataManager.getIndexedFiles(studyMetadata.getId()).iterator().next();
+
+            Trio trio = new Trio("NA19660", "NA19661", "NA19685");
+            variantStorageEngine.familyIndex(studyMetadata.getName(), Collections.singletonList(trio), new ObjectMap());
 
             //Calculate stats
             QueryOptions options = new QueryOptions(VariantStorageOptions.STUDY.key(), STUDY_NAME)
@@ -206,7 +210,30 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
         }
     }
 
+    @Test
+    public void testCompHetQuery() throws StorageEngineException {
+//        Matcher<Variant> matcher = allOf(
+//                anyOf(
+//                        samePosition(new Variant("1:2441358:T:C")),
+//                        samePosition(new Variant("1:2458010:G:C")),
+//                        samePosition(new Variant("19:501725:G:A")),
+//                        samePosition(new Variant("19:501900:C:A"))),
+//                withStudy(STUDY_NAME, withSampleGt("NA19685")));
+        Matcher<Variant> matcher = null;
+        testQuery(new VariantQuery().sample("NA19685:compoundheterozygous")
+                        .study(STUDY_NAME)
+                        .biotype("protein_coding"),
+                new QueryOptions(),
+                matcher,
+                false);
+    }
+
     public VariantQueryResult<Variant> testQuery(Query query, QueryOptions options, Matcher<Variant> matcher) throws StorageEngineException {
+        return testQuery(query, options, matcher, true);
+    }
+
+    public VariantQueryResult<Variant> testQuery(Query query, QueryOptions options, Matcher<Variant> matcher, boolean expectDBAdaptorExecutor)
+            throws StorageEngineException {
         logger.info("");
         logger.info("");
         logger.info("####################################################");
@@ -219,10 +246,18 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
                 logger.info("## - " + variantQueryExecutor.getClass().getSimpleName());
             }
         }
-        logger.info("## Using DBAdaptorVariantQueryExecutor for expected results");
-        Assert.assertTrue(dbQueryExecutor.canUseThisExecutor(variantQuery, options));
 
-        VariantQueryResult<Variant> expected = dbQueryExecutor.get(variantQuery);
+        VariantQueryResult<Variant> expected;
+        if (expectDBAdaptorExecutor) {
+            logger.info("## Using DBAdaptorVariantQueryExecutor for expected results");
+            Assert.assertTrue(dbQueryExecutor.canUseThisExecutor(variantQuery, options));
+
+            expected = dbQueryExecutor.get(variantQuery);
+        } else {
+            logger.info("## DBAdaptorVariantQueryExecutor can not be used for expected results");
+            Assert.assertFalse(dbQueryExecutor.canUseThisExecutor(variantQuery, options));
+            expected = null;
+        }
 
         VariantQueryResult<Variant> unfilteredResult = null;
         VariantQueryResult<Variant> result = null;
@@ -261,6 +296,8 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
             QueryOptions emptyOptions = new QueryOptions();
             emptyOptions.putIfNotEmpty(QueryOptions.INCLUDE, options.getString(QueryOptions.INCLUDE));
             emptyOptions.putIfNotEmpty(QueryOptions.EXCLUDE, options.getString(QueryOptions.EXCLUDE));
+            logger.info("## unfiltered query " + VariantQueryUtils.printQuery(emptyQuery));
+            logger.info("## unfiltered options " + emptyOptions.toJson());
             unfilteredResult = dbQueryExecutor.get(variantStorageEngine.parseQuery(emptyQuery, emptyOptions));
         }
 
@@ -272,10 +309,11 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
                 result = variantQueryExecutor.get(variantQuery);
                 logger.info("### Num results : " + result.getNumResults());
                 logger.info("###################");
-                expected.getResults().sort(Comparator.comparing(Variant::toString));
-                result.getResults().sort(Comparator.comparing(Variant::toString));
-                Assert.assertEquals(expected.getResults(), result.getResults());
-
+                if (expected != null) {
+                    expected.getResults().sort(Comparator.comparing(Variant::toString));
+                    result.getResults().sort(Comparator.comparing(Variant::toString));
+                    Assert.assertEquals(expected.getResults(), result.getResults());
+                }
                 assertThat(result, numResults(gt(0)));
 
                 if (matcher != null) {

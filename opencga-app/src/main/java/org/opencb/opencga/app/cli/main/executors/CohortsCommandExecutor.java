@@ -128,8 +128,8 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), CohortAclUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-            putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
+            putNestedIfNotEmpty(beanParams, "permissions", commandOptions.permissions, true);
+            putNestedIfNotEmpty(beanParams, "cohort", commandOptions.cohort, true);
 
             cohortAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -163,7 +163,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), TsvAnnotationParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
+            putNestedIfNotEmpty(beanParams, "content", commandOptions.content, true);
 
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -200,16 +200,16 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), CohortCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
-            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "status.id", commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name", commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description", commandOptions.statusDescription, true);
 
             cohortCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -285,16 +285,16 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), CohortGenerateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
-            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.bodyId, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.bodyCreationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.bodyModificationDate, true);
+            putNestedIfNotEmpty(beanParams, "status.id", commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name", commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description", commandOptions.statusDescription, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             cohortGenerateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -411,16 +411,16 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), CohortUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
-            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "status.id", commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name", commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description", commandOptions.statusDescription, true);
 
             cohortUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
