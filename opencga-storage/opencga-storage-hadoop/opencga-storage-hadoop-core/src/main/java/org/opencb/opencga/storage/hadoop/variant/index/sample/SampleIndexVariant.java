@@ -5,7 +5,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotation;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -15,24 +15,24 @@ import java.util.Objects;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
 
-public class SampleVariantIndexEntry {
+public class SampleIndexVariant {
 
     private final Variant variant;
     private final String genotype;
     private final List<BitBuffer> filesIndex;
     private final List<ByteBuffer> fileData;
-    private final AnnotationIndexEntry annotationIndexEntry;
+    private final SampleIndexVariantAnnotation annotationIndex;
     private final Integer meCode;
     private final Byte parentsCode;
 
-    public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex, ByteBuffer fileData) {
+    public SampleIndexVariant(Variant variant, BitBuffer fileIndex, ByteBuffer fileData) {
         this(variant, Collections.singletonList(fileIndex),
                 fileData == null ? Collections.emptyList() : Collections.singletonList(fileData),
                 null, null, null, null);
     }
 
-    public SampleVariantIndexEntry(Variant variant, List<BitBuffer> filesIndex,  List<ByteBuffer> fileData, String genotype,
-                                   AnnotationIndexEntry annotationIndexEntry, Byte parentsCode, Integer meCode) {
+    public SampleIndexVariant(Variant variant, List<BitBuffer> filesIndex, List<ByteBuffer> fileData, String genotype,
+                              SampleIndexVariantAnnotation annotationIndex, Byte parentsCode, Integer meCode) {
         if (CollectionUtils.isEmpty(variant.getImpl().getStudies())) {
             this.variant = variant;
         } else {
@@ -53,7 +53,7 @@ public class SampleVariantIndexEntry {
         this.filesIndex = filesIndex;
         this.fileData = fileData;
         this.genotype = genotype;
-        this.annotationIndexEntry = annotationIndexEntry;
+        this.annotationIndex = annotationIndex;
         this.meCode = meCode;
         this.parentsCode = parentsCode;
     }
@@ -91,8 +91,8 @@ public class SampleVariantIndexEntry {
         return parentsCode;
     }
 
-    public AnnotationIndexEntry getAnnotationIndexEntry() {
-        return annotationIndexEntry;
+    public SampleIndexVariantAnnotation getAnnotationIndexEntry() {
+        return annotationIndex;
     }
 
     @Override
@@ -103,7 +103,7 @@ public class SampleVariantIndexEntry {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        SampleVariantIndexEntry that = (SampleVariantIndexEntry) o;
+        SampleIndexVariant that = (SampleIndexVariant) o;
         return filesIndex.equals(that.filesIndex) && Objects.equals(variant, that.variant);
     }
 
@@ -143,22 +143,22 @@ public class SampleVariantIndexEntry {
         sb.append(separator).append("parents: ")
                 .append(this.parentsCode);
 
-        if (annotationIndexEntry != null) {
-            annotationIndexEntry.toString(schema, separator, sb);
+        if (annotationIndex != null) {
+            annotationIndex.toString(schema, separator, sb);
         }
         return sb.toString();
     }
 
-    public static class SampleVariantIndexEntryComparator implements Comparator<SampleVariantIndexEntry> {
+    public static class SampleIndexVariantComparator implements Comparator<SampleIndexVariant> {
 
         private final SampleIndexSchema schema;
 
-        public SampleVariantIndexEntryComparator(SampleIndexSchema schema) {
+        public SampleIndexVariantComparator(SampleIndexSchema schema) {
             this.schema = schema;
         }
 
         @Override
-        public int compare(SampleVariantIndexEntry o1, SampleVariantIndexEntry o2) {
+        public int compare(SampleIndexVariant o1, SampleIndexVariant o2) {
             int compare = INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(o1.variant, o2.variant);
             if (compare != 0) {
                 return compare;

@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotation;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -38,12 +38,12 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
      */
     Variant nextVariant();
 
-    default SampleVariantIndexEntry nextSampleVariantIndexEntry() {
-        AnnotationIndexEntry annotationIndexEntry = nextAnnotationIndexEntry();
-        if (annotationIndexEntry != null) {
+    default SampleIndexVariant nextSampleIndexVariant() {
+        SampleIndexVariantAnnotation annotationIndex = nextAnnotationIndexEntry();
+        if (annotationIndex != null) {
             // Make a copy of the AnnotationIndexEntry!
             // This object could be reused
-            annotationIndexEntry = new AnnotationIndexEntry(annotationIndexEntry);
+            annotationIndex = new SampleIndexVariantAnnotation(annotationIndex);
         }
         List<BitBuffer> filesIndex = new ArrayList<>();
         List<ByteBuffer> filesData = new ArrayList<>();
@@ -65,7 +65,7 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
         }
         String genotype = nextGenotype();
         Variant variant = next();
-        return new SampleVariantIndexEntry(variant, filesIndex, filesData, genotype, annotationIndexEntry, parentsCode, null);
+        return new SampleIndexVariant(variant, filesIndex, filesData, genotype, annotationIndex, parentsCode, null);
     }
 
     /**
@@ -112,7 +112,7 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
     /**
      * @return the AnnotationIndexEntry of the next element.
      */
-    AnnotationIndexEntry nextAnnotationIndexEntry();
+    SampleIndexVariantAnnotation nextAnnotationIndexEntry();
 
     int getApproxSize();
 }

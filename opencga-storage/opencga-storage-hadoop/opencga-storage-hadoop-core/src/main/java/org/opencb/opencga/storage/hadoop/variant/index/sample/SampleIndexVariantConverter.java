@@ -18,17 +18,17 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
-public class SampleVariantIndexEntryConverter {
+public class SampleIndexVariantConverter {
 
     private final FileIndexSchema fileIndex;
     private final FileDataSchema fileDataSchema;
 
-    public SampleVariantIndexEntryConverter(SampleIndexSchema configuration) {
+    public SampleIndexVariantConverter(SampleIndexSchema configuration) {
         fileIndex = configuration.getFileIndex();
         fileDataSchema = configuration.getFileData();
     }
 
-    public SampleVariantIndexEntry createSampleVariantIndexEntry(int sampleIdx, int filePosition, Variant variant) {
+    public SampleIndexVariant createSampleIndexVariant(int sampleIdx, int filePosition, Variant variant) {
         // Expecting only one study and only one file
         StudyEntry study = variant.getStudies().get(0);
         FileEntry file = study.getFiles().get(0);
@@ -38,17 +38,17 @@ public class SampleVariantIndexEntryConverter {
         ByteBuffer fileDataIndexValue = createFileDataIndexValue(variant, filePosition, file.getCall(),
                 study.getSecondaryAlternates());
 
-        return new SampleVariantIndexEntry(variant, fileIndexValue, fileDataIndexValue);
+        return new SampleIndexVariant(variant, fileIndexValue, fileDataIndexValue);
     }
 
-    public SampleVariantIndexEntry createSampleVariantIndexEntry(
+    public SampleIndexVariant createSampleIndexVariant(
             int filePosition, Variant variant, OriginalCall call, List<AlternateCoordinate> alts,
             Function<String, String> fileAttributes, Function<String, String> sampleData) {
         BitBuffer fileIndexValue =  createFileIndexValue(variant.getType(), filePosition, fileAttributes, sampleData);
         ByteBuffer fileDataIndexValue = createFileDataIndexValue(variant, filePosition, call,
                 alts);
 
-        return new SampleVariantIndexEntry(variant, fileIndexValue, fileDataIndexValue);
+        return new SampleIndexVariant(variant, fileIndexValue, fileDataIndexValue);
     }
 
     /**

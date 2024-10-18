@@ -28,7 +28,7 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadata
 import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
@@ -46,7 +46,7 @@ import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
-import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotationConverter.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField.DELTA;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.buildLocusQueries;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.validSampleIndexQuery;
@@ -1675,7 +1675,7 @@ public class SampleIndexQueryParserTest {
         SampleAnnotationIndexQuery indexQuery;
 
         // Query fully covered by summary index.
-        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(OR, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)));
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(OR, new ArrayList<>(SampleIndexVariantAnnotationConverter.POP_FREQ_ANY_001_FILTERS)));
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
@@ -1708,7 +1708,7 @@ public class SampleIndexQueryParserTest {
         assertEquals(Collections.singleton(ANNOT_POPULATION_ALTERNATE_FREQUENCY), validParams(query, true));
 
         // Summary index query plus a new filter. Use only popFreqIndex
-        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(OR, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)) + OR + "s1:ALL<0.005");
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(OR, new ArrayList<>(SampleIndexVariantAnnotationConverter.POP_FREQ_ANY_001_FILTERS)) + OR + "s1:ALL<0.005");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
@@ -1717,7 +1717,7 @@ public class SampleIndexQueryParserTest {
         assertEquals(Collections.emptySet(), validParams(query, true));
 
         // Summary index query with AND instead of OR filter. Use both, summary and popFreqIndex
-        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(AND, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)));
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(AND, new ArrayList<>(SampleIndexVariantAnnotationConverter.POP_FREQ_ANY_001_FILTERS)));
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
@@ -1727,7 +1727,7 @@ public class SampleIndexQueryParserTest {
 
         // Summary index query with AND instead of OR filter plus a new filter. Use both, summary and popFreqIndex. Leave extra filter in query
         query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
-                String.join(AND, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)) + AND + "s1:ALL<0.065132");
+                String.join(AND, new ArrayList<>(SampleIndexVariantAnnotationConverter.POP_FREQ_ANY_001_FILTERS)) + AND + "s1:ALL<0.065132");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
@@ -1737,7 +1737,7 @@ public class SampleIndexQueryParserTest {
 
         // Summary index query with AND instead of OR filter plus a new filter. Use both, summary and popFreqIndex. Clear covered query
         query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
-                String.join(AND, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)) + AND + "s1:ALL<0.005");
+                String.join(AND, new ArrayList<>(SampleIndexVariantAnnotationConverter.POP_FREQ_ANY_001_FILTERS)) + AND + "s1:ALL<0.005");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);

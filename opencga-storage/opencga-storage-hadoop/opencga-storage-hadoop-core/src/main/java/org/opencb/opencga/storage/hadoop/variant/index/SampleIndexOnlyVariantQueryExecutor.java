@@ -41,7 +41,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,8 +174,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             variantIterator = sampleIndexDBAdaptor.iterator(sampleIndexQuery, options);
             variantIterator = variantIterator.map(v -> v.setId(v.toString()));
         } else {
-            logger.info("Using sample index raw iterator Iterator<SampleVariantIndexEntry>");
-            CloseableIterator<SampleVariantIndexEntry> rawIterator;
+            logger.info("Using sample index raw iterator Iterator<{}>", SampleIndexVariant.class.getSimpleName());
+            CloseableIterator<SampleIndexVariant> rawIterator;
             try {
                 rawIterator = sampleIndexDBAdaptor.rawIterator(sampleIndexQuery, options);
             } catch (IOException e) {
@@ -183,7 +183,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             }
             boolean includeAll = parsedQuery.getSource() == VariantQuerySource.SECONDARY_SAMPLE_INDEX
                     || parsedQuery.getInputQuery().getBoolean("includeAllFromSampleIndex", false);
-            SampleVariantIndexEntryToVariantConverter converter = new SampleVariantIndexEntryToVariantConverter(
+            SampleIndexVariantToVariantConverter converter = new SampleIndexVariantToVariantConverter(
                     parsedQuery, sampleIndexQuery, dbAdaptor.getMetadataManager(), includeAll);
             variantIterator = VariantDBIterator.wrapper(Iterators.transform(rawIterator, converter::convert));
             AddMissingDataTask task = new AddMissingDataTask(
@@ -297,7 +297,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     }
 
 
-    private static class SampleVariantIndexEntryToVariantConverter implements Converter<SampleVariantIndexEntry, Variant> {
+    private static class SampleIndexVariantToVariantConverter implements Converter<SampleIndexVariant, Variant> {
 
         enum FamilyRole {
             MOTHER,
@@ -320,8 +320,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         private final SampleIndexSchema schema;
 
 
-        SampleVariantIndexEntryToVariantConverter(ParsedVariantQuery parseQuery, SampleIndexQuery sampleIndexQuery,
-                                                  VariantStorageMetadataManager metadataManager, boolean includeAll) {
+        SampleIndexVariantToVariantConverter(ParsedVariantQuery parseQuery, SampleIndexQuery sampleIndexQuery,
+                                             VariantStorageMetadataManager metadataManager, boolean includeAll) {
             schema = sampleIndexQuery.getSchema();
             this.includeAll = includeAll;
 
@@ -421,7 +421,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         }
 
         @Override
-        public Variant convert(SampleVariantIndexEntry entry) {
+        public Variant convert(SampleIndexVariant entry) {
             Variant v = entry.getVariant();
             v.setId(v.toString());
             if (includeStudy) {

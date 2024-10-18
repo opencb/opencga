@@ -125,15 +125,15 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         return map;
     }
 
-    public Map<String, TreeSet<SampleVariantIndexEntry>> convertToMapSampleVariantIndex(Result result) {
+    public Map<String, TreeSet<SampleIndexVariant>> convertToMapSampleVariantIndex(Result result) {
         if (result == null || result.isEmpty()) {
             return Collections.emptyMap();
         }
         Map<String, List<Variant>> map = convertToMap(result);
 
-        Map<String, TreeSet<SampleVariantIndexEntry>> mapVariantFileIndex = new HashMap<>();
-        SampleVariantIndexEntry.SampleVariantIndexEntryComparator comparator
-                = new SampleVariantIndexEntry.SampleVariantIndexEntryComparator(schema);
+        Map<String, TreeSet<SampleIndexVariant>> mapVariantFileIndex = new HashMap<>();
+        SampleIndexVariant.SampleIndexVariantComparator comparator
+                = new SampleIndexVariant.SampleIndexVariantComparator(schema);
         Map<String, BitInputStream> fileIndexMap = new HashMap<>();
         Map<String, ByteBuffer> fileDataMap = new HashMap<>();
         for (Cell cell : result.rawCells()) {
@@ -155,7 +155,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         }
         for (Map.Entry<String, BitInputStream> entry : fileIndexMap.entrySet()) {
             String gt = entry.getKey();
-            TreeSet<SampleVariantIndexEntry> values = new TreeSet<>(comparator);
+            TreeSet<SampleIndexVariant> values = new TreeSet<>(comparator);
             mapVariantFileIndex.put(gt, values);
 
             BitInputStream fileIndexStream = entry.getValue();
@@ -171,7 +171,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                     } else {
                         fileDataEntry = fileDataSchema.readNextDocument(fileDataBuffer);
                     }
-                    values.add(new SampleVariantIndexEntry(variant, fileIndexEntry, fileDataEntry));
+                    values.add(new SampleIndexVariant(variant, fileIndexEntry, fileDataEntry));
                 } while (this.fileIndexSchema.isMultiFile(fileIndexEntry));
             }
         }

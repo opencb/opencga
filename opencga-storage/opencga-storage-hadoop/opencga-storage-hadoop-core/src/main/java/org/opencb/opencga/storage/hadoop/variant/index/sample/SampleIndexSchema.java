@@ -25,7 +25,7 @@ import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
  * {@link SampleIndexEntry}: HBase row. Contains all the information from a sample in a specific region.
  * {@link SampleIndexEntry.SampleIndexGtEntry}: HBase columns grouped by genotype.
  * {@link SampleIndexEntryIterator}: Iterator over the variants of a {@link SampleIndexEntry}
- * {@link SampleVariantIndexEntry}: Logical view over an entry for a specific variant and corresponding keys
+ * {@link SampleIndexVariant}: Logical view over an entry for a specific variant and corresponding keys
  * <p>
  * - Row : {SAMPLE_ID}_{CHROMOSOME}_{BATCH_START}
  *   - Variants columns:          {GT} -> [{variant1}, {variant2}, {variant3}, ...]

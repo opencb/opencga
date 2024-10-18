@@ -37,27 +37,27 @@ public class SampleIndexEntryPutBuilderTest {
         assertFalse(builder.containsVariant(newVariantIndexEntry("1:500:A:C", (short) 30)));
     }
 
-    protected SampleVariantIndexEntry newVariantIndexEntry(String s, short i) {
+    protected SampleIndexVariant newVariantIndexEntry(String s, short i) {
         byte[] v = new byte[2];
         Bytes.putShort(v, 0, i);
-        return new SampleVariantIndexEntry(new Variant(s), new BitBuffer(v), null);
+        return new SampleIndexVariant(new Variant(s), new BitBuffer(v), null);
     }
 
     @Test
     public void testBuild() {
         SampleIndexSchema schema = SampleIndexSchema.defaultSampleIndexSchema();
-        SampleVariantIndexEntryConverter c = new SampleVariantIndexEntryConverter(schema);
+        SampleIndexVariantConverter c = new SampleIndexVariantConverter(schema);
 
         SampleIndexEntryPutBuilder builder = new SampleIndexEntryPutBuilder(1, "1", 10, schema, false, true);
-        assertTrue(builder.add("0/1", new SampleVariantIndexEntry(new Variant("1:100:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
-        assertTrue(builder.add("0/1", new SampleVariantIndexEntry(new Variant("1:200:A:C"), c.createFileIndexValue(SNV, 1, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
-        assertTrue(builder.add("0/1", new SampleVariantIndexEntry(new Variant("1:200:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
-        assertTrue(builder.add("1/1", new SampleVariantIndexEntry(new Variant("1:300:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
-        assertTrue(builder.add("1/1", new SampleVariantIndexEntry(new Variant("1:400:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
+        assertTrue(builder.add("0/1", new SampleIndexVariant(new Variant("1:100:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
+        assertTrue(builder.add("0/1", new SampleIndexVariant(new Variant("1:200:A:C"), c.createFileIndexValue(SNV, 1, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
+        assertTrue(builder.add("0/1", new SampleIndexVariant(new Variant("1:200:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
+        assertTrue(builder.add("1/1", new SampleIndexVariant(new Variant("1:300:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
+        assertTrue(builder.add("1/1", new SampleIndexVariant(new Variant("1:400:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
 
-        assertFalse(builder.add("0/1", new SampleVariantIndexEntry(new Variant("1:200:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
-        assertTrue(builder.add("0/1", new SampleVariantIndexEntry(new Variant("1:200:A:C"), c.createFileIndexValue(INDEL, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
-        assertFalse(builder.add("0/1", new SampleVariantIndexEntry(new Variant("1:200:A:C"), c.createFileIndexValue(INDEL, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
+        assertFalse(builder.add("0/1", new SampleIndexVariant(new Variant("1:200:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
+        assertTrue(builder.add("0/1", new SampleIndexVariant(new Variant("1:200:A:C"), c.createFileIndexValue(INDEL, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
+        assertFalse(builder.add("0/1", new SampleIndexVariant(new Variant("1:200:A:C"), c.createFileIndexValue(INDEL, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList()), null)));
 
 
         Put build = builder.build();

@@ -16,14 +16,14 @@ import java.util.stream.IntStream;
 import static org.junit.Assert.assertEquals;
 
 @Category(ShortTests.class)
-public class SampleVariantIndexEntryConverterTest {
+public class SampleIndexVariantConverterTest {
 
-    private SampleVariantIndexEntryConverter converter;
+    private SampleIndexVariantConverter converter;
     private FileIndexSchema fileIndex;
 
     @Before
     public void setUp() throws Exception {
-        converter = new SampleVariantIndexEntryConverter(SampleIndexSchema.defaultSampleIndexSchema());
+        converter = new SampleIndexVariantConverter(SampleIndexSchema.defaultSampleIndexSchema());
         fileIndex = (SampleIndexSchema.defaultSampleIndexSchema()).getFileIndex();
     }
 

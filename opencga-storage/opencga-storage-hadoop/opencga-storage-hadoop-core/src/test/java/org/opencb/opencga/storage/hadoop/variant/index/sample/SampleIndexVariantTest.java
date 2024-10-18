@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Category(ShortTests.class)
-public class SampleVariantIndexEntryTest {
+public class SampleIndexVariantTest {
 
     private FileIndexSchema fileIndex;
 
@@ -27,7 +27,7 @@ public class SampleVariantIndexEntryTest {
     @Test
     public void testComparator() {
 
-        List<SampleVariantIndexEntry> expected = Arrays.asList(
+        List<SampleIndexVariant> expected = Arrays.asList(
                 newVariantIndexEntry("1:100:A:C", 0),
                 newVariantIndexEntry("1:200:A:C", ((1 << 4)), true),
                 newVariantIndexEntry("1:200:A:C", (2 << 4)),
@@ -36,10 +36,10 @@ public class SampleVariantIndexEntryTest {
         );
 
         for (int i = 0; i < 10; i++) {
-            ArrayList<SampleVariantIndexEntry> actual = new ArrayList<>(expected);
+            ArrayList<SampleIndexVariant> actual = new ArrayList<>(expected);
             Collections.shuffle(actual);
 
-            actual.sort(new SampleVariantIndexEntry.SampleVariantIndexEntryComparator(SampleIndexSchema.defaultSampleIndexSchema()));
+            actual.sort(new SampleIndexVariant.SampleIndexVariantComparator(SampleIndexSchema.defaultSampleIndexSchema()));
 
             Assert.assertEquals(expected, actual);
         }
@@ -47,17 +47,17 @@ public class SampleVariantIndexEntryTest {
 
     }
 
-    protected SampleVariantIndexEntry newVariantIndexEntry(String s, int i) {
+    protected SampleIndexVariant newVariantIndexEntry(String s, int i) {
         return newVariantIndexEntry(s, i, false);
     }
 
-    protected SampleVariantIndexEntry newVariantIndexEntry(String s, int i, boolean multiFileIndex) {
+    protected SampleIndexVariant newVariantIndexEntry(String s, int i, boolean multiFileIndex) {
         byte[] v = new byte[4];
         Bytes.putInt(v, 0, i);
         BitBuffer fileIndex = new BitBuffer(v);
         if (multiFileIndex) {
             this.fileIndex.setMultiFile(fileIndex, 0);
         }
-        return new SampleVariantIndexEntry(new Variant(s), fileIndex, null);
+        return new SampleIndexVariant(new Variant(s), fileIndex, null);
     }
 }

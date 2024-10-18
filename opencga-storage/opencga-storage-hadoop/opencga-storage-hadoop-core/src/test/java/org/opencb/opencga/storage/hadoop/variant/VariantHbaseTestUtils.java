@@ -463,7 +463,7 @@ public class VariantHbaseTestUtils {
                     out.println("");
                     out.println("SAMPLE: " + sampleName + " (id=" + sampleId + ")");
                     while (it.hasNext()) {
-                        SampleVariantIndexEntry entry = it.next();
+                        SampleIndexVariant entry = it.next();
                         out.println("_______________________");
                         out.println(entry.toString(schema));
                     }

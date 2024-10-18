@@ -19,8 +19,8 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadata
 import org.opencb.opencga.storage.core.variant.query.OpValue;
 import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotationConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotationPutBuilder;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverterTest.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotationConverterTest.*;
 
 @Category(ShortTests.class)
 public class SampleIndexEntryFilterTest {
@@ -123,9 +123,9 @@ public class SampleIndexEntryFilterTest {
     }
 
     private SampleIndexEntry getSampleIndexEntry1() {
-        AnnotationIndexConverter converter = new AnnotationIndexConverter(schema);
+        SampleIndexVariantAnnotationConverter converter = new SampleIndexVariantAnnotationConverter(schema);
         //{0.001, 0.005, 0.01};
-        Map<String, byte[]> map = new AnnotationIndexPutBuilder(schema)
+        Map<String, byte[]> map = new SampleIndexVariantAnnotationPutBuilder(schema)
                 .add(converter.convert(annot(
                         pf("s1", "ALL", 0.0),
                         pf("s2", "ALL", 0.0),
@@ -199,9 +199,9 @@ public class SampleIndexEntryFilterTest {
     }
 
     private SampleIndexEntry getSampleIndexEntry2() {
-        AnnotationIndexConverter converter = new AnnotationIndexConverter(schema);
+        SampleIndexVariantAnnotationConverter converter = new SampleIndexVariantAnnotationConverter(schema);
 
-        Map<String, byte[]> map = new AnnotationIndexPutBuilder(schema)
+        Map<String, byte[]> map = new SampleIndexVariantAnnotationPutBuilder(schema)
                 .add(converter.convert(annot(
                         ct("missense_variant", "protein_coding"),
                         ct("start_lost", "nonsense_mediated_decay"),

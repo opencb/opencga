@@ -269,15 +269,15 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         return rawInternalIterator(sampleIndexQuery, sampleIndexQuery.getSchema());
     }
 
-    public CloseableIterator<SampleVariantIndexEntry> rawIterator(Query query) throws IOException {
+    public CloseableIterator<SampleIndexVariant> rawIterator(Query query) throws IOException {
         return rawIterator(parseSampleIndexQuery(query));
     }
 
-    public CloseableIterator<SampleVariantIndexEntry> rawIterator(SampleIndexQuery query) throws IOException {
+    public CloseableIterator<SampleIndexVariant> rawIterator(SampleIndexQuery query) throws IOException {
         return rawIterator(query, new QueryOptions());
     }
 
-    public CloseableIterator<SampleVariantIndexEntry> rawIterator(SampleIndexQuery query, QueryOptions options) throws IOException {
+    public CloseableIterator<SampleIndexVariant> rawIterator(SampleIndexQuery query, QueryOptions options) throws IOException {
         Map<String, List<String>> samples = query.getSamplesMap();
 
         if (samples.isEmpty()) {
@@ -323,15 +323,15 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             }
         }
 
-        final CloseableIterator<SampleVariantIndexEntry> iterator;
+        final CloseableIterator<SampleIndexVariant> iterator;
         if (operation.equals(QueryOperation.OR)) {
             logger.info("Union of " + iterators.size() + " sample indexes");
             iterator = new UnionMultiKeyIterator<>(
-                    Comparator.comparing(SampleVariantIndexEntry::getVariant, VariantDBIterator.VARIANT_COMPARATOR), iterators);
+                    Comparator.comparing(SampleIndexVariant::getVariant, VariantDBIterator.VARIANT_COMPARATOR), iterators);
         } else {
             logger.info("Intersection of " + iterators.size() + " sample indexes plus " + negatedIterators.size() + " negated indexes");
             iterator = new IntersectMultiKeyIterator<>(
-                    Comparator.comparing(SampleVariantIndexEntry::getVariant, VariantDBIterator.VARIANT_COMPARATOR),
+                    Comparator.comparing(SampleIndexVariant::getVariant, VariantDBIterator.VARIANT_COMPARATOR),
                     iterators, negatedIterators);
         }
 
