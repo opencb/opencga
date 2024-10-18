@@ -27,22 +27,17 @@ public class ResourceFetcherToolParams extends ToolParams {
     @DataField(id = "baseUrl", description = FieldConstants.DOWNLOAD_ALL_RESOURCES_BASEURL_DESCRIPTION)
     private String baseUrl;
 
-    @DataField(id = "overwrite", description = FieldConstants.DOWNLOAD_ALL_RESOURCES_OVERWRITE_DESCRIPTION)
-    private Boolean overwrite;
-
     public ResourceFetcherToolParams() {
     }
 
-    public ResourceFetcherToolParams(String baseUrl, Boolean overwrite) {
+    public ResourceFetcherToolParams(String baseUrl) {
         this.baseUrl = baseUrl;
-        this.overwrite = overwrite;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("DownloadResourcesParams{");
         sb.append("baseUrl='").append(baseUrl).append('\'');
-        sb.append(", overwrite=").append(overwrite);
         sb.append('}');
         return sb.toString();
     }
@@ -53,15 +48,6 @@ public class ResourceFetcherToolParams extends ToolParams {
 
     public ResourceFetcherToolParams setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
-        return this;
-    }
-
-    public Boolean getOverwrite() {
-        return overwrite;
-    }
-
-    public ResourceFetcherToolParams setOverwrite(Boolean overwrite) {
-        this.overwrite = overwrite;
         return this;
     }
 }

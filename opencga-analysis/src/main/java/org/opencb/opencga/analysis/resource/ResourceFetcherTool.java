@@ -1,7 +1,7 @@
 package org.opencb.opencga.analysis.resource;
 
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
@@ -11,7 +11,6 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 
 import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_FOLDER_NAME;
 
@@ -48,9 +47,8 @@ public class ResourceFetcherTool extends OpenCgaTool {
         step(ID, this::fetchResources);
     }
 
-    private void fetchResources() throws IOException, NoSuchAlgorithmException, CatalogException {
+    private void fetchResources() throws ResourceException {
         ResourceManager resourceManager = new ResourceManager(getOpencgaHome(), analysisParams.getBaseUrl());
-        resourceManager.fetchAllResources(getOutDir().resolve(RESOURCES_FOLDER_NAME), Boolean.TRUE.equals(analysisParams.getOverwrite()),
-                catalogManager, token);
+        resourceManager.fetchAllResources(getOutDir().resolve(RESOURCES_FOLDER_NAME), catalogManager, token);
     }
 }

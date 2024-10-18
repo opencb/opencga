@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_FOLDER_NAME;
@@ -56,28 +55,22 @@ public class ResourceManagerTest extends AbstractManagerTest {
     }
 
 
-    @Test
-    public void testFetchRelatednessResource() throws IOException, NoSuchAlgorithmException {
+    @Test(expected = ResourceException.class)
+    public void testFetchRelatednessResource() throws ResourceException {
         String analysisId = "qc"; //""relatedness";
         String resourceName = "relatedness_thresholds.tsv"; //""variants.prune.in";
 
         Assert.assertFalse(Files.exists(analysisResourcePath.resolve(analysisId).resolve(resourceName)));
 
         File file = resourceManager.getResourceFile(analysisId, resourceName);
-        Assert.assertTrue(Files.exists(file.toPath()));
-        Assert.assertTrue(Files.exists(analysisResourcePath.resolve(analysisId).resolve(resourceName)));
-
-        File file1 = resourceManager.getResourceFile(analysisId, resourceName);
-        Assert.assertTrue(Files.exists(file1.toPath()));
-        System.out.println("openCgaHome = " + openCgaHome);
     }
 
     @Test
-    public void testFetchAllResources() throws IOException, NoSuchAlgorithmException, CatalogException {
+    public void testFetchAllResources() throws IOException, ResourceException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, true, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
+        resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
         for (AnalysisResource analysisResource : resourceMetadata.getAnalysisResources()) {
             for (String resource : analysisResource.getResources()) {
                 Assert.assertTrue(Files.exists(analysisResourcePath.resolve(analysisResource.getId()).resolve(resource)));
@@ -85,33 +78,33 @@ public class ResourceManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Test(expected = CatalogAuthorizationException.class)
-    public void testFetchAllResourcesNoAdmin() throws IOException, NoSuchAlgorithmException, CatalogException {
-        resourceManager.fetchAllResources(null, true, catalogManagerResource.getCatalogManager(), normalToken1);
+    @Test(expected = ResourceException.class)
+    public void testFetchAllResourcesNoAdmin() throws ResourceException {
+        resourceManager.fetchAllResources(null, catalogManagerResource.getCatalogManager(), normalToken1);
     }
 
     @Test
-    public void testFetchAllResourcesNoOverwrite() throws IOException, NoSuchAlgorithmException, CatalogException {
+    public void testFetchAllResourcesNoOverwrite() throws IOException, ResourceException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, true, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
+        resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
         for (AnalysisResource analysisResource : resourceMetadata.getAnalysisResources()) {
             for (String resource : analysisResource.getResources()) {
                 Assert.assertTrue(Files.exists(analysisResourcePath.resolve(analysisResource.getId()).resolve(resource)));
             }
         }
 
-        resourceManager.fetchAllResources(outDir, false, catalogManagerResource.getCatalogManager(),
+        resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(),
                 catalogManagerResource.getAdminToken());
     }
 
     @Test
-    public void testFetchResourcesForAGivenAnalysis() throws IOException, NoSuchAlgorithmException, CatalogException {
+    public void testFetchResourcesForAGivenAnalysis() throws IOException, ResourceException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, true, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
+        resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
 
         String analysisId = "qc";
         AnalysisResource analysisResource = null;
@@ -131,11 +124,11 @@ public class ResourceManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testFetchAGivenResource() throws IOException, NoSuchAlgorithmException, CatalogException {
+    public void testFetchAGivenResource() throws IOException, ResourceException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, true, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
+        resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
 
         String analysisId = "liftover";
         String resourceName = "chain.frq";
