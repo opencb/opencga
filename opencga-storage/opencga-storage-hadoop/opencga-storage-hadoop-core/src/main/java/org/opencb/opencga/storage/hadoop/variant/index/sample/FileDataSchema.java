@@ -100,7 +100,8 @@ public class FileDataSchema extends DataSchema {
                     alternate += call.getVariantId().substring(alternatesIdx);
                 }
                 String alternateAndExtras = VariantPhoenixKeyFactory
-                        .buildSymbolicAlternate(reference, alternate, originalVariant.getEnd(), originalVariant.getSv());
+                        .buildSymbolicAlternate(reference, alternate,
+                                originalVariant.getStart(), originalVariant.getEnd(), originalVariant.getSv());
 
                 int relativeStart = originalVariant.getStart() - variant.getStart();
 
