@@ -136,7 +136,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
                         cliParamsBuilder.append(workflowVariable.getDefaultValue()).append(" ");
                     } else if (workflowVariable.isOutput()) {
                         processOutputCli("", inputFileUtils, cliParamsBuilder);
-                    } else if (workflowVariable.isRequired() && workflowVariable.getType() != WorkflowVariable.WorkflowType.FLAG) {
+                    } else if (workflowVariable.isRequired() && workflowVariable.getType() != WorkflowVariable.WorkflowVariableType.FLAG) {
                         throw new ToolException("Missing value for mandatory parameter: '" + variableId + "'.");
                     }
                 }
