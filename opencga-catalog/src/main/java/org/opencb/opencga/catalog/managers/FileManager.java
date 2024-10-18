@@ -587,6 +587,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 path = path.substring(1);
             }
             if (isResource) {
+                // Final path should be one from the RESOURCES folder
                 path = getResourcesPath(path);
             }
 
@@ -3340,6 +3341,14 @@ public class FileManager extends AnnotationSetManager<File> {
         throw new CatalogException("Cannot delete file: " + file.getName() + ". The status is " + file.getInternal().getStatus().getId());
     }
 
+    private OpenCGAResult<File> getRootFile(String organizationId, long studyUid)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), "");
+        return getFileDBAdaptor(organizationId).get(query, QueryOptions.empty());
+    }
+
     /**
      * Create the parent directories that are needed.
      *
@@ -3360,12 +3369,12 @@ public class FileManager extends AnnotationSetManager<File> {
             if (checkPermissions) {
                 authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_FILES);
             }
-            return null;
+            return getRootFile(organizationId, study.getUid());
         }
 
         String stringPath = path.toString();
         if (("/").equals(stringPath)) {
-            return null;
+            return getRootFile(organizationId, study.getUid());
         }
 
         logger.debug("Path: {}", stringPath);
@@ -3385,11 +3394,12 @@ public class FileManager extends AnnotationSetManager<File> {
 
         boolean isResource = false;
         if (getFileDBAdaptor(organizationId).count(query).getNumMatches() == 0) {
-            File tmpFile = createParents(organizationId, study, userId, studyURI, path.getParent(), checkPermissions).first();
-            isResource = tmpFile.isResource();
+            OpenCGAResult<File> parents = createParents(organizationId, study, userId, studyURI, path.getParent(), checkPermissions);
+            isResource = parents.first().isResource();
         } else {
+            OpenCGAResult<File> result = getFileDBAdaptor(organizationId).get(query, INCLUDE_FILE_IDS);
             if (checkPermissions) {
-                File tmpFile = getFileDBAdaptor(organizationId).get(query, INCLUDE_FILE_IDS).first();
+                File tmpFile = result.first();
                 if (tmpFile.isResource()) {
                     authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
                 } else {
@@ -3397,7 +3407,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             FilePermissions.WRITE);
                 }
             }
-            return null;
+            return result;
         }
 
         String parentPath = getParentPath(stringPath);

@@ -113,6 +113,34 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testCreateResourcesFile() throws CatalogException {
+        FileCreateParams fileCreateParams = new FileCreateParams()
+                .setType(File.Type.FILE)
+                .setPath("data/test/folder/file.txt")
+                .setResource(true)
+                .setDescription("My description")
+                .setContent("blabla");
+        File file = fileManager.create(studyFqn, fileCreateParams, true, studyAdminToken1).first();
+        assertTrue(file.isResource());
+        assertNotEquals(fileCreateParams.getPath(), file.getPath());
+        assertTrue(file.getPath().startsWith("RESOURCES/"));
+
+        // Only the study admin can create a resources file. Will try with some other users with generic WRITE file access
+        catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId1,
+                new StudyAclParams(StudyPermissions.Permissions.WRITE_FILES.name(), ""), ParamUtils.AclAction.ADD, ownerToken);
+
+        FileCreateParams fileCreateParams2 = new FileCreateParams()
+                .setType(File.Type.FILE)
+                .setPath("data/test/folder/file2.txt")
+                .setResource(true)
+                .setDescription("My description")
+                .setContent("blabla");
+        CatalogAuthorizationException exception = assertThrows(CatalogAuthorizationException.class,
+                () -> fileManager.create(studyFqn, fileCreateParams2, true, normalToken1));
+        assertTrue(exception.getMessage().contains("study administrator"));
+    }
+
+    @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
         StudyAclParams aclParams = new StudyAclParams("", "analyst");
         catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId2, aclParams, ParamUtils.AclAction.ADD, ownerToken);
@@ -1097,7 +1125,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testCreateFolder() throws Exception {
         Set<String> paths = fileManager.search(studyFqn, new Query("type", File.Type.DIRECTORY), new QueryOptions(), orgAdminToken1)
                 .getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(9, paths.size());
+        assertEquals(10, paths.size());
         assertTrue(paths.containsAll(Arrays.asList("", "JOBS/", "data/", "data/test/", "data/test/folder/", "data/d1/", "data/d1/d2/",
                 "data/d1/d2/d3/", "data/d1/d2/d3/d4/")));
 
@@ -1109,7 +1137,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         paths = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY), new QueryOptions(),
                 orgAdminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(11, paths.size());
+        assertEquals(12, paths.size());
         assertTrue(paths.containsAll(Arrays.asList("", "JOBS/", "data/", "data/test/", "data/test/folder/", "data/d1/", "data/d1/d2/",
                 "data/d1/d2/d3/", "data/d1/d2/d3/d4/", "data/new/", "data/new/folder/")));
 
@@ -1118,7 +1146,8 @@ public class FileManagerTest extends AbstractManagerTest {
 
         fileManager.createFolder(studyFqn, Paths.get("WOLOLO").toString(), true, null, QueryOptions.empty(), orgAdminToken1);
 
-        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", "", null, null, null, null, null, orgAdminToken1).first().getFqn();
+        Study study = new Study().setId("newStudy");
+        String newStudy = catalogManager.getStudyManager().create(project2, study, INCLUDE_RESULT, orgAdminToken1).first().getFqn();
 
         folder = fileManager.createFolder(newStudy, Paths.get("WOLOLO").toString(), true, null,
                 QueryOptions.empty(), orgAdminToken1).first();
@@ -1128,7 +1157,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateFolderAlreadyExists() throws Exception {
         Set<String> paths = fileManager.search(studyFqn3, new Query("type", File.Type.DIRECTORY), new QueryOptions(), orgAdminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(2, paths.size());
+        assertEquals(3, paths.size());
         assertTrue(paths.contains(""));             //root
 //        assertTrue(paths.contains("data/"));        //data
 //        assertTrue(paths.contains("analysis/"));    //analysis
@@ -1481,11 +1510,11 @@ public class FileManagerTest extends AbstractManagerTest {
                 .setContent("content"), true, ownerToken);
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), ownerToken);
-        assertEquals(27, fileTree.getNumResults());
-        assertEquals(27, countElementsInTree(fileTree.first()));
+        assertEquals(28, fileTree.getNumResults());
+        assertEquals(28, countElementsInTree(fileTree.first()));
 
         fileTree = fileManager.getTree(studyFqn, "/", 2, new QueryOptions(), ownerToken);
-        assertEquals(17, fileTree.getNumResults());
+        assertEquals(18, fileTree.getNumResults());
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
         fileTree = fileManager.getTree(studyFqn, "/", 2, options, ownerToken);
@@ -1506,10 +1535,10 @@ public class FileManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, ownerToken);
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(), ownerToken);
-        assertEquals(12, fileTree.getNumResults());
+        assertEquals(13, fileTree.getNumResults());
 
         fileTree = fileManager.getTree("phase2", ".", 5, new QueryOptions(), ownerToken);
-        assertEquals(2, fileTree.getNumResults());
+        assertEquals(3, fileTree.getNumResults());
     }
 
     @Test
@@ -1592,7 +1621,7 @@ public class FileManagerTest extends AbstractManagerTest {
         result = fileManager.search(studyFqn, query, null, ownerToken);
         result.getResults().forEach(f -> assertEquals(File.Type.DIRECTORY, f.getType()));
         int numFolders = result.getNumResults();
-        assertEquals(9, numFolders);
+        assertEquals(10, numFolders);
 
         query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "");
         result = fileManager.search(studyFqn, query, null, ownerToken);
@@ -1602,7 +1631,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE,DIRECTORY");
         result = fileManager.search(studyFqn, query, null, ownerToken);
-        assertEquals(13, result.getNumResults());
+        assertEquals(14, result.getNumResults());
         assertEquals(numFiles + numFolders, result.getNumResults());
 
         query = new Query("type", "FILE");
@@ -1630,7 +1659,7 @@ public class FileManagerTest extends AbstractManagerTest {
         QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 2).append(QueryOptions.COUNT, true);
         result = fileManager.search(studyFqn, new Query(), options, ownerToken);
         assertEquals(2, result.getNumResults());
-        assertEquals(13, result.getNumMatches());
+        assertEquals(14, result.getNumMatches());
     }
 //
 //    @Test
