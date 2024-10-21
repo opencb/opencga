@@ -1,10 +1,7 @@
 package org.opencb.opencga.app.migrations.v3.v3_0_0;
 
 import com.mongodb.client.*;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.InsertOneModel;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Updates;
+import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -17,12 +14,15 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
+import org.opencb.opencga.catalog.utils.FqnUtils;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -62,10 +62,12 @@ public class OrganizationMigration extends MigrationTool {
         ERROR
     }
 
-    public OrganizationMigration(Configuration configuration, String adminPassword, String userId) throws CatalogException {
+    public OrganizationMigration(Configuration configuration, String adminPassword, String userId, String organizationId)
+            throws CatalogException {
         this.configuration = configuration;
         this.adminPassword = adminPassword;
         this.userId = userId;
+        this.organizationId = organizationId;
 
         this.status = checkAndInit();
     }
@@ -193,7 +195,10 @@ public class OrganizationMigration extends MigrationTool {
             this.userIdsToDiscardData = new HashSet<>();
         }
 
-        this.organizationId = this.userId;
+        if (StringUtils.isEmpty(this.organizationId)) {
+            this.organizationId = this.userId;
+        }
+        ParamUtils.checkIdentifier(this.organizationId, "Organization id");
         this.catalogManager = new CatalogManager(configuration);
         return MigrationStatus.PENDING_MIGRATION;
     }
@@ -360,6 +365,10 @@ public class OrganizationMigration extends MigrationTool {
 
         CatalogIOManager ioManager = new CatalogIOManager(configuration);
 
+        Map<String, String> organizationOwnerMap = new HashMap<>();
+        organizationOwnerMap.put(ParamConstants.ADMIN_ORGANIZATION, ParamConstants.OPENCGA_USER_ID);
+        organizationOwnerMap.put(this.organizationId, this.userId);
+
         // Loop over all organizations to perform additional data model changes
         for (String organizationId : mongoDBAdaptorFactory.getOrganizationIds()) {
             ioManager.createOrganization(organizationId);
@@ -400,13 +409,14 @@ public class OrganizationMigration extends MigrationTool {
             }
 
             // Add owner as admin of every study and remove _ownerId field
+            String ownerId = organizationOwnerMap.get(organizationId);
             for (String collection : Arrays.asList(OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION, OrganizationMongoDBAdaptorFactory.DELETED_STUDY_COLLECTION)) {
                 MongoCollection<Document> mongoCollection = database.getCollection(collection);
                 mongoCollection.updateMany(
                         Filters.eq(StudyDBAdaptor.QueryParams.GROUP_ID.key(), ParamConstants.ADMINS_GROUP),
                         Updates.combine(
                                 Updates.unset("_ownerId"),
-                                Updates.push("groups.$.userIds", organizationId)
+                                Updates.push("groups.$.userIds", ownerId)
                 ));
             }
 
@@ -434,14 +444,62 @@ public class OrganizationMigration extends MigrationTool {
             // Set organization counter, owner and authOrigins
             orgCol.updateOne(Filters.eq("id", organizationId), Updates.combine(
                     Updates.set("_idCounter", counter),
-                    Updates.set("owner", organizationId),
+                    Updates.set("owner", ownerId),
                     Updates.set("configuration.authenticationOrigins", authOrigins)
             ));
+        }
+
+        // If the user didn't want to use the userId as the new organization id, we then need to change all the fqn's
+        if (!this.organizationId.equals(this.userId)) {
+            changeFqns();
         }
 
         // Skip current migration for both organizations
         catalogManager.getMigrationManager().skipPendingMigrations(ParamConstants.ADMIN_ORGANIZATION, opencgaToken);
         catalogManager.getMigrationManager().skipPendingMigrations(organizationId, opencgaToken);
+    }
+
+    private void changeFqns() throws CatalogDBException {
+        this.dbAdaptorFactory = this.mongoDBAdaptorFactory;
+
+        // Change project fqn's
+        for (String projectCol : Arrays.asList(OrganizationMongoDBAdaptorFactory.PROJECT_COLLECTION,
+                OrganizationMongoDBAdaptorFactory.DELETED_PROJECT_COLLECTION)) {
+            migrateCollection(projectCol, new Document(), Projections.include("_id", "id"), (document, bulk) -> {
+                String projectId = document.getString("id");
+                String projectFqn = FqnUtils.buildFqn(this.organizationId, projectId);
+                bulk.add(new UpdateOneModel<>(
+                        Filters.eq("_id", document.get("_id")),
+                        new Document("$set", new Document("fqn", projectFqn)))
+                );
+            });
+        }
+
+        MongoDatabase database = mongoDBAdaptorFactory.getMongoDataStore(organizationId).getDb();
+        MongoCollection<Document> jobCollection = database.getCollection(OrganizationMongoDBAdaptorFactory.JOB_COLLECTION);
+        MongoCollection<Document> jobDeletedCollection = database.getCollection(OrganizationMongoDBAdaptorFactory.DELETED_JOB_COLLECTION);
+
+        // Change study fqn's
+        for (String studyCol : Arrays.asList(OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION,
+                OrganizationMongoDBAdaptorFactory.DELETED_STUDY_COLLECTION)) {
+            migrateCollection(studyCol, new Document(), Projections.include("_id", "uid", "fqn"), (document, bulk) -> {
+                long studyUid = document.get("uid", Number.class).longValue();
+
+                String oldStudyFqn = document.getString("fqn");
+                FqnUtils.FQN oldFqnInstance = FqnUtils.parse(oldStudyFqn);
+                String newFqn = FqnUtils.buildFqn(this.organizationId, oldFqnInstance.getProject(), oldFqnInstance.getStudy());
+                bulk.add(new UpdateOneModel<>(
+                        Filters.eq("_id", document.get("_id")),
+                        new Document("$set", new Document("fqn", newFqn)))
+                );
+
+                // Change fqn in all jobs that were pointing to this study
+                Bson jobQuery = Filters.eq("studyUid", studyUid);
+                Bson update = Updates.set("study.id", newFqn);
+                jobCollection.updateMany(jobQuery, update);
+                jobDeletedCollection.updateMany(jobQuery, update);
+            });
+        }
     }
 
     Set<Class<? extends MigrationTool>> getAvailableMigrations() {
