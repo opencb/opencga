@@ -84,6 +84,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisVariantSubCommands.addCommand("sample-stats-run", analysisVariantCommandOptions.runSampleStatsCommandOptions);
         analysisVariantSubCommands.addCommand("stats-export-run", analysisVariantCommandOptions.runStatsExportCommandOptions);
         analysisVariantSubCommands.addCommand("stats-run", analysisVariantCommandOptions.runStatsCommandOptions);
+        analysisVariantSubCommands.addCommand("walker-run", analysisVariantCommandOptions.runWalkerCommandOptions);
 
         projectsCommandOptions = new ProjectsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("projects", projectsCommandOptions);

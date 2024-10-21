@@ -35,6 +35,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -99,6 +100,21 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
         assertNull(vse.getOptions().get("KeyFromTheSecondStudy"));
         assertNull(vse1.getOptions().get("KeyFromTheSecondStudy"));
         assertNotNull(vse2.getOptions().get("KeyFromTheSecondStudy"));
+    }
+
+    @Test
+    public void testConfigureProtectedValues() throws Exception {
+        VariantStorageOptions key = VariantStorageOptions.WALKER_DOCKER_MEMORY;
+        assertTrue(key.isProtected());
+        ObjectMap conf = new ObjectMap(key.key(), "30g");
+
+        String fqn = catalogManager.getProjectManager().get(projectId, null, sessionId).first().getFqn();
+
+        variantManager.configureProject(fqn, new ObjectMap(conf), opencga.getAdminToken());
+
+        thrown.expect(StorageEngineException.class);
+        thrown.expectMessage("Unable to update protected option '" + key.key() + "'");
+        variantManager.configureProject(projectId, new ObjectMap(conf), sessionId);
     }
 
     @Test

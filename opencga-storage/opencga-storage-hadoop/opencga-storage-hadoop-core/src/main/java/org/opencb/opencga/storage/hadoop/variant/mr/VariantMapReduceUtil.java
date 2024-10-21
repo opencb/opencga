@@ -15,10 +15,12 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -51,6 +53,7 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Created on 27/10/17.
@@ -60,6 +63,8 @@ import java.util.List;
 public class VariantMapReduceUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(VariantMapReduceUtil.class);
+    private static final Pattern JAVA_OPTS_XMX_PATTERN =
+            Pattern.compile(".*(?:^|\\s)-Xmx(\\d+)([gGmMkK]?)(?:$|\\s).*");
 
 
     public static void initTableMapperJob(Job job, String inTable, String outTable, Scan scan, Class<? extends TableMapper> mapperClass)
@@ -609,6 +614,26 @@ public class VariantMapReduceUtil {
         return getParam(conf, key, defaultValue, null);
     }
 
+    private static String getParam(JobConf conf, TaskType taskType, Class<? extends AbstractHBaseDriver> clazz,
+                                   HadoopVariantStorageOptions mapKey, HadoopVariantStorageOptions reduceKey) {
+        final String value;
+        switch (taskType) {
+            case MAP:
+                value = getParam(conf, mapKey, clazz);
+                break;
+            case REDUCE:
+                value = getParam(conf, reduceKey, clazz);
+                break;
+            default:
+                throw new IllegalArgumentException("Unexpected task type " + taskType);
+        }
+        return value;
+    }
+
+    public static String getParam(Configuration conf, ConfigurationOption key, Class<? extends AbstractHBaseDriver> aClass) {
+        return getParam(conf, key.key(), key.defaultValue() == null ? null : key.defaultValue().toString(), aClass);
+    }
+
     /**
      * Reads a param that might come in different forms. It will take the the first value in this order:
      * - "--{key}"
@@ -641,4 +666,69 @@ public class VariantMapReduceUtil {
         }
         return value;
     }
+
+    public static void configureTaskJavaHeap(JobConf conf, Class<? extends AbstractHBaseDriver> clazz) {
+        configureTaskJavaHeap(conf, TaskType.MAP, clazz);
+        configureTaskJavaHeap(conf, TaskType.REDUCE, clazz);
+    }
+
+    public static void configureTaskJavaHeap(JobConf conf, TaskType taskType, Class<? extends AbstractHBaseDriver> clazz) {
+        int memoryRequired = conf.getMemoryRequired(taskType);
+        String heapStr = getParam(conf, taskType, clazz,
+                HadoopVariantStorageOptions.MR_HEAP_MAP_MB,
+                HadoopVariantStorageOptions.MR_HEAP_REDUCE_MB);
+
+        int heap;
+        if (heapStr != null) {
+            heap = Integer.parseInt(heapStr);
+        } else {
+            int minHeap = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HEAP_MIN_MB, clazz));
+            int maxHeap = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HEAP_MAX_MB, clazz));
+            double ratio = Double.parseDouble(getParam(conf, HadoopVariantStorageOptions.MR_HEAP_MEMORY_MB_RATIO, clazz));
+            int other = Integer.parseInt(getParam(conf, taskType, clazz,
+                    HadoopVariantStorageOptions.MR_HEAP_MAP_OTHER_MB,
+                    HadoopVariantStorageOptions.MR_HEAP_REDUCE_OTHER_MB));
+
+            heap = (int) Math.round((memoryRequired - other) * ratio);
+            heap = Math.max(minHeap, heap);
+            heap = Math.min(maxHeap, heap);
+        }
+        setTaskJavaHeap(conf, taskType, heap);
+    }
+
+    public static void setTaskJavaHeap(Configuration conf, TaskType taskType, int javaHeapMB) {
+        String javaOpts = getTaskJavaOpts(conf, taskType);
+        String xmx = " -Xmx" + javaHeapMB + "m";
+        if (javaOpts == null) {
+            javaOpts = xmx;
+        } else if (javaOpts.contains("-Xmx")) {
+            javaOpts = JAVA_OPTS_XMX_PATTERN.matcher(javaOpts).replaceFirst(xmx);
+        } else {
+            javaOpts += xmx;
+        }
+        switch (taskType) {
+            case MAP:
+                conf.set(JobConf.MAPRED_MAP_TASK_JAVA_OPTS, javaOpts);
+                break;
+            case REDUCE:
+                conf.set(JobConf.MAPRED_REDUCE_TASK_JAVA_OPTS, javaOpts);
+                break;
+            default:
+                throw new IllegalArgumentException("Unexpected task type " + taskType);
+        }
+    }
+
+    public static String getTaskJavaOpts(Configuration conf, TaskType taskType) {
+        switch (taskType) {
+            case MAP:
+                return conf.get(JobConf.MAPRED_MAP_TASK_JAVA_OPTS,
+                        conf.get(JobConf.MAPRED_TASK_JAVA_OPTS, JobConf.DEFAULT_MAPRED_TASK_JAVA_OPTS));
+            case REDUCE:
+                return conf.get(JobConf.MAPRED_REDUCE_TASK_JAVA_OPTS,
+                        conf.get(JobConf.MAPRED_TASK_JAVA_OPTS, JobConf.DEFAULT_MAPRED_TASK_JAVA_OPTS));
+            default:
+                throw new IllegalArgumentException("Unexpected task type " + taskType);
+        }
+    }
+
 }

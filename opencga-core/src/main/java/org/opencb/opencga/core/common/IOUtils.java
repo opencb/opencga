@@ -389,15 +389,16 @@ public class IOUtils {
         if (value.endsWith("B")) {
             value = value.substring(0, value.length() - 1);
         }
-        boolean si;
-        if (value.endsWith("i")) {
-            si = false;
-            value = value.substring(0, value.length() - 1);
-        } else {
-            si = true;
-        }
+        final boolean si;
         if (assumeBinary) {
             si = false;
+        } else {
+            if (value.endsWith("i")) {
+                si = false;
+                value = value.substring(0, value.length() - 1);
+            } else {
+                si = true;
+            }
         }
         int unit = si ? 1000 : 1024;
         int exp = "KMGTPE".indexOf(value.toUpperCase().charAt(value.length() - 1)) + 1;
