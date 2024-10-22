@@ -240,7 +240,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         String studyUuid = studyFqn.getStudyUuid();
         String workflowId = "";
         try {
-            Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
             studyId = study.getId();
             studyUuid = study.getUuid();
 
