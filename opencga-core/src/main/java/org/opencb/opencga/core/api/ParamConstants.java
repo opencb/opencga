@@ -79,6 +79,8 @@ public class ParamConstants {
     public static final String OVERWRITE = "overwrite";
     private static final String UP_TO_100 = " up to a maximum of 100";
 
+    public static final String DEFAULT_MIN_NEXTFLOW_VERSION = "24.04.4";
+
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
     public static final String CELLBASE_VERSION = "v5.8";
     public static final String CELLBASE_DATA_RELEASE_GRCH38 = "7";

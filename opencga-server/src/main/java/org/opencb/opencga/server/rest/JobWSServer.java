@@ -135,7 +135,10 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = NextFlowRunParams.DESCRIPTION, required = true) JobRunParams params) {
-        return submitJob(CustomToolExecutor.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        ToolInfo toolInfo = new ToolInfo()
+                .setId("docker")
+                .setExternalExecutor(new ToolInfoExecutor(CustomToolExecutor.ID, ""));
+        return submitJob(toolInfo, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST

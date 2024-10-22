@@ -121,6 +121,9 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--tool-id"}, description = "Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.", required = false, arity = 1)
         public String toolId;
     
+        @Parameter(names = {"--tool-version"}, description = "Version of the tool to be executed.", required = false, arity = 1)
+        public String toolVersion;
+    
         @Parameter(names = {"--tool-description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
         public String toolDescription;
     

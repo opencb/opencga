@@ -185,6 +185,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "tool.id", commandOptions.toolId, true);
+            putNestedIfNotEmpty(beanParams, "tool.version", commandOptions.toolVersion, true);
             putNestedIfNotEmpty(beanParams, "tool.description", commandOptions.toolDescription, true);
             putNestedIfNotNull(beanParams, "tool.scope", commandOptions.toolScope, true);
             putNestedIfNotNull(beanParams, "tool.type", commandOptions.toolType, true);

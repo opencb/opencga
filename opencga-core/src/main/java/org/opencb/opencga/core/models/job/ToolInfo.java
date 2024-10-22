@@ -29,6 +29,9 @@ public class ToolInfo {
             description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
 
+    @DataField(id = "version", description = FieldConstants.TOOL_INFO_VERSION_DESCRIPTION)
+    private String version;
+
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
@@ -48,12 +51,14 @@ public class ToolInfo {
     public ToolInfo() {
     }
 
-    public ToolInfo(String id, String description, Scope scope, Type type, Enums.Resource resource) {
-        this(id, description, scope, type, resource, null);
+    public ToolInfo(String id, String version, String description, Scope scope, Type type, Enums.Resource resource) {
+        this(id, version, description, scope, type, resource, null);
     }
 
-    public ToolInfo(String id, String description, Scope scope, Type type, Enums.Resource resource, ToolInfoExecutor externalExecutor) {
+    public ToolInfo(String id, String version, String description, Scope scope, Type type, Enums.Resource resource,
+                    ToolInfoExecutor externalExecutor) {
         this.id = id;
+        this.version = version;
         this.description = description;
         this.scope = scope;
         this.type = type;
@@ -65,6 +70,7 @@ public class ToolInfo {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ToolInfo{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", version='").append(version).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", scope=").append(scope);
         sb.append(", type=").append(type);
@@ -80,6 +86,15 @@ public class ToolInfo {
 
     public ToolInfo setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public ToolInfo setVersion(String version) {
+        this.version = version;
         return this;
     }
 

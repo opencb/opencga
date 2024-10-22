@@ -70,6 +70,16 @@ analysis:
   # List of packages where to find analysis tools
   packages:
     - "org.opencb.opencga"
+  workflow:
+    # Minimum requirements to run a workflow
+    minRequirements:
+      cpu: 2
+      memory: 8 # In GB
+      disk: 100 # In GB
+    # List of supported workflow managers and the version to be launched by default
+    managers:
+      - id: "NEXTFLOW"
+        version: "24.04.4"
   # Scratch folder for the analysis.
   scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"
   # Default URL for downloading analysis resources.

@@ -47,6 +47,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.FederationNode;
@@ -873,6 +874,16 @@ public class OpenCGAWSServer {
         });
     }
 
+    public Response submitJob(ToolInfo toolInfo, String study, ToolParams bodyParams, String jobId, String jobDescription,
+                              String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority, Boolean dryRun) {
+        return run(() -> submitJobRaw(toolInfo, null, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun));
+    }
+
+    public Response submitJob(ToolInfo toolInfo, String project, String study, ToolParams bodyParams, String jobId, String jobDescription,
+                              String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority, Boolean dryRun) {
+        return run(() -> submitJobRaw(toolInfo, project, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun));
+    }
+
     public Response submitJob(String toolId, String project, String study, ToolParams bodyParams, String jobId, String jobDescription,
                               String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority, Boolean dryRun) {
         return run(() -> submitJobRaw(toolId, project, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun));
@@ -929,6 +940,60 @@ public class OpenCGAWSServer {
         return catalogManager.getJobManager()
                 .submit(study, toolId, priority, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, null,
                         jobScheduledStartTime, dryRun, token);
+    }
+
+    protected DataResult<Job> submitJobRaw(ToolInfo toolInfo, String project, String study, ToolParams bodyParams, String jobId,
+                                           String jobDescription, String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime,
+                                           String jobPriority, Boolean dryRun)
+            throws CatalogException {
+        Map<String, Object> paramsMap = bodyParams.toParams();
+        if (StringUtils.isNotEmpty(study)) {
+            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+        }
+        return submitJobRaw(toolInfo, project, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime,
+                jobPriority, dryRun);
+    }
+
+    protected DataResult<Job> submitJobRaw(ToolInfo toolInfo, String project, String study, Map<String, Object> paramsMap, String jobId,
+                                           String jobDescription, String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime,
+                                           String jobPriority, Boolean dryRun)
+            throws CatalogException {
+
+        if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {
+            // Project job
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
+            // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
+            List<String> studies = catalogManager.getStudyManager()
+                    .search(project, new Query(), options, token)
+                    .getResults()
+                    .stream()
+                    .map(Study::getFqn)
+                    .collect(Collectors.toList());
+            if (studies.isEmpty()) {
+                throw new CatalogException("Project '" + project + "' not found!");
+            }
+            study = studies.get(0);
+        }
+
+        List<String> jobTags;
+        if (StringUtils.isNotEmpty(jobTagsStr)) {
+            jobTags = Arrays.asList(jobTagsStr.split(","));
+        } else {
+            jobTags = Collections.emptyList();
+        }
+        List<String> jobDependsOn;
+        if (StringUtils.isNotEmpty(jobDependsOnStr)) {
+            jobDependsOn = Arrays.asList(jobDependsOnStr.split(","));
+        } else {
+            jobDependsOn = Collections.emptyList();
+        }
+        Enums.Priority priority = Enums.Priority.MEDIUM;
+        if (!StringUtils.isEmpty(jobPriority)) {
+            priority = Enums.Priority.getPriority(jobPriority.toUpperCase());
+        }
+        return catalogManager.getJobManager()
+                .submit(study, toolInfo, priority, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, null,
+                        jobScheduledStartTime, dryRun, Collections.emptyMap(), token);
     }
 
     public Response createPendingResponse() {

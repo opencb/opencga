@@ -18,6 +18,10 @@ package org.opencb.opencga.core.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.workflow.WorkflowSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,6 +135,30 @@ public class Configuration {
         if (configuration.getAccount().getPasswordExpirationDays() < 0) {
             // Disable password expiration by default
             configuration.getAccount().setPasswordExpirationDays(0);
+        }
+        if (configuration.getAnalysis().getWorkflow() == null) {
+            configuration.getAnalysis().setWorkflow(new WorkflowConfiguration());
+        }
+        addDefaultAnalysisWorkflowValues(configuration.getAnalysis().getWorkflow());
+    }
+
+    private static void addDefaultAnalysisWorkflowValues(WorkflowConfiguration workflowConfiguration) {
+        if (CollectionUtils.isEmpty(workflowConfiguration.getManagers())) {
+            workflowConfiguration.setManagers(Collections.singletonList(
+                    new WorkflowSystemConfiguration(WorkflowSystem.SystemId.NEXTFLOW.name(), ParamConstants.DEFAULT_MIN_NEXTFLOW_VERSION)));
+        }
+        if (workflowConfiguration.getMinRequirements() == null) {
+            workflowConfiguration.setMinRequirements(new WorkflowMinRequirementsConfiguration());
+        }
+        WorkflowMinRequirementsConfiguration minRequirements = workflowConfiguration.getMinRequirements();
+        if (StringUtils.isEmpty(minRequirements.getCpu())) {
+            minRequirements.setCpu("2");
+        }
+        if (StringUtils.isEmpty(minRequirements.getMemory())) {
+            minRequirements.setMemory("8"); // GB
+        }
+        if (StringUtils.isEmpty(minRequirements.getDisk())) {
+            minRequirements.setDisk("100"); // GB
         }
     }
 

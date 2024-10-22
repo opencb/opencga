@@ -300,6 +300,7 @@ public class FieldConstants {
 
 
     //ToolInfo
+    public static final String TOOL_INFO_VERSION_DESCRIPTION = "Version of the tool to be executed.";
     public static final String TOOL_INFO_SCOPE_DESCRIPTION = "Tool info scope can have the values GLOBAL, PROJECT and STUDY.";
     public static final String TOOL_INFO_TYPE_DESCRIPTION = "Tool info type can have the values OPERATION and ANALYSIS.";
     public static final String TOOL_INFO_RESOURCE_DESCRIPTION = "Tool info resource can have the values AUDIT, USER, PROJECT, "
@@ -325,6 +326,7 @@ public class FieldConstants {
     public static final String WORKFLOW_MIN_REQUIREMENTS_CPU_DESCRIPTION = "Minimum number of cpu cores required to execute the workflow.";
     public static final String WORKFLOW_MIN_REQUIREMENTS_MEMORY_DESCRIPTION = "Minimum memory required to execute the workflow"
             + " (expressed in GB).";
+    public static final String WORKFLOW_MIN_REQUIREMENTS_DISK_DESCRIPTION = "Minimum disk required to execute the workflow";
 
     public static final String WORKFLOW_SYSTEM_ID_DESCRIPTION = "Workflow system id. Valid values: NEXTFLOW.";
     public static final String WORKFLOW_SYSTEM_VERSION_DESCRIPTION = "Workflow system version to use.";

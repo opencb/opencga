@@ -21,6 +21,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -744,7 +745,8 @@ public class MigrationManager {
                         .setCreationDate(TimeUtils.getTime(start))
                         .setCommandLine("opencga-admin.sh")
                         .setParams(params)
-                        .setTool(new ToolInfo(annotation.id(), annotation.description(), Tool.Scope.GLOBAL, null, null))
+                        .setTool(new ToolInfo(annotation.id(), GitRepositoryState.getInstance().getBuildVersion(), annotation.description(),
+                                Tool.Scope.GLOBAL, null, null))
                         .setOutDir(outdir.first())
                         .setStderr(stderr.first())
                         .setInternal(new JobInternal()

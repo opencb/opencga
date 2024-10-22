@@ -88,6 +88,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -572,7 +573,8 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         }
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
-        updateParams.setTool(new ToolInfo(tool.id(), tool.description(), tool.scope(), tool.type(), tool.resource()));
+        updateParams.setTool(new ToolInfo(tool.id(), GitRepositoryState.getInstance().getBuildVersion(), tool.description(), tool.scope(),
+                tool.type(), tool.resource()));
 
         if (tool.scope() == Tool.Scope.PROJECT) {
             String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR));
@@ -643,6 +645,10 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         String shadedCommandLine = commandLine + " " + ParamConstants.OPENCGA_TOKEN_CLI_PARAM + " " + REDACTED_TOKEN;
 
         updateParams.setCommandLine(shadedCommandLine);
+        if (job.getTool().getExternalExecutor() == null || StringUtils.isEmpty(job.getTool().getExternalExecutor().getId())) {
+            job.getTool().setVersion(GitRepositoryState.getInstance().getBuildVersion());
+            updateParams.setTool(job.getTool());
+        }
 
         logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED);
         updateParams.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED)));
@@ -844,7 +850,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     public static String buildCli(String internalCli, Job job) {
-        String toolId = job.getTool().getId();
+        String toolId = job.getTool().getExternalExecutor() != null && StringUtils.isNotEmpty(job.getTool().getExternalExecutor().getId())
+                ? job.getTool().getExternalExecutor().getId()
+                : job.getTool().getId();
         String internalCommand = TOOL_CLI_MAP.get(toolId);
         if (StringUtils.isEmpty(internalCommand) || job.isDryRun()) {
             ObjectMap params = new ObjectMap()
