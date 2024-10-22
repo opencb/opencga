@@ -89,6 +89,16 @@ export default class Workflow extends OpenCGAParentClass {
     }
 
     /** Execute a Nextflow analysis.
+    * @param {Object} data - Repository parameters.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    importWorkflow(data, params) {
+        return this._post("workflows", null, null, null, "import", data, params);
+    }
+
+    /** Execute a Nextflow analysis.
     * @param {Object} data - NextFlow run parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.

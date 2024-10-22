@@ -27,6 +27,7 @@ import org.opencb.opencga.core.models.workflow.Workflow;
 import org.opencb.opencga.core.models.workflow.WorkflowAclEntryList;
 import org.opencb.opencga.core.models.workflow.WorkflowAclUpdateParams;
 import org.opencb.opencga.core.models.workflow.WorkflowCreateParams;
+import org.opencb.opencga.core.models.workflow.WorkflowRepositoryParams;
 import org.opencb.opencga.core.models.workflow.WorkflowUpdateParams;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -116,6 +117,20 @@ public class WorkflowClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.putIfNotNull("field", field);
         return execute("workflows", null, null, null, "distinct", params, GET, Object.class);
+    }
+
+    /**
+     * Execute a Nextflow analysis.
+     * @param data Repository parameters.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> importWorkflow(WorkflowRepositoryParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("workflows", null, null, null, "import", params, POST, Job.class);
     }
 
     /**
