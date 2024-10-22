@@ -21,42 +21,70 @@ import java.util.List;
 
 public class AnalysisResource {
 
-    private String id;
-    private List<String> resources;
+    private String name;
+    private String path;
+    private List<String> target;
+    private List<AnalysisResourceAction> action;
 
-    public AnalysisResource() {
-        this("", new ArrayList<>());
+    public enum AnalysisResourceAction {
+        GUNZIP
     }
 
-    public AnalysisResource(String id, List<String> resources) {
-        this.id = id;
-        this.resources = resources;
+    public AnalysisResource() {
+        this("", "", new ArrayList<>(), new ArrayList<>());
+    }
+
+    public AnalysisResource(String name, String path, List<String> target, List<AnalysisResourceAction> action) {
+        this.name = name;
+        this.path = path;
+        this.target = target;
+        this.action = action;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AnalysisResource{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", resources=").append(resources);
+        sb.append("name='").append(name).append('\'');
+        sb.append(", path='").append(path).append('\'');
+        sb.append(", target=").append(target);
+        sb.append(", action=").append(action);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getId() {
-        return id;
+    public String getName() {
+        return name;
     }
 
-    public AnalysisResource setId(String id) {
-        this.id = id;
+    public AnalysisResource setName(String name) {
+        this.name = name;
         return this;
     }
 
-    public List<String> getResources() {
-        return resources;
+    public String getPath() {
+        return path;
     }
 
-    public AnalysisResource setResources(List<String> resources) {
-        this.resources = resources;
+    public AnalysisResource setPath(String path) {
+        this.path = path;
+        return this;
+    }
+
+    public List<String> getTarget() {
+        return target;
+    }
+
+    public AnalysisResource setTarget(List<String> target) {
+        this.target = target;
+        return this;
+    }
+
+    public List<AnalysisResourceAction> getAction() {
+        return action;
+    }
+
+    public AnalysisResource setAction(List<AnalysisResourceAction> action) {
+        this.action = action;
         return this;
     }
 }

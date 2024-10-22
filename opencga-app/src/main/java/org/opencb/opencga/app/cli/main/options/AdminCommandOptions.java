@@ -173,9 +173,6 @@ public class AdminCommandOptions {
         @Parameter(names = {"--base-url"}, description = "Base URL where the resources are located, this is an optional parameter, by default the resources will be downloaded from the OpenCB repository.", required = false, arity = 1)
         public String baseUrl;
     
-        @Parameter(names = {"--overwrite"}, description = "Download and overwrite previously downloaded resources if they already exist.", required = false, arity = 1)
-        public Boolean overwrite;
-    
     }
 
     @Parameters(commandNames = {"users-create"}, commandDescription ="Create a new user")
