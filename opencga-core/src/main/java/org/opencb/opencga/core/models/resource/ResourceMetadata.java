@@ -22,22 +22,25 @@ import java.util.List;
 public class ResourceMetadata  {
 
     private String version;
-    List<AnalysisResource> analysisResources;
+    private String urlBase;
+    List<AnalysisResourceList> analysisResourceLists;
 
     public ResourceMetadata() {
-        this("", new ArrayList<>());
+        this("", "", new ArrayList<>());
     }
 
-    public ResourceMetadata(String version, List<AnalysisResource> analysisResources) {
+    public ResourceMetadata(String version, String urlBase, List<AnalysisResourceList> analysisResourceLists) {
         this.version = version;
-        this.analysisResources = analysisResources;
+        this.urlBase = urlBase;
+        this.analysisResourceLists = analysisResourceLists;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ResourceMetadata{");
         sb.append("version='").append(version).append('\'');
-        sb.append(", analysisResources=").append(analysisResources);
+        sb.append(", urlBase='").append(urlBase).append('\'');
+        sb.append(", analysisResourceLists=").append(analysisResourceLists);
         sb.append('}');
         return sb.toString();
     }
@@ -51,12 +54,21 @@ public class ResourceMetadata  {
         return this;
     }
 
-    public List<AnalysisResource> getAnalysisResources() {
-        return analysisResources;
+    public String getUrlBase() {
+        return urlBase;
     }
 
-    public ResourceMetadata setAnalysisResources(List<AnalysisResource> analysisResources) {
-        this.analysisResources = analysisResources;
+    public ResourceMetadata setUrlBase(String urlBase) {
+        this.urlBase = urlBase;
+        return this;
+    }
+
+    public List<AnalysisResourceList> getAnalysisResourceLists() {
+        return analysisResourceLists;
+    }
+
+    public ResourceMetadata setAnalysisResourceLists(List<AnalysisResourceList> analysisResourceLists) {
+        this.analysisResourceLists = analysisResourceLists;
         return this;
     }
 }

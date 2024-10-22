@@ -1,14 +1,16 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.resource.AnalysisResource;
+import org.opencb.opencga.core.models.resource.AnalysisResourceList;
 import org.opencb.opencga.core.models.resource.ResourceMetadata;
 
 import java.io.File;
@@ -17,9 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_FOLDER_NAME;
-import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_FOLDER_NAME;
+import static org.opencb.opencga.catalog.utils.ResourceManager.*;
 
 public class ResourceManagerTest extends AbstractManagerTest {
 
@@ -45,6 +47,7 @@ public class ResourceManagerTest extends AbstractManagerTest {
         resourceManager = new ResourceManager(openCgaHome, BASEURL);
 
         resourceMetadata = createResourceMetadata();
+        JacksonUtils.getDefaultObjectMapper().writerFor(ResourceMetadata.class).writeValue(scratchDir.resolve(getResourceMetaFilename()).toFile(), resourceMetadata);
     }
 
     @Test
@@ -71,9 +74,12 @@ public class ResourceManagerTest extends AbstractManagerTest {
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
         resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
-        for (AnalysisResource analysisResource : resourceMetadata.getAnalysisResources()) {
-            for (String resource : analysisResource.getResources()) {
-                Assert.assertTrue(Files.exists(analysisResourcePath.resolve(analysisResource.getId()).resolve(resource)));
+        for (AnalysisResourceList list : resourceMetadata.getAnalysisResourceLists()) {
+            for (AnalysisResource resource : list.getResources()) {
+                String name = org.apache.commons.lang3.StringUtils.isNotEmpty(resource.getName())
+                        ? resource.getName()
+                        : Paths.get(resource.getPath()).getFileName().toString();
+                Assert.assertTrue(Files.exists(analysisResourcePath.resolve(list.getAnalysisId()).resolve(name)));
             }
         }
     }
@@ -89,9 +95,12 @@ public class ResourceManagerTest extends AbstractManagerTest {
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
         System.out.println("outDir = " + outDir.toAbsolutePath());
         resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
-        for (AnalysisResource analysisResource : resourceMetadata.getAnalysisResources()) {
-            for (String resource : analysisResource.getResources()) {
-                Assert.assertTrue(Files.exists(analysisResourcePath.resolve(analysisResource.getId()).resolve(resource)));
+        for (AnalysisResourceList list : resourceMetadata.getAnalysisResourceLists()) {
+            for (AnalysisResource resource : list.getResources()) {
+                String name = org.apache.commons.lang3.StringUtils.isNotEmpty(resource.getName())
+                        ? resource.getName()
+                        : Paths.get(resource.getPath()).getFileName().toString();
+                Assert.assertTrue(Files.exists(analysisResourcePath.resolve(list.getAnalysisId()).resolve(name)));
             }
         }
 
@@ -107,19 +116,19 @@ public class ResourceManagerTest extends AbstractManagerTest {
         resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
 
         String analysisId = "qc";
-        AnalysisResource analysisResource = null;
-        for (AnalysisResource ar : resourceMetadata.getAnalysisResources()) {
-            if (analysisId.equals(ar.getId())) {
-                analysisResource = ar;
+        AnalysisResourceList analysisResourceList = null;
+        for (AnalysisResourceList list : resourceMetadata.getAnalysisResourceLists()) {
+            if (analysisId.equals(list.getAnalysisId())) {
+                analysisResourceList = list;
                 break;
             }
         }
 
         List<File> resourceFiles = resourceManager.getResourceFiles(analysisId);
-        Assert.assertEquals(analysisResource.getResources().size(), resourceFiles.size());
+        Assert.assertEquals(analysisResourceList.getResources().size(), resourceFiles.size());
         for (File resourceFile : resourceFiles) {
             Assert.assertTrue(Files.exists(resourceFile.toPath()));
-            Assert.assertTrue(analysisResource.getResources().contains(resourceFile.getName()));
+            Assert.assertTrue(analysisResourceList.getResources().stream().map(r -> StringUtils.isNotEmpty(r.getName()) ? r.getName() : Paths.get(r.getPath()).getFileName().toString()).collect(Collectors.toList()).contains(resourceFile.getName()));
         }
     }
 
@@ -132,17 +141,17 @@ public class ResourceManagerTest extends AbstractManagerTest {
 
         String analysisId = "liftover";
         String resourceName = "chain.frq";
-        AnalysisResource analysisResource = null;
-        for (AnalysisResource ar : resourceMetadata.getAnalysisResources()) {
-            if (analysisId.equals(ar.getId())) {
-                analysisResource = ar;
+        AnalysisResourceList analysisResourceList = null;
+        for (AnalysisResourceList list : resourceMetadata.getAnalysisResourceLists()) {
+            if (analysisId.equals(list.getAnalysisId())) {
+                analysisResourceList = list;
                 break;
             }
         }
 
         File resourceFile = resourceManager.getResourceFile(analysisId, resourceName);
         Assert.assertTrue(Files.exists(resourceFile.toPath()));
-        Assert.assertTrue(analysisResource.getResources().contains(resourceFile.getName()));
+        Assert.assertTrue(analysisResourceList.getResources().stream().map(r -> StringUtils.isNotEmpty(r.getName()) ? r.getName() : Paths.get(r.getPath()).getFileName().toString()).collect(Collectors.toList()).contains(resourceFile.getName()));
     }
 
     //-------------------------------------------------------------------------
@@ -153,16 +162,24 @@ public class ResourceManagerTest extends AbstractManagerTest {
         ResourceMetadata resourceMetadata = new ResourceMetadata();
         resourceMetadata.setVersion(resourceManager.getVersion());
 
+        // Liftover
+        AnalysisResourceList analysisResourceList = new AnalysisResourceList();
+        analysisResourceList.setAnalysisId("liftover");
         AnalysisResource analysisResource = new AnalysisResource();
-        analysisResource.setId("liftover");
-        resourceMetadata.getAnalysisResources().add(analysisResource);
-        analysisResource.getResources().add("chain.frq");
+        analysisResource.setPath("data/chain.frq");
+        analysisResourceList.getResources().add(analysisResource);
+        resourceMetadata.getAnalysisResourceLists().add(analysisResourceList);
 
+        // QC
+        analysisResourceList = new AnalysisResourceList();
+        analysisResourceList.setAnalysisId("qc");
         analysisResource = new AnalysisResource();
-        analysisResource.setId("qc");
-        analysisResource.getResources().add("relatedness_thresholds.tsv");
-        analysisResource.getResources().add("prune.out");
-        resourceMetadata.getAnalysisResources().add(analysisResource);
+        analysisResource.setPath("data/relatedness_thresholds.tsv");
+        analysisResourceList.getResources().add(analysisResource);
+        analysisResource = new AnalysisResource();
+        analysisResource.setPath("data/prune.out");
+        analysisResourceList.getResources().add(analysisResource);
+        resourceMetadata.getAnalysisResourceLists().add(analysisResourceList);
 
         return resourceMetadata;
     }
