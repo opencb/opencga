@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.migration.MigrationRun;
@@ -461,16 +462,23 @@ public class OrganizationMigration extends MigrationTool {
 
     private void changeFqns() throws CatalogDBException {
         this.dbAdaptorFactory = this.mongoDBAdaptorFactory;
+        String date = TimeUtils.getTime();
 
         // Change project fqn's
         for (String projectCol : Arrays.asList(OrganizationMongoDBAdaptorFactory.PROJECT_COLLECTION,
                 OrganizationMongoDBAdaptorFactory.DELETED_PROJECT_COLLECTION)) {
-            migrateCollection(projectCol, new Document(), Projections.include("_id", "id"), (document, bulk) -> {
+            migrateCollection(projectCol, new Document(), Projections.include("_id", "id", "fqn"), (document, bulk) -> {
+                String currentFqn = document.getString("fqn");
                 String projectId = document.getString("id");
                 String projectFqn = FqnUtils.buildFqn(this.organizationId, projectId);
                 bulk.add(new UpdateOneModel<>(
                         Filters.eq("_id", document.get("_id")),
-                        new Document("$set", new Document("fqn", projectFqn)))
+                        new Document("$set", new Document()
+                                .append("fqn", projectFqn)
+                                .append("attributes.OPENCGA.3_0_0", new Document()
+                                        .append("date", date)
+                                        .append("oldFqn", currentFqn)
+                                )))
                 );
             });
         }
@@ -490,12 +498,24 @@ public class OrganizationMigration extends MigrationTool {
                 String newFqn = FqnUtils.buildFqn(this.organizationId, oldFqnInstance.getProject(), oldFqnInstance.getStudy());
                 bulk.add(new UpdateOneModel<>(
                         Filters.eq("_id", document.get("_id")),
-                        new Document("$set", new Document("fqn", newFqn)))
+                        new Document("$set", new Document()
+                                .append("fqn", newFqn)
+                                .append("attributes.OPENCGA.3_0_0", new Document()
+                                        .append("date", date)
+                                        .append("oldFqn", oldStudyFqn)
+                                )
+                        ))
                 );
 
                 // Change fqn in all jobs that were pointing to this study
                 Bson jobQuery = Filters.eq("studyUid", studyUid);
-                Bson update = Updates.set("study.id", newFqn);
+                Bson update = new Document("$set", new Document()
+                        .append("study.id", newFqn)
+                        .append("attributes.OPENCGA.3_0_0", new Document()
+                                .append("date", date)
+                                .append("oldStudyFqn", oldStudyFqn)
+                        )
+                );
                 jobCollection.updateMany(jobQuery, update);
                 jobDeletedCollection.updateMany(jobQuery, update);
             });
