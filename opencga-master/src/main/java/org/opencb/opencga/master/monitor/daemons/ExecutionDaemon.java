@@ -544,8 +544,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudyFqn(job.getStudy().getId());
         String organizationId = catalogFqn.getOrganizationId();
 
-        if (StringUtils.isEmpty(job.getTool().getId())) {
-            return abortJob(job, "Tool id '" + job.getTool().getId() + "' not found.");
+        String toolId = ToolFactory.getToolId(job.getTool());
+        if (StringUtils.isEmpty(toolId)) {
+            return abortJob(job, "Tool id '" + toolId + "' not found.");
         }
 
         if (killSignalSent(job)) {
@@ -563,7 +564,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             tool = new ToolFactory().getTool(job.getTool(), packages);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            return abortJob(job, "Tool " + job.getTool().getId() + " not found", e);
+            return abortJob(job, "Tool " + toolId + " not found", e);
         }
 
         try {
@@ -573,8 +574,10 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         }
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
-        updateParams.setTool(new ToolInfo(tool.id(), GitRepositoryState.getInstance().getBuildVersion(), tool.description(), tool.scope(),
-                tool.type(), tool.resource()));
+        updateToolInfoInformation(job.getTool());
+        updateParams.setTool(job.getTool());
+//        updateParams.setTool(new ToolInfo(tool.id(), GitRepositoryState.getInstance().getBuildVersion(), tool.description(), tool.scope(),
+//                tool.type(), tool.resource()));
 
         if (tool.scope() == Tool.Scope.PROJECT) {
             String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR));
@@ -671,6 +674,18 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         notifyStatusChange(job);
 
         return 1;
+    }
+
+    private void updateToolInfoInformation(ToolInfo toolInfo, Tool tool) {
+        if (StringUtils.isEmpty(toolInfo.getVersion())) {
+            toolInfo.setVersion(GitRepositoryState.getInstance().getBuildVersion());
+        }
+        if (StringUtils.isEmpty(toolInfo.getDescription())) {
+            toolInfo.setDescription(tool.description());
+        }
+        toolInfo.setScope(tool.scope());
+        toolInfo.setType(tool.type());
+        toolInfo.setResource(tool.resource());
     }
 
     private boolean killSignalSent(Job job) {
