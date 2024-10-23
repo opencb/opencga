@@ -402,10 +402,10 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         String value = split[1].replace("\"", "").replace("'", "").trim();
         switch (key) {
             case "executor.cpus":
-                workflow.getMinimumRequirements().setCpu(value);
+                workflow.getMinimumRequirements().setCpu(Integer.valueOf(value));
                 break;
             case "executor.memory":
-                workflow.getMinimumRequirements().setMemory(value.replace(".", ""));
+                workflow.getMinimumRequirements().setMemory(Integer.valueOf(value.split("\\.")[0]));
                 break;
             default:
                 break;

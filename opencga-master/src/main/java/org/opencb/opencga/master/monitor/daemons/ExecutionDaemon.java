@@ -560,7 +560,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
         Tool tool;
         try {
-            tool = new ToolFactory().getTool(job.getTool().getId(), packages);
+            tool = new ToolFactory().getTool(job.getTool(), packages);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return abortJob(job, "Tool " + job.getTool().getId() + " not found", e);
@@ -678,7 +678,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     protected void checkToolExecutionPermission(String organizationId, Job job) throws Exception {
-        Tool tool = new ToolFactory().getTool(job.getTool().getId(), packages);
+        Tool tool = new ToolFactory().getTool(job.getTool(), packages);
 
         AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
         String user = job.getUserId();
@@ -850,9 +850,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     public static String buildCli(String internalCli, Job job) {
-        String toolId = job.getTool().getExternalExecutor() != null && StringUtils.isNotEmpty(job.getTool().getExternalExecutor().getId())
-                ? job.getTool().getExternalExecutor().getId()
-                : job.getTool().getId();
+        String toolId = ToolFactory.getToolId(job.getTool());
         String internalCommand = TOOL_CLI_MAP.get(toolId);
         if (StringUtils.isEmpty(internalCommand) || job.isDryRun()) {
             ObjectMap params = new ObjectMap()

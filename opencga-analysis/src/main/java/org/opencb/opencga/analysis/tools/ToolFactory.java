@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.tools;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -137,12 +138,21 @@ public class ToolFactory {
         return aClass;
     }
 
-    public Tool getTool(String toolId) throws ToolException {
-        return getTool(toolId, Collections.singletonList(DEFAULT_PACKAGE));
+    public Tool getTool(ToolInfo toolInfo) throws ToolException {
+        return getTool(toolInfo, Collections.singletonList(DEFAULT_PACKAGE));
     }
 
-    public Tool getTool(String toolId, List<String> packages) throws ToolException {
+    public Tool getTool(ToolInfo toolInfo, List<String> packages) throws ToolException {
+        String toolId = getToolId(toolInfo);
         return getToolClass(toolId, packages).getAnnotation(Tool.class);
+    }
+
+    public static String getToolId(ToolInfo toolInfo) {
+        if (toolInfo.getExternalExecutor() != null && StringUtils.isNotEmpty(toolInfo.getExternalExecutor().getId())) {
+            return toolInfo.getExternalExecutor().getId();
+        } else {
+            return toolInfo.getId();
+        }
     }
 
     public final OpenCgaTool createTool(String toolId) throws ToolException {

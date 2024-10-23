@@ -6,18 +6,18 @@ import org.opencb.opencga.core.api.FieldConstants;
 public class WorkflowMinimumRequirements {
 
     @DataField(id = "cpu", description = FieldConstants.WORKFLOW_MIN_REQUIREMENTS_CPU_DESCRIPTION)
-    private String cpu;
+    private Integer cpu;
 
     @DataField(id = "memory", description = FieldConstants.WORKFLOW_MIN_REQUIREMENTS_MEMORY_DESCRIPTION)
-    private String memory;
+    private Integer memory;
 
     @DataField(id = "disk", description = FieldConstants.WORKFLOW_MIN_REQUIREMENTS_DISK_DESCRIPTION)
-    private String disk;
+    private Integer disk;
 
     public WorkflowMinimumRequirements() {
     }
 
-    public WorkflowMinimumRequirements(String cpu, String memory, String disk) {
+    public WorkflowMinimumRequirements(Integer cpu, Integer memory, Integer disk) {
         this.cpu = cpu;
         this.memory = memory;
         this.disk = disk;
@@ -33,29 +33,29 @@ public class WorkflowMinimumRequirements {
         return sb.toString();
     }
 
-    public String getCpu() {
+    public Integer getCpu() {
         return cpu;
     }
 
-    public WorkflowMinimumRequirements setCpu(String cpu) {
+    public WorkflowMinimumRequirements setCpu(Integer cpu) {
         this.cpu = cpu;
         return this;
     }
 
-    public String getMemory() {
+    public Integer getMemory() {
         return memory;
     }
 
-    public WorkflowMinimumRequirements setMemory(String memory) {
+    public WorkflowMinimumRequirements setMemory(Integer memory) {
         this.memory = memory;
         return this;
     }
 
-    public String getDisk() {
+    public Integer getDisk() {
         return disk;
     }
 
-    public WorkflowMinimumRequirements setDisk(String disk) {
+    public WorkflowMinimumRequirements setDisk(Integer disk) {
         this.disk = disk;
         return this;
     }
