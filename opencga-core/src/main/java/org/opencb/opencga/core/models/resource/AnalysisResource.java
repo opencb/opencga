@@ -23,20 +23,22 @@ public class AnalysisResource {
 
     private String name;
     private String path;
+    private String md5;
     private List<String> target;
     private List<AnalysisResourceAction> action;
 
     public enum AnalysisResourceAction {
-        GUNZIP
+        UNZIP
     }
 
     public AnalysisResource() {
-        this("", "", new ArrayList<>(), new ArrayList<>());
+        this("", "", "", new ArrayList<>(), new ArrayList<>());
     }
 
-    public AnalysisResource(String name, String path, List<String> target, List<AnalysisResourceAction> action) {
+    public AnalysisResource(String name, String path, String md5, List<String> target, List<AnalysisResourceAction> action) {
         this.name = name;
         this.path = path;
+        this.md5 = md5;
         this.target = target;
         this.action = action;
     }
@@ -46,6 +48,7 @@ public class AnalysisResource {
         final StringBuilder sb = new StringBuilder("AnalysisResource{");
         sb.append("name='").append(name).append('\'');
         sb.append(", path='").append(path).append('\'');
+        sb.append(", md5='").append(md5).append('\'');
         sb.append(", target=").append(target);
         sb.append(", action=").append(action);
         sb.append('}');
@@ -67,6 +70,15 @@ public class AnalysisResource {
 
     public AnalysisResource setPath(String path) {
         this.path = path;
+        return this;
+    }
+
+    public String getMd5() {
+        return md5;
+    }
+
+    public AnalysisResource setMd5(String md5) {
+        this.md5 = md5;
         return this;
     }
 

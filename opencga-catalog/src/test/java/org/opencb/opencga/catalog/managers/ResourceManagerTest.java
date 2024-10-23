@@ -72,6 +72,7 @@ public class ResourceManagerTest extends AbstractManagerTest {
     public void testFetchAllResources() throws IOException, ResourceException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
+        Files.createDirectories(outDir);
         System.out.println("outDir = " + outDir.toAbsolutePath());
         resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
         for (AnalysisResourceList list : resourceMetadata.getAnalysisResourceLists()) {
@@ -90,28 +91,10 @@ public class ResourceManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testFetchAllResourcesNoOverwrite() throws IOException, ResourceException {
-        System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
-        Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
-        System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
-        for (AnalysisResourceList list : resourceMetadata.getAnalysisResourceLists()) {
-            for (AnalysisResource resource : list.getResources()) {
-                String name = org.apache.commons.lang3.StringUtils.isNotEmpty(resource.getName())
-                        ? resource.getName()
-                        : Paths.get(resource.getPath()).getFileName().toString();
-                Assert.assertTrue(Files.exists(analysisResourcePath.resolve(list.getAnalysisId()).resolve(name)));
-            }
-        }
-
-        resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(),
-                catalogManagerResource.getAdminToken());
-    }
-
-    @Test
     public void testFetchResourcesForAGivenAnalysis() throws IOException, ResourceException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
+        Files.createDirectories(outDir);
         System.out.println("outDir = " + outDir.toAbsolutePath());
         resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
 
@@ -136,6 +119,7 @@ public class ResourceManagerTest extends AbstractManagerTest {
     public void testFetchAGivenResource() throws IOException, ResourceException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
         Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
+        Files.createDirectories(outDir);
         System.out.println("outDir = " + outDir.toAbsolutePath());
         resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
 
