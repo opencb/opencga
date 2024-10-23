@@ -121,4 +121,25 @@ public class ConfigurationUtils {
         }
         return defaultVersion;
     }
+
+
+    public static AnalysisTool getAnalysisTool(String toolId, String version, Configuration configuration) throws ToolException {
+        for (AnalysisTool tool : configuration.getAnalysis().getTools()) {
+            if (toolId.equals(tool.getId()) && version.equals(tool.getVersion())) {
+                return tool;
+            }
+        }
+        throw new ToolException("Missing analysis tool (ID = " + toolId + ", version = " + version + ") in configuration file");
+    }
+
+    public static String getToolResource(String toolId, String version, String resourceKey, Configuration configuration)
+            throws ToolException {
+        // Get resources from the configuration file
+        AnalysisTool tool = ConfigurationUtils.getAnalysisTool(toolId, version, configuration);
+        if (!tool.getResources().containsKey(resourceKey)) {
+            throw new ToolException("Error getting resource " + resourceKey + " of analysis tool (ID = " + toolId + ", version =  "
+                    + version + "): it does not exist in the configuration file");
+        }
+        return tool.getResources().get(resourceKey);
+    }
 }

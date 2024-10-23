@@ -33,11 +33,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.mongodb.assertions.Assertions.assertFalse;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
-import static org.junit.Assume.assumeTrue;
 
 @Category(MediumTests.class)
 public class ExomiserInterpretationAnalysisTest  {
@@ -51,7 +48,7 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        opencga.clearStorageDB();
+        opencga.clear();
         clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(opencga);
     }
 
@@ -82,7 +79,6 @@ public class ExomiserInterpretationAnalysisTest  {
         String exomiserVersion = "14.0";
         String resourceVersion = "2402";
         assertTrue(opencga.getOpencgaHome().resolve("analysis").resolve("exomiser").resolve(exomiserVersion).toFile().exists());
-        assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + resourceVersion).toFile().exists());
 
         prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_single"));
@@ -133,7 +129,6 @@ public class ExomiserInterpretationAnalysisTest  {
         String exomiserVersion = "14.0";
         String resourceVersion = "2402";
         assertTrue(opencga.getOpencgaHome().resolve("analysis").resolve("exomiser").resolve(exomiserVersion).toFile().exists());
-        assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + resourceVersion).toFile().exists());
 
         prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_trio_family"));
@@ -183,7 +178,6 @@ public class ExomiserInterpretationAnalysisTest  {
         String exomiserVersion = "14.0";
         String resourceVersion = "2402";
         assertTrue(opencga.getOpencgaHome().resolve("analysis").resolve("exomiser").resolve(exomiserVersion).toFile().exists());
-        assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + resourceVersion).toFile().exists());
 
         prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_trio_single"));

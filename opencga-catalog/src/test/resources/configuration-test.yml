@@ -28,15 +28,15 @@ analysis:
       version: "13.1"
       dockerId: "exomiser/exomiser-cli:13.1.0"
       resources:
-        HG38: "exomiser/2109_hg38.zip"
-        PHENOTYPE: "exomiser/2109_phenotype.zip"
+        HG38: "2109_hg38"
+        PHENOTYPE: "2109_phenotype"
     - id: "exomiser"
       version: "14.0"
       defaultVersion: true
       dockerId: "exomiser/exomiser-cli:14.0.0"
       resources:
-        HG38: "exomiser/2402_hg38.zip"
-        PHENOTYPE: "exomiser/2402_phenotype.zip"
+        HG38: "2402_hg38"
+        PHENOTYPE: "2402_phenotype"
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory

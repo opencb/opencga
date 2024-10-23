@@ -19,39 +19,46 @@ package org.opencb.opencga.analysis.wrappers.exomiser;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
+
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 
 
 @Tool(id = ExomiserWrapperAnalysis.ID, resource = Enums.Resource.CLINICAL_ANALYSIS,
         description = ExomiserWrapperAnalysis.DESCRIPTION)
 public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
 
-    public final static String ID = "exomiser";
-    public final static String DESCRIPTION = "The Exomiser is a Java program that finds potential disease-causing variants"
+    public static final String ID = "exomiser";
+    public static final String DESCRIPTION = "The Exomiser is a Java program that finds potential disease-causing variants"
             + " from whole-exome or whole-genome sequencing data.";
 
     // It must match the tool prefix in the tool keys for exomiser in the configuration file
-    public final static String EXOMISER_PREFIX = "exomiser-";
+    public static final String EXOMISER_PREFIX = "exomiser-";
 
-    // It must match the resources key in the exomiser/tool section in the configuration file
-    public final static String HG19_RESOURCE_KEY = "HG19";
-    public final static String HG38_RESOURCE_KEY = "HG38";
-    public final static String PHENOTYPE_RESOURCE_KEY = "PHENOTYPE";
+    private static final String PREPARE_RESOURCES_STEP = "prepare-resources";
+    private static final String EXPORT_VARIANTS_STEP = "export-variants";
 
     @ToolParams
     protected final ExomiserWrapperParams analysisParams = new ExomiserWrapperParams();
 
+    @Override
     protected void check() throws Exception {
         super.check();
 
-        if (StringUtils.isEmpty(getStudy())) {
+        if (StringUtils.isEmpty(study)) {
             throw new ToolException("Missing study");
         }
+
+        setUpStorageEngineExecutor(study);
 
         // Check exomiser version
         if (StringUtils.isEmpty(analysisParams.getExomiserVersion())) {
@@ -60,19 +67,49 @@ public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
             logger.warn("Missing exomiser version, using the default {}", exomiserVersion);
             analysisParams.setExomiserVersion(exomiserVersion);
         }
+
+        ExomiserAnalysisUtils.checkResources(analysisParams.getExomiserVersion(), study, catalogManager, token, getOpencgaHome());
+    }
+
+    @Override
+    protected List<String> getSteps() {
+        return Arrays.asList(PREPARE_RESOURCES_STEP, EXPORT_VARIANTS_STEP, ExomiserWrapperAnalysis.ID);
     }
 
     @Override
     protected void run() throws Exception {
-        setUpStorageEngineExecutor(study);
+        // Main steps
+        step(PREPARE_RESOURCES_STEP, this::prepareResources);
+        step(EXPORT_VARIANTS_STEP, this::exportVariants);
+        step(ID, this::runExomiser);
+    }
 
-        step(() -> {
-            getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
-                    .setStudyId(study)
-                    .setSampleId(analysisParams.getSample())
-                    .setExomiserVersion(analysisParams.getExomiserVersion())
-                    .setClinicalAnalysisType(ClinicalAnalysis.Type.valueOf(analysisParams.getClinicalAnalysisType()))
-                    .execute();
-        });
+    private void prepareResources() throws ToolException {
+        ExomiserAnalysisUtils.prepareResources(analysisParams.getSample(), study, analysisParams.getClinicalAnalysisType(),
+                analysisParams.getExomiserVersion(), catalogManager, token, getOutDir(), getOpencgaHome());
+    }
+
+    private void exportVariants() throws ToolException {
+        ExomiserAnalysisUtils.exportVariants(analysisParams.getSample(), study, analysisParams.getClinicalAnalysisType(), getOutDir(),
+                variantStorageManager, token);
+    }
+
+    private void runExomiser() throws ToolException, CatalogException {
+        ExomiserWrapperAnalysisExecutor executor = getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
+                .setExomiserVersion(analysisParams.getExomiserVersion())
+                .setAssembly(ExomiserAnalysisUtils.checkAssembly(study, catalogManager, token))
+                .setExomiserDataPath(Paths.get(getOpencgaHome().toAbsolutePath().toAbsolutePath().toString(),
+                                ResourceManager.ANALYSIS_FOLDER_NAME, ResourceManager.RESOURCES_FOLDER_NAME, ExomiserWrapperAnalysis.ID))
+                .setSampleFile(ExomiserAnalysisUtils.getSamplePath(analysisParams.getSample(), getOutDir()))
+                .setVcfFile(ExomiserAnalysisUtils.getVcfPath(analysisParams.getSample(), getOutDir()));
+
+        for (File file : getOutDir().toFile().listFiles()) {
+            if (file.getName().endsWith(".ped")) {
+                executor.setPedigreeFile(file.toPath());
+                break;
+            }
+        }
+
+        executor.execute();
     }
 }
