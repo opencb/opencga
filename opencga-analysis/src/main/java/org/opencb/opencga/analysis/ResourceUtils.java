@@ -62,76 +62,58 @@ public class ResourceUtils {
         }
     }
 
-    public static DownloadedRefGenome downloadRefGenome(String assembly, Path outDir, Path openCgaHome) throws IOException {
-
-        // Download files
-        File gzFile = null;
-        File faiFile = null;
-        File gziFile = null;
-
-        // Get files to downloadAnalysis
-        List<String> filenames = new LinkedList<>();
-        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz");
-        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.fai");
-        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.gzi");
-
-        Path path = null;
-        for (String filename : filenames) {
-            File file;
-
-            if (openCgaHome != null) {
-                path = openCgaHome.resolve("analysis/commons/reference-genomes/" + filename);
-            }
-            if (path != null && path.toFile().exists()) {
-                File outFile = outDir.resolve(path.toFile().getName()).toFile();
-                System.out.println("downloadRefGenome from path: " + path + " to " + outFile.getAbsolutePath());
-                FileUtils.copyFile(path.toFile(), outFile);
-                file = outFile;
-            } else {
-                URL url = new URL(URL + "analysis/commons/reference-genomes/" + filename);
-                System.out.println("downloadAnalysis from URL: " + URL + ", (path does not exist: " + path + ")");
-                file = URLUtils.download(url, outDir);
-                if (file == null) {
-                    // Something wrong happened, remove downloaded files
-                    cleanRefGenome(filenames, outDir);
-                    return null;
-                }
-            }
-            if (filename.endsWith("gz")) {
-                gzFile = file;
-            } else if (filename.endsWith("fai")) {
-                faiFile = file;
-            } else if (filename.endsWith("gzi")) {
-                gziFile = file;
-            }
-
-            // Reset path for the next iteration
-            path = null;
-        }
-        return new DownloadedRefGenome(assembly, gzFile, faiFile, gziFile);
-    }
+//    public static DownloadedRefGenome downloadRefGenome(String assembly, Path outDir, Path openCgaHome) throws IOException {
+//
+//        // Download files
+//        File gzFile = null;
+//        File faiFile = null;
+//        File gziFile = null;
+//
+//        // Get files to downloadAnalysis
+//        List<String> filenames = new LinkedList<>();
+//        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz");
+//        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.fai");
+//        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.gzi");
+//Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai
+//        Path path = null;
+//        for (String filename : filenames) {
+//            File file;
+//
+//            if (openCgaHome != null) {
+//                path = openCgaHome.resolve("analysis/commons/reference-genomes/" + filename);
+//            }
+//            if (path != null && path.toFile().exists()) {
+//                File outFile = outDir.resolve(path.toFile().getName()).toFile();
+//                System.out.println("downloadRefGenome from path: " + path + " to " + outFile.getAbsolutePath());
+//                FileUtils.copyFile(path.toFile(), outFile);
+//                file = outFile;
+//            } else {
+//                URL url = new URL(URL + "analysis/commons/reference-genomes/" + filename);
+//                System.out.println("downloadAnalysis from URL: " + URL + ", (path does not exist: " + path + ")");
+//                file = URLUtils.download(url, outDir);
+//                if (file == null) {
+//                    // Something wrong happened, remove downloaded files
+//                    cleanRefGenome(filenames, outDir);
+//                    return null;
+//                }
+//            }
+//            if (filename.endsWith("gz")) {
+//                gzFile = file;
+//            } else if (filename.endsWith("fai")) {
+//                faiFile = file;
+//            } else if (filename.endsWith("gzi")) {
+//                gziFile = file;
+//            }
+//
+//            // Reset path for the next iteration
+//            path = null;
+//        }
+//        return new DownloadedRefGenome(assembly, gzFile, faiFile, gziFile);
+//    }
 
     //-------------------------------------------------------------------------
     // Support for downloading reference genomes
     //-------------------------------------------------------------------------
-
-    public static String getAssembly(CatalogManager catalogManager, String studyId, String sessionId) throws CatalogException {
-        String assembly = "";
-        OpenCGAResult<Project> projectQueryResult;
-
-        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(sessionId);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        
-        projectQueryResult = catalogManager.getProjectManager().search(organizationId, new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
-                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
-        if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())
-                && projectQueryResult.first().getOrganism() != null
-                && projectQueryResult.first().getOrganism().getAssembly() != null) {
-            assembly = projectQueryResult.first().getOrganism().getAssembly();
-        }
-        return assembly;
-    }
 
     public static class DownloadedRefGenome {
         private String assembly;

@@ -125,8 +125,10 @@ public class ConfigurationUtils {
 
     public static AnalysisTool getAnalysisTool(String toolId, String version, Configuration configuration) throws ToolException {
         for (AnalysisTool tool : configuration.getAnalysis().getTools()) {
-            if (toolId.equals(tool.getId()) && version.equals(tool.getVersion())) {
-                return tool;
+            if (toolId.equals(tool.getId())) {
+                if (StringUtils.isEmpty(version) || version.equals(tool.getVersion())) {
+                    return tool;
+                }
             }
         }
         throw new ToolException("Missing analysis tool (ID = " + toolId + ", version = " + version + ") in configuration file");

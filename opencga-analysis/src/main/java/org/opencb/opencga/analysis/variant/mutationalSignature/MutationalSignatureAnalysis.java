@@ -26,10 +26,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.ResourceUtils;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
@@ -50,7 +51,10 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import static org.opencb.opencga.catalog.utils.ResourceManager.REFERENCE_GENOMES;
 
 @Tool(id = MutationalSignatureAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
@@ -76,6 +80,13 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     public static final String TYPE_TDS = "tds";
     public static final String TYPE_INV = "inv";
     public static final String TYPE_TRANS = "trans";
+
+    public static final String GRCH38_FA = "GRCH38_FA";
+    public static final String GRCH38_FAI = "GRCH38_FAI";
+    public static final String GRCH38_GZI = "GRCH38_GZI";
+    public static final String GRCH37_FA = "GRCH37_FA";
+    public static final String GRCH37_FAI = "GRCH37_FAI";
+    public static final String GRCH37_GZI = "GRCH37_GZI";
 
     @ToolParams
     private MutationalSignatureAnalysisParams signatureParams = new MutationalSignatureAnalysisParams();
@@ -183,6 +194,14 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
 
         // Get assembly
         assembly = getAssembly(study, catalogManager, token);
+
+        // Check resources
+        ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
+        List<String> resourceKeys = Arrays.asList(GRCH38_FA, GRCH38_FAI, GRCH38_GZI, GRCH37_FA, GRCH37_FAI, GRCH37_FAI);
+        for (String resourceKey : resourceKeys) {
+            String resourceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, resourceKey, configuration);
+            resourceManager.checkResourcePath(REFERENCE_GENOMES, resourceName);
+        }
 
         // Log messages
         logger.info("Signagture id: {}", signatureParams.getId());
@@ -309,7 +328,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     }
 
     public static String getAssembly(String study, CatalogManager catalogManager, String token) throws CatalogException, ToolException {
-        String assembly = ResourceUtils.getAssembly(catalogManager, study, token);
+        String assembly = AnalysisUtils.getAssembly(catalogManager, study, token);
         if (StringUtils.isEmpty(assembly)) {
             throw new ToolException("Missing assembly for study '" + study + "'");
         }

@@ -32,10 +32,12 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.ResourceUtils;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -43,12 +45,12 @@ import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +60,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.*;
+import static org.opencb.opencga.catalog.utils.ResourceManager.REFERENCE_GENOMES;
 
 @ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
@@ -158,18 +161,32 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     private void createGenomeContextFile(File indexFile) throws ToolExecutorException {
         try {
             // First,
-            ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(getAssembly(), getOutDir(),
-                    opencgaHome);
+            String resouceName;
+            ResourceManager resourceManager = new ResourceManager(opencgaHome);
 
-            if (refGenome == null) {
-                throw new ToolExecutorException("Something wrong happened accessing reference genome, check local path"
-                        + " and public repository");
+            Path gzRefGenomePath;
+            Path faiRefGenomePath;
+            Path gziRefGenomePath;
+            String assembly = getAssembly();
+            if ("GRCh38".equalsIgnoreCase(assembly)) {
+                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH38_FA, getConfiguration());
+                gzRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
+                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH38_FAI, getConfiguration());
+                faiRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
+                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH38_GZI, getConfiguration());
+                gziRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
+            } else if ("GRCh37".equalsIgnoreCase(assembly)) {
+                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH37_FA, getConfiguration());
+                gzRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
+                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH37_FAI, getConfiguration());
+                faiRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
+                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH37_GZI, getConfiguration());
+                gziRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
+            } else {
+                throw new ToolExecutorException("Invalid assembly '" + assembly + "'. Valid values: GRCh38 and GRCh37");
             }
 
-            Path refGenomePath = refGenome.getGzFile().toPath();
-
             // Compute signature profile: contextual frequencies of each type of base substitution
-
             Query query = new Query()
                     .append(VariantQueryParam.STUDY.key(), getStudy())
                     .append(VariantQueryParam.SAMPLE.key(), getSample())
@@ -181,12 +198,9 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
 
             // Read mutation context from reference genome (.gz, .gz.fai and .gz.gzi files)
-            String base = refGenomePath.toAbsolutePath().toString();
-
             try (PrintWriter pw = new PrintWriter(indexFile);
                  BlockCompressedIndexedFastaSequenceFile indexed = new BlockCompressedIndexedFastaSequenceFile(
-                         refGenomePath, new FastaSequenceIndex(new File(base + ".fai")),
-                         GZIIndex.loadIndex(Paths.get(base + ".gzi")))) {
+                         gzRefGenomePath, new FastaSequenceIndex(faiRefGenomePath.toFile()), GZIIndex.loadIndex(gziRefGenomePath))) {
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
 
@@ -204,7 +218,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                     }
                 }
             }
-        } catch (IOException | CatalogException | ToolException | StorageEngineException e) {
+        } catch (IOException | CatalogException | ToolException | StorageEngineException | ResourceException e) {
             throw new ToolExecutorException(e);
         }
     }

@@ -37,6 +37,14 @@ analysis:
       resources:
         HG38: "2402_hg38"
         PHENOTYPE: "2402_phenotype"
+    - id: "mutational-signature"
+      resources:
+        GRCH38_FA: "reference-genomes/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+        GRCH38_FAI: "reference-genomes/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.fai"
+        GRCH38_GZI: "reference-genomes/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.gzi"
+        GRCH37_FA: "reference-genomes/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
+        GRCH37_FAI: "reference-genomes/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai"
+        GRCH37_GZI: "reference-genomes/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory

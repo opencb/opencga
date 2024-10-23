@@ -33,6 +33,8 @@ import static org.opencb.opencga.core.models.resource.AnalysisResource.AnalysisR
 
 public class ResourceManager  {
 
+    public static final String REFERENCE_GENOMES = "reference-genomes";
+
     public static final String OK = "Ok";
     public static final String MD5_EXT = ".md5";
     public static final String RESOURCE_MSG = "Resource '";
@@ -185,13 +187,14 @@ public class ResourceManager  {
         throw new ResourceException("Analysis ID '" + analysisId + "' not found in resource directory.");
     }
 
-    public void checkResourcePath(String analysisId, String resourceName) throws ResourceException {
+    public Path checkResourcePath(String analysisId, String resourceName) throws ResourceException {
         Path resourcePath = Paths.get(openCgaHome.toAbsolutePath().toString(), ANALYSIS_FOLDER_NAME, RESOURCES_FOLDER_NAME, analysisId,
                 resourceName);
         if (!Files.exists(resourcePath)) {
             throw new ResourceException(RESOURCE_MSG + resourceName + FOR_ANALYSIS_MSG + analysisId + "' is missing. Please fetch"
                     + " them first.");
         }
+        return resourcePath;
     }
 
     public static String getVersion() {
