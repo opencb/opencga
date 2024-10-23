@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.project.Project;
@@ -136,6 +137,10 @@ public class ProjectMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
         Project p1 = getProject("myp1");
         catalogProjectDBAdaptor.insert(new Project("myp2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()).setFqn(FqnUtils.buildFqn(organizationId, "myp2")), null);
         Project p2 = getProject("myp2");
+
+        // Create project folder so the study insert doesn't fail
+        CatalogIOManager catalogIOManager = new CatalogIOManager(catalogManager.getConfiguration());
+        catalogIOManager.createProject(organizationId, Long.toString(p1.getUid()));
 
         // Add study
         catalogStudyDBAdaptor.insert(p1, new Study().setId("study").setFqn(FqnUtils.buildFqn(organizationId, "myp1", "study")), null);
