@@ -323,6 +323,10 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
+    protected OpenCGAResult<FacetField> facet(MongoDBCollection collection, Bson query, QueryOptions options) {
+        return null;
+    }
+
     protected OpenCGAResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {
             return new OpenCGAResult();
