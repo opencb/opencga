@@ -9,6 +9,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.utils.CryptoUtils;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -20,6 +21,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.Migration;
+import org.opencb.opencga.catalog.migration.MigrationException;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -29,12 +31,17 @@ import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.project.DataStore;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 
+import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.file.Files;
@@ -452,6 +459,8 @@ public class OrganizationMigration extends MigrationTool {
 
         // If the user didn't want to use the userId as the new organization id, we then need to change all the fqn's
         if (!this.organizationId.equals(this.userId)) {
+            logger.info("New organization id '{}' is different from original userId '{}'. Changing FQN's from projects and studies"
+                    , this.organizationId, this.userId);
             changeFqns();
         }
 
@@ -460,26 +469,62 @@ public class OrganizationMigration extends MigrationTool {
         catalogManager.getMigrationManager().skipPendingMigrations(organizationId, opencgaToken);
     }
 
-    private void changeFqns() throws CatalogDBException {
+    private void changeFqns() throws CatalogDBException, MigrationException {
         this.dbAdaptorFactory = this.mongoDBAdaptorFactory;
         String date = TimeUtils.getTime();
+
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(readStorageConfiguration());
 
         // Change project fqn's
         for (String projectCol : Arrays.asList(OrganizationMongoDBAdaptorFactory.PROJECT_COLLECTION,
                 OrganizationMongoDBAdaptorFactory.DELETED_PROJECT_COLLECTION)) {
-            migrateCollection(projectCol, new Document(), Projections.include("_id", "id", "fqn"), (document, bulk) -> {
-                String currentFqn = document.getString("fqn");
+            migrateCollection(projectCol, new Document(), Projections.include("_id", "id", "fqn", "internal.datastores.variant"), (document, bulk) -> {
+                String oldFqn = document.getString("fqn");
                 String projectId = document.getString("id");
-                String projectFqn = FqnUtils.buildFqn(this.organizationId, projectId);
+                String newFqn = FqnUtils.buildFqn(this.organizationId, projectId);
+                logger.info("Changing project fqn from '{}' to '{}'", oldFqn, newFqn);
+
+                Document set = new Document()
+                        .append("fqn", newFqn)
+                        .append("attributes.OPENCGA.3_0_0", new Document()
+                                .append("date", date)
+                                .append("oldFqn", oldFqn)
+                        );
+
+                Document internal = document.get("internal", Document.class);
+                if (internal != null) {
+                    Document datastores = internal.get("datastores", Document.class);
+                    if (datastores != null) {
+                        Document variant = datastores.get("variant", Document.class);
+                        if (variant == null) {
+                            DataStore dataStore = VariantStorageManager.defaultDataStore(configuration.getDatabasePrefix(), oldFqn);
+                            logger.info("Undefined variant \"internal.datastores.variant\" at project '{}'.", oldFqn);
+
+                            // Update only if the project exists in the variant storage
+                            try (VariantStorageEngine variantStorageEngine = storageEngineFactory
+                                    .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName())) {
+                                if (variantStorageEngine.getMetadataManager().exists()) {
+                                    logger.info("Project exists in the variant storage. Setting variant data store: {}", dataStore);
+                                    set.append("internal.datastores.variant", new Document()
+                                            .append("storageEngine", dataStore.getStorageEngine())
+                                            .append("dbName", dataStore.getDbName())
+                                            .append("options", new Document()));
+                                } else {
+                                    logger.info("Project does not exist in the variant storage. Skipping");
+                                }
+                            } catch (StorageEngineException | IOException e) {
+                                throw new RuntimeException(e);
+                            }
+
+                        }
+                    }
+                }
+
                 bulk.add(new UpdateOneModel<>(
                         Filters.eq("_id", document.get("_id")),
-                        new Document("$set", new Document()
-                                .append("fqn", projectFqn)
-                                .append("attributes.OPENCGA.3_0_0", new Document()
-                                        .append("date", date)
-                                        .append("oldFqn", currentFqn)
-                                )))
+                        new Document("$set", set))
                 );
+                logger.info("-------");
             });
         }
 
@@ -496,6 +541,7 @@ public class OrganizationMigration extends MigrationTool {
                 String oldStudyFqn = document.getString("fqn");
                 FqnUtils.FQN oldFqnInstance = FqnUtils.parse(oldStudyFqn);
                 String newFqn = FqnUtils.buildFqn(this.organizationId, oldFqnInstance.getProject(), oldFqnInstance.getStudy());
+                logger.info("Changing study fqn from '{}' to '{}'", oldStudyFqn, newFqn);
                 bulk.add(new UpdateOneModel<>(
                         Filters.eq("_id", document.get("_id")),
                         new Document("$set", new Document()
