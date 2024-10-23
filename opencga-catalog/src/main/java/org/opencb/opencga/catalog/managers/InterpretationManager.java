@@ -27,10 +27,7 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -1265,6 +1262,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     @Override
     public DBIterator<Interpretation> iterator(String studyStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
         return null;
     }
 

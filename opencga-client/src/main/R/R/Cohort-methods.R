@@ -20,6 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/cohorts/acl/{members}/update | study, members[*], action[*], body[*] |
+#' | aggregationStats | /{apiVersion}/cohorts/aggregationStats | study, type, creationYear, creationMonth, creationDay, creationDayOfWeek, numSamples, status, release, annotation, field |
 #' | loadAnnotationSets | /{apiVersion}/cohorts/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | create | /{apiVersion}/cohorts/create | include, exclude, study, variableSet, variable, includeResult, body[*] |
 #' | distinct | /{apiVersion}/cohorts/distinct | study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field[*] |
@@ -48,6 +49,23 @@ setMethod("cohortClient", "OpencgaR", function(OpencgaR, annotationSet, cohort, 
         #' @param data JSON containing the parameters to add ACLs.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="cohorts", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/cohorts/aggregationStats:
+        #' Fetch catalog cohort stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param type Type.
+        #' @param creationYear Creation year.
+        #' @param creationMonth Creation month (JANUARY, FEBRUARY...).
+        #' @param creationDay Creation day.
+        #' @param creationDayOfWeek Creation day of week (MONDAY, TUESDAY...).
+        #' @param numSamples Number of samples.
+        #' @param status Status.
+        #' @param release Release.
+        #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        #' @param field List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="cohorts", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/cohorts/annotationSets/load:

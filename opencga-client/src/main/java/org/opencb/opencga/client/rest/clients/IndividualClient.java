@@ -17,6 +17,7 @@
 package org.opencb.opencga.client.rest.clients;
 
 import java.lang.Object;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -69,6 +70,38 @@ public class IndividualClient extends AbstractParentClient {
         params.putIfNotNull("action", action);
         params.put("body", data);
         return execute("individuals", null, "acl", members, "update", params, POST, IndividualAclEntryList.class);
+    }
+
+    /**
+     * Fetch catalog individual stats.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       hasFather: Has father.
+     *       hasMother: Has mother.
+     *       sex: Sex.
+     *       karyotypicSex: Karyotypic sex.
+     *       ethnicity: Ethnicity.
+     *       population: Population.
+     *       creationYear: Creation year.
+     *       creationMonth: Creation month (JANUARY, FEBRUARY...).
+     *       creationDay: Creation day.
+     *       creationDayOfWeek: Creation day of week (MONDAY, TUESDAY...).
+     *       status: Status.
+     *       lifeStatus: Life status.
+     *       phenotypes: Phenotypes.
+     *       numSamples: Number of samples.
+     *       parentalConsanguinity: Parental consanguinity.
+     *       release: Release.
+     *       version: Version.
+     *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
+     *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+     *       field: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("individuals", null, null, null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**

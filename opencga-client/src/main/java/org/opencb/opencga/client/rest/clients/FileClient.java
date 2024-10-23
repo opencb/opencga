@@ -18,6 +18,7 @@ package org.opencb.opencga.client.rest.clients;
 
 import java.io.DataInputStream;
 import java.lang.Object;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -75,6 +76,37 @@ public class FileClient extends AbstractParentClient {
         params.putIfNotNull("action", action);
         params.put("body", data);
         return execute("files", null, "acl", members, "update", params, POST, FileAclEntryList.class);
+    }
+
+    /**
+     * Fetch catalog file stats.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       name: Name.
+     *       type: Type.
+     *       format: Format.
+     *       bioformat: Bioformat.
+     *       creationYear: Creation year.
+     *       creationMonth: Creation month (JANUARY, FEBRUARY...).
+     *       creationDay: Creation day.
+     *       creationDayOfWeek: Creation day of week (MONDAY, TUESDAY...).
+     *       status: Status.
+     *       release: Release.
+     *       external: External.
+     *       size: Size.
+     *       software: Software.
+     *       experiment: Experiment.
+     *       numSamples: Number of samples.
+     *       numRelatedFiles: Number of related files.
+     *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
+     *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+     *       field: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", null, null, null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**

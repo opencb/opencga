@@ -20,6 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/files/acl/{members}/update | study, members[*], action[*], body[*] |
+#' | aggregationStats | /{apiVersion}/files/aggregationStats | study, name, type, format, bioformat, creationYear, creationMonth, creationDay, creationDayOfWeek, status, release, external, size, software, experiment, numSamples, numRelatedFiles, annotation, field |
 #' | loadAnnotationSets | /{apiVersion}/files/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | bioformats | /{apiVersion}/files/bioformats |  |
 #' | create | /{apiVersion}/files/create | study, parents, body[*] |
@@ -64,6 +65,31 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' @param data JSON containing the parameters to add ACLs.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="files", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/files/aggregationStats:
+        #' Fetch catalog file stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param name Name.
+        #' @param type Type.
+        #' @param format Format.
+        #' @param bioformat Bioformat.
+        #' @param creationYear Creation year.
+        #' @param creationMonth Creation month (JANUARY, FEBRUARY...).
+        #' @param creationDay Creation day.
+        #' @param creationDayOfWeek Creation day of week (MONDAY, TUESDAY...).
+        #' @param status Status.
+        #' @param release Release.
+        #' @param external External.
+        #' @param size Size.
+        #' @param software Software.
+        #' @param experiment Experiment.
+        #' @param numSamples Number of samples.
+        #' @param numRelatedFiles Number of related files.
+        #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        #' @param field List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="files", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/files/annotationSets/load:

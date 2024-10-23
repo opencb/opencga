@@ -34,6 +34,7 @@ public class DiseasePanelsCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
+        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
         public ImportCommandOptions importCommandOptions;
@@ -49,6 +50,7 @@ public class DiseasePanelsCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
         this.importCommandOptions = new ImportCommandOptions();
@@ -86,6 +88,38 @@ public class DiseasePanelsCommandOptions {
     
         @Parameter(names = {"--panel"}, description = "The body web service panel parameter", required = false, arity = 1)
         public String panel;
+    
+    }
+
+    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog panel stats")
+    public class AggregationStatsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--creation-year"}, description = "Creation year", required = false, arity = 1)
+        public String creationYear; 
+    
+        @Parameter(names = {"--creation-month"}, description = "Creation month (JANUARY, FEBRUARY...)", required = false, arity = 1)
+        public String creationMonth; 
+    
+        @Parameter(names = {"--creation-day"}, description = "Creation day", required = false, arity = 1)
+        public String creationDay; 
+    
+        @Parameter(names = {"--creation-day-of-week"}, description = "Creation day of week (MONDAY, TUESDAY...)", required = false, arity = 1)
+        public String creationDayOfWeek; 
+    
+        @Parameter(names = {"--status"}, description = "Status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--release"}, description = "Release", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
+        public String field; 
     
     }
 

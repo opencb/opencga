@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.panel.PanelImportTask;
 import org.opencb.opencga.catalog.managers.PanelManager;
@@ -289,6 +290,26 @@ public class PanelWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    // TODO: Add panel fields to aggregation stats
+    @GET
+    @Path("/aggregationStats")
+    @ApiOperation(value = "Fetch catalog panel stats", response = FacetField.class)
+    public Response getAggregationStats(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
+            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
+            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
+            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Release") @QueryParam("release") String release,
+            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
+        return run(() -> {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove("field");
+            return catalogManager.getPanelManager().facet(studyStr, query, facet, token);
+        });
     }
 
 }

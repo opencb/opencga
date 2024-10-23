@@ -34,6 +34,7 @@ public class IndividualsCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
+        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
@@ -51,6 +52,7 @@ public class IndividualsCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
@@ -96,6 +98,74 @@ public class IndividualsCommandOptions {
     
         @Parameter(names = {"--sample"}, description = "The body web service sample parameter", required = false, arity = 1)
         public String sample;
+    
+    }
+
+    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog individual stats")
+    public class AggregationStatsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--has-father"}, description = "Has father", required = false, arity = 1)
+        public Boolean hasFather; 
+    
+        @Parameter(names = {"--has-mother"}, description = "Has mother", required = false, arity = 1)
+        public Boolean hasMother; 
+    
+        @Parameter(names = {"--sex"}, description = "Sex", required = false, arity = 1)
+        public String sex; 
+    
+        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", required = false, arity = 1)
+        public String karyotypicSex; 
+    
+        @Parameter(names = {"--ethnicity"}, description = "Ethnicity", required = false, arity = 1)
+        public String ethnicity; 
+    
+        @Parameter(names = {"--population"}, description = "Population", required = false, arity = 1)
+        public String population; 
+    
+        @Parameter(names = {"--creation-year"}, description = "Creation year", required = false, arity = 1)
+        public String creationYear; 
+    
+        @Parameter(names = {"--creation-month"}, description = "Creation month (JANUARY, FEBRUARY...)", required = false, arity = 1)
+        public String creationMonth; 
+    
+        @Parameter(names = {"--creation-day"}, description = "Creation day", required = false, arity = 1)
+        public String creationDay; 
+    
+        @Parameter(names = {"--creation-day-of-week"}, description = "Creation day of week (MONDAY, TUESDAY...)", required = false, arity = 1)
+        public String creationDayOfWeek; 
+    
+        @Parameter(names = {"--status"}, description = "Status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--life-status"}, description = "Life status", required = false, arity = 1)
+        public String lifeStatus; 
+    
+        @Parameter(names = {"--phenotypes"}, description = "Phenotypes", required = false, arity = 1)
+        public String phenotypes; 
+    
+        @Parameter(names = {"--num-samples"}, description = "Number of samples", required = false, arity = 1)
+        public String numSamples; 
+    
+        @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", required = false, arity = 1)
+        public Boolean parentalConsanguinity; 
+    
+        @Parameter(names = {"--release"}, description = "Release", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--version"}, description = "Version", required = false, arity = 1)
+        public String version; 
+    
+        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
+        public String annotation; 
+    
+        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
+        public String field; 
     
     }
 

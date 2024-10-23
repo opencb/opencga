@@ -20,6 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/individuals/acl/{members}/update | study, members[*], action[*], propagate, body[*] |
+#' | aggregationStats | /{apiVersion}/individuals/aggregationStats | study, hasFather, hasMother, sex, karyotypicSex, ethnicity, population, creationYear, creationMonth, creationDay, creationDayOfWeek, status, lifeStatus, phenotypes, numSamples, parentalConsanguinity, release, version, annotation, field |
 #' | loadAnnotationSets | /{apiVersion}/individuals/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | create | /{apiVersion}/individuals/create | include, exclude, study, samples, includeResult, body[*] |
 #' | distinct | /{apiVersion}/individuals/distinct | study, id, uuid, name, familyIds, father, mother, samples, sex, ethnicity, dateOfBirth, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot, field[*] |
@@ -49,6 +50,32 @@ setMethod("individualClient", "OpencgaR", function(OpencgaR, annotationSet, indi
         #' @param data JSON containing the parameters to update the permissions. If propagate flag is set to true, it will propagate the permissions defined to the samples that are associated to the matching individuals.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="individuals", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/individuals/aggregationStats:
+        #' Fetch catalog individual stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param hasFather Has father.
+        #' @param hasMother Has mother.
+        #' @param sex Sex.
+        #' @param karyotypicSex Karyotypic sex.
+        #' @param ethnicity Ethnicity.
+        #' @param population Population.
+        #' @param creationYear Creation year.
+        #' @param creationMonth Creation month (JANUARY, FEBRUARY...).
+        #' @param creationDay Creation day.
+        #' @param creationDayOfWeek Creation day of week (MONDAY, TUESDAY...).
+        #' @param status Status.
+        #' @param lifeStatus Life status.
+        #' @param phenotypes Phenotypes.
+        #' @param numSamples Number of samples.
+        #' @param parentalConsanguinity Parental consanguinity.
+        #' @param release Release.
+        #' @param version Version.
+        #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        #' @param field List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="individuals", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/individuals/annotationSets/load:

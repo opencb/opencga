@@ -39,7 +39,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> panelsList = asList( "acl-update","create","distinct","import","search","acl","delete","info","update")
+    private List<Candidate> panelsList = asList( "acl-update","aggregationstats","create","distinct","import","search","acl","delete","info","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -49,7 +49,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> jobsList = asList( "acl-update","create","distinct","retry","search","top","acl","delete","info","update","kill","log-head","log-tail")
+    private List<Candidate> jobsList = asList( "acl-update","aggregationstats","create","distinct","retry","search","top","acl","delete","info","update","kill","log-head","log-tail")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -59,12 +59,12 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> individualsList = asList( "acl-update","annotation-sets-load","create","distinct","search","acl","delete","info","update","annotation-sets-annotations-update","relatives")
+    private List<Candidate> individualsList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","search","acl","delete","info","update","annotation-sets-annotations-update","relatives")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> familiesList = asList( "acl-update","annotation-sets-load","create","distinct","search","acl","delete","info","update","annotation-sets-annotations-update")
+    private List<Candidate> familiesList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","search","acl","delete","info","update","annotation-sets-annotations-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -74,7 +74,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> samplesList = asList( "acl-update","annotation-sets-load","create","distinct","load","search","acl","delete","info","update","annotation-sets-annotations-update")
+    private List<Candidate> samplesList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","load","search","acl","delete","info","update","annotation-sets-annotations-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -99,7 +99,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> filesList = asList( "acl-update","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","acl","delete","info","unlink","update","annotation-sets-annotations-update","download","grep","head","image","move","refresh","tail","list","tree")
+    private List<Candidate> filesList = asList( "acl-update","aggregationstats","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","acl","delete","info","unlink","update","annotation-sets-annotations-update","download","grep","head","image","move","refresh","tail","list","tree")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -109,7 +109,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> cohortsList = asList( "acl-update","annotation-sets-load","create","distinct","generate","search","acl","delete","info","update","annotation-sets-annotations-update")
+    private List<Candidate> cohortsList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","generate","search","acl","delete","info","update","annotation-sets-annotations-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());

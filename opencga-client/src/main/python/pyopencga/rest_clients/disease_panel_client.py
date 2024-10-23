@@ -37,6 +37,26 @@ class DiseasePanel(_ParentRestClient):
         options['action'] = action
         return self._post(category='panels', resource='update', subcategory='acl', second_query_id=members, data=data, **options)
 
+    def aggregation_stats(self, **options):
+        """
+        Fetch catalog panel stats.
+        PATH: /{apiVersion}/panels/aggregationStats
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param str creation_year: Creation year.
+        :param str creation_month: Creation month (JANUARY, FEBRUARY...).
+        :param str creation_day: Creation day.
+        :param str creation_day_of_week: Creation day of week (MONDAY,
+            TUESDAY...).
+        :param str status: Status.
+        :param str release: Release.
+        :param str field: List of fields separated by semicolons, e.g.:
+            studies;type;numSamples[0..10]:1.
+        """
+
+        return self._get(category='panels', resource='aggregationStats', **options)
+
     def create(self, data=None, **options):
         """
         Create a panel.

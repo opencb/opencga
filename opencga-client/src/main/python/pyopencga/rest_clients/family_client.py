@@ -40,6 +40,33 @@ class Family(_ParentRestClient):
         options['action'] = action
         return self._post(category='families', resource='update', subcategory='acl', second_query_id=members, data=data, **options)
 
+    def aggregation_stats(self, **options):
+        """
+        Fetch catalog family stats.
+        PATH: /{apiVersion}/families/aggregationStats
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param str creation_year: Creation year.
+        :param str creation_month: Creation month (JANUARY, FEBRUARY...).
+        :param str creation_day: Creation day.
+        :param str creation_day_of_week: Creation day of week (MONDAY,
+            TUESDAY...).
+        :param str status: Status.
+        :param str phenotypes: Phenotypes.
+        :param str release: Release.
+        :param str version: Version.
+        :param str num_members: Number of members.
+        :param str expected_size: Expected size.
+        :param str annotation: Annotation filters. Example:
+            age>30;gender=FEMALE. For more information, please visit
+            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        :param str field: List of fields separated by semicolons, e.g.:
+            studies;type;numSamples[0..10]:1.
+        """
+
+        return self._get(category='families', resource='aggregationStats', **options)
+
     def load_annotation_sets(self, variable_set_id, path, data=None, **options):
         """
         Load annotation sets from a TSV file.

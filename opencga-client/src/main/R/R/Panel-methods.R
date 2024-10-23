@@ -20,6 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/panels/acl/{members}/update | study, members[*], action[*], body[*] |
+#' | aggregationStats | /{apiVersion}/panels/aggregationStats | study, creationYear, creationMonth, creationDay, creationDayOfWeek, status, release, field |
 #' | create | /{apiVersion}/panels/create | include, exclude, study, includeResult, body |
 #' | distinct | /{apiVersion}/panels/distinct | study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field[*] |
 #' | importPanels | /{apiVersion}/panels/import | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body |
@@ -46,6 +47,20 @@ setMethod("panelClient", "OpencgaR", function(OpencgaR, members, panels, endpoin
         #' @param data JSON containing the parameters to update the permissions.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="panels", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/panels/aggregationStats:
+        #' Fetch catalog panel stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param creationYear Creation year.
+        #' @param creationMonth Creation month (JANUARY, FEBRUARY...).
+        #' @param creationDay Creation day.
+        #' @param creationDayOfWeek Creation day of week (MONDAY, TUESDAY...).
+        #' @param status Status.
+        #' @param release Release.
+        #' @param field List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="panels", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/panels/create:

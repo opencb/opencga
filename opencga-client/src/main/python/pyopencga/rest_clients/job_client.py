@@ -35,6 +35,35 @@ class Job(_ParentRestClient):
         options['action'] = action
         return self._post(category='jobs', resource='update', subcategory='acl', second_query_id=members, data=data, **options)
 
+    def aggregation_stats(self, **options):
+        """
+        Fetch catalog job stats.
+        PATH: /{apiVersion}/jobs/aggregationStats
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param str tool_id: Tool id.
+        :param str tool_scope: Tool scope.
+        :param str tool_type: Tool type.
+        :param str tool_resource: Tool resource.
+        :param str user_id: User id.
+        :param str priority: Priority.
+        :param str tags: Tags.
+        :param str executor_id: Executor id.
+        :param str executor_framework: Executor framework.
+        :param str creation_year: Creation year.
+        :param str creation_month: Creation month (JANUARY, FEBRUARY...).
+        :param str creation_day: Creation day.
+        :param str creation_day_of_week: Creation day of week (MONDAY,
+            TUESDAY...).
+        :param str status: Status.
+        :param str release: Release.
+        :param str field: List of fields separated by semicolons, e.g.:
+            studies;type;numSamples[0..10]:1.
+        """
+
+        return self._get(category='jobs', resource='aggregationStats', **options)
+
     def create(self, data=None, **options):
         """
         Register an executed job with POST method.

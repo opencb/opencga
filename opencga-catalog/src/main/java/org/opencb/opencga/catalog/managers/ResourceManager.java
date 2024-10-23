@@ -17,10 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -208,6 +205,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      */
     public abstract DBIterator<R> iterator(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException;
+
+    public abstract OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException;
 
     /**
      * Search of entries in catalog.

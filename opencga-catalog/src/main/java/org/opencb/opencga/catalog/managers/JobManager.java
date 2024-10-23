@@ -21,10 +21,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -811,6 +808,11 @@ public class JobManager extends ResourceManager<Job> {
         query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return getJobDBAdaptor(organizationId).iterator(study.getUid(), query, options, userId);
+    }
+
+    @Override
+    public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
+        return null;
     }
 
     public OpenCGAResult countInOrganization(String organizationId, Query query, String token) throws CatalogException {

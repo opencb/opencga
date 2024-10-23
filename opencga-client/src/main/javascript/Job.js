@@ -44,6 +44,31 @@ export default class Job extends OpenCGAParentClass {
         return this._post("jobs", null, "acl", members, "update", data, action);
     }
 
+    /** Fetch catalog job stats
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {String} [params.toolId] - Tool id.
+    * @param {String} [params.toolScope] - Tool scope.
+    * @param {String} [params.toolType] - Tool type.
+    * @param {String} [params.toolResource] - Tool resource.
+    * @param {String} [params.userId] - User id.
+    * @param {String} [params.priority] - Priority.
+    * @param {String} [params.tags] - Tags.
+    * @param {String} [params.executorId] - Executor id.
+    * @param {String} [params.executorFramework] - Executor framework.
+    * @param {String} [params.creationYear] - Creation year.
+    * @param {String} [params.creationMonth] - Creation month (JANUARY, FEBRUARY...).
+    * @param {String} [params.creationDay] - Creation day.
+    * @param {String} [params.creationDayOfWeek] - Creation day of week (MONDAY, TUESDAY...).
+    * @param {String} [params.status] - Status.
+    * @param {String} [params.release] - Release.
+    * @param {String} [params.field] - List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    aggregationStats(params) {
+        return this._get("jobs", null, null, null, "aggregationStats", params);
+    }
+
     /** Register an executed job with POST method
     * @param {Object} data - job.
     * @param {Object} [params] - The Object containing the following optional parameters:

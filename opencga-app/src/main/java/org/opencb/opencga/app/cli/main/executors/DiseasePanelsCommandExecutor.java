@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.List;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -60,6 +61,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
+                break;
+            case "aggregationstats":
+                queryResponse = aggregationStats();
                 break;
             case "create":
                 queryResponse = create();
@@ -125,6 +129,27 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), PanelAclUpdateParams.class);
         }
         return openCGAClient.getDiseasePanelClient().updateAcl(commandOptions.members, commandOptions.action, panelAclUpdateParams, queryParams);
+    }
+
+    private RestResponse<FacetField> aggregationStats() throws Exception {
+        logger.debug("Executing aggregationStats in Disease Panels command line");
+
+        DiseasePanelsCommandOptions.AggregationStatsCommandOptions commandOptions = diseasePanelsCommandOptions.aggregationStatsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
+        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
+        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
+        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getDiseasePanelClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Panel> create() throws Exception {

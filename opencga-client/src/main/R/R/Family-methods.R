@@ -20,6 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/families/acl/{members}/update | study, members[*], action[*], propagate, body[*] |
+#' | aggregationStats | /{apiVersion}/families/aggregationStats | study, creationYear, creationMonth, creationDay, creationDayOfWeek, status, phenotypes, release, version, numMembers, expectedSize, annotation, field |
 #' | loadAnnotationSets | /{apiVersion}/families/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | create | /{apiVersion}/families/create | include, exclude, study, members, includeResult, body[*] |
 #' | distinct | /{apiVersion}/families/distinct | study, id, name, uuid, members, expectedSize, samples, phenotypes, disorders, creationDate, modificationDate, deleted, internalStatus, status, annotation, acl, release, snapshot, field[*] |
@@ -48,6 +49,25 @@ setMethod("familyClient", "OpencgaR", function(OpencgaR, annotationSet, families
         #' @param data JSON containing the parameters to add ACLs.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="families", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/families/aggregationStats:
+        #' Fetch catalog family stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param creationYear Creation year.
+        #' @param creationMonth Creation month (JANUARY, FEBRUARY...).
+        #' @param creationDay Creation day.
+        #' @param creationDayOfWeek Creation day of week (MONDAY, TUESDAY...).
+        #' @param status Status.
+        #' @param phenotypes Phenotypes.
+        #' @param release Release.
+        #' @param version Version.
+        #' @param numMembers Number of members.
+        #' @param expectedSize Expected size.
+        #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        #' @param field List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="families", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/families/annotationSets/load:

@@ -20,6 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/jobs/acl/{members}/update | members[*], action[*], body[*] |
+#' | aggregationStats | /{apiVersion}/jobs/aggregationStats | study, toolId, toolScope, toolType, toolResource, userId, priority, tags, executorId, executorFramework, creationYear, creationMonth, creationDay, creationDayOfWeek, status, release, field |
 #' | create | /{apiVersion}/jobs/create | study, body[*] |
 #' | distinct | /{apiVersion}/jobs/distinct | study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field[*] |
 #' | retry | /{apiVersion}/jobs/retry | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, study, body[*] |
@@ -49,6 +50,29 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param data JSON containing the parameters to add ACLs.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/jobs/aggregationStats:
+        #' Fetch catalog job stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param toolId Tool id.
+        #' @param toolScope Tool scope.
+        #' @param toolType Tool type.
+        #' @param toolResource Tool resource.
+        #' @param userId User id.
+        #' @param priority Priority.
+        #' @param tags Tags.
+        #' @param executorId Executor id.
+        #' @param executorFramework Executor framework.
+        #' @param creationYear Creation year.
+        #' @param creationMonth Creation month (JANUARY, FEBRUARY...).
+        #' @param creationDay Creation day.
+        #' @param creationDayOfWeek Creation day of week (MONDAY, TUESDAY...).
+        #' @param status Status.
+        #' @param release Release.
+        #' @param field List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/jobs/create:

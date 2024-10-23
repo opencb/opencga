@@ -46,6 +46,26 @@ export default class Cohort extends OpenCGAParentClass {
         return this._post("cohorts", null, "acl", members, "update", data, {action, ...params});
     }
 
+    /** Fetch catalog cohort stats
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {String} [params.type] - Type.
+    * @param {String} [params.creationYear] - Creation year.
+    * @param {String} [params.creationMonth] - Creation month (JANUARY, FEBRUARY...).
+    * @param {String} [params.creationDay] - Creation day.
+    * @param {String} [params.creationDayOfWeek] - Creation day of week (MONDAY, TUESDAY...).
+    * @param {String} [params.numSamples] - Number of samples.
+    * @param {String} [params.status] - Status.
+    * @param {String} [params.release] - Release.
+    * @param {String} [params.annotation] - Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
+    *     http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+    * @param {String} [params.field] - List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    aggregationStats(params) {
+        return this._get("cohorts", null, null, null, "aggregationStats", params);
+    }
+
     /** Load annotation sets from a TSV file
     * @param {Object} [data] - JSON containing the 'content' of the TSV file if this has not yet been registered into OpenCGA.
     * @param {String} variableSetId - Variable set ID or name.
