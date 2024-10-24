@@ -8,8 +8,10 @@ import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
@@ -39,7 +41,7 @@ public class StreamVariantDriver extends VariantDriver {
 
     private Class<? extends VariantMapper> mapperClass;
     private Class<? extends Reducer> reducerClass;
-    private Class<? extends FileOutputFormat> outputFormatClass;
+    private Class<? extends OutputFormat> outputFormatClass;
 
     @Override
     protected Map<String, String> getParams() {
@@ -110,7 +112,7 @@ public class StreamVariantDriver extends VariantDriver {
     }
 
     @Override
-    protected Class<? extends FileOutputFormat> getOutputFormatClass() {
+    protected Class<? extends OutputFormat> getOutputFormatClass() {
         return outputFormatClass;
     }
 
@@ -134,7 +136,7 @@ public class StreamVariantDriver extends VariantDriver {
         StreamVariantMapper.setMaxInputBytesPerProcess(job, maxBytesPerMap);
         StreamVariantMapper.setEnvironment(job, envVars);
 
-        reducerClass = Reducer.class;
+        reducerClass = StreamVariantReducer.class;
 
         outputFormatClass = ValueOnlyTextOutputFormat.class;
         job.setOutputFormatClass(ValueOnlyTextOutputFormat.class);

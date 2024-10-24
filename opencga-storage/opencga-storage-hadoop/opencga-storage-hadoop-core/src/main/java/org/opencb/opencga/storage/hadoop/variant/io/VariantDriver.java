@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.opencb.commons.datastore.core.Query;
@@ -92,7 +93,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
 
     protected abstract Class<? extends Reducer> getReducerClass();
 
-    protected abstract Class<? extends FileOutputFormat> getOutputFormatClass();
+    protected abstract Class<? extends OutputFormat> getOutputFormatClass();
 
     protected abstract void setupJob(Job job) throws IOException;
 
@@ -109,7 +110,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
                 throw new IllegalArgumentException("Reducer class not provided!");
             }
         }
-        Class<? extends FileOutputFormat> outputFormatClass = getOutputFormatClass();
+        Class<? extends OutputFormat> outputFormatClass = getOutputFormatClass();
         if (outputFormatClass == null) {
             throw new IllegalArgumentException("Output format class not provided!");
         }
@@ -118,6 +119,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
         if (useReduceStep) {
             logger.info("Use one Reduce task to produce a single file");
             job.setReducerClass(reducerClass);
+            // TODO: Configure multiple reducers and partitioner
             job.setNumReduceTasks(1);
         } else {
             VariantMapReduceUtil.setNoneReduce(job);

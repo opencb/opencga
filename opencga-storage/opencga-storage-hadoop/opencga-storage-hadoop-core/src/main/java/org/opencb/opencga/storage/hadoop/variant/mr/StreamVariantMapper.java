@@ -53,6 +53,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     // Keep an auto-incremental number for each produced record. This is used as the key for the output record,
     // and will ensure a sorted output.
     private int outputKeyNum;
+    private String outputKeyPrefix;
 
     // Configured for every new process
     private Process process;
@@ -104,12 +105,27 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         writerFactory = new VariantWriterFactory(metadataManager);
         query = VariantMapReduceUtil.getQueryFromConfig(conf);
         options = VariantMapReduceUtil.getQueryOptionsFromConfig(conf);
-        outputKeyNum = context.getCurrentKey().hashCode();
+        Variant variant = context.getCurrentValue();
+        String chromosome = variant.getChromosome();
+        // If it's a single digit chromosome, add a 0 at the beginning
+        //       1 -> 01
+        //       3 -> 03
+        //      22 -> 22
+        // If the first character is a digit, and the second is not, add a 0 at the beginning
+        //      MT -> MT
+        //      1_KI270712v1_random -> 01_KI270712v1_random
+        if (Character.isDigit(chromosome.charAt(0)) && (chromosome.length() == 1 || !Character.isDigit(chromosome.charAt(1)))) {
+            chromosome = "0" + chromosome;
+        }
+
+        outputKeyPrefix = String.format("%s|%010d|", chromosome, variant.getStart());
+        outputKeyNum = 0;
     }
 
     @Override
     public void run(Context context) throws IOException, InterruptedException {
         if (context.nextKeyValue()) {
+            Variant currentValue = null;
             try {
                 setup(context);
                 startProcess(context);
@@ -121,7 +137,8 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                         closeProcess(context);
                         startProcess(context);
                     }
-                    map(context.getCurrentKey(), context.getCurrentValue(), context);
+                    currentValue = context.getCurrentValue();
+                    map(context.getCurrentKey(), currentValue, context);
                 } while (!hasExceptions() && context.nextKeyValue());
             } catch (Throwable th) {
                 Object currentKey = context.getCurrentKey();
@@ -134,7 +151,6 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                     }
                     String message = "Exception in mapper for key: '" + keyStr + "'";
                     try {
-                        Variant currentValue = context.getCurrentValue();
                         if (currentValue != null) {
                             message += " value: '" + currentValue + "'";
                         }
@@ -410,7 +426,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
             LineReader stdoutLineReader = new LineReader(stdout);
             try {
                 while (stdoutLineReader.readLine(line) > 0) {
-                    context.write(new ImmutableBytesWritable(Bytes.toBytes(outputKeyNum++)), line);
+                    context.write(new ImmutableBytesWritable(Bytes.toBytes(outputKeyPrefix + (outputKeyNum++))), line);
 //                    context.write(null, line);
                     if (verboseStdout) {
                         LOG.info("[STDOUT] - " + line);
