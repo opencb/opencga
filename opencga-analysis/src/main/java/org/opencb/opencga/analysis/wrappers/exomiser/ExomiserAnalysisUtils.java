@@ -243,7 +243,7 @@ public class ExomiserAnalysisUtils  {
         for (String resouceKey : resourceKeys) {
             String resource = ConfigurationUtils.getToolResource(ExomiserWrapperAnalysis.ID, exomiserVersion, resouceKey,
                     catalogManager.getConfiguration());
-            resourceManager.checkResourcePath(ExomiserWrapperAnalysis.ID, resource);
+            resourceManager.checkResourcePath(resource);
         }
     }
 
