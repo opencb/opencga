@@ -6,6 +6,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.family.PedigreeGraphInitAnalysis;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationRun;
@@ -89,11 +90,14 @@ public class CalculatePedigreeGraphMigration extends MigrationTool {
             if (CollectionUtils.isNotEmpty(project.getStudies())) {
                 for (Study study : project.getStudies()) {
                     String id = study.getFqn();
-                    for (Family family : catalogManager.getFamilyManager().search(id, new Query(), familyOptions, token).getResults()) {
-                        if (PedigreeGraphUtils.hasMinTwoGenerations(family)
-                                && (family.getPedigreeGraph() == null || StringUtils.isEmpty(family.getPedigreeGraph().getBase64()))) {
-                            studies.add(id);
-                            break;
+                    try (DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(id, new Query(), familyOptions, token)) {
+                        if (iterator.hasNext()) {
+                            Family family = iterator.next();
+                            if (PedigreeGraphUtils.hasMinTwoGenerations(family)
+                                    && (family.getPedigreeGraph() == null || StringUtils.isEmpty(family.getPedigreeGraph().getBase64()))) {
+                                studies.add(id);
+                                break;
+                            }
                         }
                     }
                 }
