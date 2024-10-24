@@ -44,6 +44,8 @@ class Sample(_ParentRestClient):
         Fetch catalog sample stats.
         PATH: /{apiVersion}/samples/aggregationStats
 
+        :param str facet: List of fields separated by semicolons, e.g.:
+            studies;type;numSamples[0..10]:1.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param str source: Source.

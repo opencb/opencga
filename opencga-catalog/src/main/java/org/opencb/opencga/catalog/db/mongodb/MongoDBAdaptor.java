@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.*;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -42,6 +43,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
+import static org.opencb.commons.datastore.core.QueryOptions.FACET;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 
 /**
@@ -323,8 +326,16 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected OpenCGAResult<FacetField> facet(MongoDBCollection collection, Bson query, QueryOptions options) {
-        return null;
+    protected OpenCGAResult facet(MongoDBCollection collection, Bson query, String facet) throws CatalogDBException {
+        if (StringUtils.isEmpty(facet)) {
+            throw new CatalogDBException("The '" + FACET + "' option parameter is empty.");
+        }
+        List<Bson> facets = MongoDBQueryUtils.createFacet(query, facet);
+        for (Bson bson : facets) {
+            logger.info(bson.toBsonDocument().toJson());
+        }
+        DataResult<Document> aggregate = collection.aggregate(facets, null);
+        return new OpenCGAResult<>(aggregate);
     }
 
     protected OpenCGAResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {
@@ -368,8 +379,8 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
             id.append(s.replace(".", GenericDocumentComplexConverter.TO_REPLACE_DOTS), "$" + s);
         }
         Bson group;
-        if (options.getBoolean(QueryOptions.COUNT, false)) {
-            group = Aggregates.group(id, Accumulators.sum(QueryOptions.COUNT, 1));
+        if (options.getBoolean(COUNT, false)) {
+            group = Aggregates.group(id, Accumulators.sum(COUNT, 1));
         } else {
             group = Aggregates.group(id, Accumulators.addToSet("items", "$" + idField));
         }

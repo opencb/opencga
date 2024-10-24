@@ -1189,11 +1189,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult<FacetField> facet(long studyUid, Query query, QueryOptions queryOptions, String userId)
+    public OpenCGAResult facet(long studyUid, Query query, String facet, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        query.append(QueryParams.STUDY_UID.key(), studyUid);
-        Bson bsonQuery = parseQuery(query, userId);
-        return facet(sampleCollection, bsonQuery, queryOptions);
+        Bson bson = parseQuery(query, userId);
+        return facet(sampleCollection, bson, facet);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)

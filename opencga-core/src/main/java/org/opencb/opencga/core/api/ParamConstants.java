@@ -29,6 +29,7 @@ public class ParamConstants {
     public static final String LIMIT_DESCRIPTION = "Number of results to be returned";
     public static final String SKIP_DESCRIPTION = "Number of results to skip";
     public static final String COUNT_DESCRIPTION = "Get the total number of results matching the query. Deactivated by default.";
+    public static final String FACET_DESCRIPTION = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1";
     public static final String CREATION_DATE_DESCRIPTION = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
     public static final String CREATION_DATE_PARAM = "creationDate";
     public static final String MODIFICATION_DATE_DESCRIPTION = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, " +

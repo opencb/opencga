@@ -74,6 +74,7 @@ public class SampleClient extends AbstractParentClient {
     /**
      * Fetch catalog sample stats.
      * @param params Map containing any of the following optional parameters.
+     *       facet: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       source: Source.
      *       creationYear: Creation year.

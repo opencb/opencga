@@ -448,6 +448,9 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/aggregationStats")
     @ApiOperation(value = "Fetch catalog sample stats", response = FacetField.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.FACET, value = ParamConstants.FACET_DESCRIPTION, dataType = "string", paramType = "query")
+    })
     public Response getAggregationStats(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Source") @QueryParam("source") String source,

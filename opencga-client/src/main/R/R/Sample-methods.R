@@ -20,7 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/samples/acl/{members}/update | study, members[*], action[*], body[*] |
-#' | aggregationStats | /{apiVersion}/samples/aggregationStats | study, source, creationYear, creationMonth, creationDay, creationDayOfWeek, status, type, phenotypes, release, version, somatic, annotation, field |
+#' | aggregationStats | /{apiVersion}/samples/aggregationStats | facet, study, source, creationYear, creationMonth, creationDay, creationDayOfWeek, status, type, phenotypes, release, version, somatic, annotation, field |
 #' | loadAnnotationSets | /{apiVersion}/samples/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | create | /{apiVersion}/samples/create | include, exclude, study, includeResult, body[*] |
 #' | distinct | /{apiVersion}/samples/distinct | study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount, field[*] |
@@ -53,6 +53,7 @@ setMethod("sampleClient", "OpencgaR", function(OpencgaR, annotationSet, members,
 
         #' @section Endpoint /{apiVersion}/samples/aggregationStats:
         #' Fetch catalog sample stats.
+        #' @param facet List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param source Source.
         #' @param creationYear Creation year.

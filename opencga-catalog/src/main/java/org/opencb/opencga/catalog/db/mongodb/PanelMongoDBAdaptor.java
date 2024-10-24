@@ -670,6 +670,12 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
     }
 
     @Override
+    public OpenCGAResult facet(long studyUid, Query query, String facet, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return null;
+    }
+
+    @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Objects.requireNonNull(action);

@@ -113,6 +113,9 @@ public class SamplesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--facet"}, description = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
+        public String facet; 
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     

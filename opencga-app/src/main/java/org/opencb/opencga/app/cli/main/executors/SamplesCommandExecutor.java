@@ -157,6 +157,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         SamplesCommandOptions.AggregationStatsCommandOptions commandOptions = samplesCommandOptions.aggregationStatsCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("facet", commandOptions.facet);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("source", commandOptions.source);
         queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);

@@ -49,6 +49,7 @@ export default class Sample extends OpenCGAParentClass {
 
     /** Fetch catalog sample stats
     * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.facet] - List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @param {String} [params.source] - Source.
     * @param {String} [params.creationYear] - Creation year.
