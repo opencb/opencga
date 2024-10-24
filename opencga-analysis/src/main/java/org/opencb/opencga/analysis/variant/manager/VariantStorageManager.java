@@ -1726,8 +1726,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return defaultDataStore(catalogManager.getConfiguration().getDatabasePrefix(), project.getFqn());
     }
 
-    public static DataStore defaultDataStore(String databasePrefix, String projectFqnStr)
-            throws CatalogException {
+    public static DataStore defaultDataStore(String databasePrefix, String projectFqnStr) {
         CatalogFqn projectFqn = CatalogFqn.extractFqnFromProjectFqn(projectFqnStr);
 
         String dbName = buildDatabaseName(databasePrefix, projectFqn.getOrganizationId(), projectFqn.getProjectId());
