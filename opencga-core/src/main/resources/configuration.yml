@@ -102,6 +102,10 @@ analysis:
         GRCH37_FA: "reference-genomes/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
         GRCH37_FAI: "reference-genomes/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai"
         GRCH37_GZI: "reference-genomes/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
+    - id: "relatedness"
+      resources:
+        VARIANTS_PRUNE_IN: "relatedness/variants.prune.in"
+        VARIANTS_FRQ: "relatedness/variants.frq"
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory

@@ -192,6 +192,14 @@ public class ResourceManager  {
         return resourcePath;
     }
 
+    public Path checkResourcePath(String resourceName) throws ResourceException {
+        Path resourcePath = Paths.get(openCgaHome.toAbsolutePath().toString(), ANALYSIS_DIRNAME, RESOURCES_DIRNAME, resourceName);
+        if (!Files.exists(resourcePath)) {
+            throw new ResourceException(RESOURCE_MSG + resourceName + "' is missing. Please fetch them first.");
+        }
+        return resourcePath;
+    }
+
     public static String getResourceMetaFilename() {
         return getResourceMetaFilename(GitRepositoryState.getInstance().getBuildVersion());
     }

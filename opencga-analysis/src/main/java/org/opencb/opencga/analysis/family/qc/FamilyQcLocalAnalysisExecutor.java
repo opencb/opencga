@@ -20,10 +20,14 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
+import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -31,9 +35,14 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.FamilyQcAnalysisExecutor;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis.VARIANTS_FRQ;
+import static org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis.VARIANTS_PRUNE_IN;
 
 @ToolExecutor(id="opencga-local", tool = FamilyQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -42,7 +51,7 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
     private CatalogManager catalogManager;
 
     @Override
-    public void run() throws ToolException {
+    public void run() throws ToolException, ResourceException {
         // Sanity check: quality control to update must not be null
         if (qualityControl == null) {
             throw new ToolException("Family quality control metrics is null");
@@ -62,7 +71,7 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
         }
     }
 
-    private void runRelatedness() throws ToolException {
+    private void runRelatedness() throws ToolException, ResourceException {
 
         if (CollectionUtils.isNotEmpty(qualityControl.getRelatedness())) {
             for (RelatednessReport relatedness : qualityControl.getRelatedness()) {
@@ -112,8 +121,14 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
         }
 
         // Run IBD/IBS computation using PLINK in docker
+        ResourceManager resourceManager = new ResourceManager(Paths.get(getExecutorParams().getString("opencgaHome")));
+        String resourceName = ConfigurationUtils.getToolResource(RelatednessAnalysis.ID, null, VARIANTS_PRUNE_IN, getConfiguration());
+        Path pruneInPath = resourceManager.checkResourcePath(resourceName);
+        resourceName = ConfigurationUtils.getToolResource(RelatednessAnalysis.ID, null, VARIANTS_FRQ, getConfiguration());
+        Path freqPath = resourceManager.checkResourcePath(resourceName);
+
         RelatednessReport report = IBDComputation.compute(getStudyId(), getFamily(), sampleIds, getRelatednessMaf(),
-                getRelatednessThresholds(), getRelatednesResourcePath(), getOutDir(), getVariantStorageManager(), getToken());
+                getRelatednessThresholds(), pruneInPath, freqPath, getOutDir(), getVariantStorageManager(), getToken());
 
         // Sanity check
         if (report == null) {

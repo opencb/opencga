@@ -19,10 +19,12 @@ package org.opencb.opencga.analysis.variant.relatedness;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
@@ -32,6 +34,7 @@ import org.opencb.opencga.core.tools.variant.IBDRelatednessAnalysisExecutor;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +45,9 @@ public class RelatednessAnalysis extends OpenCgaTool {
     public static final String DESCRIPTION = "Compute a score to quantify relatedness between samples.";
 
     public static final String MAF_DEFAULT_VALUE = "1000G:ALL>0.3";
+
+    public static final String VARIANTS_PRUNE_IN = "VARIANTS_PRUNE_IN";
+    public static final String VARIANTS_FRQ = "VARIANTS_FRQ";
 
     private String studyId;
     private String familyId;
@@ -159,6 +165,14 @@ public class RelatednessAnalysis extends OpenCgaTool {
 
         Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(FamilyQcAnalysis.ID).resolve("relatedness_thresholds.csv");
         thresholds = AnalysisUtils.parseRelatednessThresholds(thresholdsPath);
+
+        // Check resources
+        ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
+        List<String> resourceKeys = Arrays.asList(VARIANTS_PRUNE_IN, VARIANTS_FRQ);
+        for (String resourceKey : resourceKeys) {
+            String resourceName = ConfigurationUtils.getToolResource(RelatednessAnalysis.ID, null, resourceKey, configuration);
+            resourceManager.checkResourcePath(resourceName);
+        }
     }
 
     @Override
