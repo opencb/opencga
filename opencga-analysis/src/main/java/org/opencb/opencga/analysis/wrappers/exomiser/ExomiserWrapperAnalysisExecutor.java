@@ -43,7 +43,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         StringBuilder sb = initCommandLine(dockerUser);
 
         // Append mounts
-        sb.append(" --mount type=bind,source=" + exomiserDataPath + ",target=/data")
+        sb.append(" --mount type=bind,source=" + exomiserDataPath + ",target=/data,readonly")
                 .append(" --mount type=bind,source=" + getOutDir() + ",target=/jobdir ");
 
         // Append docker image, version and command
