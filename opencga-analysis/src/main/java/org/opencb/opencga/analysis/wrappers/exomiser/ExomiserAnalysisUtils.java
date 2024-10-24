@@ -128,7 +128,7 @@ public class ExomiserAnalysisUtils  {
         createSampleFile(sampleId, individual, hpos, pedigree, outDir);
 
         // Copy the analysis template file
-        Path srcPath = Paths.get(openCgaHome.toAbsolutePath().toString(), ResourceManager.ANALYSIS_FOLDER_NAME, ExomiserWrapperAnalysis.ID,
+        Path srcPath = Paths.get(openCgaHome.toAbsolutePath().toString(), ResourceManager.ANALYSIS_DIRNAME, ExomiserWrapperAnalysis.ID,
                 exomiserVersion, EXOMISER_ANALYSIS_TEMPLATE_FILENAME);
         Path destPath = outDir.resolve(EXOMISER_ANALYSIS_TEMPLATE_FILENAME);
         try {
@@ -138,7 +138,7 @@ public class ExomiserAnalysisUtils  {
         }
 
         // Copy the application.properties and update data according to Exomiser version
-        srcPath = Paths.get(openCgaHome.toAbsolutePath().toString(), ResourceManager.ANALYSIS_FOLDER_NAME, ExomiserWrapperAnalysis.ID,
+        srcPath = Paths.get(openCgaHome.toAbsolutePath().toString(), ResourceManager.ANALYSIS_DIRNAME, ExomiserWrapperAnalysis.ID,
                 exomiserVersion, EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
         destPath = outDir.resolve(EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
         try {
@@ -148,7 +148,7 @@ public class ExomiserAnalysisUtils  {
         }
 
         // Copy the output options
-        srcPath = Paths.get(openCgaHome.toAbsolutePath().toString(), ResourceManager.ANALYSIS_FOLDER_NAME, ExomiserWrapperAnalysis.ID,
+        srcPath = Paths.get(openCgaHome.toAbsolutePath().toString(), ResourceManager.ANALYSIS_DIRNAME, ExomiserWrapperAnalysis.ID,
                 exomiserVersion, EXOMISER_OUTPUT_OPTIONS_FILENAME);
         destPath = outDir.resolve(EXOMISER_OUTPUT_OPTIONS_FILENAME);
         try {

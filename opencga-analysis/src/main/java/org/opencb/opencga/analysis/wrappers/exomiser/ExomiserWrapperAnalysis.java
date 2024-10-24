@@ -99,7 +99,7 @@ public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
                 .setExomiserVersion(analysisParams.getExomiserVersion())
                 .setAssembly(ExomiserAnalysisUtils.checkAssembly(study, catalogManager, token))
                 .setExomiserDataPath(Paths.get(getOpencgaHome().toAbsolutePath().toAbsolutePath().toString(),
-                                ResourceManager.ANALYSIS_FOLDER_NAME, ResourceManager.RESOURCES_FOLDER_NAME, ExomiserWrapperAnalysis.ID))
+                                ResourceManager.ANALYSIS_DIRNAME, ResourceManager.RESOURCES_DIRNAME, ExomiserWrapperAnalysis.ID))
                 .setSampleFile(ExomiserAnalysisUtils.getSamplePath(analysisParams.getSample(), getOutDir()))
                 .setVcfFile(ExomiserAnalysisUtils.getVcfPath(analysisParams.getSample(), getOutDir()));
 

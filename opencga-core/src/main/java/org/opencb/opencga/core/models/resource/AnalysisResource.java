@@ -22,7 +22,7 @@ import java.util.List;
 public class AnalysisResource {
 
     private String name;
-    private String path;
+    private String url;
     private String md5;
     private List<String> target;
     private List<AnalysisResourceAction> action;
@@ -35,9 +35,9 @@ public class AnalysisResource {
         this("", "", "", new ArrayList<>(), new ArrayList<>());
     }
 
-    public AnalysisResource(String name, String path, String md5, List<String> target, List<AnalysisResourceAction> action) {
+    public AnalysisResource(String name, String url, String md5, List<String> target, List<AnalysisResourceAction> action) {
         this.name = name;
-        this.path = path;
+        this.url = url;
         this.md5 = md5;
         this.target = target;
         this.action = action;
@@ -47,7 +47,7 @@ public class AnalysisResource {
     public String toString() {
         final StringBuilder sb = new StringBuilder("AnalysisResource{");
         sb.append("name='").append(name).append('\'');
-        sb.append(", path='").append(path).append('\'');
+        sb.append(", url='").append(url).append('\'');
         sb.append(", md5='").append(md5).append('\'');
         sb.append(", target=").append(target);
         sb.append(", action=").append(action);
@@ -64,12 +64,12 @@ public class AnalysisResource {
         return this;
     }
 
-    public String getPath() {
-        return path;
+    public String getUrl() {
+        return url;
     }
 
-    public AnalysisResource setPath(String path) {
-        this.path = path;
+    public AnalysisResource setUrl(String url) {
+        this.url = url;
         return this;
     }
 

@@ -1,0 +1,53 @@
+{
+  "version": "3.3.0-SNAPSHOT",
+  "analysisResourceLists": [
+    {
+      "analysisId": "liftover",
+      "resources": [
+        {
+          "name": "chain.frq",
+          "url": "http://resources.opencb.org/task-6766/resources/data/liftover/chain-v31.2.frq",
+          "md5": "2e74f0b1db0a4138fc21216036a3d28b",
+          "target": [],
+          "action": []
+        }
+      ]
+    },
+    {
+      "analysisId": "exomiser",
+      "resources": [
+        {
+          "name": "",
+          "url": "http://resources.opencb.org/task-6766/resources/data/exomiser/2222_hg38.zip",
+          "md5": "396fa5c808245262c4f3a70468387374",
+          "target": [],
+          "action": [
+            "UNZIP"
+          ]
+        }
+      ]
+    },
+    {
+      "analysisId": "qc",
+      "resources": [
+        {
+          "name": "",
+          "url": "http://resources.opencb.org/task-6766/resources/data/qc/relatedness_thresholds.tsv",
+          "md5": "97175d1574f14fe45bae13ffe277f295",
+          "target": [
+            "family",
+            "individual"
+          ],
+          "action": []
+        },
+        {
+          "name": "prune.out",
+          "url": "http://resources.opencb.org/task-6766/resources/data/qc/prune-20241015.out",
+          "md5": "0d7ce55d5c48870698633ca7694e95d3",
+          "target": [],
+          "action": []
+        }
+      ]
+    }
+  ]
+}

@@ -41,8 +41,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_FOLDER_NAME;
-import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_FOLDER_NAME;
+import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
+import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_DIRNAME;
 
 /**
  * Created on 05/05/16
@@ -98,8 +98,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
         configuration.setJobDir(opencgaHome.resolve("JOBS").toAbsolutePath().toString());
 
-        Path analysisPath = opencgaHome.resolve(ANALYSIS_FOLDER_NAME);
-        Files.createDirectories(analysisPath.resolve(RESOURCES_FOLDER_NAME));
+        Path analysisPath = opencgaHome.resolve(ANALYSIS_DIRNAME);
+        Files.createDirectories(analysisPath.resolve(RESOURCES_DIRNAME));
 
         // Pedigree graph analysis
         Path pedAnalysisPath = Files.createDirectories(analysisPath.resolve("pedigree-graph")).toAbsolutePath();

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.commons.utils.VersionUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -39,29 +38,25 @@ public class ResourceManager  {
     public static final String MD5_EXT = ".md5";
     public static final String RESOURCE_MSG = "Resource '";
     public static final String FOR_ANALYSIS_MSG = "' for analysis '";
+
     private Path openCgaHome;
-    private String baseUrl;
     private Configuration configuration;
 
     // Flag to track if all resources are fetching
     private boolean isFetchingAll = false;
 
     public static final String CONFIGURATION_FILENAME = "configuration.yml";
-    public static final String CONF_FOLDER_NAME = "conf";
-    public static final String ANALYSIS_FOLDER_NAME = "analysis";
-    public static final String RESOURCES_FOLDER_NAME = "resources";
-    public static final String RELEASES_FOLDER_NAME = "releases";
+    public static final String CONF_DIRNAME = "conf";
+    public static final String ANALYSIS_DIRNAME = "analysis";
+    public static final String RESOURCES_DIRNAME = "resources";
+    public static final String RELEASES_DIRNAME = "releases";
 
     protected static Logger logger = LoggerFactory.getLogger(ResourceManager.class);
 
     public ResourceManager(Path openCgaHome) {
-        this(openCgaHome, null);
+        this.openCgaHome = openCgaHome;
     }
 
-    public ResourceManager(Path openCgaHome, String baseurl) {
-        this.openCgaHome = openCgaHome;
-        this.baseUrl = baseurl;
-    }
 
     public synchronized void fetchAllResources(Path tmpPath, CatalogManager catalogManager, String token)
             throws ResourceException {
@@ -86,7 +81,7 @@ public class ResourceManager  {
             }
 
             // Move resources to installation folder
-            move(tmpPath, openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME));
+            move(tmpPath, openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME));
         } catch (IOException | NoSuchAlgorithmException | CatalogException | ToolException e) {
             throw new ResourceException(e);
         } finally {
@@ -105,7 +100,7 @@ public class ResourceManager  {
             throw new ResourceException("Analysis ID is empty.");
         }
 
-        Path resourcePath = openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME);
+        Path resourcePath = openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME);
         Path metaPath = resourcePath.resolve(getResourceMetaFilename());
         if (!Files.exists(metaPath)) {
             throw new ResourceException("Resources for analysis '" + analysisId + "' are not ready. Please fetch them first.");
@@ -153,7 +148,7 @@ public class ResourceManager  {
             throw new ResourceException("Resource name is empty.");
         }
 
-        Path resourcePath = openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME);
+        Path resourcePath = openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME);
         Path metaPath = resourcePath.resolve(getResourceMetaFilename());
         if (!Files.exists(metaPath)) {
             throw new ResourceException("Resources for analysis '" + analysisId + "' are not ready. Please fetch them first.");
@@ -188,7 +183,7 @@ public class ResourceManager  {
     }
 
     public Path checkResourcePath(String analysisId, String resourceName) throws ResourceException {
-        Path resourcePath = Paths.get(openCgaHome.toAbsolutePath().toString(), ANALYSIS_FOLDER_NAME, RESOURCES_FOLDER_NAME, analysisId,
+        Path resourcePath = Paths.get(openCgaHome.toAbsolutePath().toString(), ANALYSIS_DIRNAME, RESOURCES_DIRNAME, analysisId,
                 resourceName);
         if (!Files.exists(resourcePath)) {
             throw new ResourceException(RESOURCE_MSG + resourceName + FOR_ANALYSIS_MSG + analysisId + "' is missing. Please fetch"
@@ -197,13 +192,8 @@ public class ResourceManager  {
         return resourcePath;
     }
 
-    public static String getVersion() {
-        VersionUtils.Version version = new VersionUtils.Version(GitRepositoryState.getInstance().getBuildVersion());
-        return String.format("%d.%d.%d", version.getMajor(), version.getMinor(), version.getPatch());
-    }
-
     public static String getResourceMetaFilename() {
-        return getResourceMetaFilename(getVersion());
+        return getResourceMetaFilename(GitRepositoryState.getInstance().getBuildVersion());
     }
 
     public static String getResourceMetaFilename(String version) {
@@ -216,12 +206,8 @@ public class ResourceManager  {
 
     private void loadConfiguration() throws IOException {
         if (configuration == null) {
-            this.configuration = Configuration.load(new FileInputStream(openCgaHome.resolve(CONF_FOLDER_NAME)
+            this.configuration = Configuration.load(new FileInputStream(openCgaHome.resolve(CONF_DIRNAME)
                     .resolve(CONFIGURATION_FILENAME).toFile()));
-
-            if (baseUrl == null) {
-                baseUrl = configuration.getAnalysis().getResourceUrl();
-            }
         }
     }
 
@@ -236,18 +222,18 @@ public class ResourceManager  {
             Files.createDirectories(analysisResourcesPath);
         }
         for (AnalysisResource resource : analysisResourceList.getResources()) {
-            Path downloadedPath = fetchFile(baseUrl, analysisId, resource, resourceTmpPath);
+            Path downloadedPath = fetchFile(analysisId, resource, resourceTmpPath);
             fetchedFiles.add(downloadedPath.toFile());
         }
         return fetchedFiles;
     }
 
-    private Path fetchFile(String baseUrl, String analysisId, AnalysisResource resource, Path downloadedPath)
+    private Path fetchFile(String analysisId, AnalysisResource resource, Path downloadedPath)
             throws IOException, NoSuchAlgorithmException, ResourceException, ToolException {
         String resourceName = getResourceName(resource);
 
         // First check installation directory, and check MD5 (it exists)
-        Path installationFile = openCgaHome.resolve(ANALYSIS_FOLDER_NAME).resolve(RESOURCES_FOLDER_NAME).resolve(analysisId)
+        Path installationFile = openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME).resolve(analysisId)
                 .resolve(resourceName);
         if (Files.exists(installationFile)) {
             try {
@@ -260,7 +246,7 @@ public class ResourceManager  {
         }
 
         // Download resource file
-        String fileUrl = baseUrl + resource.getPath();
+        String fileUrl = resource.getUrl();
         Path fetchedFile = downloadedPath.resolve(analysisId).resolve(resourceName);
         logger.info("Downloading resource '{}' to '{}' ...", fileUrl, fetchedFile.toAbsolutePath());
         donwloadFile(new URL(fileUrl), fetchedFile);
@@ -336,15 +322,17 @@ public class ResourceManager  {
 
     private ResourceMetadata getResourceMetadata(Path downloadPath) throws IOException, NoSuchAlgorithmException {
         String resourceMetaFilename = getResourceMetaFilename();
-        Path resourceUrlPath = Paths.get(String.format("%s/%s", RELEASES_FOLDER_NAME, resourceMetaFilename));
+        Path resourceUrlPath = Paths.get(String.format("%s/%s", RELEASES_DIRNAME, resourceMetaFilename));
+
+        String resourceUrl = configuration.getAnalysis().getResourceUrl();
 
         // Download MD5
         Path md5ResourceMetaPath = downloadPath.resolve(resourceMetaFilename + MD5_EXT);
-        donwloadFile(new URL(baseUrl + resourceUrlPath + MD5_EXT), md5ResourceMetaPath);
+        donwloadFile(new URL(resourceUrl + MD5_EXT), md5ResourceMetaPath);
 
         // Download resource metadata file
         Path resourceMetaPath = downloadPath.resolve(resourceMetaFilename);
-        donwloadFile(new URL(baseUrl + resourceUrlPath), resourceMetaPath);
+        donwloadFile(new URL(resourceUrl), resourceMetaPath);
 
         // Checking MD5
         validateMD5(resourceMetaPath, md5ResourceMetaPath);
@@ -399,7 +387,7 @@ public class ResourceManager  {
     private String getResourceName(AnalysisResource resource) {
         return StringUtils.isNotEmpty(resource.getName())
                 ? resource.getName()
-                : Paths.get(resource.getPath()).getFileName().toString();
+                : Paths.get(resource.getUrl()).getFileName().toString();
     }
 
     private void unzip(Path zipPath, String analysisId) throws ToolException, IOException {

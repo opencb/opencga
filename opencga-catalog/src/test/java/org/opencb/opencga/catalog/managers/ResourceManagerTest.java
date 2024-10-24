@@ -15,6 +15,7 @@ import org.opencb.opencga.core.models.resource.ResourceMetadata;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,8 +33,6 @@ public class ResourceManagerTest extends AbstractManagerTest {
     ResourceMetadata resourceMetadata;
     ResourceManager resourceManager;
 
-    String BASEURL = "http://resources.opencb.org/task-6766/";
-
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -41,22 +40,14 @@ public class ResourceManagerTest extends AbstractManagerTest {
         openCgaHome = catalogManagerResource.getOpencgaHome();
         scratchDir = createDir("scratchdir");
 
-        analysisPath = openCgaHome.resolve(ANALYSIS_FOLDER_NAME);
-        analysisResourcePath = analysisPath.resolve(RESOURCES_FOLDER_NAME);
+        analysisPath = openCgaHome.resolve(ANALYSIS_DIRNAME);
+        analysisResourcePath = analysisPath.resolve(RESOURCES_DIRNAME);
 
-        resourceManager = new ResourceManager(openCgaHome, BASEURL);
+        resourceManager = new ResourceManager(openCgaHome);
 
-        resourceMetadata = createResourceMetadata();
-        JacksonUtils.getDefaultObjectMapper().writerFor(ResourceMetadata.class).writeValue(scratchDir.resolve(getResourceMetaFilename()).toFile(), resourceMetadata);
+        InputStream stream = this.getClass().getClassLoader().getResourceAsStream("resources.json");
+        resourceMetadata = JacksonUtils.getDefaultObjectMapper().readerFor(ResourceMetadata.class).readValue(stream);
     }
-
-    @Test
-    public void testConstructor() {
-        Assert.assertEquals(GitRepositoryState.getInstance().getBuildVersion().split("-")[0], resourceManager.getVersion());
-        Assert.assertTrue(resourceManager.getConfiguration() == null);
-        System.out.println("resourceManager = " + resourceManager);
-    }
-
 
     @Test(expected = ResourceException.class)
     public void testFetchRelatednessResource() throws ResourceException {
@@ -71,7 +62,7 @@ public class ResourceManagerTest extends AbstractManagerTest {
     @Test
     public void testFetchAllResources() throws IOException, ResourceException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
-        Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
+        Path outDir = createDir("jobdir").resolve(RESOURCES_DIRNAME);
         Files.createDirectories(outDir);
         System.out.println("outDir = " + outDir.toAbsolutePath());
         resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
@@ -79,7 +70,7 @@ public class ResourceManagerTest extends AbstractManagerTest {
             for (AnalysisResource resource : list.getResources()) {
                 String name = org.apache.commons.lang3.StringUtils.isNotEmpty(resource.getName())
                         ? resource.getName()
-                        : Paths.get(resource.getPath()).getFileName().toString();
+                        : Paths.get(resource.getUrl()).getFileName().toString();
                 Assert.assertTrue(Files.exists(analysisResourcePath.resolve(list.getAnalysisId()).resolve(name)));
             }
         }
@@ -93,7 +84,7 @@ public class ResourceManagerTest extends AbstractManagerTest {
     @Test
     public void testFetchResourcesForAGivenAnalysis() throws IOException, ResourceException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
-        Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
+        Path outDir = createDir("jobdir").resolve(RESOURCES_DIRNAME);
         Files.createDirectories(outDir);
         System.out.println("outDir = " + outDir.toAbsolutePath());
         resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
@@ -111,14 +102,14 @@ public class ResourceManagerTest extends AbstractManagerTest {
         Assert.assertEquals(analysisResourceList.getResources().size(), resourceFiles.size());
         for (File resourceFile : resourceFiles) {
             Assert.assertTrue(Files.exists(resourceFile.toPath()));
-            Assert.assertTrue(analysisResourceList.getResources().stream().map(r -> StringUtils.isNotEmpty(r.getName()) ? r.getName() : Paths.get(r.getPath()).getFileName().toString()).collect(Collectors.toList()).contains(resourceFile.getName()));
+            Assert.assertTrue(analysisResourceList.getResources().stream().map(r -> StringUtils.isNotEmpty(r.getName()) ? r.getName() : Paths.get(r.getUrl()).getFileName().toString()).collect(Collectors.toList()).contains(resourceFile.getName()));
         }
     }
 
     @Test
     public void testFetchAGivenResource() throws IOException, ResourceException {
         System.out.println("analysisResourcePath = " + analysisResourcePath.toAbsolutePath());
-        Path outDir = createDir("jobdir").resolve(RESOURCES_FOLDER_NAME);
+        Path outDir = createDir("jobdir").resolve(RESOURCES_DIRNAME);
         Files.createDirectories(outDir);
         System.out.println("outDir = " + outDir.toAbsolutePath());
         resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
@@ -135,7 +126,7 @@ public class ResourceManagerTest extends AbstractManagerTest {
 
         File resourceFile = resourceManager.getResourceFile(analysisId, resourceName);
         Assert.assertTrue(Files.exists(resourceFile.toPath()));
-        Assert.assertTrue(analysisResourceList.getResources().stream().map(r -> StringUtils.isNotEmpty(r.getName()) ? r.getName() : Paths.get(r.getPath()).getFileName().toString()).collect(Collectors.toList()).contains(resourceFile.getName()));
+        Assert.assertTrue(analysisResourceList.getResources().stream().map(r -> StringUtils.isNotEmpty(r.getName()) ? r.getName() : Paths.get(r.getUrl()).getFileName().toString()).collect(Collectors.toList()).contains(resourceFile.getName()));
     }
 
     //-------------------------------------------------------------------------
@@ -144,13 +135,13 @@ public class ResourceManagerTest extends AbstractManagerTest {
 
     private ResourceMetadata createResourceMetadata() {
         ResourceMetadata resourceMetadata = new ResourceMetadata();
-        resourceMetadata.setVersion(resourceManager.getVersion());
+        resourceMetadata.setVersion(GitRepositoryState.getInstance().getBuildVersion());
 
         // Liftover
         AnalysisResourceList analysisResourceList = new AnalysisResourceList();
         analysisResourceList.setAnalysisId("liftover");
         AnalysisResource analysisResource = new AnalysisResource();
-        analysisResource.setPath("data/chain.frq");
+        analysisResource.setUrl("data/chain.frq");
         analysisResourceList.getResources().add(analysisResource);
         resourceMetadata.getAnalysisResourceLists().add(analysisResourceList);
 
@@ -158,10 +149,10 @@ public class ResourceManagerTest extends AbstractManagerTest {
         analysisResourceList = new AnalysisResourceList();
         analysisResourceList.setAnalysisId("qc");
         analysisResource = new AnalysisResource();
-        analysisResource.setPath("data/relatedness_thresholds.tsv");
+        analysisResource.setUrl("data/relatedness_thresholds.tsv");
         analysisResourceList.getResources().add(analysisResource);
         analysisResource = new AnalysisResource();
-        analysisResource.setPath("data/prune.out");
+        analysisResource.setUrl("data/prune.out");
         analysisResourceList.getResources().add(analysisResource);
         resourceMetadata.getAnalysisResourceLists().add(analysisResourceList);
 
@@ -179,4 +170,61 @@ public class ResourceManagerTest extends AbstractManagerTest {
         Files.createDirectories(path);
         return path;
     }
+
+    /*
+$ cat resources-3.3.0-SNAPSHOT.json | jq
+{
+  "version": "3.3.0-SNAPSHOT",
+  "analysisResourceLists": [
+    {
+      "analysisId": "liftover",
+      "resources": [
+        {
+          "name": "chain.frq",
+          "url": "http://resources.opencb.org/task-6766/resources/data/liftover/chain-v31.2.frq",
+          "md5": "2e74f0b1db0a4138fc21216036a3d28b",
+          "target": [],
+          "action": []
+        }
+      ]
+    },
+    {
+      "analysisId": "exomiser",
+      "resources": [
+        {
+          "name": "",
+          "url": "http://resources.opencb.org/task-6766/resources/data/exomiser/2222_hg38.zip",
+          "md5": "396fa5c808245262c4f3a70468387374",
+          "target": [],
+          "action": [
+            "UNZIP"
+          ]
+        }
+      ]
+    },
+    {
+      "analysisId": "qc",
+      "resources": [
+        {
+          "name": "",
+          "url": "http://resources.opencb.org/task-6766/resources/data/qc/relatedness_thresholds.tsv",
+          "md5": "97175d1574f14fe45bae13ffe277f295",
+          "target": [
+            "family",
+            "individual"
+          ],
+          "action": []
+        },
+        {
+          "name": "prune.out",
+          "url": "http://resources.opencb.org/task-6766/resources/data/qc/prune-20241015.out",
+          "md5": "0d7ce55d5c48870698633ca7694e95d3",
+          "target": [],
+          "action": []
+        }
+      ]
+    }
+  ]
+}
+*/
 }

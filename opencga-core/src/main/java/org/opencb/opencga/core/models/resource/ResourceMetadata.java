@@ -22,7 +22,6 @@ import java.util.List;
 public class ResourceMetadata  {
 
     private String version;
-    private String urlBase;
     List<AnalysisResourceList> analysisResourceLists;
 
     public ResourceMetadata() {
@@ -31,7 +30,6 @@ public class ResourceMetadata  {
 
     public ResourceMetadata(String version, String urlBase, List<AnalysisResourceList> analysisResourceLists) {
         this.version = version;
-        this.urlBase = urlBase;
         this.analysisResourceLists = analysisResourceLists;
     }
 
@@ -39,7 +37,6 @@ public class ResourceMetadata  {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ResourceMetadata{");
         sb.append("version='").append(version).append('\'');
-        sb.append(", urlBase='").append(urlBase).append('\'');
         sb.append(", analysisResourceLists=").append(analysisResourceLists);
         sb.append('}');
         return sb.toString();
@@ -51,15 +48,6 @@ public class ResourceMetadata  {
 
     public ResourceMetadata setVersion(String version) {
         this.version = version;
-        return this;
-    }
-
-    public String getUrlBase() {
-        return urlBase;
-    }
-
-    public ResourceMetadata setUrlBase(String urlBase) {
-        this.urlBase = urlBase;
         return this;
     }
 

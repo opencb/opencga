@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_FOLDER_NAME;
+import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_DIRNAME;
 
 @Tool(id= ResourceFetcherTool.ID,
         resource = Enums.Resource.RESOURCE,
@@ -34,7 +34,7 @@ public class ResourceFetcherTool extends OpenCgaTool {
     protected void check() throws Exception {
         super.check();
 
-        resourcePath = getOutDir().resolve(RESOURCES_FOLDER_NAME);
+        resourcePath = getOutDir().resolve(RESOURCES_DIRNAME);
         if (!Files.exists(Files.createDirectories(resourcePath))) {
             throw new IOException("Error creating resource directory '" + resourcePath.toAbsolutePath() + "'");
         }
@@ -48,7 +48,7 @@ public class ResourceFetcherTool extends OpenCgaTool {
     }
 
     private void fetchResources() throws ResourceException {
-        ResourceManager resourceManager = new ResourceManager(getOpencgaHome(), analysisParams.getBaseUrl());
-        resourceManager.fetchAllResources(getOutDir().resolve(RESOURCES_FOLDER_NAME), catalogManager, token);
+        ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
+        resourceManager.fetchAllResources(getOutDir().resolve(RESOURCES_DIRNAME), catalogManager, token);
     }
 }
