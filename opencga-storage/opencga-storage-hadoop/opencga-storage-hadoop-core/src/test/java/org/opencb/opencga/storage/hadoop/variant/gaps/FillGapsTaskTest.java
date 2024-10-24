@@ -13,6 +13,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -44,6 +45,7 @@ public class FillGapsTaskTest {
     public void setUp() throws Exception {
         DummyVariantStorageMetadataDBAdaptorFactory.clear();
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+        metadataManager.getAndUpdateProjectMetadata(new ObjectMap());
         studyMetadata = metadataManager.createStudy("S");
         metadataManager.updateStudyMetadata("S", sm -> {
             sm.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DP");

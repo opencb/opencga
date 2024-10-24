@@ -97,6 +97,15 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             "22:16616084:G:A"
     )));
 
+    public static final Set<String> COSMIC_VARIANTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "1:169607124:G:T",
+            "1:169611640:T:G",
+            "1:169617058:A:T",
+            "1:169617158:C:A",
+            "12:124372173:T:A",
+            "12:124336867:G:A"
+    )));
+
     public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
     protected static URI inputUri;
 
@@ -105,6 +114,9 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
     public static final String VCF_CORRUPTED_FILE_NAME = "variant-test-file-corrupted.vcf";
     protected static URI corruptedInputUri;
+
+    public static final String ANNOTATOR_EXTENSION_VCF_TEST_FILE_NAME = "variant-test-file-annotator-extension.vcf.gz";
+    protected static URI annotatorExtensionInputUri;
 
     protected static URI outputUri;
     protected VariantStorageEngine variantStorageEngine;
@@ -134,16 +146,20 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
         Path smallInputPath = rootDir.resolve(SMALL_VCF_TEST_FILE_NAME);
         Path corruptedInputPath = rootDir.resolve(VCF_CORRUPTED_FILE_NAME);
+        Path annotatorExtensionInputPath = rootDir.resolve(ANNOTATOR_EXTENSION_VCF_TEST_FILE_NAME);
         Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
                 StandardCopyOption.REPLACE_EXISTING);
         Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(SMALL_VCF_TEST_FILE_NAME), smallInputPath,
                 StandardCopyOption.REPLACE_EXISTING);
         Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath,
                 StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(ANNOTATOR_EXTENSION_VCF_TEST_FILE_NAME),
+                annotatorExtensionInputPath, StandardCopyOption.REPLACE_EXISTING);
 
         inputUri = inputPath.toUri();
         smallInputUri = smallInputPath.toUri();
         corruptedInputUri = corruptedInputPath.toUri();
+        annotatorExtensionInputUri = annotatorExtensionInputPath.toUri();
         outputUri = rootDir.toUri();
 //        logger.info("count: " + count.getAndIncrement());
 
@@ -372,6 +388,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 //        }
 
         return storagePipelineResult;
+    }
+
+    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI inputUri, URI outputUri,
+                                               ObjectMap params) throws StorageEngineException, FileFormatException, IOException {
+        return runETL(variantStorageManager, inputUri, outputUri, params, true, true, true);
     }
 
     public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI inputUri, URI outputUri,

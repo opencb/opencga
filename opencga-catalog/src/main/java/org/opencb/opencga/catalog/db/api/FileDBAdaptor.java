@@ -235,13 +235,10 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param variableSetList Variable set list.
      * @param options Options to filter the output that will be returned after the insertion of the file.
      * @return A OpenCGAResult object containing the time spent.
-     * @throws CatalogDBException when the file could not be inserted due to different reasons.
-     * @throws CatalogParameterException if there is any formatting error.
-     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
+     * @throws CatalogException when the file could not be inserted due to any formatting error or the user is not authorised.
      */
     OpenCGAResult insert(long studyId, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
-                         List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+                         List<VariableSet> variableSetList, QueryOptions options) throws CatalogException;
 
     /***
      * Inserts the passed file in the database.
@@ -254,13 +251,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param variableSetList Variable set list.
      * @param options Options to filter the output that will be returned after the insertion of the file.
      * @return A OpenCGAResult object containing the time spent.
-     * @throws CatalogDBException when the file could not be inserted due to different reasons.
-     * @throws CatalogParameterException if there is any formatting error.
-     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
+     * @throws CatalogException when the file could not be inserted due any formatting error or the user is not authorised.
      */
     OpenCGAResult insertWithVirtualFile(long studyId, File file, File virtualFile, List<Sample> existingSamples,
                                         List<Sample> nonExistingSamples, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+            throws CatalogException;
 
     /***
      * Retrieves the file from the database containing the fileId given.

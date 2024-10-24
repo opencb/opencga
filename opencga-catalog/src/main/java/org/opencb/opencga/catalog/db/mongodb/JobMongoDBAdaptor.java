@@ -100,8 +100,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, Job job, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult insert(long studyId, Job job, QueryOptions options) throws CatalogException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
@@ -228,7 +227,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
 
         try {
             return runTransaction(session -> privateUpdate(session, dataResult.first(), parameters, queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update job {}: {}", dataResult.first().getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not update job " + dataResult.first().getId() + ": " + e.getMessage(), e.getCause());
         }
@@ -254,7 +253,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
             Job job = iterator.next();
             try {
                 result.append(runTransaction(session -> privateUpdate(session, job, parameters, queryOptions)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update job {}: {}", job.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, job.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -306,7 +305,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                 throw new CatalogDBException("Could not find job " + job.getId() + " with uid " + job.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete job {}: {}", job.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete job " + job.getId() + ": " + e.getMessage(), e.getCause());
         }
@@ -322,7 +321,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
             String jobId = job.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, job)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete job {}: {}", jobId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, jobId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
