@@ -161,7 +161,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     private void createGenomeContextFile(File indexFile) throws ToolExecutorException {
         try {
             // First,
-            String resouceName;
+            String resourceName;
             ResourceManager resourceManager = new ResourceManager(opencgaHome);
 
             Path gzRefGenomePath;
@@ -169,19 +169,19 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             Path gziRefGenomePath;
             String assembly = getAssembly();
             if ("GRCh38".equalsIgnoreCase(assembly)) {
-                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH38_FA, getConfiguration());
-                gzRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
-                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH38_FAI, getConfiguration());
-                faiRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
-                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH38_GZI, getConfiguration());
-                gziRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
+                resourceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH38_FA, getConfiguration());
+                gzRefGenomePath = resourceManager.checkResourcePath(resourceName);
+                resourceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH38_FAI, getConfiguration());
+                faiRefGenomePath = resourceManager.checkResourcePath(resourceName);
+                resourceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH38_GZI, getConfiguration());
+                gziRefGenomePath = resourceManager.checkResourcePath(resourceName);
             } else if ("GRCh37".equalsIgnoreCase(assembly)) {
-                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH37_FA, getConfiguration());
-                gzRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
-                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH37_FAI, getConfiguration());
-                faiRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
-                resouceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH37_GZI, getConfiguration());
-                gziRefGenomePath = resourceManager.checkResourcePath(REFERENCE_GENOMES, resouceName);
+                resourceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH37_FA, getConfiguration());
+                gzRefGenomePath = resourceManager.checkResourcePath(resourceName);
+                resourceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH37_FAI, getConfiguration());
+                faiRefGenomePath = resourceManager.checkResourcePath(resourceName);
+                resourceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, GRCH37_GZI, getConfiguration());
+                gziRefGenomePath = resourceManager.checkResourcePath(resourceName);
             } else {
                 throw new ToolExecutorException("Invalid assembly '" + assembly + "'. Valid values: GRCh38 and GRCh37");
             }
