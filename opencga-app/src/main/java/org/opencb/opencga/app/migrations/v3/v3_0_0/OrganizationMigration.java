@@ -9,6 +9,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.utils.CryptoUtils;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -45,6 +46,7 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -70,20 +72,24 @@ public class OrganizationMigration extends MigrationTool {
         ERROR
     }
 
-    public OrganizationMigration(Configuration configuration, String adminPassword, String userId, String organizationId)
-            throws CatalogException {
+    public OrganizationMigration(Configuration configuration, String adminPassword, String userId, String organizationId, Path appHome)
+            throws CatalogException, IOException {
         this.configuration = configuration;
         this.adminPassword = adminPassword;
         this.userId = userId;
         this.organizationId = organizationId;
+        this.appHome = appHome;
 
         this.status = checkAndInit();
     }
 
-    private MigrationStatus checkAndInit() throws CatalogException {
+    private MigrationStatus checkAndInit() throws CatalogException, IOException {
         this.oldDatabase = configuration.getDatabasePrefix() + "_catalog";
         this.mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
         this.oldDatastore = mongoDBAdaptorFactory.getMongoManager().get(oldDatabase, mongoDBAdaptorFactory.getMongoDbConfiguration());
+
+        FileUtils.checkDirectory(appHome);
+        readStorageConfiguration();
 
         MongoCollection<Document> userCol = oldDatastore.getDb().getCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION);
         FindIterable<Document> iterable = userCol.find(Filters.eq("id", ParamConstants.OPENCGA_USER_ID));
