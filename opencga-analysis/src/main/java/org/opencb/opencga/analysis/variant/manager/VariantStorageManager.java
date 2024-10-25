@@ -204,7 +204,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
      * @throws StorageEngineException If there is any error exporting variants
      * @return generated files
      */
-    public URI walkData(String outputFile, VariantOutputFormat format,
+    public List<URI> walkData(String outputFile, VariantOutputFormat format,
                               Query query, QueryOptions queryOptions, String dockerImage, String commandLine, String token)
             throws CatalogException, StorageEngineException {
         String anyStudy = catalogUtils.getAnyStudy(query, token);

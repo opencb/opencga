@@ -82,7 +82,7 @@ public class VariantWalkerTool extends OpenCgaTool {
             Query query = toolParams.toQuery();
             QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, toolParams.getInclude())
                     .append(QueryOptions.EXCLUDE, toolParams.getExclude());
-            uris.add(variantStorageManager.walkData(outputFile,
+            uris.addAll(variantStorageManager.walkData(outputFile,
                     format, query, queryOptions, toolParams.getDockerImage(), toolParams.getCommandLine(), token));
         });
         step("move-files", () -> {

@@ -317,7 +317,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public URI walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format,
+    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format,
                               Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
         ParsedVariantQuery variantQuery = parseQuery(query, queryOptions);
         int studyId = variantQuery.getStudyQuery().getDefaultStudy().getId();
@@ -342,7 +342,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                         .append(StreamVariantDriver.INPUT_FORMAT_PARAM, format.toString())
                         .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)
         ), "Walk data");
-        return outputFile;
+        return Arrays.asList(outputFile, UriUtils.createUriSafe(outputFile.toString() + StreamVariantDriver.STDERR_TXT_GZ));
     }
 
     @Override

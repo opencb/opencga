@@ -285,7 +285,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
-    public URI walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions,
+    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions,
                               String dockerImage, String commandLine)
             throws IOException, StorageEngineException {
         if (format == VariantWriterFactory.VariantOutputFormat.VCF || format == VariantWriterFactory.VariantOutputFormat.VCF_GZ) {
@@ -326,7 +326,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
 
-    public abstract URI walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
+    public abstract List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
                                        String commandLine)
             throws StorageEngineException;
 

@@ -33,6 +33,7 @@ public class StreamVariantDriver extends VariantDriver {
     public static final String COMMAND_LINE_BASE64_PARAM = "commandLineBase64";
     public static final String MAX_BYTES_PER_MAP_PARAM = "maxBytesPerMap";
     public static final String ENVIRONMENT_VARIABLES = "envVars";
+    public static final String STDERR_TXT_GZ = ".stderr.txt.gz";
 
     private VariantWriterFactory.VariantOutputFormat format;
     private int maxBytesPerMap;
@@ -161,7 +162,7 @@ public class StreamVariantDriver extends VariantDriver {
     @Override
     protected void copyMrOutputToLocal() throws IOException {
         concatMrOutputToLocal(outdir, localOutput, true, "stdout");
-        Path stderrOutput = localOutput.suffix(".stderr.txt.gz");
+        Path stderrOutput = localOutput.suffix(STDERR_TXT_GZ);
         concatMrOutputToLocal(outdir, stderrOutput, true, "stderr");
         printKeyValue("EXTRA_OUTPUT_STDERR", stderrOutput);
     }

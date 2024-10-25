@@ -143,7 +143,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public URI walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
+    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
         throw new UnsupportedOperationException("Unable to walk data in " + getStorageEngineId());
     }
 
