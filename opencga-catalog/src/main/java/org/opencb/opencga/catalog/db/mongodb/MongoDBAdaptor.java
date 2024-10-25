@@ -44,7 +44,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
-import static org.opencb.commons.datastore.core.QueryOptions.FACET;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 
 /**
@@ -328,13 +327,17 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
 
     protected OpenCGAResult facet(MongoDBCollection collection, Bson query, String facet) throws CatalogDBException {
         if (StringUtils.isEmpty(facet)) {
-            throw new CatalogDBException("The '" + FACET + "' option parameter is empty.");
+            throw new CatalogDBException("The aggregation stats field is empty.");
         }
         List<Bson> facets = MongoDBQueryUtils.createFacet(query, facet);
-        for (Bson bson : facets) {
-            logger.info(bson.toBsonDocument().toJson());
-        }
         DataResult<Document> aggregate = collection.aggregate(facets, null);
+        if (aggregate.getNumResults() > 0) {
+            List<Document> restoredDocuments = new ArrayList<>();
+            for (Document document : aggregate.getResults()) {
+                restoredDocuments.add(GenericDocumentComplexConverter.restoreDots(document));
+            }
+            aggregate.setResults(restoredDocuments);
+        }
         return new OpenCGAResult<>(aggregate);
     }
 

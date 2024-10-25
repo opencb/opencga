@@ -44,8 +44,6 @@ class Sample(_ParentRestClient):
         Fetch catalog sample stats.
         PATH: /{apiVersion}/samples/aggregationStats
 
-        :param str facet: List of fields separated by semicolons, e.g.:
-            studies;type;numSamples[0..10]:1.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param str source: Source.
@@ -63,8 +61,8 @@ class Sample(_ParentRestClient):
         :param str annotation: Annotation filters. Example:
             age>30;gender=FEMALE. For more information, please visit
             http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
-        :param str field: List of fields separated by semicolons, e.g.:
-            studies;type;numSamples[0..10]:1.
+        :param str field: List of fields to aggregate separated by semicolons,
+            e.g.: max(version);release.
         """
 
         return self._get(category='samples', resource='aggregationStats', **options)

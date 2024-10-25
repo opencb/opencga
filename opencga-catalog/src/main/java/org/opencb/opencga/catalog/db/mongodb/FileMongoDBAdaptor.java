@@ -1377,7 +1377,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public OpenCGAResult facet(long studyUid, Query query, String facet, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+        Bson bson = parseQuery(query, userId);
+        return facet(fileCollection, bson, facet);
     }
 
     @Override

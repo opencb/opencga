@@ -74,7 +74,6 @@ public class SampleClient extends AbstractParentClient {
     /**
      * Fetch catalog sample stats.
      * @param params Map containing any of the following optional parameters.
-     *       facet: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       source: Source.
      *       creationYear: Creation year.
@@ -89,7 +88,7 @@ public class SampleClient extends AbstractParentClient {
      *       somatic: Somatic.
      *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
      *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
-     *       field: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+     *       field: List of fields to aggregate separated by semicolons, e.g.: max(version);release.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

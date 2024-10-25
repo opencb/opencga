@@ -842,7 +842,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     @Override
     public OpenCGAResult facet(long studyUid, Query query, String facet, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+        Bson bson = parseQuery(query, userId);
+        return facet(cohortCollection, bson, facet);
     }
 
     @Override

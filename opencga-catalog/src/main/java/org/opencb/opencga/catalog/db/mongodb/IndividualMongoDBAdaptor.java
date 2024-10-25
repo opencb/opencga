@@ -1376,7 +1376,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     @Override
     public OpenCGAResult facet(long studyUid, Query query, String facet, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+        Bson bson = parseQuery(query, userId);
+        return facet(individualCollection, bson, facet);
     }
 
     @Override
