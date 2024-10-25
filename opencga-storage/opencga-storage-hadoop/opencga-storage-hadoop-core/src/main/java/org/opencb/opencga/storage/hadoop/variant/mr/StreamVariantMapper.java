@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -12,6 +11,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.util.LineReader;
+import org.apache.hadoop.util.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.Query;
@@ -27,6 +27,7 @@ import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMet
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
@@ -493,7 +494,8 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
             Text line = new Text();
             LineReader stderrLineReader = new LineReader(stderr);
             try {
-                StopWatch stopWatch = StopWatch.createStarted();
+                StopWatch stopWatch = new StopWatch();
+                stopWatch.start();
                 write("---------- " + context.getTaskAttemptID().toString() + " -----------");
                 write("Start time : " + TimeUtils.getTimeMillis());
                 write("Batch start : " + firstKey + " -> " + outputKeyPrefix);
@@ -530,7 +532,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                     line.clear();
                 }
                 write("--- END STDERR ---");
-                write("Execution time : " + TimeUtils.durationToString(stopWatch));
+                write("Execution time : " + TimeUtils.durationToString(stopWatch.now(TimeUnit.MILLISECONDS)));
                 write("STDOUT lines : " + stdoutThread.numRecords);
                 write("STDERR lines : " + numRecords);
             } catch (Throwable th) {
