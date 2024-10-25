@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.db.api;
 
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -39,6 +40,6 @@ public interface CoreDBAdaptor<T> extends DBAdaptor<T> {
     OpenCGAResult<?> distinct(long studyUid, List<String> fields, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<T> facet(long studyUid, Query query, String facet, String userId)
+    OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 }

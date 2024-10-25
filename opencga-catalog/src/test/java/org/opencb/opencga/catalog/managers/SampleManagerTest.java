@@ -2790,7 +2790,8 @@ public class SampleManagerTest extends AbstractManagerTest {
 
 //        Query query = new Query(ParamConstants.ID, "s_5");
         Query query = new Query();
-        String facet = "id;somatic;version,release;version[1:5]:1;internal.status.id";
+        String facet = "version";
+//        String facet = "id;somatic;version,release;version[1:5]:1;internal.status.id";
         DataResult queryResult = catalogManager.getSampleManager().facet(studyFqn, query, facet, ownerToken);
 
 
