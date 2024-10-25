@@ -435,7 +435,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
      * @return              List of copied files from HDFS
      */
     protected List<Path> concatMrOutputToLocal(Path mrOutdir, Path localOutput) throws IOException {
-        return concatMrOutputToLocal(mrOutdir, localOutput, true);
+        return concatMrOutputToLocal(mrOutdir, localOutput, true, null);
     }
 
     /**
@@ -444,10 +444,12 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
      * @param mrOutdir      MapReduce output directory
      * @param localOutput   Local file
      * @param removeExtraHeaders Remove header lines starting with "#" from all files but the first
+     * @param partFilePrefix  Filter partial files with specific prefix. Otherwise, concat them all.
      * @throws IOException  on IOException
      * @return              List of copied files from HDFS
      */
-    protected List<Path> concatMrOutputToLocal(Path mrOutdir, Path localOutput, boolean removeExtraHeaders) throws IOException {
+    protected List<Path> concatMrOutputToLocal(Path mrOutdir, Path localOutput, boolean removeExtraHeaders, String partFilePrefix)
+            throws IOException {
         // TODO: Allow copy output to any IOConnector
         FileSystem fileSystem = mrOutdir.getFileSystem(getConf());
         RemoteIterator<LocatedFileStatus> it = fileSystem.listFiles(mrOutdir, false);
@@ -461,10 +463,12 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                     && !path.getName().equals(ParquetFileWriter.PARQUET_METADATA_FILE)
                     && !path.getName().equals(ParquetFileWriter.PARQUET_COMMON_METADATA_FILE)
                     && status.getLen() > 0) {
-                paths.add(path);
+                if (partFilePrefix == null || path.getName().startsWith(partFilePrefix)) {
+                    paths.add(path);
+                }
             }
         }
-        if (paths.size() == 0) {
+        if (paths.isEmpty()) {
             LOGGER.warn("The MapReduce job didn't produce any output. This may not be expected.");
         } else if (paths.size() == 1) {
             LOGGER.info("Copy to local file " + paths.get(0).toUri() + " to " + localOutput.toUri());
@@ -475,17 +479,15 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             LOGGER.info(" Source : " + mrOutdir.toUri());
             LOGGER.info(" Target : " + localOutput.toUri());
             LOGGER.info(" ---- ");
-            try (FSDataOutputStream fsOs = localOutput.getFileSystem(getConf()).create(localOutput)) {
-                boolean isGzip = paths.get(0).getName().endsWith(".gz");
-                OutputStream os;
-                if (isGzip) {
-                    os = new GZIPOutputStream(fsOs);
-                } else {
-                    os = fsOs;
-                }
+            boolean isGzip = paths.get(0).getName().endsWith(".gz");
+            try (FSDataOutputStream fsOs = localOutput.getFileSystem(getConf()).create(localOutput);
+                 OutputStream gzOs = isGzip ? new GZIPOutputStream(fsOs) : null) {
+                OutputStream os = gzOs == null ? fsOs : gzOs;
                 for (int i = 0; i < paths.size(); i++) {
                     Path path = paths.get(i);
-                    LOGGER.info("Concat file : '{}' {} ", path.toUri(),
+                    LOGGER.info("Concat {}file : '{}' {} ",
+                            isGzip ? "gzip " : "",
+                            path.toUri(),
                             humanReadableByteCount(fileSystem.getFileStatus(path).getLen(), false));
                     try (FSDataInputStream fsIs = fileSystem.open(path)) {
                         InputStream is;

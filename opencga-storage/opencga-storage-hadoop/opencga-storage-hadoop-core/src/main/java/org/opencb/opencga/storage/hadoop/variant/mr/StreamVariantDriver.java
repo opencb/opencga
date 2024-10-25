@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -138,7 +139,11 @@ public class StreamVariantDriver extends VariantDriver {
 
         reducerClass = StreamVariantReducer.class;
 
-        outputFormatClass = ValueOnlyTextOutputFormat.class;
+        MultipleOutputs.addNamedOutput(job, "stdout", ValueOnlyTextOutputFormat.class, keyClass, valueClass);
+        MultipleOutputs.addNamedOutput(job, "stderr", ValueOnlyTextOutputFormat.class, keyClass, valueClass);
+        LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
+        outputFormatClass = LazyOutputFormat.class;
+
         job.setOutputFormatClass(ValueOnlyTextOutputFormat.class);
         TextOutputFormat.setCompressOutput(job, true);
         TextOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
@@ -150,6 +155,15 @@ public class StreamVariantDriver extends VariantDriver {
     @Override
     protected String getJobOperationName() {
         return "stream-variants";
+    }
+
+
+    @Override
+    protected void copyMrOutputToLocal() throws IOException {
+        concatMrOutputToLocal(outdir, localOutput, true, "stdout");
+        Path stderrOutput = localOutput.suffix(".stderr.txt.gz");
+        concatMrOutputToLocal(outdir, stderrOutput, true, "stderr");
+        printKeyValue("EXTRA_OUTPUT_STDERR", stderrOutput);
     }
 
     @SuppressWarnings("unchecked")

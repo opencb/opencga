@@ -106,6 +106,11 @@ public class SshMRExecutor extends MRExecutor {
         ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
         if (exitValue == 0) {
             copyOutputFiles(args, env);
+            for (String key : result.keySet()) {
+                if (key.startsWith("EXTRA_OUTPUT_")) {
+                    copyOutputFiles(result.getString(key), env);
+                }
+            }
         }
         return new Result(exitValue, result);
     }
@@ -125,33 +130,38 @@ public class SshMRExecutor extends MRExecutor {
         List<String> argsList = Arrays.asList(args);
         int outputIdx = argsList.indexOf("output");
         if (outputIdx > 0 && argsList.size() > outputIdx + 1) {
-            String targetOutput = UriUtils.createUriSafe(argsList.get(outputIdx + 1)).getPath();
-            if (StringUtils.isNotEmpty(targetOutput)) {
-                String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
-                String srcOutput;
-                if (StringUtils.isNoneEmpty(remoteOpencgaHome, getOpencgaHome())) {
-                    srcOutput = targetOutput.replaceAll(getOpencgaHome(), remoteOpencgaHome);
-                } else {
-                    srcOutput = targetOutput;
-                }
-
-                String hadoopScpBin = getOptions()
-                        .getString(MR_EXECUTOR_SSH_HADOOP_SCP_BIN.key(), MR_EXECUTOR_SSH_HADOOP_SCP_BIN.defaultValue());
-                String commandLine = getBinPath(hadoopScpBin) + " " + srcOutput + " " + targetOutput;
-
-                Command command = new Command(commandLine, env);
-                command.run();
-                int exitValue = command.getExitValue();
-                if (exitValue != 0) {
-                    String sshHost = getOptions().getString(MR_EXECUTOR_SSH_HOST.key());
-                    String sshUser = getOptions().getString(MR_EXECUTOR_SSH_USER.key());
-                    throw new StorageEngineException("There was an issue copying files from "
-                            + sshUser + "@" + sshHost + ":" + srcOutput + " to " + targetOutput);
-                }
-                return Paths.get(targetOutput);
-            }
+            return copyOutputFiles(argsList.get(outputIdx + 1), env);
         }
         // Nothing to copy
+        return null;
+    }
+
+    private Path copyOutputFiles(String output, List<String> env) throws StorageEngineException {
+        String targetOutput = UriUtils.createUriSafe(output).getPath();
+        if (StringUtils.isNotEmpty(targetOutput)) {
+            String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
+            String srcOutput;
+            if (StringUtils.isNoneEmpty(remoteOpencgaHome, getOpencgaHome())) {
+                srcOutput = targetOutput.replaceAll(getOpencgaHome(), remoteOpencgaHome);
+            } else {
+                srcOutput = targetOutput;
+            }
+
+            String hadoopScpBin = getOptions()
+                    .getString(MR_EXECUTOR_SSH_HADOOP_SCP_BIN.key(), MR_EXECUTOR_SSH_HADOOP_SCP_BIN.defaultValue());
+            String commandLine = getBinPath(hadoopScpBin) + " " + srcOutput + " " + targetOutput;
+
+            Command command = new Command(commandLine, env);
+            command.run();
+            int exitValue = command.getExitValue();
+            if (exitValue != 0) {
+                String sshHost = getOptions().getString(MR_EXECUTOR_SSH_HOST.key());
+                String sshUser = getOptions().getString(MR_EXECUTOR_SSH_USER.key());
+                throw new StorageEngineException("There was an issue copying files from "
+                        + sshUser + "@" + sshHost + ":" + srcOutput + " to " + targetOutput);
+            }
+            return Paths.get(targetOutput);
+        }
         return null;
     }
 

@@ -144,7 +144,7 @@ public abstract class VariantTableAggregationDriver extends AbstractVariantsTabl
         super.postExecution(succeed);
         if (succeed) {
             if (localOutput != null) {
-                concatMrOutputToLocal(outdir, localOutput, isOutputWithHeaders());
+                concatMrOutputToLocal(outdir, localOutput, isOutputWithHeaders(), null);
             }
         }
         if (localOutput != null) {

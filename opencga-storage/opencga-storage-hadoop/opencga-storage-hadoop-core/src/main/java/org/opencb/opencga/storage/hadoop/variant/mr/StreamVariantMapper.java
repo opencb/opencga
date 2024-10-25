@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -17,6 +18,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -52,8 +54,12 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     private QueryOptions options;
     // Keep an auto-incremental number for each produced record. This is used as the key for the output record,
     // and will ensure a sorted output.
-    private int outputKeyNum;
+    private int stdoutKeyNum;
+    private int stderrKeyNum;
+    private String firstKey;
     private String outputKeyPrefix;
+
+    private int processCount = 0;
 
     // Configured for every new process
     private Process process;
@@ -106,7 +112,13 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         query = VariantMapReduceUtil.getQueryFromConfig(conf);
         options = VariantMapReduceUtil.getQueryOptionsFromConfig(conf);
         Variant variant = context.getCurrentValue();
-        String chromosome = variant.getChromosome();
+        firstKey = variant.getChromosome() + ":" + variant.getStart();
+        outputKeyPrefix = buildOutputKeyPrefix(variant.getChromosome(), variant.getStart());
+        stdoutKeyNum = 0;
+        stderrKeyNum = 0;
+    }
+
+    public static String buildOutputKeyPrefix(String chromosome, Integer start) {
         // If it's a single digit chromosome, add a 0 at the beginning
         //       1 -> 01
         //       3 -> 03
@@ -118,8 +130,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
             chromosome = "0" + chromosome;
         }
 
-        outputKeyPrefix = String.format("%s|%010d|", chromosome, variant.getStart());
-        outputKeyNum = 0;
+        return String.format("%s|%010d|", chromosome, start);
     }
 
     @Override
@@ -334,6 +345,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
 //        envs.forEach((k, v) -> LOG.info("Config ENV: " + k + "=" + v));
         builder.environment().putAll(envs);
         process = builder.start();
+        processCount++;
 
         stdin = new DataOutputStream(new BufferedOutputStream(
                 process.getOutputStream(),
@@ -415,6 +427,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
 
         private final Mapper<Object, Variant, ImmutableBytesWritable, Text>.Context context;
         private long lastStdoutReport = 0;
+        private int numRecords = 0;
 
         MROutputThread(Context context) {
             this.context = context;
@@ -426,8 +439,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
             LineReader stdoutLineReader = new LineReader(stdout);
             try {
                 while (stdoutLineReader.readLine(line) > 0) {
-                    context.write(new ImmutableBytesWritable(Bytes.toBytes(outputKeyPrefix + (outputKeyNum++))), line);
-//                    context.write(null, line);
+                    write(line);
                     if (verboseStdout) {
                         LOG.info("[STDOUT] - " + line);
                     }
@@ -447,6 +459,12 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
             } catch (Throwable th) {
                 addException(th);
             }
+        }
+
+        private void write(Text line) throws IOException, InterruptedException {
+            numRecords++;
+            context.write(new ImmutableBytesWritable(
+                    Bytes.toBytes(StreamVariantReducer.STDOUT_KEY + outputKeyPrefix + (stdoutKeyNum++))), line);
         }
     }
 
@@ -475,6 +493,13 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
             Text line = new Text();
             LineReader stderrLineReader = new LineReader(stderr);
             try {
+                StopWatch stopWatch = StopWatch.createStarted();
+                write("---------- " + context.getTaskAttemptID().toString() + " -----------");
+                write("Start time : " + TimeUtils.getTimeMillis());
+                write("Batch start : " + firstKey + " -> " + outputKeyPrefix);
+                write("sub-process #" + processCount);
+                write("--- START STDERR ---");
+                int numRecords = 0;
                 while (stderrLineReader.readLine(line) > 0) {
                     String lineStr = line.toString();
                     if (matchesReporter(lineStr)) {
@@ -493,6 +518,8 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                         while (stderrBufferSize > STDERR_BUFFER_CAPACITY && stderrBuffer.size() > 3) {
                             stderrBufferSize -= stderrBuffer.remove().length();
                         }
+                        write(line);
+                        numRecords++;
                         LOG.info("[STDERR] - " + lineStr);
                     }
                     long now = System.currentTimeMillis();
@@ -502,9 +529,22 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                     }
                     line.clear();
                 }
+                write("--- END STDERR ---");
+                write("Execution time : " + TimeUtils.durationToString(stopWatch));
+                write("STDOUT lines : " + stdoutThread.numRecords);
+                write("STDERR lines : " + numRecords);
             } catch (Throwable th) {
                 addException(th);
             }
+        }
+
+        private void write(String line) throws IOException, InterruptedException {
+            write(new Text(line));
+        }
+
+        private void write(Text line) throws IOException, InterruptedException {
+            context.write(new ImmutableBytesWritable(
+                    Bytes.toBytes(StreamVariantReducer.STDERR_KEY + outputKeyPrefix + (stderrKeyNum++))), line);
         }
 
         private boolean matchesReporter(String line) {

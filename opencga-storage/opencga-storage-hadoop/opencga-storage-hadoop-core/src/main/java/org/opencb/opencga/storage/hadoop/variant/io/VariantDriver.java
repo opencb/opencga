@@ -48,10 +48,10 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
 
     public static final String OUTPUT_PARAM = "output";
     public static final String CONCAT_OUTPUT_PARAM = "concat-output";
-    private Path outdir;
-    private Path localOutput;
-    private Query query = new Query();
-    private QueryOptions options = new QueryOptions();
+    protected Path outdir;
+    protected Path localOutput;
+    private final Query query = new Query();
+    private final QueryOptions options = new QueryOptions();
     private static Logger logger = LoggerFactory.getLogger(VariantDriver.class);
     protected boolean useReduceStep;
 
@@ -166,14 +166,16 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
     @Override
     protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         super.postExecution(succeed);
-        if (succeed) {
-            if (localOutput != null) {
-                concatMrOutputToLocal(outdir, localOutput);
-            }
-        }
         if (localOutput != null) {
+            if (succeed) {
+                copyMrOutputToLocal();
+            }
             deleteTemporaryFile(outdir);
         }
+    }
+
+    protected void copyMrOutputToLocal() throws IOException {
+        concatMrOutputToLocal(outdir, localOutput, true, null);
     }
 
 }
