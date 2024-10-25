@@ -574,7 +574,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         }
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
-        updateToolInfoInformation(job.getTool());
+        updateToolInfoInformation(job.getTool(), tool);
         updateParams.setTool(job.getTool());
 //        updateParams.setTool(new ToolInfo(tool.id(), GitRepositoryState.getInstance().getBuildVersion(), tool.description(), tool.scope(),
 //                tool.type(), tool.resource()));

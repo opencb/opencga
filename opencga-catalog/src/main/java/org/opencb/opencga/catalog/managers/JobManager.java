@@ -638,6 +638,15 @@ public class JobManager extends ResourceManager<Job> {
                 return reuseJob;
             } else {
                 getJobDBAdaptor(organizationId).insert(study.getUid(), job, new QueryOptions());
+
+                // Grant all job permissions to the user that generated the job
+                List<String> jobPermissions = EnumSet.allOf(JobPermissions.class)
+                        .stream()
+                        .map(JobPermissions::toString)
+                        .collect(Collectors.toList());
+                authorizationManager.setAcls(organizationId, study.getUid(), Collections.singletonList(userId),
+                        new AuthorizationManager.CatalogAclParams(Collections.singletonList(job.getUid()),
+                                jobPermissions, Enums.Resource.JOB));
                 OpenCGAResult<Job> jobResult = getJobDBAdaptor(organizationId).get(job.getUid(), new QueryOptions());
 
                 auditManager.auditCreate(organizationId, userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(),
