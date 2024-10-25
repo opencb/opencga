@@ -25,6 +25,7 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBFacetToFacetFieldsConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -329,15 +330,9 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
         if (StringUtils.isEmpty(facet)) {
             throw new CatalogDBException("The aggregation stats field is empty.");
         }
+        MongoDBFacetToFacetFieldsConverter converter = new MongoDBFacetToFacetFieldsConverter();
         List<Bson> facets = MongoDBQueryUtils.createFacet(query, facet);
-        DataResult<Document> aggregate = collection.aggregate(facets, null);
-        if (aggregate.getNumResults() > 0) {
-            List<Document> restoredDocuments = new ArrayList<>();
-            for (Document document : aggregate.getResults()) {
-                restoredDocuments.add(GenericDocumentComplexConverter.restoreDots(document));
-            }
-            aggregate.setResults(restoredDocuments);
-        }
+        DataResult<List<FacetField>> aggregate = collection.aggregate(facets, converter, null);
         return new OpenCGAResult<>(aggregate);
     }
 
