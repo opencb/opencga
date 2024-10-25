@@ -52,6 +52,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.config.storage.StorageConfiguration.Mode.READ_ONLY;
+
 @Migration(id = "add_organizations", description = "Add new Organization layer #TASK-4389", version = "3.0.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20231212)
 public class OrganizationMigration extends MigrationTool {
@@ -65,6 +67,7 @@ public class OrganizationMigration extends MigrationTool {
     private Set<String> userIdsToDiscardData;
 
     private MigrationStatus status;
+    private boolean changeOrganizationId;
 
     private enum MigrationStatus {
         MIGRATED,
@@ -212,6 +215,11 @@ public class OrganizationMigration extends MigrationTool {
         if (StringUtils.isEmpty(this.organizationId)) {
             this.organizationId = this.userId;
         }
+        changeOrganizationId = !this.organizationId.equals(this.userId);
+        if (changeOrganizationId && readStorageConfiguration().getMode() == READ_ONLY) {
+            throw new CatalogException("Cannot change organization id when storage is in read-only mode");
+        }
+
         ParamUtils.checkIdentifier(this.organizationId, "Organization id");
         this.catalogManager = new CatalogManager(configuration);
         return MigrationStatus.PENDING_MIGRATION;
@@ -464,7 +472,7 @@ public class OrganizationMigration extends MigrationTool {
         }
 
         // If the user didn't want to use the userId as the new organization id, we then need to change all the fqn's
-        if (!this.organizationId.equals(this.userId)) {
+        if (changeOrganizationId) {
             logger.info("New organization id '{}' is different from original userId '{}'. Changing FQN's from projects and studies"
                     , this.organizationId, this.userId);
             changeFqns();
@@ -515,6 +523,13 @@ public class OrganizationMigration extends MigrationTool {
                                             .append("storageEngine", dataStore.getStorageEngine())
                                             .append("dbName", dataStore.getDbName())
                                             .append("options", new Document()));
+                                    variantStorageEngine.getMetadataManager().updateStudyMetadata(oldFqn, studyMetadata -> {
+                                        studyMetadata.setName(newFqn);
+                                        studyMetadata.getAttributes().put("OPENCGA.3_0_0", new Document()
+                                                .append("date", date)
+                                                .append("oldFqn", oldFqn)
+                                        );
+                                    });
                                 } else {
                                     logger.info("Project does not exist in the variant storage. Skipping");
                                 }
