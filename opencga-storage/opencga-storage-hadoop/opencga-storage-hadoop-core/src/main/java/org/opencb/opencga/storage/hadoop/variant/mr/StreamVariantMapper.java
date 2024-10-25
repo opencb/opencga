@@ -372,6 +372,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
             }
             ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
             objectMapper.writeValue((DataOutput) stdin, metadata);
+            stdin.write('\n');
         }
 
         processedBytes = 0;
