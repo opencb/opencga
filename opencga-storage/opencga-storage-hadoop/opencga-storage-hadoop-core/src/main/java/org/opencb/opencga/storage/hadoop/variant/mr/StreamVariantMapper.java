@@ -465,7 +465,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         private void write(Text line) throws IOException, InterruptedException {
             numRecords++;
             context.write(new ImmutableBytesWritable(
-                    Bytes.toBytes(StreamVariantReducer.STDOUT_KEY + outputKeyPrefix + (stdoutKeyNum++))), line);
+                    Bytes.toBytes(String.format("%s%s%08d", StreamVariantReducer.STDOUT_KEY, outputKeyPrefix, stdoutKeyNum++))), line);
         }
     }
 
@@ -546,7 +546,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
 
         private void write(Text line) throws IOException, InterruptedException {
             context.write(new ImmutableBytesWritable(
-                    Bytes.toBytes(StreamVariantReducer.STDERR_KEY + outputKeyPrefix + (stderrKeyNum++))), line);
+                    Bytes.toBytes(String.format("%s%s%08d", StreamVariantReducer.STDERR_KEY, outputKeyPrefix, stderrKeyNum++))), line);
         }
 
         private boolean matchesReporter(String line) {
