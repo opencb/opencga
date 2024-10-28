@@ -493,16 +493,16 @@ public class OrganizationMigration extends MigrationTool {
         for (String projectCol : Arrays.asList(OrganizationMongoDBAdaptorFactory.PROJECT_COLLECTION,
                 OrganizationMongoDBAdaptorFactory.DELETED_PROJECT_COLLECTION)) {
             migrateCollection(projectCol, new Document(), Projections.include("_id", "id", "fqn", "internal.datastores.variant"), (document, bulk) -> {
-                String oldFqn = document.getString("fqn");
                 String projectId = document.getString("id");
-                String newFqn = FqnUtils.buildFqn(this.organizationId, projectId);
-                logger.info("Changing project fqn from '{}' to '{}'", oldFqn, newFqn);
+                String oldProjectFqn = document.getString("fqn");
+                String newProjectFqn = FqnUtils.buildFqn(this.organizationId, projectId);
+                logger.info("Changing project fqn from '{}' to '{}'", oldProjectFqn, newProjectFqn);
 
                 Document set = new Document()
-                        .append("fqn", newFqn)
+                        .append("fqn", newProjectFqn)
                         .append("attributes.OPENCGA.3_0_0", new Document()
                                 .append("date", date)
-                                .append("oldFqn", oldFqn)
+                                .append("oldFqn", oldProjectFqn)
                         );
 
                 Document internal = document.get("internal", Document.class);
@@ -511,8 +511,8 @@ public class OrganizationMigration extends MigrationTool {
                     if (datastores != null) {
                         Document variant = datastores.get("variant", Document.class);
                         if (variant == null) {
-                            DataStore dataStore = VariantStorageManager.defaultDataStore(configuration.getDatabasePrefix(), oldFqn);
-                            logger.info("Undefined variant \"internal.datastores.variant\" at project '{}'.", oldFqn);
+                            DataStore dataStore = VariantStorageManager.defaultDataStore(configuration.getDatabasePrefix(), oldProjectFqn);
+                            logger.info("Undefined variant \"internal.datastores.variant\" at project '{}'.", oldProjectFqn);
 
                             // Update only if the project exists in the variant storage
                             try (VariantStorageEngine variantStorageEngine = storageEngineFactory
@@ -523,13 +523,18 @@ public class OrganizationMigration extends MigrationTool {
                                             .append("storageEngine", dataStore.getStorageEngine())
                                             .append("dbName", dataStore.getDbName())
                                             .append("options", new Document()));
-                                    variantStorageEngine.getMetadataManager().updateStudyMetadata(oldFqn, studyMetadata -> {
-                                        studyMetadata.setName(newFqn);
-                                        studyMetadata.getAttributes().put("OPENCGA.3_0_0", new Document()
-                                                .append("date", date)
-                                                .append("oldFqn", oldFqn)
-                                        );
-                                    });
+
+                                    for (String oldStudyFqn : variantStorageEngine.getMetadataManager().getStudies().keySet()) {
+                                        String newStudyFqn = FqnUtils.buildFqn(this.organizationId, projectId, FqnUtils.parse(oldStudyFqn).getStudy());
+                                        logger.info("Changing study fqn from '{}' to '{}'", oldStudyFqn, newStudyFqn);
+                                        variantStorageEngine.getMetadataManager().updateStudyMetadata(oldStudyFqn, studyMetadata -> {
+                                            studyMetadata.setName(newStudyFqn);
+                                            studyMetadata.getAttributes().put("OPENCGA.3_0_0", new Document()
+                                                    .append("date", date)
+                                                    .append("oldFqn", oldStudyFqn)
+                                            );
+                                        });
+                                    }
                                 } else {
                                     logger.info("Project does not exist in the variant storage. Skipping");
                                 }
