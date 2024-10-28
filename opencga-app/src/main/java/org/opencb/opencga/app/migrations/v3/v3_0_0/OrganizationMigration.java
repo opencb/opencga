@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.core.config.storage.StorageConfiguration.Mode.READ_ONLY;
 
 @Migration(id = "add_organizations", description = "Add new Organization layer #TASK-4389", version = "3.0.0",
-        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20231212)
+        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20231212, manual = true)
 public class OrganizationMigration extends MigrationTool {
     private final Configuration configuration;
     private final String adminPassword;
