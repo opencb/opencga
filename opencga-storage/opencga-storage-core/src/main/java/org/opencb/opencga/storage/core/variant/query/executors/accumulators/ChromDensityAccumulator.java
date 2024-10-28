@@ -60,7 +60,7 @@ public class ChromDensityAccumulator<T> extends FacetFieldAccumulator<T> {
 
     @Override
     public FacetField createField() {
-        return new FacetField(VariantField.START.fieldName(), 0,
+        return new FacetField(VariantField.START.fieldName(), 0L,
                 prepareBuckets())
                 .setStart(region.getStart())
                 .setEnd(region.getEnd())
