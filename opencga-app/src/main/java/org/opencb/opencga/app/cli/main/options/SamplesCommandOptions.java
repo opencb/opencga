@@ -152,7 +152,7 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
         public String annotation; 
     
-        @Parameter(names = {"--field"}, description = "List of fields to aggregate separated by semicolons, e.g.: max(version);release", required = false, arity = 1)
+        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
     
     }

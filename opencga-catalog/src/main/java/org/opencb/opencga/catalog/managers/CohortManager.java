@@ -471,7 +471,16 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     @Override
     public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
-        return null;
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        // Set internal variables: tokenPayload, study, organizationId, userId
+        setInternalVariables(studyStr, token);
+
+        Query finalQuery = new Query(query);
+        fixQueryObject(organizationId, study, finalQuery, userId);
+        finalQuery.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return getCohortDBAdaptor(organizationId).facet(study.getUid(), finalQuery, facet, userId);
     }
 
     @Override

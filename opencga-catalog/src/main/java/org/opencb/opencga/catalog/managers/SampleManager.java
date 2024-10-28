@@ -89,6 +89,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         studyManager = catalogManager.getStudyManager();
     }
 
+    protected void test(Query query) throws CatalogException {
+        fixQueryObject(organizationId, study, query, userId);
+
+        query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+    }
+
     @Override
     Enums.Resource getEntity() {
         return Enums.Resource.SAMPLE;
@@ -288,15 +294,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     public OpenCGAResult facet(String studyStr, Query query, String facet, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-
-        Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
+        // Set internal variables: tokenPayload, study, organizationId, userId
+        setInternalVariables(studyStr, token);
 
         fixQueryObject(organizationId, study, query, userId);
-
         query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return getSampleDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);

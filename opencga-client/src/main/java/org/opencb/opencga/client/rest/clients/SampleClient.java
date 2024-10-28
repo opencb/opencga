@@ -88,7 +88,7 @@ public class SampleClient extends AbstractParentClient {
      *       somatic: Somatic.
      *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
      *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
-     *       field: List of fields to aggregate separated by semicolons, e.g.: max(version);release.
+     *       field: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

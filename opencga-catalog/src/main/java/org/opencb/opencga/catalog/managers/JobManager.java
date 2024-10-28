@@ -812,7 +812,15 @@ public class JobManager extends ResourceManager<Job> {
 
     @Override
     public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
-        return null;
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        // Set internal variables: tokenPayload, study, organizationId, userId
+        setInternalVariables(studyStr, token);
+
+        fixQueryObject(organizationId, study, query, userId);
+        query.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return getJobDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);
     }
 
     public OpenCGAResult countInOrganization(String organizationId, Query query, String token) throws CatalogException {

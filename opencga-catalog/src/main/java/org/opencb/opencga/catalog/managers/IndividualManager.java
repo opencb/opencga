@@ -404,7 +404,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     @Override
     public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
-        return null;
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        // Set internal variables: tokenPayload, study, organizationId, userId
+        setInternalVariables(studyStr, token);
+
+        Query finalQuery = new Query(query);
+        fixQuery(organizationId, study, finalQuery, userId);
+        finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return getIndividualDBAdaptor(organizationId).facet(study.getUid(), finalQuery, facet, userId);
     }
 
     @Override

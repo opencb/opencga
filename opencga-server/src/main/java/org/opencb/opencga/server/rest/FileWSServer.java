@@ -1051,7 +1051,7 @@ public class FileWSServer extends OpenCGAWSServer {
         return run(() -> {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("field");
-            return catalogManager.getFileManager().facet(studyStr, query, facet, token);
+            return catalogManager.getSampleManager().facet(studyStr, query, facet, token);
         });
     }
 }

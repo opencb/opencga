@@ -1422,15 +1422,10 @@ public class FileManager extends AnnotationSetManager<File> {
     public OpenCGAResult facet(String studyStr, Query query, String facet, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-
-        Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
+        // Set internal variables: tokenPayload, study, organizationId, userId
+        setInternalVariables(studyStr, token);
 
         fixQueryObject(study, query, userId);
-
         query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return getFileDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);

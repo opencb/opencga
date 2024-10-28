@@ -28,10 +28,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +65,11 @@ public abstract class AbstractManager {
 
     protected static final String INTERNAL_DELIMITER = "__";
 
+    protected JwtPayload tokenPayload;
+    protected String organizationId;
+    protected String userId;
+    protected Study study;
+
     AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                     DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         this.authorizationManager = authorizationManager;
@@ -71,6 +79,15 @@ public abstract class AbstractManager {
         this.catalogManager = catalogManager;
 
         logger = LoggerFactory.getLogger(this.getClass());
+    }
+
+    protected void setInternalVariables(String studyStr, String token) throws CatalogException {
+        tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        organizationId = studyFqn.getOrganizationId();
+        userId = tokenPayload.getUserId(organizationId);
+
+        study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
     }
 
     protected DBAdaptorFactory getCatalogDBAdaptorFactory() {

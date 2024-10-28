@@ -233,7 +233,15 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
 
     @Override
     public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
-        return null;
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        // Set internal variables: tokenPayload, study, organizationId, userId
+        setInternalVariables(studyStr, token);
+
+        fixQueryObject(organizationId, study, query, userId, token);
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return getClinicalAnalysisDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);
     }
 
     @Override

@@ -222,7 +222,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     @Override
     public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
-        return null;
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        // Set internal variables: tokenPayload, study, organizationId, userId
+        setInternalVariables(studyStr, token);
+
+        Query finalQuery = new Query(query);
+        fixQueryObject(organizationId, study, query, tokenPayload);
+        query.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return getFamilyDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);
     }
 
     @Override

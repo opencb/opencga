@@ -61,8 +61,8 @@ class Sample(_ParentRestClient):
         :param str annotation: Annotation filters. Example:
             age>30;gender=FEMALE. For more information, please visit
             http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
-        :param str field: List of fields to aggregate separated by semicolons,
-            e.g.: max(version);release.
+        :param str field: List of fields separated by semicolons, e.g.:
+            studies;type;numSamples[0..10]:1.
         """
 
         return self._get(category='samples', resource='aggregationStats', **options)

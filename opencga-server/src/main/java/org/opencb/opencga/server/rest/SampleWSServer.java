@@ -462,11 +462,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Version") @QueryParam("version") String version,
             @ApiParam(value = "Somatic") @QueryParam("somatic") Boolean somatic,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "List of fields to aggregate separated by semicolons, e.g.: max(version);release") @QueryParam("field") String field) {
+            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
         return run(() -> {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("field");
-            return catalogManager.getSampleManager().facet(studyStr, query, field, token);
+            return catalogManager.getSampleManager().facet(studyStr, query, facet, token);
         });
     }
 }
