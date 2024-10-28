@@ -44,6 +44,7 @@ public class ParamConstants {
     public static final String PERMISSION_LIST = "permissions";
     private static final String REGEX_SUPPORT = ". Also admits basic regular expressions using the operator '~', "
             + "i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.";
+    public static final String RESOURCES_FOLDER = "RESOURCES";
     @Deprecated // Use INTERNAL_VARIANT_INDEX_STATUS_PARAM
     public static final String INTERNAL_INDEX_STATUS_PARAM = "internalIndexStatus";
     public static final String INTERNAL_VARIANT_INDEX_STATUS_PARAM = "internalVariantIndexStatus";
