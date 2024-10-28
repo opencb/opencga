@@ -332,7 +332,9 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
         }
         MongoDBFacetToFacetFieldsConverter converter = new MongoDBFacetToFacetFieldsConverter();
         List<Bson> facets = MongoDBQueryUtils.createFacet(query, facet);
+        logger.info("facet; input = {}", facets);
         DataResult<List<FacetField>> aggregate = collection.aggregate(facets, converter, null);
+        logger.info("facet; output = {}", aggregate.getResults());
         return new OpenCGAResult<>(aggregate);
     }
 
