@@ -96,6 +96,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         INTERNAL_VARIANT_SECONDARY_INDEX("internal.variant.secondaryIndex", TEXT_ARRAY, ""),
         @Deprecated // Deprecated filter. Should use INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID once the migration is completed
         INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID("internal.variant.secondaryIndex.status.id", TEXT_ARRAY, ""),
+        INTERNAL_ALIGNMENT("internal.alignment", OBJECT, ""),
         INTERNAL_ALIGNMENT_INDEX("internal.alignment.index", TEXT_ARRAY, ""),
         INTERNAL_ALIGNMENT_INDEX_STATUS_ID("internal.alignment.index.status.id", TEXT_ARRAY, ""),
         INTERNAL_COVERAGE_INDEX("internal.alignment.coverage", TEXT_ARRAY, ""),

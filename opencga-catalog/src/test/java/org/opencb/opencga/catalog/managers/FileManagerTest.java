@@ -421,6 +421,49 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void associateAlignmentFilesTest() throws CatalogException {
+        // Link BAM file
+        String bamFileStr = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
+        File bamFile = fileManager.link(studyFqn, new FileLinkParams(bamFileStr, "", "", "", null, null, null, null, null), false, ownerToken).first();
+        assertTrue(StringUtils.isEmpty(bamFile.getInternal().getAlignment().getCoverage().getFileId()));
+
+        // Link BAI file
+        String baiFileStr = getClass().getResource("/biofiles/NA19600.chrom20.small.bam.bai").getFile();
+        OpenCGAResult<File> result = fileManager.link(studyFqn, new FileLinkParams(baiFileStr, "", "", "", null, null, null, null, null), false, ownerToken);
+        assertEquals(1, result.getEvents().size());
+        assertTrue(result.getEvents().get(0).getMessage().contains("BAM"));
+
+        File baiFile = result.first();
+        assertEquals(1, baiFile.getRelatedFiles().size());
+        assertEquals(FileRelatedFile.Relation.ALIGNMENT, baiFile.getRelatedFiles().get(0).getRelation());
+        assertEquals(bamFile.getId(), baiFile.getRelatedFiles().get(0).getFile().getId());
+
+        bamFile = fileManager.get(studyFqn, bamFile.getPath(), QueryOptions.empty(), ownerToken).first();
+        assertNotNull(bamFile.getInternal().getAlignment().getIndex());
+        assertEquals(baiFile.getId(), bamFile.getInternal().getAlignment().getIndex().getFileId());
+        assertEquals(FileStatus.READY, bamFile.getInternal().getAlignment().getIndex().getStatus().getId());
+
+        // Unlink BAM file
+        Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), bamFile.getUid());
+        setToPendingDelete(studyFqn, query);
+        fileManager.unlink(studyFqn, bamFile.getPath(), ownerToken);
+        baiFile = fileManager.get(studyFqn, baiFile.getPath(), QueryOptions.empty(), ownerToken).first();
+        assertEquals(0, baiFile.getRelatedFiles().size());
+
+        // Link BAM file back
+        bamFile = fileManager.link(studyFqn, new FileLinkParams(bamFileStr, "", "", "", null, null, null, null, null), false, ownerToken).first();
+        assertEquals(File.Format.BAM, bamFile.getFormat());
+        assertNotNull(bamFile.getInternal().getAlignment().getIndex());
+        assertEquals(baiFile.getId(), bamFile.getInternal().getAlignment().getIndex().getFileId());
+        assertEquals(FileStatus.READY, bamFile.getInternal().getAlignment().getIndex().getStatus().getId());
+
+        baiFile = fileManager.get(studyFqn, baiFile.getPath(), QueryOptions.empty(), ownerToken).first();
+        assertEquals(1, baiFile.getRelatedFiles().size());
+        assertEquals(FileRelatedFile.Relation.ALIGNMENT, baiFile.getRelatedFiles().get(0).getRelation());
+        assertEquals(bamFile.getId(), baiFile.getRelatedFiles().get(0).getFile().getId());
+    }
+
+    @Test
     public void testLinkVirtualWithDifferentSamples() throws CatalogException {
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
         fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, ownerToken);

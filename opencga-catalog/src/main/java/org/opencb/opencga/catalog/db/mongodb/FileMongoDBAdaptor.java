@@ -134,8 +134,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     logger.debug("Starting file insert transaction for file id '{}'", file.getId());
 
                     dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
-                    insert(clientSession, studyId, file, existingSamples, nonExistingSamples, variableSetList);
-                    return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+                    List<Event> events = insert(clientSession, studyId, file, existingSamples, nonExistingSamples, variableSetList);
+                    return endWrite(tmpStartTime, 1, 1, 0, 0, events);
                 },
                 (e) -> logger.error("Could not create file {}: {}", file.getId(), e.getMessage()));
     }
@@ -151,7 +151,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                             virtualFile.getId());
 
                     dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
-                    insert(clientSession, studyId, file, null, null, variableSetList);
+                    List<Event> events = new ArrayList<>();
+                    List<Event> tmpEvents = insert(clientSession, studyId, file, null, null, variableSetList);
+                    events.addAll(tmpEvents);
 
                     Map<String, Object> actionMap = new HashMap<>();
                     actionMap.put(QueryParams.RELATED_FILES.key(), BasicUpdateAction.ADD);
@@ -161,7 +163,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         virtualFile.setRelatedFiles(Collections.singletonList(
                                 new FileRelatedFile(file, FileRelatedFile.Relation.MULTIPART))
                         );
-                        insert(clientSession, studyId, virtualFile, existingSamples, nonExistingSamples, variableSetList);
+                        tmpEvents = insert(clientSession, studyId, virtualFile, existingSamples, nonExistingSamples, variableSetList);
+                        events.addAll(tmpEvents);
                     } else {
                         // Add multipart file in virtual file
                         ObjectMap params = new ObjectMap(QueryParams.RELATED_FILES.key(), Collections.singletonList(
@@ -176,12 +179,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     ));
                     transactionalUpdate(clientSession, file, params, null, qOptions);
 
-                    return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+                    return endWrite(tmpStartTime, 1, 1, 0, 0, events);
                 },
                 (e) -> logger.error("Could not create file {}: {}", file.getId(), e.getMessage()));
     }
 
-    long insert(ClientSession clientSession, long studyId, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
+    List<Event> insert(ClientSession clientSession, long studyId, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
                 List<VariableSet> variableSetList) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (filePathExists(clientSession, studyId, file.getPath())) {
             throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath());
@@ -192,6 +195,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (nonExistingSamples == null) {
             nonExistingSamples = Collections.emptyList();
         }
+        List<Event> eventList = new LinkedList<>();
 
         List<Sample> samples = new ArrayList<>(existingSamples.size() + nonExistingSamples.size());
         if (existingSamples.size() + nonExistingSamples.size() < fileSampleLinkThreshold) {
@@ -253,6 +257,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         }
 
+        List<Event> events = adjustAlignmentRelatedFiles(clientSession, file);
+        eventList.addAll(events);
         Document fileDocument = fileConverter.convertToStorageType(file, samples, variableSetList);
 
         fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
@@ -268,8 +274,186 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, studyId, file.getSize());
         }
 
-        return fileUid;
+        return eventList;
     }
+
+    private List<Event> adjustAlignmentRelatedFiles(ClientSession clientSession, File file)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        if (!file.getBioformat().equals(File.Bioformat.ALIGNMENT)) {
+            return Collections.emptyList();
+        }
+
+        List<String> path;
+        switch (file.getFormat()) {
+            case BIGWIG:
+                path = Collections.singletonList(file.getPath().replace(".bw", ""));
+                break;
+            case BAM:
+                path = Arrays.asList(file.getPath() + ".bai", file.getPath() + ".bw");
+                break;
+            case BAI:
+                path = Collections.singletonList(file.getPath().replace(".bai", ""));
+                break;
+            case CRAM:
+                path = Collections.singletonList(file.getPath() + ".crai");
+                break;
+            case CRAI:
+                path = Collections.singletonList(file.getPath().replace(".crai", ""));
+                break;
+            default:
+                return Collections.emptyList();
+        }
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), file.getStudyUid())
+                .append(QueryParams.PATH.key(), path);
+        QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
+                FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.FORMAT.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
+                FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(), QueryParams.RELATED_FILES.key(),
+                FileDBAdaptor.QueryParams.STUDY_UID.key(), QueryParams.INTERNAL_ALIGNMENT.key()));
+        OpenCGAResult<File> result = get(clientSession, query, fileOptions);
+        List<Event> eventList = new ArrayList<>();
+        if (result.getNumResults() > 0) {
+            switch (file.getFormat()) {
+                case BIGWIG:
+                    associateBigWigToBamFile(clientSession, file, result.first(), eventList);
+                    break;
+                case BAM:
+                    for (File tmpResult : result.getResults()) {
+                        if (tmpResult.getFormat().equals(File.Format.BAI)) {
+                            associateAlignmentFileToIndexFile(clientSession, file, tmpResult, eventList);
+                        } else if (tmpResult.getFormat().equals(File.Format.BIGWIG)) {
+                            associateBamFileToBigWigFile(clientSession, file, tmpResult, eventList);
+                        }
+                    }
+                    break;
+                case BAI:
+                case CRAI:
+                    associateIndexFileToAlignmentFile(clientSession, file, result.first(), eventList);
+                    break;
+                case CRAM:
+                    associateAlignmentFileToIndexFile(clientSession, file, result.first(), eventList);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return eventList;
+    }
+
+    private void associateBamFileToBigWigFile(ClientSession clientSession, File bamFile, File bigWigFile, List<Event> eventList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        eventList.add(createAssociationInfoEvent(bamFile, bigWigFile));
+
+        if (CollectionUtils.isNotEmpty(bigWigFile.getRelatedFiles())) {
+            for (FileRelatedFile relatedFile : bigWigFile.getRelatedFiles()) {
+                if (relatedFile.getRelation().equals(FileRelatedFile.Relation.ALIGNMENT)) {
+                    eventList.add(createAssociationWarningEvent(bigWigFile, bamFile.getFormat(), bamFile.getPath()));
+                }
+            }
+        }
+
+        // Add BIGWIG reference in BAM file
+        bamFile.getInternal().getAlignment().setCoverage(new FileInternalCoverageIndex(
+                new InternalStatus(InternalStatus.READY), bigWigFile.getId(), "", -1));
+
+        // Add BAM file to list of related files in BIGWIG file
+        addAlignmentReferenceToRelatedFiles(clientSession, bamFile, bigWigFile);
+    }
+
+    private void addAlignmentReferenceToRelatedFiles(ClientSession clientSession, File bamFile, File targetFile)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        List<FileRelatedFile> tmpRelatedFileList = Collections.singletonList(new FileRelatedFile(bamFile,
+                FileRelatedFile.Relation.ALIGNMENT));
+
+        Map<String, Object> tmpActionMap = new HashMap<>();
+        tmpActionMap.put(QueryParams.RELATED_FILES.key(), BasicUpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, tmpActionMap);
+
+        ObjectMap params = new ObjectMap(QueryParams.RELATED_FILES.key(), tmpRelatedFileList);
+        transactionalUpdate(clientSession, targetFile, params, null, options);
+    }
+
+    private void associateAlignmentFileToIndexFile(ClientSession clientSession, File alignFile, File indexFile, List<Event> eventList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        eventList.add(createAssociationInfoEvent(alignFile, indexFile));
+
+        if (CollectionUtils.isNotEmpty(indexFile.getRelatedFiles())) {
+            for (FileRelatedFile relatedFile : indexFile.getRelatedFiles()) {
+                if (relatedFile.getRelation().equals(FileRelatedFile.Relation.ALIGNMENT)) {
+                    eventList.add(createAssociationWarningEvent(indexFile, alignFile.getFormat(), alignFile.getPath()));
+                }
+            }
+        }
+
+        // Add index reference to alignment file
+        alignFile.getInternal().getAlignment().setIndex(new FileInternalAlignmentIndex(
+                new InternalStatus(InternalStatus.READY), indexFile.getId(), ""));
+
+
+        // Add alignment file to list of related files in index file
+        addAlignmentReferenceToRelatedFiles(clientSession, alignFile, indexFile);
+    }
+
+    private void associateBigWigToBamFile(ClientSession clientSession, File bigWig, File bamFile, List<Event> eventList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        eventList.add(createAssociationInfoEvent(bigWig, bamFile));
+
+        if (bamFile.getInternal() != null && bamFile.getInternal().getAlignment() != null
+                && bamFile.getInternal().getAlignment().getCoverage() != null
+                && StringUtils.isNotEmpty(bamFile.getInternal().getAlignment().getCoverage().getFileId())) {
+            eventList.add(createAssociationWarningEvent(bamFile, bigWig.getFormat(),
+                    bamFile.getInternal().getAlignment().getCoverage().getFileId()));
+        }
+
+        List<FileRelatedFile> relatedFileList = bigWig.getRelatedFiles() != null ? new ArrayList<>(bigWig.getRelatedFiles())
+                : new ArrayList<>();
+        relatedFileList.add(new FileRelatedFile(bamFile, FileRelatedFile.Relation.ALIGNMENT));
+        bigWig.setRelatedFiles(relatedFileList);
+
+        FileInternalCoverageIndex coverage = new FileInternalCoverageIndex(new InternalStatus(InternalStatus.READY),
+                bigWig.getId(), "", -1);
+        bigWig.getInternal().getAlignment().setCoverage(coverage);
+
+        ObjectMap params = new ObjectMap(QueryParams.INTERNAL_COVERAGE_INDEX.key(), coverage);
+        transactionalUpdate(clientSession, bamFile, params, null, null);
+    }
+
+    private void associateIndexFileToAlignmentFile(ClientSession clientSession, File indexFile, File alignmentFile, List<Event> eventList)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        eventList.add(createAssociationInfoEvent(indexFile, alignmentFile));
+
+        if (alignmentFile.getInternal() != null && alignmentFile.getInternal().getAlignment() != null
+                && alignmentFile.getInternal().getAlignment().getIndex() != null
+                && StringUtils.isNotEmpty(alignmentFile.getInternal().getAlignment().getIndex().getFileId())) {
+            eventList.add(createAssociationWarningEvent(alignmentFile, indexFile.getFormat(),
+                    alignmentFile.getInternal().getAlignment().getIndex().getFileId()));
+        }
+
+        List<FileRelatedFile> relatedFileList = indexFile.getRelatedFiles() != null ? new ArrayList<>(indexFile.getRelatedFiles())
+                : new ArrayList<>();
+        relatedFileList.add(new FileRelatedFile(alignmentFile, FileRelatedFile.Relation.ALIGNMENT));
+        indexFile.setRelatedFiles(relatedFileList);
+
+        FileInternalAlignmentIndex alignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.READY),
+                indexFile.getId(), "");
+        indexFile.getInternal().getAlignment().setIndex(alignmentIndex);
+
+        ObjectMap params = new ObjectMap(QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), alignmentIndex);
+        transactionalUpdate(clientSession, alignmentFile, params, null, null);
+    }
+
+    private Event createAssociationInfoEvent(File firstFile, File secondFile) {
+        return new Event(Event.Type.INFO, "The " + firstFile.getFormat() + " file '" + firstFile.getPath() + "' was automatically"
+                + " associated to the " + secondFile.getFormat() + " file '" + secondFile.getPath() + "'.");
+    }
+
+    private Event createAssociationWarningEvent(File file, File.Format format, String fileIdFound) {
+        return new Event(Event.Type.WARNING, "Found another " + format + " file '" + fileIdFound + "' associated to the " + file.getFormat()
+                + " file '" + file.getPath() + "'. This relation was automatically removed.");
+    }
+
+
 
     @Override
     public long getId(long studyId, String path) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -382,6 +566,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, File file, ObjectMap parameters,
                                             List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        variableSetList = ParamUtils.defaultObject(variableSetList, Collections::emptyList);
+        queryOptions = ParamUtils.defaultObject(queryOptions, QueryOptions::empty);
+
         long tmpStartTime = startQuery();
         long studyUid = file.getStudyUid();
         long fileUid = file.getUid();
