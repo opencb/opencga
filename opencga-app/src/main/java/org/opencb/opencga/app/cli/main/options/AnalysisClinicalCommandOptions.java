@@ -34,10 +34,12 @@ public class AnalysisClinicalCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
+        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
         public UpdateClinicalConfigurationCommandOptions updateClinicalConfigurationCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
+        public AggregationStatsInterpretationCommandOptions aggregationStatsInterpretationCommandOptions;
         public DistinctInterpretationCommandOptions distinctInterpretationCommandOptions;
         public SearchInterpretationCommandOptions searchInterpretationCommandOptions;
         public InfoInterpretationCommandOptions infoInterpretationCommandOptions;
@@ -75,10 +77,12 @@ public class AnalysisClinicalCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
         this.updateClinicalConfigurationCommandOptions = new UpdateClinicalConfigurationCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
+        this.aggregationStatsInterpretationCommandOptions = new AggregationStatsInterpretationCommandOptions();
         this.distinctInterpretationCommandOptions = new DistinctInterpretationCommandOptions();
         this.searchInterpretationCommandOptions = new SearchInterpretationCommandOptions();
         this.infoInterpretationCommandOptions = new InfoInterpretationCommandOptions();
@@ -141,6 +145,101 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
+    
+    }
+
+    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog clinical analysis aggregation stats")
+    public class AggregationStatsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list of Clinical Analysis IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--uuid"}, description = "Comma separated list of Clinical Analysis UUIDs up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--type"}, description = "Clinical Analysis type", required = false, arity = 1)
+        public String type; 
+    
+        @Parameter(names = {"--disorder"}, description = "Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String disorder; 
+    
+        @Parameter(names = {"--files"}, description = "Clinical Analysis files", required = false, arity = 1)
+        public String files; 
+    
+        @Parameter(names = {"--sample"}, description = "Sample associated to the proband or any member of a family", required = false, arity = 1)
+        public String sample; 
+    
+        @Parameter(names = {"--individual"}, description = "Proband or any member of a family", required = false, arity = 1)
+        public String individual; 
+    
+        @Parameter(names = {"--proband"}, description = "Clinical Analysis proband", required = false, arity = 1)
+        public String proband; 
+    
+        @Parameter(names = {"--proband-samples"}, description = "Clinical Analysis proband samples", required = false, arity = 1)
+        public String probandSamples; 
+    
+        @Parameter(names = {"--family"}, description = "Clinical Analysis family", required = false, arity = 1)
+        public String family; 
+    
+        @Parameter(names = {"--family-members"}, description = "Clinical Analysis family members", required = false, arity = 1)
+        public String familyMembers; 
+    
+        @Parameter(names = {"--family-member-samples"}, description = "Clinical Analysis family members samples", required = false, arity = 1)
+        public String familyMemberSamples; 
+    
+        @Parameter(names = {"--panels"}, description = "Clinical Analysis panels", required = false, arity = 1)
+        public String panels; 
+    
+        @Parameter(names = {"--locked"}, description = "Locked Clinical Analyses", required = false, arity = 1)
+        public Boolean locked; 
+    
+        @Parameter(names = {"--analyst-id"}, description = "Clinical Analysis analyst id", required = false, arity = 1)
+        public String analystId; 
+    
+        @Parameter(names = {"--priority"}, description = "Clinical Analysis priority", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--flags"}, description = "Clinical Analysis flags", required = false, arity = 1)
+        public String flags; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Clinical Analysis Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--due-date"}, description = "Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String dueDate; 
+    
+        @Parameter(names = {"--quality-control-summary"}, description = "Clinical Analysis quality control summary", required = false, arity = 1)
+        public String qualityControlSummary; 
+    
+        @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
+        public Integer snapshot; 
+    
+        @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
+        public String annotation; 
+    
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
+    
+        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
+        public String field; 
     
     }
 
@@ -442,6 +541,62 @@ public class AnalysisClinicalCommandOptions {
         public boolean deleted = false; 
     
         @Parameter(names = {"--field"}, description = "Comma separated list of fields for which to obtain the distinct values", required = true, arity = 1)
+        public String field; 
+    
+    }
+
+    @Parameters(commandNames = {"interpretation-aggregation-stats"}, commandDescription ="Fetch catalog interpretation aggregation stats")
+    public class AggregationStatsInterpretationCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--uuid"}, description = "Comma separated list of Interpretation UUIDs up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of Interpretation names up to a maximum of 100", required = false, arity = 1)
+        public String name; 
+    
+        @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical Analysis id", required = false, arity = 1)
+        public String clinicalAnalysisId; 
+    
+        @Parameter(names = {"--analyst-id"}, description = "Analyst ID", required = false, arity = 1)
+        public String analystId; 
+    
+        @Parameter(names = {"--method-name"}, description = "Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String methodName; 
+    
+        @Parameter(names = {"--panels"}, description = "Interpretation panels", required = false, arity = 1)
+        public String panels; 
+    
+        @Parameter(names = {"--primary-findings"}, description = "Interpretation primary findings", required = false, arity = 1)
+        public String primaryFindings; 
+    
+        @Parameter(names = {"--secondary-findings"}, description = "Interpretation secondary findings", required = false, arity = 1)
+        public String secondaryFindings; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Interpretation Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Interpretation Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
     
     }

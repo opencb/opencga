@@ -20,10 +20,12 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/analysis/clinical/acl/{members}/update | study, members[*], action[*], propagate, body[*] |
+#' | aggregationStats | /{apiVersion}/analysis/clinical/aggregationStats | study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted, field |
 #' | loadAnnotationSets | /{apiVersion}/analysis/clinical/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | updateClinicalConfiguration | /{apiVersion}/analysis/clinical/clinical/configuration/update | study, body |
 #' | create | /{apiVersion}/analysis/clinical/create | include, exclude, study, skipCreateDefaultInterpretation, includeResult, body[*] |
 #' | distinct | /{apiVersion}/analysis/clinical/distinct | study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted, field[*] |
+#' | aggregationStatsInterpretation | /{apiVersion}/analysis/clinical/interpretation/aggregationStats | study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field |
 #' | distinctInterpretation | /{apiVersion}/analysis/clinical/interpretation/distinct | study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field[*] |
 #' | searchInterpretation | /{apiVersion}/analysis/clinical/interpretation/search | include, exclude, limit, skip, sort, study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release |
 #' | infoInterpretation | /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info | include, exclude, interpretations[*], study, version, deleted |
@@ -73,6 +75,41 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param data JSON containing the parameters to add ACLs.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical/acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/analysis/clinical/aggregationStats:
+        #' Fetch catalog clinical analysis aggregation stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param id Comma separated list of Clinical Analysis IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list of Clinical Analysis UUIDs up to a maximum of 100.
+        #' @param type Clinical Analysis type.
+        #' @param disorder Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param files Clinical Analysis files.
+        #' @param sample Sample associated to the proband or any member of a family.
+        #' @param individual Proband or any member of a family.
+        #' @param proband Clinical Analysis proband.
+        #' @param probandSamples Clinical Analysis proband samples.
+        #' @param family Clinical Analysis family.
+        #' @param familyMembers Clinical Analysis family members.
+        #' @param familyMemberSamples Clinical Analysis family members samples.
+        #' @param panels Clinical Analysis panels.
+        #' @param locked Locked Clinical Analyses.
+        #' @param analystId Clinical Analysis analyst id.
+        #' @param priority Clinical Analysis priority.
+        #' @param flags Clinical Analysis flags.
+        #' @param creationDate Clinical Analysis Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param dueDate Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param qualityControlSummary Clinical Analysis quality control summary.
+        #' @param release Release when it was created.
+        #' @param snapshot Snapshot value (Latest version of the entry in the specified release).
+        #' @param status Filter by status.
+        #' @param internalStatus Filter by internal status.
+        #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        #' @param deleted Boolean to retrieve deleted entries.
+        #' @param field List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/annotationSets/load:
@@ -139,6 +176,28 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param field Comma separated list of fields for which to obtain the distinct values.
         distinct=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
                 subcategoryId=NULL, action="distinct", params=params, httpMethod="GET", as.queryParam=c("field"), ...),
+
+        #' @section Endpoint /{apiVersion}/analysis/clinical/interpretation/aggregationStats:
+        #' Fetch catalog interpretation aggregation stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param id Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list of Interpretation UUIDs up to a maximum of 100.
+        #' @param name Comma separated list of Interpretation names up to a maximum of 100.
+        #' @param clinicalAnalysisId Clinical Analysis id.
+        #' @param analystId Analyst ID.
+        #' @param methodName Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param panels Interpretation panels.
+        #' @param primaryFindings Interpretation primary findings.
+        #' @param secondaryFindings Interpretation secondary findings.
+        #' @param creationDate Interpretation Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Interpretation Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param status Filter by status.
+        #' @param internalStatus Filter by internal status.
+        #' @param release Release when it was created.
+        #' @param field List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+        aggregationStatsInterpretation=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
+                subcategory="clinical/interpretation", subcategoryId=NULL, action="aggregationStats", params=params,
+                httpMethod="GET", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/interpretation/distinct:
         #' Interpretation distinct method.

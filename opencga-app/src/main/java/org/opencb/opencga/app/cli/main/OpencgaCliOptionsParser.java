@@ -113,10 +113,12 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("clinical", analysisClinicalCommandOptions);
         JCommander analysisClinicalSubCommands = jCommander.getCommands().get("clinical");
         analysisClinicalSubCommands.addCommand("acl-update", analysisClinicalCommandOptions.updateAclCommandOptions);
+        analysisClinicalSubCommands.addCommand("aggregationstats", analysisClinicalCommandOptions.aggregationStatsCommandOptions);
         analysisClinicalSubCommands.addCommand("annotation-sets-load", analysisClinicalCommandOptions.loadAnnotationSetsCommandOptions);
         analysisClinicalSubCommands.addCommand("clinical-configuration-update", analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions);
         analysisClinicalSubCommands.addCommand("create", analysisClinicalCommandOptions.createCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);
+        analysisClinicalSubCommands.addCommand("interpretation-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-distinct", analysisClinicalCommandOptions.distinctInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-search", analysisClinicalCommandOptions.searchInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-info", analysisClinicalCommandOptions.infoInterpretationCommandOptions);
