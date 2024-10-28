@@ -319,6 +319,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      */
     OpenCGAResult delete(Query query, String status) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
+    void associateAlignmentFiles(long studyUid) throws CatalogException;
+
     int getFileSampleLinkThreshold();
 
     void setFileSampleLinkThreshold(int numSamples);

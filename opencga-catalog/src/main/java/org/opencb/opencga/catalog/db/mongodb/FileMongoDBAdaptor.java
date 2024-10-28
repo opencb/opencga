@@ -185,7 +185,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     List<Event> insert(ClientSession clientSession, long studyId, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
-                List<VariableSet> variableSetList) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+                       List<VariableSet> variableSetList) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (filePathExists(clientSession, studyId, file.getPath())) {
             throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath());
         }
@@ -341,6 +341,70 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         return eventList;
     }
 
+    @Override
+    public void associateAlignmentFiles(long studyUid) throws CatalogException {
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.FORMAT.key(), Arrays.asList(File.Format.BAM, File.Format.CRAM));
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.PATH.key(), QueryParams.FORMAT.key(),
+                QueryParams.RELATED_FILES.key(), QueryParams.INTERNAL.key()));
+
+        try (DBIterator<File> iterator = iterator(query, options)) {
+            while (iterator.hasNext()) {
+                File alignmentFile = iterator.next();
+                List<String> additionalFiles = new ArrayList<>(2);
+                if (alignmentFile.getInternal().getAlignment() == null || alignmentFile.getInternal().getAlignment().getIndex() == null
+                        || StringUtils.isEmpty(alignmentFile.getInternal().getAlignment().getIndex().getFileId())) {
+                    switch (alignmentFile.getFormat()) {
+                        case BAM:
+                            additionalFiles.add(alignmentFile.getPath() + ".bai");
+                            break;
+                        case CRAM:
+                            additionalFiles.add(alignmentFile.getPath() + ".crai");
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                if (alignmentFile.getFormat().equals(File.Format.BAM)
+                        && (alignmentFile.getInternal().getAlignment() == null
+                        || alignmentFile.getInternal().getAlignment().getCoverage() == null
+                        || StringUtils.isEmpty(alignmentFile.getInternal().getAlignment().getCoverage().getFileId()))) {
+                    additionalFiles.add(alignmentFile.getPath() + ".bw");
+                }
+
+                if (!additionalFiles.isEmpty()) {
+                    runTransaction(session -> {
+                        Query tmpQuery = new Query()
+                                .append(QueryParams.STUDY_UID.key(), studyUid)
+                                .append(QueryParams.PATH.key(), additionalFiles);
+                        QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
+                                FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
+                                FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.URI.key(),
+                                FileDBAdaptor.QueryParams.PATH.key(), QueryParams.RELATED_FILES.key(),
+                                FileDBAdaptor.QueryParams.STUDY_UID.key(), QueryParams.INTERNAL_ALIGNMENT.key()));
+                        try (DBIterator<File> tmpIterator = iterator(session, tmpQuery, fileOptions)) {
+                            while (tmpIterator.hasNext()) {
+                                File secondFile = tmpIterator.next();
+                                switch (secondFile.getFormat()) {
+                                    case BAI:
+                                    case CRAI:
+                                        associateAlignmentFileToIndexFile(session, alignmentFile, secondFile, new LinkedList<>());
+                                        break;
+                                    case BIGWIG:
+                                        associateBamFileToBigWigFile(session, alignmentFile, secondFile, new LinkedList<>());
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                        return null;
+                    });
+                }
+            }
+        }
+    }
+
     private void associateBamFileToBigWigFile(ClientSession clientSession, File bamFile, File bigWigFile, List<Event> eventList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         eventList.add(createAssociationInfoEvent(bamFile, bigWigFile));
@@ -444,11 +508,15 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     private Event createAssociationInfoEvent(File firstFile, File secondFile) {
+        logger.info("The {} file '{}' was automatically associated to the {} file '{}'.", firstFile.getFormat(), firstFile.getPath(),
+                secondFile.getFormat(), secondFile.getPath());
         return new Event(Event.Type.INFO, "The " + firstFile.getFormat() + " file '" + firstFile.getPath() + "' was automatically"
                 + " associated to the " + secondFile.getFormat() + " file '" + secondFile.getPath() + "'.");
     }
 
     private Event createAssociationWarningEvent(File file, File.Format format, String fileIdFound) {
+        logger.warn("Found another {} file '{}' associated to the {} file '{}'. This relation was automatically removed.", format,
+                fileIdFound, file.getFormat(), file.getPath());
         return new Event(Event.Type.WARNING, "Found another " + format + " file '" + fileIdFound + "' associated to the " + file.getFormat()
                 + " file '" + file.getPath() + "'. This relation was automatically removed.");
     }

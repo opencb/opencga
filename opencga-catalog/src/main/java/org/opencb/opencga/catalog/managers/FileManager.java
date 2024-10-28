@@ -3124,6 +3124,17 @@ public class FileManager extends AnnotationSetManager<File> {
         checkCanDeleteFile(organizationId, study, fileId, unlink, Arrays.asList(FileStatus.READY, FileStatus.TRASHED), userId);
     }
 
+    public void associateAlignmentFiles(String studyStr, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, userId, organizationId);
+
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+        getFileDBAdaptor(organizationId).associateAlignmentFiles(study.getUid());
+    }
+
     /**
      * Method to check if a file or folder can be deleted. It will check for indexation, status, permissions and file system availability.
      *
