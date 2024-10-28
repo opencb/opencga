@@ -595,8 +595,12 @@ public class PanelManager extends ResourceManager<Panel> {
     public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        // Set internal variables: tokenPayload, study, organizationId, userId
-        setInternalVariables(studyStr, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
 
         fixQueryObject(query);
         query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
