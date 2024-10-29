@@ -321,9 +321,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 case BAM:
                     for (File tmpResult : result.getResults()) {
                         if (tmpResult.getFormat().equals(File.Format.BAI)) {
-                            associateAlignmentFileToIndexFile(clientSession, file, tmpResult, eventList);
+                            associateAlignmentFileToIndexFile(clientSession, file, tmpResult, true, eventList);
                         } else if (tmpResult.getFormat().equals(File.Format.BIGWIG)) {
-                            associateBamFileToBigWigFile(clientSession, file, tmpResult, eventList);
+                            associateBamFileToBigWigFile(clientSession, file, tmpResult, true, eventList);
                         }
                     }
                     break;
@@ -332,7 +332,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     associateIndexFileToAlignmentFile(clientSession, file, result.first(), eventList);
                     break;
                 case CRAM:
-                    associateAlignmentFileToIndexFile(clientSession, file, result.first(), eventList);
+                    associateAlignmentFileToIndexFile(clientSession, file, result.first(), true, eventList);
                     break;
                 default:
                     break;
@@ -407,6 +407,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
     private void associateBamFileToBigWigFile(ClientSession clientSession, File bamFile, File bigWigFile, List<Event> eventList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        associateBamFileToBigWigFile(clientSession, bamFile, bigWigFile, false, eventList);
+    }
+
+    private void associateBamFileToBigWigFile(ClientSession clientSession, File bamFile, File bigWigFile, boolean bamFileNotYetInserted,
+                                              List<Event> eventList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         eventList.add(createAssociationInfoEvent(bamFile, bigWigFile));
 
         if (CollectionUtils.isNotEmpty(bigWigFile.getRelatedFiles())) {
@@ -417,12 +423,30 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             }
         }
 
-        // Add BIGWIG reference in BAM file
-        bamFile.getInternal().getAlignment().setCoverage(new FileInternalCoverageIndex(
-                new InternalStatus(InternalStatus.READY), bigWigFile.getId(), "", -1));
+        FileInternalCoverageIndex coverage = new FileInternalCoverageIndex(new InternalStatus(InternalStatus.READY), bigWigFile.getId(), "",
+                -1);
+        if (bamFileNotYetInserted) {
+            // Add BIGWIG reference in BAM file
+            bamFile.getInternal().getAlignment().setCoverage(coverage);
+        } else {
+            // Add coverage reference in BAM document
+            addCoverageReferenceInBamFile(clientSession, bamFile, coverage);
+        }
 
         // Add BAM file to list of related files in BIGWIG file
         addAlignmentReferenceToRelatedFiles(clientSession, bamFile, bigWigFile);
+    }
+
+    private void addCoverageReferenceInBamFile(ClientSession clientSession, File bamFile, FileInternalCoverageIndex coverage)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        ObjectMap params = new ObjectMap(QueryParams.INTERNAL_ALIGNMENT_COVERAGE.key(), coverage);
+        transactionalUpdate(clientSession, bamFile, params, null, null);
+    }
+
+    private void addIndexReferenceInAlignmentFile(ClientSession clientSession, File alignFile, FileInternalAlignmentIndex index)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        ObjectMap params = new ObjectMap(QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), index);
+        transactionalUpdate(clientSession, alignFile, params, null, null);
     }
 
     private void addAlignmentReferenceToRelatedFiles(ClientSession clientSession, File bamFile, File targetFile)
@@ -440,6 +464,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
     private void associateAlignmentFileToIndexFile(ClientSession clientSession, File alignFile, File indexFile, List<Event> eventList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        associateAlignmentFileToIndexFile(clientSession, alignFile, indexFile, false, eventList);
+    }
+
+    private void associateAlignmentFileToIndexFile(ClientSession clientSession, File alignFile, File indexFile,
+                                                   boolean alignmentFileNotYetInserted, List<Event> eventList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         eventList.add(createAssociationInfoEvent(alignFile, indexFile));
 
         if (CollectionUtils.isNotEmpty(indexFile.getRelatedFiles())) {
@@ -450,10 +480,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             }
         }
 
-        // Add index reference to alignment file
-        alignFile.getInternal().getAlignment().setIndex(new FileInternalAlignmentIndex(
-                new InternalStatus(InternalStatus.READY), indexFile.getId(), ""));
-
+        FileInternalAlignmentIndex index = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.READY), indexFile.getId(), "");
+        if (alignmentFileNotYetInserted) {
+            // Add index reference to alignment file
+            alignFile.getInternal().getAlignment().setIndex(index);
+        } else {
+            addIndexReferenceInAlignmentFile(clientSession, alignFile, index);
+        }
 
         // Add alignment file to list of related files in index file
         addAlignmentReferenceToRelatedFiles(clientSession, alignFile, indexFile);
@@ -479,8 +512,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 bigWig.getId(), "", -1);
         bigWig.getInternal().getAlignment().setCoverage(coverage);
 
-        ObjectMap params = new ObjectMap(QueryParams.INTERNAL_COVERAGE_INDEX.key(), coverage);
-        transactionalUpdate(clientSession, bamFile, params, null, null);
+        // Add coverage reference to bam file
+        addCoverageReferenceInBamFile(clientSession, bamFile, coverage);
     }
 
     private void associateIndexFileToAlignmentFile(ClientSession clientSession, File indexFile, File alignmentFile, List<Event> eventList)
@@ -503,8 +536,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 indexFile.getId(), "");
         indexFile.getInternal().getAlignment().setIndex(alignmentIndex);
 
-        ObjectMap params = new ObjectMap(QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), alignmentIndex);
-        transactionalUpdate(clientSession, alignmentFile, params, null, null);
+        addIndexReferenceInAlignmentFile(clientSession, alignmentFile, alignmentIndex);
     }
 
     private Event createAssociationInfoEvent(File firstFile, File secondFile) {
@@ -1114,7 +1146,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         String[] acceptedObjectParams = {QueryParams.INTERNAL_VARIANT_INDEX.key(), QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
                 QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
-                QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), QueryParams.INTERNAL_COVERAGE_INDEX.key(), QueryParams.SOFTWARE.key(),
+                QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), QueryParams.INTERNAL_ALIGNMENT_COVERAGE.key(), QueryParams.SOFTWARE.key(),
                 QueryParams.EXPERIMENT.key(), QueryParams.STATUS.key(), QueryParams.INTERNAL_MISSING_SAMPLES.key(),
                 QueryParams.QUALITY_CONTROL.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);

@@ -471,7 +471,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
     public OpenCGAResult<?> updateFileInternalCoverageIndex(String studyFqn, File file, FileInternalCoverageIndex index, String token)
             throws CatalogException {
-        return updateFileInternalField(studyFqn, file, index, FileDBAdaptor.QueryParams.INTERNAL_COVERAGE_INDEX.key(), token);
+        return updateFileInternalField(studyFqn, file, index, FileDBAdaptor.QueryParams.INTERNAL_ALIGNMENT_COVERAGE.key(), token);
     }
 
     private OpenCGAResult<?> updateFileInternalField(String studyFqn, File file, Object value, String fieldKey, String token)
