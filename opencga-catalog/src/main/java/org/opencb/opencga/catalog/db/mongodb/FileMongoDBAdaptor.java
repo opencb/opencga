@@ -346,8 +346,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(QueryParams.FORMAT.key(), Arrays.asList(File.Format.BAM, File.Format.CRAM));
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.PATH.key(), QueryParams.FORMAT.key(),
-                QueryParams.RELATED_FILES.key(), QueryParams.INTERNAL.key()));
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.UID.key(), QueryParams.PATH.key(),
+                QueryParams.FORMAT.key(), QueryParams.RELATED_FILES.key(), QueryParams.INTERNAL.key(), QueryParams.STUDY_UID.key()));
 
         try (DBIterator<File> iterator = iterator(query, options)) {
             while (iterator.hasNext()) {
