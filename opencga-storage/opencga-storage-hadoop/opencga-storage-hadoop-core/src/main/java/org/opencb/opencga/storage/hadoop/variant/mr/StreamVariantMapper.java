@@ -149,6 +149,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                         LOG.info("Processed bytes = " + processedBytes + " > " + maxInputBytesPerProcess + ". Restarting process.");
                         restartProcess(context, "BYTES_LIMIT");
                     } else if (!currentChromosome.equals(currentValue.getChromosome())) {
+                        // TODO: Should we change only when the chromosome change would produce a partition change?
                         LOG.info("Chromosome changed from " + currentChromosome + " to " + currentValue.getChromosome()
                                 + ". Restarting process.");
                         restartProcess(context, "CHR_CHANGE");

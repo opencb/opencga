@@ -159,9 +159,10 @@ public class GenomeHelper {
         // End split is always added, unless the numberOfSplits is a multiple of the "total" size.
         boolean hasEndSplit = splitList.size() == numberOfSplits;
         if (includeEndSplit) {
-            if (hasEndSplit) {
+            if (!hasEndSplit) {
                 // Add last split
-                splitList.add(keyGenerator.apply(sortedRegions.lastKey(), 0));
+                String lastKey = sortedRegions.lastKey();
+                splitList.add(keyGenerator.apply(lastKey, sortedRegions.get(lastKey).intValue()));
             }
         } else {
             if (hasEndSplit) {
