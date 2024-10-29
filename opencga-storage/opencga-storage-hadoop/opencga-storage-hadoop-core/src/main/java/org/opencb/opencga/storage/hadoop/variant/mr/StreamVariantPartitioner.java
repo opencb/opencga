@@ -4,11 +4,11 @@ import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
-import javax.xml.soap.Text;
 import java.io.IOException;
 import java.util.List;
 import java.util.TreeMap;

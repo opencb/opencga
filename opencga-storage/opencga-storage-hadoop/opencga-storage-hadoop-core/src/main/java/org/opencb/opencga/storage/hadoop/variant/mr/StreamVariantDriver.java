@@ -155,11 +155,12 @@ public class StreamVariantDriver extends VariantDriver {
 
     @Override
     protected void setupReducer(Job job, String variantTableName) throws IOException {
-        String numReducersStr = getParam(JobContext.NUM_REDUCES);
+        String numReducersKey = getClass().getSimpleName() + "." + JobContext.NUM_REDUCES;
+        String numReducersStr = getParam(numReducersKey);
         int reduceTasks;
         if (StringUtils.isNotEmpty(numReducersStr)) {
             reduceTasks = Integer.parseInt(numReducersStr);
-            logger.info("Set reduce tasks to " + reduceTasks + " (derived from input parameter '" + JobContext.NUM_REDUCES + "')");
+            logger.info("Set reduce tasks to " + reduceTasks + " (derived from input parameter '" + numReducersKey + "')");
         } else {
             int serversSize = getHBaseManager().act(variantTableName, (table, admin) -> admin.getClusterStatus().getServersSize());
             // Set the number of reduce tasks to 2x the number of hosts
