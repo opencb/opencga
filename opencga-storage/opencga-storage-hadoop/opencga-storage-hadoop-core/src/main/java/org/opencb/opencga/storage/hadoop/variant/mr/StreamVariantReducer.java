@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -44,8 +45,13 @@ public class StreamVariantReducer extends Reducer<ImmutableBytesWritable, Text, 
                         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "header_records").increment(1);
                     }
                 } else {
-                    // No more header, assume all header is written
-                    headerWritten = true;
+                    if (value.getLength() < 3 && StringUtils.isBlank(value.toString())) {
+                        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stdout_records_empty").increment(1);
+                        // Do not interrupt header with empty records
+                    } else {
+                        // No more header, assume all header is written
+                        headerWritten = true;
+                    }
                     mos.write("stdout", key, value);
                     context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "body_records").increment(1);
                 }
