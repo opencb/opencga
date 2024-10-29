@@ -143,6 +143,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                 startProcess(context);
                 // Do-while instead of "while", as we've already called context.nextKeyValue() once
                 do {
+                    // FIXME: If the chromosome is different, we should start a new process and get a new outputKeyPrefix
                     if (processedBytes > maxInputBytesPerProcess) {
                         LOG.info("Processed bytes = " + processedBytes + " > " + maxInputBytesPerProcess + ". Restarting process.");
                         context.getCounter(COUNTER_GROUP_NAME, "RESTARTED_PROCESS").increment(1);

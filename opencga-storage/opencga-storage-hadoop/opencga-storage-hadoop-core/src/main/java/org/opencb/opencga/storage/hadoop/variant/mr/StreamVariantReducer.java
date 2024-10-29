@@ -45,6 +45,7 @@ public class StreamVariantReducer extends Reducer<ImmutableBytesWritable, Text, 
                         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "header_records").increment(1);
                     }
                 } else {
+                    // length < 3 to include lines with a small combination of \n \r \t and spaces.
                     if (value.getLength() < 3 && StringUtils.isBlank(value.toString())) {
                         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stdout_records_empty").increment(1);
                         // Do not interrupt header with empty records

@@ -117,10 +117,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
         job.setOutputFormatClass(outputFormatClass);
 
         if (useReduceStep) {
-            logger.info("Use one Reduce task to produce a single file");
-            job.setReducerClass(reducerClass);
-            // TODO: Configure multiple reducers and partitioner
-            job.setNumReduceTasks(1);
+            setupReducer(job, variantTable);
         } else {
             VariantMapReduceUtil.setNoneReduce(job);
         }
@@ -160,6 +157,12 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
 
 
         return job;
+    }
+
+    protected void setupReducer(Job job, String variantTable) throws IOException {
+        logger.info("Use one Reduce task to produce a single file");
+        job.setReducerClass(getReducerClass());
+        job.setNumReduceTasks(1);
     }
 
 

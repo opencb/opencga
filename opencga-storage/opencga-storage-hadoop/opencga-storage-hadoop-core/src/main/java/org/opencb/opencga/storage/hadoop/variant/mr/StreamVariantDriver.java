@@ -154,6 +154,27 @@ public class StreamVariantDriver extends VariantDriver {
     }
 
     @Override
+    protected void setupReducer(Job job, String variantTableName) throws IOException {
+        String numReducersStr = getParam(JobContext.NUM_REDUCES);
+        int reduceTasks;
+        if (StringUtils.isNotEmpty(numReducersStr)) {
+            reduceTasks = Integer.parseInt(numReducersStr);
+            logger.info("Set reduce tasks to " + reduceTasks + " (derived from input parameter '" + JobContext.NUM_REDUCES + "')");
+        } else {
+            int serversSize = getHBaseManager().act(variantTableName, (table, admin) -> admin.getClusterStatus().getServersSize());
+            // Set the number of reduce tasks to 2x the number of hosts
+            reduceTasks = serversSize * 2;
+            logger.info("Set reduce tasks to " + reduceTasks + " (derived from 'number_of_servers * 2')");
+        }
+        job.setReducerClass(getReducerClass());
+        job.setPartitionerClass(StreamVariantPartitioner.class);
+        job.setNumReduceTasks(reduceTasks);
+        // TODO: Use a grouping comparator to group by chromosome and position, ignoring the rest of the key?
+//        job.setGroupingComparatorClass(StreamVariantGroupingComparator.class);
+//        job.setSortComparatorClass();
+    }
+
+    @Override
     protected String getJobOperationName() {
         return "stream-variants";
     }
