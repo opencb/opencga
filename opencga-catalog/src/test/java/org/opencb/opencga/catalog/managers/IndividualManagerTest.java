@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.ClinicalComment;
@@ -8,10 +9,7 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -22,6 +20,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
@@ -1139,6 +1138,38 @@ public class IndividualManagerTest extends AbstractManagerTest {
         individual = catalogManager.getIndividualManager().get(studyFqn, "individual", QueryOptions.empty(), ownerToken).first();
         assertEquals(2, individual.getSamples().get(0).getFileIds().size());
         assertTrue(Arrays.asList("variant-test-file.vcf.gz", "NA19600.chrom20.small.bam").containsAll(individual.getSamples().get(0).getFileIds()));
+    }
+
+    @Test
+    public void testFacet() throws CatalogException {
+        OpenCGAResult<Individual> results = catalogManager.getIndividualManager().search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        System.out.println("results.getResults() = " + results.getResults());
+        OpenCGAResult<List<FacetField>> facets = catalogManager.getIndividualManager().facet(studyFqn, new Query(), "karyotypicSex", normalToken1);
+
+        long totalCount = 0;
+        Map<String, Integer> map = new HashMap<>();
+        for (Individual result : results.getResults()) {
+            String key;
+            if (result.getKaryotypicSex() == null) {
+                key = "null";
+            } else {
+                key = result.getKaryotypicSex().name();
+            }
+            if (!map.containsKey(key)) {
+                map.put(key, 0);
+            }
+            map.put(key, 1 + map.get(key));
+            totalCount++;
+        }
+
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults().get(0)) {
+            Assert.assertEquals(totalCount, result.getCount());
+            Assert.assertEquals(map.size(), result.getBuckets().size());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * map.get(bucket.getValue()), bucket.getCount());
+            }
+        }
     }
 
 }

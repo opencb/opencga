@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -26,6 +27,7 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
@@ -58,6 +60,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.opencb.commons.datastore.mongodb.MongoDBQueryUtils.Accumulator.max;
 
 /**
  * Created by pfurio on 11/05/17.
@@ -249,7 +252,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
 
         createDummyFamily("Other-Family-Name", false);
         individualList = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("john", "father", "mother", "child1", "child2",
-                        "child3"), QueryOptions.empty(), ownerToken).getResults();
+                "child3"), QueryOptions.empty(), ownerToken).getResults();
         for (Individual individual : individualList) {
             switch (individual.getId()) {
                 case "john":
@@ -1433,5 +1436,28 @@ public class FamilyManagerTest extends AbstractManagerTest {
                 new IndividualReferenceParam(father.getId(), child.getUuid())
         ));
         catalogManager.getFamilyManager().update(studyFqn, family.getId(), updateParams, QueryOptions.empty(), ownerToken);
+    }
+
+    @Test
+    public void testFacet() throws CatalogException {
+        createDummyFamily("Other-Family-Name-1", true);
+
+        OpenCGAResult<Family> results = catalogManager.getFamilyManager().search(studyFqn, new Query(), QueryOptions.empty(), ownerToken);
+        System.out.println("results.getResults() = " + results.getResults());
+        OpenCGAResult<List<FacetField>> facets = catalogManager.getFamilyManager().facet(studyFqn, new Query(), "max(version)", normalToken1);
+
+        long maxValue = 0;
+        for (Family result : results.getResults()) {
+            if (result.getVersion() > maxValue) {
+                maxValue = result.getVersion();
+            }
+        }
+
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults().get(0)) {
+            Assert.assertEquals(max.name(), result.getAggregationName());
+            Assert.assertEquals(1, result.getAggregationValues().size());
+            Assert.assertEquals(maxValue, result.getAggregationValues().get(0), 0.0001);
+        }
     }
 }

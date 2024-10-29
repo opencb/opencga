@@ -2410,6 +2410,7 @@ public class FileManagerTest extends AbstractManagerTest {
             totalCount++;
         }
 
+        Assert.assertEquals(1, facets.getResults().size());
         for (FacetField result : facets.getResults().get(0)) {
             Assert.assertEquals(totalCount, result.getCount());
             Assert.assertEquals(formatMap.size(), result.getBuckets().size());

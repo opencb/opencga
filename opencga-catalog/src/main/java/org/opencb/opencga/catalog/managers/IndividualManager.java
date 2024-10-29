@@ -403,7 +403,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
+    public OpenCGAResult facet(String studyStr, Query query, String facet, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
