@@ -53,16 +53,13 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     private VariantWriterFactory writerFactory;
     private Query query;
     private QueryOptions options;
-    // Keep an auto-incremental number for each produced record. This is used as the key for the output record,
-    // and will ensure a sorted output.
-    private int stdoutKeyNum;
-    private int stderrKeyNum;
-    private String firstKey;
-    private String outputKeyPrefix;
+    private String firstVariant;
 
     private int processCount = 0;
 
+    ////////////
     // Configured for every new process
+    ////////////
     private Process process;
     private DataOutputStream stdin;
     private DataInputStream stdout;
@@ -70,10 +67,17 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     private MRErrorThread stderrThread;
     private MROutputThread stdoutThread;
     private DataWriter<Variant> variantDataWriter;
+    protected final List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
     private int processedBytes = 0;
     private long numRecordsRead = 0;
     private long numRecordsWritten = 0;
-    protected final List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
+    // auto-incremental number for each produced record.
+    // This is used with the outputKeyPrefix to ensure a sorted output.
+    private int stdoutKeyNum;
+    private int stderrKeyNum;
+    private String currentChromosome;
+    private int currentPosition;
+    private String outputKeyPrefix;
 
     private volatile boolean processProvidedStatus_ = false;
     private VariantMetadata metadata;
@@ -112,11 +116,6 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         writerFactory = new VariantWriterFactory(metadataManager);
         query = VariantMapReduceUtil.getQueryFromConfig(conf);
         options = VariantMapReduceUtil.getQueryOptionsFromConfig(conf);
-        Variant variant = context.getCurrentValue();
-        firstKey = variant.getChromosome() + ":" + variant.getStart();
-        outputKeyPrefix = buildOutputKeyPrefix(variant.getChromosome(), variant.getStart());
-        stdoutKeyNum = 0;
-        stderrKeyNum = 0;
     }
 
     public static String buildOutputKeyPrefix(String chromosome, Integer start) {
@@ -143,14 +142,17 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                 startProcess(context);
                 // Do-while instead of "while", as we've already called context.nextKeyValue() once
                 do {
-                    // FIXME: If the chromosome is different, we should start a new process and get a new outputKeyPrefix
+                    currentValue = context.getCurrentValue();
+                    // Restart the process if the input bytes exceed the limit
+                    // or if the chromosome changes
                     if (processedBytes > maxInputBytesPerProcess) {
                         LOG.info("Processed bytes = " + processedBytes + " > " + maxInputBytesPerProcess + ". Restarting process.");
-                        context.getCounter(COUNTER_GROUP_NAME, "RESTARTED_PROCESS").increment(1);
-                        closeProcess(context);
-                        startProcess(context);
+                        restartProcess(context, "BYTES_LIMIT");
+                    } else if (!currentChromosome.equals(currentValue.getChromosome())) {
+                        LOG.info("Chromosome changed from " + currentChromosome + " to " + currentValue.getChromosome()
+                                + ". Restarting process.");
+                        restartProcess(context, "CHR_CHANGE");
                     }
-                    currentValue = context.getCurrentValue();
                     map(context.getCurrentKey(), currentValue, context);
                 } while (!hasExceptions() && context.nextKeyValue());
             } catch (Throwable th) {
@@ -185,6 +187,13 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
             context.getCounter(COUNTER_GROUP_NAME, "EMPTY_INPUT_SPLIT").increment(1);
         }
         throwExceptionIfAny();
+    }
+
+    private void restartProcess(Mapper<Object, Variant, ImmutableBytesWritable, Text>.Context context, String reason)
+            throws IOException, InterruptedException, StorageEngineException {
+        context.getCounter(COUNTER_GROUP_NAME, "RESTARTED_PROCESS_" + reason).increment(1);
+        closeProcess(context);
+        startProcess(context);
     }
 
     private boolean hasExceptions() {
@@ -336,9 +345,19 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
 //        drainStdout(context);
     }
 
-    private void startProcess(Context context) throws IOException, StorageEngineException {
+    private void startProcess(Context context) throws IOException, StorageEngineException, InterruptedException {
         LOG.info("bash -ce '" + commandLine + "'");
         context.getCounter(COUNTER_GROUP_NAME, "START_PROCESS").increment(1);
+
+        Variant variant = context.getCurrentValue();
+        currentChromosome = variant.getChromosome();
+        currentPosition = variant.getStart();
+        if (firstVariant == null) {
+            firstVariant = variant.getChromosome() + ":" + variant.getStart();
+        }
+        outputKeyPrefix = buildOutputKeyPrefix(variant.getChromosome(), variant.getStart());
+        stdoutKeyNum = 0;
+        stderrKeyNum = 0;
 
         // Start the process
         ProcessBuilder builder = new ProcessBuilder("bash", "-ce", commandLine);
@@ -500,7 +519,8 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                 stopWatch.start();
                 write("---------- " + context.getTaskAttemptID().toString() + " -----------");
                 write("Start time : " + TimeUtils.getTimeMillis());
-                write("Batch start : " + firstKey + " -> " + outputKeyPrefix);
+                write("Input split : " + firstVariant);
+                write("Batch start : " + currentChromosome + ":" + currentPosition + " -> " + outputKeyPrefix);
                 write("sub-process #" + processCount);
                 write("--- START STDERR ---");
                 int numRecords = 0;
