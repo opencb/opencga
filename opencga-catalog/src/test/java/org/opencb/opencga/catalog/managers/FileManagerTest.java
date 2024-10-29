@@ -19,14 +19,12 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -2388,6 +2386,37 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals("/tmp/other/variant-test-file.vcf.gz", Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(Paths.get("/tmp/other/variant-test-file.vcf.gz")));
         assertTrue(result.first().isExternal());
+    }
+
+    @Test
+    public void testFacet() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        System.out.println("results.getResults() = " + results.getResults());
+        OpenCGAResult<List<FacetField>> facets = fileManager.facet(studyFqn, new Query(), "format", normalToken1);
+
+        long totalCount = 0;
+        Map<String, Integer> formatMap = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key;
+            if (result.getFormat() == null) {
+                key = "null";
+            } else {
+                key = result.getFormat().name();
+            }
+            if (!formatMap.containsKey(key)) {
+                formatMap.put(key, 0);
+            }
+            formatMap.put(key, 1 + formatMap.get(key));
+            totalCount++;
+        }
+
+        for (FacetField result : facets.getResults().get(0)) {
+            Assert.assertEquals(totalCount, result.getCount());
+            Assert.assertEquals(formatMap.size(), result.getBuckets().size());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * formatMap.get(bucket.getValue()), bucket.getCount());
+            }
+        }
     }
 
 //    @Test
