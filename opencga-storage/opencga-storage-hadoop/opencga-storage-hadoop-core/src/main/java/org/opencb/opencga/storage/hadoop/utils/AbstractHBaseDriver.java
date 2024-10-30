@@ -471,9 +471,11 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         if (paths.isEmpty()) {
             LOGGER.warn("The MapReduce job didn't produce any output. This may not be expected.");
         } else if (paths.size() == 1) {
-            LOGGER.info("Copy to local file " + paths.get(0).toUri() + " to " + localOutput.toUri());
+            LOGGER.info("Copy to local file");
+            LOGGER.info(" Source : {} ({})",
+                    paths.get(0).toUri(), humanReadableByteCount(fileSystem.getFileStatus(paths.get(0)).getLen(), false));
+            LOGGER.info(" Target : {}", localOutput.toUri());
             fileSystem.copyToLocalFile(false, paths.get(0), localOutput);
-            LOGGER.info("File size : " + humanReadableByteCount(Files.size(Paths.get(localOutput.toUri())), false));
         } else {
             LOGGER.info("Concat and copy to local " + paths.size());
             LOGGER.info(" Source : " + mrOutdir.toUri());
@@ -485,8 +487,8 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                 OutputStream os = gzOs == null ? fsOs : gzOs;
                 for (int i = 0; i < paths.size(); i++) {
                     Path path = paths.get(i);
-                    LOGGER.info("Concat {}file : '{}' {} ",
-                            isGzip ? "gzip " : "",
+                    LOGGER.info("Concat {} : '{}' ({}) ",
+                            isGzip ? "gzip file" : "file",
                             path.toUri(),
                             humanReadableByteCount(fileSystem.getFileStatus(path).getLen(), false));
                     try (FSDataInputStream fsIs = fileSystem.open(path)) {
@@ -503,7 +505,8 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                             do {
                                 br.mark(10 * 1024 * 1024); //10MB
                                 line = br.readLine();
-                            } while (line != null && line.startsWith("#"));
+                                // Skip blank lines and
+                            } while (line != null && (StringUtils.isBlank(line) || line.startsWith("#")));
                             br.reset();
                             is = new ReaderInputStream(br, Charset.defaultCharset());
                         }
