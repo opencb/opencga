@@ -24,7 +24,6 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.filter.CompareFilter;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.solr.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.slf4j.Logger;
@@ -134,18 +133,17 @@ public class HBaseLockManager {
         // Minimum lock duration of 100ms
         lockDuration = Math.max(lockDuration, 100);
 
-        byte[] lockValue;
-        String readToken = "";
+        LockToken lockToken;
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 
         do {
-            lockValue = readLockValue(row, column);
+            lockToken = readLockToken(row, column);
 
             // If the lock is taken, wait
-            while (isLockTaken(lockValue)) {
+            while (lockToken.isTaken()) {
                 Thread.sleep(100);
-                lockValue = readLockValue(row, column);
+                lockToken = readLockToken(row, column);
                 //Check if the lock is still valid
                 if (stopWatch.getTime() > timeout) {
                     throw new TimeoutException("Unable to get the lock");
@@ -157,19 +155,19 @@ public class HBaseLockManager {
             }
 
             // Try to lock cell
-            if (tryToPutToken(token, lockDuration, row, column, lockValue, CURRENT)) {
-                readToken = parseValidLockToken(readLockValue(row, column));
+            if (tryToPutToken(token, lockDuration, row, column, lockToken, CURRENT)) {
+                lockToken = readLockToken(row, column);
             }
 
-            // You win the lock if the first available lock is yours.
-        } while (!token.equals(readToken));
+            // You win the lock if you manage to write your lock.
+        } while (!lockToken.equals(token));
 
-        boolean prevTokenExpired = lockValue != null && lockValue.length > 0;
+        boolean prevTokenExpired = !lockToken.isEmpty() && lockToken.isExpired();
         boolean slowQuery = stopWatch.getTime() > 60000;
         if (prevTokenExpired || slowQuery) {
             StringBuilder msg = new StringBuilder("Lock column '").append(Bytes.toStringBinary(column)).append("'");
             if (prevTokenExpired) {
-                long expireDate = parseExpireDate(lockValue);
+                long expireDate = lockToken.getExpireDate();
                 msg.append(". Previous token expired ")
                         .append(TimeUtils.durationToString(System.currentTimeMillis() - expireDate))
                         .append(" ago");
@@ -181,78 +179,40 @@ public class HBaseLockManager {
             logger.warn(msg.toString());
         }
 
-        long tokenHash = token.hashCode();
-        logger.debug("Won the lock with token " + token + " (" + tokenHash + ")");
+        logger.debug("Won the lock with token " + token + " (" + token.hashCode() + ")");
 
-        long finalLockDuration = lockDuration;
-        return new Lock(threadPool, (int) (finalLockDuration / 4), tokenHash) {
-            @Override
-            public void unlock0() {
-                try {
-                    HBaseLockManager.this.unlock(row, column, tokenHash);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
-
-            @Override
-            public synchronized void refresh() throws IOException {
-                HBaseLockManager.this.refresh(row, column, tokenHash, finalLockDuration);
-            }
-        };
+        return new HBaseLock(lockDuration, token, row, column);
     }
-
-    /**
-     * Refreshes the lock.
-     *
-     * @param column        Column to find the lock cell
-     * @param lockToken     Lock token
-     * @param lockDuration  Duration un milliseconds of the token. After this time the token is expired.
-     * @throws IOException      if there is an error writing or reading from HBase.
-     */
-    public void refresh(byte[] column, long lockToken, int lockDuration) throws IOException {
-        refresh(defaultRow, column, lockToken, lockDuration);
-    }
-
 
     /**
      * Refreshes the lock.
      *
      * @param row           Row to find the lock cell
      * @param column        Column to find the lock cell
-     * @param lockToken     Lock token
+     * @param lockTokenHash Lock token
      * @param lockDuration  Duration un milliseconds of the token. After this time the token is expired.
      * @throws IOException      if there is an error writing or reading from HBase.
      */
-    public void refresh(byte[] row, byte[] column, long lockToken, long lockDuration) throws IOException {
+    private void refresh(byte[] row, byte[] column, long lockTokenHash, long lockDuration) throws IOException {
         // Check token is valid
-        byte[] lockValue = readLockValue(row, column);
-        String currentLockToken = parseValidLockToken(lockValue);
-        if (currentLockToken == null || currentLockToken.hashCode() != lockToken) {
-            throw IllegalLockStatusException.inconsistentLock(row, column, lockToken, currentLockToken, lockValue);
+        LockToken currentLockToken = readLockToken(row, column);
+        if (currentLockToken.isEmpty() || currentLockToken.isExpired() || !currentLockToken.equals(lockTokenHash)) {
+            throw IllegalLockStatusException.inconsistentLock(row, column, lockTokenHash, currentLockToken);
+        }
+        if (currentLockToken.getRemainingTime() < lockDuration / 2) {
+            logger.warn("Refreshing lock with less than half of the duration remaining. Expected duration: {} Remaining time: {}ms",
+                    lockDuration,
+                    currentLockToken.getRemainingTime());
         }
 
-        if (!tryToPutToken(currentLockToken, lockDuration, row, column, lockValue, REFRESH)) {
+        if (!tryToPutToken(currentLockToken.token, lockDuration, row, column, currentLockToken, REFRESH)) {
             // Error refreshing!
-            lockValue = readLockValue(row, column);
-            String newLockToken = parseValidLockToken(lockValue);
+            LockToken newLockToken = readLockToken(row, column);
 
-            logger.error("Current lock token:" + currentLockToken);
-            logger.error("New lock token: " + newLockToken);
-            throw IllegalLockStatusException.inconsistentLock(row, column, lockToken, currentLockToken, lockValue);
+            logger.error("Current lock token:" + currentLockToken.token);
+            logger.error("New lock token: " + newLockToken.token);
+            throw IllegalLockStatusException.inconsistentLock(row, column, lockTokenHash, currentLockToken);
         }
-    }
-
-    /**
-     * Releases the lock.
-     *
-     * @param column    Column to find the lock cell
-     * @param lockToken Lock token
-     * @throws IOException                if there is an error writing or reading from HBase.
-     * @throws IllegalLockStatusException if the lockToken does not match with the current lockToken
-     */
-    public void unlock(byte[] column, long lockToken) throws IOException, IllegalLockStatusException {
-        unlock(defaultRow, column, lockToken);
     }
 
     /**
@@ -260,26 +220,24 @@ public class HBaseLockManager {
      *
      * @param row       Row to find the lock cell
      * @param column    Column to find the lock cell
-     * @param lockToken Lock token
+     * @param lockTokenHash Lock token
      * @throws IOException                if there is an error writing or reading from HBase.
      * @throws IllegalLockStatusException if the lockToken does not match with the current lockToken
      */
-    public void unlock(byte[] row, byte[] column, long lockToken) throws IOException, IllegalLockStatusException {
-        byte[] lockValue = readLockValue(row, column);
+    private void unlock(byte[] row, byte[] column, long lockTokenHash) throws IOException, IllegalLockStatusException {
+        LockToken currentToken = readLockToken(row, column);
 
-        String currentToken = parseValidLockToken(lockValue);
-
-        if (currentToken == null || currentToken.hashCode() != lockToken) {
-            throw IllegalLockStatusException.inconsistentLock(row, column, lockToken, currentToken, lockValue);
+        if (currentToken.isEmpty() || currentToken.isExpired() || !currentToken.equals(lockTokenHash)) {
+            throw IllegalLockStatusException.inconsistentLock(row, column, lockTokenHash, currentToken);
         }
 
-        logger.debug("Unlock lock with token " + lockToken);
-        if (!clearLock(row, column, lockValue)) {
-            throw IllegalLockStatusException.inconsistentLock(row, column, lockToken, currentToken, lockValue);
+        logger.debug("Unlock lock with token " + lockTokenHash);
+        if (!clearLock(row, column, currentToken)) {
+            throw IllegalLockStatusException.inconsistentLock(row, column, lockTokenHash, currentToken);
         }
     }
 
-    private Boolean tryToPutToken(String token, long lockDuration, byte[] row, byte[] qualifier, byte[] lockValue, String type)
+    private Boolean tryToPutToken(String token, long lockDuration, byte[] row, byte[] qualifier, LockToken currentLock, String type)
             throws IOException {
         return hbaseManager.act(tableName, table -> {
             Put put = new Put(row)
@@ -288,30 +246,31 @@ public class HBaseLockManager {
                                     + token
                                     + LOCK_EXPIRING_DATE_SEPARATOR_STR
                                     + (System.currentTimeMillis() + lockDuration)));
-            return table.checkAndPut(row, columnFamily, qualifier, CompareFilter.CompareOp.EQUAL, lockValue, put);
+            return table.checkAndPut(row, columnFamily, qualifier, CompareFilter.CompareOp.EQUAL, currentLock.lockValue, put);
         });
     }
 
-    private boolean clearLock(byte[] row, byte[] qualifier, byte[] lockValue) throws IOException {
+    private boolean clearLock(byte[] row, byte[] qualifier, LockToken lockToken) throws IOException {
         return hbaseManager.act(tableName, table -> {
             Put put = new Put(row)
                     .addColumn(columnFamily, qualifier, Bytes.toBytes(""));
-            return table.checkAndPut(row, columnFamily, qualifier, CompareFilter.CompareOp.EQUAL, lockValue, put);
+            return table.checkAndPut(row, columnFamily, qualifier, CompareFilter.CompareOp.EQUAL, lockToken.lockValue, put);
         });
     }
 
     /**
-     * Parse non-expired lock token.
+     * Parse lock token.
      * @param lockValue lock values
-     * @return Current lock token, if any
+     * @return Current lock token.
      */
-    protected static String parseValidLockToken(byte[] lockValue) {
+    protected static LockToken parseLockToken(byte[] lockValue) {
         if (lockValue == null || lockValue.length == 0) {
-            return null;
+            return new LockToken();
         }
 
         int idx1 = Bytes.indexOf(lockValue, LOCK_PREFIX_SEPARATOR_BYTE);
         int idx2 = Bytes.indexOf(lockValue, LOCK_EXPIRING_DATE_SEPARATOR_BYTE);
+        String type = Bytes.toString(lockValue, 0, idx1);
         String token = Bytes.toString(lockValue, idx1 + 1, idx2 - idx1 - 1);
         long expireDate;
         try {
@@ -319,45 +278,82 @@ public class HBaseLockManager {
         } catch (NumberFormatException e) {
             // Deprecated token. Assume expired token
             if (Bytes.contains(lockValue, DEPRECATED_LOCK_SEPARATOR_BYTE)) {
-                return null;
+                return new LockToken();
             }
             throw e;
         }
+        return new LockToken(lockValue, type, token, expireDate);
+    }
 
-        if (isExpired(expireDate)) {
-            return null;
-        } else {
+    protected static final class LockToken {
+        protected final byte[] lockValue;
+        protected final String type;
+        protected final String token;
+        protected final Long expireDate;
+
+        private LockToken() {
+            this.lockValue = new byte[0];
+            this.type = null;
+            this.token = null;
+            this.expireDate = null;
+        }
+
+        private LockToken(byte[] lockValue, String type, String token, long expireDate) {
+            this.lockValue = lockValue;
+            this.type = type;
+            this.token = token;
+            this.expireDate = expireDate;
+        }
+
+        /**
+         * A lock is taken if there is any lockValue, and
+         * the token has not expired.
+         *
+         * @return if the lock is taken
+         */
+        public boolean isTaken() {
+            return token != null && !isExpired();
+        }
+
+        public boolean isExpired() {
+            return expireDate != null && expireDate < System.currentTimeMillis();
+        }
+
+        public boolean isEmpty() {
+            return token == null;
+        }
+
+        public boolean equals(String token) {
+            return !isEmpty() && this.token.equals(token);
+        }
+
+        public boolean equals(long tokenHash) {
+            return !isEmpty() && this.token.hashCode() == tokenHash;
+        }
+
+        public byte[] getLockValue() {
+            return lockValue;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public String getToken() {
             return token;
         }
-    }
 
-    protected static long parseExpireDate(byte[] lockValue) {
-        int idx2 = Bytes.indexOf(lockValue, LOCK_EXPIRING_DATE_SEPARATOR_BYTE);
-        try {
-            return Long.parseLong(Bytes.toString(lockValue, idx2 + 1));
-        } catch (NumberFormatException e) {
-            // Deprecated token. Assume expired token
-            if (Bytes.contains(lockValue, DEPRECATED_LOCK_SEPARATOR_BYTE)) {
-                return -1;
-            }
-            throw e;
+        public Long getExpireDate() {
+            return expireDate;
+        }
+
+        public long getRemainingTime() {
+            return expireDate == null ? 0 : expireDate - System.currentTimeMillis();
         }
     }
 
-    /**
-     * A lock is taken if there is any lockValue in the array, and
-     * the token has not expired.
-     *
-     *
-     * @param lockValue lock values
-     * @return if the lock is taken
-     */
-    protected static boolean isLockTaken(byte[] lockValue) {
-        return parseValidLockToken(lockValue) != null;
-    }
-
-    private static boolean isExpired(long expireDate) {
-        return expireDate < System.currentTimeMillis();
+    private LockToken readLockToken(byte[] row, byte[] qualifier) throws IOException {
+        return parseLockToken(readLockValue(row, qualifier));
     }
 
     private byte[] readLockValue(byte[] row, byte[] qualifier) throws IOException {
@@ -380,18 +376,22 @@ public class HBaseLockManager {
             super(s);
         }
 
-        public static IllegalLockStatusException inconsistentLock(byte[] row, byte[] column, long lockToken, String currentLock,
-                                                                  byte[] lockValue) {
-            if (StringUtils.isEmpty(currentLock)) {
-                return new IllegalLockStatusException("Inconsistent lock status. You don't have the lock! "
+        private static IllegalLockStatusException inconsistentLock(byte[] row, byte[] column, long lockTokenHash, LockToken currentLock) {
+            if (currentLock.isEmpty()) {
+                return new IllegalLockStatusException("Inconsistent lock status. You don't have the lock! Empty lock. "
                         + "Row: '" + Bytes.toStringBinary(row) + "', "
                         + "column: '" + Bytes.toStringBinary(column) + "'. "
-                        + "Lock: " + Bytes.toString(lockValue) + ".");
+                        + "Lock: " + Bytes.toString(currentLock.lockValue) + ".");
+            } else if (currentLock.isExpired()) {
+                return new IllegalLockStatusException("Inconsistent lock status. You don't have the lock! Expired lock. "
+                        + "Row: '" + Bytes.toStringBinary(row) + "', "
+                        + "column: '" + Bytes.toStringBinary(column) + "'. "
+                        + "Lock: " + Bytes.toString(currentLock.lockValue) + ".");
             } else {
-                return new IllegalLockStatusException("Inconsistent lock status. You don't have the lock! "
+                return new IllegalLockStatusException("Inconsistent lock status. You don't have the lock! Lock is taken. "
                         + "Row: '" + Bytes.toStringBinary(row) + "', "
                         + "column: '" + Bytes.toStringBinary(column) + "'. "
-                        + lockToken + " != " + currentLock.hashCode() + " from " + Bytes.toString(lockValue));
+                        + lockTokenHash + " != " + currentLock.token.hashCode() + " from " + Bytes.toString(currentLock.lockValue));
             }
         }
     }
@@ -403,4 +403,38 @@ public class HBaseLockManager {
                         .build());
     }
 
+    private final class HBaseLock extends Lock {
+        private final long lockDuration;
+        private final String token;
+        private final long tokenHash;
+        private final byte[] row;
+        private final byte[] column;
+
+        private HBaseLock(long lockDuration, String token, byte[] row, byte[] column) {
+            super(HBaseLockManager.threadPool, (int) (lockDuration / 4), token.hashCode());
+            this.lockDuration = lockDuration;
+            this.token = token;
+            this.tokenHash = token.hashCode();
+            this.row = row;
+            this.column = column;
+        }
+
+        @Override
+        public void unlock0() {
+            try {
+                synchronized (this) {
+                    HBaseLockManager.this.unlock(row, column, tokenHash);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        @Override
+        public void refresh() throws IOException {
+            synchronized (this) {
+                HBaseLockManager.this.refresh(row, column, tokenHash, lockDuration);
+            }
+        }
+    }
 }

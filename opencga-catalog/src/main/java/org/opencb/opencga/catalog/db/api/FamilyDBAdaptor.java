@@ -149,7 +149,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
     OpenCGAResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
 
     OpenCGAResult<Family> insert(long studyId, Family family, List<Individual> members, List<VariableSet> variableSetList,
-                                 QueryOptions options) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+                                 QueryOptions options) throws CatalogException;
 
     OpenCGAResult<Family> get(long familyId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

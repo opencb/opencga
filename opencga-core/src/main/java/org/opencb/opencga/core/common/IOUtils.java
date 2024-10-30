@@ -375,6 +375,17 @@ public class IOUtils {
      * @return number of bytes
      */
     public static long fromHumanReadableToByte(String value) {
+        return fromHumanReadableToByte(value, false);
+    }
+
+    /**
+     * Get Bytes numbers from a human-readable string
+     *
+     * @param value     Human-readable value
+     * @param assumeBinary  Use Binary Units (power of 2)
+     * @return number of bytes
+     */
+    public static long fromHumanReadableToByte(String value, boolean assumeBinary) {
         if (value.endsWith("B")) {
             value = value.substring(0, value.length() - 1);
         }
@@ -385,8 +396,11 @@ public class IOUtils {
         } else {
             si = true;
         }
+        if (assumeBinary) {
+            si = false;
+        }
         int unit = si ? 1000 : 1024;
-        int exp = (si ? "kMGTPE" : "KMGTPE").indexOf(value.charAt(value.length() - 1)) + 1;
+        int exp = "KMGTPE".indexOf(value.toUpperCase().charAt(value.length() - 1)) + 1;
         if (exp > 0) {
             value = value.substring(0, value.length() - 1);
         }

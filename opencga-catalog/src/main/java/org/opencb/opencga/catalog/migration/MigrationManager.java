@@ -671,7 +671,8 @@ public class MigrationManager {
                 + "-" + RandomStringUtils.randomAlphanumeric(5);
         String logFile = startMigrationLogger(jobId, Paths.get(configuration.getJobDir()).resolve(path));
         logger.info("------------------------------------------------------");
-        logger.info("Executing migration '{}' for version '{}'", annotation.id(), annotation.version());
+        logger.info("Executing migration '{}' for version '{}' in organization '{}'", annotation.id(), annotation.version(),
+                organizationId);
         logger.info("    {}", annotation.description());
         logger.info("------------------------------------------------------");
 
@@ -710,6 +711,7 @@ public class MigrationManager {
                 logger.info("Migration '{}' finished with status {} : {}", annotation.id(), status, TimeUtils.durationToString(stopWatch));
             }
             logger.info("------------------------------------------------------");
+            logger.info("");
         } catch (Exception e) {
             migrationRun.setStatus(MigrationRun.MigrationStatus.ERROR);
             String message;

@@ -266,7 +266,7 @@ export default class File extends OpenCGAParentClass {
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     upload(params) {
-        return this._post("files", null, null, null, "upload", params);
+        return this._post("files", null, null, null, "upload", null, params);
     }
 
     /** Return the acl defined for the file or folder. If member is provided, it will only return the acl for the member.

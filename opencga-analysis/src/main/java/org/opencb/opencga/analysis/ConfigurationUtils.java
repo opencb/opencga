@@ -16,9 +16,13 @@
 
 package org.opencb.opencga.analysis;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.core.config.AnalysisTool;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,10 +32,15 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ConfigurationUtils {
     private static Logger logger = LoggerFactory.getLogger(ConfigurationUtils.class);
 
+    private ConfigurationUtils() {
+        throw new IllegalStateException("Utility class");
+    }
     /**
      * This method attempts to load general configuration from OpenCGA installation folder, if not exists then loads JAR configuration.yml.
      *
@@ -82,5 +91,34 @@ public class ConfigurationUtils {
             return StorageConfiguration
                     .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
         }
+    }
+
+    public static String getToolDefaultVersion(String toolId, Configuration configuration) throws ToolException {
+        List<AnalysisTool> tools = new ArrayList<>();
+        for (AnalysisTool tool : configuration.getAnalysis().getTools()) {
+            if (tool.getId().equals(toolId)) {
+                tools.add(tool);
+            }
+        }
+        if (CollectionUtils.isEmpty(tools)) {
+            throw new ToolException("Tool ID '" + toolId + "' missing in the configuration file");
+        }
+        if (tools.size() == 1) {
+            return tools.get(0).getVersion();
+        }
+        String defaultVersion = null;
+        for (AnalysisTool tool : tools) {
+            if (tool.isDefaultVersion()) {
+                if (!StringUtils.isEmpty(defaultVersion)) {
+                    throw new ToolException("More than one default version found for tool ID '" + toolId + "'");
+                } else {
+                    defaultVersion = tool.getVersion();
+                }
+            }
+        }
+        if (StringUtils.isEmpty(defaultVersion)) {
+            throw new ToolException("Multiple tools '" + toolId + "' were found, but none have the default version set to true");
+        }
+        return defaultVersion;
     }
 }
