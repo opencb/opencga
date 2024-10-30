@@ -14,5 +14,7 @@ public enum NoteType {
     DISEASE_PANEL,
     CLINICAL_ANALYSIS,
     WORKFLOW,
-    OTHER
+    ORGANIZATION,
+    OTHER,
+    UNKNOWN
 }

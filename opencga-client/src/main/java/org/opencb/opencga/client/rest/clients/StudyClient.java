@@ -252,6 +252,7 @@ public class StudyClient extends AbstractParentClient {
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       id: Note unique identifier.
+     *       type: Note type.
      *       uuid: Unique 32-character identifier assigned automatically by OpenCGA.
      *       userId: User that wrote that Note.
      *       tags: Note tags.
