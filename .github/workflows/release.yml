@@ -37,7 +37,7 @@ jobs:
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
    # needs: [ build, deploy-maven, deploy-docker, deploy-python ]
-    needs: build
+    needs: deploy-python
     with:
       artifact: build-folder
       file: |
