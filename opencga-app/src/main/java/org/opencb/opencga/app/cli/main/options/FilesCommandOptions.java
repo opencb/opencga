@@ -289,6 +289,9 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--external"}, description = "Boolean field indicating whether to filter by external or non external files", required = false, arity = 1)
         public Boolean external; 
     
+        @Parameter(names = {"--resource"}, description = "Boolean field indicating whether the file is a resource or not", required = false, arity = 1)
+        public Boolean resource; 
+    
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
     
@@ -600,6 +603,9 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--external"}, description = "Boolean field indicating whether to filter by external or non external files", required = false, arity = 1)
         public Boolean external; 
+    
+        @Parameter(names = {"--resource"}, description = "Boolean field indicating whether the file is a resource or not", required = false, arity = 1)
+        public Boolean resource; 
     
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 

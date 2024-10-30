@@ -720,13 +720,15 @@ public class FileManager extends AnnotationSetManager<File> {
             return resourcesPath.toString();
         } else if (path.startsWith("RESOURCES/")) {
             return path;
+        } else if (path.startsWith("resources/")) {
+            return path.replaceFirst("resources/", "RESOURCES/");
         } else {
             return resourcesPath.resolve(path).toString();
         }
     }
 
     private boolean isResourcesPath(String path) {
-        return path.startsWith("RESOURCES/");
+        return path.startsWith("RESOURCES/") || path.startsWith("resources/");
     }
 
     List<Event> validateNewFile(String organizationId, Study study, File file, boolean overwrite) throws CatalogException {
@@ -2454,13 +2456,25 @@ public class FileManager extends AnnotationSetManager<File> {
             File file = internalGet(organizationId, study.getUid(), entryStr, QueryOptions.empty(), userId).first();
             fileId = file.getId();
             fileUuid = file.getUuid();
-            // Check user has write permissions on file/folder
-            authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
+
+            if (file.isResource()) {
+                authorizationManager.isAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+            } else {
+                // Check user has write permissions on file/folder
+                authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
+            }
 
             OpenCGAResult<File> parents = getParents(organizationId, study.getUid(), targetPathStr, false, INCLUDE_FILE_IDS);
             // Check user can write in target path
             File parentFolder = parents.first();
-            authorizationManager.checkFilePermission(organizationId, study.getUid(), parentFolder.getUid(), userId, FilePermissions.WRITE);
+            if (file.isResource() && !parentFolder.isResource()) {
+                throw new CatalogException("Cannot move RESOURCE file to a non RESOURCE folder.");
+            }
+            if (!parentFolder.isResource()) {
+                // If it is RESOURCE, it was already checked that the user is at least a study administrator
+                authorizationManager.checkFilePermission(organizationId, study.getUid(), parentFolder.getUid(), userId,
+                        FilePermissions.WRITE);
+            }
 
             ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.PATH.key(), targetPathStr);
             OpenCGAResult<File> update = getFileDBAdaptor(organizationId)

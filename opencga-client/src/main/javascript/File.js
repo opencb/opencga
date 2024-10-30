@@ -97,6 +97,7 @@ export default class File extends OpenCGAParentClass {
     * @param {String} [params.bioformat] - Comma separated Bioformat values. For existing Bioformats see files/bioformats.
     * @param {String} [params.format] - Comma separated Format values. For existing Formats see files/formats.
     * @param {Boolean} [params.external] - Boolean field indicating whether to filter by external or non external files.
+    * @param {Boolean} [params.resource] - Boolean field indicating whether the file is a resource or not.
     * @param {String} [params.status] - Filter by status.
     * @param {String} [params.internalStatus] - Filter by internal status.
     * @param {String} [params.internalVariantIndexStatus] - Filter by internal variant index status.
@@ -222,6 +223,7 @@ export default class File extends OpenCGAParentClass {
     * @param {String} [params.bioformat] - Comma separated Bioformat values. For existing Bioformats see files/bioformats.
     * @param {String} [params.format] - Comma separated Format values. For existing Formats see files/formats.
     * @param {Boolean} [params.external] - Boolean field indicating whether to filter by external or non external files.
+    * @param {Boolean} [params.resource] - Boolean field indicating whether the file is a resource or not.
     * @param {String} [params.status] - Filter by status.
     * @param {String} [params.internalStatus] - Filter by internal status.
     * @param {String} [params.internalVariantIndexStatus] - Filter by internal variant index status.

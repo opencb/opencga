@@ -116,6 +116,8 @@ class File(_ParentRestClient):
             see files/formats.
         :param bool external: Boolean field indicating whether to filter by
             external or non external files.
+        :param bool resource: Boolean field indicating whether the file is a
+            resource or not.
         :param str status: Filter by status.
         :param str internal_status: Filter by internal status.
         :param str internal_variant_index_status: Filter by internal variant
@@ -290,6 +292,8 @@ class File(_ParentRestClient):
             see files/formats.
         :param bool external: Boolean field indicating whether to filter by
             external or non external files.
+        :param bool resource: Boolean field indicating whether the file is a
+            resource or not.
         :param str status: Filter by status.
         :param str internal_status: Filter by internal status.
         :param str internal_variant_index_status: Filter by internal variant
