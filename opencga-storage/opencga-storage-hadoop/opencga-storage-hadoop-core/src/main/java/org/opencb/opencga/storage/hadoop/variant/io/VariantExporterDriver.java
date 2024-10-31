@@ -12,6 +12,7 @@ import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -25,6 +26,8 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantFileOutputFormat;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantLocusKey;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantLocusKeyPartitioner;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
 
 import java.io.IOException;
@@ -41,6 +44,7 @@ public class VariantExporterDriver extends VariantDriver {
     private Class<? extends VariantMapper> mapperClass;
     private Class<? extends Reducer> reducerClass;
     private Class<? extends FileOutputFormat> outputFormatClass;
+    private Class<? extends Partitioner> partitioner;
 
     @Override
     protected void parseAndValidateParameters() throws IOException {
@@ -60,6 +64,11 @@ public class VariantExporterDriver extends VariantDriver {
     }
 
     @Override
+    protected Class<? extends Partitioner> getPartitioner() {
+        return partitioner;
+    }
+
+    @Override
     protected Class<? extends FileOutputFormat> getOutputFormatClass() {
         return outputFormatClass;
     }
@@ -76,7 +85,7 @@ public class VariantExporterDriver extends VariantDriver {
             case AVRO:
                 outputFormatClass = AvroKeyOutputFormat.class;
                 if (useReduceStep) {
-                    job.setMapOutputKeyClass(NullWritable.class);
+                    job.setMapOutputKeyClass(VariantLocusKey.class);
                     AvroJob.setMapOutputValueSchema(job, VariantAvro.getClassSchema());
                     AvroJob.setOutputKeySchema(job, VariantAvro.getClassSchema());
                     job.setOutputValueClass(NullWritable.class);
@@ -108,11 +117,15 @@ public class VariantExporterDriver extends VariantDriver {
                 }
                 break;
             default:
+                if (outputFormat.isBinary()) {
+                    throw new IllegalArgumentException("Unexpected binary output format " + outputFormat);
+                }
                 if (useReduceStep) {
-                    job.setMapOutputKeyClass(NullWritable.class);
+                    job.setMapOutputKeyClass(VariantLocusKey.class);
                     AvroJob.setMapOutputValueSchema(job, VariantAvro.getClassSchema());
                     mapperClass = AvroVariantExporterMapper.class;
                     reducerClass = VariantExporterReducer.class;
+                    partitioner = VariantLocusKeyPartitioner.class;
                 } else {
                     AvroJob.setOutputKeySchema(job, VariantAvro.getClassSchema());
                     mapperClass = VariantExporterDirectMapper.class;
@@ -182,7 +195,7 @@ public class VariantExporterDriver extends VariantDriver {
      * @see VariantExporterReducer
      * @see AvroKeyVariantExporterReducer
      */
-    public static class AvroVariantExporterMapper extends VariantMapper<NullWritable, AvroValue<VariantAvro>> {
+    public static class AvroVariantExporterMapper extends VariantMapper<VariantLocusKey, AvroValue<VariantAvro>> {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
@@ -193,7 +206,7 @@ public class VariantExporterDriver extends VariantDriver {
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
             removeNullsFromAvro(value.getImpl(), context);
-            context.write(NullWritable.get(), new AvroValue<>(value.getImpl()));
+            context.write(new VariantLocusKey(value), new AvroValue<>(value.getImpl()));
         }
     }
 
@@ -203,9 +216,9 @@ public class VariantExporterDriver extends VariantDriver {
      * @see AvroVariantExporterMapper
      * @see VariantWriterFactory.VariantOutputFormat
      */
-    public static class VariantExporterReducer extends Reducer<NullWritable, AvroValue<VariantAvro>, Variant, NullWritable> {
+    public static class VariantExporterReducer<T> extends Reducer<T, AvroValue<VariantAvro>, Variant, NullWritable> {
         @Override
-        protected void reduce(NullWritable key, Iterable<AvroValue<VariantAvro>> values, Context context)
+        protected void reduce(T key, Iterable<AvroValue<VariantAvro>> values, Context context)
                 throws IOException, InterruptedException {
             for (AvroValue<VariantAvro> value : values) {
                 context.write(new Variant(value.datum()), NullWritable.get());
@@ -219,10 +232,10 @@ public class VariantExporterDriver extends VariantDriver {
      * @see AvroVariantExporterMapper
      * @see AvroKeyOutputFormat
      */
-    public static class AvroKeyVariantExporterReducer
-            extends Reducer<NullWritable, AvroValue<VariantAvro>, AvroKey<VariantAvro>, NullWritable> {
+    public static class AvroKeyVariantExporterReducer<T>
+            extends Reducer<T, AvroValue<VariantAvro>, AvroKey<VariantAvro>, NullWritable> {
         @Override
-        protected void reduce(NullWritable key, Iterable<AvroValue<VariantAvro>> values, Context context)
+        protected void reduce(T key, Iterable<AvroValue<VariantAvro>> values, Context context)
                 throws IOException, InterruptedException {
             for (AvroValue<VariantAvro> value : values) {
                 context.write(new AvroKey<>(value.datum()), NullWritable.get());

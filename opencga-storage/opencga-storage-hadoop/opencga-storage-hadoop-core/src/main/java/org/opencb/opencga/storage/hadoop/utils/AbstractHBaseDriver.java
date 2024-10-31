@@ -477,7 +477,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             LOGGER.info(" Target : {}", localOutput.toUri());
             fileSystem.copyToLocalFile(false, paths.get(0), localOutput);
         } else {
-            LOGGER.info("Concat and copy to local " + paths.size());
+            LOGGER.info("Concat and copy to local : " + paths.size() + " partial files");
             LOGGER.info(" Source : " + mrOutdir.toUri());
             LOGGER.info(" Target : " + localOutput.toUri());
             LOGGER.info(" ---- ");
@@ -487,7 +487,8 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                 OutputStream os = gzOs == null ? fsOs : gzOs;
                 for (int i = 0; i < paths.size(); i++) {
                     Path path = paths.get(i);
-                    LOGGER.info("Concat {} : '{}' ({}) ",
+                    LOGGER.info("[{}] Concat {} : '{}' ({}) ",
+                            i,
                             isGzip ? "gzip file" : "file",
                             path.toUri(),
                             humanReadableByteCount(fileSystem.getFileStatus(path).getLen(), false));

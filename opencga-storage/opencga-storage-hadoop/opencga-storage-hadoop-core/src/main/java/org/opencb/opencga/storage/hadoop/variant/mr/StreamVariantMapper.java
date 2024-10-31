@@ -469,7 +469,8 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
 
         private void write(Text line) throws IOException, InterruptedException {
             numRecords++;
-            context.write(new VariantLocusKey(currentChromosome, currentPosition, StreamVariantReducer.STDOUT_KEY + (stdoutKeyNum++)), line);
+            context.write(new VariantLocusKey(currentChromosome, currentPosition,
+                    StreamVariantReducer.STDOUT_KEY + (stdoutKeyNum++)), line);
         }
     }
 
@@ -550,7 +551,8 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         }
 
         private void write(Text line) throws IOException, InterruptedException {
-            context.write(new VariantLocusKey(currentChromosome, currentPosition, StreamVariantReducer.STDERR_KEY + (stderrKeyNum++)), line);
+            context.write(new VariantLocusKey(currentChromosome, currentPosition,
+                    StreamVariantReducer.STDERR_KEY + (stderrKeyNum++)), line);
         }
 
         private boolean matchesReporter(String line) {
