@@ -11,7 +11,7 @@ import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 
 import java.io.IOException;
 
-public class StreamVariantReducer extends Reducer<ImmutableBytesWritable, Text, ImmutableBytesWritable, Text> {
+public class StreamVariantReducer extends Reducer<VariantLocusKey, Text, VariantLocusKey, Text> {
 
     public static final String STDOUT_KEY = "O:";
     public static final byte[] STDOUT_KEY_BYTES = Bytes.toBytes(STDOUT_KEY);
@@ -20,22 +20,22 @@ public class StreamVariantReducer extends Reducer<ImmutableBytesWritable, Text, 
 
     private static final Log LOG = LogFactory.getLog(StreamVariantReducer.class);
     public static final byte[] HEADER_PREFIX_BYTES = Bytes.toBytes("#");
-    private MultipleOutputs<ImmutableBytesWritable, Text> mos;
+    private MultipleOutputs<VariantLocusKey, Text> mos;
     private boolean headerWritten = false;
 
     @Override
-    protected void setup(Reducer<ImmutableBytesWritable, Text, ImmutableBytesWritable, Text>.Context context)
+    protected void setup(Reducer<VariantLocusKey, Text, VariantLocusKey, Text>.Context context)
             throws IOException, InterruptedException {
         super.setup(context);
         mos = new MultipleOutputs<>(context);
     }
 
     @Override
-    protected void reduce(ImmutableBytesWritable key, Iterable<Text> values,
-                          Reducer<ImmutableBytesWritable, Text, ImmutableBytesWritable, Text>.Context context)
+    protected void reduce(VariantLocusKey key, Iterable<Text> values,
+                          Reducer<VariantLocusKey, Text, VariantLocusKey, Text>.Context context)
             throws IOException, InterruptedException {
         for (Text value : values) {
-            if (hasPrefix(key, STDOUT_KEY_BYTES)) {
+            if (key.getOther().startsWith(STDOUT_KEY)) {
                 if (hasPrefix(value, HEADER_PREFIX_BYTES)) {
                     if (headerWritten) {
                         // skip header
@@ -81,7 +81,7 @@ public class StreamVariantReducer extends Reducer<ImmutableBytesWritable, Text, 
     }
 
     @Override
-    protected void cleanup(Reducer<ImmutableBytesWritable, Text, ImmutableBytesWritable, Text>.Context context)
+    protected void cleanup(Reducer<VariantLocusKey, Text, VariantLocusKey, Text>.Context context)
             throws IOException, InterruptedException {
         super.cleanup(context);
         mos.close();

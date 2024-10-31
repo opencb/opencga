@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DeflateCodec;
@@ -10,6 +9,7 @@ import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
@@ -114,6 +114,11 @@ public class StreamVariantDriver extends VariantDriver {
     }
 
     @Override
+    protected Class<? extends Partitioner> getPartitioner() {
+        return VariantLocusKeyPartitioner.class;
+    }
+
+    @Override
     protected Class<? extends OutputFormat> getOutputFormatClass() {
         return outputFormatClass;
     }
@@ -124,9 +129,10 @@ public class StreamVariantDriver extends VariantDriver {
         job.getConfiguration().setBoolean(JobContext.MAP_OUTPUT_COMPRESS, true);
         job.getConfiguration().setClass(JobContext.MAP_OUTPUT_COMPRESS_CODEC, DeflateCodec.class, CompressionCodec.class);
 
-        Class<ImmutableBytesWritable> keyClass = ImmutableBytesWritable.class;
-//        Class<ImmutableBytesWritable> keyClass = NullWritable.class;
-//        Class<ImmutableBytesWritable> keyClass = Text.class;
+        Class<?> keyClass = VariantLocusKey.class;
+//        Class<?> keyClass = ImmutableBytesWritable.class;
+//        Class<?> keyClass = NullWritable.class;
+//        Class<?> keyClass = Text.class;
         Class<Text> valueClass = Text.class;
 
         mapperClass = StreamVariantMapper.class;
@@ -155,21 +161,7 @@ public class StreamVariantDriver extends VariantDriver {
 
     @Override
     protected void setupReducer(Job job, String variantTableName) throws IOException {
-        String numReducersKey = getClass().getSimpleName() + "." + JobContext.NUM_REDUCES;
-        String numReducersStr = getParam(numReducersKey);
-        int reduceTasks;
-        if (StringUtils.isNotEmpty(numReducersStr)) {
-            reduceTasks = Integer.parseInt(numReducersStr);
-            logger.info("Set reduce tasks to " + reduceTasks + " (derived from input parameter '" + numReducersKey + "')");
-        } else {
-            int serversSize = getHBaseManager().act(variantTableName, (table, admin) -> admin.getClusterStatus().getServersSize());
-            // Set the number of reduce tasks to 2x the number of hosts
-            reduceTasks = serversSize * 2;
-            logger.info("Set reduce tasks to " + reduceTasks + " (derived from 'number_of_servers * 2')");
-        }
-        job.setReducerClass(getReducerClass());
-        job.setPartitionerClass(StreamVariantPartitioner.class);
-        job.setNumReduceTasks(reduceTasks);
+        super.setupReducer(job, variantTableName);
         // TODO: Use a grouping comparator to group by chromosome and position, ignoring the rest of the key?
 //        job.setGroupingComparatorClass(StreamVariantGroupingComparator.class);
 //        job.setSortComparatorClass();

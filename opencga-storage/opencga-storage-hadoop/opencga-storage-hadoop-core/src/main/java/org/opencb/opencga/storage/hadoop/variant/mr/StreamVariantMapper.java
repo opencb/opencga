@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
-public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, Text> {
+public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
     private static final Log LOG = LogFactory.getLog(StreamVariantMapper.class);
 
     private static final int BUFFER_SIZE = 128 * 1024;
@@ -72,12 +72,11 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     private long numRecordsRead = 0;
     private long numRecordsWritten = 0;
     // auto-incremental number for each produced record.
-    // This is used with the outputKeyPrefix to ensure a sorted output.
+    // These are used with the VariantLocusKey to ensure a sorted output.
     private int stdoutKeyNum;
     private int stderrKeyNum;
     private String currentChromosome;
     private int currentPosition;
-    private String outputKeyPrefix;
 
     private volatile boolean processProvidedStatus_ = false;
     private VariantMetadata metadata;
@@ -116,21 +115,6 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         writerFactory = new VariantWriterFactory(metadataManager);
         query = VariantMapReduceUtil.getQueryFromConfig(conf);
         options = VariantMapReduceUtil.getQueryOptionsFromConfig(conf);
-    }
-
-    public static String buildOutputKeyPrefix(String chromosome, Integer start) {
-        // If it's a single digit chromosome, add a 0 at the beginning
-        //       1 -> 01
-        //       3 -> 03
-        //      22 -> 22
-        // If the first character is a digit, and the second is not, add a 0 at the beginning
-        //      MT -> MT
-        //      1_KI270712v1_random -> 01_KI270712v1_random
-        if (Character.isDigit(chromosome.charAt(0)) && (chromosome.length() == 1 || !Character.isDigit(chromosome.charAt(1)))) {
-            chromosome = "0" + chromosome;
-        }
-
-        return String.format("%s|%010d|", chromosome, start);
     }
 
     @Override
@@ -190,7 +174,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         throwExceptionIfAny();
     }
 
-    private void restartProcess(Mapper<Object, Variant, ImmutableBytesWritable, Text>.Context context, String reason)
+    private void restartProcess(Mapper<Object, Variant, VariantLocusKey, Text>.Context context, String reason)
             throws IOException, InterruptedException, StorageEngineException {
         context.getCounter(COUNTER_GROUP_NAME, "RESTARTED_PROCESS_" + reason).increment(1);
         closeProcess(context);
@@ -263,7 +247,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
     }
 
     @Override
-    protected void cleanup(Mapper<Object, Variant, ImmutableBytesWritable, Text>.Context context) throws IOException, InterruptedException {
+    protected void cleanup(Mapper<Object, Variant, VariantLocusKey, Text>.Context context) throws IOException, InterruptedException {
         closeProcess(context);
         dockerPruneImages();
         super.cleanup(context);
@@ -356,7 +340,6 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         if (firstVariant == null) {
             firstVariant = variant.getChromosome() + ":" + variant.getStart();
         }
-        outputKeyPrefix = buildOutputKeyPrefix(variant.getChromosome(), variant.getStart());
         stdoutKeyNum = 0;
         stderrKeyNum = 0;
 
@@ -448,7 +431,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
 
     private class MROutputThread extends Thread {
 
-        private final Mapper<Object, Variant, ImmutableBytesWritable, Text>.Context context;
+        private final Mapper<Object, Variant, VariantLocusKey, Text>.Context context;
         private long lastStdoutReport = 0;
         private int numRecords = 0;
 
@@ -486,15 +469,14 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
 
         private void write(Text line) throws IOException, InterruptedException {
             numRecords++;
-            context.write(new ImmutableBytesWritable(
-                    Bytes.toBytes(String.format("%s%s%08d", StreamVariantReducer.STDOUT_KEY, outputKeyPrefix, stdoutKeyNum++))), line);
+            context.write(new VariantLocusKey(currentChromosome, currentPosition, StreamVariantReducer.STDOUT_KEY + (stdoutKeyNum++)), line);
         }
     }
 
     private class MRErrorThread extends Thread {
 
         private final Configuration conf;
-        private final Mapper<Object, Variant, ImmutableBytesWritable, Text>.Context context;
+        private final Mapper<Object, Variant, VariantLocusKey, Text>.Context context;
         private long lastStderrReport = 0;
         private final String reporterPrefix;
         private final String counterPrefix;
@@ -521,7 +503,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
                 write("---------- " + context.getTaskAttemptID().toString() + " -----------");
                 write("Start time : " + TimeUtils.getTimeMillis());
                 write("Input split : " + firstVariant);
-                write("Batch start : " + currentChromosome + ":" + currentPosition + " -> " + outputKeyPrefix);
+                write("Batch start : " + currentChromosome + ":" + currentPosition);
                 write("sub-process #" + processCount);
                 write("--- START STDERR ---");
                 int numRecords = 0;
@@ -568,8 +550,7 @@ public class StreamVariantMapper extends VariantMapper<ImmutableBytesWritable, T
         }
 
         private void write(Text line) throws IOException, InterruptedException {
-            context.write(new ImmutableBytesWritable(
-                    Bytes.toBytes(String.format("%s%s%08d", StreamVariantReducer.STDERR_KEY, outputKeyPrefix, stderrKeyNum++))), line);
+            context.write(new VariantLocusKey(currentChromosome, currentPosition, StreamVariantReducer.STDERR_KEY + (stderrKeyNum++)), line);
         }
 
         private boolean matchesReporter(String line) {

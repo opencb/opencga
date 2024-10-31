@@ -3,8 +3,10 @@ package org.opencb.opencga.storage.hadoop.variant.io;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.opencb.commons.datastore.core.Query;
@@ -93,6 +95,10 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
 
     protected abstract Class<? extends Reducer> getReducerClass();
 
+    protected Class<? extends Partitioner> getPartitioner() {
+        return null;
+    }
+
     protected abstract Class<? extends OutputFormat> getOutputFormatClass();
 
     protected abstract void setupJob(Job job) throws IOException;
@@ -160,11 +166,29 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
     }
 
     protected void setupReducer(Job job, String variantTable) throws IOException {
-        logger.info("Use one Reduce task to produce a single file");
-        job.setReducerClass(getReducerClass());
-        job.setNumReduceTasks(1);
+        Class<? extends Partitioner> partitionerClass = getPartitioner();
+        if (partitionerClass == null) {
+            logger.info("Use one Reduce task to produce a single file");
+            job.setReducerClass(getReducerClass());
+            job.setNumReduceTasks(1);
+        } else {
+            String numReducersKey = getClass().getSimpleName() + "." + JobContext.NUM_REDUCES;
+            String numReducersStr = getParam(numReducersKey);
+            int reduceTasks;
+            if (StringUtils.isNotEmpty(numReducersStr)) {
+                reduceTasks = Integer.parseInt(numReducersStr);
+                logger.info("Set reduce tasks to " + reduceTasks + " (derived from input parameter '" + numReducersKey + "')");
+            } else {
+                int serversSize = getHBaseManager().act(variantTable, (table, admin) -> admin.getClusterStatus().getServersSize());
+                // Set the number of reduce tasks to 2x times the number of servers
+                reduceTasks = serversSize * 2;
+                logger.info("Set reduce tasks to " + reduceTasks + " (derived from 'number_of_servers * 2')");
+            }
+            job.setReducerClass(getReducerClass());
+            job.setPartitionerClass(partitionerClass);
+            job.setNumReduceTasks(reduceTasks);
+        }
     }
-
 
     @Override
     protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
