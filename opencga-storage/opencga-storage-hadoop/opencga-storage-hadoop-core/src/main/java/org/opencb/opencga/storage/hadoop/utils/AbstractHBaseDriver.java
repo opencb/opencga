@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
@@ -19,6 +20,10 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.api.records.YarnApplicationState;
+import org.apache.hadoop.yarn.client.api.YarnClient;
+import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.parquet.hadoop.ParquetFileWriter;
 import org.apache.phoenix.mapreduce.util.PhoenixConfigurationUtil;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -34,11 +39,9 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -193,6 +196,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             LOGGER.info("     - Outdir      : " + job.getConfiguration().get(FileOutputFormat.OUTDIR));
         }
         LOGGER.info("=================================================");
+        reportRunningJobs();
         boolean succeed = executeJob(job);
         if (!succeed) {
             LOGGER.error("error with job!");
@@ -213,6 +217,32 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         close();
 
         return succeed ? 0 : 1;
+    }
+
+    private void reportRunningJobs() {
+        // Get the number of pending or running jobs in yarn
+        try (YarnClient yarnClient = YarnClient.createYarnClient()) {
+            yarnClient.init(getConf());
+            yarnClient.start();
+
+            List<ApplicationReport> applications = yarnClient.getApplications(EnumSet.of(
+                    YarnApplicationState.NEW,
+                    YarnApplicationState.NEW_SAVING,
+                    YarnApplicationState.SUBMITTED,
+                    YarnApplicationState.ACCEPTED,
+                    YarnApplicationState.RUNNING));
+            if (applications.isEmpty()) {
+                LOGGER.info("No pending or running jobs in yarn");
+            } else {
+                LOGGER.info("Found " + applications.size() + " pending or running jobs in yarn");
+                for (Map.Entry<YarnApplicationState, List<ApplicationReport>> entry : applications.stream()
+                        .collect(Collectors.groupingBy(ApplicationReport::getYarnApplicationState)).entrySet()) {
+                    LOGGER.info("   * " + entry.getKey() + " : " + entry.getValue().size());
+                }
+            }
+        } catch (IOException | YarnException e) {
+            LOGGER.error("Error getting list of pending jobs from YARN", e);
+        }
     }
 
     private boolean configFromArgs(String[] args) {
@@ -468,6 +498,8 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                 }
             }
         }
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         if (paths.isEmpty()) {
             LOGGER.warn("The MapReduce job didn't produce any output. This may not be expected.");
         } else if (paths.size() == 1) {
@@ -517,6 +549,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                 }
             }
             LOGGER.info("File size : " + humanReadableByteCount(Files.size(Paths.get(localOutput.toUri())), false));
+            LOGGER.info("Time to copy from HDFS and concat : " + TimeUtils.durationToString(stopWatch));
         }
         return paths;
     }

@@ -57,9 +57,15 @@ public class StreamVariantReducer extends Reducer<VariantLocusKey, Text, Variant
                     context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "body_records").increment(1);
                 }
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stdout_records").increment(1);
-            } else {
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stdout_records_bytes")
+                        .increment(value.getLength());
+            } else if (key.getOther().startsWith(STDERR_KEY)) {
                 mos.write("stderr", key, value);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stderr_records").increment(1);
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stderr_records_bytes")
+                        .increment(value.getLength());
+            } else {
+                throw new IllegalStateException("Unknown key " + key);
             }
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "records").increment(1);
         }

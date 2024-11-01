@@ -131,12 +131,12 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
                     // or if the chromosome changes
                     if (processedBytes > maxInputBytesPerProcess) {
                         LOG.info("Processed bytes = " + processedBytes + " > " + maxInputBytesPerProcess + ". Restarting process.");
-                        restartProcess(context, "BYTES_LIMIT");
+                        restartProcess(context, "bytes_limit");
                     } else if (!currentChromosome.equals(currentValue.getChromosome())) {
                         // TODO: Should we change only when the chromosome change would produce a partition change?
                         LOG.info("Chromosome changed from " + currentChromosome + " to " + currentValue.getChromosome()
                                 + ". Restarting process.");
-                        restartProcess(context, "CHR_CHANGE");
+                        restartProcess(context, "chr_change");
                     }
                     map(context.getCurrentKey(), currentValue, context);
                 } while (!hasExceptions() && context.nextKeyValue());
@@ -169,14 +169,14 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
                 addException(th);
             }
         } else {
-            context.getCounter(COUNTER_GROUP_NAME, "EMPTY_INPUT_SPLIT").increment(1);
+            context.getCounter(COUNTER_GROUP_NAME, "empty_input_split").increment(1);
         }
         throwExceptionIfAny();
     }
 
     private void restartProcess(Mapper<Object, Variant, VariantLocusKey, Text>.Context context, String reason)
             throws IOException, InterruptedException, StorageEngineException {
-        context.getCounter(COUNTER_GROUP_NAME, "RESTARTED_PROCESS_" + reason).increment(1);
+        context.getCounter(COUNTER_GROUP_NAME, "restarted_process_" + reason).increment(1);
         closeProcess(context);
         startProcess(context);
     }
@@ -332,7 +332,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
 
     private void startProcess(Context context) throws IOException, StorageEngineException, InterruptedException {
         LOG.info("bash -ce '" + commandLine + "'");
-        context.getCounter(COUNTER_GROUP_NAME, "START_PROCESS").increment(1);
+        context.getCounter(COUNTER_GROUP_NAME, "start_process").increment(1);
 
         Variant variant = context.getCurrentValue();
         currentChromosome = variant.getChromosome();

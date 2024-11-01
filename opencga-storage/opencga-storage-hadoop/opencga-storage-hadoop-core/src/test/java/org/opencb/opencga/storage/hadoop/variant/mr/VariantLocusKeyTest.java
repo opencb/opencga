@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 
@@ -148,5 +149,30 @@ public class VariantLocusKeyTest {
                 prevKey = key;
             }
         }
+    }
+
+    @Test
+    public void testWriteAndRead() throws IOException {
+        testWriteAndRead(new VariantLocusKey("1_random", 1000, "A"));
+        testWriteAndRead(new VariantLocusKey("1", 3541316, "O:31231"));
+        testWriteAndRead(new VariantLocusKey("0", 3541316, "O:31231"));
+        testWriteAndRead(new VariantLocusKey("", 3541316, ""));
+        testWriteAndRead(new VariantLocusKey("", -2, ""));
+    }
+
+    private static void testWriteAndRead(VariantLocusKey originalKey) throws IOException {
+        // Write the object to a byte array output stream
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
+        originalKey.write(dataOutputStream);
+
+        // Read the object from a byte array input stream
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+        DataInputStream dataInputStream = new DataInputStream(byteArrayInputStream);
+        VariantLocusKey readKey = new VariantLocusKey();
+        readKey.readFields(dataInputStream);
+
+        // Assert that the read object is equal to the original object
+        assertEquals(originalKey, readKey);
     }
 }

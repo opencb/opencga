@@ -71,21 +71,20 @@ public class VariantLocusKey implements WritableComparable<VariantLocusKey>  {
 
     @Override
     public void write(DataOutput out) throws IOException {
-        out.writeChars(chromosome);
-        out.writeChars("\n");
+        out.writeUTF(chromosome);
         out.writeInt(position);
         if (other != null) {
-            out.writeChars(other);
+            out.writeUTF(other);
         } else {
-            out.writeChars("");
+            out.writeUTF("");
         }
     }
 
     @Override
     public void readFields(DataInput in) throws IOException {
-        chromosome = in.readLine();
+        chromosome = in.readUTF();
         position = in.readInt();
-        other = in.readLine();
+        other = in.readUTF();
     }
 
     public String getChromosome() {
