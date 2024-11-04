@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
@@ -37,7 +36,9 @@ import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOu
 import org.opencb.opencga.storage.hadoop.variant.io.MaxWriteBlockOutputStream;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
-import java.io.*;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 
 /**
