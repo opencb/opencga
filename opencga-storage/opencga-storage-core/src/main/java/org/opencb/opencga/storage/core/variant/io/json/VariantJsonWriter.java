@@ -186,7 +186,11 @@ public class VariantJsonWriter implements VariantWriter {
                 fileGenerator.flush();
             }
         } catch (IOException ex) {
-            close();
+            try {
+                close();
+            } catch (Exception ex1) {
+                ex.addSuppressed(ex1);
+            }
             throw new UncheckedIOException(ex);
         }
         return true;

@@ -34,11 +34,10 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.hadoop.variant.io.MaxWriteBlockOutputStream;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 
 
 /**
@@ -67,13 +66,12 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
         }
         Path file = this.getDefaultWorkFile(job, extension);
         FileSystem fs = file.getFileSystem(conf);
-        FSDataOutputStream fileOut = fs.create(file, false);
+        OutputStream out = fs.create(file, false);
         if (isCompressed) {
-            DataOutputStream out = new DataOutputStream(codec.createOutputStream(fileOut));
-            return new VariantRecordWriter(configureWriter(job, out), out);
-        } else {
-            return new VariantRecordWriter(configureWriter(job, fileOut), fileOut);
+            out = new DataOutputStream(codec.createOutputStream(out));
         }
+        out = new MaxWriteBlockOutputStream(out);
+        return new VariantRecordWriter(configureWriter(job, out), out);
     }
 
     private DataWriter<Variant> configureWriter(final TaskAttemptContext job, OutputStream fileOut) throws IOException {
