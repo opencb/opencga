@@ -194,6 +194,10 @@ public class UserManager extends AbstractManager {
             }
         }
 
+        // Check if we have already reached the limit of users in the Organisation
+        checkUserLimitQuota(organizationId);
+
+        // Check if the user already exists
         checkUserExists(organizationId, user.getId());
 
         try {
@@ -215,6 +219,15 @@ public class UserManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
             throw e;
+        }
+    }
+
+    private void checkUserLimitQuota(String organizationId) throws CatalogException {
+        // Check if we have already reached the limit of users in the Organisation
+        long numUsers = getUserDBAdaptor(organizationId).count(new Query()).getNumMatches();
+        if (numUsers >= configuration.getQuota().getMaxNumUsers()) {
+            throw new CatalogException("The organization '" + organizationId + "' has reached the maximum quota of allowed users ("
+                    + configuration.getQuota().getMaxNumUsers() + ").");
         }
     }
 

@@ -30,9 +30,10 @@ import java.util.concurrent.TimeUnit;
 
 public class TimeUtils {
 
-    private static final String yyyyMMdd = "yyyyMMdd";
-    private static final String yyyyMMddHHmmss = "yyyyMMddHHmmss";
-    private static final String yyyyMMddHHmmssSSS = "yyyyMMddHHmmssSSS";
+    public static final String yyyyMM = "yyyyMM";
+    public static final String yyyyMMdd = "yyyyMMdd";
+    public static final String yyyyMMddHHmmss = "yyyyMMddHHmmss";
+    public static final String yyyyMMddHHmmssSSS = "yyyyMMddHHmmssSSS";
 
     private static final Logger logger = LoggerFactory.getLogger(TimeUtils.class);
 
@@ -46,6 +47,11 @@ public class TimeUtils {
 
     public static String getTime(Date date) {
         SimpleDateFormat sdf = new SimpleDateFormat(yyyyMMddHHmmss);
+        return sdf.format(date);
+    }
+
+    public static String getTime(Date date, String format) {
+        SimpleDateFormat sdf = new SimpleDateFormat(format);
         return sdf.format(date);
     }
 

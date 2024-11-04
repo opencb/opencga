@@ -40,7 +40,6 @@ import java.util.*;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 @Category(MediumTests.class)
@@ -504,6 +503,24 @@ public class UserManagerTest extends AbstractManagerTest {
             CatalogAuthenticationException exception = assertThrows(CatalogAuthenticationException.class,
                     () -> mockCatalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD));
             assertTrue(exception.getMessage().contains("expired on " + beforeYesterday));
+        }
+    }
+
+    @Test
+    public void createUserQuotaTest() throws CatalogException {
+        try (CatalogManager mockCatalogManager = mockCatalogManager()) {
+            UserDBAdaptor userDBAdaptor = mockCatalogManager.getUserManager().getUserDBAdaptor(organizationId);
+
+            // Mock there already exists 50 users
+            OpenCGAResult<User> result = new OpenCGAResult<>(0, Collections.emptyList());
+            result.setNumMatches(50);
+            Mockito.doReturn(result).when(userDBAdaptor).count();
+            Mockito.doReturn(result).when(userDBAdaptor).count(Mockito.any(Query.class));
+
+            User user = new User("newUser");
+            CatalogException exception = assertThrows(CatalogException.class,
+                    () -> mockCatalogManager.getUserManager().create(user, TestParamConstants.PASSWORD, ownerToken));
+            assertTrue(exception.getMessage().contains("quota"));
         }
     }
 

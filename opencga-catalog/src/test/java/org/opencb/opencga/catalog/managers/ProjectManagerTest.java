@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -51,6 +52,26 @@ import static org.junit.Assert.*;
  */
 @Category(MediumTests.class)
 public class ProjectManagerTest extends AbstractManagerTest {
+
+    @Test
+    public void createProjectQuotaTest() throws CatalogException {
+        try (CatalogManager mockCatalogManager = mockCatalogManager()) {
+            ProjectDBAdaptor projectDBAdaptor = mockCatalogManager.getProjectManager().getProjectDBAdaptor(organizationId);
+
+            // Mock there already exists 50 projects
+            OpenCGAResult<Project> result = new OpenCGAResult<>(0, Collections.emptyList());
+            result.setNumMatches(50);
+            Mockito.doReturn(result).when(projectDBAdaptor).count();
+            Mockito.doReturn(result).when(projectDBAdaptor).count(Mockito.any(Query.class));
+
+            ProjectCreateParams projectCreateParams = new ProjectCreateParams()
+                    .setId("newProject")
+                    .setName("Project about some genomes");
+            CatalogException exception = assertThrows(CatalogException.class,
+                    () -> mockCatalogManager.getProjectManager().create(projectCreateParams, QueryOptions.empty(), ownerToken));
+            assertTrue(exception.getMessage().contains("quota"));
+        }
+    }
 
     @Test
     public void searchProjectByStudy() throws CatalogException {

@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.DataResult;
@@ -968,6 +969,32 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         query = new Query(JobDBAdaptor.QueryParams.VISITED.key(), false);
         assertEquals(1, catalogManager.getJobManager().count(studyFqn, query, ownerToken).getNumMatches());
+    }
+
+    @Test
+    public void testJobQuotaLimit() throws CatalogException {
+        // Submit a dummy job. This shouldn't raise any error
+        catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken);
+
+        OpenCGAResult<ExecutionTime> result = catalogManager.getJobManager().getExecutionTimeByMonth(organizationId, new Query(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals(0, result.first().getTime().getHours(), 0.0);
+        assertEquals(0, result.first().getTime().getMinutes(), 0.0);
+        assertEquals(0, result.first().getTime().getSeconds(), 0.0);
+
+        try (CatalogManager mockManager = mockCatalogManager()) {
+            // Mock check result
+            OpenCGAResult<ExecutionTime> results = new OpenCGAResult<>(0, Collections.singletonList(new ExecutionTime("1", "2024",
+                    new ExecutionTime.Time(1000.0, 1000 * 60.0, 1000.0 * 60 * 60))));
+            JobDBAdaptor jobDBAdaptor = mockManager.getJobManager().getJobDBAdaptor(organizationId);
+
+            Mockito.doReturn(results).when(jobDBAdaptor).executionTimeByMonth(Mockito.any(Query.class));
+
+            // Submit a job. This should raise an error
+            CatalogException exception = assertThrows(CatalogException.class, () -> mockManager.getJobManager()
+                    .submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken));
+            assertTrue(exception.getMessage().contains("quota"));
+        }
     }
 
     /**

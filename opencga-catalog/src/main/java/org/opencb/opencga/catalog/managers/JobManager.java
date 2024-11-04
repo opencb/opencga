@@ -572,8 +572,10 @@ public class JobManager extends ResourceManager<Job> {
         job.setAttributes(attributes);
         try {
             autoCompleteNewJob(organizationId, study, job, tokenPayload);
-
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.EXECUTE_JOBS);
+
+            // Check if we have already reached the limit of job hours in the Organisation
+            checkExecutionLimitQuota(organizationId);
 
             // Check params
             ParamUtils.checkObj(params, "params");
@@ -610,6 +612,27 @@ public class JobManager extends ResourceManager<Job> {
             getJobDBAdaptor(organizationId).insert(study.getUid(), job, new QueryOptions());
 
             throw e;
+        }
+    }
+
+    public OpenCGAResult<ExecutionTime> getExecutionTimeByMonth(String organizationId, Query query, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        ParamUtils.checkParameter(organizationId, "organizationId");
+        authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId(organizationId));
+        return getJobDBAdaptor(organizationId).executionTimeByMonth(query);
+    }
+
+    private void checkExecutionLimitQuota(String organizationId) throws CatalogException {
+        // Get current year/month
+        String time = TimeUtils.getTime(TimeUtils.getDate(), TimeUtils.yyyyMM);
+        Query query = new Query(JobDBAdaptor.QueryParams.MODIFICATION_DATE.key(), time);
+        OpenCGAResult<ExecutionTime> result = getJobDBAdaptor(organizationId).executionTimeByMonth(query);
+        if (result.getNumResults() > 0) {
+            ExecutionTime executionTime = result.first();
+            if (executionTime.getTime().getHours() >= configuration.getQuota().getMaxNumJobHours()) {
+                throw new CatalogException("The organization '" + organizationId + "' has reached the maximum quota of execution hours ("
+                        + configuration.getQuota().getMaxNumJobHours() + ") for the current month.");
+            }
         }
     }
 
