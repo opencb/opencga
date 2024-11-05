@@ -24,6 +24,7 @@ import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.utils.PedigreeGraphUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -67,8 +68,7 @@ public class PedigreeGraphInitAnalysis extends OpenCgaToolScopeStudy {
 
         step(getId(), () -> {
             // Get all families from that study
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("id", "members", "pedigreeGraph"));
-            try (DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(study, new Query(), queryOptions, token)) {
+            try (DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(study, new Query(), FamilyManager.INCLUDE_FAMILY_FOR_PEDIGREE, token)) {
                 while (iterator.hasNext()) {
                     Family family = iterator.next();
                     if (PedigreeGraphUtils.hasMinTwoGenerations(family)

@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -509,7 +510,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Query query = new Query()
                 .append(QueryParams.UID.key(), family.getUid())
                 .append(QueryParams.STUDY_UID.key(), family.getStudyUid());
-        Family tmpFamily = get(clientSession, query, QueryOptions.empty()).first();
+        Family tmpFamily = get(clientSession, query, FamilyManager.INCLUDE_FAMILY_FOR_PEDIGREE).first();
 
         try {
             return PedigreeGraphUtils.getPedigreeGraph(tmpFamily,

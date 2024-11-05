@@ -558,42 +558,70 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      * @return new QueryOptions after removing the inner projectionKey projections.
      */
     protected QueryOptions removeInnerProjections(QueryOptions options, String projectionKey) {
+        return removeInnerProjections(options, Collections.singletonList(projectionKey));
+    }
+
+    /**
+     * Removes any other entity projections made. This method should be called by any entity containing inner entities:
+     * Family -> Individual; Individual -> Sample; File -> Sample; Cohort -> Sample
+     *
+     * @param options           current query options object.
+     * @param projectionKeyList Projection keys to be removed from the query options.
+     * @return new QueryOptions after removing the inner projectionKey projections.
+     */
+    protected QueryOptions removeInnerProjections(QueryOptions options, List<String> projectionKeyList) {
         QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
 
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
             List<String> includeList = queryOptions.getAsStringList(QueryOptions.INCLUDE);
             List<String> newInclude = new ArrayList<>(includeList.size());
-            boolean projectionKeyExcluded = false;
+            Map<String, Boolean> projectionKeyExcluded = new HashMap<>(projectionKeyList.size());
+            for (String projectionKey : projectionKeyList) {
+                projectionKeyExcluded.put(projectionKey, false);
+            }
+
             for (String include : includeList) {
-                if (!include.startsWith(projectionKey + ".")) {
+                boolean excluded = false;
+                for (String projectionKey : projectionKeyList) {
+                    if (include.startsWith(projectionKey + ".")) {
+                        projectionKeyExcluded.put(projectionKey, true);
+                        excluded = true;
+                        break;
+                    }
+                }
+                if (!excluded) {
                     newInclude.add(include);
-                } else {
-                    projectionKeyExcluded = true;
                 }
             }
             if (newInclude.isEmpty()) {
-                queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(ID, projectionKey));
+                List<String> tmpInclude = new ArrayList<>(projectionKeyList.size() + 1);
+                tmpInclude.addAll(projectionKeyList);
+                tmpInclude.add(ID);
+                queryOptions.put(QueryOptions.INCLUDE, tmpInclude);
             } else {
-                if (projectionKeyExcluded) {
-                    newInclude.add(projectionKey);
+                for (Map.Entry<String, Boolean> entry : projectionKeyExcluded.entrySet()) {
+                    if (entry.getValue()) {
+                        newInclude.add(entry.getKey());
+                    }
                 }
                 queryOptions.put(QueryOptions.INCLUDE, newInclude);
             }
         }
-        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
-            List<String> excludeList = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
-            List<String> newExclude = new ArrayList<>(excludeList.size());
-            for (String exclude : excludeList) {
-                if (!exclude.startsWith(projectionKey + ".")) {
-                    newExclude.add(exclude);
-                }
-            }
-            if (newExclude.isEmpty()) {
-                queryOptions.remove(QueryOptions.EXCLUDE);
-            } else {
-                queryOptions.put(QueryOptions.EXCLUDE, newExclude);
-            }
-        }
+        // TODO: This code seems unnecessary. We should remove it if we don't find any issue.
+//        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+//            List<String> excludeList = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+//            List<String> newExclude = new ArrayList<>(excludeList.size());
+//            for (String exclude : excludeList) {
+//                if (!exclude.startsWith(projectionKey + ".")) {
+//                    newExclude.add(exclude);
+//                }
+//            }
+//            if (newExclude.isEmpty()) {
+//                queryOptions.remove(QueryOptions.EXCLUDE);
+//            } else {
+//                queryOptions.put(QueryOptions.EXCLUDE, newExclude);
+//            }
+//        }
 
         return queryOptions;
     }
