@@ -30,9 +30,7 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
@@ -623,6 +621,13 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     private void checkExecutionLimitQuota(String organizationId) throws CatalogException {
+        if (exceedsExecutionLimitQuota(organizationId)) {
+            throw new CatalogException("The organization '" + organizationId + "' has reached the maximum quota of execution hours ("
+                    + configuration.getQuota().getMaxNumJobHours() + ") for the current month.");
+        }
+    }
+
+    public boolean exceedsExecutionLimitQuota(String organizationId) throws CatalogException {
         // Get current year/month
         String time = TimeUtils.getTime(TimeUtils.getDate(), TimeUtils.yyyyMM);
         Query query = new Query(JobDBAdaptor.QueryParams.MODIFICATION_DATE.key(), time);
@@ -630,10 +635,10 @@ public class JobManager extends ResourceManager<Job> {
         if (result.getNumResults() > 0) {
             ExecutionTime executionTime = result.first();
             if (executionTime.getTime().getHours() >= configuration.getQuota().getMaxNumJobHours()) {
-                throw new CatalogException("The organization '" + organizationId + "' has reached the maximum quota of execution hours ("
-                        + configuration.getQuota().getMaxNumJobHours() + ") for the current month.");
+                return true;
             }
         }
+        return false;
     }
 
     /**

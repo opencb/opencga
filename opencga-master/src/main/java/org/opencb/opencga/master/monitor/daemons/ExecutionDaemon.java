@@ -500,8 +500,15 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
         for (String organizationId : organizationIds) {
             try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, pendingJobsQuery, queryOptions, token)) {
+                boolean exceeds = jobManager.exceedsExecutionLimitQuota(organizationId);
                 while (iterator.hasNext()) {
-                    pendingJobs.add(iterator.next());
+                    if (exceeds) {
+                        abortJob(iterator.next(), "The organization '" + organizationId + "' has reached the maximum limit quota of"
+                                + " execution hours (" + catalogManager.getConfiguration().getQuota().getMaxNumJobHours()
+                                + ") for the current month.");
+                    } else {
+                        pendingJobs.add(iterator.next());
+                    }
                 }
             } catch (Exception e) {
                 logger.error("Error listing pending jobs from organization {}", organizationId, e);
