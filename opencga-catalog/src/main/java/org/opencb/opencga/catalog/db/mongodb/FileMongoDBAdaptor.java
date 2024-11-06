@@ -1520,6 +1520,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         break;
                     case UUID:
                     case EXTERNAL:
+                    case RESOURCE:
                     case TYPE:
                     case URI:
                     case ID:

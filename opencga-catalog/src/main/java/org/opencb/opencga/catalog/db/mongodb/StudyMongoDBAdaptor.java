@@ -286,9 +286,9 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                         "study root folder", FileInternal.init(), false, 0, project.getCurrentRelease()),
                 new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/",
                         ioManager.getJobsUri(), "Default jobs folder", FileInternal.init(), false, 0, project.getCurrentRelease()),
-                new File("RESOURCES", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "RESOURCES/",
-                        Paths.get(study.getUri()).resolve("RESOURCES").toUri(), "Default resources folder", FileInternal.init(), true, 0,
-                        project.getCurrentRelease())
+                new File(ParamConstants.RESOURCES_FOLDER, File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN,
+                        ParamConstants.RESOURCES_FOLDER + "/", Paths.get(study.getUri()).resolve(ParamConstants.RESOURCES_FOLDER).toUri(),
+                        "Default resources folder", FileInternal.init(), true, 0, project.getCurrentRelease())
         );
 
         // Create default folders

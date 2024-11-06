@@ -142,6 +142,7 @@ public class FileClient extends AbstractParentClient {
      *       bioformat: Comma separated Bioformat values. For existing Bioformats see files/bioformats.
      *       format: Comma separated Format values. For existing Formats see files/formats.
      *       external: Boolean field indicating whether to filter by external or non external files.
+     *       resource: Boolean field indicating whether the file is a resource or not.
      *       status: Filter by status.
      *       internalStatus: Filter by internal status.
      *       internalVariantIndexStatus: Filter by internal variant index status.
@@ -285,6 +286,7 @@ public class FileClient extends AbstractParentClient {
      *       bioformat: Comma separated Bioformat values. For existing Bioformats see files/bioformats.
      *       format: Comma separated Format values. For existing Formats see files/formats.
      *       external: Boolean field indicating whether to filter by external or non external files.
+     *       resource: Boolean field indicating whether the file is a resource or not.
      *       status: Filter by status.
      *       internalStatus: Filter by internal status.
      *       internalVariantIndexStatus: Filter by internal variant index status.

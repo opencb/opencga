@@ -23,13 +23,13 @@
 #' | loadAnnotationSets | /{apiVersion}/files/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | bioformats | /{apiVersion}/files/bioformats |  |
 #' | create | /{apiVersion}/files/create | study, parents, body[*] |
-#' | distinct | /{apiVersion}/files/distinct | study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release, field[*] |
+#' | distinct | /{apiVersion}/files/distinct | study, id, uuid, name, path, uri, type, bioformat, format, external, resource, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release, field[*] |
 #' | fetch | /{apiVersion}/files/fetch | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body[*] |
 #' | formats | /{apiVersion}/files/formats |  |
 #' | link | /{apiVersion}/files/link | study, parents, body[*] |
 #' | runLink | /{apiVersion}/files/link/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | runPostlink | /{apiVersion}/files/postlink/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
-#' | search | /{apiVersion}/files/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release |
+#' | search | /{apiVersion}/files/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, path, uri, type, bioformat, format, external, resource, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release |
 #' | upload | /{apiVersion}/files/upload | file, fileName, fileFormat, bioformat, checksum, resource, study, relativeFilePath, description, parents |
 #' | acl | /{apiVersion}/files/{files}/acl | files[*], study, member, silent |
 #' | delete | /{apiVersion}/files/{files}/delete | study, files[*], skipTrash |
@@ -104,6 +104,7 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' @param bioformat Comma separated Bioformat values. For existing Bioformats see files/bioformats.
         #' @param format Comma separated Format values. For existing Formats see files/formats.
         #' @param external Boolean field indicating whether to filter by external or non external files.
+        #' @param resource Boolean field indicating whether the file is a resource or not.
         #' @param status Filter by status.
         #' @param internalStatus Filter by internal status.
         #' @param internalVariantIndexStatus Filter by internal variant index status.
@@ -198,6 +199,7 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' @param bioformat Comma separated Bioformat values. For existing Bioformats see files/bioformats.
         #' @param format Comma separated Format values. For existing Formats see files/formats.
         #' @param external Boolean field indicating whether to filter by external or non external files.
+        #' @param resource Boolean field indicating whether the file is a resource or not.
         #' @param status Filter by status.
         #' @param internalStatus Filter by internal status.
         #' @param internalVariantIndexStatus Filter by internal variant index status.

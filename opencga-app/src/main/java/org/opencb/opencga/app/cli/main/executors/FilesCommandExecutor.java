@@ -319,6 +319,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("bioformat", commandOptions.bioformat);
         queryParams.putIfNotEmpty("format", commandOptions.format);
         queryParams.putIfNotNull("external", commandOptions.external);
+        queryParams.putIfNotNull("resource", commandOptions.resource);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("internalVariantIndexStatus", commandOptions.internalVariantIndexStatus);
@@ -538,6 +539,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("bioformat", commandOptions.bioformat);
         queryParams.putIfNotEmpty("format", commandOptions.format);
         queryParams.putIfNotNull("external", commandOptions.external);
+        queryParams.putIfNotNull("resource", commandOptions.resource);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("internalVariantIndexStatus", commandOptions.internalVariantIndexStatus);

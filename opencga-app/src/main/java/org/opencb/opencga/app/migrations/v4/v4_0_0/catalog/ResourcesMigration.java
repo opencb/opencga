@@ -16,6 +16,8 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Collections;
 
@@ -31,7 +33,7 @@ public class ResourcesMigration extends MigrationTool {
                 Projections.include("fqn", "uid", "uri"), studyDoc -> {
                     String studyFqn = studyDoc.getString("fqn");
                     long studyUid = studyDoc.get("uid", Number.class).longValue();
-                    String studyUri = studyDoc.getString("uri");
+                    String studyUriStr = studyDoc.getString("uri");
 
                     // Check if the resources folder already exists
                     Bson fileQuery = Filters.and(
@@ -43,13 +45,15 @@ public class ResourcesMigration extends MigrationTool {
                         return;
                     }
 
-                    // Obtain JOBS folder to get the release number that should be associated to the RESSOURCES folder
+                    // Obtain JOBS folder to get the release number that should be associated to the RESOURCES folder
                     fileQuery = Filters.and(
                             Filters.eq("studyUid", studyUid),
                             Filters.eq("path", "JOBS/")
                     );
                     Bson projection = Projections.include("release");
                     try {
+                        URI studyUri = new URI(studyUriStr);
+
                         queryMongo(OrganizationMongoDBAdaptorFactory.FILE_COLLECTION, fileQuery, projection, fileDoc -> {
                             int release = fileDoc.get("release", Number.class).intValue();
 
@@ -66,7 +70,7 @@ public class ResourcesMigration extends MigrationTool {
                                         e);
                             }
                         });
-                    } catch (CatalogDBException e) {
+                    } catch (CatalogDBException | URISyntaxException e) {
                         throw new CatalogDBRuntimeException(e);
                     }
 
