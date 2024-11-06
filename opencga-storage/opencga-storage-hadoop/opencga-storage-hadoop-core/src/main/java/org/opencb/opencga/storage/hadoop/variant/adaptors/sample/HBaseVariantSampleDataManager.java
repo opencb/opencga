@@ -15,7 +15,6 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -26,8 +25,8 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
@@ -45,30 +44,19 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final VariantStorageMetadataManager metadataManager;
-    private final CellBaseUtils cellBaseUtils;
-
-    public HBaseVariantSampleDataManager(VariantHadoopDBAdaptor dbAdaptor, CellBaseUtils cellBaseUtils) {
+    public HBaseVariantSampleDataManager(VariantHadoopDBAdaptor dbAdaptor) {
         super(dbAdaptor);
         this.dbAdaptor = dbAdaptor;
         metadataManager = dbAdaptor.getMetadataManager();
-        this.cellBaseUtils = cellBaseUtils;
     }
 
     @Override
-    protected DataResult<Variant> getSampleData(String variantStr, String study, QueryOptions options,
+    protected DataResult<Variant> getSampleData(Variant inputVariant, String study, QueryOptions options,
                                                 List<String> includeSamples,
                                                 Set<String> genotypes,
                                                 int sampleLimit) {
         StopWatch stopWatch = StopWatch.createStarted();
         Set<VariantField> includeFields = VariantField.getIncludeFields(options);
-
-        final Variant variant;
-        if (VariantQueryUtils.isVariantId(variantStr)) {
-            variant = new Variant(variantStr);
-        } else {
-            variant = cellBaseUtils.getVariant(variantStr);
-        }
-        variant.setId(variant.toString());
 
         int studyId = metadataManager.getStudyId(study);
 
@@ -90,6 +78,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
         int skip = Math.max(0, options.getInt(QueryOptions.SKIP, 0));
         int limit = Math.max(0, options.getInt(QueryOptions.LIMIT, 10));
+        byte[] rowKey = VariantPhoenixKeyFactory.generateVariantRowKey(inputVariant);
 
         try {
             List<Integer> samples = new ArrayList<>(limit);
@@ -97,7 +86,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
             dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
                 // Create one GET for samples
-                Get get = new Get(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
+                Get get = new Get(rowKey);
                 LinkedList<Filter> filters = new LinkedList<>();
 
                 filters.add(new QualifierFilter(CompareFilter.CompareOp.EQUAL,
@@ -139,7 +128,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                                     samples.add(sampleColumn.getSampleId());
                                     sampleDataMap.add(sampleColumn);
                                 }
-                            }).walk();
+                            }).walk(inputVariant);
                 }
             });
 
@@ -148,8 +137,10 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             Set<Integer> fileIdsFromSampleIds = metadataManager.getFileIdsFromSampleIds(studyId, samples);
             HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter();
             List<VariantStats> stats = new LinkedList<>();
+            Variant variantResult = new Variant(inputVariant.toString());
             dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
-                Get get = new Get(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
+                Get get = new Get(rowKey);
+
                 // Add file columns
                 for (Integer fileId : fileIdsFromSampleIds) {
                     get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.buildFileColumnKey(studyId, fileId));
@@ -172,7 +163,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 Result result = table.get(get);
 
                 if (result == null || result.isEmpty()) {
-                    throw VariantQueryException.variantNotFound(variantStr);
+                    throw VariantQueryException.variantNotFound(variantResult.toString());
                 }
                 // Walk row
                 VariantRow.walker(result)
@@ -186,9 +177,9 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                         })
                         .onVariantAnnotation(column -> {
                             ImmutableBytesWritable b = column.toBytesWritable();
-                            variant.setAnnotation(new HBaseToVariantAnnotationConverter().convert(b.get(), b.getOffset(), b.getLength()));
+                            variantResult.setAnnotation(new HBaseToVariantAnnotationConverter().convert(b));
                         })
-                        .walk();
+                        .walk(variantResult);
             });
 
             // Convert to VariantSampleData
@@ -204,13 +195,14 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                                     new ArrayList<>(fileIdsFromSampleIds)))
                     .build());
 
-            StudyEntry studyEntry = converter.convert(sampleDataMap, filesMap, variant, studyId);
+            variantResult.setId(inputVariant.toString());
+            StudyEntry studyEntry = converter.convert(sampleDataMap, filesMap, variantResult, studyId);
 
-            variant.addStudyEntry(studyEntry);
+            variantResult.addStudyEntry(studyEntry);
             studyEntry.setStats(stats);
-//        String msg = "Queries : " + queries + " , readSamples : " + readSamples;
+
             return new DataResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), 1,
-                    Collections.singletonList(variant), 1);
+                    Collections.singletonList(variantResult), 1);
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }

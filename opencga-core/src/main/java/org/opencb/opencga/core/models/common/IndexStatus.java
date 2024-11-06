@@ -13,12 +13,13 @@ public class IndexStatus extends InternalStatus {
      */
     public static final String NONE = "NONE";
     public static final String INDEXING = "INDEXING";
+    public static final String INVALID = "INVALID";
 
-    public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, INDEXING);
+    public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, INDEXING, INVALID);
 
     public IndexStatus(String status, String message) {
         if (isValid(status)) {
-            init(status, status, message);
+            init(status, message);
         } else {
             throw new IllegalArgumentException("Unknown status " + status);
         }
@@ -50,6 +51,7 @@ public class IndexStatus extends InternalStatus {
         return status != null
                 && (status.equals(READY)
                 || status.equals(DELETED)
+                || status.equals(INVALID)
                 || status.equals(NONE)
                 || status.equals(INDEXING));
     }

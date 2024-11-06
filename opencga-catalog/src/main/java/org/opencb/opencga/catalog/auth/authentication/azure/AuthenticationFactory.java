@@ -1,15 +1,15 @@
 package org.opencb.opencga.catalog.auth.authentication.azure;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.AzureADAuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.LDAPAuthenticationManager;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.auth.authentication.*;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.OrganizationManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.config.Email;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
@@ -17,6 +17,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,17 +29,21 @@ public final class AuthenticationFactory {
     private final Map<String, Map<String, AuthenticationManager>> authenticationManagerMap;
     private final Logger logger = LoggerFactory.getLogger(AuthenticationFactory.class);
     private final DBAdaptorFactory catalogDBAdaptorFactory;
+    private final Configuration configuration;
 
-    public AuthenticationFactory(DBAdaptorFactory catalogDBAdaptorFactory) {
+    public AuthenticationFactory(DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
+        this.configuration = configuration;
         authenticationManagerMap = new ConcurrentHashMap<>();
     }
 
     public void configureOrganizationAuthenticationManager(Organization organization) throws CatalogException {
-        // TODO: Pass proper email values
-        Email email = new Email();
-
         Map<String, AuthenticationManager> tmpAuthenticationManagerMap = new HashMap<>();
+
+        long expiration = organization.getConfiguration().getToken().getExpiration();
+        String algorithm = organization.getConfiguration().getToken().getAlgorithm();
+        String secretKey = organization.getConfiguration().getToken().getSecretKey();
+
         if (organization.getConfiguration() != null
                 && CollectionUtils.isNotEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
             for (AuthenticationOrigin authOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
@@ -46,15 +51,21 @@ public final class AuthenticationFactory {
                     switch (authOrigin.getType()) {
                         case LDAP:
                             tmpAuthenticationManagerMap.put(authOrigin.getId(),
-                                    new LDAPAuthenticationManager(authOrigin, authOrigin.getSecretKey(), authOrigin.getExpiration()));
+                                    new LDAPAuthenticationManager(authOrigin, algorithm, secretKey, expiration));
                             break;
                         case AzureAD:
                             tmpAuthenticationManagerMap.put(authOrigin.getId(), new AzureADAuthenticationManager(authOrigin));
                             break;
                         case OPENCGA:
-                            tmpAuthenticationManagerMap.put(authOrigin.getId(),
-                                    new CatalogAuthenticationManager(catalogDBAdaptorFactory, email, authOrigin.getSecretKey(),
-                                            authOrigin.getExpiration()));
+                            CatalogAuthenticationManager catalogAuthenticationManager =
+                                    new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration.getEmail(), algorithm,
+                                            secretKey, expiration);
+                            tmpAuthenticationManagerMap.put(CatalogAuthenticationManager.INTERNAL, catalogAuthenticationManager);
+                            tmpAuthenticationManagerMap.put(CatalogAuthenticationManager.OPENCGA, catalogAuthenticationManager);
+                            break;
+                        case SSO:
+                            tmpAuthenticationManagerMap.put(authOrigin.getId(), new SSOAuthenticationManager(algorithm, secretKey,
+                                    expiration));
                             break;
                         default:
                             logger.warn("Unexpected authentication origin type '{}' for id '{}' found in organization '{}'. "
@@ -67,6 +78,18 @@ public final class AuthenticationFactory {
         }
         if (tmpAuthenticationManagerMap.isEmpty()) {
             throw new CatalogException("No authentication origin found for organization '" + organization.getId() + "'");
+        }
+        if (authenticationManagerMap.containsKey(organization.getId())) {
+            for (AuthenticationManager authenticationManager : authenticationManagerMap.get(organization.getId()).values()) {
+                try {
+                    logger.info("Closing previous authentication manager for organization '{}'", organization.getId());
+                    authenticationManager.close();
+                } catch (IOException e) {
+                    throw new CatalogException("Unable to close previous authentication manager for organization '" + organization.getId()
+                            + "'.", e);
+                }
+            }
+            logger.info("Reloading new set of AuthenticationManagers for organization '{}'", organization.getId());
         }
         authenticationManagerMap.put(organization.getId(), tmpAuthenticationManagerMap);
     }
@@ -117,8 +140,10 @@ public final class AuthenticationFactory {
             // Check if the organization exists (it must have been created on a different instance)
             for (String id : catalogDBAdaptorFactory.getOrganizationIds()) {
                 if (id.equals(organizationId)) {
-                    Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId)
-                            .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
+                    QueryOptions options = new QueryOptions(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
+                    options.put(OrganizationDBAdaptor.IS_ORGANIZATION_ADMIN_OPTION, true);
+                    Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(options)
+                            .first();
                     configureOrganizationAuthenticationManager(organization);
                     return authenticationManagerMap.get(organizationId);
                 }
@@ -135,6 +160,27 @@ public final class AuthenticationFactory {
             throw new CatalogException("Authentication origin '" + authOriginId + "' for organization '" + organizationId + "' not found.");
         }
         return organizationAuthenticationManagers.get(authOriginId);
+    }
+
+    public void validateAuthenticationOrigin(AuthenticationOrigin authenticationOrigin) throws CatalogException {
+        ParamUtils.checkParameter(authenticationOrigin.getId(), "authentication origin id");
+        ParamUtils.checkObj(authenticationOrigin.getType(), "authentication origin type");
+        switch (authenticationOrigin.getType()) {
+            case OPENCGA:
+                CatalogAuthenticationManager.validateAuthenticationOriginConfiguration(authenticationOrigin);
+                break;
+            case LDAP:
+                LDAPAuthenticationManager.validateAuthenticationOriginConfiguration(authenticationOrigin);
+                break;
+            case AzureAD:
+                AzureADAuthenticationManager.validateAuthenticationOriginConfiguration(authenticationOrigin);
+                break;
+            case SSO:
+                SSOAuthenticationManager.validateAuthenticationOriginConfiguration(authenticationOrigin);
+                break;
+            default:
+                throw new CatalogException("Unknown authentication origin type '" + authenticationOrigin.getType() + "'");
+        }
     }
 
 }

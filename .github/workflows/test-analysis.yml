@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: '0'
+          fetch-depth: '10'
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
@@ -65,7 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: '0'
+          fetch-depth: '10'
       - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
@@ -90,8 +90,8 @@ jobs:
       - name: Maven build
         run: mvn -B clean install -DskipTests -P ${{ inputs.hadoop }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report --fail-never -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
-      - name: Publish Test Report
+        run: mvn -B verify surefire-report:report --fail-never -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
+      - name: Publish Test Report on GitHub
         uses: scacap/action-surefire-report@v1
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'

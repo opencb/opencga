@@ -125,14 +125,20 @@ public class MigrationManager {
     public void runMigration(String version, Collection<Migration.MigrationDomain> domains,
                              Collection<Migration.MigrationLanguage> languages, boolean offline, String appHome, ObjectMap params,
                              String token) throws CatalogException, IOException {
-        // Migrate all organizations
-        for (String organizationId : dbAdaptorFactory.getOrganizationIds()) {
-            if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
-                runMigration(organizationId, version, domains, languages, offline, appHome, params, token);
+        runMigration(ParamConstants.ADMIN_ORGANIZATION, version, domains, languages, offline, appHome, params, token);
+
+        // ***** Starts code to remove in future versions. Reload MongoDBAdaptorFactory to avoid Notes migration issue. *****/
+        try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory())) {
+            for (String organizationId : mongoDBAdaptorFactory.getOrganizationIds()) {
+                // ***** Finish code to remove in future versions. Reload MongoDBAdaptorFactory to avoid Notes migration issue. *****/
+
+                // Migrate all organizations
+    //        for (String organizationId : dbAdaptorFactory.getOrganizationIds()) {
+                if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+                    runMigration(organizationId, version, domains, languages, offline, appHome, params, token);
+                }
             }
         }
-        // Lastly, migrate the admin organization
-        runMigration(ParamConstants.ADMIN_ORGANIZATION, version, domains, languages, offline, appHome, params, token);
     }
 
     public void runMigration(String organizationId, String version, Collection<Migration.MigrationDomain> domains,
@@ -662,7 +668,8 @@ public class MigrationManager {
                 + "-" + RandomStringUtils.randomAlphanumeric(5);
         String logFile = startMigrationLogger(jobId, Paths.get(configuration.getJobDir()).resolve(path));
         logger.info("------------------------------------------------------");
-        logger.info("Executing migration '{}' for version '{}'", annotation.id(), annotation.version());
+        logger.info("Executing migration '{}' for version '{}' in organization '{}'", annotation.id(), annotation.version(),
+                organizationId);
         logger.info("    {}", annotation.description());
         logger.info("------------------------------------------------------");
 
@@ -701,6 +708,7 @@ public class MigrationManager {
                 logger.info("Migration '{}' finished with status {} : {}", annotation.id(), status, TimeUtils.durationToString(stopWatch));
             }
             logger.info("------------------------------------------------------");
+            logger.info("");
         } catch (Exception e) {
             migrationRun.setStatus(MigrationRun.MigrationStatus.ERROR);
             String message;

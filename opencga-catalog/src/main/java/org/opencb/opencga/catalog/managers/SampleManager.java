@@ -504,7 +504,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -609,7 +609,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -665,7 +665,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         OpenCGAResult<Sample> result;
         try {
             long studyId = study.getUid();
-            authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
             result = getSampleDBAdaptor(organizationId).setRgaIndexes(study.getUid(), new RgaIndex(RgaIndex.Status.NOT_INDEXED,
                     TimeUtils.getTime()));
 
@@ -703,7 +703,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             auditManager.initAuditBatch(operationUuid);
 
             long studyId = study.getUid();
-            authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
 
             ParamUtils.checkNotEmptyArray(samples, "samples");
             ParamUtils.checkObj(rgaIndex, "RgaIndex");
@@ -787,7 +787,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         long studyId = study.getUid();
-        authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
 
         ObjectMap params;
         try {

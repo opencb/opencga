@@ -27,7 +27,6 @@ import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.StorageManager;
@@ -39,7 +38,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
@@ -66,6 +64,7 @@ public class AlignmentStorageManager extends StorageManager {
 
     private AlignmentStorageEngine alignmentStorageEngine;
     private String jobId;
+    private boolean dryRun;
 
     private static final Map<String, String> statsMap = new HashMap<>();
 
@@ -78,32 +77,29 @@ public class AlignmentStorageManager extends StorageManager {
         initStatsMap();
     }
 
-    public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, String jobId) {
+    public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, String jobId, boolean dryRun) {
         super(catalogManager, storageEngineFactory);
 
         // TODO: Create this alignmentStorageEngine by reflection
         this.alignmentStorageEngine = new LocalAlignmentStorageEngine();
         this.jobId = jobId;
+        this.dryRun = dryRun;
 
         initStatsMap();
     }
 
-    //-------------------------------------------------------------------------
-    // INDEX
-    //-------------------------------------------------------------------------
-
-    public void index(String study, String inputFile, boolean overwrite, String outdir, String token) throws ToolException {
-        ObjectMap params = new ObjectMap();
-
-        AlignmentIndexOperation indexOperation = new AlignmentIndexOperation();
-        indexOperation.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
-
-        indexOperation.setStudy(study);
-        indexOperation.setInputFile(inputFile);
-        indexOperation.setOverwrite(overwrite);
-
-        indexOperation.start();
-    }
+//    //-------------------------------------------------------------------------
+//    // INDEX
+//    //-------------------------------------------------------------------------
+//
+//    public void index(String study, String inputFile, String outdir, String token) throws ToolException {
+//        ToolRunner toolRunner = new ToolRunner("", catalogManager, storageEngineFactory);
+//
+//        AlignmentIndexParams params = new AlignmentIndexParams();
+//        params.setFileId(inputFile);
+//        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study), Paths.get(outdir),
+//                jobId, token);
+//    }
 
     //-------------------------------------------------------------------------
     // QUERY

@@ -232,8 +232,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 Configurator.setLevel(MapTask.class.getName(), Level.WARN);
                 Configurator.setLevel(TableInputFormatBase.class.getName(), Level.WARN);
 
-                utility.set(new HBaseTestingUtility());
-                Configuration conf = utility.get().getConfiguration();
+                HBaseTestingUtility testingUtility = new HBaseTestingUtility();
+                Configuration conf = testingUtility.getConfiguration();
                 HadoopVariantStorageTest.configuration.set(conf);
 
 
@@ -277,7 +277,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 }
 
                 //org.apache.commons.configuration2.Configuration
-                utility.get().startMiniCluster(1);
+                testingUtility.startMiniCluster(1);
+                utility.set(testingUtility);
 
     //            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();
     //            MiniMRClientCluster miniMRClientCluster = MiniMRClientClusterFactory.create(HadoopVariantStorageManagerTestUtils.class, 1, configuration);
@@ -534,7 +535,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
 
         @Override
-        public <T extends Tool> int run(Class<T> clazz, String[] args) throws StorageEngineException {
+        public <T extends Tool> Result run(Class<T> clazz, String[] args) throws StorageEngineException {
             try {
                 // Copy configuration
                 Configuration conf = new Configuration(false);
@@ -547,14 +548,14 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 if (((Number) o).intValue() != 0) {
                     throw new StorageEngineException("Error executing MapReduce. Exit code: " + o);
                 }
-                return ((Number) o).intValue();
+                return new Result(((Number) o).intValue(), new ObjectMap());
             } catch (Exception e) {
                 throw new StorageEngineException("Error executing MapReduce.", e);
             }
         }
 
         @Override
-        public int run(String executable, String[] args) {
+        public Result run(String executable, String[] args) {
             try {
                 // Copy configuration
                 Configuration conf = new Configuration(false);
@@ -569,7 +570,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 if (((Number) o).intValue() != 0) {
                     throw new RuntimeException("Exit code = " + o);
                 }
-                return ((Number) o).intValue();
+                return new Result(((Number) o).intValue(), new ObjectMap());
 
             } catch (Exception e) {
 //                e.printStackTrace();

@@ -274,7 +274,7 @@ public class SampleIndexQueryParser {
         //} else if (isValidParam(query, FILE)) {
             // Add FILEs filter ?
         } else {
-            throw new IllegalStateException("Unable to query SamplesIndex");
+            throw new IllegalStateException("Unable to query SamplesIndex. Missing sample filter! Query: " + query.toJson());
         }
         boolean requireFamilyIndex = !mendelianErrorSet.isEmpty();
         SampleIndexSchema schema = schemaFactory.getSchema(studyId, sampleGenotypeQuery.keySet(), false, requireFamilyIndex);
@@ -551,7 +551,7 @@ public class SampleIndexQueryParser {
         return new SampleIndexQuery(schema, regionGroups, extendedFilteringRegion, variantTypes, study,
                 sampleGenotypeQuery, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
-                fileIndexMap, annotationIndexQuery, mendelianErrorSet, mendelianErrorType, includeParentsField, queryOperation);
+                fileIndexMap, annotationIndexQuery, mendelianErrorSet, mendelianErrorType, includeParentsField, queryOperation, query);
     }
 
     private Set<String> findParents(Set<String> childrenSet, Map<String, List<String>> parentsMap) {
@@ -1286,6 +1286,7 @@ public class SampleIndexQueryParser {
                     intergenic == Boolean.FALSE && (!ctFilterCoveredBySummary
                                     || (!ctBtCombinationCoveredBySummary && combination.isBiotype())
                                     || combination.isFlag());
+
             if (useCtIndexFilter) {
                 ctCovered = completeIndex;
                 consequenceTypeFilter = schema.getCtIndex().getField().buildFilter(new OpValue<>("=", soNames));
@@ -1515,6 +1516,8 @@ public class SampleIndexQueryParser {
 
         if (intergenic == null || intergenic) {
             // If intergenic is undefined, or true, CT and BT filters can not be used.
+            biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
+            consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
             if (!biotypeFilter.isNoOp()) {
                 throw new IllegalStateException("Unexpected BT filter for intergenic=" + intergenic);
             }

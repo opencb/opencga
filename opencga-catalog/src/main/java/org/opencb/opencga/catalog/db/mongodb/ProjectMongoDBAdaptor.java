@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.ProjectCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -54,7 +55,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * Created by imedina on 08/01/16.
  */
-public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAdaptor {
+public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements ProjectDBAdaptor {
 
     private final MongoDBCollection projectCollection;
     private final MongoDBCollection deletedProjectCollection;
@@ -82,8 +83,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public OpenCGAResult<Project> insert(Project project, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Project> insert(Project project, QueryOptions options) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting project insert transaction for project id '{}'", project.getId());
@@ -201,7 +201,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, projectDataResult.first(), parameters));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update project {}: {}", projectDataResult.first().getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not update project '" + projectDataResult.first().getId() + "': " + e.getMessage(),
                     e.getCause());
@@ -220,7 +220,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             Project project = iterator.next();
             try {
                 result.append(runTransaction(clientSession -> privateUpdate(clientSession, project, parameters)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update project {}: {}", project.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, project.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -268,7 +268,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return endWrite(tmpStartTime, 1, 1, null);
     }
 
-    UpdateDocument getDocumentUpdateParams(ObjectMap parameters) {
+    UpdateDocument getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(),
@@ -383,7 +383,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public OpenCGAResult delete(Project project) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> privateDelete(clientSession, project));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete project {}: {}", project.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete project '" + project.getId() + "': " + e.getMessage(), e.getCause());
         }
@@ -412,7 +412,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, project)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete project {}: {}", project.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, project.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -542,9 +542,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Document> nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        return nativeGet(null, query, options);
+    }
+
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
             return endQuery(startTime, dbIterator);
         }
     }
@@ -552,8 +556,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        return nativeGet(null, query, options, user);
+    }
+
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
-        try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options, user)) {
             return endQuery(startTime, dbIterator);
         }
     }
@@ -570,11 +579,15 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
+        return nativeIterator(null, query, options);
+    }
+
+    public DBIterator nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions);
-        return new ProjectCatalogMongoDBIterator<>(mongoCursor, null, null, dbAdaptorFactory, options, null);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
+        return new ProjectCatalogMongoDBIterator<>(mongoCursor, clientSession, null, dbAdaptorFactory, options, null);
     }
 
     @Override
@@ -587,11 +600,16 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        return nativeIterator(null, query, options, user);
+    }
+
+    public DBIterator nativeIterator(ClientSession clientSession, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
-        return new ProjectCatalogMongoDBIterator<>(mongoCursor, null, null, dbAdaptorFactory, options, user);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
+        return new ProjectCatalogMongoDBIterator<>(mongoCursor, clientSession, null, dbAdaptorFactory, options, user);
     }
 
 //    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
@@ -717,7 +735,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                             .collect(Collectors.toList()));
         }
 
-        options = filterQueryOptions(options, Arrays.asList(QueryParams.ID.key(), QueryParams.FQN.key()));
+        options = filterQueryOptionsToIncludeKeys(options, Arrays.asList(QueryParams.ID.key(), QueryParams.FQN.key()));
 
         // 0. Check if the user is the owner or one of the organization admins
         boolean isOwnerOrAdmin = dbAdaptorFactory.getCatalogOrganizationDBAdaptor().isOwnerOrAdmin(clientSession, user);
@@ -766,7 +784,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson bsonQuery = parseQuery(query);
 
         // Check include
-        QueryOptions qOptions = filterQueryOptions(options, Arrays.asList(QueryParams.UID.key(), QueryParams.FQN.key()));
+        QueryOptions qOptions = filterQueryOptionsToIncludeKeys(options, Arrays.asList(QueryParams.UID.key(), QueryParams.FQN.key()));
 
         MongoDBCollection collection = getQueryCollection(query, projectCollection, null, deletedProjectCollection);
         logger.debug("Project query: {}", bsonQuery.toBsonDocument());
@@ -814,8 +832,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         List<Bson> andBsonList = new ArrayList<>();
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

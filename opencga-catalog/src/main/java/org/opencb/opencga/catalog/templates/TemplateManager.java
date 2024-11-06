@@ -147,7 +147,7 @@ public class TemplateManager {
         Study study = getStudy(organizationId, manifest.getConfiguration().getProjectId(), manifest.getStudy().getId());
         JwtPayload payload = catalogManager.getUserManager().validateToken(token);
         String userId = payload.getUserId(organizationId);
-        catalogManager.getAuthorizationManager().checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+        catalogManager.getAuthorizationManager().checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
 //        // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.
 //        if (!resume && !overwrite) {

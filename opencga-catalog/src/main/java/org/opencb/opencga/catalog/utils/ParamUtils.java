@@ -124,9 +124,9 @@ public class ParamUtils {
         if (userId.equals(ParamConstants.ANONYMOUS_USER_ID) || userId.equals(ParamConstants.REGISTERED_USERS)) {
             throw new CatalogParameterException("User id cannot be one of the reserved OpenCGA users.");
         }
-        if (!userId.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
+        if (!userId.matches("^[A-Za-z0-9]([-_.@]?[A-Za-z0-9])*$")) {
             throw new CatalogParameterException("Invalid user id. Id needs to start by any character and might contain single '-', '_', "
-                    + "'.', symbols followed by any character or number.");
+                    + "'.' or '@' symbols followed by any character or number.");
         }
     }
 
@@ -170,6 +170,22 @@ public class ParamUtils {
             Date date = TimeUtils.toDate(creationDate);
             if (date == null || creationDate.length() != 14) {
                 throw new CatalogParameterException("Unexpected '" + param + "' format. Expected format is 'yyyyMMddHHmmss'");
+            }
+        }
+    }
+
+    public static void checkDateIsNotExpired(String dateStr, String param) throws CatalogParameterException {
+        if (StringUtils.isEmpty(dateStr)) {
+            throw CatalogParameterException.isNull(param);
+        } else {
+            // Validate date can be parsed and has the proper format
+            Date date = TimeUtils.toDate(dateStr);
+            if (date == null || dateStr.length() != 14) {
+                throw new CatalogParameterException("Unexpected '" + param + "' format. Expected format is 'yyyyMMddHHmmss'");
+            }
+            if (date.before(TimeUtils.getDate())) {
+                throw new CatalogParameterException("The date for '" + param + "' introduced is already expired. Please, introduce a valid"
+                        + " date in the future.");
             }
         }
     }

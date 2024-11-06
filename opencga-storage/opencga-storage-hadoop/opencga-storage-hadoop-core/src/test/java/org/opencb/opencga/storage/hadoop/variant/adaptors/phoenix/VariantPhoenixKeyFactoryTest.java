@@ -1,5 +1,9 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.ByteStringer;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -11,7 +15,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.HBaseCompat;
 
 import java.sql.SQLException;
@@ -36,6 +42,7 @@ public class VariantPhoenixKeyFactoryTest {
         checkVariantRowKeyGeneration(new Variant("5", 21648, "A", "T"));
         checkVariantRowKeyGeneration(new Variant("5", 21648, "AAAAAA", "T"));
         checkVariantRowKeyGeneration(new Variant("5", 21648, "A", ""));
+        checkVariantRowKeyGeneration(new Variant("5", 21648, "", "T"));
         checkVariantRowKeyGeneration(new Variant("5", 21648, "AAT", "TTT"));
         checkVariantRowKeyGeneration(new Variant("X", 21648, "", "TTT"));
         checkVariantRowKeyGeneration(new Variant("MT", 21648, "", ""));
@@ -52,6 +59,16 @@ public class VariantPhoenixKeyFactoryTest {
         checkVariantRowKeyGeneration(new Variant("5:100<110<120-500<510<520:A:<CN5>"));
         checkVariantRowKeyGeneration(new Variant("5:100<110<120-500<510<520:-:<CN5>"));
         checkVariantRowKeyGeneration(new Variant("5:100:A:A]:chr5:234]"));
+    }
+
+    @Test
+    public void testExtraLargeVariantRowKey() throws Exception {
+        String allele1 = RandomStringUtils.random(50000, "ACGT");
+        checkVariantRowKeyGeneration(new Variant("5:1000:-:" + allele1));
+        StructuralVariation sv = new StructuralVariation();
+        sv.setLeftSvInsSeq(allele1);
+        sv.setRightSvInsSeq(allele1);
+        checkVariantRowKeyGeneration(new Variant("5:1000:A:<INS>").setSv(sv));
     }
 
     @Test
@@ -73,11 +90,18 @@ public class VariantPhoenixKeyFactoryTest {
 //        System.out.println("expected = " + Bytes.toStringBinary(phoenixRowKey));
 
         byte[] variantRowkey = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
+        byte[] alleles = Bytes.toBytes(VariantPhoenixKeyFactory.buildAlleles(variant));
 //        System.out.println("actual   = " + Bytes.toStringBinary(variantRowkey));
-        Variant generatedVariant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(variantRowkey);
+        Variant generatedVariant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(variantRowkey, null, alleles);
+
+        Result result = Result.create(Collections.singletonList(new KeyValue(phoenixRowKey, GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes(),
+                alleles)));
+
+        Variant generatedVariant2 = VariantPhoenixKeyFactory.extractVariantFromResult(result);
 
         assertArrayEquals(variant.toString(), phoenixRowKey, variantRowkey);
         assertEquals(variant, generatedVariant);
+        assertEquals(variant, generatedVariant2);
     }
 
     public byte[] generateVariantRowKeyPhoenix(Variant variant) {
@@ -104,12 +128,23 @@ public class VariantPhoenixKeyFactoryTest {
         }
 
         ImmutableBytesWritable key = new ImmutableBytesWritable();
+        String reference = variant.getReference();
+        String alternate = VariantPhoenixKeyFactory.buildSymbolicAlternate(variant);
         table.newKey(key, new byte[][]{
                 Bytes.toBytes(variant.getChromosome()),
                 Bytes.toBytes(variant.getStart()),
-                Bytes.toBytes(variant.getReference()),
-                Bytes.toBytes(VariantPhoenixKeyFactory.buildSymbolicAlternate(variant.getReference(), variant.getAlternate(), variant.getEnd(), variant.getSv())),
+                Bytes.toBytes(reference),
+                Bytes.toBytes(alternate),
         });
+        if (key.getLength() > HConstants.MAX_ROW_LENGTH) {
+            key = new ImmutableBytesWritable();
+            table.newKey(key, new byte[][]{
+                    Bytes.toBytes(variant.getChromosome()),
+                    Bytes.toBytes(variant.getStart()),
+                    Bytes.toBytes(VariantPhoenixKeyFactory.hashAllele(reference)),
+                    Bytes.toBytes(VariantPhoenixKeyFactory.hashAllele(alternate)),
+            });
+        }
 
         if (key.getLength() == key.get().length) {
             return key.get();

@@ -55,6 +55,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         public GrepCommandOptions grepCommandOptions;
         public HeadCommandOptions headCommandOptions;
         public ImageCommandOptions imageCommandOptions;
+        public MoveCommandOptions moveCommandOptions;
         public RefreshCommandOptions refreshCommandOptions;
         public TailCommandOptions tailCommandOptions;
         public ListCommandOptions listCommandOptions;
@@ -86,6 +87,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         this.grepCommandOptions = new GrepCommandOptions();
         this.headCommandOptions = new HeadCommandOptions();
         this.imageCommandOptions = new ImageCommandOptions();
+        this.moveCommandOptions = new MoveCommandOptions();
         this.refreshCommandOptions = new RefreshCommandOptions();
         this.tailCommandOptions = new TailCommandOptions();
         this.listCommandOptions = new ListCommandOptions();
@@ -361,6 +363,15 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -457,6 +468,15 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
         @Parameter(names = {"--uri", "--input", "-i"}, description = "The body web service uri parameter", required = false, arity = 1)
         public String uri;
     
@@ -503,6 +523,15 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
     
         @Parameter(names = {"--files"}, description = "The body web service files parameter", required = false, arity = 1)
         public String files;
@@ -720,9 +749,6 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--sample-ids-action"}, description = "Action to be performed if the array of samples is being updated.", required = false, arity = 1)
         public String sampleIdsAction = "ADD"; 
     
-        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String name;
-    
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
@@ -734,9 +760,6 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--sample-ids"}, description = "The body web service sampleIds parameter", required = false, arity = 1)
         public String sampleIds;
-    
-        @Parameter(names = {"--checksum"}, description = "The body web service checksum parameter", required = false, arity = 1)
-        public String checksum;
     
         @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, PDF, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
         public String format;
@@ -800,9 +823,6 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
-    
-        @Parameter(names = {"--size"}, description = "The body web service size parameter", required = false, arity = 1)
-        public Long size;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
@@ -918,6 +938,35 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
+    
+    }
+
+    @Parameters(commandNames = {"move"}, commandDescription ="Move file to a different path")
+    public class MoveCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--file"}, description = "File id, UUID or name.", required = true, arity = 1)
+        public String file; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--path"}, description = "The body web service path parameter", required = false, arity = 1)
+        public String path;
     
     }
 

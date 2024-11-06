@@ -30,14 +30,12 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class FileUpdateParams {
 
-    private String name;
     private String description;
     private String creationDate;
     private String modificationDate;
 
     private List<String> sampleIds;
 
-    private String checksum;
     private File.Format format;
     private File.Bioformat bioformat;
     private Software software;
@@ -46,8 +44,6 @@ public class FileUpdateParams {
     private SmallFileInternal internal;
 
     private List<SmallRelatedFileParams> relatedFiles;
-
-    private Long size;
 
     private StatusParams status;
     private List<AnnotationSet> annotationSets;
@@ -58,24 +54,21 @@ public class FileUpdateParams {
     public FileUpdateParams() {
     }
 
-    public FileUpdateParams(String name, String description, String creationDate, String modificationDate, List<String> sampleIds,
-                            String checksum, File.Format format, File.Bioformat bioformat, Software software, FileExperiment experiment,
-                            List<String> tags, SmallFileInternal internal, Long size, List<SmallRelatedFileParams> relatedFiles,
+    public FileUpdateParams(String description, String creationDate, String modificationDate, List<String> sampleIds,
+                            File.Format format, File.Bioformat bioformat, Software software, FileExperiment experiment,
+                            List<String> tags, SmallFileInternal internal, List<SmallRelatedFileParams> relatedFiles,
                             StatusParams status, List<AnnotationSet> annotationSets, FileQualityControl qualityControl,
                             Map<String, Object> stats, Map<String, Object> attributes) {
-        this.name = name;
         this.description = description;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.sampleIds = sampleIds;
-        this.checksum = checksum;
         this.format = format;
         this.bioformat = bioformat;
         this.software = software;
         this.experiment = experiment;
         this.tags = tags;
         this.internal = internal;
-        this.size = size;
         this.relatedFiles = relatedFiles;
         this.status = status;
         this.annotationSets = annotationSets;
@@ -103,12 +96,10 @@ public class FileUpdateParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileUpdateParams{");
-        sb.append("name='").append(name).append('\'');
-        sb.append(", description='").append(description).append('\'');
+        sb.append("description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", sampleIds=").append(sampleIds);
-        sb.append(", checksum='").append(checksum).append('\'');
         sb.append(", format=").append(format);
         sb.append(", bioformat=").append(bioformat);
         sb.append(", software=").append(software);
@@ -116,7 +107,6 @@ public class FileUpdateParams {
         sb.append(", tags=").append(tags);
         sb.append(", internal=").append(internal);
         sb.append(", relatedFiles=").append(relatedFiles);
-        sb.append(", size=").append(size);
         sb.append(", status=").append(status);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", qualityControl=").append(qualityControl);
@@ -124,15 +114,6 @@ public class FileUpdateParams {
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public FileUpdateParams setName(String name) {
-        this.name = name;
-        return this;
     }
 
     public String getDescription() {
@@ -168,15 +149,6 @@ public class FileUpdateParams {
 
     public FileUpdateParams setSampleIds(List<String> sampleIds) {
         this.sampleIds = sampleIds;
-        return this;
-    }
-
-    public String getChecksum() {
-        return checksum;
-    }
-
-    public FileUpdateParams setChecksum(String checksum) {
-        this.checksum = checksum;
         return this;
     }
 
@@ -231,15 +203,6 @@ public class FileUpdateParams {
 
     public FileUpdateParams setExperiment(FileExperiment experiment) {
         this.experiment = experiment;
-        return this;
-    }
-
-    public Long getSize() {
-        return size;
-    }
-
-    public FileUpdateParams setSize(Long size) {
-        this.size = size;
         return this;
     }
 

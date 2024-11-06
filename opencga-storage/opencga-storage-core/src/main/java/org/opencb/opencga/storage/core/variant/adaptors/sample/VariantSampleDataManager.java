@@ -40,13 +40,13 @@ public class VariantSampleDataManager {
 
     }
 
-    public final DataResult<Variant> getSampleData(String variant, String study, QueryOptions options) {
+    public final DataResult<Variant> getSampleData(Variant variant, String study, QueryOptions options) {
         options = options == null ? new QueryOptions() : options;
         int sampleLimit = options.getInt(SAMPLE_BATCH_SIZE, SAMPLE_BATCH_SIZE_DEFAULT);
         return getSampleData(variant, study, options, sampleLimit);
     }
 
-    public final DataResult<Variant> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
+    public final DataResult<Variant> getSampleData(Variant variant, String study, QueryOptions options, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
 
 
@@ -77,7 +77,7 @@ public class VariantSampleDataManager {
     }
 
     protected DataResult<Variant> getSampleData(
-            String variantStr, String study, QueryOptions options, List<String> includeSamples, Set<String> genotypes,
+            Variant variant, String study, QueryOptions options, List<String> includeSamples, Set<String> genotypes,
             int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
         Set<VariantField> includeFields = VariantField.getIncludeFields(options);
@@ -98,7 +98,7 @@ public class VariantSampleDataManager {
         int queries = 0;
         while (true) {
             queries++;
-            Query query = new Query(VariantQueryParam.ID.key(), variantStr)
+            Query query = new Query(VariantQueryParam.ID.key(), variant.toString())
                     .append(VariantQueryParam.STUDY.key(), study)
                     .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), options.get(VariantQueryParam.INCLUDE_GENOTYPE.key()))
                     .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), options.get(VariantQueryParam.INCLUDE_SAMPLE_DATA.key()))
@@ -130,7 +130,7 @@ public class VariantSampleDataManager {
 
             DataResult<Variant> result = dbAdaptor.get(query, variantQueryOptions);
             if (result.getNumResults() == 0) {
-                throw VariantQueryException.variantNotFound(variantStr);
+                throw VariantQueryException.variantNotFound(variant.toString());
             }
             dbTime += result.getTime();
             Variant partialVariant = result.first();
@@ -199,7 +199,7 @@ public class VariantSampleDataManager {
             }
         }
 
-        Variant variant = new Variant(variantStr);
+        variant = new Variant(variant.toString());
         variant.setAnnotation(annotation);
         StudyEntry studyEntry = new StudyEntry(study);
         variant.addStudyEntry(studyEntry);

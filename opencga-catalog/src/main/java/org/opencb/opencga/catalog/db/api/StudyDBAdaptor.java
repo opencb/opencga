@@ -25,9 +25,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -83,19 +85,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         return queryResults;
     }
 
-    OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
-
     OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException;
-
-    default List<OpenCGAResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
-        Objects.requireNonNull(queries);
-        List<OpenCGAResult> queryResults = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            queryResults.add(nativeGet(query, options));
-        }
-        return queryResults;
-    }
 
     OpenCGAResult<Study> update(long id, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
@@ -200,7 +191,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     OpenCGAResult<Study> nativeInsert(Map<String, Object> study) throws CatalogDBException;
 
-    OpenCGAResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Study> insert(Project project, Study study, List<File> files, QueryOptions options) throws CatalogDBException;
 
     boolean hasStudyPermission(long studyId, String user, StudyPermissions.Permissions permission) throws CatalogDBException;
 
@@ -259,8 +250,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      */
     OpenCGAResult<Group> removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
-    OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogException;
 
     /**
      * Delete a group.
@@ -283,12 +273,9 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @param groupList  List containing possible groups that are synced and where the user should be added to.
      * @param authOrigin Authentication origin of the synced groups.
      * @return OpenCGAResult object.
-     * @throws CatalogDBException CatalogDBException
-     * @throws CatalogParameterException CatalogParameterException
-     * @throws CatalogAuthorizationException CatalogAuthorizationException
+     * @throws CatalogException CatalogException
      */
-    OpenCGAResult<Group> resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Group> resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogException;
 
     /**
      * ADD or REMOVE user to list of provided groups.
@@ -298,13 +285,10 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @param groupList  List of group ids.
      * @param action     Update action [ADD, REMOVE]
      * @return OpenCGAResult object.
-     * @throws CatalogDBException CatalogDBException
-     * @throws CatalogParameterException CatalogParameterException
-     * @throws CatalogAuthorizationException CatalogAuthorizationException
+     * @throws CatalogException CatalogException
      */
-    OpenCGAResult<Group> updateUserFromGroups(String user, List<Long> studyUids, List<String> groupList,
-                                              ParamUtils.AddRemoveAction action)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Group> updateUserFromGroups(String user, List<Long> studyUids, List<String> groupList, ParamUtils.AddRemoveAction action)
+            throws CatalogException;
 
     /**
      * Create the permission rule to the list of permission rules defined for the entry in the studyId.
@@ -390,14 +374,14 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     OpenCGAResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException;
 
-    OpenCGAResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+    OpenCGAResult<VariableSet> addFieldToVariableSet(long studyUid, long variableSetId, Variable variable, String user)
+            throws CatalogException;
 
     OpenCGAResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    OpenCGAResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+    OpenCGAResult<VariableSet> removeFieldFromVariableSet(long studyUid, long variableSetId, String name, String user)
+            throws CatalogException;
 
     OpenCGAResult<VariableSet> getVariableSet(long variableSetUid, QueryOptions options) throws CatalogDBException;
 
@@ -421,8 +405,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     OpenCGAResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    OpenCGAResult<VariableSet> deleteVariableSet(long studyUid, VariableSet variableSet, boolean force)
-            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+    OpenCGAResult<VariableSet> deleteVariableSet(long studyUid, VariableSet variableSet, boolean force) throws CatalogException;
 
     void updateDiskUsage(ClientSession clientSession, long studyId, long size) throws CatalogDBException;
 
@@ -438,6 +421,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         DESCRIPTION("description", TEXT, ""),
         TYPE("type", OBJECT, ""),
         SOURCES("sources", TEXT_ARRAY, ""),
+        NOTES("notes", OBJECT, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
@@ -461,8 +445,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         PROJECT_UUID("projectUuid", TEXT, ""),
         ADDITIONAL_INFO("additionalInfo", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         RELEASE("release", INTEGER, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
@@ -474,8 +456,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         GROUP_SYNCED_FROM_REMOTE_GROUP("groups.syncedFrom.remoteGroup", TEXT, ""),
 
         PERMISSION_RULES("permissionRules", TEXT_ARRAY, ""),
-
-        COHORTS("cohorts", TEXT_ARRAY, ""),
 
         DELETED("deleted", BOOLEAN, ""),
 

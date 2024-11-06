@@ -4,26 +4,29 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 
 import java.util.Base64;
 import java.util.Date;
 
 public class JwtPayload {
 
-    private String userId;
-    private String organization;
-    private String issuer;        // Issuer of the JWT token.
-    private Date issuedAt;        // Time when the JWT was issued.
-    private Date expirationTime;  // Expiration time of the JWT.
-    private String token;
+    private final String userId;
+    private final String organization;
+    private final AuthenticationOrigin.AuthenticationType authOrigin;
+    private final String issuer;        // Issuer of the JWT token.
+    private final Date issuedAt;        // Time when the JWT was issued.
+    private final Date expirationTime;  // Expiration time of the JWT.
+    private final String token;
 
-    public JwtPayload() {
-    }
+    public static final String AUTH_ORIGIN = "authOrigin";
 
-    public JwtPayload(String userId, String organization, String issuer, Date issuedAt, Date expirationTime, String token) {
+    public JwtPayload(String userId, String organization, AuthenticationOrigin.AuthenticationType authOrigin, String issuer, Date issuedAt,
+                      Date expirationTime, String token) {
         this.token = token;
         this.userId = userId;
         this.organization = organization;
+        this.authOrigin = authOrigin;
         this.issuer = issuer;
         this.issuedAt = issuedAt;
         this.expirationTime = expirationTime;
@@ -59,14 +62,24 @@ public class JwtPayload {
             this.organization = claimsMap.getString("aud");
             this.issuer = claimsMap.getString("iss");
 
+            if (claimsMap.containsKey(AUTH_ORIGIN)) {
+                this.authOrigin = AuthenticationOrigin.AuthenticationType.valueOf(claimsMap.getString(AUTH_ORIGIN));
+            } else {
+                this.authOrigin = null;
+            }
+
             if (claimsMap.containsKey("iat")) {
                 long iat = 1000L * claimsMap.getLong("iat");
                 this.issuedAt = new Date(iat);
+            } else {
+                this.issuedAt = null;
             }
 
             if (claimsMap.containsKey("exp")) {
                 long exp = 1000L * claimsMap.getLong("exp");
                 this.expirationTime = new Date(exp);
+            } else {
+                this.expirationTime = null;
             }
         }
     }
@@ -76,6 +89,7 @@ public class JwtPayload {
         final StringBuilder sb = new StringBuilder("JwtPayload{");
         sb.append("userId='").append(userId).append('\'');
         sb.append(", organization='").append(organization).append('\'');
+        sb.append(", authOrigin=").append(authOrigin);
         sb.append(", issuer='").append(issuer).append('\'');
         sb.append(", issuedAt=").append(issuedAt);
         sb.append(", expirationTime=").append(expirationTime);
@@ -98,6 +112,10 @@ public class JwtPayload {
 
     public String getOrganization() {
         return organization;
+    }
+
+    public AuthenticationOrigin.AuthenticationType getAuthOrigin() {
+        return authOrigin;
     }
 
     public String getIssuer() {

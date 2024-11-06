@@ -19,11 +19,12 @@ public class VariantIndexStatus extends IndexStatus {
     public static final String TRANSFORMED = "TRANSFORMED";
     public static final String LOADING = "LOADING";
 
-    public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, TRANSFORMED, TRANSFORMING, LOADING, INDEXING);
+    public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, TRANSFORMED, TRANSFORMING, LOADING, INDEXING,
+            INVALID);
 
     public VariantIndexStatus(String status, String message) {
         if (isValid(status)) {
-            init(status, status, message);
+            init(status, message);
         } else {
             throw new IllegalArgumentException("Unknown status " + status);
         }
@@ -56,6 +57,7 @@ public class VariantIndexStatus extends IndexStatus {
                 && (status.equals(READY)
                 || status.equals(DELETED)
                 || status.equals(NONE)
+                || status.equals(INVALID)
                 || status.equals(TRANSFORMED)
                 || status.equals(TRANSFORMING)
                 || status.equals(LOADING)

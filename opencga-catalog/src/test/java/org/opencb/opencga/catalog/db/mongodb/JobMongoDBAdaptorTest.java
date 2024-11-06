@@ -60,7 +60,7 @@ public class JobMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     }
 
     @Test
-    public void createJobTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public void createJobTest() throws CatalogException {
         Job job = getNewJob("jobName1");
         System.out.println(catalogJobDBAdaptor.insert(studyUid, job, null));
 
@@ -120,7 +120,7 @@ public class JobMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     }
 
     @Test
-    public void testSortResultsPriorityAndCreationDate() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public void testSortResultsPriorityAndCreationDate() throws CatalogException {
         Date startDate = TimeUtils.getDate();
 
         // Create 100 jobs
@@ -176,7 +176,7 @@ public class JobMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 //    }
 
     @Test
-    public void getJobsOrderedByDate() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public void getJobsOrderedByDate() throws CatalogException {
         // Job with current date
         Job job1 = getNewJob("job1");
 
@@ -250,7 +250,7 @@ public class JobMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     }
 
     @Test
-    public void groupByStatus() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
+    public void groupByStatus() throws CatalogException {
         for (int i = 0; i < 10; i++) {
             Enums.ExecutionStatus status = new Enums.ExecutionStatus();
             if (i < 5) {

@@ -16,9 +16,6 @@
 
 package org.opencb.opencga.core.config;
 
-import org.opencb.opencga.core.common.PasswordUtils;
-
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -29,15 +26,13 @@ public class AuthenticationOrigin {
     private String id;
     private AuthenticationType type;
     private String host;
-    private String algorithm;
-    private String secretKey;
-    private long expiration; // Expiration time in seconds
     private Map<String, Object> options;
 
     public enum AuthenticationType {
         OPENCGA,
         LDAP,
-        AzureAD
+        AzureAD,
+        SSO
     }
 
     // Possible keys of the options map
@@ -56,22 +51,12 @@ public class AuthenticationOrigin {
     public static final String CONNECTION_TIMEOUT = "connectionTimeout";
 
     public AuthenticationOrigin() {
-        this("internal", AuthenticationType.OPENCGA.name(), "localhost", "HS256", PasswordUtils.getStrongRandomPassword(32), 3600L,
-                Collections.emptyMap());
     }
 
     public AuthenticationOrigin(String id, AuthenticationType type, String host, Map<String, Object> options) {
-        this(id, type.name(), host, "HS256", PasswordUtils.getStrongRandomPassword(32), 3600L, options);
-    }
-
-    public AuthenticationOrigin(String id, String type, String host, String algorithm, String secretKey, long expiration,
-                                Map<String, Object> options) {
         this.id = id;
-        this.type = AuthenticationType.valueOf(type);;
+        this.type = type;
         this.host = host;
-        this.algorithm = algorithm;
-        this.secretKey = secretKey;
-        this.expiration = expiration;
         this.options = options;
     }
 
@@ -81,9 +66,6 @@ public class AuthenticationOrigin {
         sb.append("id='").append(id).append('\'');
         sb.append(", type=").append(type);
         sb.append(", host='").append(host).append('\'');
-        sb.append(", algorithm='").append(algorithm).append('\'');
-        sb.append(", secretKey='").append(secretKey).append('\'');
-        sb.append(", expiration=").append(expiration);
         sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
@@ -116,30 +98,18 @@ public class AuthenticationOrigin {
         return this;
     }
 
-    public String getAlgorithm() {
-        return algorithm;
-    }
-
+    @Deprecated
     public AuthenticationOrigin setAlgorithm(String algorithm) {
-        this.algorithm = algorithm;
         return this;
     }
 
-    public String getSecretKey() {
-        return secretKey;
-    }
-
+    @Deprecated
     public AuthenticationOrigin setSecretKey(String secretKey) {
-        this.secretKey = secretKey;
         return this;
     }
 
-    public long getExpiration() {
-        return expiration;
-    }
-
+    @Deprecated
     public AuthenticationOrigin setExpiration(long expiration) {
-        this.expiration = expiration;
         return this;
     }
 

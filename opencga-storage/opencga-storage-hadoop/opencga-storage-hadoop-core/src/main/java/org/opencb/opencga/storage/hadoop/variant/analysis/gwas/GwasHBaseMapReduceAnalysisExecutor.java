@@ -25,7 +25,7 @@ public class GwasHBaseMapReduceAnalysisExecutor extends GwasAnalysisExecutor imp
         List<String> samples1 = getSampleList1();
         List<String> samples2 = getSampleList2();
 
-        if (getConfiguration().getMethod().equals(GwasConfiguration.Method.CHI_SQUARE_TEST)) {
+        if (getGwasConfiguration().getMethod().equals(GwasConfiguration.Method.CHI_SQUARE_TEST)) {
             addWarning("Unable to calculate chi-square test.");
         }
 

@@ -37,7 +37,6 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -70,6 +69,7 @@ import static org.opencb.opencga.storage.core.metadata.models.TaskMetadata.Statu
 import static org.opencb.opencga.storage.core.metadata.models.TaskMetadata.Type;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.UNSUPPORTED_VARIANT_TYPE_SET;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
 /**
@@ -80,7 +80,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
 public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStoragePipeline {
 
     private final Logger logger = LoggerFactory.getLogger(HadoopLocalLoadVariantStoragePipeline.class);
-    private static final String OPERATION_NAME = "Load";
+    public static final String OPERATION_NAME = "Load";
     private int taskId;
     private HashSet<String> loadedGenotypes;
     private int sampleIndexVersion;
@@ -95,83 +95,6 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     @Override
     protected void preLoadRegisterAndValidateFile(int studyId, VariantFileMetadata variantFileMetadata) throws StorageEngineException {
         super.preLoadRegisterAndValidateFile(studyId, variantFileMetadata);
-        boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
-        FileMetadata fileMetadata = getMetadataManager().getFileMetadata(studyId, getFileId());
-
-        int version = getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
-        Set<String> alreadyIndexedSamples = new LinkedHashSet<>();
-        Set<Integer> processedSamples = new LinkedHashSet<>();
-        Set<Integer> samplesWithoutSplitData = new LinkedHashSet<>();
-        VariantStorageEngine.SplitData splitData = VariantStorageEngine.SplitData.from(options);
-        for (String sample : variantFileMetadata.getSampleIds()) {
-            Integer sampleId = getMetadataManager().getSampleId(studyId, sample);
-            SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(studyId, sampleId);
-            if (splitData != null && sampleMetadata.getSplitData() != null) {
-                if (!splitData.equals(sampleMetadata.getSplitData())) {
-                    throw new StorageEngineException("Incompatible split data methods. "
-                            + "Unable to mix requested " + splitData
-                            + " with existing " + sampleMetadata.getSplitData());
-                }
-            }
-            if (sampleMetadata.isIndexed()) {
-                if (sampleMetadata.getFiles().size() == 1 && sampleMetadata.getFiles().contains(fileMetadata.getId())) {
-                    // It might happen that the sample is marked as INDEXED, but not the file.
-                    // If the sample only belongs to this file (i.e. it's only file is this file), then ignore
-                    // the overwrite the current sample metadata index status
-                    sampleMetadata = getMetadataManager().updateSampleMetadata(studyId, sampleId,
-                            sm -> sm.setIndexStatus(fileMetadata.getIndexStatus()));
-                }
-            }
-            if (sampleMetadata.isIndexed()) {
-                alreadyIndexedSamples.add(sample);
-                if (sampleMetadata.isAnnotated()
-                        || !loadSampleIndex && sampleMetadata.getSampleIndexStatus(version) == Status.READY
-                        || sampleMetadata.getSampleIndexAnnotationStatus(version) == Status.READY
-                        || sampleMetadata.getFamilyIndexStatus(version) == Status.READY
-                        || sampleMetadata.isFamilyIndexDefined()) {
-                    processedSamples.add(sampleMetadata.getId());
-                }
-            }
-
-            if (splitData != null && splitData != sampleMetadata.getSplitData()) {
-                samplesWithoutSplitData.add(sampleId);
-            }
-        }
-
-        if (!alreadyIndexedSamples.isEmpty()) {
-            if (splitData != null) {
-                logger.info("Loading split data");
-            } else {
-                String fileName = Paths.get(variantFileMetadata.getPath()).getFileName().toString();
-                throw StorageEngineException.alreadyLoadedSamples(fileName, new ArrayList<>(alreadyIndexedSamples));
-            }
-            for (Integer sampleId : processedSamples) {
-                getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                    if (!loadSampleIndex) {
-                        for (Integer v : sampleMetadata.getSampleIndexVersions()) {
-                            sampleMetadata.setSampleIndexStatus(Status.NONE, v);
-                        }
-                    }
-                    for (Integer v : sampleMetadata.getSampleIndexAnnotationVersions()) {
-                        sampleMetadata.setSampleIndexAnnotationStatus(Status.NONE, v);
-                    }
-                    for (Integer v : sampleMetadata.getFamilyIndexVersions()) {
-                        sampleMetadata.setFamilyIndexStatus(Status.NONE, v);
-                    }
-                    sampleMetadata.setAnnotationStatus(Status.NONE);
-                    sampleMetadata.setMendelianErrorStatus(Status.NONE);
-                });
-            }
-        }
-
-        if (splitData != null) {
-            // Register loadSplitData
-            for (Integer sampleId : samplesWithoutSplitData) {
-                getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                    sampleMetadata.setSplitData(splitData);
-                });
-            }
-        }
     }
 
     @Override
@@ -182,18 +105,32 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         final AtomicInteger ongoingLoads = new AtomicInteger(1); // this
         boolean resume = options.getBoolean(VariantStorageOptions.RESUME.key(), VariantStorageOptions.RESUME.defaultValue());
-        List<Integer> fileIds = Collections.singletonList(getFileId());
 
-        taskId = getMetadataManager()
-                .addRunningTask(studyId, OPERATION_NAME, fileIds, resume, Type.LOAD,
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        LinkedHashSet<Integer> sampleIdsFromFileId = metadataManager.getSampleIdsFromFileId(studyId, getFileId());
+        VariantStorageEngine.SplitData splitData = VariantStorageEngine.SplitData.from(options);
+
+        taskId = metadataManager
+                .addRunningTask(studyId, OPERATION_NAME, Collections.singletonList(getFileId()), resume, Type.LOAD,
                 operation -> {
                     if (operation.getName().equals(OPERATION_NAME)) {
-                        if (operation.currentStatus().equals(Status.ERROR)) {
+                        if (operation.currentStatus() == Status.ERROR) {
                             Integer fileId = operation.getFileIds().get(0);
-                            String fileName = getMetadataManager().getFileName(studyMetadata.getId(), fileId);
+                            String fileName = metadataManager.getFileName(studyMetadata.getId(), fileId);
                             logger.warn("Pending load operation for file " + fileName + " (" + fileId + ')');
                         } else {
                             ongoingLoads.incrementAndGet();
+                        }
+                        if (splitData != VariantStorageEngine.SplitData.CHROMOSOME && splitData != VariantStorageEngine.SplitData.REGION) {
+                            // Do not allow any concurrent load operation on files sharing samples
+                            for (Integer fileId : operation.getFileIds()) {
+                                Set<Integer> samples = metadataManager.getSampleIdsFromFileId(studyId, fileId);
+                                for (Integer sample : samples) {
+                                    if (sampleIdsFromFileId.contains(sample)) {
+                                        return false;
+                                    }
+                                }
+                            }
                         }
                         return true;
                     } else {
@@ -490,7 +427,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         if (skipped > 0) {
             logger.info("There were " + skipped + " skipped variants");
             for (VariantType type : VariantType.values()) {
-                if (!TARGET_VARIANT_TYPE_SET.contains(type)) {
+                if (UNSUPPORTED_VARIANT_TYPE_SET.contains(type)) {
                     Long countByType = variantFileMetadata.getStats().getTypeCount().get(type.toString());
                     if (countByType != null && countByType > 0) {
                         logger.info("  * Of which " + countByType + " are " + type.toString() + " variants.");

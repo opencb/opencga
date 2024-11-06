@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
@@ -43,21 +42,37 @@ import java.util.Map;
  */
 public class CatalogAuthenticationManager extends AuthenticationManager {
 
+    // TODO: Remove INTERNAL field and its usages after several releases (TASK-5923)
+    @Deprecated
     public static final String INTERNAL = "internal";
+    public static final String OPENCGA = "OPENCGA";
     private final Email emailConfig;
 
     private final DBAdaptorFactory dbAdaptorFactory;
 
-    public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Email emailConfig, String secretKeyString, long expiration) {
+    public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Email emailConfig, String algorithm, String secretKeyString,
+                                        long expiration) {
         super(expiration);
 
         this.emailConfig = emailConfig;
         this.dbAdaptorFactory = dbAdaptorFactory;
 
-        Key secretKey = this.converStringToKeyObject(secretKeyString, SignatureAlgorithm.HS256.getJcaName());
-        this.jwtManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), secretKey);
+        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.valueOf(algorithm);
+        Key secretKey = this.converStringToKeyObject(secretKeyString, signatureAlgorithm.getJcaName());
+        this.jwtManager = new JwtManager(signatureAlgorithm.getValue(), secretKey);
 
         this.logger = LoggerFactory.getLogger(CatalogAuthenticationManager.class);
+    }
+
+    public static void validateAuthenticationOriginConfiguration(AuthenticationOrigin authenticationOrigin) throws CatalogException {
+        if (!OPENCGA.equals(authenticationOrigin.getId())) {
+            throw new CatalogException("Unknown authentication origin. Expected origin id '" + OPENCGA + "' but received '"
+                    + authenticationOrigin.getId() + "'.");
+        }
+        if (authenticationOrigin.getType() != AuthenticationOrigin.AuthenticationType.OPENCGA) {
+            throw new CatalogException("Unknown authentication type. Expected type '" + AuthenticationOrigin.AuthenticationType.OPENCGA
+                    + "' but received '" + authenticationOrigin.getType() + "'.");
+        }
     }
 
     @Override
@@ -98,19 +113,19 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
     @Override
     public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration) {
-        return jwtManager.createJWTToken(organizationId, userId, claims, expiration);
+        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.OPENCGA, userId, claims, expiration);
     }
 
     @Override
     public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims) {
-        return jwtManager.createJWTToken(organizationId, userId, claims, 0L);
+        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.OPENCGA, userId, claims, 0L);
     }
 
     @Override
     public OpenCGAResult resetPassword(String organizationId, String userId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         OpenCGAResult result = null;
-        String newPassword = RandomStringUtils.randomAlphanumeric(12);
+        String newPassword = PasswordUtils.getStrongRandomPassword();
 
         OpenCGAResult<User> user =
                 dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId)
@@ -127,7 +142,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         String mailHost = this.emailConfig.getHost();
         String mailPort = this.emailConfig.getPort();
         try {
-            MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
+            MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort, userId);
             result = dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).resetPassword(userId, email, newPassword);
         } catch (Exception e) {
             throw new CatalogException("Email could not be sent.", e);
@@ -136,12 +151,13 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         return result;
     }
 
-    public static AuthenticationOrigin createRandomInternalAuthenticationOrigin() {
+    public static AuthenticationOrigin createOpencgaAuthenticationOrigin() {
         return new AuthenticationOrigin()
-                .setId(CatalogAuthenticationManager.INTERNAL)
-                .setType(AuthenticationOrigin.AuthenticationType.OPENCGA)
-                .setAlgorithm("HS256")
-                .setExpiration(3600L)
-                .setSecretKey(PasswordUtils.getStrongRandomPassword(32));
+                .setId(CatalogAuthenticationManager.OPENCGA)
+                .setType(AuthenticationOrigin.AuthenticationType.OPENCGA);
+    }
+
+    @Override
+    public void close() {
     }
 }

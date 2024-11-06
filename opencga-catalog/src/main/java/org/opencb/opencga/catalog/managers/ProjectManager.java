@@ -165,7 +165,7 @@ public class ProjectManager extends AbstractManager {
         OpenCGAResult<Project> queryResult;
         Project project;
         try {
-            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
             ParamUtils.checkObj(projectCreateParams, "ProjectCreateParams");
             project = projectCreateParams.toProject();
             validateProjectForCreation(organizationId, project);
@@ -220,15 +220,20 @@ public class ProjectManager extends AbstractManager {
             throw new CatalogParameterException("Missing mandatory organism information");
         }
         try {
+            //TODO: Should the datarelease be undefined? When undefined, it'd be read from cellbase meta endpoints.
+            String defaultDataRelease = project.getOrganism().getAssembly().equalsIgnoreCase("grch38")
+                    ? ParamConstants.CELLBASE_DATA_RELEASE_GRCH38
+                    : null;
             CellBaseConfiguration cellBaseConfiguration = ParamUtils.defaultObject(project.getCellbase(),
-                    new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION));
-            cellBaseConfiguration = CellBaseValidator.validate(cellBaseConfiguration, project.getOrganism().getScientificName(),
+                    new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION,
+                            defaultDataRelease, ParamConstants.CELLBASE_APIKEY));
+            cellBaseConfiguration = CellBaseValidator.validate(cellBaseConfiguration,
+                    project.getOrganism().getScientificName(),
                     project.getOrganism().getAssembly(), true);
             project.setCellbase(cellBaseConfiguration);
         } catch (IOException e) {
             throw new CatalogParameterException(e);
         }
-
         project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
         if (project.getStudies() != null && !project.getStudies().isEmpty()) {
             throw new CatalogParameterException("Creating project and studies in a single transaction is forbidden");
@@ -552,13 +557,12 @@ public class ProjectManager extends AbstractManager {
             throws CatalogException, IOException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String userId = tokenPayload.getUserId(organizationId);
-        if (!authorizationManager.isOpencgaAdministrator(organizationId, userId)
-                && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("import data");
         }
 
         OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(owner, new QueryOptions(QueryOptions.INCLUDE,
-                Collections.singletonList(UserDBAdaptor.QueryParams.ACCOUNT.key())));
+                Collections.singletonList(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT.key())));
         if (userDataResult.getNumResults() == 0) {
             throw new CatalogException("User " + owner + " not found");
         }
@@ -672,8 +676,7 @@ public class ProjectManager extends AbstractManager {
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        if (!authorizationManager.isOpencgaAdministrator(organizationId, userId)
-                && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("export data");
         }
 
@@ -860,8 +863,7 @@ public class ProjectManager extends AbstractManager {
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectStr, tokenPayload);
         String organizationId = catalogFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        if (!authorizationManager.isOpencgaAdministrator(organizationId, userId)
-                && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("export data");
         }
 

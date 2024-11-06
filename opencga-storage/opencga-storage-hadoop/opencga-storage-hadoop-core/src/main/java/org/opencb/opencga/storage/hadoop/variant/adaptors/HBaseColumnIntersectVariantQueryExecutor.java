@@ -2,14 +2,15 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
 import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.slf4j.Logger;
@@ -43,8 +44,8 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) {
-
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) {
+        VariantQuery query = variantQuery.getQuery();
         if (!options.getBoolean(HBASE_COLUMN_INTERSECT, ACTIVE_BY_DEFAULT)) {
             // HBase column intersect not active
             return false;
@@ -76,23 +77,19 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
         return false;
     }
 
-    @Override
-    public DataResult<Long> count(Query query) {
-        throw new UnsupportedOperationException("Count not implemented in " + getClass());
-    }
-
     /**
      * Intersect result of column hbase scan and full phoenix query.
      * Use {@link org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator}.
      *
-     * @param query    Query
-     * @param options  Options
+     * @param variantQuery Parsed query
      * @param iterator Shall the resulting object be an iterator instead of a DataResult
      * @return DataResult or Iterator with the variants that matches the query
      */
     @Override
-    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) {
+    protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) {
         logger.info("HBase column intersect");
+        Query query = variantQuery.getQuery();
+        QueryOptions options = variantQuery.getInputOptions();
 
         // Build the query with only one query filter -> Single HBase column filter
         //

@@ -215,6 +215,8 @@ public class AuditManager {
                 try {
                     dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId).insertAuditRecords(this.auditRecordMap.get(operationId));
                 } catch (CatalogDBException e) {
+                    // FIXME : How to raise attention on this silent error?
+                    // This is a critical error that should not happen.
                     logger.error("Could not audit operation '{}' -> Error: {}", operationId, e.getMessage(), e);
                 } finally {
                     this.auditRecordMap.get(operationId).clear();
@@ -247,7 +249,7 @@ public class AuditManager {
                 .append("options", options)
                 .append("token", token);
         try {
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
             query.remove(AuditDBAdaptor.QueryParams.STUDY_ID.key());
             query.put(AuditDBAdaptor.QueryParams.STUDY_UUID.key(), study.getUuid());
@@ -285,10 +287,9 @@ public class AuditManager {
         JwtPayload payload = catalogManager.getUserManager().validateToken(token);
         String organizationId = payload.getOrganization();
         String userId = payload.getUserId();
-        if (authorizationManager.isOpencgaAdministrator(organizationId, userId)
-                || authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             return dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId).groupBy(query, fields, options);
         }
-        throw new CatalogAuthorizationException("Only root of OpenCGA can query the audit database");
+        throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("query the audit database");
     }
 }
