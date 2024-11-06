@@ -22,16 +22,20 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.utils.ResourceManager.*;
+import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
+import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_DIRNAME;
 
 public class ResourceManagerTest extends AbstractManagerTest {
 
-    Path openCgaHome;
-    Path scratchDir;
-    Path analysisPath;
-    Path analysisResourcePath;
-    ResourceMetadata resourceMetadata;
-    ResourceManager resourceManager;
+    private Path openCgaHome;
+    private Path scratchDir;
+    private Path analysisPath;
+    private Path analysisResourcePath;
+    private ResourceMetadata resourceMetadata;
+    private ResourceManager resourceManager;
+
+    private String version = "3.3.0-SNAPSHOT";
+
 
     @Before
     public void setUp() throws Exception {
@@ -45,8 +49,8 @@ public class ResourceManagerTest extends AbstractManagerTest {
 
         resourceManager = new ResourceManager(openCgaHome);
 
-        InputStream stream = this.getClass().getClassLoader().getResourceAsStream("resources.json");
-        resourceMetadata = JacksonUtils.getDefaultObjectMapper().readerFor(ResourceMetadata.class).readValue(stream);
+//        InputStream stream = this.getClass().getClassLoader().getResourceAsStream("resources.json");
+//        resourceMetadata = JacksonUtils.getDefaultObjectMapper().readerFor(ResourceMetadata.class).readValue(stream);
     }
 
     @Test(expected = ResourceException.class)
@@ -56,7 +60,7 @@ public class ResourceManagerTest extends AbstractManagerTest {
 
         Assert.assertFalse(Files.exists(analysisResourcePath.resolve(analysisId).resolve(resourceName)));
 
-        File file = resourceManager.getResourceFile(analysisId, resourceName);
+        File file = resourceManager.getResourceFile(analysisId, resourceName, version);
     }
 
     @Test
@@ -65,20 +69,19 @@ public class ResourceManagerTest extends AbstractManagerTest {
         Path outDir = createDir("jobdir").resolve(RESOURCES_DIRNAME);
         Files.createDirectories(outDir);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
+        resourceManager.fetchAllResources(version, outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
+        resourceMetadata = JacksonUtils.getDefaultObjectMapper().readerFor(ResourceMetadata.class).readValue(openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME).resolve(resourceManager.getResourceMetaFilename(version)).toFile());
+
         for (AnalysisResourceList list : resourceMetadata.getAnalysisResourceLists()) {
             for (AnalysisResource resource : list.getResources()) {
-                String name = org.apache.commons.lang3.StringUtils.isNotEmpty(resource.getName())
-                        ? resource.getName()
-                        : Paths.get(resource.getUrl()).getFileName().toString();
-                Assert.assertTrue(Files.exists(analysisResourcePath.resolve(list.getAnalysisId()).resolve(name)));
+                Assert.assertTrue(Files.exists(analysisResourcePath.resolve(resource.getLocalRelativePath())));
             }
         }
     }
 
     @Test(expected = ResourceException.class)
     public void testFetchAllResourcesNoAdmin() throws ResourceException {
-        resourceManager.fetchAllResources(null, catalogManagerResource.getCatalogManager(), normalToken1);
+        resourceManager.fetchAllResources(version, null, catalogManagerResource.getCatalogManager(), normalToken1);
     }
 
     @Test
@@ -87,7 +90,8 @@ public class ResourceManagerTest extends AbstractManagerTest {
         Path outDir = createDir("jobdir").resolve(RESOURCES_DIRNAME);
         Files.createDirectories(outDir);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
+        resourceManager.fetchAllResources(version, outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
+        resourceMetadata = JacksonUtils.getDefaultObjectMapper().readerFor(ResourceMetadata.class).readValue(openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME).resolve(resourceManager.getResourceMetaFilename(version)).toFile());
 
         String analysisId = "qc";
         AnalysisResourceList analysisResourceList = null;
@@ -98,11 +102,11 @@ public class ResourceManagerTest extends AbstractManagerTest {
             }
         }
 
-        List<File> resourceFiles = resourceManager.getResourceFiles(analysisId);
+        List<File> resourceFiles = resourceManager.getResourceFiles(analysisId, version);
         Assert.assertEquals(analysisResourceList.getResources().size(), resourceFiles.size());
         for (File resourceFile : resourceFiles) {
             Assert.assertTrue(Files.exists(resourceFile.toPath()));
-            Assert.assertTrue(analysisResourceList.getResources().stream().map(r -> StringUtils.isNotEmpty(r.getName()) ? r.getName() : Paths.get(r.getUrl()).getFileName().toString()).collect(Collectors.toList()).contains(resourceFile.getName()));
+            Assert.assertTrue(analysisResourceList.getResources().stream().map(r -> Paths.get(r.getLocalRelativePath()).getFileName().toString()).collect(Collectors.toList()).contains(resourceFile.getName()));
         }
     }
 
@@ -112,7 +116,8 @@ public class ResourceManagerTest extends AbstractManagerTest {
         Path outDir = createDir("jobdir").resolve(RESOURCES_DIRNAME);
         Files.createDirectories(outDir);
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        resourceManager.fetchAllResources(outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
+        resourceManager.fetchAllResources(version, outDir, catalogManagerResource.getCatalogManager(), catalogManagerResource.getAdminToken());
+        resourceMetadata = JacksonUtils.getDefaultObjectMapper().readerFor(ResourceMetadata.class).readValue(openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME).resolve(resourceManager.getResourceMetaFilename(version)).toFile());
 
         String analysisId = "liftover";
         String resourceName = "chain.frq";
@@ -124,9 +129,9 @@ public class ResourceManagerTest extends AbstractManagerTest {
             }
         }
 
-        File resourceFile = resourceManager.getResourceFile(analysisId, resourceName);
+        File resourceFile = resourceManager.getResourceFile(analysisId, resourceName, version);
         Assert.assertTrue(Files.exists(resourceFile.toPath()));
-        Assert.assertTrue(analysisResourceList.getResources().stream().map(r -> StringUtils.isNotEmpty(r.getName()) ? r.getName() : Paths.get(r.getUrl()).getFileName().toString()).collect(Collectors.toList()).contains(resourceFile.getName()));
+        Assert.assertTrue(analysisResourceList.getResources().stream().map(r -> Paths.get(r.getLocalRelativePath()).getFileName().toString()).collect(Collectors.toList()).contains(resourceFile.getName()));
     }
 
     //-------------------------------------------------------------------------

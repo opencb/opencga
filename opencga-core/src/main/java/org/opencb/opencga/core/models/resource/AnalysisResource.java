@@ -21,9 +21,9 @@ import java.util.List;
 
 public class AnalysisResource {
 
-    private String name;
     private String url;
     private String md5;
+    private String localRelativePath;
     private List<String> target;
     private List<AnalysisResourceAction> action;
 
@@ -35,8 +35,8 @@ public class AnalysisResource {
         this("", "", "", new ArrayList<>(), new ArrayList<>());
     }
 
-    public AnalysisResource(String name, String url, String md5, List<String> target, List<AnalysisResourceAction> action) {
-        this.name = name;
+    public AnalysisResource(String localRelativePath, String url, String md5, List<String> target, List<AnalysisResourceAction> action) {
+        this.localRelativePath = localRelativePath;
         this.url = url;
         this.md5 = md5;
         this.target = target;
@@ -46,7 +46,7 @@ public class AnalysisResource {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AnalysisResource{");
-        sb.append("name='").append(name).append('\'');
+        sb.append("localRelativePath='").append(localRelativePath).append('\'');
         sb.append(", url='").append(url).append('\'');
         sb.append(", md5='").append(md5).append('\'');
         sb.append(", target=").append(target);
@@ -55,12 +55,12 @@ public class AnalysisResource {
         return sb.toString();
     }
 
-    public String getName() {
-        return name;
+    public String getLocalRelativePath() {
+        return localRelativePath;
     }
 
-    public AnalysisResource setName(String name) {
-        this.name = name;
+    public AnalysisResource setLocalRelativePath(String localRelativePath) {
+        this.localRelativePath = localRelativePath;
         return this;
     }
 
