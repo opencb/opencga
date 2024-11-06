@@ -241,14 +241,14 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                             fields[18]);
                     try {
                         Variant normalized = normalizer.normalize(Collections.singletonList(variant), false).get(0);
-                        String variantId = normalized.toStringSimple();
-                        normalizedToTsv.put(variantId, variant.toStringSimple());
+                        String variantId = normalized.toString();
+                        normalizedToTsv.put(variantId, variant.toString());
                         if (!variantTsvMap.containsKey(variantId)) {
                             variantTsvMap.put(variantId, new ArrayList<>());
                         }
                         variantTsvMap.get(variantId).add(fields);
                     } catch (NonStandardCompliantSampleField e) {
-                        logger.warn("Skipping variant {}, it could not be normalized", variant.toStringSimple());
+                        logger.warn("Skipping variant {}, it could not be normalized", variant.toString());
                     }
 
                     // Next line
@@ -275,8 +275,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 for (Variant variant : variantResults.getResults()) {
                     ClinicalVariant clinicalVariant = clinicalVariantCreator.create(variant);
                     List<ExomiserTranscriptAnnotation> exomiserTranscripts = new ArrayList<>(variantTranscriptMap.get(normalizedToTsv
-                            .get(variant.toStringSimple())));
-                    for (String[] fields : variantTsvMap.get(variant.toStringSimple())) {
+                            .get(variant.toString())));
+                    for (String[] fields : variantTsvMap.get(variant.toString())) {
                         ClinicalProperty.ModeOfInheritance moi = getModeOfInheritance(fields[4]);
                         Map<String, Object> attributes = getAttributesFromTsv(fields);
 
@@ -301,8 +301,13 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 if (geneScore.containsKey("contributingVariants")) {
                     List<Map<String, Object>> contributingVariants = (ArrayList) geneScore.get("contributingVariants");
                     for (Map<String, Object> contributingVariant : contributingVariants) {
-                        String variantId = contributingVariant.get("contigName") + ":" + contributingVariant.get("start") + ":"
-                                + contributingVariant.get("ref") + ":" + contributingVariant.get("alt");
+                        String variantId = new Variant(
+                                contributingVariant.get("contigName").toString(),
+                                ((Number) contributingVariant.get("start")).intValue(),
+                                ((Number) contributingVariant.get("end")).intValue(),
+                                contributingVariant.get("ref").toString(),
+                                contributingVariant.get("alt").toString())
+                                .toString();
                         if (!results.containsKey(variantId)) {
                             results.put(variantId, new HashSet<>());
                         }
