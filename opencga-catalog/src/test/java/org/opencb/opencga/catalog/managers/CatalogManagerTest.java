@@ -997,6 +997,27 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
     }
 
+    @Test
+    public void rescheduleJobTest() throws CatalogException {
+        Job job = catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
+
+        Date firstDayOfNextMonth = TimeUtils.getFirstDayOfNextMonth(new Date());
+        String scheduleStartTime = TimeUtils.getTime(firstDayOfNextMonth);
+        catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime, "My message",
+                ownerToken);
+
+        OpenCGAResult<Job> result = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals(scheduleStartTime, result.first().getScheduledStartTime());
+        assertEquals(1, result.first().getInternal().getEvents().size());
+        assertEquals("My message", result.first().getInternal().getEvents().get(0).getMessage());
+
+        CatalogAuthorizationException authException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime,
+                        "My message", normalToken1));
+        assertTrue(authException.getMessage().contains("study administrators"));
+    }
+
     /**
      * VariableSet methods ***************************
      */

@@ -407,7 +407,8 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, QueryOptions options) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
-        String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key()};
+        String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key(),
+                QueryParams.SCHEDULED_START_TIME.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         String[] acceptedBooleanParams = {QueryParams.VISITED.key(), QueryParams.INTERNAL_KILL_JOB_REQUESTED.key()};

@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.FieldConstants;
@@ -609,6 +610,65 @@ public class JobManager extends ResourceManager<Job> {
             job.getInternal().getStatus().setDescription(e.toString());
             getJobDBAdaptor(organizationId).insert(study.getUid(), job, new QueryOptions());
 
+            throw e;
+        }
+    }
+
+    public OpenCGAResult<Job> rescheduleJobs(String studyStr, List<Long> jobUids, String scheduledStartTime, String token)
+            throws CatalogException {
+        return rescheduleJobs(studyStr, jobUids, scheduledStartTime, null, token);
+    }
+
+    public OpenCGAResult<Job> rescheduleJobs(String studyStr, List<Long> jobUids, String scheduledStartTime, String eventMessage,
+                                             String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("jobUids", jobUids)
+                .append("scheduledStartTime", scheduledStartTime)
+                .append("eventMessage", eventMessage)
+                .append("token", token);
+        try {
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+
+            if (CollectionUtils.isEmpty(jobUids)) {
+                throw new CatalogException("Missing job uids");
+            }
+            if (StringUtils.isEmpty(scheduledStartTime)) {
+                throw new CatalogException("Missing scheduled start time");
+            }
+            ParamUtils.checkDateIsNotExpired(scheduledStartTime, JobDBAdaptor.QueryParams.SCHEDULED_START_TIME.key());
+
+            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.SCHEDULED_START_TIME.key(), scheduledStartTime);
+            QueryOptions queryOptions = new QueryOptions();
+
+            if (StringUtils.isNotEmpty(eventMessage)) {
+                // Add event message
+                List<Event> eventList = Collections.singletonList(new Event(Event.Type.INFO, "reschedule", eventMessage));
+                params.append(JobDBAdaptor.QueryParams.INTERNAL_EVENTS.key(), eventList);
+
+                Map<String, Object> actionMap = new HashMap<>();
+                actionMap.put(JobDBAdaptor.QueryParams.INTERNAL_EVENTS.key(), ParamUtils.BasicUpdateAction.ADD);
+                queryOptions.getMap(Constants.ACTIONS, actionMap);
+            }
+
+            Query query = new Query()
+                    .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(JobDBAdaptor.QueryParams.UID.key(), jobUids);
+            OpenCGAResult<Job> update = getJobDBAdaptor(organizationId).update(query, params, queryOptions);
+
+            auditManager.audit(organizationId, userId, Enums.Action.RESCHEDULE_JOB, Enums.Resource.JOB, "", "", "",
+                    "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return update;
+        } catch (Exception e) {
+            auditManager.audit(organizationId, userId, Enums.Action.RESCHEDULE_JOB, Enums.Resource.JOB, "", "", "",
+                    "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             throw e;
         }
     }
