@@ -148,9 +148,13 @@ public class StreamVariantDriver extends VariantDriver {
         StreamVariantMapper.setMaxInputBytesPerProcess(job, maxBytesPerMap);
         StreamVariantMapper.setEnvironment(job, envVars);
 
-        // Current implementation only supports using the reduce step
-        useReduceStep = true;
-        reducerClass = StreamVariantReducer.class;
+        if (useReduceStep) {
+            reducerClass = StreamVariantReducer.class;
+            StreamVariantMapper.setHasReduce(job, true);
+        } else {
+            reducerClass = null;
+            StreamVariantMapper.setHasReduce(job, false);
+        }
 
         MultipleOutputs.addNamedOutput(job, STDOUT_NAMED_OUTPUT, ValueOnlyTextOutputFormat.class, keyClass, valueClass);
         MultipleOutputs.addNamedOutput(job, STDERR_NAMED_OUTPUT, ValueOnlyTextOutputFormat.class, keyClass, valueClass);

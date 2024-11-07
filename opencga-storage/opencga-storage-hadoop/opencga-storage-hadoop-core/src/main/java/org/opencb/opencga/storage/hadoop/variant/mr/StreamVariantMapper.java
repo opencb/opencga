@@ -10,6 +10,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.util.LineReader;
 import org.apache.hadoop.util.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
@@ -29,16 +30,20 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static org.opencb.opencga.storage.hadoop.variant.io.VariantExporterDriver.VariantExporterDirectMultipleOutputsMapper.buildOutputKeyPrefix;
+import static org.opencb.opencga.storage.hadoop.variant.mr.StreamVariantDriver.STDERR_NAMED_OUTPUT;
+import static org.opencb.opencga.storage.hadoop.variant.mr.StreamVariantDriver.STDOUT_NAMED_OUTPUT;
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
 public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
     private static final Log LOG = LogFactory.getLog(StreamVariantMapper.class);
 
     private static final int BUFFER_SIZE = 128 * 1024;
-    public static final String MAX_INPUT_BYTES_PER_PROCESS = "stream.maxInputBytesPerProcess";
+    public static final String MAX_INPUT_BYTES_PER_PROCESS = "opencga.variant.stream.maxInputBytesPerProcess";
     public static final String VARIANT_FORMAT = "opencga.variant.stream.format";
-    public static final String COMMANDLINE_BASE64 = "opencga.variant.commandline_base64";
-    public static final String ADDENVIRONMENT_PARAM = "opencga.variant.addenvironment";
+    public static final String COMMANDLINE_BASE64 = "opencga.variant.stream.commandline_base64";
+    public static final String ADDENVIRONMENT_PARAM = "opencga.variant.stream.addenvironment";
+    public static final String HAS_REDUCE = "opencga.variant.stream.hasReduce";
 
     private final boolean verboseStdout = false;
     private static final long REPORTER_OUT_DELAY = 10 * 1000L;
@@ -54,6 +59,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
     private Query query;
     private QueryOptions options;
     private String firstVariant;
+    private boolean multipleOutputs;
 
     private int processCount = 0;
 
@@ -71,6 +77,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
     private int processedBytes = 0;
     private long numRecordsRead = 0;
     private long numRecordsWritten = 0;
+    private MultipleOutputs<VariantLocusKey, Text> mos;
     // auto-incremental number for each produced record.
     // These are used with the VariantLocusKey to ensure a sorted output.
     private int stdoutKeyNum;
@@ -94,6 +101,10 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         job.getConfiguration().setInt(MAX_INPUT_BYTES_PER_PROCESS, maxInputBytesPerProcess);
     }
 
+    public static void setHasReduce(Job job, boolean hasReduce) {
+        job.getConfiguration().setBoolean(HAS_REDUCE, hasReduce);
+    }
+
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
@@ -103,6 +114,14 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         format = VariantWriterFactory.toOutputFormat(conf.get(VARIANT_FORMAT), "");
         if (!format.isPlain()) {
             format = format.inPlain();
+        }
+        if (conf.getBoolean(HAS_REDUCE, false)) {
+            // If the job has a reduce step, the output will be written by the reducer
+            // No need to write the output here
+            multipleOutputs = false;
+        } else {
+            // If the job does not have a reduce step, the output will be written by the mapper
+            multipleOutputs = true;
         }
 
         envs = new HashMap<>();
@@ -327,6 +346,15 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         } catch (Throwable th) {
             addException(th);
         }
+
+        try {
+            if (mos != null) {
+                mos.close();
+                mos = null;
+            }
+        } catch (Throwable th) {
+            addException(th);
+        }
 //        drainStdout(context);
     }
 
@@ -339,6 +367,9 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         currentPosition = variant.getStart();
         if (firstVariant == null) {
             firstVariant = variant.getChromosome() + ":" + variant.getStart();
+        }
+        if (multipleOutputs) {
+            mos = new MultipleOutputs<>(context);
         }
         stdoutKeyNum = 0;
         stderrKeyNum = 0;
@@ -469,8 +500,13 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
 
         private void write(Text line) throws IOException, InterruptedException {
             numRecords++;
-            context.write(new VariantLocusKey(currentChromosome, currentPosition,
-                    StreamVariantReducer.STDOUT_KEY + (stdoutKeyNum++)), line);
+            VariantLocusKey locusKey = new VariantLocusKey(currentChromosome, currentPosition,
+                    StreamVariantReducer.STDOUT_KEY + (stdoutKeyNum++));
+            if (multipleOutputs) {
+                mos.write(STDOUT_NAMED_OUTPUT, locusKey, line, buildOutputKeyPrefix(STDOUT_NAMED_OUTPUT, currentChromosome, currentPosition));
+            } else {
+                context.write(locusKey, line);
+            }
         }
     }
 
@@ -551,8 +587,14 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         }
 
         private void write(Text line) throws IOException, InterruptedException {
-            context.write(new VariantLocusKey(currentChromosome, currentPosition,
-                    StreamVariantReducer.STDERR_KEY + (stderrKeyNum++)), line);
+            VariantLocusKey locusKey = new VariantLocusKey(currentChromosome, currentPosition,
+                    StreamVariantReducer.STDERR_KEY + (stderrKeyNum++));
+
+            if (multipleOutputs) {
+                mos.write(STDERR_NAMED_OUTPUT, locusKey, line, buildOutputKeyPrefix(STDERR_NAMED_OUTPUT, currentChromosome, currentPosition));
+            } else {
+                context.write(locusKey, line);
+            }
         }
 
         private boolean matchesReporter(String line) {

@@ -189,7 +189,7 @@ public class VariantExporterDriver extends VariantDriver {
         private String baseOutputPath;
         private String chromosome;
 
-        public static String buildOutputKeyPrefix(String chromosome, Integer start) {
+        public static String buildOutputKeyPrefix(String namedOutput, String chromosome, Integer start) {
             // If it's a single digit chromosome, add a 0 at the beginning
             //       1 -> 01
             //       3 -> 03
@@ -201,7 +201,7 @@ public class VariantExporterDriver extends VariantDriver {
                 chromosome = "0" + chromosome;
             }
 
-            return String.format("%s.%s.%010d.", NAMED_OUTPUT, chromosome, start);
+            return String.format("%s.%s.%010d.", namedOutput, chromosome, start);
         }
 
         private MultipleOutputs<Variant, NullWritable> mos;
@@ -216,7 +216,7 @@ public class VariantExporterDriver extends VariantDriver {
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
             if (baseOutputPath == null || !consecutiveChromosomes(chromosome, value.getChromosome())) {
-                baseOutputPath = buildOutputKeyPrefix(value.getChromosome(), value.getStart());
+                baseOutputPath = buildOutputKeyPrefix(NAMED_OUTPUT, value.getChromosome(), value.getStart());
                 chromosome = value.getChromosome();
             }
             mos.write(NAMED_OUTPUT, value, NullWritable.get(), baseOutputPath);
