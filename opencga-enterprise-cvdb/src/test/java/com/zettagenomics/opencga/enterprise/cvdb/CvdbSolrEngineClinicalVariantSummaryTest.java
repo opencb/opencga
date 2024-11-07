@@ -144,6 +144,10 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
 //        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().get("VACTERL-like phenotypes"));
 //        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().size());
 //        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().get("TIER3"));
+
+        System.out.println("============================================");
+        System.out.println("result.first() = " + result.first());
+        System.out.println("============================================");
     }
 
     @Test
@@ -169,7 +173,29 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
 //        Assert.assertEquals(2, (int) result.getResults().get(1).getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().get("Ultra-rare undescribed monogenic disorders"));
 //        Assert.assertEquals(1, result.getResults().get(1).getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().size());
 //        Assert.assertEquals(2, (int) result.getResults().get(1).getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().get("TIER3"));
+
+        System.out.println("============================================");
+        System.out.println("result.getResults().get(0) = " + result.getResults().get(0));
+        System.out.println("result.getResults().get(1) = " + result.getResults().get(1));
+        System.out.println("============================================");
+    }
+
+    @Test
+    public void testUpdateSummaryStats() throws IOException, CvdbException, CatalogException {
+        // CVDB query
+        List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
+
+        DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantIds, null, projectId, null,
+                userToken);
+        Assert.assertEquals(2, result.getNumResults());
+
+        System.out.println("============================================");
+        System.out.println("result.getResults().get(0) = " + result.getResults().get(0));
+        System.out.println("result.getResults().get(1) = " + result.getResults().get(1));
+        System.out.println("After updating 1 with 0");
+        CvdbUtils.updateSummaryStats(result.getResults().get(0), result.getResults().get(1));
+        System.out.println("result.getResults().get(1) = " + result.getResults().get(1));
+        System.out.println("============================================");
     }
 }
-
 
