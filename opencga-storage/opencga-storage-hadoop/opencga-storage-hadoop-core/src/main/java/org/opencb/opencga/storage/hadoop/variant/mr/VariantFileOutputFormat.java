@@ -73,7 +73,8 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
         if (isCompressed) {
             out = new DataOutputStream(codec.createOutputStream(out));
         }
-        return new VariantRecordWriter(configureWriter(job, out), out);
+        CountingOutputStream countingOut = new CountingOutputStream(out);
+        return new VariantRecordWriter(configureWriter(job, countingOut), countingOut);
     }
 
     private DataWriter<Variant> configureWriter(final TaskAttemptContext job, OutputStream fileOut) throws IOException {
@@ -103,9 +104,9 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
         private final DataWriter<Variant> writer;
         private final CountingOutputStream outputStream;
 
-        public VariantRecordWriter(DataWriter<Variant> writer, OutputStream outputStream) {
+        public VariantRecordWriter(DataWriter<Variant> writer, CountingOutputStream outputStream) {
             this.writer = writer;
-            this.outputStream = new CountingOutputStream(outputStream);
+            this.outputStream = outputStream;
         }
 
         @Override

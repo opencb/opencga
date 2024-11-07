@@ -181,13 +181,13 @@ public class HadoopVariantExporter extends VariantExporter {
                                         + " Current variants threshold is {}, and matchRatioThreshold is {}% ."
                                         + " Consider small query."
                                         + " Skip MapReduce",
-                                count, totalCount, String.format("%.4f", matchRate * 100), variantsThreshold, matchRatioThreshold);
+                                count, totalCount, String.format("%.4f", matchRate * 100), variantsThreshold, matchRatioThreshold * 100);
                         smallQuery = true;
                     } else {
                         logger.info("Query for approximately {} of {} variants, which is {}% of the total."
                                         + " Current variants threshold is {}, and matchRatioThreshold is {}% ."
                                         + " Not a small query",
-                                count, totalCount, String.format("%.3f", matchRate * 100), variantsThreshold, matchRatioThreshold);
+                                count, totalCount, String.format("%.3f", matchRate * 100), variantsThreshold, matchRatioThreshold * 100);
                     }
                 } catch (VariantSearchException e) {
                     logger.info("Unable to count variants from SearchEngine", e);

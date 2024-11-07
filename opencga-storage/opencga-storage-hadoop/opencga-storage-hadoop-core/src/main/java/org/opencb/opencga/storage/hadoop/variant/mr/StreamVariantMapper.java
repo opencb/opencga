@@ -503,7 +503,8 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
             VariantLocusKey locusKey = new VariantLocusKey(currentChromosome, currentPosition,
                     StreamVariantReducer.STDOUT_KEY + (stdoutKeyNum++));
             if (multipleOutputs) {
-                mos.write(STDOUT_NAMED_OUTPUT, locusKey, line, buildOutputKeyPrefix(STDOUT_NAMED_OUTPUT, currentChromosome, currentPosition));
+                mos.write(STDOUT_NAMED_OUTPUT, locusKey, line,
+                        buildOutputKeyPrefix(STDOUT_NAMED_OUTPUT, currentChromosome, currentPosition));
             } else {
                 context.write(locusKey, line);
             }
@@ -591,7 +592,8 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
                     StreamVariantReducer.STDERR_KEY + (stderrKeyNum++));
 
             if (multipleOutputs) {
-                mos.write(STDERR_NAMED_OUTPUT, locusKey, line, buildOutputKeyPrefix(STDERR_NAMED_OUTPUT, currentChromosome, currentPosition));
+                mos.write(STDERR_NAMED_OUTPUT, locusKey, line,
+                        buildOutputKeyPrefix(STDERR_NAMED_OUTPUT, currentChromosome, currentPosition));
             } else {
                 context.write(locusKey, line);
             }

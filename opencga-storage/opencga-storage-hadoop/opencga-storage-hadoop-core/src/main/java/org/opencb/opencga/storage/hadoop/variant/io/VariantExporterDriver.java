@@ -201,7 +201,7 @@ public class VariantExporterDriver extends VariantDriver {
                 chromosome = "0" + chromosome;
             }
 
-            return String.format("%s.%s.%010d.", namedOutput, chromosome, start);
+            return String.format("%s.%s.%010d", namedOutput, chromosome, start);
         }
 
         private MultipleOutputs<Variant, NullWritable> mos;

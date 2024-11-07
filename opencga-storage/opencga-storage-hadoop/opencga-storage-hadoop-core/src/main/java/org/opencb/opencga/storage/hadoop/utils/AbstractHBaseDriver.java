@@ -368,7 +368,6 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                 }
             }
         }
-        LOGGER.info("Temporary directory: " + toUri(tmpDir));
         return new Path(tmpDir, fileName);
     }
 
@@ -454,10 +453,10 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                     outdir.getFileSystem(getConf()).deleteOnExit(outdir);
                 }
                 if (localOutput != null) {
-                    LOGGER.info(" * Outdir file: " + toUri(localOutput));
-                    LOGGER.info(" * Temporary outdir file: " + toUri(outdir));
+                    LOGGER.info(" * Output file      : " + toUri(localOutput));
+                    LOGGER.info(" * Temporary outdir : " + toUri(outdir));
                 } else {
-                    LOGGER.info(" * Outdir file: " + toUri(outdir));
+                    LOGGER.info(" * Outdir: " + toUri(outdir));
                 }
             }
         }
