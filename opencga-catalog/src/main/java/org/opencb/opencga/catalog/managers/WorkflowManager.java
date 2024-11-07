@@ -32,8 +32,9 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
+import org.opencb.opencga.core.models.job.MinimumRequirements;
 import org.opencb.opencga.core.models.job.ToolInfo;
-import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.workflow.*;
@@ -191,10 +192,11 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
         ToolInfo toolInfo = new ToolInfo()
                 .setId(workflow.getId())
-                .setVersion(String.valueOf(workflow.getVersion()))
-                .setDescription(workflow.getDescription())
-                .setExternalExecutor(new ToolInfoExecutor(workflow.getManager().getId().name().toLowerCase(),
-                        workflow.getManager().getVersion()));
+                // Set workflow minimum requirements
+                .setMinimumRequirements(workflow.getMinimumRequirements() != null
+                        ? workflow.getMinimumRequirements()
+                        : configuration.getAnalysis().getWorkflow().getMinRequirements())
+                .setDescription(workflow.getDescription());
 
         Map<String, Object> paramsMap = runParams.toParams();
         paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study.getFqn());
@@ -218,8 +220,8 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             jobTags = Collections.emptyList();
         }
 
-        return catalogManager.getJobManager().submit(study.getFqn(), toolInfo, priority, paramsMap, jobId, jobDescription, jobDependsOn,
-                jobTags, null, jobScheduledStartTime, dryRun, Collections.emptyMap(), token);
+        return catalogManager.getJobManager().submit(study.getFqn(), JobType.WORKFLOW, toolInfo, priority, paramsMap, jobId, jobDescription,
+                jobDependsOn, jobTags, null, jobScheduledStartTime, dryRun, Collections.emptyMap(), token);
     }
 
     public OpenCGAResult<Workflow> importWorkflow(String studyStr, WorkflowRepositoryParams repository, QueryOptions options, String token)
@@ -312,7 +314,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         }
 
         Workflow workflow = new Workflow("", "", "", null, new WorkflowSystem(WorkflowSystem.SystemId.NEXTFLOW, ""), new LinkedList<>(),
-                new LinkedList<>(), new WorkflowMinimumRequirements(), false, repository.toWorkflowRepository(), new LinkedList<>(),
+                new LinkedList<>(), new MinimumRequirements(), false, repository.toWorkflowRepository(), new LinkedList<>(),
                 new WorkflowInternal(), TimeUtils.getTime(), TimeUtils.getTime(), new HashMap<>());
         try {
             URL url = new URL(urlStr);
@@ -402,10 +404,10 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         String value = split[1].replace("\"", "").replace("'", "").trim();
         switch (key) {
             case "executor.cpus":
-                workflow.getMinimumRequirements().setCpu(Integer.valueOf(value));
+                workflow.getMinimumRequirements().setCpu(value);
                 break;
             case "executor.memory":
-                workflow.getMinimumRequirements().setMemory(Integer.valueOf(value.split("\\.")[0]));
+                workflow.getMinimumRequirements().setMemory(value);
                 break;
             default:
                 break;

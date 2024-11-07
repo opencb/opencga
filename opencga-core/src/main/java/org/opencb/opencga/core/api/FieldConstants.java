@@ -320,13 +320,12 @@ public class FieldConstants {
     public static final String WORKFLOW_SCRIPTS_DESCRIPTION = "List of scripts used by the Workflow.";
     public static final String WORKFLOW_TAGS_DESCRIPTION = "List of tags.";
     public static final String WORKFLOW_VARIABLES_DESCRIPTION = "List of variables accepted by the Workflow.";
-    public static final String WORKFLOW_MINIMUM_REQUIREMENTS_DESCRIPTION = "Minimum requirements to execute the workflow.";
+    public static final String MINIMUM_REQUIREMENTS_DESCRIPTION = "Minimum requirements to execute the process.";
     public static final String WORKFLOW_INTERNAL_DESCRIPTION = "Workflow internal information.";
 
-    public static final String WORKFLOW_MIN_REQUIREMENTS_CPU_DESCRIPTION = "Minimum number of cpu cores required to execute the workflow.";
-    public static final String WORKFLOW_MIN_REQUIREMENTS_MEMORY_DESCRIPTION = "Minimum memory required to execute the workflow"
-            + " (expressed in GB).";
-    public static final String WORKFLOW_MIN_REQUIREMENTS_DISK_DESCRIPTION = "Minimum disk required to execute the workflow";
+    public static final String MIN_REQUIREMENTS_CPU_DESCRIPTION = "Minimum number of cpu cores required to execute the process.";
+    public static final String MIN_REQUIREMENTS_MEMORY_DESCRIPTION = "Minimum memory required to execute the process.";
+    public static final String MIN_REQUIREMENTS_DISK_DESCRIPTION = "Minimum disk required to execute the process.";
 
     public static final String WORKFLOW_SYSTEM_ID_DESCRIPTION = "Workflow system id. Valid values: NEXTFLOW.";
     public static final String WORKFLOW_SYSTEM_VERSION_DESCRIPTION = "Workflow system version to use.";
@@ -397,11 +396,13 @@ public class FieldConstants {
     public static final String EXECUTION_RESULT_START = "Date the execution started.";
     public static final String EXECUTION_RESULT_END = "Date the execution was completed.";
     public static final String EXECUTION_RESULT_STATUS = "Executor status can have the values PENDING, RUNNING, DONE and ERROR.";
+    public static final String EXECUTION_RESULT_DEPENDENCIES = "List of tool dependencies used during the execution.";
     public static final String EXECUTION_RESULT_EXTERNAL_FILES = "List of uris to the external files.";
     public static final String EXECUTION_RESULT_STEPS = "List of ToolStep.";
     public static final String EXECUTION_RESULT_EVENTS = "List of Event.";
 
     //Job
+    public static final String JOB_TYPE = "Job type indicating the origin of the tool that will be run.";
     public static final String JOB_TOOL = "Job tool info.";
     public static final String JOB_USER_ID = "Job user id.";
     public static final String JOB_COMMAND_LINE = "Job command line.";

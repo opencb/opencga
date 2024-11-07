@@ -121,9 +121,6 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--tool-id"}, description = "Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.", required = false, arity = 1)
         public String toolId;
     
-        @Parameter(names = {"--tool-version"}, description = "Version of the tool to be executed.", required = false, arity = 1)
-        public String toolVersion;
-    
         @Parameter(names = {"--tool-description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
         public String toolDescription;
     
@@ -135,6 +132,9 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--tool-resource"}, description = "Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.", required = false, arity = 1)
         public String toolResource;
+    
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: NATIVE, WORKFLOW, CUSTOM, WALKER", required = false, arity = 1)
+        public String type;
     
         @Parameter(names = {"--priority"}, description = "The body web service priority parameter", required = false, arity = 1)
         public String priority;

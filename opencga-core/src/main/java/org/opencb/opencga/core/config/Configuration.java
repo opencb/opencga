@@ -21,6 +21,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.job.MinimumRequirements;
 import org.opencb.opencga.core.models.workflow.WorkflowSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,9 +149,9 @@ public class Configuration {
                     new WorkflowSystemConfiguration(WorkflowSystem.SystemId.NEXTFLOW.name(), ParamConstants.DEFAULT_MIN_NEXTFLOW_VERSION)));
         }
         if (workflowConfiguration.getMinRequirements() == null) {
-            workflowConfiguration.setMinRequirements(new WorkflowMinRequirementsConfiguration());
+            workflowConfiguration.setMinRequirements(new MinimumRequirements());
         }
-        WorkflowMinRequirementsConfiguration minRequirements = workflowConfiguration.getMinRequirements();
+        MinimumRequirements minRequirements = workflowConfiguration.getMinRequirements();
         if (StringUtils.isEmpty(minRequirements.getCpu())) {
             minRequirements.setCpu("2");
         }

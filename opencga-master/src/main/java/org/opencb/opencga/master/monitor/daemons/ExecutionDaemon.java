@@ -88,7 +88,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -544,7 +543,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudyFqn(job.getStudy().getId());
         String organizationId = catalogFqn.getOrganizationId();
 
-        String toolId = ToolFactory.getToolId(job.getTool());
+        String toolId = ToolFactory.getToolId(job.getType(), job.getTool());
         if (StringUtils.isEmpty(toolId)) {
             return abortJob(job, "Tool id '" + toolId + "' not found.");
         }
@@ -561,7 +560,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
         Tool tool;
         try {
-            tool = new ToolFactory().getTool(job.getTool(), packages);
+            tool = new ToolFactory().getTool(job.getType(), job.getTool(), packages);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return abortJob(job, "Tool " + toolId + " not found", e);
@@ -648,10 +647,6 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         String shadedCommandLine = commandLine + " " + ParamConstants.OPENCGA_TOKEN_CLI_PARAM + " " + REDACTED_TOKEN;
 
         updateParams.setCommandLine(shadedCommandLine);
-        if (job.getTool().getExternalExecutor() == null || StringUtils.isEmpty(job.getTool().getExternalExecutor().getId())) {
-            job.getTool().setVersion(GitRepositoryState.getInstance().getBuildVersion());
-            updateParams.setTool(job.getTool());
-        }
 
         logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED);
         updateParams.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED)));
@@ -677,9 +672,6 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     private void updateToolInfoInformation(ToolInfo toolInfo, Tool tool) {
-        if (StringUtils.isEmpty(toolInfo.getVersion())) {
-            toolInfo.setVersion(GitRepositoryState.getInstance().getBuildVersion());
-        }
         if (StringUtils.isEmpty(toolInfo.getDescription())) {
             toolInfo.setDescription(tool.description());
         }
@@ -693,7 +685,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     protected void checkToolExecutionPermission(String organizationId, Job job) throws Exception {
-        Tool tool = new ToolFactory().getTool(job.getTool(), packages);
+        Tool tool = new ToolFactory().getTool(job.getType(), job.getTool(), packages);
 
         AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
         String user = job.getUserId();
@@ -865,7 +857,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     public static String buildCli(String internalCli, Job job) {
-        String toolId = ToolFactory.getToolId(job.getTool());
+        String toolId = ToolFactory.getToolId(job.getType(), job.getTool());
         String internalCommand = TOOL_CLI_MAP.get(toolId);
         if (StringUtils.isEmpty(internalCommand) || job.isDryRun()) {
             ObjectMap params = new ObjectMap()

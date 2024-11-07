@@ -20,6 +20,7 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.tools.ToolDependency;
 
 import java.net.URI;
 import java.util.Date;
@@ -48,6 +49,9 @@ public class ExecutionResult {
     @DataField(id = "status", indexed = true,
             description = FieldConstants.EXECUTION_RESULT_STATUS)
     private Status status;
+
+    @DataField(id = "dependencies", description = FieldConstants.EXECUTION_RESULT_DEPENDENCIES)
+    private List<ToolDependency> dependencies;
 
     @DataField(id = "externalFiles", indexed = true,
             description = FieldConstants.EXECUTION_RESULT_EXTERNAL_FILES)

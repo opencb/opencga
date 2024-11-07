@@ -700,8 +700,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testCreateJob() throws CatalogException {
         String studyId = catalogManager.getStudyManager().searchInOrganization(organizationId, new Query(), null, ownerToken).first().getId();
 
-        catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken);
-        catalogManager.getJobManager().submit(studyId, "command-subcommand2", null, Collections.emptyMap(), ownerToken);
+        catalogManager.getJobManager().submit(studyId, JobType.NATIVE, "command-subcommand", null, Collections.emptyMap(), ownerToken);
+        catalogManager.getJobManager().submit(studyId, JobType.NATIVE, "command-subcommand2", null, Collections.emptyMap(), ownerToken);
 
         catalogManager.getJobManager().create(studyId,
                 new Job().setId("job1").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))),
@@ -729,7 +729,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testKillJob() throws CatalogException {
-        Job job = catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
+        Job job = catalogManager.getJobManager().submit(studyId, JobType.NATIVE, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
         assertFalse(job.getInternal().isKillJobRequested());
 
         catalogManager.getJobManager().kill(studyFqn, job.getId(), ownerToken);
@@ -737,7 +737,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(job.getInternal().isKillJobRequested());
 
         for (String status : Arrays.asList(Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.ERROR)) {
-            job = catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
+            job = catalogManager.getJobManager().submit(studyId, JobType.NATIVE, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
             catalogManager.getJobManager().update(studyFqn, job.getId(),
                     new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), new Enums.ExecutionStatus(status)),
                     QueryOptions.empty(), ownerToken);
@@ -765,41 +765,41 @@ public class CatalogManagerTest extends AbstractManagerTest {
 //                .put("jobs.reuse.tools", "command-subcommand");
 //        String toolId = "command-subcommand";
         String toolId = "variant-index";
-        String job1 = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key", 1).append("key2", 2), ownerToken).first().getId();
+        String job1 = catalogManager.getJobManager().submit(study1, JobType.NATIVE, toolId, null, new ObjectMap("key", 1).append("key2", 2), ownerToken).first().getId();
 
         // Same params, different order, empty jobId
-        OpenCGAResult<Job> result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 1),
+        OpenCGAResult<Job> result = catalogManager.getJobManager().submit(study1, JobType.NATIVE, toolId, null, new ObjectMap("key2", 2).append("key", 1),
                 "", "", Collections.emptyList(), Collections.emptyList(), null, null, false, ownerToken);
         assertEquals(job1, result.first().getId());
         assertEquals(1, result.getEvents().size());
         assertEquals("reuse", result.getEvents().get(0).getId());
 
         // Same params, different values
-        result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), ownerToken);
+        result = catalogManager.getJobManager().submit(study1, JobType.NATIVE, toolId, null, new ObjectMap("key2", 2).append("key", 2), ownerToken);
         assertNotEquals(job1, result.first().getId());
 
         // Same params, but with jobId
-        result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "MyJobId", "",
+        result = catalogManager.getJobManager().submit(study1, JobType.NATIVE, toolId, null, new ObjectMap("key2", 2).append("key", 2), "MyJobId", "",
                 Collections.emptyList(), Collections.emptyList(), null, null, false, ownerToken);
         assertNotEquals(job1, result.first().getId());
         assertEquals("MyJobId", result.first().getId());
 
         // Same params, but with dependencies
-        result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "", "",
+        result = catalogManager.getJobManager().submit(study1, JobType.NATIVE, toolId, null, new ObjectMap("key2", 2).append("key", 2), "", "",
                 Collections.singletonList(job1), Collections.emptyList(), null, null, false, ownerToken);
         assertNotEquals(job1, result.first().getId());
     }
 
     @Test
     public void submitJobWithDependenciesFromDifferentStudies() throws CatalogException {
-        Job first = catalogManager.getJobManager().submit(studyFqn, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
-        Job second = catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
+        Job first = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
+        Job second = catalogManager.getJobManager().submit(studyFqn2, JobType.NATIVE, "command-subcommand2", null, Collections.emptyMap(), null, "",
                 Collections.singletonList(first.getUuid()), null, null, null, false, ownerToken).first();
         assertEquals(first.getId(), second.getDependsOn().get(0).getId());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
+        catalogManager.getJobManager().submit(studyFqn2, JobType.NATIVE, "command-subcommand2", null, Collections.emptyMap(), null, "",
                 Collections.singletonList(first.getId()), null, null, null, false, ownerToken);
     }
 
@@ -853,7 +853,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void submitJobOwner() throws CatalogException {
-        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 ownerToken);
 
         assertEquals(1, job.getNumResults());
@@ -862,12 +862,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void submitJobWithDependencies() throws CatalogException {
-        Job job1 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file1"), ownerToken).first();
-        Job job2 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file2"), ownerToken).first();
+        Job job1 = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file1"), ownerToken).first();
+        Job job2 = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file2"), ownerToken).first();
 
-        Job job3 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file3"), null, null,
+        Job job3 = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file3"), null, null,
                 Arrays.asList(job1.getId(), job2.getId()), null, null, null, false, ownerToken).first();
-        Job job4 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file4"), null, null,
+        Job job4 = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file4"), null, null,
                 Arrays.asList(job1.getUuid(), job2.getUuid()), null, null, null, false, ownerToken).first();
 
         assertEquals(2, job3.getDependsOn().size());
@@ -885,7 +885,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList(normalUserId3)), ownerToken);
 
-        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 ownerToken);
 
         assertEquals(1, job.getNumResults());
@@ -903,7 +903,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new StudyAclParams("", ""), ParamUtils.AclAction.SET, ownerToken);
 
         try {
-            catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), normalToken3);
+            catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), normalToken3);
             fail("Submission should have failed with a message saying the user does not have EXECUTION permissions");
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("Permission denied"));
@@ -925,7 +925,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId3,
                 new StudyAclParams(StudyPermissions.Permissions.EXECUTE_JOBS.name(), AuthorizationManager.ROLE_VIEW_ONLY), ParamUtils.AclAction.SET, ownerToken);
 
-        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 orgAdminToken2);
         assertEquals(1, search.getNumResults());
         assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getId());
@@ -936,7 +936,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId1,
                 new StudyAclParams(StudyPermissions.Permissions.EXECUTE_JOBS.name(), AuthorizationManager.ROLE_VIEW_ONLY), ParamUtils.AclAction.SET, ownerToken);
 
-        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 normalToken1);
         assertEquals(1, search.getNumResults());
         assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getId());
@@ -948,7 +948,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void visitJob() throws CatalogException {
-        Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), ownerToken)
+        Job job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), ownerToken)
                 .first();
 
         Query query = new Query(JobDBAdaptor.QueryParams.VISITED.key(), false);

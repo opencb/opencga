@@ -136,9 +136,9 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = NextFlowRunParams.DESCRIPTION, required = true) JobRunParams params) {
         ToolInfo toolInfo = new ToolInfo()
-                .setId("docker")
-                .setExternalExecutor(new ToolInfoExecutor(CustomToolExecutor.ID, ""));
-        return submitJob(toolInfo, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+                .setId(params.getDocker().getId());
+        return submitJob(study, JobType.CUSTOM, toolInfo, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime,
+                jobPriority, dryRun);
     }
 
     @POST
@@ -155,7 +155,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = "body", required = true) JobToolBuildParams params) {
-        return submitJob(CustomToolBuilder.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, CustomToolBuilder.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET

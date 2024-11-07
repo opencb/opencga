@@ -4,6 +4,7 @@ import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.job.MinimumRequirements;
 
 import java.util.List;
 import java.util.Map;
@@ -37,8 +38,8 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
     private List<WorkflowVariable> variables;
 
-    @DataField(id = "minimumRequirements", description = FieldConstants.WORKFLOW_MINIMUM_REQUIREMENTS_DESCRIPTION)
-    private WorkflowMinimumRequirements minimumRequirements;
+    @DataField(id = "minimumRequirements", description = FieldConstants.MINIMUM_REQUIREMENTS_DESCRIPTION)
+    private MinimumRequirements minimumRequirements;
 
     @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
     private boolean draft;
@@ -78,7 +79,7 @@ public class Workflow extends PrivateStudyUid {
     }
 
     public Workflow(String id, String name, String description, Type type, WorkflowSystem manager, List<String> tags,
-                    List<WorkflowVariable> variables, WorkflowMinimumRequirements minimumRequirements, boolean draft,
+                    List<WorkflowVariable> variables, MinimumRequirements minimumRequirements, boolean draft,
                     WorkflowRepository repository, List<WorkflowScript> scripts, WorkflowInternal internal, String creationDate,
                     String modificationDate, Map<String, Object> attributes) {
         this.id = id;
@@ -247,11 +248,11 @@ public class Workflow extends PrivateStudyUid {
         return this;
     }
 
-    public WorkflowMinimumRequirements getMinimumRequirements() {
+    public MinimumRequirements getMinimumRequirements() {
         return minimumRequirements;
     }
 
-    public Workflow setMinimumRequirements(WorkflowMinimumRequirements minimumRequirements) {
+    public Workflow setMinimumRequirements(MinimumRequirements minimumRequirements) {
         this.minimumRequirements = minimumRequirements;
         return this;
     }

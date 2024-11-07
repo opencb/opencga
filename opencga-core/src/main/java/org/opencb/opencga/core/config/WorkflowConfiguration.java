@@ -1,19 +1,21 @@
 package org.opencb.opencga.core.config;
 
+import org.opencb.opencga.core.models.job.MinimumRequirements;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class WorkflowConfiguration {
 
-    private WorkflowMinRequirementsConfiguration minRequirements;
+    private MinimumRequirements minRequirements;
     private List<WorkflowSystemConfiguration> managers;
 
     public WorkflowConfiguration() {
-        this.minRequirements = new WorkflowMinRequirementsConfiguration();
+        this.minRequirements = new MinimumRequirements();
         this.managers = new ArrayList<>();
     }
 
-    public WorkflowConfiguration(WorkflowMinRequirementsConfiguration minRequirements, List<WorkflowSystemConfiguration> managers) {
+    public WorkflowConfiguration(MinimumRequirements minRequirements, List<WorkflowSystemConfiguration> managers) {
         this.minRequirements = minRequirements;
         this.managers = managers;
     }
@@ -27,11 +29,11 @@ public class WorkflowConfiguration {
         return sb.toString();
     }
 
-    public WorkflowMinRequirementsConfiguration getMinRequirements() {
+    public MinimumRequirements getMinRequirements() {
         return minRequirements;
     }
 
-    public WorkflowConfiguration setMinRequirements(WorkflowMinRequirementsConfiguration minRequirements) {
+    public WorkflowConfiguration setMinRequirements(MinimumRequirements minRequirements) {
         this.minRequirements = minRequirements;
         return this;
     }
