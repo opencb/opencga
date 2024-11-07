@@ -35,6 +35,7 @@ public class SshMRExecutor extends MRExecutor {
     // env-var expected by "sshpass -e"
     private static final String SSHPASS_ENV = "SSHPASS";
     public static final String PID = "PID";
+    public static final String EXTRA_OUTPUT_PREFIX = "EXTRA_OUTPUT_";
     private static Logger logger = LoggerFactory.getLogger(SshMRExecutor.class);
 
     @Override
@@ -107,7 +108,7 @@ public class SshMRExecutor extends MRExecutor {
         if (exitValue == 0) {
             copyOutputFiles(args, env);
             for (String key : result.keySet()) {
-                if (key.startsWith("EXTRA_OUTPUT_")) {
+                if (key.startsWith(EXTRA_OUTPUT_PREFIX)) {
                     copyOutputFiles(result.getString(key), env);
                 }
             }

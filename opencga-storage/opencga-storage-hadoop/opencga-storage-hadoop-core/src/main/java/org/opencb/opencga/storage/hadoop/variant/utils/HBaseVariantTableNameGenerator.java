@@ -58,6 +58,10 @@ public class HBaseVariantTableNameGenerator {
         pendingSecondaryIndexPruneTableName = getPendingSecondaryIndexPruneTableName(namespace, this.dbName);
     }
 
+    public String getDbName() {
+        return dbName;
+    }
+
     public String getVariantTableName() {
         return variantTableName;
     }

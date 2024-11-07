@@ -31,11 +31,13 @@ import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
+import org.opencb.opencga.storage.hadoop.variant.executors.SshMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -220,6 +222,10 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     }
 
     private void reportRunningJobs() {
+        if (getConf().getBoolean("storage.hadoop.mr.skipReportRunningJobs", false)) {
+            LOGGER.info("Skip report running jobs");
+            return;
+        }
         // Get the number of pending or running jobs in yarn
         try (YarnClient yarnClient = YarnClient.createYarnClient()) {
             yarnClient.init(getConf());
@@ -362,8 +368,18 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                 }
             }
         }
-        LOGGER.info("Temporary directory: " + tmpDir.toUri());
+        LOGGER.info("Temporary directory: " + toUri(tmpDir));
         return new Path(tmpDir, fileName);
+    }
+
+    private URI toUri(Path path) throws IOException {
+        URI tmpUri = path.toUri();
+        if (tmpUri.getScheme() == null) {
+            // If the scheme is null, add the default scheme
+            FileSystem fileSystem = path.getFileSystem(getConf());
+            tmpUri = fileSystem.getUri().resolve(tmpUri.getPath());
+        }
+        return tmpUri;
     }
 
     protected Path getLocalOutput(Path outdir) throws IOException {
@@ -408,13 +424,23 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
         private final Supplier<String> nameGenerator;
         private final String tempFilePrefix;
+        private final Map<String, String> extraFiles = new HashMap<>();
+        private String namedOutput;
         protected Path localOutput;
         protected Path outdir;
+
+        public MapReduceOutputFile(String tempFilePrefix) throws IOException {
+            this.nameGenerator = () -> null;
+            this.tempFilePrefix = tempFilePrefix;
+            getOutputPath();
+            namedOutput = null;
+        }
 
         public MapReduceOutputFile(Supplier<String> nameGenerator, String tempFilePrefix) throws IOException {
             this.nameGenerator = nameGenerator;
             this.tempFilePrefix = tempFilePrefix;
             getOutputPath();
+            namedOutput = null;
         }
 
         protected void getOutputPath() throws IOException {
@@ -428,10 +454,10 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                     outdir.getFileSystem(getConf()).deleteOnExit(outdir);
                 }
                 if (localOutput != null) {
-                    LOGGER.info(" * Outdir file: " + localOutput.toUri());
-                    LOGGER.info(" * Temporary outdir file: " + outdir.toUri());
+                    LOGGER.info(" * Outdir file: " + toUri(localOutput));
+                    LOGGER.info(" * Temporary outdir file: " + toUri(outdir));
                 } else {
-                    LOGGER.info(" * Outdir file: " + outdir.toUri());
+                    LOGGER.info(" * Outdir file: " + toUri(outdir));
                 }
             }
         }
@@ -439,11 +465,32 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         public void postExecute(boolean succeed) throws IOException {
             if (succeed) {
                 if (localOutput != null) {
-                    concatMrOutputToLocal(outdir, localOutput);
+                    getConcatMrOutputToLocal();
                 }
             }
             if (localOutput != null) {
                 deleteTemporaryFile(outdir);
+            }
+        }
+
+        public MapReduceOutputFile setNamedOutput(String partFilePrefix) {
+            this.namedOutput = partFilePrefix;
+            return this;
+        }
+
+        public void addExtraNamedOutput(String namedOutput, String localOutputPrefix) {
+            extraFiles.put(namedOutput, localOutputPrefix);
+        }
+
+        protected void getConcatMrOutputToLocal() throws IOException {
+            concatMrOutputToLocal(outdir, localOutput, true, namedOutput);
+
+            for (Map.Entry<String, String> entry : extraFiles.entrySet()) {
+                String suffix = entry.getValue();
+                String partFilePrefix = entry.getKey();
+                Path extraOutput = localOutput.suffix(suffix);
+                concatMrOutputToLocal(outdir, extraOutput, true, partFilePrefix);
+                printKeyValue(SshMRExecutor.EXTRA_OUTPUT_PREFIX + partFilePrefix.toUpperCase(), extraOutput);
             }
         }
 

@@ -420,6 +420,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         TestMRExecutor.setStaticConfiguration(conf);
 
         options.put(HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(), false);
+        options.put("storage.hadoop.mr.skipReportRunningJobs", true);
         EnumSet<Compression.Algorithm> supportedAlgorithms = EnumSet.of(Compression.Algorithm.NONE, HBaseTestingUtility.getSupportedCompressionAlgorithms());
 
         options.put(HadoopVariantStorageOptions.ARCHIVE_TABLE_COMPRESSION.key(), supportedAlgorithms.contains(Compression.Algorithm.GZ)

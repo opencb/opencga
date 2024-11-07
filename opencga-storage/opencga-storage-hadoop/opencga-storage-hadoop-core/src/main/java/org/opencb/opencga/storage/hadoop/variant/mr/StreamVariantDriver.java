@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DeflateCodec;
@@ -34,6 +33,8 @@ public class StreamVariantDriver extends VariantDriver {
     public static final String MAX_BYTES_PER_MAP_PARAM = "maxBytesPerMap";
     public static final String ENVIRONMENT_VARIABLES = "envVars";
     public static final String STDERR_TXT_GZ = ".stderr.txt.gz";
+    public static final String STDOUT_NAMED_OUTPUT = "stdout";
+    public static final String STDERR_NAMED_OUTPUT = "stderr";
 
     private VariantWriterFactory.VariantOutputFormat format;
     private int maxBytesPerMap;
@@ -101,6 +102,9 @@ public class StreamVariantDriver extends VariantDriver {
         if (StringUtils.isEmpty(outdirStr)) {
             throw new IllegalArgumentException("Missing argument " + OUTPUT_PARAM);
         }
+
+        output.setNamedOutput(STDOUT_NAMED_OUTPUT);
+        output.addExtraNamedOutput(STDERR_NAMED_OUTPUT, STDERR_TXT_GZ);
     }
 
     @Override
@@ -144,10 +148,12 @@ public class StreamVariantDriver extends VariantDriver {
         StreamVariantMapper.setMaxInputBytesPerProcess(job, maxBytesPerMap);
         StreamVariantMapper.setEnvironment(job, envVars);
 
+        // Current implementation only supports using the reduce step
+        useReduceStep = true;
         reducerClass = StreamVariantReducer.class;
 
-        MultipleOutputs.addNamedOutput(job, "stdout", ValueOnlyTextOutputFormat.class, keyClass, valueClass);
-        MultipleOutputs.addNamedOutput(job, "stderr", ValueOnlyTextOutputFormat.class, keyClass, valueClass);
+        MultipleOutputs.addNamedOutput(job, STDOUT_NAMED_OUTPUT, ValueOnlyTextOutputFormat.class, keyClass, valueClass);
+        MultipleOutputs.addNamedOutput(job, STDERR_NAMED_OUTPUT, ValueOnlyTextOutputFormat.class, keyClass, valueClass);
         LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
         outputFormatClass = LazyOutputFormat.class;
 
@@ -170,15 +176,6 @@ public class StreamVariantDriver extends VariantDriver {
     @Override
     protected String getJobOperationName() {
         return "stream-variants";
-    }
-
-
-    @Override
-    protected void copyMrOutputToLocal() throws IOException {
-        concatMrOutputToLocal(outdir, localOutput, true, "stdout");
-        Path stderrOutput = localOutput.suffix(STDERR_TXT_GZ);
-        concatMrOutputToLocal(outdir, stderrOutput, true, "stderr");
-        printKeyValue("EXTRA_OUTPUT_STDERR", stderrOutput);
     }
 
     @SuppressWarnings("unchecked")

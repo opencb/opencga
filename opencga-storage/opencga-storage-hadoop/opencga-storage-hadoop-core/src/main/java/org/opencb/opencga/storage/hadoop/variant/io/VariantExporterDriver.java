@@ -11,11 +11,11 @@ import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapred.JobContext;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Partitioner;
-import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.parquet.Log;
 import org.apache.parquet.avro.AvroParquetOutputFormat;
 import org.apache.parquet.hadoop.ParquetOutputFormat;
@@ -43,7 +43,7 @@ public class VariantExporterDriver extends VariantDriver {
     private VariantWriterFactory.VariantOutputFormat outputFormat;
     private Class<? extends VariantMapper> mapperClass;
     private Class<? extends Reducer> reducerClass;
-    private Class<? extends FileOutputFormat> outputFormatClass;
+    private Class<? extends OutputFormat> outputFormatClass;
     private Class<? extends Partitioner> partitioner;
 
     @Override
@@ -69,7 +69,7 @@ public class VariantExporterDriver extends VariantDriver {
     }
 
     @Override
-    protected Class<? extends FileOutputFormat> getOutputFormatClass() {
+    protected Class<? extends OutputFormat> getOutputFormatClass() {
         return outputFormatClass;
     }
 
@@ -126,17 +126,25 @@ public class VariantExporterDriver extends VariantDriver {
                     mapperClass = AvroVariantExporterMapper.class;
                     reducerClass = VariantExporterReducer.class;
                     partitioner = VariantLocusKeyPartitioner.class;
+                    outputFormatClass = VariantFileOutputFormat.class;
                 } else {
                     AvroJob.setOutputKeySchema(job, VariantAvro.getClassSchema());
-                    mapperClass = VariantExporterDirectMapper.class;
+                    mapperClass = VariantExporterDirectMultipleOutputsMapper.class;
+//                    mapperClass = VariantExporterDirectMapper.class;
+
                     reducerClass = null;
+
+//                    MultipleOutputs.setCountersEnabled(job, true);
+                    MultipleOutputs.addNamedOutput(job, VariantExporterDirectMultipleOutputsMapper.NAMED_OUTPUT,
+                            VariantFileOutputFormat.class, Variant.class, NullWritable.class);
+                    LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
+                    outputFormatClass = LazyOutputFormat.class;
                 }
                 if (outputFormat.isGzip()) {
                     FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression
                 } else if (outputFormat.isSnappy()) {
                     FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class); // compression
                 }
-                outputFormatClass = VariantFileOutputFormat.class;
                 job.getConfiguration().set(VariantFileOutputFormat.VARIANT_OUTPUT_FORMAT, outputFormat.name());
                 job.setOutputKeyClass(Variant.class);
                 break;
@@ -166,6 +174,69 @@ public class VariantExporterDriver extends VariantDriver {
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
             context.write(value, NullWritable.get());
+        }
+    }
+
+    /**
+     * Mapper to convert to Variant.
+     * The output of this mapper should be connected directly to the {@link VariantWriterFactory.VariantOutputFormat}
+     * This mapper can not work with a reduce step.
+     * The output is written to multiple outputs, ensuring that generated files are sorted by chromosome and position.
+     */
+    public static class VariantExporterDirectMultipleOutputsMapper extends VariantMapper<Variant, NullWritable> {
+
+        public static final String NAMED_OUTPUT = "export";
+        private String baseOutputPath;
+        private String chromosome;
+
+        public static String buildOutputKeyPrefix(String chromosome, Integer start) {
+            // If it's a single digit chromosome, add a 0 at the beginning
+            //       1 -> 01
+            //       3 -> 03
+            //      22 -> 22
+            // If the first character is a digit, and the second is not, add a 0 at the beginning
+            //      MT -> MT
+            //      1_KI270712v1_random -> 01_KI270712v1_random
+            if (VariantLocusKey.isSingleDigitChromosome(chromosome)) {
+                chromosome = "0" + chromosome;
+            }
+
+            return String.format("%s.%s.%010d.", NAMED_OUTPUT, chromosome, start);
+        }
+
+        private MultipleOutputs<Variant, NullWritable> mos;
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+            mos = new MultipleOutputs<>(context);
+            context.getCounter(COUNTER_GROUP_NAME, "variants").increment(0);
+        }
+
+        @Override
+        protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
+            context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
+            if (baseOutputPath == null || !consecutiveChromosomes(chromosome, value.getChromosome())) {
+                baseOutputPath = buildOutputKeyPrefix(value.getChromosome(), value.getStart());
+                chromosome = value.getChromosome();
+            }
+            mos.write(NAMED_OUTPUT, value, NullWritable.get(), baseOutputPath);
+        }
+
+        private static boolean consecutiveChromosomes(String prevChromosome, String newChromosome) {
+            if (newChromosome.equals(prevChromosome)) {
+                return true;
+            }
+            if (VariantLocusKey.isSingleDigitChromosome(prevChromosome)) {
+                return VariantLocusKey.isSingleDigitChromosome(newChromosome);
+            } else {
+                return !VariantLocusKey.isSingleDigitChromosome(newChromosome);
+            }
+        }
+
+        @Override
+        protected void cleanup(Mapper<Object, Variant, Variant, NullWritable>.Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+            mos.close();
         }
     }
 

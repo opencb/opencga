@@ -41,7 +41,7 @@ public class StreamVariantReducer extends Reducer<VariantLocusKey, Text, Variant
                         // skip header
                         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "header_records_skip").increment(1);
                     } else {
-                        mos.write("stdout", key, value);
+                        mos.write(StreamVariantDriver.STDOUT_NAMED_OUTPUT, key, value);
                         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "header_records").increment(1);
                     }
                 } else {
@@ -53,14 +53,14 @@ public class StreamVariantReducer extends Reducer<VariantLocusKey, Text, Variant
                         // No more header, assume all header is written
                         headerWritten = true;
                     }
-                    mos.write("stdout", key, value);
+                    mos.write(StreamVariantDriver.STDOUT_NAMED_OUTPUT, key, value);
                     context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "body_records").increment(1);
                 }
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stdout_records").increment(1);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stdout_records_bytes")
                         .increment(value.getLength());
             } else if (key.getOther().startsWith(STDERR_KEY)) {
-                mos.write("stderr", key, value);
+                mos.write(StreamVariantDriver.STDERR_NAMED_OUTPUT, key, value);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stderr_records").increment(1);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stderr_records_bytes")
                         .increment(value.getLength());

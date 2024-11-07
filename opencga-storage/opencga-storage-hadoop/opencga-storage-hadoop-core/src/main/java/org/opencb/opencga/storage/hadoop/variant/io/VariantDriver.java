@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.io;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.Job;
@@ -50,8 +49,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
 
     public static final String OUTPUT_PARAM = "output";
     public static final String CONCAT_OUTPUT_PARAM = "concat-output";
-    protected Path outdir;
-    protected Path localOutput;
+    protected MapReduceOutputFile output;
     private final Query query = new Query();
     private final QueryOptions options = new QueryOptions();
     private static Logger logger = LoggerFactory.getLogger(VariantDriver.class);
@@ -61,25 +59,9 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
     protected void parseAndValidateParameters() throws IOException {
         setStudyId(-1);
         super.parseAndValidateParameters();
-        String outdirStr = getParam(OUTPUT_PARAM);
-        if (StringUtils.isEmpty(outdirStr)) {
-            throw new IllegalArgumentException("Missing argument " + OUTPUT_PARAM);
-        }
 
-        useReduceStep = Boolean.valueOf(getParam(CONCAT_OUTPUT_PARAM));
-        outdir = new Path(outdirStr);
-        if (isLocal(outdir)) {
-            localOutput = getLocalOutput(outdir);
-            outdir = getTempOutdir("opencga_export", localOutput.getName());
-            outdir.getFileSystem(getConf()).deleteOnExit(outdir);
-        }
-        if (localOutput != null) {
-            useReduceStep = true;
-            logger.info(" * Outdir file: " + localOutput.toUri());
-            logger.info(" * Temporary outdir file: " + outdir.toUri());
-        } else {
-            logger.info(" * Outdir file: " + outdir.toUri());
-        }
+//        useReduceStep = Boolean.valueOf(getParam(CONCAT_OUTPUT_PARAM));
+        output = new MapReduceOutputFile(getTableNameGenerator().getDbName() + "_" + getClass().getSimpleName());
 
         getQueryFromConfig(query, getConf());
         getQueryOptionsFromConfig(options, getConf());
@@ -156,7 +138,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
 
         setNoneTimestamp(job);
 
-        FileOutputFormat.setOutputPath(job, outdir); // set Path
+        FileOutputFormat.setOutputPath(job, output.getOutdir()); // set Path
 
         VariantMapReduceUtil.configureVariantConverter(job.getConfiguration(), false, true, true,
                 query.getString(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."));
@@ -193,16 +175,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
     @Override
     protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         super.postExecution(succeed);
-        if (localOutput != null) {
-            if (succeed) {
-                copyMrOutputToLocal();
-            }
-            deleteTemporaryFile(outdir);
-        }
-    }
-
-    protected void copyMrOutputToLocal() throws IOException {
-        concatMrOutputToLocal(outdir, localOutput, true, null);
+        output.postExecute(succeed);
     }
 
 }
