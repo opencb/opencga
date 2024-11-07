@@ -177,13 +177,13 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean post() {
         try {
-            variantsStream.flush();
-            variantsGenerator.flush();
+//            variantsStream.flush();
+//            variantsGenerator.flush();
 
             if (fileGenerator != null) {
                 fileGenerator.writeObject(fileMetadata);
-                fileStream.flush();
-                fileGenerator.flush();
+//                fileStream.flush();
+//                fileGenerator.flush();
             }
         } catch (IOException ex) {
             try {

@@ -33,12 +33,14 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
-import org.opencb.opencga.storage.hadoop.variant.io.MaxWriteBlockOutputStream;
+import org.opencb.opencga.storage.hadoop.variant.io.CountingOutputStream;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
 
 /**
@@ -71,7 +73,6 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
         if (isCompressed) {
             out = new DataOutputStream(codec.createOutputStream(out));
         }
-        out = new MaxWriteBlockOutputStream(out);
         return new VariantRecordWriter(configureWriter(job, out), out);
     }
 
@@ -100,11 +101,11 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
 
     protected static class VariantRecordWriter extends RecordWriter<Variant, NullWritable> {
         private final DataWriter<Variant> writer;
-        private final OutputStream outputStream;
+        private final CountingOutputStream outputStream;
 
         public VariantRecordWriter(DataWriter<Variant> writer, OutputStream outputStream) {
             this.writer = writer;
-            this.outputStream = outputStream;
+            this.outputStream = new CountingOutputStream(outputStream);
         }
 
         @Override
@@ -117,6 +118,7 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
             writer.post();
             writer.close();
             outputStream.close();
+            taskAttemptContext.getCounter(COUNTER_GROUP_NAME, "bytes_written").increment(outputStream.getByteCount());
         }
     }
 
