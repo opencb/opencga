@@ -175,4 +175,26 @@ public class VariantLocusKeyTest {
         // Assert that the read object is equal to the original object
         assertEquals(originalKey, readKey);
     }
+
+    @Test
+    public void shouldTestConsecutiveChromosomesWithAlternateConfigs() {
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("1", "1"));
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("1", "1_random"));
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("1", "2"));
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("1", "3"));
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("10", "11"));
+        assertFalse(VariantLocusKey.naturalConsecutiveChromosomes("1", "10"));
+        assertFalse(VariantLocusKey.naturalConsecutiveChromosomes("9", "10"));
+        assertFalse(VariantLocusKey.naturalConsecutiveChromosomes("2", "20"));
+        assertFalse(VariantLocusKey.naturalConsecutiveChromosomes("22", "X"));
+        assertFalse(VariantLocusKey.naturalConsecutiveChromosomes("1", "X"));
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("X", "Y"));
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("X", "Z"));
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("1_random", "1_random"));
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("1_randomA", "1_randomB"));
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("1_randomB", "1_randomA"));
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("1_random", "2_random"));
+        assertTrue(VariantLocusKey.naturalConsecutiveChromosomes("10_random", "11_random"));
+        assertFalse(VariantLocusKey.naturalConsecutiveChromosomes("1_random", "10_random"));
+    }
 }

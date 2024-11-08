@@ -215,22 +215,11 @@ public class VariantExporterDriver extends VariantDriver {
         @Override
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
-            if (baseOutputPath == null || !consecutiveChromosomes(chromosome, value.getChromosome())) {
+            if (baseOutputPath == null || !VariantLocusKey.naturalConsecutiveChromosomes(chromosome, value.getChromosome())) {
                 baseOutputPath = buildOutputKeyPrefix(NAMED_OUTPUT, value.getChromosome(), value.getStart());
                 chromosome = value.getChromosome();
             }
             mos.write(NAMED_OUTPUT, value, NullWritable.get(), baseOutputPath);
-        }
-
-        private static boolean consecutiveChromosomes(String prevChromosome, String newChromosome) {
-            if (newChromosome.equals(prevChromosome)) {
-                return true;
-            }
-            if (VariantLocusKey.isSingleDigitChromosome(prevChromosome)) {
-                return VariantLocusKey.isSingleDigitChromosome(newChromosome);
-            } else {
-                return !VariantLocusKey.isSingleDigitChromosome(newChromosome);
-            }
         }
 
         @Override

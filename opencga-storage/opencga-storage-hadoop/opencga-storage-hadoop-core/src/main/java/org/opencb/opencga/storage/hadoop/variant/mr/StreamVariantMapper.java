@@ -78,6 +78,8 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
     private long numRecordsRead = 0;
     private long numRecordsWritten = 0;
     private MultipleOutputs<VariantLocusKey, Text> mos;
+    private String stdoutBaseOutputPath;
+    private String stderrBaseOutputPath;
     // auto-incremental number for each produced record.
     // These are used with the VariantLocusKey to ensure a sorted output.
     private int stdoutKeyNum;
@@ -150,12 +152,11 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
                     // or if the chromosome changes
                     if (processedBytes > maxInputBytesPerProcess) {
                         LOG.info("Processed bytes = " + processedBytes + " > " + maxInputBytesPerProcess + ". Restarting process.");
-                        restartProcess(context, "bytes_limit");
-                    } else if (!currentChromosome.equals(currentValue.getChromosome())) {
-                        // TODO: Should we change only when the chromosome change would produce a partition change?
+                        restartProcess(context, "bytes_limit", false);
+                    } else if (!VariantLocusKey.naturalConsecutiveChromosomes(currentChromosome, currentValue.getChromosome())) {
                         LOG.info("Chromosome changed from " + currentChromosome + " to " + currentValue.getChromosome()
                                 + ". Restarting process.");
-                        restartProcess(context, "chr_change");
+                        restartProcess(context, "chr_change", true);
                     }
                     map(context.getCurrentKey(), currentValue, context);
                 } while (!hasExceptions() && context.nextKeyValue());
@@ -193,10 +194,10 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         throwExceptionIfAny();
     }
 
-    private void restartProcess(Mapper<Object, Variant, VariantLocusKey, Text>.Context context, String reason)
+    private void restartProcess(Mapper<Object, Variant, VariantLocusKey, Text>.Context context, String reason, boolean restartOutput)
             throws IOException, InterruptedException, StorageEngineException {
         context.getCounter(COUNTER_GROUP_NAME, "restarted_process_" + reason).increment(1);
-        closeProcess(context);
+        closeProcess(context, restartOutput);
         startProcess(context);
     }
 
@@ -267,7 +268,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
 
     @Override
     protected void cleanup(Mapper<Object, Variant, VariantLocusKey, Text>.Context context) throws IOException, InterruptedException {
-        closeProcess(context);
+        closeProcess(context, true);
         dockerPruneImages();
         super.cleanup(context);
     }
@@ -300,7 +301,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         processedBytes = stdin.size();
     }
 
-    private void closeProcess(Context context) throws IOException, InterruptedException {
+    private void closeProcess(Context context, boolean closeOutputs) throws IOException, InterruptedException {
 
         try {
             if (variantDataWriter != null) {
@@ -348,7 +349,8 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         }
 
         try {
-            if (mos != null) {
+            // Close the MultipleOutputs if required
+            if (mos != null && closeOutputs) {
                 mos.close();
                 mos = null;
             }
@@ -368,8 +370,10 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         if (firstVariant == null) {
             firstVariant = variant.getChromosome() + ":" + variant.getStart();
         }
-        if (multipleOutputs) {
+        if (multipleOutputs && mos == null) {
             mos = new MultipleOutputs<>(context);
+            stdoutBaseOutputPath = buildOutputKeyPrefix(STDOUT_NAMED_OUTPUT, currentChromosome, currentPosition);
+            stderrBaseOutputPath = buildOutputKeyPrefix(STDERR_NAMED_OUTPUT, currentChromosome, currentPosition);
         }
         stdoutKeyNum = 0;
         stderrKeyNum = 0;
@@ -503,8 +507,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
             VariantLocusKey locusKey = new VariantLocusKey(currentChromosome, currentPosition,
                     StreamVariantReducer.STDOUT_KEY + (stdoutKeyNum++));
             if (multipleOutputs) {
-                mos.write(STDOUT_NAMED_OUTPUT, locusKey, line,
-                        buildOutputKeyPrefix(STDOUT_NAMED_OUTPUT, currentChromosome, currentPosition));
+                mos.write(STDOUT_NAMED_OUTPUT, locusKey, line, stdoutBaseOutputPath);
             } else {
                 context.write(locusKey, line);
             }
@@ -592,8 +595,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
                     StreamVariantReducer.STDERR_KEY + (stderrKeyNum++));
 
             if (multipleOutputs) {
-                mos.write(STDERR_NAMED_OUTPUT, locusKey, line,
-                        buildOutputKeyPrefix(STDERR_NAMED_OUTPUT, currentChromosome, currentPosition));
+                mos.write(STDERR_NAMED_OUTPUT, locusKey, line, stderrBaseOutputPath);
             } else {
                 context.write(locusKey, line);
             }
