@@ -592,7 +592,12 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response submitOperation(String toolId, String project, String study, ToolParams params, String jobName, String jobDescription,
                                     String jobDependsOn, String jobTags, String jobScheduledStartTime, String jobPriority, Boolean dryRun) {
         try {
-            Map<String, Object> paramsMap = params.toParams();
+            Map<String, Object> paramsMap;
+            if (params != null) {
+                paramsMap = params.toParams();
+            } else {
+                paramsMap = new HashMap<>();
+            }
             if (StringUtils.isNotEmpty(study)) {
                 paramsMap.put(ParamConstants.STUDY_PARAM, study);
             }
