@@ -5,11 +5,13 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
+import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
@@ -162,9 +164,13 @@ public class StreamVariantDriver extends VariantDriver {
         outputFormatClass = LazyOutputFormat.class;
 
         job.setOutputFormatClass(ValueOnlyTextOutputFormat.class);
-        TextOutputFormat.setCompressOutput(job, true);
-        TextOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
-//        TextOutputFormat.setOutputCompressorClass(job, DeflateCodec.class);
+        if (SnappyCodec.isNativeCodeLoaded()) {
+            FileOutputFormat.setCompressOutput(job, true);
+            FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+        } else {
+            FileOutputFormat.setCompressOutput(job, true);
+            FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
+        }
         job.setOutputKeyClass(keyClass);
         job.setOutputValueClass(valueClass);
     }

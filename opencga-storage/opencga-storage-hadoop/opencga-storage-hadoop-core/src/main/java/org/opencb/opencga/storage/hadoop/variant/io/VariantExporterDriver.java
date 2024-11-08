@@ -140,10 +140,12 @@ public class VariantExporterDriver extends VariantDriver {
                     LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
                     outputFormatClass = LazyOutputFormat.class;
                 }
-                if (outputFormat.isGzip()) {
-                    FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression
-                } else if (outputFormat.isSnappy()) {
-                    FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class); // compression
+                if (SnappyCodec.isNativeCodeLoaded()) {
+                    FileOutputFormat.setCompressOutput(job, true);
+                    FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+                } else {
+                    FileOutputFormat.setCompressOutput(job, true);
+                    FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
                 }
                 job.getConfiguration().set(VariantFileOutputFormat.VARIANT_OUTPUT_FORMAT, outputFormat.name());
                 job.setOutputKeyClass(Variant.class);
