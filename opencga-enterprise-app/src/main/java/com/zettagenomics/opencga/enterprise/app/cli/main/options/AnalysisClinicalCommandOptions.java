@@ -2092,11 +2092,8 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = true, arity = 1)
+        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
-        public String study; 
     
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = true, arity = 1)
         public String cvId; 

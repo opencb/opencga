@@ -264,7 +264,7 @@ public class CvdbUtilsTest {
         assertEquals(1, cvResult.getNumResults());
         assertTrue(TestUtilities.existsVariantId(query.getString(VariantQueryParam.ID.key()), cvResult.getResults()));
 
-        DataResult<ClinicalVariantSummaryStats> summaryResult = cvdbEngine.getClinicalVariantSummaryStats(query.getString(VariantQueryParam.ID.key()), null, PROJECT, STUDY, token);
+        DataResult<ClinicalVariantSummaryStats> summaryResult = cvdbEngine.getClinicalVariantSummaryStats(query.getString(VariantQueryParam.ID.key()), null, PROJECT, token);
         assertEquals(1, summaryResult.getNumResults());
     }
 
