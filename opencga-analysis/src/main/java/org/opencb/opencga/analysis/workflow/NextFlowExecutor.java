@@ -18,8 +18,12 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
-import org.opencb.opencga.core.models.workflow.*;
+import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
+import org.opencb.opencga.core.models.workflow.Workflow;
+import org.opencb.opencga.core.models.workflow.WorkflowScript;
+import org.opencb.opencga.core.models.workflow.WorkflowVariable;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.ToolDependency;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.result.Status;
@@ -111,6 +115,14 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         if (CollectionUtils.isNotEmpty(workflow.getTags())) {
             tags.addAll(workflow.getTags());
         }
+        List<ToolDependency> dependencyList = new ArrayList<>(4);
+        dependencyList.add(new ToolDependency("opencb/opencga-workflow", "TASK-6445"));
+        dependencyList.add(new ToolDependency("nextflow", workflow.getManager().getVersion()));
+        dependencyList.add(new ToolDependency(workflow.getId(), String.valueOf(workflow.getVersion())));
+        if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getId())) {
+            dependencyList.add(new ToolDependency(workflow.getRepository().getId(), workflow.getRepository().getVersion()));
+        }
+        addDependencies(dependencyList);
         updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
         StringBuilder cliParamsBuilder = new StringBuilder();

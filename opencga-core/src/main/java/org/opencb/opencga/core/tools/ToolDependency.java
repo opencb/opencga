@@ -9,6 +9,11 @@ public class ToolDependency {
     public ToolDependency() {
     }
 
+    public ToolDependency(String id, String version) {
+        this.id = id;
+        this.version = version;
+    }
+
     public ToolDependency(String id, String version, String commit) {
         this.id = id;
         this.version = version;

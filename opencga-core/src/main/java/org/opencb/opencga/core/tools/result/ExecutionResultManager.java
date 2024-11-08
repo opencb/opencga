@@ -29,6 +29,7 @@ import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.ToolDependency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -258,6 +259,17 @@ public class ExecutionResultManager {
                 step = getStep(result, result.getStatus().getStep());
             }
             return step.getAttributes().put(key, value);
+        });
+    }
+
+    public void addDependency(ToolDependency dependency) throws ToolException {
+        addDependencies(Collections.singletonList(dependency));
+    }
+
+    public void addDependencies(List<ToolDependency> dependencyList) throws ToolException {
+        updateResult(result -> {
+            result.getDependencies().addAll(dependencyList);
+            return null;
         });
     }
 

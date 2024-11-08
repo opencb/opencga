@@ -72,6 +72,7 @@ public class ExecutionResult {
     public ExecutionResult() {
         executor = new ExecutorInfo();
         status = Status.initStatus();
+        dependencies = new LinkedList<>();
         events = new LinkedList<>();
         externalFiles = new LinkedList<>();
         steps = new LinkedList<>();
@@ -85,6 +86,7 @@ public class ExecutionResult {
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
         sb.append(", status=").append(status);
+        sb.append(", dependencies=").append(dependencies);
         sb.append(", externalFiles=").append(externalFiles);
         sb.append(", steps=").append(steps);
         sb.append(", events=").append(events);
@@ -144,6 +146,15 @@ public class ExecutionResult {
 
     public ExecutionResult setEvents(List<Event> events) {
         this.events = events;
+        return this;
+    }
+
+    public List<ToolDependency> getDependencies() {
+        return dependencies;
+    }
+
+    public ExecutionResult setDependencies(List<ToolDependency> dependencies) {
+        this.dependencies = dependencies;
         return this;
     }
 
