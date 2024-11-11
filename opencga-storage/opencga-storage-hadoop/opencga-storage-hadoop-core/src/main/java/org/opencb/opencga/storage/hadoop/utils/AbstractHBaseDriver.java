@@ -37,6 +37,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.variant.executors.SshMRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantTableInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,6 +171,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         LOGGER.info("   * InputFormat   : " + job.getInputFormatClass().getName());
         if (StringUtils.isNotEmpty(job.getConfiguration().get(TableInputFormat.INPUT_TABLE))) {
             LOGGER.info("     - InputTable  : " + job.getConfiguration().get(TableInputFormat.INPUT_TABLE));
+            if (job.getConfiguration().getBoolean(AbstractHBaseVariantTableInputFormat.USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, false)) {
+                String sampleIndexTable = job.getConfiguration().get(AbstractHBaseVariantTableInputFormat.SAMPLE_INDEX_TABLE);
+                if (StringUtils.isNotEmpty(sampleIndexTable)) {
+                    LOGGER.info("     - SecondarySampleIndexTable  : " + sampleIndexTable);
+                } else {
+                    LOGGER.info("     - SecondarySampleIndexTable  : (not set)");
+                }
+            }
         } else if (StringUtils.isNotEmpty(job.getConfiguration().get(PhoenixConfigurationUtil.INPUT_TABLE_NAME))) {
             LOGGER.info("     - InputPTable : " + job.getConfiguration().get(PhoenixConfigurationUtil.INPUT_TABLE_NAME));
         } else if (StringUtils.isNotEmpty(job.getConfiguration().get(FileInputFormat.INPUT_DIR))) {

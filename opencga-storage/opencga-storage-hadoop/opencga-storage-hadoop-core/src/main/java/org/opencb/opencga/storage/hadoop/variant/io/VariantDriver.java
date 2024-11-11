@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.io;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.OutputFormat;
@@ -12,21 +11,13 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
@@ -110,31 +101,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
             VariantMapReduceUtil.setNoneReduce(job);
         }
 
-        VariantQueryParser variantQueryParser = new HadoopVariantQueryParser(null, getMetadataManager());
-        ParsedVariantQuery variantQuery = variantQueryParser.parseQuery(query, options);
-        Query query = variantQuery.getQuery();
-        if (VariantHBaseQueryParser.isSupportedQuery(query)) {
-            logger.info("Init MapReduce job reading from HBase");
-            boolean useSampleIndex = !getConf().getBoolean("skipSampleIndex", false) && SampleIndexQueryParser.validSampleIndexQuery(query);
-            if (useSampleIndex) {
-                // Remove extra fields from the query
-                new SampleIndexDBAdaptor(getHBaseManager(), getTableNameGenerator(), getMetadataManager()).parseSampleIndexQuery(query);
-
-                logger.info("Use sample index to read from HBase");
-            }
-
-            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(getMetadataManager());
-            List<Scan> scans = parser.parseQueryMultiRegion(variantQuery, options);
-            VariantMapReduceUtil.configureMapReduceScans(scans, getConf());
-
-            VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex);
-        } else {
-            logger.info("Init MapReduce job reading from Phoenix");
-            String sql = new VariantSqlQueryParser(variantTable, getMetadataManager(), getHelper().getConf())
-                    .parse(variantQuery, options);
-
-            VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
-        }
+        VariantMapReduceUtil.initVariantMapperJob(job, mapperClass, variantTable, getMetadataManager(), query, options, false);
 
         setNoneTimestamp(job);
 
