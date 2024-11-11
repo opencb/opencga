@@ -206,7 +206,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     public abstract DBIterator<R> iterator(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException;
 
-    public abstract OpenCGAResult facet(String studyStr, Query query, String facet, String token) throws CatalogException;
+    public abstract OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException;
 
     /**
      * Search of entries in catalog.

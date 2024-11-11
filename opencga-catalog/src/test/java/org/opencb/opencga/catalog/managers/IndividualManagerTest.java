@@ -1144,7 +1144,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
     public void testFacet() throws CatalogException {
         OpenCGAResult<Individual> results = catalogManager.getIndividualManager().search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
         System.out.println("results.getResults() = " + results.getResults());
-        OpenCGAResult<List<FacetField>> facets = catalogManager.getIndividualManager().facet(studyFqn, new Query(), "karyotypicSex", normalToken1);
+        OpenCGAResult<FacetField> facets = catalogManager.getIndividualManager().facet(studyFqn, new Query(), "karyotypicSex", normalToken1);
 
         long totalCount = 0;
         Map<String, Integer> map = new HashMap<>();
@@ -1163,8 +1163,8 @@ public class IndividualManagerTest extends AbstractManagerTest {
         }
 
         Assert.assertEquals(1, facets.getResults().size());
-        for (FacetField result : facets.getResults().get(0)) {
-            Assert.assertEquals(totalCount, result.getCount());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount().longValue());
             Assert.assertEquals(map.size(), result.getBuckets().size());
             for (FacetField.Bucket bucket : result.getBuckets()) {
                 Assert.assertEquals(1L * map.get(bucket.getValue()), bucket.getCount());

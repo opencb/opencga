@@ -1003,7 +1003,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
     }
 
     @Override
-    public OpenCGAResult facet(long studyUid, Query query, String facet, String userId)
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, userId);
         return facet(clinicalCollection, bson, facet);

@@ -1444,7 +1444,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
 
         OpenCGAResult<Family> results = catalogManager.getFamilyManager().search(studyFqn, new Query(), QueryOptions.empty(), ownerToken);
         System.out.println("results.getResults() = " + results.getResults());
-        OpenCGAResult<List<FacetField>> facets = catalogManager.getFamilyManager().facet(studyFqn, new Query(), "max(version)", normalToken1);
+        OpenCGAResult<FacetField> facets = catalogManager.getFamilyManager().facet(studyFqn, new Query(), "max(version)", normalToken1);
 
         long maxValue = 0;
         for (Family result : results.getResults()) {
@@ -1454,7 +1454,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
         }
 
         Assert.assertEquals(1, facets.getResults().size());
-        for (FacetField result : facets.getResults().get(0)) {
+        for (FacetField result : facets.getResults()) {
             Assert.assertEquals(max.name(), result.getAggregationName());
             Assert.assertEquals(1, result.getAggregationValues().size());
             Assert.assertEquals(maxValue, result.getAggregationValues().get(0), 0.0001);

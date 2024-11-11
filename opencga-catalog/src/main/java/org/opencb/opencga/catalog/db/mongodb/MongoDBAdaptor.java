@@ -25,7 +25,7 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDBFacetToFacetFieldsConverter;
+import org.opencb.commons.datastore.mongodb.MongoDBDocumentToFacetFieldsConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -326,16 +326,21 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected OpenCGAResult facet(MongoDBCollection collection, Bson query, String facet) throws CatalogDBException {
+    protected OpenCGAResult<FacetField> facet(MongoDBCollection collection, Bson query, String facet) throws CatalogDBException {
         if (StringUtils.isEmpty(facet)) {
             throw new CatalogDBException("The aggregation stats field is empty.");
         }
-        MongoDBFacetToFacetFieldsConverter converter = new MongoDBFacetToFacetFieldsConverter();
+        MongoDBDocumentToFacetFieldsConverter converter = new MongoDBDocumentToFacetFieldsConverter();
         List<Bson> facets = MongoDBQueryUtils.createFacet(query, facet);
         logger.info("facet; input = {}", facets);
         DataResult<List<FacetField>> aggregate = collection.aggregate(facets, converter, null);
         logger.info("facet; output = {}", aggregate.getResults());
-        return new OpenCGAResult<>(aggregate);
+
+        List<FacetField> facetFields = aggregate.getResults().get(0);
+        DataResult<FacetField> result = new DataResult<>(aggregate.getTime(), aggregate.getEvents(), facetFields.size(), facetFields,
+                facetFields.size());
+
+        return new OpenCGAResult<>(result);
     }
 
     protected OpenCGAResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {

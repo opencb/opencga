@@ -1055,7 +1055,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public OpenCGAResult facet(long studyUid, Query query, String facet, String userId)
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }

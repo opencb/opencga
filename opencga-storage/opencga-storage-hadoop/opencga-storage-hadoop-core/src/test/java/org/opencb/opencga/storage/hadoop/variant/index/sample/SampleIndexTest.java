@@ -854,7 +854,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         String msg = "aggregation for ct:" + ct + " expected count " + count.get() + " : "
                 + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet);
-        assertEquals(msg, count.get(), facet.getCount());
+        assertEquals(msg, count.get(), facet.getCount().longValue());
         FacetField.Bucket bucket = facet.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
         FacetField.Bucket bucketAll = facetAll.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
         System.out.println("ct = " + ct + " : " + count.get());
@@ -946,7 +946,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions()).forEachRemaining(v -> count.incrementAndGet());
         FacetField facet = executor.aggregation(new Query(query), new QueryOptions(QueryOptions.FACET, "consequenceType")).first();
 
-        assertEquals(count.get(), facet.getCount());
+        assertEquals(count.get(), facet.getCount().longValue());
         FacetField.Bucket bucket = facet.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
 //        System.out.println("ct = " + ct + " : " + count.get());
 //            System.out.println("facet = " + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
