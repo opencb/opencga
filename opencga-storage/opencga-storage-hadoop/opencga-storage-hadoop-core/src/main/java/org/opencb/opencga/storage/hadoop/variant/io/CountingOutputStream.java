@@ -30,6 +30,11 @@ public class CountingOutputStream extends FilterOutputStream {
         count += len;
     }
 
+    @Override
+    public void close() throws IOException {
+        out.close();
+    }
+
     public long getByteCount() {
         return count;
     }

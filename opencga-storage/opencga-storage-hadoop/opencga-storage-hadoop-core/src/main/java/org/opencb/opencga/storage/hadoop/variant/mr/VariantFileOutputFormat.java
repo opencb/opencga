@@ -17,8 +17,10 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.azurebfs.services.AbfsOutputStream;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
@@ -37,6 +39,7 @@ import org.opencb.opencga.storage.hadoop.variant.io.CountingOutputStream;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.DataOutputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -69,7 +72,19 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
         }
         Path file = this.getDefaultWorkFile(job, extension);
         FileSystem fs = file.getFileSystem(conf);
-        OutputStream out = fs.create(file, false);
+        FSDataOutputStream fsOs = fs.create(file, false);
+        OutputStream out;
+        if (fsOs.getWrappedStream() instanceof AbfsOutputStream) {
+            // Disable flush on ABFS. See HADOOP-16548
+            out = new FilterOutputStream(fsOs) {
+                @Override
+                public void flush() throws IOException {
+                    // Do nothing
+                }
+            };
+        } else {
+            out = fsOs;
+        }
         if (isCompressed) {
             out = new DataOutputStream(codec.createOutputStream(out));
         }
