@@ -41,7 +41,10 @@ import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryPar
 
 public class ClinicalQueryParser {
 
-    SolrQueryParser solrParser;
+    protected String opencgaDbPrefix;
+    protected String cvdbPrefix;
+
+    private SolrQueryParser solrParser;
 
     public static Set<String> CA_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CA_TYPE_NAME, CA_DISORDER_ID_NAME, CA_FILENAME_NAME,
             CA_PROBAND_ID_NAME, CA_FAMILY_ID_NAME, CA_FAMILY_PHENOTYPE_NAME_NAME, CA_FAMILY_MEMBER_ID_NAME, CA_STATUS_NAME,
@@ -104,8 +107,11 @@ public class ClinicalQueryParser {
 
     protected static Logger logger = LoggerFactory.getLogger(ClinicalQueryParser.class);
 
-    protected ClinicalQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
-        solrParser = new SolrQueryParser(variantStorageMetadataManager);
+    protected ClinicalQueryParser(String opencgaDbPrefix, String cvdbPrefix,
+                                  VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.opencgaDbPrefix = opencgaDbPrefix;
+        this.cvdbPrefix = cvdbPrefix;
+        this.solrParser = new SolrQueryParser(variantStorageMetadataManager);
     }
 
     public SolrQuery parse(Query query, QueryOptions queryOptions) throws CvdbException {

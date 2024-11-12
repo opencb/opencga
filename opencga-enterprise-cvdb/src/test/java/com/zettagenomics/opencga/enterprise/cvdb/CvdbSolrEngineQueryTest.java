@@ -2014,7 +2014,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(EXCLUDE, "panels,interpretation.panels,secondaryInterpretations.panels");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("mediumJson", solrQuery.getFields());
     }
@@ -2029,7 +2029,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(EXCLUDE, "panels,interpretation.panels");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2054,7 +2054,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(EXCLUDE, "panels");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2083,7 +2083,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,family.members.id");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertTrue(solrQuery.getFields().contains("id"));
         assertTrue(solrQuery.getFields().contains("familyMemberIds"));
@@ -2113,7 +2113,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,family.members.sex");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
 
@@ -2143,7 +2143,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,type,proband.id,proband.samples.id,family.id,family.members.id,disorder.id,interpretation.id,interpretation.stats,panels.id,panels.name,panels.source,panels.stats");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
 
@@ -2182,7 +2182,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,family.members.name,interpretation.primaryFindings.annotation");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("mediumJson", solrQuery.getFields());
     }
@@ -2197,7 +2197,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,family.members.name");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
     }
@@ -2211,7 +2211,7 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2248,7 +2248,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "panels");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2278,7 +2278,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "interpretation.primaryFindings.id");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
 
@@ -2302,7 +2302,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id");
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("id", solrQuery.getFields());
     }
@@ -2317,7 +2317,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "primaryFindings.evidences");
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
     }
@@ -2332,7 +2332,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "primaryFindings.annotation.id");
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("mediumJson", solrQuery.getFields());
     }
@@ -2347,7 +2347,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "panels.genes");
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
     }
@@ -2362,7 +2362,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MINIMUM_JSON);
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
     }
@@ -2377,7 +2377,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MEDIUM_JSON);
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("mediumJson", solrQuery.getFields());
     }
@@ -2392,7 +2392,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MEDIUM_JSON);
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("mediumJson", solrQuery.getFields());
 
@@ -2422,7 +2422,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MINIMUM_JSON);
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
 
@@ -2443,7 +2443,7 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "interpretation.description");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
 
@@ -2469,7 +2469,7 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2501,7 +2501,7 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2532,7 +2532,7 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2563,7 +2563,7 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 

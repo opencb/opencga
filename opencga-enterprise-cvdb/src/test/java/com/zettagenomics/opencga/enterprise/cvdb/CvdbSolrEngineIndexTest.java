@@ -42,7 +42,6 @@ import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_ANALYSES_COLLECTION_SUFFIX;
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.getCollectionName;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CA_ID_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -56,10 +55,10 @@ public class CvdbSolrEngineIndexTest {
     protected Study study;
 
     @Rule
-    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);;
+    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     @Rule
-    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);
 
     protected CatalogManager catalogManager;
     private String opencgaToken;
@@ -117,7 +116,7 @@ public class CvdbSolrEngineIndexTest {
         solrQuery.setRows(100);
 
         // Execute the Solr query
-        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+        QueryResponse response = cvdbEngine.getSolrClient().query(cvdbEngine.getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
                 solrQuery);
 
         // Print out the results
@@ -142,7 +141,7 @@ public class CvdbSolrEngineIndexTest {
         solrQuery.setRows(100);
 
         // Execute the Solr query
-        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+        QueryResponse response = cvdbEngine.getSolrClient().query(cvdbEngine.getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
                 solrQuery);
 
         // Print out the results
@@ -181,7 +180,7 @@ public class CvdbSolrEngineIndexTest {
         solrQuery.setRows(100);
 
         // Execute the Solr query
-        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+        QueryResponse response = cvdbEngine.getSolrClient().query(cvdbEngine.getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
                 solrQuery);
 
         // Print out the results

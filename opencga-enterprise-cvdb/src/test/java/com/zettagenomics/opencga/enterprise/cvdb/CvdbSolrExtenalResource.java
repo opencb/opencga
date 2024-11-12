@@ -1,6 +1,7 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.core.GitUtils;
+import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -11,6 +12,7 @@ import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,10 +24,12 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
+import static org.junit.Assert.fail;
 
 public class CvdbSolrExtenalResource extends ExternalResource {
 
     private SolrClient solrClient;
+
     protected boolean embeded;
     private String projectId;
 
@@ -35,9 +39,23 @@ public class CvdbSolrExtenalResource extends ExternalResource {
 
     private static Path rootDir;
 
+    private Configuration configuration;
+    private EnterpriseConfiguration enterpriseConfiguration;
+
     public CvdbSolrExtenalResource(boolean embeded, String projectId) {
         this.embeded = embeded;
         this.projectId = projectId;
+
+        try {
+            this.configuration = Configuration.load(CvdbSolrExtenalResource.class.getResourceAsStream("/configuration-test.yml"));
+            this.enterpriseConfiguration = EnterpriseConfiguration.load(CvdbSolrExtenalResource.class.getResourceAsStream("/enterprise-configuration.yml"));
+
+            System.out.println("this.configuration.getDatabasePrefix() = " + this.configuration.getDatabasePrefix());
+            System.out.println("this.enterpriseConfiguration.getCvdb().getPrefix() = " + this.enterpriseConfiguration.getCvdb().getPrefix());
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail();
+        }
     }
 
     @Override
@@ -59,10 +77,10 @@ public class CvdbSolrExtenalResource extends ExternalResource {
 
         if (embeded) {
             solrClient = create(solrHome, rootDir.resolve("configsets").toString(),
-                    getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX)
-                            + "," + getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX)
-                            + "," + getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX)
-                            + "," + getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
+                    CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), enterpriseConfiguration.getCvdb().getPrefix(), projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX)
+                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), enterpriseConfiguration.getCvdb().getPrefix(), projectId, INTERPRETATIONS_COLLECTION_SUFFIX)
+                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), enterpriseConfiguration.getCvdb().getPrefix(), projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX)
+                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), enterpriseConfiguration.getCvdb().getPrefix(), projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
         } else {
             SolrManager solrManager = new SolrManager(solrHost, solrMode, solrTimeout);
             this.solrClient = solrManager.getSolrClient();
@@ -100,7 +118,7 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     }
 
     public CvdbSolrEngine configure() {
-        CvdbSolrEngine cvdbEngine = new CvdbSolrEngine();
+        CvdbSolrEngine cvdbEngine = new CvdbSolrEngine(configuration, enterpriseConfiguration.getCvdb());
         cvdbEngine.setSolrManager(new SolrManager(solrClient, solrHost, solrMode));
         return cvdbEngine;
     }

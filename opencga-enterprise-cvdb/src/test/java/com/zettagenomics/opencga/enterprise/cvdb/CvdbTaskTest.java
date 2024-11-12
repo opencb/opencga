@@ -6,6 +6,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParam
 import org.junit.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -42,7 +43,7 @@ public class CvdbTaskTest {
     private ToolRunner toolRunner;
 
     @Rule
-    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);;
+    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);
 
     @Rule
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
@@ -180,8 +181,9 @@ public class CvdbTaskTest {
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(CvdbIndexTask.class.getClassLoader()
                 .getResource("enterprise-configuration.yml").openStream());
 
-        CvdbSolrEngine cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), null, null);
-        return cvdbEngine.getSolrManager().isAlive();
+        return new SolrManager(enterpriseConfiguration.getCvdb().getDatabase().getHosts(),
+                enterpriseConfiguration.getCvdb().getDatabase().getMode(),
+                enterpriseConfiguration.getCvdb().getDatabase().getTimeout()).isAlive();
     }
 
 }

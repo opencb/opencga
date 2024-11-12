@@ -55,6 +55,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -77,7 +78,8 @@ import java.util.stream.Collectors;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.*;
-import static org.opencb.commons.datastore.core.QueryOptions.*;
+import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
+import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 import static org.opencb.opencga.core.api.ParamConstants.ANONYMOUS_USER_ID;
 
 /**
@@ -89,6 +91,9 @@ public class CvdbSolrEngine {
     private CatalogManager catalogManager;
     private VariantStorageMetadataManager variantStorageMetadataManager;
 
+    private Configuration configuration;
+    private CvdbConfiguration cvdbConfiguration;
+
     private ClinicalAnalysisConverter caConverter;
     private ClinicalInterpretationConverter ciConverter;
     private ClinicalVariantConverter cvConverter;
@@ -99,10 +104,10 @@ public class CvdbSolrEngine {
     public static final String NO_ACCESS_FOR_ANONYMOUS_USERS_MSG = "Access to CVDB is restricted for anonymous users. Please log in to"
             + " proceed.";
 
-    public static final String CLINICAL_ANALYSES_COLLECTION_SUFFIX = "_cvdb_analyses";
-    public static final String INTERPRETATIONS_COLLECTION_SUFFIX = "_cvdb_interpretations";
-    public static final String CLINICAL_VARIANTS_COLLECTION_SUFFIX = "_cvdb_variants";
-    public static final String CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX = "_cvdb_evidences";
+    public static final String CLINICAL_ANALYSES_COLLECTION_SUFFIX = "_analyses";
+    public static final String INTERPRETATIONS_COLLECTION_SUFFIX = "_interpretations";
+    public static final String CLINICAL_VARIANTS_COLLECTION_SUFFIX = "_variants";
+    public static final String CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX = "_evidences";
 
     public static final List<String> COLLECTION_SUFFIXES = Arrays.asList(CLINICAL_ANALYSES_COLLECTION_SUFFIX,
             INTERPRETATIONS_COLLECTION_SUFFIX,
@@ -125,11 +130,17 @@ public class CvdbSolrEngine {
 
     public static final String WITHOUT_ID = "-234";
 
-    public CvdbSolrEngine() {
+    public CvdbSolrEngine(Configuration configuration, CvdbConfiguration cvdbConfiguration) {
+        this.configuration = configuration;
+        this.cvdbConfiguration = cvdbConfiguration;
+
         init();
     }
 
     public CvdbSolrEngine(CvdbConfiguration cvdbConfig, CatalogManager catalogManager, VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.configuration = catalogManager.getConfiguration();
+        this.cvdbConfiguration = cvdbConfig;
+
         this.solrManager = new SolrManager(cvdbConfig.getDatabase().getHosts(), cvdbConfig.getDatabase().getMode(),
                 cvdbConfig.getDatabase().getTimeout());
         this.catalogManager = catalogManager;
@@ -151,8 +162,9 @@ public class CvdbSolrEngine {
     // P U B L I C      M E T H O D S
     //----------------------------------------------------------------------
 
-    public static String getCollectionName(String projectId, String suffix) {
-        return "opencga_" + projectId + suffix;
+    public String getCollectionName(String projectId, String suffix) {
+        return CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), cvdbConfiguration.getPrefix(), projectId,
+                suffix);
     }
 
     public CvdbIndexResult indexProject(String projectId, CatalogManager catalogManager, boolean overwrite, String sessionIdUser)
@@ -336,7 +348,8 @@ public class CvdbSolrEngine {
         setViewerInQuery(query, token);
 
         // Parse query
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(variantStorageMetadataManager);
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(catalogManager.getConfiguration().getDatabasePrefix(),
+                cvdbConfiguration.getPrefix(), variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         if (queryOptions.containsKey(INCLUDE)) {
             List<String> includeList = new ArrayList<>();
@@ -376,7 +389,8 @@ public class CvdbSolrEngine {
         checkFacet(query, queryOptions, CA_FACET_FIELD_SET);
 
         // Parse query
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(variantStorageMetadataManager);
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(catalogManager.getConfiguration().getDatabasePrefix(),
+                cvdbConfiguration.getPrefix(), variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
 
         // Execute query
@@ -425,7 +439,8 @@ public class CvdbSolrEngine {
         setViewerInQuery(query, token);
 
         // Parse query
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(variantStorageMetadataManager);
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(
+                catalogManager.getConfiguration().getDatabasePrefix(), cvdbConfiguration.getPrefix(), variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         if (queryOptions.containsKey(INCLUDE)) {
             List<String> includeList = new ArrayList<>();
@@ -465,7 +480,8 @@ public class CvdbSolrEngine {
         checkFacet(query, queryOptions, CI_FACET_FIELD_SET);
 
         // Parse query
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(variantStorageMetadataManager);
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(
+                catalogManager.getConfiguration().getDatabasePrefix(), cvdbConfiguration.getPrefix(), variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
 
         // Execute query
@@ -514,7 +530,8 @@ public class CvdbSolrEngine {
         setViewerInQuery(query, token);
 
         // Parse query
-        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(variantStorageMetadataManager);
+        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(catalogManager.getConfiguration().getDatabasePrefix(),
+                cvdbConfiguration.getPrefix(), variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         if (queryOptions.containsKey(INCLUDE)) {
             List<String> includeList = new ArrayList<>();
@@ -546,7 +563,8 @@ public class CvdbSolrEngine {
         checkFacet(query, queryOptions, CV_FACET_FIELD_SET);
 
         // Parse query
-        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(variantStorageMetadataManager);
+        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(catalogManager.getConfiguration().getDatabasePrefix(),
+                cvdbConfiguration.getPrefix(), variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
 
         // Execute query
@@ -595,7 +613,8 @@ public class CvdbSolrEngine {
         setViewerInQuery(query, token);
 
         // Parse query
-        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(variantStorageMetadataManager);
+        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(
+                catalogManager.getConfiguration().getDatabasePrefix(), cvdbConfiguration.getPrefix(), variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
 
         // Execute query
@@ -615,7 +634,8 @@ public class CvdbSolrEngine {
         checkFacet(query, queryOptions, CVE_FACET_FIELD_SET);
 
         // Parse query
-        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(variantStorageMetadataManager);
+        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(
+                catalogManager.getConfiguration().getDatabasePrefix(), cvdbConfiguration.getPrefix(), variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
 
         // Execute query
@@ -1043,6 +1063,15 @@ public class CvdbSolrEngine {
     //----------------------------------------------------------------------
     // G E T T E R S     A N D      S E T T E R S
     //----------------------------------------------------------------------
+
+    public CvdbConfiguration getCvdbConfiguration() {
+        return cvdbConfiguration;
+    }
+
+    public CvdbSolrEngine setCvdbConfiguration(CvdbConfiguration cvdbConfiguration) {
+        this.cvdbConfiguration = cvdbConfiguration;
+        return this;
+    }
 
     public SolrManager getSolrManager() {
         return solrManager;
