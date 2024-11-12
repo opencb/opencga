@@ -474,6 +474,10 @@ public abstract class OpenCgaTool {
         return params;
     }
 
+    public final String refreshToken() throws CatalogException {
+        return catalogManager.getUserManager().refreshToken(token).getToken();
+    }
+
     private ToolParams findToolParams() throws ToolException {
         for (Field field : getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(org.opencb.opencga.core.tools.annotations.ToolParams.class)

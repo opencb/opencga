@@ -60,7 +60,8 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
         tags.add(this.dockerImage);
         updateJobInformation(tags, toolInfoExecutor);
 
-        StringBuilder cliParamsBuilder = new StringBuilder();
+        StringBuilder cliParamsBuilder = new StringBuilder()
+                .append(" --opencga-token ").append(refreshToken());
         processInputParams(runParams.getCommandLine(), cliParamsBuilder);
         this.cliParams = cliParamsBuilder.toString();
     }

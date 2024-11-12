@@ -208,7 +208,11 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
         String dockerImage = "opencb/opencga-workflow:TASK-6445";
         StringBuilder stringBuilder = new StringBuilder()
-                .append("bash -c \"NXF_VER=").append(workflow.getManager().getVersion()).append(" nextflow -c ").append(nextflowConfigPath).append(" run ");
+                .append("bash -c \"NXF_VER=")
+                .append(workflow.getManager().getVersion())
+                .append(" nextflow -c ")
+                .append(nextflowConfigPath)
+                .append(" run ");
         if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getId())) {
 //            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
             stringBuilder.append(workflow.getRepository().getId());
@@ -223,7 +227,9 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         if (StringUtils.isNotEmpty(cliParams)) {
             stringBuilder.append(" ").append(cliParams);
         }
-        stringBuilder.append(" -with-report ").append(outDirPath).append("/report.html\"");
+        stringBuilder
+                .append(" --opencga-token ").append(refreshToken())
+                .append(" -with-report ").append(outDirPath).append("/report.html\"");
 
         startTraceFileMonitor();
 
