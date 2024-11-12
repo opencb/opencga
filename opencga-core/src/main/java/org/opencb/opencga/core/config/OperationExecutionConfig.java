@@ -20,6 +20,7 @@ public class OperationExecutionConfig {
     public enum Policy {
         IMMEDIATE,
         NIGHTLY,
+        WEEKLY,
         NEVER
     }
 
