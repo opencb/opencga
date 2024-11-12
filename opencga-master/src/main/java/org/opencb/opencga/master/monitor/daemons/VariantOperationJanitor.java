@@ -29,6 +29,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -98,6 +100,11 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
 
         if (!isNightTime() && config.getPolicy() == OperationExecutionConfig.Policy.NIGHTLY) {
             logger.info("Waiting until night time to check for pending operation '{}'", toolId);
+            return;
+        }
+
+        if (!isWeekend() && config.getPolicy() == OperationExecutionConfig.Policy.WEEKLY) {
+            logger.info("Waiting until weekend to check for pending operation '{}'", toolId);
             return;
         }
 
@@ -358,6 +365,12 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
             isNightTime = true;
         }
         return isNightTime;
+    }
+
+    private static boolean isWeekend() {
+        LocalDate today = LocalDate.now();
+        DayOfWeek dayOfWeek = today.getDayOfWeek();
+        return dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
     }
 
     private boolean pendingJobs(String studyIds, String toolId) throws CatalogException {
