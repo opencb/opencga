@@ -45,6 +45,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.TO_REPLACE_DOTS;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 
 /**
@@ -336,9 +337,16 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
         DataResult<List<FacetField>> aggregate = collection.aggregate(facets, converter, null);
         logger.info("facet; output = {}", aggregate.getResults());
 
+        // Replace "&#46;" by .
         List<FacetField> facetFields = aggregate.getResults().get(0);
+        for (FacetField facetField : facetFields) {
+            if (StringUtils.isNotEmpty(facetField.getName())) {
+                facetField.setName(facetField.getName().replace(TO_REPLACE_DOTS, "."));
+            }
+        }
         DataResult<FacetField> result = new DataResult<>(aggregate.getTime(), aggregate.getEvents(), facetFields.size(), facetFields,
                 facetFields.size());
+        logger.info("facet; result = {}", result.getResults());
 
         return new OpenCGAResult<>(result);
     }

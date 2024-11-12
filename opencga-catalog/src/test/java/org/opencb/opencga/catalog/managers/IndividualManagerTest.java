@@ -1172,4 +1172,29 @@ public class IndividualManagerTest extends AbstractManagerTest {
         }
     }
 
+    @Test
+    public void testFacetMaxDotNotation() throws CatalogException {
+        OpenCGAResult<Individual> results = catalogManager.getIndividualManager().search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        System.out.println("results.getResults() = " + results.getResults());
+        String accumulator = "max";
+        String facetName = "samples.version";
+        OpenCGAResult<FacetField> facets = catalogManager.getIndividualManager().facet(studyFqn, new Query(), accumulator + "(" + facetName + ")", normalToken1);
+
+        int maxVersion = 0;
+        for (Individual result : results.getResults()) {
+            for (Sample sample : result.getSamples()) {
+                if (sample.getVersion() > maxVersion) {
+                    maxVersion = sample.getVersion();
+                }
+            }
+        }
+
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(facetName, result.getName());
+            Assert.assertEquals(accumulator, result.getAggregationName());
+            Assert.assertEquals(1, result.getAggregationValues().size());
+            Assert.assertEquals(maxVersion, result.getAggregationValues().get(0), 0.0001);
+        }
+    }
 }

@@ -2420,7 +2420,41 @@ public class FileManagerTest extends AbstractManagerTest {
         }
     }
 
-//    @Test
+    @Test
+    public void testFacetDotNotation() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        System.out.println("results.getResults() = " + results.getResults());
+        String facetName = "internal.status.id";
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), facetName, normalToken1);
+
+        long totalCount = 0;
+        Map<String, Integer> internalStatusIdMap = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key;
+            if (result.getInternal() == null || result.getInternal().getStatus() == null || result.getInternal().getStatus().getId() == null) {
+                key = "null";
+            } else {
+                key = result.getInternal().getStatus().getId();
+            }
+            if (!internalStatusIdMap.containsKey(key)) {
+                internalStatusIdMap.put(key, 0);
+            }
+            internalStatusIdMap.put(key, 1 + internalStatusIdMap.get(key));
+            totalCount++;
+        }
+
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount().longValue());
+            Assert.assertEquals(internalStatusIdMap.size(), result.getBuckets().size());
+            Assert.assertEquals(facetName, result.getName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * internalStatusIdMap.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    //    @Test
 //    public void testIndex() throws Exception {
 //        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
 //        File file = fileManager.link(studyFqn, uri, "", null, sessionIdUser).first();
