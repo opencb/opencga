@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lmax.disruptor.EventFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Mutation;
@@ -21,7 +22,9 @@ import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.TaskType;
+import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
+import org.apache.tephra.TransactionSystemClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -47,6 +50,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,16 +151,6 @@ public class VariantMapReduceUtil {
         }
     }
 
-    public static void initTableMapperJobFromPhoenix(Job job, String variantTable, String sql,
-                                                     Class<? extends Mapper> mapper) {
-        job.setInputFormatClass(CustomPhoenixInputFormat.class);
-
-        LOGGER.info(sql);
-        PhoenixMapReduceUtil.setInput(job, ExposedResultSetDBWritable.class, variantTable,  sql);
-        job.setMapperClass(mapper);
-
-    }
-
     public static void initVariantMapperJob(Job job, Class<? extends VariantMapper> mapperClass, String variantTable,
                                                VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
                                                boolean skipSampleIndex) throws IOException {
@@ -251,12 +245,8 @@ public class VariantMapReduceUtil {
                                                        Class<? extends VariantMapper> variantMapperClass)
             throws IOException {
         // VariantDBWritable is the DBWritable class that enables us to process the Result of the query
-        PhoenixMapReduceUtil.setInput(job, PhoenixVariantTableInputFormat.VariantDBWritable.class, variantTableName,  sqlQuery);
-
-        LOGGER.info(sqlQuery);
-        job.setMapperClass(variantMapperClass);
-
-        job.setInputFormatClass(PhoenixVariantTableInputFormat.class);
+        initVariantMapperJobFromPhoenix(job, variantTableName, sqlQuery, variantMapperClass,
+                PhoenixVariantTableInputFormat.VariantDBWritable.class, PhoenixVariantTableInputFormat.class);
     }
 
     public static void initVariantRowMapperJob(Job job, Class<? extends VariantRowMapper> mapperClass, String variantTable,
@@ -374,13 +364,28 @@ public class VariantMapReduceUtil {
     public static void initVariantRowMapperJobFromPhoenix(Job job, String variantTableName, String sqlQuery,
                                                        Class<? extends Mapper> variantMapperClass)
             throws IOException {
+        initVariantMapperJobFromPhoenix(job, variantTableName, sqlQuery, variantMapperClass,
+                ExposedResultSetDBWritable.class, PhoenixVariantRowTableInputFormat.class);
+    }
+
+    private static void initVariantMapperJobFromPhoenix(Job job, String variantTableName, String sqlQuery,
+                                                        Class<? extends Mapper> variantMapperClass, Class<? extends DBWritable> inputClass,
+                                                        Class<? extends InputFormat> inputFormatClass) throws IOException {
+
+        boolean addDependencyJar = job.getConfiguration().getBoolean(
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(),
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
+        if (addDependencyJar) {
+            TableMapReduceUtil.addDependencyJars(job);
+            TableMapReduceUtil.addDependencyJarsForClasses(job.getConfiguration(),
+                    TransactionSystemClient.class,
+                    EventFactory.class);
+        }
 
         LOGGER.info(sqlQuery);
-        // VariantDBWritable is the DBWritable class that enables us to process the Result of the query
-        PhoenixMapReduceUtil.setInput(job, ExposedResultSetDBWritable.class, variantTableName,  sqlQuery);
-
+        PhoenixMapReduceUtil.setInput(job, inputClass, variantTableName, sqlQuery);
         job.setMapperClass(variantMapperClass);
-        job.setInputFormatClass(PhoenixVariantRowTableInputFormat.class);
+        job.setInputFormatClass(inputFormatClass);
     }
 
     public static void setNoneReduce(Job job) throws IOException {

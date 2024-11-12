@@ -81,11 +81,6 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver {
         String archiveTable = getArchiveTable();
         String variantTable = getVariantsTable();
 
-        int maxKeyValueSize = conf.getInt(HadoopVariantStorageOptions.MR_HBASE_KEYVALUE_SIZE_MAX.key(),
-                HadoopVariantStorageOptions.MR_HBASE_KEYVALUE_SIZE_MAX.defaultValue());
-        logger.info("HBASE: set " + ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
-        conf.setInt(ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
-
         /* -------------------------------*/
         // Validate parameters CHECK
 //        if (StringUtils.isEmpty(archiveTable)) {
@@ -114,11 +109,16 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver {
             checkTablesExist(hBaseManager, variantTable);
         }
 
+        int maxKeyValueSize = conf.getInt(HadoopVariantStorageOptions.MR_HBASE_KEYVALUE_SIZE_MAX.key(),
+                HadoopVariantStorageOptions.MR_HBASE_KEYVALUE_SIZE_MAX.defaultValue());
+        logger.info("HBASE: set " + ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
+        conf.setInt(ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
+
         // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions
         // See opencb/opencga#352 for more info.
         int scannerTimeout = getConf().getInt(HadoopVariantStorageOptions.MR_HBASE_SCANNER_TIMEOUT.key(),
                 getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
-        logger.info("Set Scanner timeout to " + scannerTimeout + " ...");
+        logger.info("HBASE: set Scanner timeout to " + scannerTimeout + " ...");
         conf.setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
 
     }

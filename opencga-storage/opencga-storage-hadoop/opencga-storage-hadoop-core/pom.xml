@@ -441,6 +441,12 @@
                                 <ignoredUsedUndeclaredDependency>
                                     commons-lang:commons-lang
                                 </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    org.apache.tephra:tephra-core
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    com.lmax:disruptor
+                                </ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                         </configuration>
                     </execution>

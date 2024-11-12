@@ -215,6 +215,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             }
         }
         LOGGER.info("=================================================");
+        LOGGER.info("tmpjars=" + Arrays.toString(job.getConfiguration().getStrings("tmpjars")));
         reportRunningJobs();
         boolean succeed = executeJob(job);
         if (!succeed) {
