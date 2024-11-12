@@ -55,7 +55,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
      * @param token          Valid administrator token.
      */
     public VariantOperationJanitor(CatalogManager catalogManager, String token) {
-        super(5000, token, catalogManager);
+        super(30000, token, catalogManager);
         this.catalogManager = catalogManager;
         if (catalogManager.getConfiguration().getAnalysis().getOperations() == null) {
             this.operationConfig = new OperationConfig();
