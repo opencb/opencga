@@ -44,6 +44,7 @@
 #' | configureVariantSecondarySampleIndex | /{apiVersion}/operation/variant/secondary/sample/index/configure | study, skipRebuild, body |
 #' | secondaryIndexVariant | /{apiVersion}/operation/variant/secondaryIndex | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, study, body |
 #' | deleteVariantSecondaryIndex | /{apiVersion}/operation/variant/secondaryIndex/delete | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, samples |
+#' | setupVariant | /{apiVersion}/operation/variant/setup | study, body |
 #' | deleteVariantStats | /{apiVersion}/operation/variant/stats/delete | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | indexVariantStats | /{apiVersion}/operation/variant/stats/index | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | deleteVariantStudy | /{apiVersion}/operation/variant/study/delete | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body |
@@ -405,6 +406,13 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         deleteVariantSecondaryIndex=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
                 subcategory="variant/secondaryIndex", subcategoryId=NULL, action="delete", params=params,
                 httpMethod="DELETE", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/operation/variant/setup:
+        #' Execute Variant Setup to allow using the variant engine. This setup is necessary before starting any variant operation.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param data Variant setup params.
+        setupVariant=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL, subcategory="variant",
+                subcategoryId=NULL, action="setup", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/operation/variant/stats/delete:
         #' Deletes the VariantStats of a cohort/s from the database.

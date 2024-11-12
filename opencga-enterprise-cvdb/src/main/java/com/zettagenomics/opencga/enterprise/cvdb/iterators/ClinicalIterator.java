@@ -23,6 +23,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 
 import java.io.IOException;
@@ -41,11 +42,11 @@ public class ClinicalIterator<M,N,C extends SearchConverter<M, N>> extends Clini
     private C converter;
     private Class<C> converterType;
 
-    public ClinicalIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, List<String> includeList,
+    public ClinicalIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, QueryOptions queryOptions,
                             Class<N> nativeType, Class<C> converterType)
             throws IOException, SolrServerException, NoSuchMethodException, InvocationTargetException, InstantiationException,
             IllegalAccessException {
-        super(includeList);
+        super(queryOptions);
         nativeSolrIterator = new ClinicalSolrterator<N>(solrClient, collection, solrQuery, nativeType);
         converter = converterType.getConstructor().newInstance();
     }

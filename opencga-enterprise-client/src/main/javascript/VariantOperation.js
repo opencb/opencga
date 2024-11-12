@@ -488,6 +488,16 @@ export default class VariantOperation extends OpenCGAParentClass {
         return this._delete("operation", null, "variant/secondaryIndex", null, "delete", params);
     }
 
+    /** Execute Variant Setup to allow using the variant engine. This setup is necessary before starting any variant operation.
+    * @param {Object} [data] - Variant setup params.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    setupVariant(data, params) {
+        return this._post("operation", null, "variant", null, "setup", data, params);
+    }
+
     /** Deletes the VariantStats of a cohort/s from the database
     * @param {Object} data - Variant stats delete params.
     * @param {Object} [params] - The Object containing the following optional parameters:

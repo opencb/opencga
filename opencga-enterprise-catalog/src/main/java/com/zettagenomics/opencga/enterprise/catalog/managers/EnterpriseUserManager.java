@@ -15,6 +15,7 @@ import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserInternal;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,7 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
         super(catalogManager, enterpriseConfiguration, opencgaToken);
 
         this.userAccountInfoQueryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key(),
+                Arrays.asList(UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.INTERNAL.key(),
                         UserDBAdaptor.QueryParams.ATTRIBUTES.key()));
     }
 
@@ -88,16 +89,18 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
 
         if (result.getNumResults() == 1) {
             // Check account
-            if (!authOriginId.equals(result.first().getAccount().getAuthentication().getId())) {
+            if (!authOriginId.equals(result.first().getInternal().getAccount().getAuthentication().getId())) {
                 throw new CatalogException("User '" + principal.getName() + "' was already registered from a "
-                        + "different authentication origin (" + result.first().getAccount().getAuthentication().getId()
-                        + ")");
+                        + "different authentication origin ("
+                        + result.first().getInternal().getAccount().getAuthentication().getId() + ")");
             }
         } else {
             // User does not exist
             User user = new User()
                     .setId(principal.getName())
-                    .setAccount(new Account(null, null, new Account.AuthenticationOrigin(authOriginId, false)))
+                    .setInternal(new UserInternal().setAccount(
+                            new Account(null, null, 0, new Account.AuthenticationOrigin(authOriginId, false)))
+                    )
                     .setAttributes(principal.getAttributes());
             if (enterpriseConfiguration.getSso().getAttributes() != null && principal.getAttributes() != null) {
                 String name = getDefaultValue(principal.getAttributes(),

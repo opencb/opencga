@@ -97,6 +97,8 @@ export default class Organization extends OpenCGAParentClass {
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
+    * @param {"ADD SET REMOVE"} [params.tagsAction = "ADD"] - Action to be performed if the array of tags is being updated. The default
+    *     value is ADD.
     * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.
     *     The default value is false.
     * @returns {Promise} Promise object in the form of RestResponse instance.

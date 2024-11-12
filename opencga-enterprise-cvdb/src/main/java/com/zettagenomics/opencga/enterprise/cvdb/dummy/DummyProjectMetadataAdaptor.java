@@ -29,7 +29,7 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     private static Map<String, Integer> counters = new HashMap<>();
 
     @Override
-    public Lock lockProject(long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+    public Lock lockProject(long lockDuration, long timeout, String lockName) throws StorageEngineException {
         return new Lock(0) {
             @Override
             public void unlock0() {
@@ -41,10 +41,6 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
 
             }
         };
-    }
-
-    @Override
-    public void unLockProject(long lockId) {
     }
 
     @Override
