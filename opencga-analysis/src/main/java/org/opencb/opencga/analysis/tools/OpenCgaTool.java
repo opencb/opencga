@@ -474,7 +474,7 @@ public abstract class OpenCgaTool {
         return params;
     }
 
-    public final String refreshToken() throws CatalogException {
+    public final String getExpiringToken() throws CatalogException {
         return catalogManager.getUserManager().refreshToken(token).getToken();
     }
 

@@ -227,9 +227,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         if (StringUtils.isNotEmpty(cliParams)) {
             stringBuilder.append(" ").append(cliParams);
         }
-        stringBuilder
-                .append(" --opencga-token ").append(refreshToken())
-                .append(" -with-report ").append(outDirPath).append("/report.html\"");
+        stringBuilder.append(" -with-report ").append(outDirPath).append("/report.html\"");
 
         startTraceFileMonitor();
 
@@ -237,6 +235,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         // Set HOME environment variable to the temporal input directory. This is because nextflow creates a hidden folder there and,
         // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
         dockerParams.put("-e", "HOME=" + temporalInputDir);
+        dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
 
         // Execute docker image
         StopWatch stopWatch = StopWatch.createStarted();
