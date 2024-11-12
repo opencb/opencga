@@ -170,7 +170,9 @@ public class VariantMapReduceUtil {
                 Object regions = query.get(VariantQueryParam.REGION.key());
                 Object geneRegions = query.get(VariantQueryUtils.ANNOT_GENE_REGIONS.key());
                 // Remove extra fields from the query
-                SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(null, null, metadataManager);
+                HBaseVariantTableNameGenerator tableNameGenerator = HBaseVariantTableNameGenerator
+                        .fromVariantsTable(variantTable, job.getConfiguration());
+                SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(null, tableNameGenerator, metadataManager);
                 SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
                 setSampleIndexConfiguration(job,
                         sampleIndexQuery.getSchema().getConfiguration(),
@@ -276,7 +278,9 @@ public class VariantMapReduceUtil {
             String sampleIndexTable = null;
             if (useSampleIndex) {
                 // Remove extra fields from the query
-                SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(null, null, metadataManager);
+                HBaseVariantTableNameGenerator tableNameGenerator = HBaseVariantTableNameGenerator
+                        .fromVariantsTable(variantTable, job.getConfiguration());
+                SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(null, tableNameGenerator, metadataManager);
                 SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
                 setSampleIndexConfiguration(job,
                         sampleIndexQuery.getSchema().getConfiguration(),
