@@ -44,14 +44,59 @@ class DiseasePanel(_ParentRestClient):
 
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
-        :param str creation_year: Creation year.
-        :param str creation_month: Creation month (JANUARY, FEBRUARY...).
-        :param str creation_day: Creation day.
-        :param str creation_day_of_week: Creation day of week (MONDAY,
-            TUESDAY...).
-        :param str status: Status.
-        :param str release: Release.
-        :param str field: List of fields separated by semicolons, e.g.:
+        :param str id: Comma separated list of panel IDs  up to a maximum of
+            100. Also admits basic regular expressions using the operator '~',
+            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i'
+            for case insensitive search.
+        :param str uuid: Comma separated list of panel UUIDs  up to a maximum
+            of 100.
+        :param str name: Comma separated list of panel names  up to a maximum
+            of 100. Also admits basic regular expressions using the operator
+            '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive,
+            '~/value/i' for case insensitive search.
+        :param str internal_status: Filter by internal status.
+        :param str disorders: Comma separated list of disorder ids or names.
+            Also admits basic regular expressions using the operator '~', i.e.
+            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
+            case insensitive search.. Also admits basic regular expressions
+            using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+            sensitive, '~/value/i' for case insensitive search.
+        :param str variants: Comma separated list of variant ids. Also admits
+            basic regular expressions using the operator '~', i.e.
+            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
+            case insensitive search.
+        :param str genes: Comma separated list of gene ids. Also admits basic
+            regular expressions using the operator '~', i.e. '~{perl-regex}'
+            e.g. '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str source: Comma separated list of source ids or names.
+        :param str regions: Comma separated list of regions. Also admits basic
+            regular expressions using the operator '~', i.e. '~{perl-regex}'
+            e.g. '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str categories: Comma separated list of category names. Also
+            admits basic regular expressions using the operator '~', i.e.
+            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
+            case insensitive search.
+        :param str tags: Panel tags. Also admits basic regular expressions
+            using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+            sensitive, '~/value/i' for case insensitive search.
+        :param bool deleted: Boolean to retrieve deleted entries.
+        :param str status: Filter by status.
+        :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
+            Examples: >2018, 2017-2018, <201805.
+        :param str modification_date: Modification date. Format:
+            yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        :param str acl: Filter entries for which a user has the provided
+            permissions. Format: acl={user}:{permissions}. Example:
+            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which
+            user john has both WRITE and WRITE_ANNOTATIONS permissions. Only
+            study owners or administrators can query by this field. .
+        :param str release: Release when it was created.
+        :param int snapshot: Snapshot value (Latest version of the entry in
+            the specified release).
+        :param str aggregation_fields: List of fields, separated by
+            semicolons, for applying aggregation stats, e.g.:
             studies;type;numSamples[0..10]:1.
         """
 

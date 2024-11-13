@@ -104,35 +104,50 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--type"}, description = "Type", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of cohort IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of cohort names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String name; 
+    
+        @Parameter(names = {"--uuid"}, description = "Comma separated list of cohort IDs up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
         public String type; 
     
-        @Parameter(names = {"--creation-year"}, description = "Creation year", required = false, arity = 1)
-        public String creationYear; 
+        @Parameter(names = {"--creation-date", "--cd"}, description = "creationDate", required = false, arity = 1)
+        public String creationDate; 
     
-        @Parameter(names = {"--creation-month"}, description = "Creation month (JANUARY, FEBRUARY...)", required = false, arity = 1)
-        public String creationMonth; 
+        @Parameter(names = {"--modification-date", "--md"}, description = "modificationDate", required = false, arity = 1)
+        public String modificationDate; 
     
-        @Parameter(names = {"--creation-day"}, description = "Creation day", required = false, arity = 1)
-        public String creationDay; 
+        @Parameter(names = {"--deleted"}, description = "deleted", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
-        @Parameter(names = {"--creation-day-of-week"}, description = "Creation day of week (MONDAY, TUESDAY...)", required = false, arity = 1)
-        public String creationDayOfWeek; 
+        @Parameter(names = {"--status"}, description = "status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--internal-status"}, description = "internalStatus", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--annotation"}, description = "Cohort annotation", required = false, arity = 1)
+        public String annotation; 
+    
+        @Parameter(names = {"--acl"}, description = "acl", required = false, arity = 1)
+        public String acl; 
+    
+        @Parameter(names = {"--samples"}, description = "Cohort sample IDs", required = false, arity = 1)
+        public String samples; 
     
         @Parameter(names = {"--num-samples"}, description = "Number of samples", required = false, arity = 1)
         public String numSamples; 
     
-        @Parameter(names = {"--status"}, description = "Status", required = false, arity = 1)
-        public String status; 
-    
-        @Parameter(names = {"--release"}, description = "Release", required = false, arity = 1)
+        @Parameter(names = {"--release"}, description = "release", required = false, arity = 1)
         public String release; 
     
-        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
-        public String annotation; 
-    
-        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
-        public String field; 
+        @Parameter(names = {"--aggregation-fields"}, description = "List of fields, separated by semicolons, for applying aggregation stats, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
+        public String aggregationFields; 
     
     }
 

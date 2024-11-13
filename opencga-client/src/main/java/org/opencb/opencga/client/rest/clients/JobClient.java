@@ -72,22 +72,30 @@ public class JobClient extends AbstractParentClient {
      * Fetch catalog job stats.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
-     *       toolId: Tool id.
-     *       toolScope: Tool scope.
-     *       toolType: Tool type.
-     *       toolResource: Tool resource.
-     *       userId: User id.
-     *       priority: Priority.
-     *       tags: Tags.
-     *       executorId: Executor id.
-     *       executorFramework: Executor framework.
-     *       creationYear: Creation year.
-     *       creationMonth: Creation month (JANUARY, FEBRUARY...).
-     *       creationDay: Creation day.
-     *       creationDayOfWeek: Creation day of week (MONDAY, TUESDAY...).
-     *       status: Status.
-     *       release: Release.
-     *       field: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+     *       otherStudies: Flag indicating the entries being queried can belong to any related study, not just the primary one.
+     *       id: Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list of job UUIDs up to a maximum of 100.
+     *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+     *            '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
+     *       userId: User that created the job.
+     *       priority: Priority of the job.
+     *       status: Filter by status.
+     *       internalStatus: Filter by internal status.
+     *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       visited: Visited status of job.
+     *       tags: Job tags.
+     *       input: Comma separated list of file IDs used as input.
+     *       output: Comma separated list of file IDs used as output.
+     *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
+     *            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+     *            permissions. Only study owners or administrators can query by this field. .
+     *       release: Release when it was created.
+     *       deleted: Boolean to retrieve deleted entries.
+     *       aggregationFields: List of fields, separated by semicolons, for applying aggregation stats, e.g.:
+     *            studies;type;numSamples[0..10]:1.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

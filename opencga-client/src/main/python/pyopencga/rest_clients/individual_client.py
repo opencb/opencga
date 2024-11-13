@@ -48,28 +48,65 @@ class Individual(_ParentRestClient):
 
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
-        :param bool has_father: Has father.
-        :param bool has_mother: Has mother.
-        :param str sex: Sex.
-        :param str karyotypic_sex: Karyotypic sex.
-        :param str ethnicity: Ethnicity.
-        :param str population: Population.
-        :param str creation_year: Creation year.
-        :param str creation_month: Creation month (JANUARY, FEBRUARY...).
-        :param str creation_day: Creation day.
-        :param str creation_day_of_week: Creation day of week (MONDAY,
-            TUESDAY...).
-        :param str status: Status.
-        :param str life_status: Life status.
-        :param str phenotypes: Phenotypes.
-        :param str num_samples: Number of samples.
-        :param bool parental_consanguinity: Parental consanguinity.
-        :param str release: Release.
-        :param str version: Version.
+        :param str id: Comma separated list individual IDs up to a maximum of
+            100. Also admits basic regular expressions using the operator '~',
+            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i'
+            for case insensitive search.
+        :param str uuid: Comma separated list individual UUIDs up to a maximum
+            of 100.
+        :param str name: Comma separated list individual names up to a maximum
+            of 100. Also admits basic regular expressions using the operator
+            '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive,
+            '~/value/i' for case insensitive search.
+        :param str father: Father ID, name or UUID.
+        :param str mother: Mother ID, name or UUID.
+        :param str samples: Sample ID, name or UUID.
+        :param str family_ids: Comma separated list of family ids the
+            individuals may belong to.
+        :param str sex: Individual sex.
+        :param str date_of_birth: Individual date of birth.
+        :param str ethnicity: Individual ethnicity. Also admits basic regular
+            expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+            '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str disorders: Comma separated list of disorder ids or names.
+            Also admits basic regular expressions using the operator '~', i.e.
+            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
+            case insensitive search.
+        :param str phenotypes: Comma separated list of phenotype ids or names.
+            Also admits basic regular expressions using the operator '~', i.e.
+            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
+            case insensitive search.
+        :param str population_name: Population name. Also admits basic regular
+            expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+            '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str population_subpopulation: Subpopulation name. Also admits
+            basic regular expressions using the operator '~', i.e.
+            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
+            case insensitive search.
+        :param str karyotypic_sex: Individual karyotypic sex.
+        :param str life_status: Individual life status.
+        :param str internal_status: Filter by internal status.
+        :param str status: Filter by status.
+        :param bool deleted: Boolean to retrieve deleted entries.
+        :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
+            Examples: >2018, 2017-2018, <201805.
+        :param str modification_date: Modification date. Format:
+            yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         :param str annotation: Annotation filters. Example:
             age>30;gender=FEMALE. For more information, please visit
             http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
-        :param str field: List of fields separated by semicolons, e.g.:
+        :param str acl: Filter entries for which a user has the provided
+            permissions. Format: acl={user}:{permissions}. Example:
+            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which
+            user john has both WRITE and WRITE_ANNOTATIONS permissions. Only
+            study owners or administrators can query by this field. .
+        :param str release: Release when it was created.
+        :param int snapshot: Snapshot value (Latest version of the entry in
+            the specified release).
+        :param str aggregation_fields: List of fields, separated by
+            semicolons, for applying aggregation stats, e.g.:
             studies;type;numSamples[0..10]:1.
         """
 

@@ -219,24 +219,32 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
         queryParams.putIfNotEmpty("name", commandOptions.name);
+        queryParams.putIfNotEmpty("path", commandOptions.path);
+        queryParams.putIfNotEmpty("uri", commandOptions.uri);
         queryParams.putIfNotEmpty("type", commandOptions.type);
-        queryParams.putIfNotEmpty("format", commandOptions.format);
         queryParams.putIfNotEmpty("bioformat", commandOptions.bioformat);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotEmpty("format", commandOptions.format);
         queryParams.putIfNotNull("external", commandOptions.external);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("internalVariantIndexStatus", commandOptions.internalVariantIndexStatus);
+        queryParams.putIfNotEmpty("softwareName", commandOptions.softwareName);
+        queryParams.putIfNotEmpty("directory", commandOptions.directory);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("description", commandOptions.description);
+        queryParams.putIfNotEmpty("tags", commandOptions.tags);
         queryParams.putIfNotEmpty("size", commandOptions.size);
-        queryParams.putIfNotEmpty("software", commandOptions.software);
-        queryParams.putIfNotEmpty("experiment", commandOptions.experiment);
-        queryParams.putIfNotEmpty("numSamples", commandOptions.numSamples);
-        queryParams.putIfNotEmpty("numRelatedFiles", commandOptions.numRelatedFiles);
+        queryParams.putIfNotEmpty("sampleIds", commandOptions.sampleIds);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
+        queryParams.putIfNotEmpty("acl", commandOptions.acl);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotEmpty("aggregationFields", commandOptions.aggregationFields);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

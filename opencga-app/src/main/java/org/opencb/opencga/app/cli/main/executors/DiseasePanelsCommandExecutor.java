@@ -138,13 +138,25 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("name", commandOptions.name);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("disorders", commandOptions.disorders);
+        queryParams.putIfNotEmpty("variants", commandOptions.variants);
+        queryParams.putIfNotEmpty("genes", commandOptions.genes);
+        queryParams.putIfNotEmpty("source", commandOptions.source);
+        queryParams.putIfNotEmpty("regions", commandOptions.regions);
+        queryParams.putIfNotEmpty("categories", commandOptions.categories);
+        queryParams.putIfNotEmpty("tags", commandOptions.tags);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
         queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
+        queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
+        queryParams.putIfNotEmpty("aggregationFields", commandOptions.aggregationFields);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

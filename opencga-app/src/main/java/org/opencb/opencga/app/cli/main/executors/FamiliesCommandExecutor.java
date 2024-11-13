@@ -149,18 +149,24 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("name", commandOptions.name);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("members", commandOptions.members);
+        queryParams.putIfNotNull("expectedSize", commandOptions.expectedSize);
+        queryParams.putIfNotEmpty("samples", commandOptions.samples);
         queryParams.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotEmpty("version", commandOptions.version);
-        queryParams.putIfNotEmpty("numMembers", commandOptions.numMembers);
-        queryParams.putIfNotEmpty("expectedSize", commandOptions.expectedSize);
+        queryParams.putIfNotEmpty("disorders", commandOptions.disorders);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
+        queryParams.putIfNotEmpty("acl", commandOptions.acl);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
+        queryParams.putIfNotEmpty("aggregationFields", commandOptions.aggregationFields);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

@@ -49,25 +49,41 @@ export default class File extends OpenCGAParentClass {
     /** Fetch catalog file stats
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
-    * @param {String} [params.name] - Name.
-    * @param {String} [params.type] - Type.
-    * @param {String} [params.format] - Format.
-    * @param {String} [params.bioformat] - Bioformat.
-    * @param {String} [params.creationYear] - Creation year.
-    * @param {String} [params.creationMonth] - Creation month (JANUARY, FEBRUARY...).
-    * @param {String} [params.creationDay] - Creation day.
-    * @param {String} [params.creationDayOfWeek] - Creation day of week (MONDAY, TUESDAY...).
-    * @param {String} [params.status] - Status.
-    * @param {String} [params.release] - Release.
-    * @param {Boolean} [params.external] - External.
-    * @param {String} [params.size] - Size.
-    * @param {String} [params.software] - Software.
-    * @param {String} [params.experiment] - Experiment.
-    * @param {String} [params.numSamples] - Number of samples.
-    * @param {String} [params.numRelatedFiles] - Number of related files.
+    * @param {String} [params.id] - Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the
+    *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list file UUIDs up to a maximum of 100.
+    * @param {String} [params.name] - Comma separated list of file names. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.path] - Comma separated list of paths. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uri] - Comma separated list of uris. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.type] - File type, either FILE or DIRECTORY.
+    * @param {String} [params.bioformat] - Comma separated Bioformat values. For existing Bioformats see files/bioformats.
+    * @param {String} [params.format] - Comma separated Format values. For existing Formats see files/formats.
+    * @param {Boolean} [params.external] - Boolean field indicating whether to filter by external or non external files.
+    * @param {String} [params.status] - Filter by status.
+    * @param {String} [params.internalStatus] - Filter by internal status.
+    * @param {String} [params.internalVariantIndexStatus] - Filter by internal variant index status.
+    * @param {String} [params.softwareName] - Software name.
+    * @param {String} [params.directory] - Directory under which we want to look for files or folders.
+    * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.description] - Description.
+    * @param {String} [params.tags] - Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value'
+    *     for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.size] - File size.
+    * @param {String} [params.sampleIds] - Comma separated list sample IDs or UUIDs up to a maximum of 100.
+    * @param {String} [params.jobId] - Job ID that created the file(s) or folder(s).
     * @param {String} [params.annotation] - Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
     *     http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
-    * @param {String} [params.field] - List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+    * @param {String} [params.acl] - Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}.
+    *     Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+    *     permissions. Only study owners or administrators can query by this field. .
+    * @param {Boolean} [params.deleted = "false"] - Boolean to retrieve deleted entries. The default value is false.
+    * @param {String} [params.release] - Release when it was created.
+    * @param {String} [params.aggregationFields] - List of fields, separated by semicolons, for applying aggregation stats, e.g.:
+    *     studies;type;numSamples[0..10]:1.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     aggregationStats(params) {

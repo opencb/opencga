@@ -20,7 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/jobs/acl/{members}/update | members[*], action[*], body[*] |
-#' | aggregationStats | /{apiVersion}/jobs/aggregationStats | study, toolId, toolScope, toolType, toolResource, userId, priority, tags, executorId, executorFramework, creationYear, creationMonth, creationDay, creationDayOfWeek, status, release, field |
+#' | aggregationStats | /{apiVersion}/jobs/aggregationStats | study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, aggregationFields |
 #' | create | /{apiVersion}/jobs/create | study, body[*] |
 #' | distinct | /{apiVersion}/jobs/distinct | study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field[*] |
 #' | retry | /{apiVersion}/jobs/retry | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, study, body[*] |
@@ -55,22 +55,25 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @section Endpoint /{apiVersion}/jobs/aggregationStats:
         #' Fetch catalog job stats.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
-        #' @param toolId Tool id.
-        #' @param toolScope Tool scope.
-        #' @param toolType Tool type.
-        #' @param toolResource Tool resource.
-        #' @param userId User id.
-        #' @param priority Priority.
-        #' @param tags Tags.
-        #' @param executorId Executor id.
-        #' @param executorFramework Executor framework.
-        #' @param creationYear Creation year.
-        #' @param creationMonth Creation month (JANUARY, FEBRUARY...).
-        #' @param creationDay Creation day.
-        #' @param creationDayOfWeek Creation day of week (MONDAY, TUESDAY...).
-        #' @param status Status.
-        #' @param release Release.
-        #' @param field List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+        #' @param otherStudies Flag indicating the entries being queried can belong to any related study, not just the primary one.
+        #' @param id Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list of job UUIDs up to a maximum of 100.
+        #' @param toolId Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param toolType Tool type executed by the job [OPERATION, ANALYSIS].
+        #' @param userId User that created the job.
+        #' @param priority Priority of the job.
+        #' @param status Filter by status.
+        #' @param internalStatus Filter by internal status.
+        #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param visited Visited status of job.
+        #' @param tags Job tags.
+        #' @param input Comma separated list of file IDs used as input.
+        #' @param output Comma separated list of file IDs used as output.
+        #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
+        #' @param release Release when it was created.
+        #' @param deleted Boolean to retrieve deleted entries.
+        #' @param aggregationFields List of fields, separated by semicolons, for applying aggregation stats, e.g.: studies;type;numSamples[0..10]:1.
         aggregationStats=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),

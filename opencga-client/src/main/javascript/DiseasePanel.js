@@ -49,13 +49,38 @@ export default class DiseasePanel extends OpenCGAParentClass {
     /** Fetch catalog panel stats
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
-    * @param {String} [params.creationYear] - Creation year.
-    * @param {String} [params.creationMonth] - Creation month (JANUARY, FEBRUARY...).
-    * @param {String} [params.creationDay] - Creation day.
-    * @param {String} [params.creationDayOfWeek] - Creation day of week (MONDAY, TUESDAY...).
-    * @param {String} [params.status] - Status.
-    * @param {String} [params.release] - Release.
-    * @param {String} [params.field] - List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+    * @param {String} [params.id] - Comma separated list of panel IDs  up to a maximum of 100. Also admits basic regular expressions using
+    *     the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list of panel UUIDs  up to a maximum of 100.
+    * @param {String} [params.name] - Comma separated list of panel names  up to a maximum of 100. Also admits basic regular expressions
+    *     using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.internalStatus] - Filter by internal status.
+    * @param {String} [params.disorders] - Comma separated list of disorder ids or names. Also admits basic regular expressions using the
+    *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.. Also admits basic
+    *     regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive
+    *     search.
+    * @param {String} [params.variants] - Comma separated list of variant ids. Also admits basic regular expressions using the operator '~',
+    *     i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.genes] - Comma separated list of gene ids. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.source] - Comma separated list of source ids or names.
+    * @param {String} [params.regions] - Comma separated list of regions. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.categories] - Comma separated list of category names. Also admits basic regular expressions using the operator
+    *     '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.tags] - Panel tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+    *     '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {Boolean} [params.deleted = "false"] - Boolean to retrieve deleted entries. The default value is false.
+    * @param {String} [params.status] - Filter by status.
+    * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.acl] - Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}.
+    *     Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+    *     permissions. Only study owners or administrators can query by this field. .
+    * @param {String} [params.release] - Release when it was created.
+    * @param {Number} [params.snapshot] - Snapshot value (Latest version of the entry in the specified release).
+    * @param {String} [params.aggregationFields] - List of fields, separated by semicolons, for applying aggregation stats, e.g.:
+    *     studies;type;numSamples[0..10]:1.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     aggregationStats(params) {

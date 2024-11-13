@@ -42,23 +42,41 @@ class Job(_ParentRestClient):
 
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
-        :param str tool_id: Tool id.
-        :param str tool_scope: Tool scope.
-        :param str tool_type: Tool type.
-        :param str tool_resource: Tool resource.
-        :param str user_id: User id.
-        :param str priority: Priority.
-        :param str tags: Tags.
-        :param str executor_id: Executor id.
-        :param str executor_framework: Executor framework.
-        :param str creation_year: Creation year.
-        :param str creation_month: Creation month (JANUARY, FEBRUARY...).
-        :param str creation_day: Creation day.
-        :param str creation_day_of_week: Creation day of week (MONDAY,
-            TUESDAY...).
-        :param str status: Status.
-        :param str release: Release.
-        :param str field: List of fields separated by semicolons, e.g.:
+        :param bool other_studies: Flag indicating the entries being queried
+            can belong to any related study, not just the primary one.
+        :param str id: Comma separated list of job IDs up to a maximum of 100.
+            Also admits basic regular expressions using the operator '~', i.e.
+            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
+            case insensitive search.
+        :param str uuid: Comma separated list of job UUIDs up to a maximum of
+            100.
+        :param str tool_id: Tool ID executed by the job. Also admits basic
+            regular expressions using the operator '~', i.e. '~{perl-regex}'
+            e.g. '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str tool_type: Tool type executed by the job [OPERATION,
+            ANALYSIS].
+        :param str user_id: User that created the job.
+        :param str priority: Priority of the job.
+        :param str status: Filter by status.
+        :param str internal_status: Filter by internal status.
+        :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
+            Examples: >2018, 2017-2018, <201805.
+        :param str modification_date: Modification date. Format:
+            yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        :param bool visited: Visited status of job.
+        :param str tags: Job tags.
+        :param str input: Comma separated list of file IDs used as input.
+        :param str output: Comma separated list of file IDs used as output.
+        :param str acl: Filter entries for which a user has the provided
+            permissions. Format: acl={user}:{permissions}. Example:
+            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which
+            user john has both WRITE and WRITE_ANNOTATIONS permissions. Only
+            study owners or administrators can query by this field. .
+        :param str release: Release when it was created.
+        :param bool deleted: Boolean to retrieve deleted entries.
+        :param str aggregation_fields: List of fields, separated by
+            semicolons, for applying aggregation stats, e.g.:
             studies;type;numSamples[0..10]:1.
         """
 

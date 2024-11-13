@@ -157,25 +157,32 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotNull("hasFather", commandOptions.hasFather);
-        queryParams.putIfNotNull("hasMother", commandOptions.hasMother);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("name", commandOptions.name);
+        queryParams.putIfNotEmpty("father", commandOptions.father);
+        queryParams.putIfNotEmpty("mother", commandOptions.mother);
+        queryParams.putIfNotEmpty("samples", commandOptions.samples);
+        queryParams.putIfNotEmpty("familyIds", commandOptions.familyIds);
         queryParams.putIfNotEmpty("sex", commandOptions.sex);
-        queryParams.putIfNotEmpty("karyotypicSex", commandOptions.karyotypicSex);
+        queryParams.putIfNotEmpty("dateOfBirth", commandOptions.dateOfBirth);
         queryParams.putIfNotEmpty("ethnicity", commandOptions.ethnicity);
-        queryParams.putIfNotEmpty("population", commandOptions.population);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
-        queryParams.putIfNotEmpty("lifeStatus", commandOptions.lifeStatus);
+        queryParams.putIfNotEmpty("disorders", commandOptions.disorders);
         queryParams.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
-        queryParams.putIfNotEmpty("numSamples", commandOptions.numSamples);
-        queryParams.putIfNotNull("parentalConsanguinity", commandOptions.parentalConsanguinity);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotEmpty("version", commandOptions.version);
+        queryParams.putIfNotEmpty("populationName", commandOptions.populationName);
+        queryParams.putIfNotEmpty("populationSubpopulation", commandOptions.populationSubpopulation);
+        queryParams.putIfNotEmpty("karyotypicSex", commandOptions.karyotypicSex);
+        queryParams.putIfNotEmpty("lifeStatus", commandOptions.lifeStatus);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
+        queryParams.putIfNotEmpty("acl", commandOptions.acl);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
+        queryParams.putIfNotEmpty("aggregationFields", commandOptions.aggregationFields);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

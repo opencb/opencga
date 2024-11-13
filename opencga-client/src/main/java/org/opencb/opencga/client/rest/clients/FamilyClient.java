@@ -75,19 +75,32 @@ public class FamilyClient extends AbstractParentClient {
      * Fetch catalog family stats.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
-     *       creationYear: Creation year.
-     *       creationMonth: Creation month (JANUARY, FEBRUARY...).
-     *       creationDay: Creation day.
-     *       creationDayOfWeek: Creation day of week (MONDAY, TUESDAY...).
-     *       status: Status.
-     *       phenotypes: Phenotypes.
-     *       release: Release.
-     *       version: Version.
-     *       numMembers: Number of members.
-     *       expectedSize: Expected size.
+     *       id: Comma separated list family IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       name: Comma separated list family names up to a maximum of 100. Also admits basic regular expressions using the operator '~',
+     *            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list family UUIDs up to a maximum of 100.
+     *       members: Comma separated list of family members.
+     *       expectedSize: Expected size of the family (number of members).
+     *       samples: Comma separated list of member's samples.
+     *       phenotypes: Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       disorders: Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       deleted: Boolean to retrieve deleted entries.
+     *       internalStatus: Filter by internal status.
+     *       status: Filter by status.
      *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
      *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
-     *       field: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+     *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
+     *            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+     *            permissions. Only study owners or administrators can query by this field. .
+     *       release: Release when it was created.
+     *       snapshot: Snapshot value (Latest version of the entry in the specified release).
+     *       aggregationFields: List of fields, separated by semicolons, for applying aggregation stats, e.g.:
+     *            studies;type;numSamples[0..10]:1.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

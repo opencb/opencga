@@ -116,44 +116,119 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--source"}, description = "Source", required = false, arity = 1)
-        public String source; 
+        @Parameter(names = {"--id"}, description = "Comma separated list sample IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
     
-        @Parameter(names = {"--creation-year"}, description = "Creation year", required = false, arity = 1)
-        public String creationYear; 
+        @Parameter(names = {"--uuid"}, description = "Comma separated list sample UUIDs up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
     
-        @Parameter(names = {"--creation-month"}, description = "Creation month (JANUARY, FEBRUARY...)", required = false, arity = 1)
-        public String creationMonth; 
+        @Parameter(names = {"--somatic"}, description = "Somatic sample", required = false, arity = 1)
+        public Boolean somatic; 
     
-        @Parameter(names = {"--creation-day"}, description = "Creation day", required = false, arity = 1)
-        public String creationDay; 
+        @Parameter(names = {"--individual-id"}, description = "Individual ID or UUID", required = false, arity = 1)
+        public String individualId; 
     
-        @Parameter(names = {"--creation-day-of-week"}, description = "Creation day of week (MONDAY, TUESDAY...)", required = false, arity = 1)
-        public String creationDayOfWeek; 
+        @Parameter(names = {"--file-ids"}, description = "Comma separated list of file IDs, paths or UUIDs", required = false, arity = 1)
+        public String fileIds; 
     
-        @Parameter(names = {"--status"}, description = "Status", required = false, arity = 1)
+        @Parameter(names = {"--cohort-ids"}, description = "Comma separated list of cohort IDs", required = false, arity = 1)
+        public String cohortIds; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
     
-        @Parameter(names = {"--type"}, description = "Type", required = false, arity = 1)
-        public String type; 
+        @Parameter(names = {"--processing-product"}, description = "Processing product", required = false, arity = 1)
+        public String processingProduct; 
     
-        @Parameter(names = {"--phenotypes"}, description = "Phenotypes", required = false, arity = 1)
+        @Parameter(names = {"--processing-preparation-method"}, description = "Processing preparation method", required = false, arity = 1)
+        public String processingPreparationMethod; 
+    
+        @Parameter(names = {"--processing-extraction-method"}, description = "Processing extraction method", required = false, arity = 1)
+        public String processingExtractionMethod; 
+    
+        @Parameter(names = {"--processing-lab-sample-id"}, description = "Processing lab sample id", required = false, arity = 1)
+        public String processingLabSampleId; 
+    
+        @Parameter(names = {"--collection-from"}, description = "Collection from", required = false, arity = 1)
+        public String collectionFrom; 
+    
+        @Parameter(names = {"--collection-type"}, description = "Collection type", required = false, arity = 1)
+        public String collectionType; 
+    
+        @Parameter(names = {"--collection-method"}, description = "Collection method", required = false, arity = 1)
+        public String collectionMethod; 
+    
+        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String phenotypes; 
-    
-        @Parameter(names = {"--release"}, description = "Release", required = false, arity = 1)
-        public String release; 
-    
-        @Parameter(names = {"--version"}, description = "Version", required = false, arity = 1)
-        public String version; 
-    
-        @Parameter(names = {"--somatic"}, description = "Somatic", required = false, arity = 1)
-        public Boolean somatic; 
     
         @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
         public String annotation; 
     
-        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
-        public String field; 
+        @Parameter(names = {"--acl"}, description = "Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. ", required = false, arity = 1)
+        public String acl; 
+    
+        @Parameter(names = {"--internal-rga-status"}, description = "Index status of the sample for the Recessive Gene Analysis", required = false, arity = 1)
+        public String internalRgaStatus; 
+    
+        @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
+        public Integer snapshot; 
+    
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
+    
+        @Parameter(names = {"--stats-id"}, description = "Sample variant stats Id. If this field is not provided and the user filters by other stats fields, it will automatically be set to ALL", required = false, arity = 1)
+        public String statsId; 
+    
+        @Parameter(names = {"--stats-variant-count"}, description = "Sample variant stats VariantCount", required = false, arity = 1)
+        public String statsVariantCount; 
+    
+        @Parameter(names = {"--stats-chromosome-count"}, description = "Sample variant stats ChromosomeCount", required = false, arity = 1)
+        public String statsChromosomeCount; 
+    
+        @Parameter(names = {"--stats-type-count"}, description = "Sample variant stats TypeCount", required = false, arity = 1)
+        public String statsTypeCount; 
+    
+        @Parameter(names = {"--stats-genotype-count"}, description = "Sample variant stats GenotypeCount", required = false, arity = 1)
+        public String statsGenotypeCount; 
+    
+        @Parameter(names = {"--stats-ti-tv-ratio"}, description = "Sample variant stats TiTvRatio", required = false, arity = 1)
+        public String statsTiTvRatio; 
+    
+        @Parameter(names = {"--stats-quality-avg"}, description = "Sample variant stats QualityAvg", required = false, arity = 1)
+        public String statsQualityAvg; 
+    
+        @Parameter(names = {"--stats-quality-std-dev"}, description = "Sample variant stats QualityStdDev", required = false, arity = 1)
+        public String statsQualityStdDev; 
+    
+        @Parameter(names = {"--stats-heterozygosity-rate"}, description = "Sample variant stats HeterozygosityRate", required = false, arity = 1)
+        public String statsHeterozygosityRate; 
+    
+        @Parameter(names = {"--stats-depth-count"}, description = "Sample variant stats DepthCount", required = false, arity = 1)
+        public String statsDepthCount; 
+    
+        @Parameter(names = {"--stats-biotype-count"}, description = "Sample variant stats BiotypeCount", required = false, arity = 1)
+        public String statsBiotypeCount; 
+    
+        @Parameter(names = {"--stats-clinical-significance-count"}, description = "Sample variant stats ClinicalSignificanceCount", required = false, arity = 1)
+        public String statsClinicalSignificanceCount; 
+    
+        @Parameter(names = {"--stats-consequence-type-count"}, description = "Sample variant stats ConsequenceTypeCount", required = false, arity = 1)
+        public String statsConsequenceTypeCount; 
+    
+        @Parameter(names = {"--aggregation-fields"}, description = "List of fields, separated by semicolons, for applying aggregation stats, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
+        public String aggregationFields; 
     
     }
 

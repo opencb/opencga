@@ -49,17 +49,24 @@ export default class Cohort extends OpenCGAParentClass {
     /** Fetch catalog cohort stats
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
-    * @param {String} [params.type] - Type.
-    * @param {String} [params.creationYear] - Creation year.
-    * @param {String} [params.creationMonth] - Creation month (JANUARY, FEBRUARY...).
-    * @param {String} [params.creationDay] - Creation day.
-    * @param {String} [params.creationDayOfWeek] - Creation day of week (MONDAY, TUESDAY...).
+    * @param {String} [params.id] - Comma separated list of cohort IDs up to a maximum of 100. Also admits basic regular expressions using
+    *     the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.name] - Comma separated list of cohort names up to a maximum of 100. Also admits basic regular expressions
+    *     using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list of cohort IDs up to a maximum of 100.
+    * @param {String} [params.type] - Cohort type.
+    * @param {String} [params.creationDate] - creationDate.
+    * @param {String} [params.modificationDate] - modificationDate.
+    * @param {Boolean} [params.deleted] - deleted.
+    * @param {String} [params.status] - status.
+    * @param {String} [params.internalStatus] - internalStatus.
+    * @param {String} [params.annotation] - Cohort annotation.
+    * @param {String} [params.acl] - acl.
+    * @param {String} [params.samples] - Cohort sample IDs.
     * @param {String} [params.numSamples] - Number of samples.
-    * @param {String} [params.status] - Status.
-    * @param {String} [params.release] - Release.
-    * @param {String} [params.annotation] - Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
-    *     http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
-    * @param {String} [params.field] - List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+    * @param {String} [params.release] - release.
+    * @param {String} [params.aggregationFields] - List of fields, separated by semicolons, for applying aggregation stats, e.g.:
+    *     studies;type;numSamples[0..10]:1.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     aggregationStats(params) {

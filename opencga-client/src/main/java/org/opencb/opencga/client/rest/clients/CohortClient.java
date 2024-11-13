@@ -75,17 +75,24 @@ public class CohortClient extends AbstractParentClient {
      * Fetch catalog cohort stats.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
-     *       type: Type.
-     *       creationYear: Creation year.
-     *       creationMonth: Creation month (JANUARY, FEBRUARY...).
-     *       creationDay: Creation day.
-     *       creationDayOfWeek: Creation day of week (MONDAY, TUESDAY...).
+     *       id: Comma separated list of cohort IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~',
+     *            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       name: Comma separated list of cohort names up to a maximum of 100. Also admits basic regular expressions using the operator
+     *            '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list of cohort IDs up to a maximum of 100.
+     *       type: Cohort type.
+     *       creationDate: creationDate.
+     *       modificationDate: modificationDate.
+     *       deleted: deleted.
+     *       status: status.
+     *       internalStatus: internalStatus.
+     *       annotation: Cohort annotation.
+     *       acl: acl.
+     *       samples: Cohort sample IDs.
      *       numSamples: Number of samples.
-     *       status: Status.
-     *       release: Release.
-     *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
-     *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
-     *       field: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+     *       release: release.
+     *       aggregationFields: List of fields, separated by semicolons, for applying aggregation stats, e.g.:
+     *            studies;type;numSamples[0..10]:1.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

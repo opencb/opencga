@@ -104,53 +104,62 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--tool-id"}, description = "Tool id", required = false, arity = 1)
+        @Parameter(names = {"--other-studies"}, description = "Flag indicating the entries being queried can belong to any related study, not just the primary one.", required = false, help = true, arity = 0)
+        public boolean otherStudies = false; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--uuid"}, description = "Comma separated list of job UUIDs up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String toolId; 
     
-        @Parameter(names = {"--tool-scope"}, description = "Tool scope", required = false, arity = 1)
-        public String toolScope; 
-    
-        @Parameter(names = {"--tool-type"}, description = "Tool type", required = false, arity = 1)
+        @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
         public String toolType; 
     
-        @Parameter(names = {"--tool-resource"}, description = "Tool resource", required = false, arity = 1)
-        public String toolResource; 
-    
-        @Parameter(names = {"--user-id"}, description = "User id", required = false, arity = 1)
+        @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
         public String userId; 
     
-        @Parameter(names = {"--priority"}, description = "Priority", required = false, arity = 1)
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
         public String priority; 
     
-        @Parameter(names = {"--tags"}, description = "Tags", required = false, arity = 1)
-        public String tags; 
-    
-        @Parameter(names = {"--executor-id"}, description = "Executor id", required = false, arity = 1)
-        public String executorId; 
-    
-        @Parameter(names = {"--executor-framework"}, description = "Executor framework", required = false, arity = 1)
-        public String executorFramework; 
-    
-        @Parameter(names = {"--creation-year"}, description = "Creation year", required = false, arity = 1)
-        public String creationYear; 
-    
-        @Parameter(names = {"--creation-month"}, description = "Creation month (JANUARY, FEBRUARY...)", required = false, arity = 1)
-        public String creationMonth; 
-    
-        @Parameter(names = {"--creation-day"}, description = "Creation day", required = false, arity = 1)
-        public String creationDay; 
-    
-        @Parameter(names = {"--creation-day-of-week"}, description = "Creation day of week (MONDAY, TUESDAY...)", required = false, arity = 1)
-        public String creationDayOfWeek; 
-    
-        @Parameter(names = {"--status"}, description = "Status", required = false, arity = 1)
+        @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
     
-        @Parameter(names = {"--release"}, description = "Release", required = false, arity = 1)
+        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--visited"}, description = "Visited status of job", required = false, arity = 1)
+        public Boolean visited; 
+    
+        @Parameter(names = {"--tags"}, description = "Job tags", required = false, arity = 1)
+        public String tags; 
+    
+        @Parameter(names = {"--input"}, description = "Comma separated list of file IDs used as input.", required = false, arity = 1)
+        public String input; 
+    
+        @Parameter(names = {"--output"}, description = "Comma separated list of file IDs used as output.", required = false, arity = 1)
+        public String output; 
+    
+        @Parameter(names = {"--acl"}, description = "Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. ", required = false, arity = 1)
+        public String acl; 
+    
+        @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
-        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
-        public String field; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
+    
+        @Parameter(names = {"--aggregation-fields"}, description = "List of fields, separated by semicolons, for applying aggregation stats, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
+        public String aggregationFields; 
     
     }
 

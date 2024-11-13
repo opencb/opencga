@@ -82,25 +82,41 @@ public class FileClient extends AbstractParentClient {
      * Fetch catalog file stats.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
-     *       name: Name.
-     *       type: Type.
-     *       format: Format.
-     *       bioformat: Bioformat.
-     *       creationYear: Creation year.
-     *       creationMonth: Creation month (JANUARY, FEBRUARY...).
-     *       creationDay: Creation day.
-     *       creationDayOfWeek: Creation day of week (MONDAY, TUESDAY...).
-     *       status: Status.
-     *       release: Release.
-     *       external: External.
-     *       size: Size.
-     *       software: Software.
-     *       experiment: Experiment.
-     *       numSamples: Number of samples.
-     *       numRelatedFiles: Number of related files.
+     *       id: Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~',
+     *            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list file UUIDs up to a maximum of 100.
+     *       name: Comma separated list of file names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}'
+     *            e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       path: Comma separated list of paths. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+     *            '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uri: Comma separated list of uris. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+     *            '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       type: File type, either FILE or DIRECTORY.
+     *       bioformat: Comma separated Bioformat values. For existing Bioformats see files/bioformats.
+     *       format: Comma separated Format values. For existing Formats see files/formats.
+     *       external: Boolean field indicating whether to filter by external or non external files.
+     *       status: Filter by status.
+     *       internalStatus: Filter by internal status.
+     *       internalVariantIndexStatus: Filter by internal variant index status.
+     *       softwareName: Software name.
+     *       directory: Directory under which we want to look for files or folders.
+     *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       description: Description.
+     *       tags: Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+     *            sensitive, '~/value/i' for case insensitive search.
+     *       size: File size.
+     *       sampleIds: Comma separated list sample IDs or UUIDs up to a maximum of 100.
+     *       jobId: Job ID that created the file(s) or folder(s).
      *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
      *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
-     *       field: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+     *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
+     *            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+     *            permissions. Only study owners or administrators can query by this field. .
+     *       deleted: Boolean to retrieve deleted entries.
+     *       release: Release when it was created.
+     *       aggregationFields: List of fields, separated by semicolons, for applying aggregation stats, e.g.:
+     *            studies;type;numSamples[0..10]:1.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

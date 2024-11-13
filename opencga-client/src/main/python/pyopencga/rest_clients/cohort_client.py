@@ -44,19 +44,29 @@ class Cohort(_ParentRestClient):
 
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
-        :param str type: Type.
-        :param str creation_year: Creation year.
-        :param str creation_month: Creation month (JANUARY, FEBRUARY...).
-        :param str creation_day: Creation day.
-        :param str creation_day_of_week: Creation day of week (MONDAY,
-            TUESDAY...).
+        :param str id: Comma separated list of cohort IDs up to a maximum of
+            100. Also admits basic regular expressions using the operator '~',
+            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i'
+            for case insensitive search.
+        :param str name: Comma separated list of cohort names up to a maximum
+            of 100. Also admits basic regular expressions using the operator
+            '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive,
+            '~/value/i' for case insensitive search.
+        :param str uuid: Comma separated list of cohort IDs up to a maximum of
+            100.
+        :param str type: Cohort type.
+        :param str creation_date: creationDate.
+        :param str modification_date: modificationDate.
+        :param bool deleted: deleted.
+        :param str status: status.
+        :param str internal_status: internalStatus.
+        :param str annotation: Cohort annotation.
+        :param str acl: acl.
+        :param str samples: Cohort sample IDs.
         :param str num_samples: Number of samples.
-        :param str status: Status.
-        :param str release: Release.
-        :param str annotation: Annotation filters. Example:
-            age>30;gender=FEMALE. For more information, please visit
-            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
-        :param str field: List of fields separated by semicolons, e.g.:
+        :param str release: release.
+        :param str aggregation_fields: List of fields, separated by
+            semicolons, for applying aggregation stats, e.g.:
             studies;type;numSamples[0..10]:1.
         """
 

@@ -355,23 +355,30 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @Path("/aggregationStats")
     @ApiOperation(value = "Fetch catalog family stats", response = FacetField.class)
     public Response getAggregationStats(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-            @ApiParam(value = "Status") @QueryParam("status") String status,
-            @ApiParam(value = "Phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Release") @QueryParam("release") String release,
-            @ApiParam(value = "Version") @QueryParam("version") String version,
-            @ApiParam(value = "Number of members") @QueryParam("numMembers") String numMembers,
-            @ApiParam(value = "Expected size") @QueryParam("expectedSize") String expectedSize,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.FAMILY_ID_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.FAMILY_NAME_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.FAMILY_UUID_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.FAMILY_MEMBERS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_MEMBERS_PARAM) String members,
+            @ApiParam(value = ParamConstants.FAMILY_EXPECTED_SIZE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_EXPECTED_SIZE_PARAM) Integer expectedSize,
+            @ApiParam(value = ParamConstants.FAMILY_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_SAMPLES_PARAM) String samples,
+            @ApiParam(value = ParamConstants.FAMILY_PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_PHENOTYPES_PARAM) String phenotypes,
+            @ApiParam(value = ParamConstants.FAMILY_DISORDERS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_DISORDERS_PARAM) String disorders,
+            @ApiParam(value = ParamConstants.FAMILY_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.FAMILY_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.FAMILY_DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.FAMILY_DELETED_PARAM) boolean deleted,
+            @ApiParam(value = ParamConstants.FAMILY_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.FAMILY_STATUS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.FAMILY_ANNOTATION_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_ANNOTATION_PARAM) String annotation,
+            @ApiParam(value = ParamConstants.FAMILY_ACL_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.FAMILY_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.FAMILY_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_SNAPSHOT_PARAM) Integer snapshot,
+
+            // Facet field
+            @ApiParam(value = ParamConstants.FACET_DESCRIPTION) @QueryParam(ParamConstants.FACET_PARAM) String facet) {
         return run(() -> {
             query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("field");
+            query.remove(ParamConstants.FACET_PARAM);
             return catalogManager.getFamilyManager().facet(studyStr, query, facet, token);
         });
     }
