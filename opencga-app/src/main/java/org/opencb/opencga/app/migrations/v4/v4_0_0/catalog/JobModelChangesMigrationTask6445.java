@@ -19,15 +19,25 @@ public class JobModelChangesMigrationTask6445 extends MigrationTool {
 
     @Override
     protected void run() throws Exception {
-        Bson query = Filters.exists("type", false);
-        Bson update = Updates.combine(
-                Updates.set("type", "NATIVE"),
-                Updates.set("tool.minimumRequirements", new Document()),
-                Updates.set("execution.dependencies", Collections.emptyList())
+        Bson typeQuery = Filters.exists("type", false);
+        Bson typeUpdate = Updates.set("type", "NATIVE");
+
+        Bson requirementsQuery = Filters.and(
+                Filters.exists("tool.id"),
+                Filters.exists("tool.minimumRequirements", false)
         );
+        Bson requirementsUpdate = Updates.set("tool.minimumRequirements", new Document());
+
+        Bson dependenciesQuery = Filters.and(
+                Filters.exists("execution.executor"),
+                Filters.exists("execution.dependencies", false)
+        );
+        Bson dependenciesUpdate = Updates.set("execution.dependencies", Collections.emptyList());
         for (String collection : Arrays.asList(OrganizationMongoDBAdaptorFactory.JOB_COLLECTION,
                 OrganizationMongoDBAdaptorFactory.DELETED_JOB_COLLECTION)) {
-            getMongoCollection(collection).updateMany(query, update);
+            getMongoCollection(collection).updateMany(typeQuery, typeUpdate);
+            getMongoCollection(collection).updateMany(requirementsQuery, requirementsUpdate);
+            getMongoCollection(collection).updateMany(dependenciesQuery, dependenciesUpdate);
         }
     }
 
