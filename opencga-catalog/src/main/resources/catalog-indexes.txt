@@ -20,7 +20,6 @@
 {"collections": ["job"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true}}
 {"collections": ["job"], "fields": {"tool.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"tool.type": 1, "studyUid": 1}, "options": {}}
-{"collections": ["job"], "fields": {"tool.externalExecutor.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"userId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"parentId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"outDir.uid": 1, "studyUid": 1}, "options": {}}
