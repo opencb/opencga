@@ -140,6 +140,18 @@ public class OrganizationClient extends AbstractParentClient {
     }
 
     /**
+     * Reset user's password.
+     * @param params Map containing any of the following optional parameters.
+     *       userId: User whose password needs to be reset.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> resetPassword(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("organizations", null, "password", null, "reset", params, POST, ObjectMap.class);
+    }
+
+    /**
      * Update the user status.
      * @param user User ID.
      * @param data JSON containing the User fields to be updated.

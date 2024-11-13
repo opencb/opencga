@@ -112,6 +112,16 @@ class Organization(_ParentRestClient):
 
         return self._post(category='organizations', resource='update', subcategory='notes', second_query_id=id, data=data, **options)
 
+    def reset_password(self, **options):
+        """
+        Reset user's password.
+        PATH: /{apiVersion}/organizations/password/reset
+
+        :param str user_id: User whose password needs to be reset.
+        """
+
+        return self._post(category='organizations', resource='reset', subcategory='password', **options)
+
     def user_update_status(self, user, data=None, **options):
         """
         Update the user status.

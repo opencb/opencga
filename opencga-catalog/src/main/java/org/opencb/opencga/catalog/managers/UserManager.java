@@ -773,26 +773,6 @@ public class UserManager extends AbstractManager {
         throw new UnsupportedOperationException();
     }
 
-    public OpenCGAResult resetPassword(String userId, String token) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(token, "token");
-        JwtPayload jwtPayload = validateToken(token);
-        String organizationId = jwtPayload.getOrganization();
-        try {
-            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId());
-            String authOrigin = getAuthenticationOriginId(organizationId, userId);
-            OpenCGAResult writeResult = authenticationFactory.resetPassword(organizationId, authOrigin, userId);
-
-            auditManager.auditUser(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.RESET_USER_PASSWORD, userId,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return writeResult;
-        } catch (CatalogException e) {
-            auditManager.auditUser(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.RESET_USER_PASSWORD, userId,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-    }
-
     public AuthenticationResponse loginAsAdmin(String password) throws CatalogException {
         return login(ParamConstants.ADMIN_ORGANIZATION, OPENCGA, password);
     }
@@ -1533,7 +1513,7 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    private String getAuthenticationOriginId(String organizationId, String userId) throws CatalogException {
+    String getAuthenticationOriginId(String organizationId, String userId) throws CatalogException {
         OpenCGAResult<User> user = getUserDBAdaptor(organizationId).get(userId, new QueryOptions());
         if (user == null || user.getNumResults() == 0) {
             throw new CatalogException(userId + " user not found");

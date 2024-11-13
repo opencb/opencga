@@ -182,14 +182,14 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     @GET
     @Path("/{user}/password/reset")
-    @ApiOperation(value = "Reset password", hidden = false,
-            notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.", response = User.class)
+    @ApiOperation(value = "[DEPRECATED]", notes = "[DEPRECATED] This WS has been moved to /organizations/password/reset.", response = User.class)
     public Response resetPassword(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
         try {
-            OpenCGAResult<User> result = catalogManager.getUserManager().resetPassword(userId, token);
+            OpenCGAResult<?> result = catalogManager.getOrganizationManager().resetUserPassword(userId, token);
             return createOkResponse(result, "The new password has been sent to the user's email.");
         } catch (Exception e) {
             return createErrorResponse(e);

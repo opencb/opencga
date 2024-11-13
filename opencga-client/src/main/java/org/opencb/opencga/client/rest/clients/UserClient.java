@@ -208,7 +208,7 @@ public class UserClient extends AbstractParentClient {
     }
 
     /**
-     * Reset password.
+     * [DEPRECATED].
      * @param user User ID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

@@ -148,6 +148,20 @@ public class OrganizationWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/password/reset")
+    @ApiOperation(value = "Reset user's password",
+            notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
+    public Response resetPassword(
+            @ApiParam(value = "User whose password needs to be reset") @QueryParam("userId") String userId) {
+        try {
+            OpenCGAResult<?> result = catalogManager.getOrganizationManager().resetUserPassword(userId, token);
+            return createOkResponse(result, "The new password has been sent to the user's email.");
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
     @Path("/notes/search")
     @ApiOperation(value = "Search for notes of scope ORGANIZATION", response = Note.class)

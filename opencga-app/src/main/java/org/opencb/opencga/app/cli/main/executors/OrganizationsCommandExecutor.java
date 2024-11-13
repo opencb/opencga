@@ -81,6 +81,9 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
             case "notes-update":
                 queryResponse = updateNotes();
                 break;
+            case "password-reset":
+                queryResponse = resetPassword();
+                break;
             case "update-status-user":
                 queryResponse = userUpdateStatus();
                 break;
@@ -238,6 +241,17 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), NoteUpdateParams.class);
         }
         return openCGAClient.getOrganizationClient().updateNotes(commandOptions.id, noteUpdateParams, queryParams);
+    }
+
+    private RestResponse<ObjectMap> resetPassword() throws Exception {
+        logger.debug("Executing resetPassword in Organizations command line");
+
+        OrganizationsCommandOptions.ResetPasswordCommandOptions commandOptions = organizationsCommandOptions.resetPasswordCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("userId", commandOptions.userId);
+
+        return openCGAClient.getOrganizationClient().resetPassword(queryParams);
     }
 
     private RestResponse<User> userUpdateStatus() throws Exception {
