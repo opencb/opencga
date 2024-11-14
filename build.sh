@@ -156,7 +156,7 @@ function print_usage() {
   echo "     -b     --prepare-branches    FLAG           Previous to run, it will download and compile all branches of the dependencies."
   echo "     -s     --test-save-reports   FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
   echo "     -d     --docker              FLAG           Publish docker of OpenCGA-enterprise."
-  echo "     -p     --docker-suffix       FLAG           Suffix for the the tag of the docker of OpenCGA-enterprise."
+  echo "     -p     --docker-tag          FLAG           Tag for docker of OpenCGA-enterprise."
   echo "     -c     --cellbase-db         STRING         Connection to mongodb to test cellbase (host:port)."
   echo "     -v     --verbose             FLAG           Print verbose logs"
   echo "     -h     --help                FLAG           Print this help and exit"
@@ -404,18 +404,12 @@ function publish_dockers() {
   if [ "$DOCKER" == "true" ];then
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-    if [[ -n $TASK_REFERENCE ]]; then
+    if [[ -n "$DOCKER_TAG" ]]; then
+      TAG="${DOCKER_TAG}"
+    elif [[ -n $TASK_REFERENCE ]]; then
       TAG=$TASK_REFERENCE
     else
       TAG="$(mvn help:evaluate --file "${OPENCGA_ENTERPRISE_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
-    fi
-    if [[ -n "$SUFFIX" ]]; then
-        # Comprobar si $SUFFIX empieza con "-"
-        if [[ "$SUFFIX" != -* ]]; then
-            SUFFIX="-$SUFFIX"
-        fi
-        # Concatenar $TAG y $SUFFIX
-        TAG="${TAG}${SUFFIX}"
     fi
     python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag "$TAG"
     if [[ "$?" -ne 0 ]] ; then
@@ -658,7 +652,7 @@ OPENCGA_HOME_DIR="$PWD/opencga-home/"
 STORAGE_HADOOP_DEPS="hdp3.1"
 TEST_TAG="runShortTests"
 FAIL_NEVER=""
-SUFFIX=""
+DOCKER_TAG=""
 PREPARE_BRANCHES=""
 DEBUG=""
 SKIP_TESTS=false
@@ -709,8 +703,8 @@ while [[ $# -gt 0 ]]; do
       DOCKER="true"
       shift # past argument
       ;;
-  -p | --docker-suffix)
-      SUFFIX="$value"
+  -p | --docker-tag)
+      DOCKER_TAG="$value"
       shift # past argument
       shift # past value
       ;;
