@@ -710,9 +710,9 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         public Map<String, String> jobStatus = new HashMap<>();
 
         @Override
-        public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
-            System.out.println("Executing job " + jobId + " --- " + commandLine);
-            jobStatus.put(jobId, Enums.ExecutionStatus.QUEUED);
+        public void execute(Job job, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
+            System.out.println("Executing job " + job.getId() + " --- " + commandLine);
+            jobStatus.put(job.getId(), Enums.ExecutionStatus.QUEUED);
         }
 
         @Override

@@ -660,7 +660,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         try {
             String queue = getQueue(tool);
             logger.info("Queue job '{}' on queue '{}'", job.getId(), queue);
-            batchExecutor.execute(job.getId(), queue, authenticatedCommandLine, stdout, stderr);
+            batchExecutor.execute(job, queue, authenticatedCommandLine, stdout, stderr);
         } catch (Exception e) {
             return abortJob(job, "Error executing job.", e);
         }
