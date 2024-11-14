@@ -43,7 +43,7 @@ public class CvdbTaskTest {
     private ToolRunner toolRunner;
 
     @Rule
-    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);
+    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
 
     @Rule
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();

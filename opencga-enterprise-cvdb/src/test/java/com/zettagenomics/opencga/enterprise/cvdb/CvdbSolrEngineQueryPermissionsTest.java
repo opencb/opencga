@@ -64,7 +64,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
     @BeforeClass
     public static void before() throws Throwable {
-        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
         cvdbSolrExternalResource.before();
 
         catalogManagerResource = new CatalogManagerExternalResource();
@@ -80,8 +80,8 @@ public class CvdbSolrEngineQueryPermissionsTest {
         cvdbEngine.setCatalogManager(catalogManager);
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
-        if (!cvdbEngine.existCollections(projectId)) {
-            cvdbEngine.createCollections(projectId);
+        if (!cvdbEngine.existCollections(organizationId, projectId)) {
+            cvdbEngine.createCollections(organizationId, projectId);
         }
 
         // Load and index
@@ -127,6 +127,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "FAMILY");
 
@@ -163,6 +164,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
 
@@ -213,6 +215,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
         // Check type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_TYPE_NAME, "INDEL");
 
@@ -249,6 +252,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
         // Check type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_TYPE_NAME, "INDEL");
 
@@ -293,6 +297,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "FAMILY");
 
@@ -306,6 +311,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
     private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(CA_ID_NAME, caId);
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
@@ -315,6 +321,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
     private Interpretation getClinicalInterpretation(String ciId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_ID_NAME, ciId);
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), sessionIdUser);
@@ -325,6 +332,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
     private ClinicalVariant getClinicalVariant(String cvId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_ID_NAME, cvId);
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), sessionIdUser);

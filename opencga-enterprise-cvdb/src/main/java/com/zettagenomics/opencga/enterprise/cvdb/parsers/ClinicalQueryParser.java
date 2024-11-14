@@ -41,8 +41,7 @@ import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryPar
 
 public class ClinicalQueryParser {
 
-    protected String opencgaDbPrefix;
-    protected String cvdbPrefix;
+    protected String collectionPrefix;
 
     private SolrQueryParser solrParser;
 
@@ -107,10 +106,8 @@ public class ClinicalQueryParser {
 
     protected static Logger logger = LoggerFactory.getLogger(ClinicalQueryParser.class);
 
-    protected ClinicalQueryParser(String opencgaDbPrefix, String cvdbPrefix,
-                                  VariantStorageMetadataManager variantStorageMetadataManager) {
-        this.opencgaDbPrefix = opencgaDbPrefix;
-        this.cvdbPrefix = cvdbPrefix;
+    protected ClinicalQueryParser(String collectionPrefix, VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.collectionPrefix = collectionPrefix;
         this.solrParser = new SolrQueryParser(variantStorageMetadataManager);
     }
 

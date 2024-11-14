@@ -31,6 +31,7 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     private SolrClient solrClient;
 
     protected boolean embeded;
+    private String organizationId;
     private String projectId;
 
     private String solrHost = "http://localhost:8983/solr"; // "localhost:2181"; //"http://localhost:8983/solr";
@@ -42,8 +43,9 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     private Configuration configuration;
     private EnterpriseConfiguration enterpriseConfiguration;
 
-    public CvdbSolrExtenalResource(boolean embeded, String projectId) {
+    public CvdbSolrExtenalResource(boolean embeded, String organizationId, String projectId) {
         this.embeded = embeded;
+        this.organizationId = organizationId;
         this.projectId = projectId;
 
         try {
@@ -51,7 +53,6 @@ public class CvdbSolrExtenalResource extends ExternalResource {
             this.enterpriseConfiguration = EnterpriseConfiguration.load(CvdbSolrExtenalResource.class.getResourceAsStream("/enterprise-configuration.yml"));
 
             System.out.println("this.configuration.getDatabasePrefix() = " + this.configuration.getDatabasePrefix());
-            System.out.println("this.enterpriseConfiguration.getCvdb().getPrefix() = " + this.enterpriseConfiguration.getCvdb().getPrefix());
         } catch (IOException e) {
             e.printStackTrace();
             fail();
@@ -77,10 +78,10 @@ public class CvdbSolrExtenalResource extends ExternalResource {
 
         if (embeded) {
             solrClient = create(solrHome, rootDir.resolve("configsets").toString(),
-                    CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), enterpriseConfiguration.getCvdb().getPrefix(), projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX)
-                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), enterpriseConfiguration.getCvdb().getPrefix(), projectId, INTERPRETATIONS_COLLECTION_SUFFIX)
-                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), enterpriseConfiguration.getCvdb().getPrefix(), projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX)
-                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), enterpriseConfiguration.getCvdb().getPrefix(), projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
+                    CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX)
+                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, INTERPRETATIONS_COLLECTION_SUFFIX)
+                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX)
+                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
         } else {
             SolrManager solrManager = new SolrManager(solrHost, solrMode, solrTimeout);
             this.solrClient = solrManager.getSolrClient();

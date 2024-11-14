@@ -151,6 +151,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Calculate and fetch clinical analysis aggregation stats.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       projectId: Project ID.
      *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
@@ -291,6 +292,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical analyses from CVDB.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       projectId: Project ID.
      *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       include: Fields included in the response, whole JSON path must be provided.
@@ -452,6 +454,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Calculate and fetch clinical interpretation aggregation stats.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       projectId: Project ID.
      *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
@@ -593,6 +596,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical interpretations from CVDB.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       projectId: Project ID.
      *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       include: Fields included in the response, whole JSON path must be provided.
@@ -732,6 +736,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Calculate and fetch clinical variant aggregation stats.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       projectId: Project ID.
      *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
@@ -872,6 +877,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical variants from CVDB.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       projectId: Project ID.
      *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       include: Fields included in the response, whole JSON path must be provided.
@@ -1011,6 +1017,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Calculate and fetch clinical variant evidence aggregation stats.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       projectId: Project ID.
      *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
@@ -1152,6 +1159,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical variant evidences from CVDB.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       projectId: Project ID.
      *       studyId: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
      *       include: Fields included in the response, whole JSON path must be provided.

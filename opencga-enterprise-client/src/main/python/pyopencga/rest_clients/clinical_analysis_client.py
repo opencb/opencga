@@ -102,6 +102,7 @@ class ClinicalAnalysis(_ParentRestClient):
         Calculate and fetch clinical analysis aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/case/aggregationStats
 
+        :param str organization_id: Organization ID.
         :param str project_id: Project ID.
         :param str study_id: Study ID (or list of study IDs separated by
             commas), or '*' for all studies of the current user.
@@ -351,6 +352,7 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical analyses from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/case/query
 
+        :param str organization_id: Organization ID.
         :param str project_id: Project ID.
         :param str study_id: Study ID (or list of study IDs separated by
             commas), or '*' for all studies of the current user.
@@ -625,6 +627,7 @@ class ClinicalAnalysis(_ParentRestClient):
         Calculate and fetch clinical interpretation aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/interpretation/aggregationStats
 
+        :param str organization_id: Organization ID.
         :param str project_id: Project ID.
         :param str study_id: Study ID (or list of study IDs separated by
             commas), or '*' for all studies of the current user.
@@ -876,6 +879,7 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical interpretations from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/interpretation/query
 
+        :param str organization_id: Organization ID.
         :param str project_id: Project ID.
         :param str study_id: Study ID (or list of study IDs separated by
             commas), or '*' for all studies of the current user.
@@ -1122,6 +1126,7 @@ class ClinicalAnalysis(_ParentRestClient):
         Calculate and fetch clinical variant aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variant/aggregationStats
 
+        :param str organization_id: Organization ID.
         :param str project_id: Project ID.
         :param str study_id: Study ID (or list of study IDs separated by
             commas), or '*' for all studies of the current user.
@@ -1372,6 +1377,7 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical variants from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variant/query
 
+        :param str organization_id: Organization ID.
         :param str project_id: Project ID.
         :param str study_id: Study ID (or list of study IDs separated by
             commas), or '*' for all studies of the current user.
@@ -1618,6 +1624,7 @@ class ClinicalAnalysis(_ParentRestClient):
         Calculate and fetch clinical variant evidence aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variantEvidence/aggregationStats
 
+        :param str organization_id: Organization ID.
         :param str project_id: Project ID.
         :param str study_id: Study ID (or list of study IDs separated by
             commas), or '*' for all studies of the current user.
@@ -1869,6 +1876,7 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical variant evidences from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variantEvidence/query
 
+        :param str organization_id: Organization ID.
         :param str project_id: Project ID.
         :param str study_id: Study ID (or list of study IDs separated by
             commas), or '*' for all studies of the current user.

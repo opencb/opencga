@@ -13,7 +13,6 @@ sso:
     groups: groups
 cvdb:
   active: true
-  prefix: cvdb
   database:
     hosts:
       - http://localhost:8983/solr/    # URL containing host and port, e.g. http://localhost:8983/solr/

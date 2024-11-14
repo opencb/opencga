@@ -6,27 +6,17 @@ import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
-import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Tool(id = CvdbIndexTask.ID, resource = Enums.Resource.CLINICAL_ANALYSIS, description = CvdbIndexTask.DESCRIPTION)
 public class CvdbIndexTask extends OpenCgaToolScopeStudy {
@@ -68,12 +58,13 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(getOpencgaHome());
         cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, null);
         try {
-            if (!cvdbEngine.existCollections(project.getId())) {
-                cvdbEngine.createCollections(project.getId());
+            if (!cvdbEngine.existCollections(organizationId, project.getId())) {
+                cvdbEngine.createCollections(organizationId, project.getId());
             }
         } catch (CvdbException e) {
-            logger.error("Could not perform CVDB index for project {}", project.getId(), e);
-            throw new CvdbException("Could not CVDB index for project '" + project.getId() + "'.");
+            String msg = "Could not perform CVDB index for organization '" + organizationId + "' and project '" + project.getId() + "'";
+            logger.error(msg);
+            throw new CvdbException(msg);
         }
     }
 

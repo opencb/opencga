@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.ORGANIZATION_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
@@ -64,7 +65,7 @@ public class ClinicalAggregationTest {
 
     @BeforeClass
     public static void before() throws Throwable {
-        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
         cvdbSolrExternalResource.before();
 
         catalogManagerResource = new CatalogManagerExternalResource();
@@ -80,8 +81,8 @@ public class ClinicalAggregationTest {
         cvdbEngine.setCatalogManager(catalogManager);
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
-        if (!cvdbEngine.existCollections(projectId)) {
-            cvdbEngine.createCollections(projectId);
+        if (!cvdbEngine.existCollections(organizationId, projectId)) {
+            cvdbEngine.createCollections(organizationId, projectId);
         }
 
         // Load and index
@@ -128,6 +129,7 @@ public class ClinicalAggregationTest {
         // Check existing type
         queryOptions.put(QueryOptions.FACET, CA_DISORDER_ID_NAME);
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, null);
         assertEquals(1, facetResult.getNumResults());
         assertEquals(2, facetResult.first().getCount());
@@ -147,6 +149,7 @@ public class ClinicalAggregationTest {
         // Check existing type
         queryOptions.put(QueryOptions.FACET, CA_TYPE_NAME + FACET_SEPARATOR + CA_DISORDER_ID_NAME);
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, null);
         assertEquals(2, facetResult.getNumResults());
         Set<String> fieldNames = facetResult.getResults().stream().map(f -> f.getName()).collect(Collectors.toSet());
@@ -168,6 +171,7 @@ public class ClinicalAggregationTest {
         // Check existing type
         queryOptions.put(QueryOptions.FACET, CA_TYPE_NAME + FacetQueryParser.NESTED_FACET_SEPARATOR + CA_DISORDER_ID_NAME);
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, null);
         assertEquals(1, facetResult.getNumResults());
         assertEquals(CA_TYPE_NAME, facetResult.first().getName());

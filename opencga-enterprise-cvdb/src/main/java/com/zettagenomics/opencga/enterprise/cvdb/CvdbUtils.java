@@ -21,8 +21,8 @@ package com.zettagenomics.opencga.enterprise.cvdb;
  */
 public class CvdbUtils {
 
-    public static String getCollectionName(String opencgaDbPrefix, String cvdbPrefix, String projectId, String suffix) {
-        return opencgaDbPrefix + "_" + cvdbPrefix + "_" + projectId + suffix;
+    public static String getCollectionName(String prefix, String organizationId, String projectId, String suffix) {
+        return prefix + "_cvdb_" + organizationId + "_" + projectId + suffix;
     }
 }
 

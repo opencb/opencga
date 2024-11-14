@@ -75,7 +75,7 @@ public class CvdbSolrEngineQueryTest {
 
     @BeforeClass
     public static void before() throws Throwable {
-        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
         cvdbSolrExternalResource.before();
 
         catalogManagerResource = new CatalogManagerExternalResource();
@@ -91,8 +91,8 @@ public class CvdbSolrEngineQueryTest {
         cvdbEngine.setCatalogManager(catalogManager);
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
-        if (!cvdbEngine.existCollections(projectId)) {
-            cvdbEngine.createCollections(projectId);
+        if (!cvdbEngine.existCollections(organizationId, projectId)) {
+            cvdbEngine.createCollections(organizationId, projectId);
         }
 
         // Load and index
@@ -132,6 +132,7 @@ public class CvdbSolrEngineQueryTest {
     @Test
     public void testCvdbContent() throws IOException, CvdbException, CatalogException {
         Query query = new Query();
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         QueryOptions queryOptions = new QueryOptions();
@@ -157,6 +158,7 @@ public class CvdbSolrEngineQueryTest {
         String panelId = "VACTERL-like_phenotypes-PanelAppId-101";
 
         Query query = new Query();
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_ID_NAME, variantId);
@@ -180,6 +182,7 @@ public class CvdbSolrEngineQueryTest {
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
         Query query = new Query();
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_ID_NAME, StringUtils.join(variantIds, ","));
@@ -202,6 +205,7 @@ public class CvdbSolrEngineQueryTest {
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
         Query query = new Query();
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_ID_NAME, StringUtils.join(variantIds, ","));
@@ -231,6 +235,7 @@ public class CvdbSolrEngineQueryTest {
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
         Query query = new Query();
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_ID_NAME, StringUtils.join(variantIds, ","));
@@ -267,6 +272,7 @@ public class CvdbSolrEngineQueryTest {
         DataResult<ClinicalVariant> result;
 
         Query query = new Query();
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_ID_NAME, StringUtils.join(variantIds, ","));
@@ -335,6 +341,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check existing type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "FAMILY");
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -344,6 +351,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check non-existing type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "TOTOTO");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -351,6 +359,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check disorder
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_DISORDER_ID_NAME, "Ultra-rare undescribed monogenic disorders");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -360,6 +369,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check family member
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_FAMILY_MEMBER_ID_NAME, "NR_111002765_3102043");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -380,6 +390,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check existing type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "FAMILY");
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -395,6 +406,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check non-existing type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "TOTOTO");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -402,6 +414,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check disorder
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_DISORDER_ID_NAME, "Ultra-rare undescribed monogenic disorders");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -417,6 +430,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check family member
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_FAMILY_MEMBER_ID_NAME, "NR_111002765_3102043");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -443,6 +457,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check existing type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "FAMILY");
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -460,6 +475,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check non-existing type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "TOTOTO");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -467,6 +483,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check disorder
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_DISORDER_ID_NAME, "Ultra-rare undescribed monogenic disorders");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -484,6 +501,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check family member
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_FAMILY_MEMBER_ID_NAME, "NR_111002765_3102043");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -512,6 +530,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check existing type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "FAMILY");
         DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -529,6 +548,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check non-existing type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "TOTOTO");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -536,6 +556,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check disorder
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_DISORDER_ID_NAME, "Ultra-rare undescribed monogenic disorders");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -553,6 +574,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check family member
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_FAMILY_MEMBER_ID_NAME, "NR_111002765_3102043");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -580,6 +602,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -590,6 +613,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check non-existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PANEL_ID_NAME, "TOTOTO");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -597,6 +621,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check interpretation ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_ID_NAME, "OPA-6522-1.1");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -628,6 +653,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check single date
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         String strDate = "20231030104137";
         query.put(CI_ANALYIST_DATE_NAME, strDate);
@@ -636,6 +662,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check multiple date
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         strDate = "20231030104137,20231030104144";
         query.put(CI_ANALYIST_DATE_NAME, strDate);
@@ -644,6 +671,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check range date
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         strDate = "20221030104137-20241030104144";
         query.put(CI_ANALYIST_DATE_NAME, strDate);
@@ -652,6 +680,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check range date (no start date)
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         strDate = "-20231030104144";
         query.put(CI_ANALYIST_DATE_NAME, strDate);
@@ -660,6 +689,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check range date (no end date)
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         strDate = "20231030104137-";
         query.put(CI_ANALYIST_DATE_NAME, strDate);
@@ -684,6 +714,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check single integer
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_VERSION_NAME, 1);
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -694,6 +725,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check multiple integers
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         List<Integer> versions = Arrays.asList(1, 3);
         query.put(CI_VERSION_NAME, StringUtils.join(versions, ","));
@@ -705,6 +737,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check non-existing integer
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_VERSION_NAME, "555");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -723,6 +756,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check boolean (true)
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -733,6 +767,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, "true");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -744,6 +779,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check boolean (false)
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.FALSE);
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -754,6 +790,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, "false");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -765,6 +802,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check boolean (non-valid value -> false)
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, "toto");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -787,6 +825,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check single word
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_REVIEW_TEXT_NAME, "passed");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -797,6 +836,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check non-existing value
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_REVIEW_TEXT_NAME, "toto");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -805,6 +845,7 @@ public class CvdbSolrEngineQueryTest {
         // Check multiple words separated by , (i.e., OR)
         words = Arrays.asList("passed", "toto");
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_REVIEW_TEXT_NAME, StringUtils.join(words, ","));
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -822,6 +863,7 @@ public class CvdbSolrEngineQueryTest {
         // Check multiple words separated by ; (i.e., AND)
         words = Arrays.asList("passed", "segregation");
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_REVIEW_TEXT_NAME, StringUtils.join(words, ";"));
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -835,6 +877,7 @@ public class CvdbSolrEngineQueryTest {
         // Check multiple words separated by ; (i.e., AND)
         words = Arrays.asList("passed", "toto");
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_REVIEW_TEXT_NAME, StringUtils.join(words, ";"));
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -851,6 +894,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -861,6 +905,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check non-existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PANEL_ID_NAME, "TOTOTO");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -868,6 +913,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check interpretation ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_ID_NAME, "OPA-6522-1.1");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -888,6 +934,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -905,6 +952,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check non-existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PANEL_ID_NAME, "TOTOTO");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -912,6 +960,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check interpretation ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_ID_NAME, "OPA-6522-1.2");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -939,6 +988,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
         DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -956,6 +1006,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check non-existing panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PANEL_ID_NAME, "TOTOTO");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -963,6 +1014,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check interpretation ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_ID_NAME, "OPA-6522-1.2");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -989,6 +1041,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_TYPE_NAME, "INDEL");
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1008,6 +1061,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_TYPE_NAME, "INDEL");
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1027,6 +1081,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_TYPE_NAME, "INDEL");
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1046,6 +1101,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check type
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_TYPE_NAME, "INDEL");
         DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -1069,6 +1125,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check tier
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_TIER_NAME, "TIER3");
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1091,6 +1148,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check gene name
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "RP1L1");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1113,6 +1171,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1134,6 +1193,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check consequence type ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "SO:0001821");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1155,6 +1215,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check consequence type name
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "inframe_insertion");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1177,6 +1238,7 @@ public class CvdbSolrEngineQueryTest {
         // Check filter with multiple values
         List<String> geneNames = Arrays.asList("TENM1","CSF2RA");
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, StringUtils.join(geneNames, ","));
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1198,6 +1260,7 @@ public class CvdbSolrEngineQueryTest {
 
         List<String> soTerms = Arrays.asList("inframe_insertion","splice_region_variant");
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, StringUtils.join(soTerms, ","));
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1223,6 +1286,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check multiple filters
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "TENM1");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "missense_variant");
@@ -1230,6 +1294,7 @@ public class CvdbSolrEngineQueryTest {
         assertEquals(0, result.getNumResults());
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "TENM1");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "splice_region_variant");
@@ -1253,6 +1318,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "CSF2RA");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "missense_variant");
@@ -1277,6 +1343,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check moi
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_MOI_NAME, "X_LINKED_DOMINANT");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1296,6 +1363,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_MOI_NAME, "TOTOTOTO");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1303,6 +1371,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check penetrance
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PENETRANCE_NAME, "COMPLETE");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1321,6 +1390,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PENETRANCE_NAME, "TOTOTOTO");
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
@@ -1338,6 +1408,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check tier
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_TIER_NAME, "TIER3");
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1360,6 +1431,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check gene name
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "RP1L1");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1382,6 +1454,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1403,6 +1476,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check consequence type ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "SO:0001821");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1424,6 +1498,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check consequence type name
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "inframe_insertion");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1446,6 +1521,7 @@ public class CvdbSolrEngineQueryTest {
         // Check filter with multiple values
         List<String> geneNames = Arrays.asList("TENM1","CSF2RA");
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, StringUtils.join(geneNames, ","));
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1467,6 +1543,7 @@ public class CvdbSolrEngineQueryTest {
 
         List<String> soTerms = Arrays.asList("inframe_insertion","splice_region_variant");
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, StringUtils.join(soTerms, ","));
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1492,6 +1569,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check multiple filters
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "TENM1");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "missense_variant");
@@ -1499,6 +1577,7 @@ public class CvdbSolrEngineQueryTest {
         assertEquals(0, result.getNumResults());
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "TENM1");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "splice_region_variant");
@@ -1522,6 +1601,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "CSF2RA");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "missense_variant");
@@ -1546,6 +1626,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check moi
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_MOI_NAME, "X_LINKED_DOMINANT");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1564,6 +1645,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_MOI_NAME, "TOTOTOTO");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1571,6 +1653,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check penetrance
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PENETRANCE_NAME, "COMPLETE");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1588,6 +1671,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PENETRANCE_NAME, "TOTOTOTO");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
@@ -1604,6 +1688,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check tier
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_TIER_NAME, "TIER3");
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1620,6 +1705,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check gene name
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "RP1L1");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1636,6 +1722,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1652,6 +1739,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check consequence type ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "SO:0001821");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1668,6 +1756,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check consequence type name
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "inframe_insertion");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1685,6 +1774,7 @@ public class CvdbSolrEngineQueryTest {
         // Check filter with multiple values
         List<String> geneNames = Arrays.asList("TENM1","CSF2RA");
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, StringUtils.join(geneNames, ","));
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1701,6 +1791,7 @@ public class CvdbSolrEngineQueryTest {
 
         List<String> soTerms = Arrays.asList("inframe_insertion","splice_region_variant");
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, StringUtils.join(soTerms, ","));
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1721,6 +1812,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check multiple filters
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "TENM1");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "missense_variant");
@@ -1728,6 +1820,7 @@ public class CvdbSolrEngineQueryTest {
         assertEquals(0, result.getNumResults());
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "TENM1");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "splice_region_variant");
@@ -1746,6 +1839,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "CSF2RA");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "missense_variant");
@@ -1765,6 +1859,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check moi
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_MOI_NAME, "X_LINKED_RECESSIVE");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1781,6 +1876,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_MOI_NAME, "TOTOTOTO");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1788,6 +1884,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check penetrance
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PENETRANCE_NAME, "COMPLETE");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1803,6 +1900,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PENETRANCE_NAME, "TOTOTOTO");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
@@ -1819,6 +1917,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check tier
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_TIER_NAME, "TIER3");
         DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -1829,6 +1928,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check gene name
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "RP1L1");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -1839,6 +1939,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check panel ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -1849,6 +1950,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check consequence type ID
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "SO:0001821");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -1859,6 +1961,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check consequence type name
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "inframe_insertion");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -1870,6 +1973,7 @@ public class CvdbSolrEngineQueryTest {
         // Check filter with multiple values
         List<String> geneNames = Arrays.asList("TENM1","CSF2RA");
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, StringUtils.join(geneNames, ","));
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -1880,6 +1984,7 @@ public class CvdbSolrEngineQueryTest {
 
         List<String> soTerms = Arrays.asList("inframe_insertion","splice_region_variant");
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, StringUtils.join(soTerms, ","));
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -1899,6 +2004,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check multiple filters
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "TENM1");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "missense_variant");
@@ -1906,6 +2012,7 @@ public class CvdbSolrEngineQueryTest {
         assertEquals(0, result.getNumResults());
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "TENM1");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "splice_region_variant");
@@ -1919,6 +2026,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_GENE_NAME_NAME, "CSF2RA");
         query.put(CVE_CONSEQUENCE_TYPE_ID_NAME, "missense_variant");
@@ -1933,6 +2041,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check moi
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_MOI_NAME, "AUTOSOMAL_RECESSIVE");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -1942,6 +2051,7 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_MOI_NAME, "TOTOTOTO");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -1949,6 +2059,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check penetrance
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PENETRANCE_NAME, "COMPLETE");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -1958,12 +2069,14 @@ public class CvdbSolrEngineQueryTest {
         }
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_PENETRANCE_NAME, "TOTOTOTO");
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
         assertEquals(0, result.getNumResults());
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
         for (ClinicalVariantEvidence cve : result.getResults()) {
@@ -1988,6 +2101,7 @@ public class CvdbSolrEngineQueryTest {
 
         // Check tier
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_TIER_NAME, "TIER3");
         DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
@@ -2008,13 +2122,14 @@ public class CvdbSolrEngineQueryTest {
     public void testExcludeQueryClinicalAInterpretationsUsingMediumJson() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(EXCLUDE, "panels,interpretation.panels,secondaryInterpretations.panels");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("mediumJson", solrQuery.getFields());
     }
@@ -2023,13 +2138,14 @@ public class CvdbSolrEngineQueryTest {
     public void testExcludeQueryClinicalInterpretationsUsingMaxJson1() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(EXCLUDE, "panels,interpretation.panels");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2048,13 +2164,14 @@ public class CvdbSolrEngineQueryTest {
     public void testExcludeQueryClinicalInterpretationsUsingMaxJson2() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(EXCLUDE, "panels");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2077,13 +2194,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalAnalysisUsingIndexedFields() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,family.members.id");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertTrue(solrQuery.getFields().contains("id"));
         assertTrue(solrQuery.getFields().contains("familyMemberIds"));
@@ -2107,13 +2225,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalAnalysisUsingMinJsonIncludeWithField() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,family.members.sex");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
 
@@ -2137,13 +2256,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalAnalysisUsingMinJsonIncludeWithField1() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,type,proband.id,proband.samples.id,family.id,family.members.id,disorder.id,interpretation.id,interpretation.stats,panels.id,panels.name,panels.source,panels.stats");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
 
@@ -2176,13 +2296,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalAnalysisUsingMediumJsonIncludeWithField() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,family.members.name,interpretation.primaryFindings.annotation");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("mediumJson", solrQuery.getFields());
     }
@@ -2191,13 +2312,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalAnalysisMinJson() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,family.members.name");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
     }
@@ -2206,12 +2328,13 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalAnalysisUsingMaxJsonNoInclude() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2242,13 +2365,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalAnalysisUsingMaxJson() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "panels");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2272,13 +2396,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalAnalysisUsingMinJson() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "interpretation.primaryFindings.id");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
 
@@ -2296,13 +2421,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalInterpretationNoneJson() throws CvdbException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id");
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("id", solrQuery.getFields());
     }
@@ -2311,13 +2437,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalInterpretationMinJson() throws CvdbException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "primaryFindings.evidences");
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
     }
@@ -2326,13 +2453,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalInterpretationMediumJson() throws CvdbException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "primaryFindings.annotation.id");
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("mediumJson", solrQuery.getFields());
     }
@@ -2341,13 +2469,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalInterpretationMaxJson() throws CvdbException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "panels.genes");
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
     }
@@ -2356,13 +2485,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalInterpretationMinJson2() throws CvdbException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MINIMUM_JSON);
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
     }
@@ -2371,13 +2501,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalInterpretationMediumJson2() throws CvdbException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MEDIUM_JSON);
 
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("mediumJson", solrQuery.getFields());
     }
@@ -2386,13 +2517,14 @@ public class CvdbSolrEngineQueryTest {
     public void testIncludeClinicalAnalysistionMediumJson2() throws CvdbException, CatalogException, IOException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MEDIUM_JSON);
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("mediumJson", solrQuery.getFields());
 
@@ -2416,13 +2548,14 @@ public class CvdbSolrEngineQueryTest {
     public void testClinicalAnalysisQueryByCaReport() throws CvdbException, CatalogException, IOException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_REPORT_NAME, "testing");
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MINIMUM_JSON);
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
 
@@ -2437,13 +2570,14 @@ public class CvdbSolrEngineQueryTest {
     public void testClinicalAnalysisQueryByCiDescription() throws CvdbException, CatalogException, IOException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_DESCRIPTION_NAME, "genomics_england_tiering");
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "interpretation.description");
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
 
@@ -2464,12 +2598,13 @@ public class CvdbSolrEngineQueryTest {
     public void testClinicalAnalysisQueryByCvCt() throws CvdbException, CatalogException, IOException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, "missense_variant");
 
         QueryOptions queryOptions = new QueryOptions();
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2496,12 +2631,13 @@ public class CvdbSolrEngineQueryTest {
 
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, StringUtils.join(soTerms, ";"));
 
         QueryOptions queryOptions = new QueryOptions();
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2527,12 +2663,13 @@ public class CvdbSolrEngineQueryTest {
 
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, StringUtils.join(soTerms, ","));
 
         QueryOptions queryOptions = new QueryOptions();
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2558,12 +2695,13 @@ public class CvdbSolrEngineQueryTest {
 
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CVE_CLINICAL_SIGNIFICANCE_NAME, ClinicalProperty.ClinicalSignificance.LIKELY_BENIGN);
 
         QueryOptions queryOptions = new QueryOptions();
 
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getCvdbConfiguration().getPrefix(), cvdbEngine.getVariantStorageMetadataManager());
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
 
@@ -2602,6 +2740,7 @@ public class CvdbSolrEngineQueryTest {
         String panelId = "VACTERL-like_phenotypes-PanelAppId-101";
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PANEL_ID_NAME, panelId);
 
@@ -2620,6 +2759,7 @@ public class CvdbSolrEngineQueryTest {
 
     private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_ID_NAME, caId);
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), sessionIdUser);
@@ -2630,6 +2770,7 @@ public class CvdbSolrEngineQueryTest {
 
     private Interpretation getClinicalInterpretation(String ciId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_ID_NAME, ciId);
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), sessionIdUser);
@@ -2640,6 +2781,7 @@ public class CvdbSolrEngineQueryTest {
 
     private ClinicalVariant getClinicalVariant(String cvId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_ID_NAME, cvId);
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), sessionIdUser);
