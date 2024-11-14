@@ -16,7 +16,6 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb;
 
-import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.core.configuration.CvdbConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalAnalysisConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretationConverter;
@@ -315,17 +314,17 @@ public class CvdbSolrEngine {
 
     public DataResult<ClinicalAnalysis> searchClinicalAnalyses(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException, CatalogException {
-        int limit = queryOptions.getInt(LIMIT);
-        List<ClinicalAnalysis> results = new ArrayList<>(limit);
+//        int limit = queryOptions.getInt(LIMIT);
+        List<ClinicalAnalysis> results = new ArrayList<>();
 
         StopWatch stopWatch = StopWatch.createStarted();
         ClinicalIterator<ClinicalAnalysis, ClinicalAnalysisSearch, ClinicalAnalysisConverter> iterator = clinicalAnalysisIterator(query,
                 queryOptions, token);
         while (iterator.hasNext()) {
             results.add(iterator.next());
-            if (results.size() == limit) {
-                break;
-            }
+//            if (results.size() == limit) {
+//                break;
+//            }
         }
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
@@ -404,17 +403,17 @@ public class CvdbSolrEngine {
 
     public DataResult<Interpretation> searchClinicalInterpretations(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException, CatalogException {
-        int limit = queryOptions.getInt(LIMIT);
-        List<Interpretation> results = new ArrayList<>(limit);
+//        int limit = queryOptions.getInt(LIMIT);
+        List<Interpretation> results = new ArrayList<>();
 
         StopWatch stopWatch = StopWatch.createStarted();
         ClinicalIterator<Interpretation, ClinicalInterpretationSearch, ClinicalInterpretationConverter> iterator =
                 clinicalInterpretationIterator(query, queryOptions, token);
         while (iterator.hasNext()) {
             results.add(iterator.next());
-            if (results.size() == limit) {
-                break;
-            }
+//            if (results.size() == limit) {
+//                break;
+//            }
         }
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
@@ -493,17 +492,17 @@ public class CvdbSolrEngine {
 
     public DataResult<ClinicalVariant> searchClinicalVariants(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException, CatalogException {
-        int limit = queryOptions.getInt(LIMIT);
-        List<ClinicalVariant> results = new ArrayList<>(limit);
+//        int limit = queryOptions.getInt(LIMIT);
+        List<ClinicalVariant> results = new ArrayList<>();
 
         StopWatch stopWatch = StopWatch.createStarted();
         ClinicalIterator<ClinicalVariant, ClinicalVariantSearch, ClinicalVariantConverter> iterator = clinicalVariantIterator(query,
                 queryOptions, token);
         while (iterator.hasNext()) {
             results.add(iterator.next());
-            if (results.size() == limit) {
-                break;
-            }
+//            if (results.size() == limit) {
+//                break;
+//            }
         }
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
@@ -574,17 +573,17 @@ public class CvdbSolrEngine {
 
     public DataResult<ClinicalVariantEvidence> searchClinicalVariantEvidences(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException, CatalogException {
-        int limit = queryOptions.getInt(LIMIT);
-        List<ClinicalVariantEvidence> results = new ArrayList<>(limit);
+//        int limit = queryOptions.getInt(LIMIT);
+        List<ClinicalVariantEvidence> results = new ArrayList<>();
 
         StopWatch stopWatch = StopWatch.createStarted();
         ClinicalIterator<ClinicalVariantEvidence, ClinicalVariantEvidenceSearch, ClinicalVariantEvidenceConverter> iterator =
                 clinicalVariantEvidenceIterator(query, queryOptions, token);
         while (iterator.hasNext()) {
             results.add(iterator.next());
-            if (results.size() == limit) {
-                break;
-            }
+//            if (results.size() == limit) {
+//                break;
+//            }
         }
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
@@ -649,9 +648,9 @@ public class CvdbSolrEngine {
             throw new CvdbException("Missing variant ID(s) when running clinical variant summary");
         }
 
-        if (variantIds.size() > DEFAULT_LIMIT) {
-            throw new CvdbException("The maximum number of variants (" + DEFAULT_LIMIT + ")has been exceeded (" + variantIds.size() + ")");
-        }
+//        if (variantIds.size() > DEFAULT_LIMIT) {
+//            throw new CvdbException("The maximum number of variants (" + DEFAULT_LIMIT + ")has been exceeded (" + variantIds.size() + ")");
+//        }
 
         // Get project from study
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
@@ -671,6 +670,8 @@ public class CvdbSolrEngine {
         StopWatch stopWatch = StopWatch.createStarted();
         List<ClinicalVariantSummaryStats> variantStatsList = new ArrayList<>(variantIds.size());
 
+        QueryOptions caQueryOptions = new QueryOptions(INCLUDE, "id,disorder.id,interpretation.id,secondaryInterpretations.id");
+        QueryOptions cvQueryOptions = new QueryOptions(INCLUDE, "status,confidence,evidences");
         for (String variantId : variantIds) {
             ClinicalVariantSummaryStats variantStats = new ClinicalVariantSummaryStats();
             for (String targetProjectId : projectIds) {
@@ -690,9 +691,8 @@ public class CvdbSolrEngine {
                         // Set clinical interpretation status ID
                         query.append(CI_STATUS_ID_NAME, interpretationStatusId);
                     }
-                    QueryOptions queryOptions = new QueryOptions(INCLUDE, "id,disorder.id,interpretation.id,secondaryInterpretations.id");
 
-                    DataResult<ClinicalAnalysis> caDataResult = searchClinicalAnalyses(query, queryOptions, token);
+                    DataResult<ClinicalAnalysis> caDataResult = searchClinicalAnalyses(query, caQueryOptions, token);
 
                     // Num. clinical analysis
                     projectVariantStats.setNumCases(caDataResult.getNumResults());
@@ -714,7 +714,7 @@ public class CvdbSolrEngine {
                         }
                     }
 
-                    DataResult<ClinicalVariant> cvDataResult = searchClinicalVariants(query, QueryOptions.empty(), token);
+                    DataResult<ClinicalVariant> cvDataResult = searchClinicalVariants(query, cvQueryOptions, token);
                     for (ClinicalVariant cv : cvDataResult.getResults()) {
                         // Variant status counts
                         if (cv.getStatus() != null) {
@@ -885,13 +885,16 @@ public class CvdbSolrEngine {
         // Check limit
         if (queryOptions.containsKey(LIMIT)) {
             int limit = queryOptions.getInt(LIMIT);
-            if (limit < 1 || limit > ParamConstants.DEFAULT_LIMIT) {
-                logger.warn("Invalid query limit {}, the default limit {} will be used", limit, DEFAULT_LIMIT);
-                queryOptions.put(LIMIT, DEFAULT_LIMIT);
+            if (limit < 1) {
+                throw new CvdbException("Invalid query limit: " + limit);
             }
-        } else {
-            logger.warn("Query limit not defined, the default limit {} will be used", DEFAULT_LIMIT);
-            queryOptions.put(LIMIT, DEFAULT_LIMIT);
+//            if (limit < 1 || limit > ParamConstants.DEFAULT_LIMIT) {
+//                logger.warn("Invalid query limit {}, the default limit {} will be used", limit, DEFAULT_LIMIT);
+//                queryOptions.put(LIMIT, DEFAULT_LIMIT);
+//            }
+//        } else {
+//            logger.warn("Query limit not defined, the default limit {} will be used", DEFAULT_LIMIT);
+//            queryOptions.put(LIMIT, DEFAULT_LIMIT);
         }
     }
 
