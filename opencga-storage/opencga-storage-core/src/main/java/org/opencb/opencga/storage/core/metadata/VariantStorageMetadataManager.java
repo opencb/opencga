@@ -208,7 +208,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     // Test purposes only
     @Deprecated
     public StudyMetadata createStudy(String studyName) throws StorageEngineException {
-        return createStudy(studyName, "v5");
+        return createStudy(studyName, ParamConstants.CELLBASE_VERSION);
     }
 
     public StudyMetadata createStudy(String studyName, String cellbaseVersion) throws StorageEngineException {
@@ -223,14 +223,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public StudyMetadata.SampleIndexConfigurationVersioned addSampleIndexConfiguration(
-            String study, SampleIndexConfiguration configuration, boolean staging) throws StorageEngineException {
-        Integer idOrNull = getStudyIdOrNull(study);
-        int studyId;
-        if (idOrNull == null) {
-            studyId = createStudy(study, null).getId();
-        } else {
-            studyId = idOrNull;
-        }
+            int studyId, SampleIndexConfiguration configuration, boolean staging) throws StorageEngineException {
         StudyMetadata.SampleIndexConfigurationVersioned.Status status = staging
                 ? StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING
                 : StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE;

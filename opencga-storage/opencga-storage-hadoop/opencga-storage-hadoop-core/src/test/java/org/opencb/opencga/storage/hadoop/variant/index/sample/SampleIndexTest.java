@@ -160,7 +160,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         configuration.getFileDataConfiguration()
                 .setIncludeOriginalCall(null)
                 .setIncludeSecondaryAlternates(null);
-        versioned = metadataManager.addSampleIndexConfiguration(STUDY_NAME_2, configuration, true);
+        metadataManager.createStudy(STUDY_NAME_2, engine.getCellBaseUtils().getVersionFromServer());
+        versioned = metadataManager.addSampleIndexConfiguration(metadataManager.getStudyId(STUDY_NAME_2), configuration, true);
         assertEquals(2, versioned.getVersion());
         assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
 
@@ -176,7 +177,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
         // Study 3 - platinum
-        metadataManager.addSampleIndexConfiguration(STUDY_NAME_3, SampleIndexConfiguration.defaultConfiguration()
+        metadataManager.createStudy(STUDY_NAME_3, engine.getCellBaseUtils().getVersionFromServer());
+        metadataManager.addSampleIndexConfiguration(metadataManager.getStudyId(STUDY_NAME_3), SampleIndexConfiguration.defaultConfiguration()
                 .addFileIndexField(new FieldConfiguration(FieldConfiguration.Source.FILE, "culprit",
                         FieldConfiguration.Type.CATEGORICAL, "DP", "FS", "MQ", "QD").setNullable(true)), true);
 
@@ -209,10 +211,11 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         engine.familyIndex(STUDY_NAME_5, trios, new ObjectMap());
 
         // Study 6, multiallelic
+        metadataManager.createStudy(STUDY_NAME_6, engine.getCellBaseUtils().getVersionFromServer());
         SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
         sampleIndexConfiguration.getFileIndexConfiguration().getCustomField(FieldConfiguration.Source.FILE, "FILTER")
                 .setValues("PASS", "noPass", "noPass2");
-        engine.getMetadataManager().addSampleIndexConfiguration(STUDY_NAME_6, sampleIndexConfiguration, true);
+        engine.getMetadataManager().addSampleIndexConfiguration(metadataManager.getStudyId(STUDY_NAME_6), sampleIndexConfiguration, true);
 
         params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_6)
@@ -230,7 +233,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         configuration = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest().getConfiguration();
         // Don't modify the configuration.
-        versioned = engine.getMetadataManager().addSampleIndexConfiguration(STUDY_NAME, configuration, true);
+        versioned = engine.getMetadataManager().addSampleIndexConfiguration(metadataManager.getStudyId(STUDY_NAME), configuration, true);
         assertEquals(2, versioned.getVersion());
         assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
 

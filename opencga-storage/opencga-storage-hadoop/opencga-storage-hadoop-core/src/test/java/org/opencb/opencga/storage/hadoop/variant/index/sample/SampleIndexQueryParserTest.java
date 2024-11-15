@@ -85,7 +85,7 @@ public class SampleIndexQueryParserTest {
         mm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         sampleIndexQueryParser = new SampleIndexQueryParser(mm);
         studyId = mm.createStudy("study").getId();
-        int sampleIndexVersion = mm.addSampleIndexConfiguration("study", configuration, false).getVersion();
+        int sampleIndexVersion = mm.addSampleIndexConfiguration(studyId, configuration, false).getVersion();
         mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "F1", Arrays.asList("S1", "S2", "S3"))));
 
         mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "fam1", Arrays.asList("fam1_child", "fam1_father", "fam1_mother"))));

@@ -558,10 +558,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             String cellbaseVersion = engine.getCellBaseUtils().getVersionFromServer();
             sampleIndexConfiguration.validate(cellbaseVersion);
             String studyFqn = getStudyFqn(studyStr, token);
+            int studyId;
             if (!engine.getMetadataManager().studyExists(studyFqn)) {
-                engine.getMetadataManager().createStudy(studyFqn, cellbaseVersion);
+                studyId = engine.getMetadataManager().createStudy(studyFqn, cellbaseVersion).getId();
+            } else {
+                studyId = engine.getMetadataManager().getStudyId(studyFqn);
             }
-            engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration, true);
+            engine.getMetadataManager().addSampleIndexConfiguration(studyId, sampleIndexConfiguration, true);
 
             catalogManager.getStudyManager()
                     .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
