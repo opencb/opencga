@@ -579,9 +579,15 @@ public class OrganizationMigration extends MigrationTool {
                         ))
                 );
 
+                // Ensure all jobs have attributes field
+                Bson jobQuery = Filters.eq("attributes", null);
+                Bson update = new Document("$set", new Document("attributes", new Document()));
+                jobCollection.updateMany(jobQuery, update);
+                jobDeletedCollection.updateMany(jobQuery, update);
+
                 // Change fqn in all jobs that were pointing to this study
-                Bson jobQuery = Filters.eq("studyUid", studyUid);
-                Bson update = new Document("$set", new Document()
+                jobQuery = Filters.eq("studyUid", studyUid);
+                update = new Document("$set", new Document()
                         .append("study.id", newFqn)
                         .append("attributes.OPENCGA.3_0_0", new Document()
                                 .append("date", date)
