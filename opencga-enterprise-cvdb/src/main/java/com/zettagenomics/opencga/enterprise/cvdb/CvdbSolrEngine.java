@@ -23,6 +23,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantConve
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantEvidenceConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIterator;
+import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalSolrIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.*;
 import com.zettagenomics.opencga.enterprise.cvdb.models.mappings.*;
 import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParser;
@@ -374,6 +375,47 @@ public class CvdbSolrEngine {
         }
     }
 
+    public ClinicalSolrIterator<ClinicalAnalysisSearch> clinicalAnalysisNativeIterator(
+            Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException, CatalogException {
+        // Check
+        checkQuery(query, queryOptions, token);
+
+        // Update query with user from token
+        setViewerInQuery(query, token);
+
+        // Parse query
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        if (queryOptions.containsKey(INCLUDE)) {
+            List<String> includeList = new ArrayList<>();
+            for (String include : queryOptions.getAsStringList(INCLUDE, ",")) {
+                String[] split = include.split("\\.");
+                if (split.length > 2 && (split[1].equals("primaryFindings") || split[1].equals("secondaryFindings"))) {
+                    if (isImplClinicalVariantField(split[2])) {
+                        StringBuilder sb = new StringBuilder(split[0]).append(".").append(split[1]).append(".impl");
+                        for (int i = 2; i < split.length; i++) {
+                            sb.append(".").append(split[i]);
+                        }
+                        includeList.add(sb.toString());
+                    } else {
+                        includeList.add(include);
+                    }
+                } else {
+                    includeList.add(include);
+                }
+            }
+            queryOptions.put(INCLUDE, StringUtils.join(includeList, ","));
+        }
+
+        // Execute query
+        try {
+            String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_ANALYSES_COLLECTION_SUFFIX);
+            return new ClinicalSolrIterator(getSolrClient(), collection, solrQuery, ClinicalAnalysisSearch.class);
+        } catch (SolrServerException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+    }
+
     public DataResult<FacetField> facetClinicalAnalyses(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException {
         // Check
@@ -544,6 +586,39 @@ public class CvdbSolrEngine {
         }
     }
 
+    public ClinicalSolrIterator<ClinicalVariantSearch> clinicalVariantNativeIterator(
+            Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException, CatalogException {
+        // Check
+        checkQuery(query, queryOptions, token);
+
+        // Update query with user from token
+        setViewerInQuery(query, token);
+
+        // Parse query
+        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        if (queryOptions.containsKey(INCLUDE)) {
+            List<String> includeList = new ArrayList<>();
+            for (String include : queryOptions.getAsStringList(INCLUDE, ",")) {
+                String[] split = include.split("\\.");
+                if (isImplClinicalVariantField(split[0])) {
+                    includeList.add("impl." + include);
+                } else {
+                    includeList.add(include);
+                }
+            }
+            queryOptions.put(INCLUDE, StringUtils.join(includeList, ","));
+        }
+
+        // Execute query
+        try {
+            String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANTS_COLLECTION_SUFFIX);
+            return new ClinicalSolrIterator<>(getSolrClient(), collection, solrQuery, ClinicalVariantSearch.class);
+        } catch (SolrServerException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+    }
+
     public DataResult<FacetField> facetClinicalVariants(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException {
         // Check
@@ -671,7 +746,7 @@ public class CvdbSolrEngine {
         List<ClinicalVariantSummaryStats> variantStatsList = new ArrayList<>(variantIds.size());
 
         QueryOptions caQueryOptions = new QueryOptions(INCLUDE, "id,disorder.id");//,interpretation.id,secondaryInterpretations.id");
-        QueryOptions cvQueryOptions = new QueryOptions(INCLUDE, "status,confidence,evidences");
+        QueryOptions cvQueryOptions = new QueryOptions(INCLUDE, "status,confidence.value"); //,evidences");
         for (String variantId : variantIds) {
             ClinicalVariantSummaryStats variantStats = new ClinicalVariantSummaryStats();
             for (String targetProjectId : projectIds) {
@@ -692,26 +767,54 @@ public class CvdbSolrEngine {
                         query.append(CI_STATUS_ID_NAME, interpretationStatusId);
                     }
 
-                    DataResult<ClinicalAnalysis> caDataResult = searchClinicalAnalyses(query, caQueryOptions, token);
 
-                    // Num. clinical analysis
-                    projectVariantStats.setNumCases(caDataResult.getNumResults());
-                    for (ClinicalAnalysis ca : caDataResult.getResults()) {
+                    ClinicalSolrIterator<ClinicalAnalysisSearch> caIterator = clinicalAnalysisNativeIterator(query, caQueryOptions, token);
+                    int numCases = 0;
+                    while (caIterator.hasNext()) {
+                        ClinicalAnalysisSearch cas = caIterator.next();
                         // Disorder counts
-                        if (ca.getDisorder() != null && StringUtils.isNotEmpty(ca.getDisorder().getId())) {
-                            updateCount(ca.getDisorder().getId(), projectVariantStats.getClinicalAnalysisDisorderCounts());
+                        if (StringUtils.isNotEmpty(cas.getDisorderId())) {
+                            updateCount(cas.getDisorderId(), projectVariantStats.getClinicalAnalysisDisorderCounts());
                         }
 
-//                        // Num. primary interpretations
-//                        if (ca.getInterpretation() != null) {
-//                            projectVariantStats.setNumPrimaryInterpretations(1 + projectVariantStats.getNumPrimaryInterpretations());
+                        numCases++;
+                    }
+                    projectVariantStats.setNumCases(numCases);
+
+//                    DataResult<ClinicalAnalysis> caDataResult = searchClinicalAnalyses(query, caQueryOptions, token);
+//
+//                    // Num. clinical analysis
+//                    projectVariantStats.setNumCases(caDataResult.getNumResults());
+//                    for (ClinicalAnalysis ca : caDataResult.getResults()) {
+//                        // Disorder counts
+//                        if (ca.getDisorder() != null && StringUtils.isNotEmpty(ca.getDisorder().getId())) {
+//                            updateCount(ca.getDisorder().getId(), projectVariantStats.getClinicalAnalysisDisorderCounts());
 //                        }
 //
-//                        // Num. secondary interpretations
-//                        if (CollectionUtils.isNotEmpty(ca.getSecondaryInterpretations())) {
-//                            projectVariantStats.setNumSecondaryInterpretations(ca.getSecondaryInterpretations().size()
-//                                    + projectVariantStats.getNumSecondaryInterpretations());
-//                        }
+////                        // Num. primary interpretations
+////                        if (ca.getInterpretation() != null) {
+////                            projectVariantStats.setNumPrimaryInterpretations(1 + projectVariantStats.getNumPrimaryInterpretations());
+////                        }
+////
+////                        // Num. secondary interpretations
+////                        if (CollectionUtils.isNotEmpty(ca.getSecondaryInterpretations())) {
+////                            projectVariantStats.setNumSecondaryInterpretations(ca.getSecondaryInterpretations().size()
+////                                    + projectVariantStats.getNumSecondaryInterpretations());
+////                        }
+//                    }
+
+                    ClinicalSolrIterator<ClinicalVariantSearch> cvsIterator = clinicalVariantNativeIterator(query, cvQueryOptions, token);
+                    while (cvsIterator.hasNext()) {
+                        ClinicalVariantSearch cvs = cvsIterator.next();
+                        // Variant status counts
+                        if (StringUtils.isNotEmpty(cvs.getStatus())) {
+                            updateCount(cvs.getStatus(), projectVariantStats.getVariantStatusCounts());
+                        }
+
+                        // Variant confidence counts
+                        if (StringUtils.isNotEmpty(cvs.getConfidenceValue())) {
+                            updateCount(cvs.getConfidenceValue(), projectVariantStats.getVariantConfidenceCounts());
+                        }
                     }
 
 //                    DataResult<ClinicalVariant> cvDataResult = searchClinicalVariants(query, cvQueryOptions, token);
@@ -737,7 +840,7 @@ public class CvdbSolrEngine {
 //                            }
 //                        }
 //                    }
-//
+
                     updateSummaryStats(projectVariantStats, variantStats);
                 }
             }

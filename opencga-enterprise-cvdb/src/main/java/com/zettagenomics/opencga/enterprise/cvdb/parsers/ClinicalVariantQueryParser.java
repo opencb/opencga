@@ -18,6 +18,7 @@ package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -26,12 +27,15 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser;
 
-import java.util.List;
+import java.util.*;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CV_TYPE_NAME;
 
 public class ClinicalVariantQueryParser extends ClinicalQueryParser {
+
+    // Map from clinical variant fields (keys) to Solr indexed fields (values)
+    public static Map<String, String> cvToCvsFieldMap;
 
     private SolrQueryParser solrQueryParser;
 
@@ -94,252 +98,60 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
         return variantQuery;
     }
 
-//    public SolrQuery parse(Query query, QueryOptions queryOptions) {
-//        // First, call SolrQueryParser.parse
-//        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-//
-//        String key;
-//
-//        // ---------- ClinicalAnalysis ----------
-//
-//        // ID
-//        key = ClinicalVariantQueryParam.CA_ID.key();
-//        if (StringUtils.isNotEmpty(key)) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Description
-//        key = ClinicalVariantQueryParam.CA_DESCRIPTION.key();
-//        if (StringUtils.isNotEmpty(key)) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Type
-//        key = ClinicalVariantQueryParam.CA_TYPE.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Disorder ID
-//        key = ClinicalVariantQueryParam.CA_DISORDER_ID.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Filename
-//        key = ClinicalVariantQueryParam.CA_FILENAME.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Proband ID
-//        key = ClinicalVariantQueryParam.CA_PROBAND_ID.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Family ID
-//        key = ClinicalVariantQueryParam.CA_FAMILY_ID.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Family phenotype name
-//        key = ClinicalVariantQueryParam.CA_FAMILY_PHENOTYPE_NAME.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Family member ID
-//        key = ClinicalVariantQueryParam.CA_FAMILY_MEMBER_ID.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Report
-//        key = ClinicalVariantQueryParam.CA_REPORT.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Status
-//        key = ClinicalVariantQueryParam.CA_STATUS.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Lock
-//        key = ClinicalVariantQueryParam.CA_FAMILY_PHENOTYPE_NAME.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//        // ---------- Interpretation ----------
-//        //
-//        //    ID, software name, software version, analyst name, panel name, creation date, more info
-//
-//        // Interpretation ID
-//        key = ClinicalVariantQueryParam.INT_ID.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Interpretation software name
-//        key = ClinicalVariantQueryParam.INT_SOFTWARE_NAME.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Interpretation software version
-//        key = ClinicalVariantQueryParam.INT_SOFTWARE_VERSION.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Interpretation analysit name
-//        key = ClinicalVariantQueryParam.INT_ANALYST_NAME.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Interpretation panel names
-//        key = ClinicalVariantQueryParam.INT_PANEL_NAMES.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // Interpretation description
-//        key = ClinicalVariantQueryParam.INT_DESCRIPTION.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(parseInterpretationInfo(key, query.getString(key)));
-//        }
-//
-//        // Interpretation dependency names
-//        key = ClinicalVariantQueryParam.INT_DEPENDENCY_NAME.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(parseInterpretationInfo(key, query.getString(key)));
-//        }
-//
-//        // Interpretation dependency versions
-//        key = ClinicalVariantQueryParam.INT_DEPENDENCY_VERSION.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(parseInterpretationInfo(key, query.getString(key)));
-//        }
-//
-//        // Interpretation comments
-//        key = ClinicalVariantQueryParam.INT_COMMENTS.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(parseInterpretationInfo(key, query.getString(key)));
-//        }
-//
-//        // TODO: creation date management
-//        // Interpretation creation date
-//
-////        // ---------- Catalog ----------
-////        //
-////        //    project ID, assembly, study ID
-////
-////        // Project
-////        key = "project";
-////        if (StringUtils.isNotEmpty(query.getString(key))) {
-////            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-////        }
-////
-////        // Assembly
-////        key = "assembly";
-////        if (StringUtils.isNotEmpty(query.getString(key))) {
-////            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-////        }
-//
-//        // ---------- ReportedVariant ----------
-//        //
-//        //   deNovo quality score, comments
-//
-//        key = ClinicalVariantQueryParam.RV_DE_NOVO_QUALITY_SCORE.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseNumericValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RV_COMMENTS.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        // ---------- ReportedEvent ----------
-//        //
-//        //  phenotype names, consequence type IDs,
-//
-//        key = ClinicalVariantQueryParam.RE_PHENOTYPE_NAMES.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_CONSEQUENCE_TYPE_IDS.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_GENE_NAMES.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_XREFS.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_PANEL_NAMES.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_ACMG.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_CLINICAL_SIGNIFICANCE.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_DRUG_RESPONSE.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_TRAIT_ASSOCIATION.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_FUNCTIONAL_EFFECT.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_TUMORIGENESIS.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_OTHER_CLASSIFICATION.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_ROLES_IN_CANCER.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        key = ClinicalVariantQueryParam.RE_SCORE.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
-//        }
-//
-//        return solrQuery;
-//    }
+    @Override
+    protected void parseQueryOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            // Nothing to do
+            return;
+        }
+
+        // Parse common options
+        super.parseQueryOptions(queryOptions, solrQuery);
+
+        // Parse include and exclude options to get Solr fields to include
+        Set<String> cvsFields = getCvsInclude(queryOptions);
+        solrQuery.setFields(StringUtils.join(cvsFields, ","));
+    }
+
+    private Set<String> getCvsInclude(QueryOptions queryOptions) {
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            return getCvsIncludeFromInclude(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+        }
+        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            return getCvsIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+        }
+        return Collections.singleton("json");
+    }
+
+    private Set<String> getCvsIncludeFromInclude(List<String> caFields) {
+        Set<String> cvsFields = new HashSet<>();
+        for (String caField : caFields) {
+            if (cvToCvsFieldMap.containsKey(caField)) {
+                // This field is stored in a Solr indexed field
+                cvsFields.add(cvToCvsFieldMap.get(caField));
+            } else {
+                return Collections.singleton("json");
+            }
+        }
+        return cvsFields;
+    }
+
+    private Set<String> getCvsIncludeFromExclude(List<String> caFields) {
+        return Collections.singleton("json");
+    }
+
+    static {
+        // Map from clinical analysis fields to Solr indexed fields
+        cvToCvsFieldMap = new HashMap<>();
+        cvToCvsFieldMap.put("discussion.author", "discussionAuthor");
+        cvToCvsFieldMap.put("discussion.date", "discussionDate");
+        cvToCvsFieldMap.put("discussion.text", "discussionText");
+        cvToCvsFieldMap.put("confidence.value", "confidenceValue");
+        cvToCvsFieldMap.put("confidence.author", "confidenceAuthor");
+        cvToCvsFieldMap.put("confidence.date", "confidenceDate");
+        cvToCvsFieldMap.put("tags", "tags");
+        cvToCvsFieldMap.put("status", "status");
+    }
 
     private String parseInterpretationInfo(String key, String string) {
         // TODO: parse intInfo

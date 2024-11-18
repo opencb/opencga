@@ -31,7 +31,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 
-public class ClinicalSolrterator<T> implements Iterator<T>, AutoCloseable {
+public class ClinicalSolrIterator<T> implements Iterator<T>, AutoCloseable {
 
     private SolrClient solrClient;
     private String collection;
@@ -47,9 +47,9 @@ public class ClinicalSolrterator<T> implements Iterator<T>, AutoCloseable {
 
     private static final int BATCH_SIZE = 100;
 
-    protected static Logger logger = LoggerFactory.getLogger(ClinicalSolrterator.class);
+    protected static Logger logger = LoggerFactory.getLogger(ClinicalSolrIterator.class);
 
-    public ClinicalSolrterator(SolrClient solrClient, String collection, SolrQuery solrQuery, Class<T> classType)
+    public ClinicalSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, Class<T> classType)
             throws IOException, SolrServerException {
         this.solrClient = solrClient;
         this.collection = collection;

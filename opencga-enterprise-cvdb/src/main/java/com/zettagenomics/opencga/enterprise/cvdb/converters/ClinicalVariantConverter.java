@@ -127,7 +127,35 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
         List<ClinicalVariant> cvList = new ArrayList<>();
         for (ClinicalVariantSearch cvs : cvsList) {
             try {
-                cvList.add(clinicalVariantReader.readValue(cvs.getJson()));
+                ClinicalVariant cv;
+                if (StringUtils.isNotEmpty(cvs.getJson())) {
+                    logger.info("Convert to clinical variant from JSON");
+                    cv = clinicalVariantReader.readValue(cvs.getJson());
+                } else {
+                    logger.info("Convert to clinical variant from indexed fields");
+                    cv = new ClinicalVariant();
+
+                    // Status
+                    if (StringUtils.isNotEmpty(cvs.getStatus())) {
+                        cv.setStatus(ClinicalVariant.Status.valueOf(cvs.getStatus()));
+                    }
+
+                    // Confidence
+                    ClinicalVariantConfidence confidence = new ClinicalVariantConfidence();
+                    if (StringUtils.isNotEmpty(cvs.getConfidenceValue())) {
+                        confidence.setValue(ClinicalVariantConfidence.Confidence.valueOf(cvs.getConfidenceValue()));
+                    }
+                    if (StringUtils.isNotEmpty(cvs.getConfidenceAuthor())) {
+                        confidence.setAuthor(cvs.getConfidenceAuthor());
+                    }
+                    if (cvs.getConfidenceDate() != null) {
+                        confidence.setAuthor(simpleDateFormat.format(cvs.getConfidenceDate()));
+                    }
+                    cv.setConfidence(confidence);
+                }
+
+                // Add to the list
+                cvList.add(cv);
             } catch (JsonProcessingException e) {
                 throw new CvdbException("Error when converting to clinical variant " + cvs.getVariantId(), e);
             }
