@@ -670,7 +670,7 @@ public class CvdbSolrEngine {
         StopWatch stopWatch = StopWatch.createStarted();
         List<ClinicalVariantSummaryStats> variantStatsList = new ArrayList<>(variantIds.size());
 
-        QueryOptions caQueryOptions = new QueryOptions(INCLUDE, "id,disorder.id,interpretation.id,secondaryInterpretations.id");
+        QueryOptions caQueryOptions = new QueryOptions(INCLUDE, "id,disorder.id");//,interpretation.id,secondaryInterpretations.id");
         QueryOptions cvQueryOptions = new QueryOptions(INCLUDE, "status,confidence,evidences");
         for (String variantId : variantIds) {
             ClinicalVariantSummaryStats variantStats = new ClinicalVariantSummaryStats();
@@ -702,42 +702,42 @@ public class CvdbSolrEngine {
                             updateCount(ca.getDisorder().getId(), projectVariantStats.getClinicalAnalysisDisorderCounts());
                         }
 
-                        // Num. primary interpretations
-                        if (ca.getInterpretation() != null) {
-                            projectVariantStats.setNumPrimaryInterpretations(1 + projectVariantStats.getNumPrimaryInterpretations());
-                        }
-
-                        // Num. secondary interpretations
-                        if (CollectionUtils.isNotEmpty(ca.getSecondaryInterpretations())) {
-                            projectVariantStats.setNumSecondaryInterpretations(ca.getSecondaryInterpretations().size()
-                                    + projectVariantStats.getNumSecondaryInterpretations());
-                        }
+//                        // Num. primary interpretations
+//                        if (ca.getInterpretation() != null) {
+//                            projectVariantStats.setNumPrimaryInterpretations(1 + projectVariantStats.getNumPrimaryInterpretations());
+//                        }
+//
+//                        // Num. secondary interpretations
+//                        if (CollectionUtils.isNotEmpty(ca.getSecondaryInterpretations())) {
+//                            projectVariantStats.setNumSecondaryInterpretations(ca.getSecondaryInterpretations().size()
+//                                    + projectVariantStats.getNumSecondaryInterpretations());
+//                        }
                     }
 
-                    DataResult<ClinicalVariant> cvDataResult = searchClinicalVariants(query, cvQueryOptions, token);
-                    for (ClinicalVariant cv : cvDataResult.getResults()) {
-                        // Variant status counts
-                        if (cv.getStatus() != null) {
-                            updateCount(cv.getStatus().name(), projectVariantStats.getVariantStatusCounts());
-                        }
-
-                        // Variant confidence counts
-                        if (cv.getConfidence() != null && cv.getConfidence().getValue() != null) {
-                            updateCount(cv.getConfidence().getValue().name(), projectVariantStats.getVariantConfidenceCounts());
-                        }
-
-                        // Variant evidence counts
-                        if (CollectionUtils.isNotEmpty(cv.getEvidences())) {
-                            for (ClinicalVariantEvidence cve : cv.getEvidences()) {
-                                updateGenomicFeatureCounts(cve.getGenomicFeature(), projectVariantStats.getInterpretationSummaryStats());
-                                updateModeOfInheritanceCounts(cve.getModeOfInheritances(), projectVariantStats.getInterpretationSummaryStats());
-                                updatePanelCounts(cve.getPanelId(), projectVariantStats.getInterpretationSummaryStats());
-                                updateReviewCounts(cve.getReview(), projectVariantStats.getInterpretationSummaryStats());
-                                updateClassificationCounts(cve.getClassification(), projectVariantStats.getInterpretationSummaryStats());
-                            }
-                        }
-                    }
-
+//                    DataResult<ClinicalVariant> cvDataResult = searchClinicalVariants(query, cvQueryOptions, token);
+//                    for (ClinicalVariant cv : cvDataResult.getResults()) {
+//                        // Variant status counts
+//                        if (cv.getStatus() != null) {
+//                            updateCount(cv.getStatus().name(), projectVariantStats.getVariantStatusCounts());
+//                        }
+//
+//                        // Variant confidence counts
+//                        if (cv.getConfidence() != null && cv.getConfidence().getValue() != null) {
+//                            updateCount(cv.getConfidence().getValue().name(), projectVariantStats.getVariantConfidenceCounts());
+//                        }
+//
+//                        // Variant evidence counts
+//                        if (CollectionUtils.isNotEmpty(cv.getEvidences())) {
+//                            for (ClinicalVariantEvidence cve : cv.getEvidences()) {
+//                                updateGenomicFeatureCounts(cve.getGenomicFeature(), projectVariantStats.getInterpretationSummaryStats());
+//                                updateModeOfInheritanceCounts(cve.getModeOfInheritances(), projectVariantStats.getInterpretationSummaryStats());
+//                                updatePanelCounts(cve.getPanelId(), projectVariantStats.getInterpretationSummaryStats());
+//                                updateReviewCounts(cve.getReview(), projectVariantStats.getInterpretationSummaryStats());
+//                                updateClassificationCounts(cve.getClassification(), projectVariantStats.getInterpretationSummaryStats());
+//                            }
+//                        }
+//                    }
+//
                     updateSummaryStats(projectVariantStats, variantStats);
                 }
             }
