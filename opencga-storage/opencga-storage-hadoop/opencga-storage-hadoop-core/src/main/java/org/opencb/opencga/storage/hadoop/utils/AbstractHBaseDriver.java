@@ -221,10 +221,11 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         if (!succeed) {
             LOGGER.error("error with job!");
             if (!"NA".equals(job.getStatus().getFailureInfo())) {
-                LOGGER.error("Failure info: " + job.getStatus().getFailureInfo());
-                printKeyValue(ERROR_MESSAGE, job.getStatus().getFailureInfo());
+                String errorMessage = job.getStatus().getFailureInfo().replace("\n", "\\n");
+                errorMessage += getExtendedTaskErrorMessage(job);
+                LOGGER.error("Failure info: " + errorMessage.replace("\\n", "\n"));
+                printKeyValue(ERROR_MESSAGE, errorMessage);
             }
-
         }
         LOGGER.info("=================================================");
         LOGGER.info("Finish job " + getJobName());
@@ -237,6 +238,43 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         close();
 
         return succeed ? 0 : 1;
+    }
+
+    private static String getExtendedTaskErrorMessage(Job job) {
+        try {
+            StringBuilder sb = new StringBuilder();
+            int eventCounter = 0;
+            TaskCompletionEvent[] events;
+            do {
+                events = job.getTaskCompletionEvents(eventCounter, 10);
+                eventCounter += events.length;
+                for (TaskCompletionEvent event : events) {
+                    if (event.getStatus() == TaskCompletionEvent.Status.FAILED) {
+                        LOGGER.info(event.toString());
+                        // Displaying the task diagnostic information
+                        TaskAttemptID taskId = event.getTaskAttemptId();
+                        String[] taskDiagnostics = job.getTaskDiagnostics(taskId);
+                        if (taskDiagnostics != null) {
+                            for (String diagnostics : taskDiagnostics) {
+                                for (String diagnosticLine : diagnostics.split("\n")) {
+                                    if (diagnosticLine.contains("Error:")
+                                            || diagnosticLine.contains("Caused by:")
+                                            || diagnosticLine.contains("Suppressed:")) {
+                                        sb.append(diagnosticLine);
+                                        sb.append("\\n");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } while (events.length > 0);
+            return sb.toString();
+        } catch (Exception e) {
+            // Ignore
+            LOGGER.error("Error getting task diagnostics", e);
+        }
+        return "";
     }
 
     private void reportRunningJobs() {
@@ -316,8 +354,9 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             }
         });
         try {
-            Runtime.getRuntime().addShutdownHook(hook);
             job.submit();
+            // Add shutdown hook after successfully submitting the job.
+            Runtime.getRuntime().addShutdownHook(hook);
             JobID jobID = job.getJobID();
             String applicationId = jobID.appendTo(new StringBuilder(ApplicationId.appIdStrPrefix)).toString();
             printKeyValue(MR_APPLICATION_ID, applicationId);

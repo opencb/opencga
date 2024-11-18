@@ -121,7 +121,7 @@ public abstract class MRExecutor {
         if (exitValue != 0) {
             String message = "Error executing MapReduce for : \"" + taskDescription + "\"";
             if (StringUtils.isNotEmpty(result.getErrorMessage())) {
-                message += " : " + result.getErrorMessage();
+                message += " : " + result.getErrorMessage().replace("\\n", "\n");
             } else {
                 message += " : Unidentified error executing MapReduce job. Check logs for more information.";
             }

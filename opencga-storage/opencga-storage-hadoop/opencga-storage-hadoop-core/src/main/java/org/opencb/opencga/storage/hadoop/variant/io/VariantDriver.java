@@ -56,6 +56,11 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
 
         getQueryFromConfig(query, getConf());
         getQueryOptionsFromConfig(options, getConf());
+        if (!options.getBoolean(QueryOptions.SORT)) {
+            // Unsorted results might break the file generation.
+            // Results from HBase are always sorted, but when reading from Phoenix, some results might be out of order.
+            options.put(QueryOptions.SORT, true);
+        }
 
         logger.info(" * Query:");
         for (Map.Entry<String, Object> entry : query.entrySet()) {

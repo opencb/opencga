@@ -365,8 +365,18 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         context.getCounter(COUNTER_GROUP_NAME, "start_process").increment(1);
 
         Variant variant = context.getCurrentValue();
-        currentChromosome = variant.getChromosome();
-        currentPosition = variant.getStart();
+        if (variant.getChromosome().equals(currentChromosome)) {
+            if (currentPosition >= variant.getStart()) {
+                // Multiple variants might point to the same locus
+                // In that case, simply increment the position
+                currentPosition++;
+            } else {
+                currentPosition = variant.getStart();
+            }
+        } else {
+            currentChromosome = variant.getChromosome();
+            currentPosition = variant.getStart();
+        }
         if (firstVariant == null) {
             firstVariant = variant.getChromosome() + ":" + variant.getStart();
         }

@@ -496,6 +496,7 @@ public class VariantMapReduceUtil {
     public static void getQueryOptionsFromConfig(QueryOptions options, Configuration conf) {
         options.put(QueryOptions.INCLUDE, conf.get(QueryOptions.INCLUDE));
         options.put(QueryOptions.EXCLUDE, conf.get(QueryOptions.EXCLUDE));
+        options.put(QueryOptions.SORT, conf.get(QueryOptions.SORT));
     }
 
     public static Query getQueryFromConfig(Configuration conf) {
