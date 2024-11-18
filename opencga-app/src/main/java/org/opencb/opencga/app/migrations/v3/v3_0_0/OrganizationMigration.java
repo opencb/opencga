@@ -7,6 +7,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.commons.utils.FileUtils;
@@ -27,6 +28,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -510,38 +512,46 @@ public class OrganizationMigration extends MigrationTool {
                     Document datastores = internal.get("datastores", Document.class);
                     if (datastores != null) {
                         Document variant = datastores.get("variant", Document.class);
+                        DataStore dataStore;
+                        boolean updateVariant = false;
                         if (variant == null) {
-                            DataStore dataStore = VariantStorageManager.defaultDataStore(configuration.getDatabasePrefix(), oldProjectFqn);
-                            logger.info("Undefined variant \"internal.datastores.variant\" at project '{}'.", oldProjectFqn);
-
-                            // Update only if the project exists in the variant storage
-                            try (VariantStorageEngine variantStorageEngine = storageEngineFactory
-                                    .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName())) {
-                                if (variantStorageEngine.getMetadataManager().exists()) {
-                                    logger.info("Project exists in the variant storage. Setting variant data store: {}", dataStore);
+                            dataStore = VariantStorageManager.defaultDataStore(configuration.getDatabasePrefix(), oldProjectFqn);
+                            updateVariant = true;
+                        } else {
+                            dataStore = JacksonUtils.getDefaultObjectMapper().convertValue(variant, DataStore.class);
+                        }
+                        // Update only if the project exists in the variant storage
+                        try (VariantStorageEngine variantStorageEngine = storageEngineFactory
+                                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName())) {
+                            logger.info("Project '{}' exists in the variant storage.", oldProjectFqn);
+                            if (variantStorageEngine.getMetadataManager().exists()) {
+                                if (updateVariant) {
+                                    logger.info("Undefined variant \"internal.datastores.variant\" at project '{}'.", oldProjectFqn);
                                     set.append("internal.datastores.variant", new Document()
                                             .append("storageEngine", dataStore.getStorageEngine())
                                             .append("dbName", dataStore.getDbName())
                                             .append("options", new Document()));
-
-                                    for (String oldStudyFqn : variantStorageEngine.getMetadataManager().getStudies().keySet()) {
-                                        String newStudyFqn = FqnUtils.buildFqn(this.organizationId, projectId, FqnUtils.parse(oldStudyFqn).getStudy());
-                                        logger.info("Changing study fqn from '{}' to '{}'", oldStudyFqn, newStudyFqn);
-                                        variantStorageEngine.getMetadataManager().updateStudyMetadata(oldStudyFqn, studyMetadata -> {
-                                            studyMetadata.setName(newStudyFqn);
-                                            studyMetadata.getAttributes().put("OPENCGA.3_0_0", new Document()
-                                                    .append("date", date)
-                                                    .append("oldFqn", oldStudyFqn)
-                                            );
-                                        });
-                                    }
                                 } else {
-                                    logger.info("Project does not exist in the variant storage. Skipping");
+                                    logger.info("Datastore variant at project '{}': {}", oldProjectFqn, datastores);
                                 }
-                            } catch (StorageEngineException | IOException e) {
-                                throw new RuntimeException(e);
-                            }
 
+                                for (String oldStudyFqn : variantStorageEngine.getMetadataManager().getStudies().keySet()) {
+                                    String study = FqnUtils.parse(oldStudyFqn).getStudy();
+                                    String newStudyFqn = FqnUtils.buildFqn(this.organizationId, projectId, study);
+                                    logger.info("Changing study fqn from '{}' to '{}'", oldStudyFqn, newStudyFqn);
+                                    variantStorageEngine.getMetadataManager().updateStudyMetadata(oldStudyFqn, studyMetadata -> {
+                                        studyMetadata.setName(newStudyFqn);
+                                        studyMetadata.getAttributes().put("OPENCGA_3_0_0", new ObjectMap()
+                                                .append("date", date)
+                                                .append("oldFqn", oldStudyFqn)
+                                        );
+                                    });
+                                }
+                            } else {
+                                logger.info("Project '{}' does not exist in the variant storage. Skipping", oldProjectFqn);
+                            }
+                        } catch (StorageEngineException | IOException e) {
+                            throw new RuntimeException(e);
                         }
                     }
                 }
@@ -579,9 +589,15 @@ public class OrganizationMigration extends MigrationTool {
                         ))
                 );
 
+                // Ensure all jobs have attributes field
+                Bson jobQuery = Filters.eq("attributes", null);
+                Bson update = new Document("$set", new Document("attributes", new Document()));
+                jobCollection.updateMany(jobQuery, update);
+                jobDeletedCollection.updateMany(jobQuery, update);
+
                 // Change fqn in all jobs that were pointing to this study
-                Bson jobQuery = Filters.eq("studyUid", studyUid);
-                Bson update = new Document("$set", new Document()
+                jobQuery = Filters.eq("studyUid", studyUid);
+                update = new Document("$set", new Document()
                         .append("study.id", newFqn)
                         .append("attributes.OPENCGA.3_0_0", new Document()
                                 .append("date", date)
