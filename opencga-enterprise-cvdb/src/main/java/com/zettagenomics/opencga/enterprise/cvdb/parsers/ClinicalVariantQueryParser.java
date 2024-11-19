@@ -35,7 +35,7 @@ import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryPar
 public class ClinicalVariantQueryParser extends ClinicalQueryParser {
 
     // Map from clinical variant fields (keys) to Solr indexed fields (values)
-    public static Map<String, String> cvToCvsFieldMap;
+    public static Map<String, List<String>> cvToCvsFieldMap;
 
     private SolrQueryParser solrQueryParser;
 
@@ -123,12 +123,12 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
         return Collections.singleton("json");
     }
 
-    private Set<String> getCvsIncludeFromInclude(List<String> caFields) {
+    private Set<String> getCvsIncludeFromInclude(List<String> cvFields) {
         Set<String> cvsFields = new HashSet<>();
-        for (String caField : caFields) {
-            if (cvToCvsFieldMap.containsKey(caField)) {
+        for (String cvField : cvFields) {
+            if (cvToCvsFieldMap.containsKey(cvField)) {
                 // This field is stored in a Solr indexed field
-                cvsFields.add(cvToCvsFieldMap.get(caField));
+                cvsFields.addAll(cvToCvsFieldMap.get(cvField));
             } else {
                 return Collections.singleton("json");
             }
@@ -143,14 +143,15 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
     static {
         // Map from clinical analysis fields to Solr indexed fields
         cvToCvsFieldMap = new HashMap<>();
-        cvToCvsFieldMap.put("discussion.author", "discussionAuthor");
-        cvToCvsFieldMap.put("discussion.date", "discussionDate");
-        cvToCvsFieldMap.put("discussion.text", "discussionText");
-        cvToCvsFieldMap.put("confidence.value", "confidenceValue");
-        cvToCvsFieldMap.put("confidence.author", "confidenceAuthor");
-        cvToCvsFieldMap.put("confidence.date", "confidenceDate");
-        cvToCvsFieldMap.put("tags", "tags");
-        cvToCvsFieldMap.put("status", "status");
+        cvToCvsFieldMap.put("discussion", Arrays.asList("discussionAuthor", "discussionDate", "discussionText"));
+        cvToCvsFieldMap.put("discussion.author", Arrays.asList("discussionAuthor"));
+        cvToCvsFieldMap.put("discussion.date", Arrays.asList("discussionDate"));
+        cvToCvsFieldMap.put("discussion.text", Arrays.asList("discussionText"));
+        cvToCvsFieldMap.put("confidence.value", Arrays.asList("confidenceValue"));
+        cvToCvsFieldMap.put("confidence.author", Arrays.asList("confidenceAuthor"));
+        cvToCvsFieldMap.put("confidence.date", Arrays.asList("confidenceDate"));
+        cvToCvsFieldMap.put("tags", Arrays.asList("tags"));
+        cvToCvsFieldMap.put("status", Arrays.asList("status"));
     }
 
     private String parseInterpretationInfo(String key, String string) {

@@ -18,16 +18,20 @@ package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
-import java.util.List;
+import java.util.*;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 
 public class ClinicalVariantEvidenceQueryParser extends ClinicalQueryParser {
+
+    // Map from clinical variant fields (keys) to Solr indexed fields (values)
+    public static Map<String, List<String>> cveToCvesFieldMap;
 
     public ClinicalVariantEvidenceQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
         super(variantStorageMetadataManager);
@@ -78,5 +82,58 @@ public class ClinicalVariantEvidenceQueryParser extends ClinicalQueryParser {
 
         // Return Solr query
         return solrQuery;
+    }
+
+    @Override
+    protected void parseQueryOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            // Nothing to do
+            return;
+        }
+
+        // Parse common options
+        super.parseQueryOptions(queryOptions, solrQuery);
+
+        // Parse include and exclude options to get Solr fields to include
+        Set<String> cvesFields = getCvesInclude(queryOptions);
+        solrQuery.setFields(StringUtils.join(cvesFields, ","));
+    }
+
+    private Set<String> getCvesInclude(QueryOptions queryOptions) {
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            return getCvesIncludeFromInclude(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+        }
+        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            return getCvesIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+        }
+        return Collections.singleton("json");
+    }
+
+    private Set<String> getCvesIncludeFromInclude(List<String> cveFields) {
+        Set<String> cvsFields = new HashSet<>();
+        for (String cveField : cveFields) {
+            if (cveToCvesFieldMap.containsKey(cveField)) {
+                // This field is stored in a Solr indexed field
+                cvsFields.addAll(cveToCvesFieldMap.get(cveField));
+            } else {
+                return Collections.singleton("json");
+            }
+        }
+        return cvsFields;
+    }
+
+    private Set<String> getCvesIncludeFromExclude(List<String> caFields) {
+        return Collections.singleton("json");
+    }
+
+    static {
+        // Map from clinical analysis fields to Solr indexed fields
+        cveToCvesFieldMap = new HashMap<>();
+        cveToCvesFieldMap.put("genomicFeature.geneName", Arrays.asList("geneName"));
+        cveToCvesFieldMap.put("panelId", Arrays.asList("panelId"));
+        cveToCvesFieldMap.put("modeOfInheritances", Arrays.asList("mois"));
+        cveToCvesFieldMap.put("classification.acmg", Arrays.asList("acmgs"));
+        cveToCvesFieldMap.put("classification.tier", Arrays.asList("tier"));
+        cveToCvesFieldMap.put("classification.clinicalSignificance", Arrays.asList("clinicalSignificance"));
     }
 }
