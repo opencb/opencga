@@ -596,6 +596,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveTranscriptId; 
+    
         @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveConsequenceTypeId; 
     
@@ -883,6 +886,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveTranscriptId; 
+    
         @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveConsequenceTypeId; 
     
@@ -924,6 +930,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRolInCancer; 
+    
+        @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cveReviewText; 
     
     }
 
@@ -1198,6 +1207,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
+    
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveTranscriptId; 
     
         @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveConsequenceTypeId; 
@@ -1486,6 +1498,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveTranscriptId; 
+    
         @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveConsequenceTypeId; 
     
@@ -1527,6 +1542,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRolInCancer; 
+    
+        @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cveReviewText; 
     
     }
 
@@ -1754,6 +1772,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
+    
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveTranscriptId; 
     
         @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveConsequenceTypeId; 
@@ -2042,6 +2063,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveTranscriptId; 
+    
         @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveConsequenceTypeId; 
     
@@ -2083,6 +2107,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRolInCancer; 
+    
+        @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cveReviewText; 
     
     }
 
@@ -2327,6 +2354,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
+    
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveTranscriptId; 
     
         @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveConsequenceTypeId; 
@@ -2615,6 +2645,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveTranscriptId; 
+    
         @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveConsequenceTypeId; 
     
@@ -2656,6 +2689,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRolInCancer; 
+    
+        @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cveReviewText; 
     
     }
 

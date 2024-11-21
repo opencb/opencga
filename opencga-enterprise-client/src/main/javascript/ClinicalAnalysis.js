@@ -198,6 +198,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
+    * @param {String} [params.cveTranscriptId] - Clinical variant evidence trancript ID (or IDs separated by commas).
     * @param {String} [params.cveConsequenceTypeId] - Clinical variant evidence consequence type ID (or IDs separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
@@ -343,6 +344,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
+    * @param {String} [params.cveTranscriptId] - Clinical variant evidence trancript ID (or IDs separated by commas).
     * @param {String} [params.cveConsequenceTypeId] - Clinical variant evidence consequence type ID (or IDs separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
@@ -364,6 +366,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
     * @param {String} [params.cveRolInCancer] - Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveReviewText] - Clinical variant evidence review text (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     queryCvdbCase(params) {
@@ -498,6 +502,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
+    * @param {String} [params.cveTranscriptId] - Clinical variant evidence trancript ID (or IDs separated by commas).
     * @param {String} [params.cveConsequenceTypeId] - Clinical variant evidence consequence type ID (or IDs separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
@@ -644,6 +649,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
+    * @param {String} [params.cveTranscriptId] - Clinical variant evidence trancript ID (or IDs separated by commas).
     * @param {String} [params.cveConsequenceTypeId] - Clinical variant evidence consequence type ID (or IDs separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
@@ -665,6 +671,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
     * @param {String} [params.cveRolInCancer] - Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveReviewText] - Clinical variant evidence review text (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     queryCvdbInterpretation(params) {
@@ -780,6 +788,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
+    * @param {String} [params.cveTranscriptId] - Clinical variant evidence trancript ID (or IDs separated by commas).
     * @param {String} [params.cveConsequenceTypeId] - Clinical variant evidence consequence type ID (or IDs separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
@@ -925,6 +934,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
+    * @param {String} [params.cveTranscriptId] - Clinical variant evidence trancript ID (or IDs separated by commas).
     * @param {String} [params.cveConsequenceTypeId] - Clinical variant evidence consequence type ID (or IDs separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
@@ -946,6 +956,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
     * @param {String} [params.cveRolInCancer] - Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveReviewText] - Clinical variant evidence review text (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     queryCvdbVariant(params) {
@@ -1072,6 +1084,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
+    * @param {String} [params.cveTranscriptId] - Clinical variant evidence trancript ID (or IDs separated by commas).
     * @param {String} [params.cveConsequenceTypeId] - Clinical variant evidence consequence type ID (or IDs separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
@@ -1218,6 +1231,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
+    * @param {String} [params.cveTranscriptId] - Clinical variant evidence trancript ID (or IDs separated by commas).
     * @param {String} [params.cveConsequenceTypeId] - Clinical variant evidence consequence type ID (or IDs separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
@@ -1239,6 +1253,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
     * @param {String} [params.cveRolInCancer] - Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveReviewText] - Clinical variant evidence review text (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     queryCvdbVariantEvidence(params) {

@@ -503,6 +503,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
         queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
         queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveTranscriptId", commandOptions.cveTranscriptId);
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
@@ -609,6 +610,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
         queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
         queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveTranscriptId", commandOptions.cveTranscriptId);
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
@@ -623,6 +625,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -750,6 +753,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
         queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
         queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveTranscriptId", commandOptions.cveTranscriptId);
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
@@ -856,6 +860,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
         queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
         queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveTranscriptId", commandOptions.cveTranscriptId);
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
@@ -870,6 +875,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -956,6 +962,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
         queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
         queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveTranscriptId", commandOptions.cveTranscriptId);
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
@@ -1062,6 +1069,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
         queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
         queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveTranscriptId", commandOptions.cveTranscriptId);
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
@@ -1076,6 +1084,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -1174,6 +1183,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
         queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
         queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveTranscriptId", commandOptions.cveTranscriptId);
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
@@ -1280,6 +1290,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
         queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
         queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveTranscriptId", commandOptions.cveTranscriptId);
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
@@ -1294,6 +1305,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

@@ -257,6 +257,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
+     *       cveTranscriptId: Clinical variant evidence trancript ID (or IDs separated by commas).
      *       cveConsequenceTypeId: Clinical variant evidence consequence type ID (or IDs separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
@@ -401,6 +402,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
+     *       cveTranscriptId: Clinical variant evidence trancript ID (or IDs separated by commas).
      *       cveConsequenceTypeId: Clinical variant evidence consequence type ID (or IDs separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
@@ -420,6 +422,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
      *       cveRolInCancer: Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
+     *       cveReviewText: Clinical variant evidence review text (word or list of words contained in the text, if the words are separated
+     *            by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -558,6 +562,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
+     *       cveTranscriptId: Clinical variant evidence trancript ID (or IDs separated by commas).
      *       cveConsequenceTypeId: Clinical variant evidence consequence type ID (or IDs separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
@@ -703,6 +708,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
+     *       cveTranscriptId: Clinical variant evidence trancript ID (or IDs separated by commas).
      *       cveConsequenceTypeId: Clinical variant evidence consequence type ID (or IDs separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
@@ -722,6 +728,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
      *       cveRolInCancer: Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
+     *       cveReviewText: Clinical variant evidence review text (word or list of words contained in the text, if the words are separated
+     *            by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -838,6 +846,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
+     *       cveTranscriptId: Clinical variant evidence trancript ID (or IDs separated by commas).
      *       cveConsequenceTypeId: Clinical variant evidence consequence type ID (or IDs separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
@@ -982,6 +991,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
+     *       cveTranscriptId: Clinical variant evidence trancript ID (or IDs separated by commas).
      *       cveConsequenceTypeId: Clinical variant evidence consequence type ID (or IDs separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
@@ -1001,6 +1011,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
      *       cveRolInCancer: Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
+     *       cveReviewText: Clinical variant evidence review text (word or list of words contained in the text, if the words are separated
+     *            by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -1132,6 +1144,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
+     *       cveTranscriptId: Clinical variant evidence trancript ID (or IDs separated by commas).
      *       cveConsequenceTypeId: Clinical variant evidence consequence type ID (or IDs separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
@@ -1277,6 +1290,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
+     *       cveTranscriptId: Clinical variant evidence trancript ID (or IDs separated by commas).
      *       cveConsequenceTypeId: Clinical variant evidence consequence type ID (or IDs separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
@@ -1296,6 +1310,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
      *       cveRolInCancer: Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
+     *       cveReviewText: Clinical variant evidence review text (word or list of words contained in the text, if the words are separated
+     *            by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

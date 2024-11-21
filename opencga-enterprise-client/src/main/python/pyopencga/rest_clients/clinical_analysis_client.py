@@ -299,6 +299,8 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
+        :param str cve_transcript_id: Clinical variant evidence trancript ID
+            (or IDs separated by commas).
         :param str cve_consequence_type_id: Clinical variant evidence
             consequence type ID (or IDs separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
@@ -554,6 +556,8 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
+        :param str cve_transcript_id: Clinical variant evidence trancript ID
+            (or IDs separated by commas).
         :param str cve_consequence_type_id: Clinical variant evidence
             consequence type ID (or IDs separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
@@ -588,6 +592,10 @@ class ClinicalAnalysis(_ParentRestClient):
             separated by commas).
         :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
             (or roles in cancer separated by commas).
+        :param str cve_review_text: Clinical variant evidence review text
+            (word or list of words contained in the text, if the words are
+            separated by a comma an OR will be applied; if the words are
+            separated by a semicolon, an AND will be applied).
         """
 
         return self._get(category='analysis', resource='query', subcategory='clinical/cvdb/case', **options)
@@ -822,6 +830,8 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
+        :param str cve_transcript_id: Clinical variant evidence trancript ID
+            (or IDs separated by commas).
         :param str cve_consequence_type_id: Clinical variant evidence
             consequence type ID (or IDs separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
@@ -1079,6 +1089,8 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
+        :param str cve_transcript_id: Clinical variant evidence trancript ID
+            (or IDs separated by commas).
         :param str cve_consequence_type_id: Clinical variant evidence
             consequence type ID (or IDs separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
@@ -1113,6 +1125,10 @@ class ClinicalAnalysis(_ParentRestClient):
             separated by commas).
         :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
             (or roles in cancer separated by commas).
+        :param str cve_review_text: Clinical variant evidence review text
+            (word or list of words contained in the text, if the words are
+            separated by a comma an OR will be applied; if the words are
+            separated by a semicolon, an AND will be applied).
         """
 
         return self._get(category='analysis', resource='query', subcategory='clinical/cvdb/interpretation', **options)
@@ -1319,6 +1335,8 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
+        :param str cve_transcript_id: Clinical variant evidence trancript ID
+            (or IDs separated by commas).
         :param str cve_consequence_type_id: Clinical variant evidence
             consequence type ID (or IDs separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
@@ -1575,6 +1593,8 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
+        :param str cve_transcript_id: Clinical variant evidence trancript ID
+            (or IDs separated by commas).
         :param str cve_consequence_type_id: Clinical variant evidence
             consequence type ID (or IDs separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
@@ -1609,6 +1629,10 @@ class ClinicalAnalysis(_ParentRestClient):
             separated by commas).
         :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
             (or roles in cancer separated by commas).
+        :param str cve_review_text: Clinical variant evidence review text
+            (word or list of words contained in the text, if the words are
+            separated by a comma an OR will be applied; if the words are
+            separated by a semicolon, an AND will be applied).
         """
 
         return self._get(category='analysis', resource='query', subcategory='clinical/cvdb/variant', **options)
@@ -1830,6 +1854,8 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
+        :param str cve_transcript_id: Clinical variant evidence trancript ID
+            (or IDs separated by commas).
         :param str cve_consequence_type_id: Clinical variant evidence
             consequence type ID (or IDs separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
@@ -2087,6 +2113,8 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
+        :param str cve_transcript_id: Clinical variant evidence trancript ID
+            (or IDs separated by commas).
         :param str cve_consequence_type_id: Clinical variant evidence
             consequence type ID (or IDs separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
@@ -2121,6 +2149,10 @@ class ClinicalAnalysis(_ParentRestClient):
             separated by commas).
         :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
             (or roles in cancer separated by commas).
+        :param str cve_review_text: Clinical variant evidence review text
+            (word or list of words contained in the text, if the words are
+            separated by a comma an OR will be applied; if the words are
+            separated by a semicolon, an AND will be applied).
         """
 
         return self._get(category='analysis', resource='query', subcategory='clinical/cvdb/variantEvidence', **options)
