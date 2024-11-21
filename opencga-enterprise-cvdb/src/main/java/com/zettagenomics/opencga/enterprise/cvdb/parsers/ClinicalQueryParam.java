@@ -470,6 +470,12 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final String CVE_GENE_NAME_DESCR = "Clinical variant evidence gene name (or names" + OPT_LIST;
     public static final ClinicalQueryParam CVE_GENE_NAME = new ClinicalQueryParam(CVE_GENE_NAME_NAME, TEXT_ARRAY, CVE_GENE_NAME_DESCR);
 
+    // <field name="transcriptId" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_TRANSCRIPT_ID_NAME = "cveTranscriptId";
+    public static final String CVE_TRANSCRIPT_ID_DESCR = "Clinical variant evidence trancript ID (or IDs" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_TRANSCRIPT_ID = new ClinicalQueryParam(CVE_TRANSCRIPT_ID_NAME, TEXT_ARRAY,
+            CVE_TRANSCRIPT_ID_DESCR);
+
     // <field name="consequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
     public static final String CVE_CONSEQUENCE_TYPE_ID_NAME = "cveConsequenceTypeId";
     public static final String CVE_CONSEQUENCE_TYPE_ID_DESCR = "Clinical variant evidence consequence type ID (or IDs" + OPT_LIST;
@@ -555,6 +561,25 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final String CVE_ROL_IN_CANCER_DESCR = "Clinical variant evidence rol in cancer (or roles in cancer" + OPT_LIST;
     public static final ClinicalQueryParam CVE_ROL_IN_CANCER = new ClinicalQueryParam(CVE_ROL_IN_CANCER_NAME, TEXT_ARRAY,
             CVE_ROL_IN_CANCER_DESCR);
+
+    // <field name="reviewTier" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_REVIEW_TIER_NAME = "cveReviewTier";
+    public static final String CVE_REVIEW_TIER_DESCR = "Clinical variant evidence review tier (or list of tier values" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_REVIEW_TIER = new ClinicalQueryParam(CVE_REVIEW_TIER_NAME, TEXT_ARRAY,
+            CVE_REVIEW_TIER_DESCR);
+
+    // <field name="reviewAcmgs" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CVE_REVIEW_ACGM_NAME = "cveAcmg";
+    public static final String CVE_REVIEW_ACGM_DESCR = "Clinical variant evidence review ACMG (or ACGMs" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_REVIEW_ACGM = new ClinicalQueryParam(CVE_REVIEW_ACGM_NAME, TEXT_ARRAY,
+            CVE_REVIEW_ACGM_DESCR);
+
+    // <field name="reviewClinicalSignificance" type="text_en" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME = "cveReviewClinicalSignificance";
+    public static final String CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR = "Clinical variant evidence review clinical significance (or list"
+            + " of clinical significances" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_REVIEW_CLINICAL_SIGNIFICANCE = new ClinicalQueryParam(CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME,
+            TEXT_ARRAY, CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR);
 
     // <field name="reviewText" type="text_en" indexed="true" stored="true" multiValued="false"/>
     public static final String CVE_REVIEW_TEXT_NAME = "cveReviewText";

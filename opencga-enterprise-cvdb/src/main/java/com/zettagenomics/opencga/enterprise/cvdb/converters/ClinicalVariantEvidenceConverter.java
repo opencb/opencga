@@ -61,6 +61,7 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
                 GenomicFeature genomicFeature = cve.getGenomicFeature();
 
                 cves.setGeneName(genomicFeature.getGeneName());
+                cves.setTranscriptId(genomicFeature.getTranscriptId());
 
                 if (CollectionUtils.isNotEmpty(genomicFeature.getConsequenceTypes())) {
                     cves.setConsequenceTypeIds(genomicFeature.getConsequenceTypes().stream().map(so -> so.getAccession())
@@ -113,9 +114,19 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
                 cves.setRolesInCancer(cve.getRolesInCancer().stream().map(r -> r.name()).collect(Collectors.toList()));
             }
 
-            if (cve.getReview() != null && cve.getReview().getDiscussion() != null
-                    && StringUtils.isNotEmpty(cve.getReview().getDiscussion().getText())) {
-                cves.setReviewText(cve.getReview().getDiscussion().getText());
+            if (cve.getReview() != null) {
+                if (CollectionUtils.isNotEmpty(cve.getReview().getAcmg())) {
+                    cves.setReviewAcmgs(cve.getReview().getAcmg().stream().map(a -> a.getClassification()).collect(Collectors.toList()));
+                }
+                if (StringUtils.isNotEmpty(cve.getReview().getTier())) {
+                    cves.setReviewTier(cve.getReview().getTier());
+                }
+                if (cve.getReview().getClinicalSignificance() != null) {
+                    cves.setReviewClinicalSignificance(cve.getReview().getClinicalSignificance().name());
+                }
+                if (cve.getReview().getDiscussion() != null  && StringUtils.isNotEmpty(cve.getReview().getDiscussion().getText())) {
+                    cves.setReviewText(cve.getReview().getDiscussion().getText());
+                }
             }
 
 //            private Map<String, Double> cveScores;

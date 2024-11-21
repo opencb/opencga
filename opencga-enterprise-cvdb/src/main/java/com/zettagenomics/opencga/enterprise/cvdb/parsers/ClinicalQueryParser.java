@@ -236,9 +236,12 @@ public class ClinicalQueryParser {
         SolrQuery solrQuery = solrParser.parse(variantQuery, QueryOptions.empty());
         if (ArrayUtils.isNotEmpty(solrQuery.getFilterQueries())) {
             filters.addAll(Arrays.asList(solrQuery.getFilterQueries()));
+            System.out.println(">>>>>>>>>>>>>>>>>>>>>> solrQuery.getFilterQueries() = " + solrQuery.getFilterQueries());
         }
 
         // Clinical variant filters
+
+        addStringFilters("variantId", query.getString("variantId"), filters);
 
         // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
         addBooleanFilters("primary", query.getString(CV_PRIMARY_NAME), filters);
@@ -281,11 +284,18 @@ public class ClinicalQueryParser {
     public List<String> clinicalVariantEvidenceFilters(Query query) {
         List<String> filters = new ArrayList<>();
 
+        addStringFilters(ClinicalQueryParam.CA_ID_NAME, query.getString(ClinicalQueryParam.CA_ID_NAME), filters);
+        addStringFilters(ClinicalQueryParam.CI_ID_NAME, query.getString(ClinicalQueryParam.CI_ID_NAME), filters);
+        addStringFilters(ClinicalQueryParam.CV_ID_NAME, query.getString(ClinicalQueryParam.CV_ID_NAME), filters);
+
         // <field name="phenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
         addStringFilters("phenotypeNames", query.getString(ClinicalQueryParam.CVE_PHENOTYPE_NAME_NAME), filters);
 
         // <field name="geneName" type="string" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("geneName", query.getString(ClinicalQueryParam.CVE_GENE_NAME_NAME), filters);
+
+        // <field name="transcriptId" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("transcriptId", query.getString(ClinicalQueryParam.CVE_TRANSCRIPT_ID_NAME), filters);
 
         // <field name="consequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
         addStringFilters("consequenceTypeIds", query.getString(ClinicalQueryParam.CVE_CONSEQUENCE_TYPE_ID_NAME), filters);
@@ -328,6 +338,15 @@ public class ClinicalQueryParser {
 
         // <field name="rolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
         addStringFilters("rolesInCancer", query.getString(ClinicalQueryParam.CVE_ROL_IN_CANCER_NAME), filters);
+
+        // <field name="reviewAcmgs" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("reviewAcmgs", query.getString(ClinicalQueryParam.CVE_REVIEW_ACGM_NAME), filters);
+
+        // <field name="reviewTier" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("reviewTier", query.getString(ClinicalQueryParam.CVE_REVIEW_TIER_NAME), filters);
+
+        // <field name="reviewClinicalSignificance" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("reviewClinicalSignificance", query.getString(ClinicalQueryParam.CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME), filters);
 
         // <field name="reviewText" type="text_en" indexed="true" stored="true" multiValued="false"/>
         addTextFilters("reviewText", query.getString(ClinicalQueryParam.CVE_REVIEW_TEXT_NAME), filters);

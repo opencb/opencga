@@ -58,6 +58,9 @@ public class ClinicalVariantEvidenceSearch {
     @Field("geneName")
     private String geneName;
 
+    @Field("transcriptId")
+    private String transcriptId;
+
     @Field("consequenceTypeIds")
     private List<String> consequenceTypeIds;
 
@@ -100,6 +103,15 @@ public class ClinicalVariantEvidenceSearch {
     @Field("rolesInCancer")
     private List<String> rolesInCancer;
 
+    @Field("reviewAcmgs")
+    private List<String> reviewAcmgs;
+
+    @Field("reviewTier")
+    private String reviewTier;
+
+    @Field("reviewClinicalSignificance")
+    private String reviewClinicalSignificance;
+
     @Field("reviewText")
     private String reviewText;
 
@@ -119,6 +131,7 @@ public class ClinicalVariantEvidenceSearch {
         acmgs = new ArrayList<>();
         otherClassifications = new ArrayList<>();
         rolesInCancer = new ArrayList<>();
+        reviewAcmgs = new ArrayList<>();
         scores = new HashMap<>();
     }
 
@@ -134,6 +147,7 @@ public class ClinicalVariantEvidenceSearch {
         sb.append(", variantId='").append(variantId).append('\'');
         sb.append(", phenotypeNames=").append(phenotypeNames);
         sb.append(", geneName='").append(geneName).append('\'');
+        sb.append(", transcriptId='").append(transcriptId).append('\'');
         sb.append(", consequenceTypeIds=").append(consequenceTypeIds);
         sb.append(", xrefIds=").append(xrefIds);
         sb.append(", panelId='").append(panelId).append('\'');
@@ -148,6 +162,9 @@ public class ClinicalVariantEvidenceSearch {
         sb.append(", tumorigenesis='").append(tumorigenesis).append('\'');
         sb.append(", otherClassifications=").append(otherClassifications);
         sb.append(", rolesInCancer=").append(rolesInCancer);
+        sb.append(", reviewAcmgs=").append(reviewAcmgs);
+        sb.append(", reviewTier='").append(reviewTier).append('\'');
+        sb.append(", reviewClinicalSignificance='").append(reviewClinicalSignificance).append('\'');
         sb.append(", reviewText='").append(reviewText).append('\'');
         sb.append(", scores=").append(scores);
         sb.append(", json='").append(json).append('\'');
@@ -233,6 +250,15 @@ public class ClinicalVariantEvidenceSearch {
 
     public ClinicalVariantEvidenceSearch setGeneName(String geneName) {
         this.geneName = geneName;
+        return this;
+    }
+
+    public String getTranscriptId() {
+        return transcriptId;
+    }
+
+    public ClinicalVariantEvidenceSearch setTranscriptId(String transcriptId) {
+        this.transcriptId = transcriptId;
         return this;
     }
 
@@ -359,6 +385,33 @@ public class ClinicalVariantEvidenceSearch {
 
     public ClinicalVariantEvidenceSearch setRolesInCancer(List<String> rolesInCancer) {
         this.rolesInCancer = rolesInCancer;
+        return this;
+    }
+
+    public List<String> getReviewAcmgs() {
+        return reviewAcmgs;
+    }
+
+    public ClinicalVariantEvidenceSearch setReviewAcmgs(List<String> reviewAcmgs) {
+        this.reviewAcmgs = reviewAcmgs;
+        return this;
+    }
+
+    public String getReviewTier() {
+        return reviewTier;
+    }
+
+    public ClinicalVariantEvidenceSearch setReviewTier(String reviewTier) {
+        this.reviewTier = reviewTier;
+        return this;
+    }
+
+    public String getReviewClinicalSignificance() {
+        return reviewClinicalSignificance;
+    }
+
+    public ClinicalVariantEvidenceSearch setReviewClinicalSignificance(String reviewClinicalSignificance) {
+        this.reviewClinicalSignificance = reviewClinicalSignificance;
         return this;
     }
 
