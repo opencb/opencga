@@ -727,9 +727,9 @@ public class CvdbSolrEngine {
             throw new CvdbException("Missing variant ID(s) when running clinical variant summary");
         }
 
-//        if (variantIds.size() > DEFAULT_LIMIT) {
-//            throw new CvdbException("The maximum number of variants (" + DEFAULT_LIMIT + ")has been exceeded (" + variantIds.size() + ")");
-//        }
+        if (variantIds.size() > DEFAULT_LIMIT) {
+            throw new CvdbException("The maximum number of variants (" + DEFAULT_LIMIT + ")has been exceeded (" + variantIds.size() + ")");
+        }
 
         // Get project from study
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
@@ -758,12 +758,6 @@ public class CvdbSolrEngine {
         StopWatch stopWatch = StopWatch.createStarted();
         List<ClinicalVariantSummaryStats> variantStatsList = new ArrayList<>(variantIds.size());
 
-//        QueryOptions caQueryOptions = new QueryOptions(FACET, "disorderId");//,interpretation.id,secondaryInterpretations.id");
-//        QueryOptions cvQueryOptions = new QueryOptions(INCLUDE, "status,confidence.value"); //,evidences");
-//        QueryOptions cveQueryOptions = new QueryOptions(INCLUDE, "genomicFeature.geneName,modeOfInheritances,panelId,classification.acmg,"
-//                + "classification.tier,classification.clinicalSignificance");
-
-
         Query query;
         QueryOptions queryOptions;
         DataResult<FacetField> facetResult;
@@ -777,6 +771,7 @@ public class CvdbSolrEngine {
 
                 query = new Query()
                         .append(PROJECT_PARAM_NAME, pId)
+                        .append(STUDY_PARAM_NAME, ALL_STUDIES_VALUE)
                         .append("variantId", vId);
 
                 // Clinical analysis stats: num. cases and disorder IDs
@@ -814,7 +809,7 @@ public class CvdbSolrEngine {
                         .getEvidenceReviewClinicalSignificanceCounts());
                 performFacet(query, facetMap, "evidence", token);
 
-                System.out.println(">>>>> projectStats = " + projectStats);
+//                System.out.println(">>>>> projectStats = " + projectStats);
 
                 updateSummaryStats(projectStats, variantStats);
             }
@@ -849,9 +844,9 @@ public class CvdbSolrEngine {
             }
         }
 
-        System.out.println(">>>>> facetResult.getNumResults() = " + facetResult.getNumResults());
+//        System.out.println(">>>>> facetResult.getNumResults() = " + facetResult.getNumResults());
         for (FacetField facetField : facetResult.getResults()) {
-            System.out.println(">>>>> facetField = " + facetField);
+//            System.out.println(">>>>> facetField = " + facetField);
             Map<String, Long> counts = facetMap.get(facetField.getName());
             for (FacetField.Bucket bucket : facetField.getBuckets()) {
                 counts.put(bucket.getValue(), bucket.getCount());
