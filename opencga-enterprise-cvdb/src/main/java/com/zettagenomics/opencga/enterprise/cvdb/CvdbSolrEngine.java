@@ -774,9 +774,11 @@ public class CvdbSolrEngine {
                         .append(STUDY_PARAM_NAME, ALL_STUDIES_VALUE)
                         .append("variantId", vId);
 
+                StopWatch watch = StopWatch.createStarted();
                 // Clinical analysis stats: num. cases and disorder IDs
                 DataResult<Long> countResult = clinicalAnalysisCount(query, token);
                 projectStats.setNumCases(countResult.first());
+                logger.info("clinicalAnalysisCount, time: {} ms", (int) watch.getTime(TimeUnit.MILLISECONDS));
 
                 facetMap.clear();
                 facetMap.put(CA_DISORDER_ID_NAME, projectStats.getClinicalAnalysisDisorderCounts());
@@ -788,28 +790,21 @@ public class CvdbSolrEngine {
                 facetMap.put(CV_CONFIDENCE_VALUE_NAME, projectStats.getVariantConfidenceCounts());
                 performFacet(query, facetMap, "variant", token);
 
-                // Clinical variant evidence stats: gene name, transcript ID
+                // Clinical variant evidence stats: gene name, transcript ID, panel ID, MoI, ACMG, and for review tier, ACMG
+                // and clinical significance
                 facetMap.clear();
                 facetMap.put(CVE_GENE_NAME_NAME, projectStats.getInterpretationSummaryStats().getEvidenceGeneNameCounts());
 //                facetMap.put(CVE_TRANSCRIPT_ID_NAME, projectStats.getInterpretationSummaryStats().getEvidenceTranscriptCounts());
-                performFacet(query, facetMap, "evidence", token);
-
-                // Clinical variant evidence stats: panel ID, MoI and ACMG
-                facetMap.clear();
                 facetMap.put(CVE_PANEL_ID_NAME, projectStats.getInterpretationSummaryStats().getEvidencePanelCounts());
                 facetMap.put(CVE_MOI_NAME, projectStats.getInterpretationSummaryStats().getEvidenceModeOfInheritanceCounts());
                 facetMap.put(CVE_ACGM_NAME, projectStats.getInterpretationSummaryStats().getEvidenceClassificationAcmgCounts());
-                performFacet(query, facetMap, "evidence", token);
-
-                // Clinical variant evidence stats: tier, ACMG and clinical significance from review
-                facetMap.clear();
                 facetMap.put(CVE_ACGM_NAME, projectStats.getInterpretationSummaryStats().getEvidenceReviewAcmgCounts());
                 facetMap.put(CVE_TIER_NAME, projectStats.getInterpretationSummaryStats().getEvidenceReviewTierCounts());
                 facetMap.put(CVE_CLINICAL_SIGNIFICANCE_NAME, projectStats.getInterpretationSummaryStats()
                         .getEvidenceReviewClinicalSignificanceCounts());
                 performFacet(query, facetMap, "evidence", token);
 
-//                System.out.println(">>>>> projectStats = " + projectStats);
+                //                System.out.println(">>>>> projectStats = " + projectStats);
 
                 updateSummaryStats(projectStats, variantStats);
             }
@@ -823,6 +818,7 @@ public class CvdbSolrEngine {
 
     private void performFacet(Query query, Map<String, Map<String, Long>> facetMap, String type, String token)
             throws IOException, CvdbException {
+        StopWatch watch = StopWatch.createStarted();
         DataResult<FacetField> facetResult;
         List<String> facetNames = new ArrayList<>(facetMap.keySet());
         QueryOptions queryOptions = new QueryOptions(FACET, StringUtils.join(facetNames, FacetQueryParser.FACET_SEPARATOR));
@@ -843,7 +839,8 @@ public class CvdbSolrEngine {
                 throw new CvdbException("Invalid type: " + type);
             }
         }
-
+        logger.info("{} facet, time: {} ms", type, (int) watch.getTime(TimeUnit.MILLISECONDS));
+        watch = StopWatch.createStarted();
 //        System.out.println(">>>>> facetResult.getNumResults() = " + facetResult.getNumResults());
         for (FacetField facetField : facetResult.getResults()) {
 //            System.out.println(">>>>> facetField = " + facetField);
@@ -852,6 +849,7 @@ public class CvdbSolrEngine {
                 counts.put(bucket.getValue(), bucket.getCount());
             }
         }
+        logger.info("{} facet parsing, time: {} ms", type, (int) watch.getTime(TimeUnit.MILLISECONDS));
     }
 
     public DataResult<ClinicalVariantSummaryStats> getClinicalVariantSummaryStatsOLD(List<String> variantIds, String interpretationStatusId,
