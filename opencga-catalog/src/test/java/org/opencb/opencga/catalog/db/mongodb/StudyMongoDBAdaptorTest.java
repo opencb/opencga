@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -99,10 +100,10 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void testRemoveFieldFromVariableSet() throws CatalogDBException, CatalogAuthorizationException {
+    public void testRemoveFieldFromVariableSet() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         DataResult<VariableSet> variableSetDataResult = createExampleVariableSet("VARSET_1", false);
         DataResult result =
-                catalogStudyDBAdaptor.removeFieldFromVariableSet(variableSetDataResult.first().getUid(), "NAME", user3.getId());
+                catalogStudyDBAdaptor.removeFieldFromVariableSet(5L, variableSetDataResult.first().getUid(), "NAME", user3.getId());
         assertEquals(1, result.getNumUpdated());
 
         VariableSet variableSet = catalogStudyDBAdaptor.getVariableSet(variableSetDataResult.first().getUid(), QueryOptions.empty()).first();
@@ -152,12 +153,12 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      * @throws CatalogDBException
      */
     @Test
-    public void addFieldToVariableSetTest1() throws CatalogDBException, CatalogAuthorizationException {
+    public void addFieldToVariableSetTest1() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         createExampleVariableSet("VARSET_1", false);
         createExampleVariableSet("VARSET_2", true);
         Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "", null,
                 Collections.emptyMap());
-        DataResult result = catalogStudyDBAdaptor.addFieldToVariableSet(18, variable, user3.getId());
+        DataResult result = catalogStudyDBAdaptor.addFieldToVariableSet(5L, 18, variable, user3.getId());
         assertEquals(1, result.getNumUpdated());
 
         DataResult<VariableSet> queryResult = catalogStudyDBAdaptor.getVariableSet(18L, QueryOptions.empty());
@@ -169,7 +170,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         // We try to insert the same one again.
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("already exist");
-        catalogStudyDBAdaptor.addFieldToVariableSet(18, variable, user3.getId());
+        catalogStudyDBAdaptor.addFieldToVariableSet(5L, 18, variable, user3.getId());
     }
 
     /**
@@ -178,12 +179,12 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      * @throws CatalogDBException
      */
     @Test
-    public void addFieldToVariableSetTest2() throws CatalogDBException, CatalogAuthorizationException {
+    public void addFieldToVariableSetTest2() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "", null,
                 Collections.emptyMap());
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not found");
-        catalogStudyDBAdaptor.addFieldToVariableSet(18, variable, user3.getId());
+        catalogStudyDBAdaptor.addFieldToVariableSet(5L, 18, variable, user3.getId());
     }
 
     @Test
@@ -208,7 +209,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void resyncUserWithSyncedGroups() throws CatalogDBException {
+    public void resyncUserWithSyncedGroups() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         // We create synced groups and not synced groups in study 5
         Group group = new Group("@notSyncedGroup", Arrays.asList("user1", "user2", "user3"));
         catalogStudyDBAdaptor.createGroup(5L, group);
@@ -273,6 +274,76 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(4, groupsStudy1.getNumResults());
         assertTrue(groupsStudy1.getResults().stream().map(Group::getId).collect(Collectors.toList())
                 .containsAll(Arrays.asList("@notSyncedGroup", "@syncedGroup2", "@syncedGroup3", "@members")));
+    }
+
+    @Test
+    public void updateUserToGroups() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        // We create synced groups and not synced groups in study 5
+        Group group = new Group("@notSyncedGroup", Collections.emptyList());
+        catalogStudyDBAdaptor.createGroup(5L, group);
+        group.setId("@syncedGroup1");
+        group.setSyncedFrom(new Group.Sync("origin1", "@syncedGroup1"));
+        catalogStudyDBAdaptor.createGroup(5L, group);
+        group.setId("@syncedGroup2");
+        group.setSyncedFrom(new Group.Sync("origin1", "@syncedGroup2"));
+        catalogStudyDBAdaptor.createGroup(5L, group);
+        group.setId("@syncedGroup3");
+        group.setSyncedFrom(new Group.Sync("otherOrigin", "@syncedGroup3"));
+        catalogStudyDBAdaptor.createGroup(5L, group);
+
+        // We create the same synced groups and not synced groups in study 9
+        group = new Group("@notSyncedGroup", Collections.emptyList());
+        catalogStudyDBAdaptor.createGroup(9L, group);
+        group.setId("@syncedGroup1");
+        group.setSyncedFrom(new Group.Sync("origin1", "@syncedGroup1"));
+        catalogStudyDBAdaptor.createGroup(9L, group);
+        group.setId("@syncedGroup2");
+        group.setSyncedFrom(new Group.Sync("origin1", "@syncedGroup2"));
+        catalogStudyDBAdaptor.createGroup(9L, group);
+        group.setId("@syncedGroup3");
+        group.setSyncedFrom(new Group.Sync("otherOrigin", "@syncedGroup3"));
+        catalogStudyDBAdaptor.createGroup(9L, group);
+        group = new Group("@otherNotSyncedGroup", Collections.emptyList());
+        catalogStudyDBAdaptor.createGroup(9L, group);
+
+        catalogStudyDBAdaptor.updateUserFromGroups("user2", null, Arrays.asList("syncedGroup1", "notSyncedGroup"), ParamUtils.AddRemoveAction.ADD);
+        DataResult<Group> groupsStudy1 = catalogStudyDBAdaptor.getGroup(5L, null, Arrays.asList("user2"));
+        DataResult<Group> groupsStudy2 = catalogStudyDBAdaptor.getGroup(9L, null, Arrays.asList("user2"));
+        assertEquals(groupsStudy1.getNumResults(), groupsStudy2.getNumResults());
+        assertEquals(3, groupsStudy1.getNumResults());
+        assertTrue(groupsStudy1.getResults().stream().map(Group::getId).collect(Collectors.toList())
+                .containsAll(Arrays.asList("@notSyncedGroup", "@syncedGroup1", "@members")));
+        assertEquals(3, groupsStudy2.getNumResults());
+        assertTrue(groupsStudy2.getResults().stream().map(Group::getId).collect(Collectors.toList())
+                .containsAll(Arrays.asList("@notSyncedGroup", "@syncedGroup1", "@members")));
+
+        catalogStudyDBAdaptor.updateUserFromGroups("user2", null, Arrays.asList("syncedGroup1", "notSyncedGroup"), ParamUtils.AddRemoveAction.REMOVE);
+        groupsStudy1 = catalogStudyDBAdaptor.getGroup(5L, null, Arrays.asList("user2"));
+        groupsStudy2 = catalogStudyDBAdaptor.getGroup(9L, null, Arrays.asList("user2"));
+        assertEquals(1, groupsStudy1.getNumResults());
+        assertEquals(1, groupsStudy2.getNumResults());
+        assertEquals("@members", groupsStudy1.first().getId());
+        assertEquals("@members", groupsStudy2.first().getId());
+
+        catalogStudyDBAdaptor.updateUserFromGroups("user2", Arrays.asList(5L, 9L), Arrays.asList("syncedGroup1", "notSyncedGroup"), ParamUtils.AddRemoveAction.ADD);
+        groupsStudy1 = catalogStudyDBAdaptor.getGroup(5L, null, Arrays.asList("user2"));
+        groupsStudy2 = catalogStudyDBAdaptor.getGroup(9L, null, Arrays.asList("user2"));
+        assertEquals(groupsStudy1.getNumResults(), groupsStudy2.getNumResults());
+        assertEquals(3, groupsStudy1.getNumResults());
+        assertTrue(groupsStudy1.getResults().stream().map(Group::getId).collect(Collectors.toList())
+                .containsAll(Arrays.asList("@notSyncedGroup", "@syncedGroup1", "@members")));
+        assertEquals(3, groupsStudy2.getNumResults());
+        assertTrue(groupsStudy2.getResults().stream().map(Group::getId).collect(Collectors.toList())
+                .containsAll(Arrays.asList("@notSyncedGroup", "@syncedGroup1", "@members")));
+
+        catalogStudyDBAdaptor.updateUserFromGroups("user2", Collections.singletonList(5L), Arrays.asList("syncedGroup1", "notSyncedGroup"), ParamUtils.AddRemoveAction.REMOVE);
+        groupsStudy1 = catalogStudyDBAdaptor.getGroup(5L, null, Arrays.asList("user2"));
+        groupsStudy2 = catalogStudyDBAdaptor.getGroup(9L, null, Arrays.asList("user2"));
+        assertEquals(1, groupsStudy1.getNumResults());
+        assertEquals("@members", groupsStudy1.first().getId());
+        assertEquals(3, groupsStudy2.getNumResults());
+        assertTrue(groupsStudy2.getResults().stream().map(Group::getId).collect(Collectors.toList())
+                .containsAll(Arrays.asList("@notSyncedGroup", "@syncedGroup1", "@members")));
     }
 
 }

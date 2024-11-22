@@ -79,7 +79,7 @@ public class VariantPhoenixSchemaManager implements AutoCloseable {
         registerNewFiles(studyId, new ArrayList<>(metadataManager.getIndexedFiles(studyId)));
 
         List<Integer> cohortIds = new LinkedList<>();
-        for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyId)) {
+        for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(studyId)) {
             cohortIds.add(cohort.getId());
         }
         registerNewCohorts(studyId, cohortIds);

@@ -11,6 +11,7 @@ import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.AdminCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.admin.GroupSyncParams;
@@ -18,6 +19,7 @@ import org.opencb.opencga.core.models.admin.InstallationParams;
 import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserCreateParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
+import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.common.Enums.Resource;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
@@ -42,6 +44,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "admin";
     public AdminCommandOptions adminCommandOptions;
 
     public AdminCommandExecutor(AdminCommandOptions adminCommandOptions) throws CatalogAuthenticationException {
@@ -82,6 +85,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "users-sync":
                 queryResponse = syncUsers();
+                break;
+            case "update-groups-users":
+                queryResponse = usersUpdateGroups();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -126,10 +132,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         InstallationParams installationParams = null;
         if (commandOptions.jsonDataModel) {
-            installationParams = new InstallationParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(installationParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/install"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             installationParams = JacksonUtils.getDefaultObjectMapper()
@@ -155,10 +160,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         JWTParams jWTParams = null;
         if (commandOptions.jsonDataModel) {
-            jWTParams = new JWTParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(jWTParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/jwt"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jWTParams = JacksonUtils.getDefaultObjectMapper()
@@ -181,10 +185,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         UserCreateParams userCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            userCreateParams = new UserCreateParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             userCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -212,10 +215,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         UserImportParams userImportParams = null;
         if (commandOptions.jsonDataModel) {
-            userImportParams = new UserImportParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userImportParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/import"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             userImportParams = JacksonUtils.getDefaultObjectMapper()
@@ -260,10 +262,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         GroupSyncParams groupSyncParams = null;
         if (commandOptions.jsonDataModel) {
-            groupSyncParams = new GroupSyncParams();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(groupSyncParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/sync"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             groupSyncParams = JacksonUtils.getDefaultObjectMapper()
@@ -283,5 +284,35 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), GroupSyncParams.class);
         }
         return openCGAClient.getAdminClient().syncUsers(groupSyncParams);
+    }
+
+    private RestResponse<Group> usersUpdateGroups() throws Exception {
+        logger.debug("Executing usersUpdateGroups in Admin command line");
+
+        AdminCommandOptions.UsersUpdateGroupsCommandOptions commandOptions = adminCommandOptions.usersUpdateGroupsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("action", commandOptions.action);
+
+
+        UserUpdateGroup userUpdateGroup = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Group> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/{user}/groups/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            userUpdateGroup = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), UserUpdateGroup.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "studyIds",commandOptions.studyIds, true);
+            putNestedIfNotNull(beanParams, "groupIds",commandOptions.groupIds, true);
+
+            userUpdateGroup = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), UserUpdateGroup.class);
+        }
+        return openCGAClient.getAdminClient().usersUpdateGroups(commandOptions.user, userUpdateGroup, queryParams);
     }
 }

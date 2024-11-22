@@ -119,6 +119,7 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
                 add(put, VariantPhoenixSchema.VariantColumn.CI_END_R, Math.max(0, variant.getSv().getCiEndRight()));
             }
         }
+        add(put, VariantPhoenixSchema.VariantColumn.ALLELES, VariantPhoenixKeyFactory.buildAlleles(variant));
         add(put, studyColumn, 0);
         if (releaseColumn != null) {
             add(put, releaseColumn, true);

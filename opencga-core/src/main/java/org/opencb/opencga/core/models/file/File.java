@@ -562,6 +562,7 @@ public class File extends Annotable {
 
         TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, //Serialization formats
 
+        PDF,
         IMAGE,
         PLAIN,
         BINARY,

@@ -1,0 +1,50 @@
+name: Manual deploy Docker base
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch, tag or SHA of the source code to build docker."
+        type: string
+        required: true
+      tag:
+        description: "The tag for the new docker."
+        type: string
+        required: true
+
+jobs:
+  build:
+    name: Build Java app
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.get_project_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '10'
+          ref: "${{ inputs.branch }}"
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'maven'
+      - name: Install dependencies branches
+        run: |
+          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/get_same_branch.sh
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+          fi
+      - name: Maven Build (skip tests)
+        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-folder
+          path: build
+
+
+  deploy-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: build
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ inputs.tag }}
+    secrets: inherit

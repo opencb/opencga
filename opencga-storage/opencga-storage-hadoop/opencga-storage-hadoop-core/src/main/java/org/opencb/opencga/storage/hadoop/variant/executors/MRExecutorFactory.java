@@ -10,7 +10,10 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MRExecutorFactory {
+public final class MRExecutorFactory {
+
+    private MRExecutorFactory() {
+    }
 
     public static MRExecutor getMRExecutor(ObjectMap options) throws StorageEngineException {
         MRExecutor mrExecutor;

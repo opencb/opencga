@@ -3,21 +3,24 @@ package org.opencb.opencga.storage.core.variant.query.executors;
 import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
-import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,20 +64,16 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException {
-        return isValidParam(query, VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS);
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException {
+        return isValidParam(variantQuery.getQuery(), VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS);
     }
 
     @Override
-    public DataResult<Long> count(Query query) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) {
-        Trio trio = getCompHetTrio(query);
-        return getOrIterator(query.getString(VariantQueryParam.STUDY.key()), trio.getChild(), trio.getFather(), trio.getMother(),
-                query, options, iterator);
+    protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) {
+        Trio trio = getCompHetTrio(variantQuery.getQuery());
+        String study = variantQuery.getStudyQuery().getDefaultStudyOrFail().getName();
+        return getOrIterator(study, trio.getChild(), trio.getFather(), trio.getMother(),
+                variantQuery, iterator);
     }
 
     @Override
@@ -84,25 +83,25 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
                 .append(QueryOptions.INCLUDE, VariantField.ID.fieldName())));
     }
 
-    public VariantQueryResult<Variant> get(String study, String proband, String father, String mother, Query query, QueryOptions options) {
-        return (VariantQueryResult<Variant>) getOrIterator(study, proband, father, mother, query, options, false);
+    public VariantQueryResult<Variant> get(String study, String proband, String father, String mother, ParsedVariantQuery variantQuery) {
+        return (VariantQueryResult<Variant>) getOrIterator(study, proband, father, mother, variantQuery, false);
     }
 
-    public VariantDBIterator iterator(String study, String proband, String father, String mother, Query query, QueryOptions options) {
-        return (VariantDBIterator) getOrIterator(study, proband, father, mother, query, options, true);
+    public VariantDBIterator iterator(String study, String proband, String father, String mother, ParsedVariantQuery variantQuery) {
+        return (VariantDBIterator) getOrIterator(study, proband, father, mother, variantQuery, true);
     }
 
-    private Object getOrIterator(String study, String proband, String father, String mother, Query query, QueryOptions inputOptions,
+    private Object getOrIterator(String study, String proband, String father, String mother, ParsedVariantQuery variantQuery,
                                  boolean iterator) {
         // Prepare query and options
-        int skip = getSkip(inputOptions);
-        int limit = inputOptions.containsKey(QueryOptions.LIMIT) ? getLimit(inputOptions) : (Integer.MAX_VALUE - skip);
-        int samplingSize = getSamplingSize(inputOptions, DEFAULT_SAMPLING_SIZE, iterator);
-        QueryOptions options = buildQueryOptions(inputOptions);
+        int skip = variantQuery.getSkip();
+        int limit = variantQuery.getLimit() != null ? variantQuery.getLimit() : (Integer.MAX_VALUE - skip);
+        int samplingSize = getSamplingSize(variantQuery.getInputOptions(), DEFAULT_SAMPLING_SIZE, iterator);
+        QueryOptions options = buildQueryOptions(variantQuery.getInputOptions());
         // Always sort results for compound heterozygous
         options.put(QueryOptions.SORT, true);
 
-        query = new Query(query);
+        Query query = new Query(variantQuery.getQuery());
         List<String> includeSample = getAndCheckIncludeSample(query, proband, father, mother);
 
         Set<String> biotypes;
@@ -158,12 +157,12 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
             return VariantDBIterator.wrapper(variantIterator);
         } else {
             VariantQueryResult<Variant> result = VariantDBIterator.wrapper(variantIterator)
-                    .toDataResult(Collections.singletonMap(study, includeSample));
+                    .toDataResult(variantQuery);
             if ((limit + skip) < samplingSize && compoundHeterozygous.size() < samplingSize) {
                 result.setApproximateCount(false);
                 result.setNumMatches(compoundHeterozygous.size());
             } else {
-                setNumTotalResults(unfilteredIterator, result, query, inputOptions,
+                setNumTotalResults(unfilteredIterator, result, query, variantQuery.getInputOptions(),
                         unfilteredIterator.getCount(),
                         compoundHeterozygous.size());
             }

@@ -75,10 +75,6 @@ public interface FileMetadataDBAdaptor extends AutoCloseable {
 
     LinkedHashSet<Integer> getIndexedFiles(int studyId, boolean includePartial);
 
-    default void addIndexedFiles(int studyId, List<Integer> fileIds) {}
-
-    default void removeIndexedFiles(int studyId, Collection<Integer> fileIds) {};
-
     default DataResult count() {
         return count(new Query());
     }

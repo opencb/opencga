@@ -13,6 +13,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -21,6 +22,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
@@ -972,7 +974,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         // Update individual 2
         individual2 = catalogManager.getIndividualManager().update(studyFqn, individual2.getId(), new IndividualUpdateParams()
-                        .setName("blabla"), options, token).first();
+                .setName("blabla"), options, token).first();
         assertEquals(2, individual2.getSamples().size());
         assertEquals(3, individual2.getVersion());
         assertEquals(2, individual2.getSamples().stream().map(Sample::getVersion).filter(v -> v == 1).count());
@@ -996,7 +998,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         // Update id from individual1
         individual1 = catalogManager.getIndividualManager().update(studyFqn, individual1.getId(), new IndividualUpdateParams()
-                        .setId("blabla"), options, token).first();
+                .setId("blabla"), options, token).first();
         assertEquals(2, individual1.getSamples().size());
         assertEquals(3, individual1.getVersion());
         assertEquals(2, individual1.getSamples().stream().map(Sample::getVersion).filter(v -> v == 2).count());
@@ -1038,7 +1040,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         // locked true
         ClinicalAnalysis case3 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null)
-                        .setLocked(true);
+                .setLocked(true);
 
         case1 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case1, options, token).first();
         assertFalse(case1.isLocked());
@@ -1127,6 +1129,39 @@ public class IndividualManagerTest extends AbstractManagerTest {
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("in use in 3 cases"));
         }
+    }
+
+    @Test
+    // TASK-5668
+    public void viewSampleFilesFromIndividualTest() throws CatalogException {
+        // Link VCF file. This VCF file will automatically create sample NA19600
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        catalogManager.getFileManager().link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null, null), false, token);
+
+        Sample sample = catalogManager.getSampleManager().get(studyFqn, "NA19600",
+                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key()), token).first();
+        assertEquals(1, sample.getFileIds().size());
+        assertEquals("variant-test-file.vcf.gz", sample.getFileIds().get(0));
+
+        // Create individual
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual"), Collections.singletonList(sample.getId()),
+                QueryOptions.empty(), token);
+        Individual individual = catalogManager.getIndividualManager().get(studyFqn, "individual", QueryOptions.empty(), token).first();
+        assertEquals(1, individual.getSamples().get(0).getFileIds().size());
+        assertEquals("variant-test-file.vcf.gz", individual.getSamples().get(0).getFileIds().get(0));
+
+        // Link BAM file (related to NA19600 sample)
+        String bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
+        catalogManager.getFileManager().link(studyFqn, new FileLinkParams(bamFile, "", "", "", null, null, null, null, null), false, token);
+
+        sample = catalogManager.getSampleManager().get(studyFqn, "NA19600",
+                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key()), token).first();
+        assertEquals(2, sample.getFileIds().size());
+        assertTrue(Arrays.asList("variant-test-file.vcf.gz", "NA19600.chrom20.small.bam").containsAll(sample.getFileIds()));
+
+        individual = catalogManager.getIndividualManager().get(studyFqn, "individual", QueryOptions.empty(), token).first();
+        assertEquals(2, individual.getSamples().get(0).getFileIds().size());
+        assertTrue(Arrays.asList("variant-test-file.vcf.gz", "NA19600.chrom20.small.bam").containsAll(individual.getSamples().get(0).getFileIds()));
     }
 
 }

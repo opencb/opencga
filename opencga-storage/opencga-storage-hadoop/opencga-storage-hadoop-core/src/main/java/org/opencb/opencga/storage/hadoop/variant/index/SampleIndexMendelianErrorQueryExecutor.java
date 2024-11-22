@@ -9,12 +9,12 @@ import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.tools.pedigree.MendelianError;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
@@ -32,10 +32,10 @@ public class SampleIndexMendelianErrorQueryExecutor extends SampleIndexVariantQu
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) {
-        if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)
-                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO)
-                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO_STRICT)) {
+    public boolean canUseThisExecutor(ParsedVariantQuery query, QueryOptions options) {
+        if (VariantQueryUtils.isValidParam(query.getQuery(), VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)
+                || VariantQueryUtils.isValidParam(query.getQuery(), VariantQueryUtils.SAMPLE_DE_NOVO)
+                || VariantQueryUtils.isValidParam(query.getQuery(), VariantQueryUtils.SAMPLE_DE_NOVO_STRICT)) {
             return super.canUseThisExecutor(query, options);
         } else {
             return false;
@@ -43,7 +43,7 @@ public class SampleIndexMendelianErrorQueryExecutor extends SampleIndexVariantQu
     }
 
     @Override
-    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator, SampleIndexQuery sampleIndexQuery) {
+    protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator, SampleIndexQuery sampleIndexQuery) {
 
         List<Trio> trios = new ArrayList<>(sampleIndexQuery.getMendelianErrorSet().size());
         int studyId = metadataManager.getStudyId(sampleIndexQuery.getStudy());
@@ -65,7 +65,7 @@ public class SampleIndexMendelianErrorQueryExecutor extends SampleIndexVariantQu
             trios.add(new Trio(null, father, mother, sampleMetadata.getName()));
         }
 
-        Object object = super.getOrIterator(query, options, iterator, sampleIndexQuery);
+        Object object = super.getOrIterator(variantQuery, iterator, sampleIndexQuery);
 
         if (iterator) {
             VariantDBIterator variantIterator = (VariantDBIterator) object;

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+    <Properties>
+        <Property name="logLevel">${sys:opencga.log.level:-info}</Property>
+    </Properties>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_ERR">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n"/>
+            <ThresholdFilter level="${logLevel}" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="DEBUG">
+            <AppenderRef ref="Console"/>
+        </Root>
+        <Logger name="org.mongodb.driver.cluster" level="WARN"/>
+        <Logger name="org.mongodb.driver.connection" level="WARN"/>
+        <Logger name="org.mongodb.driver.protocol.command" level="WARN"/>
+    </Loggers>
+</Configuration>

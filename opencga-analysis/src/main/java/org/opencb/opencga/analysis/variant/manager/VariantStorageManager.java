@@ -68,9 +68,8 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
-import org.opencb.opencga.core.models.variant.VariantPruneParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -408,7 +407,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             List<Trio> trios = new LinkedList<>();
-            List<Event> events = new LinkedList<>();
             VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
             VariantCatalogQueryUtils catalogUtils = new VariantCatalogQueryUtils(catalogManager);
             if (familiesStr.size() == 1 && familiesStr.get(0).equals(VariantQueryUtils.ALL)) {
@@ -425,7 +423,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             }
             DataResult<Trio> dataResult = engine.familyIndex(study, trios, params);
             getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
-                    .flatMap(t->t.toList().stream())
+                    .flatMap(t -> t.toList().stream())
                     .collect(Collectors.toList()), token);
             return dataResult;
         });
@@ -441,11 +439,29 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             Collection<String> thisSamples = samples;
+            boolean allSamples;
             if (CollectionUtils.size(thisSamples) == 1 && thisSamples.iterator().next().equals(ParamConstants.ALL)) {
                 thisSamples = getIndexedSamples(study, token);
+                allSamples = true;
+            } else {
+                allSamples = false;
             }
 
             List<Trio> trios = catalogUtils.getTriosFromSamples(study, engine.getMetadataManager(), thisSamples, token);
+            if (trios.isEmpty()) {
+                String msg;
+                if (thisSamples.size() > 6) {
+                    msg = "No trios found for " + thisSamples.size() + " samples";
+                } else {
+                    msg = "No trios found for samples " + thisSamples;
+                }
+                if (allSamples) {
+                    logger.info(msg);
+                    return new DataResult<>(0, Collections.singletonList(new Event(Event.Type.INFO, msg)), 0, Collections.emptyList(), 0);
+                } else {
+                    throw new StorageEngineException(msg);
+                }
+            }
             DataResult<Trio> dataResult = engine.familyIndex(study, trios, params);
             getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
                     .flatMap(t -> t.toList().stream())
@@ -630,6 +646,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     @SuppressWarnings("unchecked")
     public <T> VariantQueryResult<T> get(Query query, QueryOptions queryOptions, String token, Class<T> clazz)
             throws CatalogException, IOException, StorageEngineException {
+
         VariantQueryResult<Variant> result = get(query, queryOptions, token);
         List<T> variants;
         if (clazz == Variant.class) {
@@ -643,16 +660,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         } else {
             throw new IllegalArgumentException("Unknown variant format " + clazz);
         }
-        return new VariantQueryResult<>(
-                result.getTime(),
-                result.getNumResults(),
-                result.getNumMatches(),
-                result.getEvents(),
-                variants,
-                result.getSamples(),
-                result.getSource(),
-                result.getApproximateCount(),
-                result.getApproximateCountSamplingSize(), null);
+        return new VariantQueryResult<>(result, variants);
 
     }
 
@@ -883,7 +891,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
                         VariantQueryResult<Variant> result = new VariantQueryResult<>(
                                 ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)),
-                                1, 1, new ArrayList<>(), Collections.singletonList(variantResult), null, null)
+                                1, 1, new ArrayList<>(), Collections.singletonList(variantResult), engine.getStorageEngineId())
                                 .setNumSamples(sampleEntries.size());
                         if (exactNumSamples) {
                             result.setApproximateCount(false);
@@ -1028,8 +1036,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             engine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), organism.getAssembly());
         }
         if (cellbase != null) {
-            if (StringUtils.isEmpty(cellbase.getToken()) || storageConfiguration.getCellbase() != null) {
-                cellbase.setToken(storageConfiguration.getCellbase().getToken());
+            // To ensure that we use the project API key before using the storage API key
+            if (StringUtils.isEmpty(cellbase.getApiKey()) && storageConfiguration.getCellbase() != null) {
+                cellbase.setApiKey(storageConfiguration.getCellbase().getApiKey());
             }
             engine.getConfiguration().setCellbase(cellbase);
             engine.reloadCellbaseConfiguration();

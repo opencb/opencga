@@ -84,11 +84,15 @@ public abstract class ParentClientRestApiWriter {
         return commandName.toLowerCase();
     }
 
+    public String getCategoryRestName(RestCategory restCategory, CategoryConfig categoryConfig) {
+        return restCategory.getPath().substring(restCategory.getPath().lastIndexOf("/") + 1);
+    }
+
     public String getCategoryCommandName(RestCategory restCategory, CategoryConfig categoryConfig) {
         if (!StringUtils.isEmpty(categoryConfig.getCommandName())) {
             return categoryConfig.getCommandName();
         }
-        return restCategory.getPath().substring(restCategory.getPath().lastIndexOf("/") + 1);
+        return getCategoryRestName(restCategory, categoryConfig);
     }
 
     protected void writeToFile(File file, StringBuffer sb) throws IOException {
@@ -217,6 +221,8 @@ public abstract class ParentClientRestApiWriter {
 //                 methodName = items[3] + "_" + items[1] + "_" + items[2];
             } else if (items[0].contains("}") && items[2].contains("}") && (!items[1].contains("}")) && (!items[3].contains("}"))) {
                 methodName = items[3] + "_" + items[1];
+            } else if (items[1].contains("}") && (!items[0].contains("}") && !items[2].contains("}") && !items[3].contains("}"))) {
+                methodName = items[0] + "_" + items[3] + "_" + items[2];
             }
         } else if (items.length == 5) {
             if (items[0].contains("}") && items[2].contains("}") && (!items[1].contains("}")) && (!items[3].contains("}"))

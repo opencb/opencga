@@ -51,6 +51,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "samples";
     public SamplesCommandOptions samplesCommandOptions;
 
     public SamplesCommandExecutor(SamplesCommandOptions samplesCommandOptions) throws CatalogAuthenticationException {
@@ -127,10 +128,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         SampleAclUpdateParams sampleAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleAclUpdateParams = new SampleAclUpdateParams();
             RestResponse<SampleAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(sampleAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             sampleAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -195,10 +195,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
-            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/annotationSets/load"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
@@ -231,10 +230,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         SampleCreateParams sampleCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleCreateParams = new SampleCreateParams();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(sampleCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             sampleCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -469,10 +467,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         SampleUpdateParams sampleUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleUpdateParams = new SampleUpdateParams();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(sampleUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/{samples}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             sampleUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -529,10 +526,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
-            objectMap = new ObjectMap();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(objectMap));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/{sample}/annotationSets/{annotationSet}/annotations/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             objectMap = JacksonUtils.getDefaultObjectMapper()

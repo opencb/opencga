@@ -8,14 +8,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrNativeIterator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -75,34 +73,22 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException {
+        VariantQuery query = variantQuery.getQuery();
         return doQuerySearchManager(query, options) || doIntersectWithSearch(query, options);
     }
 
     @Override
-    public DataResult<Long> count(Query query) {
-        try {
-            StopWatch watch = StopWatch.createStarted();
-            long count = searchManager.count(dbName, query);
-            int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
-            return new DataResult<>(time, Collections.emptyList(), 1, Collections.singletonList(count), 1);
-        } catch (IOException | VariantSearchException e) {
-            throw new VariantQueryException("Error querying Solr", e);
-        }
-    }
-
-    @Override
-    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) {
-        if (options == null) {
-            options = QueryOptions.empty();
-        }
+    protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) {
+        Query query = variantQuery.getQuery();
+        QueryOptions options = variantQuery.getInputOptions();
 
         if (doQuerySearchManager(query, options)) {
             try {
                 if (iterator) {
                     return searchManager.iterator(dbName, query, options);
                 } else {
-                    return searchManager.query(dbName, query, options);
+                    return searchManager.query(dbName, variantQuery);
                 }
             } catch (IOException | VariantSearchException e) {
                 throw new VariantQueryException("Error querying Solr", e);
@@ -134,7 +120,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                     approxCount = false;
                 } else if (options.getBoolean(APPROXIMATE_COUNT.key()) || options.getBoolean(QueryOptions.COUNT)) {
                     options.put(QueryOptions.COUNT, false);
-                    VariantQueryResult<Long> result = approximateCount(query, options);
+                    VariantQueryResult<Long> result = approximateCount(variantQuery);
                     numTotalResults = result.first();
                     approxCount = result.getApproximateCount();
                     approxCountSamplingSize = result.getApproximateCountSamplingSize();
@@ -176,7 +162,9 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         }
     }
 
-    public VariantQueryResult<Long> approximateCount(Query query, QueryOptions options) {
+    public VariantQueryResult<Long> approximateCount(ParsedVariantQuery variantQuery) {
+        Query query = variantQuery.getQuery();
+        QueryOptions options = variantQuery.getInputOptions();
         long count;
         boolean approxCount = true;
         int sampling = 0;
@@ -193,7 +181,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 Query searchEngineQuery = getSearchEngineQuery(query);
                 Query engineQuery = getEngineQuery(query, options, getMetadataManager());
 
-                VariantQueryResult<VariantSearchModel> nativeResult = searchManager
+                DataResult<VariantSearchModel> nativeResult = searchManager
                         .nativeQuery(dbName, searchEngineQuery, queryOptions);
                 List<String> variantIds = nativeResult.getResults().stream().map(VariantSearchModel::getId).collect(Collectors.toList());
                 // Adjust numSamples if the results from SearchManager is smaller than numSamples
@@ -202,7 +190,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                     approxCount = false;
                     sampling = variantIds.size();
                 }
-                long numSearchResults = nativeResult.getNumTotalResults();
+                long numSearchResults = nativeResult.getNumMatches();
 
                 long numResults;
                 if (variantIds.isEmpty()) {
@@ -223,8 +211,8 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             throw new VariantQueryException("Error querying Solr", e);
         }
         int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
-        return new VariantQueryResult<>(time, 1, 1, Collections.emptyList(), Collections.singletonList(count), null,
-                SEARCH_ENGINE_ID + '+' + getStorageEngineId(), approxCount, approxCount ? sampling : null, null);
+        return new VariantQueryResult<>(time, 1, 1, Collections.emptyList(), Collections.singletonList(count),
+                SEARCH_ENGINE_ID + '+' + getStorageEngineId(), approxCount, approxCount ? sampling : null, null, variantQuery);
     }
 
     /**
@@ -274,6 +262,10 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             intersect = true;
         } else {
             if (options.getBoolean(QueryOptions.COUNT)) {
+                // The SearchIndex is better than anyone in terms of counting
+                intersect = true;
+            } else if (options.getInt(QueryOptions.SKIP, 0) > 500) {
+                // Large "skip" queries should use SearchIndex when possible
                 intersect = true;
             } else {
                 // TODO: Improve this heuristic
@@ -308,7 +300,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         try {
             // Do not iterate for small queries
             if (limit < 10000) {
-                VariantQueryResult<VariantSearchModel> nativeResult = searchManager.nativeQuery(dbName, query, queryOptions);
+                DataResult<VariantSearchModel> nativeResult = searchManager.nativeQuery(dbName, query, queryOptions);
                 if (numTotalResults != null) {
                     numTotalResults.set(nativeResult.getNumMatches());
                 }

@@ -34,6 +34,7 @@ public class AnalysisClinicalCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
+        public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
         public UpdateClinicalConfigurationCommandOptions updateClinicalConfigurationCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
@@ -58,12 +59,14 @@ public class AnalysisClinicalCommandOptions {
         public AclCommandOptions aclCommandOptions;
         public DeleteCommandOptions deleteCommandOptions;
         public UpdateCommandOptions updateCommandOptions;
+        public UpdateAnnotationSetsAnnotationsCommandOptions updateAnnotationSetsAnnotationsCommandOptions;
         public InfoCommandOptions infoCommandOptions;
         public CreateInterpretationCommandOptions createInterpretationCommandOptions;
         public ClearInterpretationCommandOptions clearInterpretationCommandOptions;
         public DeleteInterpretationCommandOptions deleteInterpretationCommandOptions;
         public RevertInterpretationCommandOptions revertInterpretationCommandOptions;
         public UpdateInterpretationCommandOptions updateInterpretationCommandOptions;
+        public UpdateReportCommandOptions updateReportCommandOptions;
 
 
     public AnalysisClinicalCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
@@ -71,6 +74,7 @@ public class AnalysisClinicalCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
         this.updateClinicalConfigurationCommandOptions = new UpdateClinicalConfigurationCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
@@ -95,12 +99,14 @@ public class AnalysisClinicalCommandOptions {
         this.aclCommandOptions = new AclCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
+        this.updateAnnotationSetsAnnotationsCommandOptions = new UpdateAnnotationSetsAnnotationsCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.createInterpretationCommandOptions = new CreateInterpretationCommandOptions();
         this.clearInterpretationCommandOptions = new ClearInterpretationCommandOptions();
         this.deleteInterpretationCommandOptions = new DeleteInterpretationCommandOptions();
         this.revertInterpretationCommandOptions = new RevertInterpretationCommandOptions();
         this.updateInterpretationCommandOptions = new UpdateInterpretationCommandOptions();
+        this.updateReportCommandOptions = new UpdateReportCommandOptions();
     
     }
     
@@ -133,6 +139,38 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
+    
+    }
+
+    @Parameters(commandNames = {"annotation-sets-load"}, commandDescription ="Load annotation sets from a TSV file")
+    public class LoadAnnotationSetsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--variable-set-id"}, description = "Variable set ID or name", required = true, arity = 1)
+        public String variableSetId; 
+    
+        @Parameter(names = {"--path"}, description = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true, arity = 1)
+        public String path; 
+    
+        @Parameter(names = {"--parents"}, description = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).", required = false, help = true, arity = 0)
+        public boolean parents = false; 
+    
+        @Parameter(names = {"--annotation-set-id"}, description = "Annotation set id. If not provided, variableSetId will be used.", required = false, arity = 1)
+        public String annotationSetId; 
+    
+        @Parameter(names = {"--content"}, description = "The body web service content parameter", required = false, arity = 1)
+        public String content;
     
     }
 
@@ -225,6 +263,42 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--report-date"}, description = "Report date.", required = false, arity = 1)
         public String reportDate;
     
+        @Parameter(names = {"--request-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String requestId;
+    
+        @Parameter(names = {"--request-justification"}, description = "The body web service justification parameter", required = false, arity = 1)
+        public String requestJustification;
+    
+        @Parameter(names = {"--request-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String requestDate;
+    
+        @DynamicParameter(names = {"--request-attributes"}, description = "The body web service attributes parameter. Use: --request-attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> requestAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+        @Parameter(names = {"--responsible-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String responsibleId;
+    
+        @Parameter(names = {"--responsible-name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String responsibleName;
+    
+        @Parameter(names = {"--responsible-email"}, description = "The body web service email parameter", required = false, arity = 1)
+        public String responsibleEmail;
+    
+        @Parameter(names = {"--responsible-organization"}, description = "The body web service organization parameter", required = false, arity = 1)
+        public String responsibleOrganization;
+    
+        @Parameter(names = {"--responsible-department"}, description = "The body web service department parameter", required = false, arity = 1)
+        public String responsibleDepartment;
+    
+        @Parameter(names = {"--responsible-address"}, description = "The body web service address parameter", required = false, arity = 1)
+        public String responsibleAddress;
+    
+        @Parameter(names = {"--responsible-city"}, description = "The body web service city parameter", required = false, arity = 1)
+        public String responsibleCity;
+    
+        @Parameter(names = {"--responsible-postcode"}, description = "The body web service postcode parameter", required = false, arity = 1)
+        public String responsiblePostcode;
+    
         @Parameter(names = {"--interpretation-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String interpretationDescription;
     
@@ -245,6 +319,12 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN", required = false, arity = 1)
         public String qualityControlSummary;
+    
+        @Parameter(names = {"--quality-control-comments"}, description = "The body web service comments parameter", required = false, arity = 1)
+        public String qualityControlComments;
+    
+        @Parameter(names = {"--quality-control-files"}, description = "The body web service files parameter", required = false, arity = 1)
+        public String qualityControlFiles;
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String creationDate;
@@ -275,7 +355,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of Clinical Analysis IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of Clinical Analysis IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Clinical Analysis UUIDs up to a maximum of 100", required = false, arity = 1)
@@ -284,7 +364,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--type"}, description = "Clinical Analysis type", required = false, arity = 1)
         public String type; 
     
-        @Parameter(names = {"--disorder"}, description = "Clinical Analysis disorder", required = false, arity = 1)
+        @Parameter(names = {"--disorder"}, description = "Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String disorder; 
     
         @Parameter(names = {"--files"}, description = "Clinical Analysis files", required = false, arity = 1)
@@ -347,6 +427,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
         public String internalStatus; 
     
+        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
+        public String annotation; 
+    
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
         public boolean deleted = false; 
     
@@ -364,7 +447,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of Interpretation IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Interpretation UUIDs up to a maximum of 100", required = false, arity = 1)
@@ -376,7 +459,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analyst-id"}, description = "Analyst ID", required = false, arity = 1)
         public String analystId; 
     
-        @Parameter(names = {"--method-name"}, description = "Interpretation method name", required = false, arity = 1)
+        @Parameter(names = {"--method-name"}, description = "Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String methodName; 
     
         @Parameter(names = {"--panels"}, description = "Interpretation panels", required = false, arity = 1)
@@ -432,7 +515,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of Interpretation IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Interpretation UUIDs up to a maximum of 100", required = false, arity = 1)
@@ -444,7 +527,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analyst-id"}, description = "Analyst ID", required = false, arity = 1)
         public String analystId; 
     
-        @Parameter(names = {"--method-name"}, description = "Interpretation method name", required = false, arity = 1)
+        @Parameter(names = {"--method-name"}, description = "Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String methodName; 
     
         @Parameter(names = {"--panels"}, description = "Interpretation panels", required = false, arity = 1)
@@ -1485,10 +1568,13 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
         public boolean count = false; 
     
+        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
+        public boolean flattenAnnotations = false; 
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of Clinical Analysis IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of Clinical Analysis IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Clinical Analysis UUIDs up to a maximum of 100", required = false, arity = 1)
@@ -1497,7 +1583,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--type"}, description = "Clinical Analysis type", required = false, arity = 1)
         public String type; 
     
-        @Parameter(names = {"--disorder"}, description = "Clinical Analysis disorder", required = false, arity = 1)
+        @Parameter(names = {"--disorder"}, description = "Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String disorder; 
     
         @Parameter(names = {"--files"}, description = "Clinical Analysis files", required = false, arity = 1)
@@ -1560,6 +1646,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
         public String internalStatus; 
     
+        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
+        public String annotation; 
+    
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
         public boolean deleted = false; 
     
@@ -1598,7 +1687,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--include-interpretation"}, description = "Interpretation ID to include the fields related to this interpretation", required = false, arity = 1)
         public String includeInterpretation; 
     
-        @Parameter(names = {"--id"}, description = "List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
@@ -1679,7 +1768,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
         public String ct; 
     
-        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...", required = false, arity = 1)
+        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
         public String xref; 
     
         @Parameter(names = {"--biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
@@ -1817,6 +1906,12 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
+        @Parameter(names = {"--analysts-action"}, description = "Action to be performed if the array of analysts is being updated.", required = false, arity = 1)
+        public String analystsAction = "ADD"; 
+    
+        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated.", required = false, arity = 1)
+        public String annotationSetsAction = "ADD"; 
+    
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     
@@ -1865,8 +1960,50 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--report-date"}, description = "Report date.", required = false, arity = 1)
         public String reportDate;
     
+        @Parameter(names = {"--request-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String requestId;
+    
+        @Parameter(names = {"--request-justification"}, description = "The body web service justification parameter", required = false, arity = 1)
+        public String requestJustification;
+    
+        @Parameter(names = {"--request-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String requestDate;
+    
+        @DynamicParameter(names = {"--request-attributes"}, description = "The body web service attributes parameter. Use: --request-attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> requestAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+        @Parameter(names = {"--responsible-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String responsibleId;
+    
+        @Parameter(names = {"--responsible-name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String responsibleName;
+    
+        @Parameter(names = {"--responsible-email"}, description = "The body web service email parameter", required = false, arity = 1)
+        public String responsibleEmail;
+    
+        @Parameter(names = {"--responsible-organization"}, description = "The body web service organization parameter", required = false, arity = 1)
+        public String responsibleOrganization;
+    
+        @Parameter(names = {"--responsible-department"}, description = "The body web service department parameter", required = false, arity = 1)
+        public String responsibleDepartment;
+    
+        @Parameter(names = {"--responsible-address"}, description = "The body web service address parameter", required = false, arity = 1)
+        public String responsibleAddress;
+    
+        @Parameter(names = {"--responsible-city"}, description = "The body web service city parameter", required = false, arity = 1)
+        public String responsibleCity;
+    
+        @Parameter(names = {"--responsible-postcode"}, description = "The body web service postcode parameter", required = false, arity = 1)
+        public String responsiblePostcode;
+    
         @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN", required = false, arity = 1)
         public String qualityControlSummary;
+    
+        @Parameter(names = {"--quality-control-comments"}, description = "The body web service comments parameter", required = false, arity = 1)
+        public String qualityControlComments;
+    
+        @Parameter(names = {"--quality-control-files"}, description = "The body web service files parameter", required = false, arity = 1)
+        public String qualityControlFiles;
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String creationDate;
@@ -1888,6 +2025,32 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
+    @Parameters(commandNames = {"annotation-sets-annotations-update"}, commandDescription ="Update annotations from an annotationSet")
+    public class UpdateAnnotationSetsAnnotationsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID", required = true, arity = 1)
+        public String clinicalAnalysis; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--annotation-set"}, description = "AnnotationSet ID to be updated.", required = true, arity = 1)
+        public String annotationSet; 
+    
+        @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any.", required = false, arity = 1)
+        public String action = "ADD"; 
+    
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Clinical analysis info")
     public class InfoCommandOptions {
     
@@ -1899,6 +2062,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
+    
+        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
+        public boolean flattenAnnotations = false; 
     
         @Parameter(names = {"--clinical-analysis"}, description = "Comma separated list of clinical analysis IDs or names up to a maximum of 100", required = true, arity = 1)
         public String clinicalAnalysis; 
@@ -2107,6 +2273,65 @@ public class AnalysisClinicalCommandOptions {
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+    }
+
+    @Parameters(commandNames = {"report-update"}, commandDescription ="Update clinical analysis report")
+    public class UpdateReportCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID", required = true, arity = 1)
+        public String clinicalAnalysis; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--supporting-evidences-action"}, description = "Action to be performed if the array of supporting evidences is being updated.", required = false, arity = 1)
+        public String supportingEvidencesAction = "ADD"; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+        @Parameter(names = {"--title"}, description = "Report title.", required = false, arity = 1)
+        public String title;
+    
+        @Parameter(names = {"--overview"}, description = "Report overview.", required = false, arity = 1)
+        public String overview;
+    
+        @Parameter(names = {"--discussion-author"}, description = "The body web service author parameter", required = false, arity = 1)
+        public String discussionAuthor;
+    
+        @Parameter(names = {"--discussion-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String discussionDate;
+    
+        @Parameter(names = {"--discussion-text"}, description = "The body web service text parameter", required = false, arity = 1)
+        public String discussionText;
+    
+        @Parameter(names = {"--logo"}, description = "Report logo.", required = false, arity = 1)
+        public String logo;
+    
+        @Parameter(names = {"--signed-by"}, description = "Indicates who has signed the report.", required = false, arity = 1)
+        public String signedBy;
+    
+        @Parameter(names = {"--signature"}, description = "Report signature.", required = false, arity = 1)
+        public String signature;
+    
+        @Parameter(names = {"--date"}, description = "Report date.", required = false, arity = 1)
+        public String date;
     
     }
 

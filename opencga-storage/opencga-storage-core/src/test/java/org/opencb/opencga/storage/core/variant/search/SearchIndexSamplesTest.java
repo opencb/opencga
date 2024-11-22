@@ -229,7 +229,8 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
         Query query = new Query(SAMPLE.key(), samples);
         int expectedCount = variantStorageEngine.getDBAdaptor().count(query).first().intValue();
-        assertEquals(expectedCount, variantSearchManager.query(collection, new Query(), new QueryOptions()).getNumTotalResults());
+        assertEquals(expectedCount, variantSearchManager.query(collection, variantStorageEngine.parseQuery(new Query(), new QueryOptions()))
+                .getNumTotalResults());
 
 
         SolrVariantDBIterator solrIterator = variantSearchManager.iterator(collection, new Query(), new QueryOptions(QueryOptions.SORT, true));

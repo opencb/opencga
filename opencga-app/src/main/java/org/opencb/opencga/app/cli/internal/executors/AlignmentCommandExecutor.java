@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentCoverageAnalysis;
+import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
@@ -119,9 +120,12 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void indexRun() throws Exception {
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory, alignmentCommandOptions.internalJobOptions.jobId);
+        ObjectMap params = new AlignmentIndexParams(
+                cliOptions.fileId,
+                cliOptions.overwrite
+        ).toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        alignmentManager.index(cliOptions.study, cliOptions.file, cliOptions.overwrite, cliOptions.outdir, cliOptions.commonOptions.token);
+        toolRunner.execute(AlignmentIndexOperation.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
 
@@ -234,9 +238,9 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
         ObjectMap params = new CoverageIndexParams(
-                cliOptions.file,
-                cliOptions.windowSize,
-                cliOptions.overwrite
+                cliOptions.bamFileId,
+                cliOptions.baiFileId,
+                cliOptions.windowSize
         ).toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
         toolRunner.execute(AlignmentCoverageAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);

@@ -27,7 +27,7 @@ jobs:
     outputs:
       profiles: ${{ steps.getter.outputs.profiles }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '10'
       - name: Building string profiles to run
@@ -51,6 +51,5 @@ jobs:
     uses: ./.github/workflows/test-analysis.yml
     with:
       test_profile: ${{ needs.get_profiles.outputs.profiles }}
-      report_context: development
       mvn_opts: ${{ inputs.mvn_opts }}
     secrets: inherit
