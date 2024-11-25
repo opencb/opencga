@@ -5,10 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
-import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.util.ReflectionUtils;
@@ -365,14 +362,17 @@ public class MapReduceOutputFile {
 
             try (OutputStream os = getOutputStreamPlain(localOutput.getName(), localOutput.getFileSystem(getConf()).create(localOutput))) {
                 for (int i = 0; i < paths.size(); i++) {
-                    Path path = paths.get(i);
+                    Path partFile = paths.get(i);
+                    long partFileSize = fileSystem.getFileStatus(partFile).getLen();
                     LOGGER.info("[{}] Concat {} file : '{}' ({}) ",
                             i,
-                            getCompression(path.getName()),
-                            path.toUri(),
-                            humanReadableByteCount(fileSystem.getFileStatus(path).getLen(), false));
-                    try (InputStream isAux = getInputStream(path.getName(), fileSystem.open(path))) {
-                        InputStream is = isAux;
+                            getCompression(partFile.getName()),
+                            partFile.toUri(),
+                            humanReadableByteCount(partFileSize, false));
+                    InputStream is = null;
+                    Throwable e = null;
+                    try {
+                        is = getInputStream(partFile.getName(), fileSystem.open(partFile));
                         // Remove extra headers from all files but the first
                         if (removeExtraHeaders && i != 0) {
                             BufferedReader br = new BufferedReader(new InputStreamReader(is));
@@ -386,7 +386,28 @@ public class MapReduceOutputFile {
                             is = new ReaderInputStream(br, Charset.defaultCharset());
                         }
 
-                        IOUtils.copyBytes(is, os, getConf(), false);
+                        if (partFileSize > 50 * 1024 * 1024) {
+                            org.opencb.opencga.core.common.IOUtils.copyBytesParallel(is, os, getConf().getInt(
+                                    CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_KEY,
+                                    CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_DEFAULT));
+                        } else {
+                            org.apache.hadoop.io.IOUtils.copyBytes(is, os, getConf(), false);
+                        }
+                    } catch (Throwable throwable) {
+                        e = throwable;
+                        throw throwable;
+                    } finally {
+                        if (is != null) {
+                            try {
+                                is.close();
+                            } catch (IOException ex) {
+                                if (e == null) {
+                                    throw ex;
+                                } else {
+                                    e.addSuppressed(ex);
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -16,12 +16,21 @@
 
 package org.opencb.opencga.core.common;
 
+import org.opencb.commons.run.ParallelTaskRunner;
+
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -406,5 +415,111 @@ public class IOUtils {
             value = value.substring(0, value.length() - 1);
         }
         return (long) (Double.parseDouble(value) * Math.pow(unit, exp));
+    }
+
+    public static void copyBytesParallel(InputStream is, OutputStream os) throws IOException {
+        copyBytesParallel(is, os, 4096);
+    }
+    public static void copyBytesParallel(InputStream is, OutputStream os, int bufferSize) throws IOException {
+        List<ByteBuffer> buffersPool = Collections.synchronizedList(new LinkedList<>());
+        ArrayBlockingQueue<ByteBuffer> buffersQueue = new ArrayBlockingQueue<>(5);
+        AtomicReference<Exception> exception = new AtomicReference<>();
+
+        Thread readerThread = new Thread(() -> {
+            try {
+                while (true) {
+                    // Take a buffer from the pool or create a new one
+                    ByteBuffer buf = buffersPool.isEmpty() ? ByteBuffer.allocate(bufferSize) : buffersPool.remove(0);
+                    int bytesRead = is.read(buf.array());
+                    if (bytesRead == -1) {
+                        buffersQueue.put(ByteBuffer.allocate(0)); // Signal end of stream
+                        break;
+                    }
+                    buf.limit(bytesRead);
+                    buffersQueue.put(buf);
+                }
+            } catch (Exception e) {
+                if (!exception.compareAndSet(null, e)) {
+                    exception.get().addSuppressed(e);
+                }
+            }
+        });
+
+        Thread writerThread = new Thread(() -> {
+            try {
+                while (true) {
+                    ByteBuffer buf = buffersQueue.take();
+                    if (buf.limit() == 0) {
+                        break; // End of stream signal
+                    }
+                    os.write(buf.array(), 0, buf.limit());
+                    buf.clear();
+                    // Return the buffer to the pool
+                    buffersPool.add(buf);
+                }
+            } catch (Exception e) {
+                if (!exception.compareAndSet(null, e)) {
+                    exception.get().addSuppressed(e);
+                }
+            }
+        });
+
+        readerThread.start();
+        writerThread.start();
+
+        try {
+            readerThread.join();
+            writerThread.join();
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        }
+
+        if (exception.get() != null) {
+            throw new IOException(exception.get());
+        }
+    }
+
+    public static void copyBytesParallel2(InputStream is, OutputStream os, int bufferSize) throws IOException {
+
+        List<ByteBuffer> buffersPool = Collections.synchronizedList(new LinkedList<>());
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setNumTasks(1)
+                .setCapacity(5)
+                .setSorted(true)
+                .build();
+        ParallelTaskRunner<ByteBuffer, ByteBuffer> runner = new ParallelTaskRunner<>(batchSize -> {
+            try {
+                ByteBuffer buf = buffersPool.isEmpty() ? ByteBuffer.allocate(bufferSize) : buffersPool.remove(0);
+                int bytesRead = is.read(buf.array());
+                if (bytesRead > 0) {
+                    if (bytesRead != buf.array().length) {
+                        buf.limit(bytesRead);
+                        buf.rewind();
+                    }
+                    return Collections.singletonList(buf);
+                } else {
+                    return Collections.emptyList();
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }, t -> t, batch -> {
+            try {
+                for (ByteBuffer buf : batch) {
+                    os.write(buf.array(), 0, buf.limit());
+                    // Return the buffer to the pool
+                    buf.clear();
+                    buffersPool.add(buf);
+                }
+            } catch (IOException e1) {
+                throw new UncheckedIOException(e1);
+            }
+            return true;
+        }, config);
+        try {
+            runner.run();
+        } catch (ExecutionException e) {
+            throw new IOException(e);
+        }
     }
 }
