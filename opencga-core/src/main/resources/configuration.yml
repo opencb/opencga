@@ -9,7 +9,7 @@ jobDir: ${OPENCGA.USER.WORKSPACE}/jobs
 # Maximum number of login attempts before banning a user account
 account:
   maxLoginAttempts: ${OPENCGA.ACCOUNT.MAX_LOGIN_ATTEMPTS}
-  passwordExpirationDays: 0
+  passwordExpirationDays: 90
 
 panel:
   host: "http://resources.opencb.org/opencb/opencga/disease-panels"
@@ -170,7 +170,6 @@ analysis:
       k8s.nodeSelector:
         agentpool: jobs
         kubernetes.io/os: linux
-        kubernetes.io/role: agent
       # FOR ACI:
       # k8s.requests:
       #   cpu: 2
