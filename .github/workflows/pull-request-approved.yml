@@ -27,7 +27,8 @@ jobs:
         with:
           repository: zetta-genomics/opencga-enterprise
           token: ${{ secrets.GH_PRIVATE_TOKEN }}
-          fetch-depth: "10"
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: "0" # Perform a full clone, not a shallow one to build.sh can get the branch name
       - id: get_opencga_branch
         name: Get current branch for opencga from 'pom.xml' property
         run: |
@@ -41,7 +42,7 @@ jobs:
           repository: opencb/opencga
           ref: ${{ steps.get_opencga_branch.outputs.opencga_branch }}
           path: opencga-home
-          fetch-depth: '10'
+          fetch-depth: "0" # Perform a full clone, not a shallow one to build.sh can get the branch name
       - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
@@ -77,4 +78,4 @@ jobs:
           SSH_PORT: ${{ env.SSH_PORT }}
       - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, cellbase, opencga and opencga-enterprise
         run: |
-         ./build.sh -t -l runShortTests -d -b -s -T ${{ github.event.pull_request.head.ref }} -c localhost:27018 -H hdp3.1
+          ./build.sh -t -l runShortTests -d -b -s -T ${{ github.event.pull_request.head.ref }} -c localhost:27018 -H hdp3.1
