@@ -1901,7 +1901,8 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             ObjectMap valueAsMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(index));
             ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), valueAsMap);
 
-            OpenCGAResult<?> update = getClinicalAnalysisDBAdaptor(organizationId).update(clinical.getUid(), params, QueryOptions.empty());
+            OpenCGAResult<?> update = getClinicalAnalysisDBAdaptor(organizationId).update(clinical.getUid(), params,
+                    Collections.emptyList(), Collections.emptyList(), QueryOptions.empty());
             auditManager.audit(organizationId, userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.CLINICAL_ANALYSIS, clinical.getId(),
                     clinical.getUuid(), studyId, studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return new OpenCGAResult<>(update.getTime(), update.getEvents(), 1, Collections.emptyList(), 1);
