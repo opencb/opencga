@@ -187,6 +187,7 @@ variant:
         # DOCKER_HOST environment variable to be used by the docker executor inside the MapReduce job
         storage.hadoop.mr.stream.docker.host: ""
 
+        mapreduce.task.timeout: 1800000
         mapreduce.map.memory.mb: 2048
         DeleteHBaseColumnDriver:
           storage.hadoop.write.mappers.limit.factor: 4
