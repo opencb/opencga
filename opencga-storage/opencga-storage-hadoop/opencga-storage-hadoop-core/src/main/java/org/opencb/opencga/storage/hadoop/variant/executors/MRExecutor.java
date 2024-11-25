@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.Tool;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -46,6 +47,8 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
 public abstract class MRExecutor {
 
     public static final String HADOOP_LIB_VERSION_PROPERTIES = "org/opencb/opencga/storage/hadoop/lib/version.properties";
+    protected String dbName;
+    protected Configuration conf;
     private ObjectMap options;
     private List<String> env;
     private static Logger logger = LoggerFactory.getLogger(MRExecutor.class);
@@ -74,8 +77,10 @@ public abstract class MRExecutor {
         }
     }
 
-    public MRExecutor init(ObjectMap options) {
+    public MRExecutor init(String dbName, Configuration conf, ObjectMap options) {
+        this.dbName = dbName;
         this.options = options;
+        this.conf = conf;
         env = options.getAsStringList(MR_HADOOP_ENV.key());
         return this;
     }

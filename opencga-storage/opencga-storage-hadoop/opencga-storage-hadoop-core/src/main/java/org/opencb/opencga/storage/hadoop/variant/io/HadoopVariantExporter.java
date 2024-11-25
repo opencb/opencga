@@ -75,7 +75,7 @@ public class HadoopVariantExporter extends VariantExporter {
     public List<URI> export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile,
                             ParsedVariantQuery variantQuery)
             throws IOException, StorageEngineException {
-        VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
+        VariantHadoopDBAdaptor dbAdaptor = engine.getDBAdaptor();
         IOConnector ioConnector = ioConnectorProvider.get(outputFileUri);
 
         // Use pre-processed query instead of input query
@@ -199,7 +199,8 @@ public class HadoopVariantExporter extends VariantExporter {
                 || (variantsFile != null)
                 || smallQuery
                 || queryOptions.getBoolean("skipMapReduce", false)
-                || (!(ioConnector instanceof HDFSIOConnector) && !(ioConnector instanceof LocalIOConnector))) {
+                // Mapreduce can only use HDFS or Local IOConnectors. When using other IOConnectors, skip mapreduce
+                || !(ioConnector instanceof HDFSIOConnector || ioConnector instanceof LocalIOConnector)) {
             return super.export(outputFileUri, outputFormat, variantsFile, variantQuery);
         } else {
             outputFileUri = VariantWriterFactory.checkOutput(outputFileUri, outputFormat);

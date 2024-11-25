@@ -252,7 +252,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         }
         job.getConfiguration().setInt(STUDY_ID, getStudyId());
         job.getConfiguration().set(TRIOS, trios);
-        if (outdir != null) {
+        if (output != null) {
             job.getConfiguration().setBoolean(WRITE_TO_DISK, true);
         }
         return job;

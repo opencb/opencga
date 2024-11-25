@@ -222,7 +222,9 @@ public class VariantMapReduceUtil {
         job.setInputFormatClass(HBaseVariantTableInputFormat.class);
         job.getConfiguration().setBoolean(HBaseVariantTableInputFormat.MULTI_SCANS, scans.size() > 1);
         job.getConfiguration().setBoolean(HBaseVariantTableInputFormat.USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, useSampleIndex);
-        job.getConfiguration().set(HBaseVariantTableInputFormat.SAMPLE_INDEX_TABLE, sampleIndexTable);
+        if (sampleIndexTable != null) {
+            job.getConfiguration().set(HBaseVariantTableInputFormat.SAMPLE_INDEX_TABLE, sampleIndexTable);
+        }
     }
 
     public static void initVariantMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor,

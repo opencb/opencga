@@ -1,9 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.opencb.commons.datastore.core.Query;
@@ -11,6 +10,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
 import org.slf4j.Logger;
@@ -28,10 +28,8 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.
 public abstract class VariantTableAggregationDriver extends AbstractVariantsTableDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    public static final String OUTPUT = "output";
-
-    protected Path outdir;
-    protected Path localOutput;
+    public static final String OUTPUT = OUTPUT_PARAM;
+    protected MapReduceOutputFile output;
 
 
     @Override
@@ -51,16 +49,7 @@ public abstract class VariantTableAggregationDriver extends AbstractVariantsTabl
             throw new IllegalArgumentException("Missing study");
         }
 
-        String outdirStr = getParam(OUTPUT);
-        if (StringUtils.isNotEmpty(outdirStr)) {
-            outdir = new Path(outdirStr);
-
-            if (isLocal(outdir)) {
-                localOutput = getLocalOutput(outdir, this::generateOutputFileName);
-                outdir = getTempOutdir("opencga_sample_variant_stats", localOutput.getName());
-                outdir.getFileSystem(getConf()).deleteOnExit(outdir);
-            }
-        }
+        output = initMapReduceOutputFile(null, true);
     }
 
 
@@ -118,17 +107,11 @@ public abstract class VariantTableAggregationDriver extends AbstractVariantsTabl
         job.setOutputKeyClass(getOutputKeyClass());
         job.setOutputValueClass(getOutputValueClass());
 
-        if (outdir == null) {
+        if (output == null) {
             job.setOutputFormatClass(NullOutputFormat.class);
         } else {
             job.setOutputFormatClass(TextOutputFormat.class);
-            TextOutputFormat.setOutputPath(job, outdir);
-            if (localOutput == null) {
-                LOGGER.info("Output directory : " + outdir);
-            } else {
-                LOGGER.info("Temporary output directory : " + outdir);
-                LOGGER.info("Local output file : " + localOutput);
-            }
+            FileOutputFormat.setOutputPath(job, output.getOutdir()); // set Path
         }
 
         int numReduceTasks = getNumReduceTasks();
@@ -142,13 +125,8 @@ public abstract class VariantTableAggregationDriver extends AbstractVariantsTabl
     @Override
     protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         super.postExecution(succeed);
-        if (succeed) {
-            if (localOutput != null) {
-                concatMrOutputToLocal(outdir, localOutput, isOutputWithHeaders(), null);
-            }
-        }
-        if (localOutput != null) {
-            deleteTemporaryFile(outdir);
+        if (output != null) {
+            output.postExecute(succeed);
         }
     }
 

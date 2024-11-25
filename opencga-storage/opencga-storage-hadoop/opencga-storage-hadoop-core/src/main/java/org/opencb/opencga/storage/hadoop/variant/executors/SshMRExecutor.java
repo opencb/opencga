@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.RunJar;
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -8,10 +9,13 @@ import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
+import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,17 +39,17 @@ public class SshMRExecutor extends MRExecutor {
     // env-var expected by "sshpass -e"
     private static final String SSHPASS_ENV = "SSHPASS";
     public static final String PID = "PID";
-    public static final String EXTRA_OUTPUT_PREFIX = "EXTRA_OUTPUT_";
     private static Logger logger = LoggerFactory.getLogger(SshMRExecutor.class);
 
     @Override
-    public SshMRExecutor init(ObjectMap options) {
-        super.init(options);
+    public SshMRExecutor init(String dbName, Configuration conf, ObjectMap options) {
+        super.init(dbName, conf, options);
         return this;
     }
 
     @Override
     public Result run(String executable, String[] args) throws StorageEngineException {
+        MapReduceOutputFile mrOutput = initMrOutput(executable, args);
         String commandLine = buildCommand(executable, args);
         List<String> env = buildEnv();
 
@@ -105,15 +109,77 @@ public class SshMRExecutor extends MRExecutor {
         int exitValue = command.getExitValue();
         Runtime.getRuntime().removeShutdownHook(hook);
         ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
-        if (exitValue == 0) {
-            copyOutputFiles(args, env);
-            for (String key : result.keySet()) {
-                if (key.startsWith(EXTRA_OUTPUT_PREFIX)) {
-                    copyOutputFiles(result.getString(key), env);
-                }
+        boolean succeed = exitValue == 0;
+        if (mrOutput != null) {
+            try {
+                mrOutput.postExecute(result, succeed);
+            } catch (IOException e) {
+                throw new StorageEngineException(e.getMessage(), e);
             }
         }
+        try {
+            if (succeed) {
+                if (mrOutput != null) {
+                    mrOutput.postExecute(result, succeed);
+                } else {
+                    copyOutputFiles(args, env);
+                }
+                // Copy extra output files
+                for (String key : result.keySet()) {
+                    if (key.startsWith(MapReduceOutputFile.EXTRA_OUTPUT_PREFIX)) {
+                        copyOutputFiles(result.getString(key), env);
+                    }
+                }
+            } else {
+                if (mrOutput != null) {
+                    mrOutput.postExecute(result, succeed);
+                } // else // should delete remote output files?
+            }
+        } catch (IOException e) {
+            throw new StorageEngineException(e.getMessage(), e);
+        }
         return new Result(exitValue, result);
+    }
+
+    /**
+     * If the MapReduce to be executed is writing to a local filesystem, change the output to a temporary HDFS path.
+     * The output will be copied to the local filesystem after the execution.
+     * <p>
+     *     This method will look for the ${@link AbstractHBaseDriver#OUTPUT_PARAM} argument in the args array.
+     *
+     * @param executable    Executable
+     * @param args          Arguments passed to the executable. Might be modified
+     * @return              MapReduceOutputFile if any
+     * @throws StorageEngineException if there is an issue creating the temporary output path
+     */
+    private MapReduceOutputFile initMrOutput(String executable, String[] args) throws StorageEngineException {
+        MapReduceOutputFile mrOutput = null;
+        List<String> argsList = Arrays.asList(args);
+        int outputIdx = argsList.indexOf(AbstractHBaseDriver.OUTPUT_PARAM);
+        if (outputIdx > 0 && argsList.size() > outputIdx + 1) {
+            String output = argsList.get(outputIdx + 1);
+            URI outputUri = UriUtils.createUriSafe(output);
+            if (MapReduceOutputFile.isLocal(outputUri)) {
+                try {
+                    int i = executable.lastIndexOf('.');
+                    String tempFilePrefix;
+                    if (i > 0) {
+                        String className = executable.substring(i);
+                        tempFilePrefix = dbName + "_" + className;
+                    } else {
+                        tempFilePrefix = dbName;
+                    }
+                    mrOutput = new MapReduceOutputFile(outputUri.toString(), null,
+                            tempFilePrefix, true, conf);
+                } catch (IOException e) {
+                    throw new StorageEngineException(e.getMessage(), e);
+                }
+                logger.info("Change output from file:// to hdfs://. Using MapReduceOutputFile: " + mrOutput.getOutdir());
+                // Replace output path with the temporary path
+                argsList.set(outputIdx + 1, mrOutput.getOutdir().toString());
+            }
+        }
+        return mrOutput;
     }
 
     /**
@@ -129,7 +195,7 @@ public class SshMRExecutor extends MRExecutor {
      */
     private Path copyOutputFiles(String[] args, List<String> env) throws StorageEngineException {
         List<String> argsList = Arrays.asList(args);
-        int outputIdx = argsList.indexOf("output");
+        int outputIdx = argsList.indexOf(AbstractHBaseDriver.OUTPUT_PARAM);
         if (outputIdx > 0 && argsList.size() > outputIdx + 1) {
             return copyOutputFiles(argsList.get(outputIdx + 1), env);
         }
@@ -138,7 +204,12 @@ public class SshMRExecutor extends MRExecutor {
     }
 
     private Path copyOutputFiles(String output, List<String> env) throws StorageEngineException {
-        String targetOutput = UriUtils.createUriSafe(output).getPath();
+        URI targetOutputUri = UriUtils.createUriSafe(output);
+        if (MapReduceOutputFile.isLocal(targetOutputUri)) {
+            logger.info("Output is not a file:// URI. Skipping copy file {}", targetOutputUri);
+            return null;
+        }
+        String targetOutput = targetOutputUri.getPath();
         if (StringUtils.isNotEmpty(targetOutput)) {
             String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
             String srcOutput;

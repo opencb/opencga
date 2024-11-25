@@ -63,9 +63,6 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         String samples = getParam(SAMPLES);
         String cohort = getParam(COHORT);
 
-        if (outdir == null) {
-            throw new IllegalArgumentException("Expected param " + OUTPUT);
-        }
         if (samples == null && cohort == null) {
             throw new IllegalArgumentException("Expected param " + SAMPLES + " or " + COHORT);
         }

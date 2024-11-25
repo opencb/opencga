@@ -142,7 +142,9 @@ public class VariantExporterDriver extends VariantDriver {
                 }
                 if (SnappyCodec.isNativeCodeLoaded()) {
                     FileOutputFormat.setCompressOutput(job, true);
-                    FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+                    // FIXME: SnappyCodec might not be available in client side
+//                      FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+                    FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
                 } else {
                     FileOutputFormat.setCompressOutput(job, true);
                     FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);

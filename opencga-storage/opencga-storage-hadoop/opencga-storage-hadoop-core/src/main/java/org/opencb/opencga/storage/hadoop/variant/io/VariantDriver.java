@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
@@ -38,8 +39,6 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.
  */
 public abstract class VariantDriver extends AbstractVariantsTableDriver {
 
-    public static final String OUTPUT_PARAM = "output";
-    public static final String CONCAT_OUTPUT_PARAM = "concat-output";
     protected MapReduceOutputFile output;
     private final Query query = new Query();
     private final QueryOptions options = new QueryOptions();
@@ -52,7 +51,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
         super.parseAndValidateParameters();
 
 //        useReduceStep = Boolean.valueOf(getParam(CONCAT_OUTPUT_PARAM));
-        output = new MapReduceOutputFile(getTableNameGenerator().getDbName() + "_" + getClass().getSimpleName());
+        output = initMapReduceOutputFile();
 
         getQueryFromConfig(query, getConf());
         getQueryOptionsFromConfig(options, getConf());

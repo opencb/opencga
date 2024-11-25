@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillMissingFromArchiveTask;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.FILE_ID;
@@ -265,6 +267,27 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver {
 
     protected String getArchiveTable() {
         return getConf().get(ArchiveTableHelper.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
+    }
+
+    protected MapReduceOutputFile initMapReduceOutputFile() throws IOException {
+        return initMapReduceOutputFile(null);
+    }
+
+    protected MapReduceOutputFile initMapReduceOutputFile(Supplier<String> nameGenerator) throws IOException {
+        return initMapReduceOutputFile(nameGenerator, false);
+    }
+
+    protected MapReduceOutputFile initMapReduceOutputFile(Supplier<String> nameGenerator, boolean optional) throws IOException {
+        String output = getParam(OUTPUT_PARAM);
+        if (StringUtils.isEmpty(output)) {
+            if (optional) {
+                return null;
+            } else {
+                throw new IllegalArgumentException("Expected param " + OUTPUT_PARAM);
+            }
+        }
+        return new MapReduceOutputFile(output, nameGenerator,
+                getTableNameGenerator().getDbName() + "_" + getClass().getSimpleName(), getConf());
     }
 
     protected HBaseVariantTableNameGenerator getTableNameGenerator() {
