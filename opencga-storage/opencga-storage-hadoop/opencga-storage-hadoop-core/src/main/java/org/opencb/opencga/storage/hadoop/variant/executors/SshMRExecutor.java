@@ -165,7 +165,7 @@ public class SshMRExecutor extends MRExecutor {
                     String tempFilePrefix;
                     if (i > 0) {
                         String className = executable.substring(i);
-                        tempFilePrefix = dbName + "_" + className;
+                        tempFilePrefix = dbName + className;
                     } else {
                         tempFilePrefix = dbName;
                     }
