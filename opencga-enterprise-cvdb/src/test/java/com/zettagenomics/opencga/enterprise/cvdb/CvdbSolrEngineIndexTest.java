@@ -20,6 +20,7 @@ import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
+import org.opencb.opencga.core.models.clinical.CvdbIndexStatus;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
@@ -103,6 +104,7 @@ public class CvdbSolrEngineIndexTest {
     @Test
     public void testIndexProject() throws CatalogException, IOException, CvdbException, SolrServerException {
         TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
+        TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 
         // CVDB index from catalog project
         cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
@@ -123,11 +125,14 @@ public class CvdbSolrEngineIndexTest {
             System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
             System.out.println();
         }
+
+        TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.READY, study, catalogManager, userToken);
     }
 
     @Test
     public void testIndexStudy() throws CatalogException, IOException, CvdbException, SolrServerException {
         TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
+        TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 
         // CVDB index from catalog study
         cvdbEngine.indexStudy(study.getFqn(), catalogManager, true, userToken);
@@ -148,11 +153,14 @@ public class CvdbSolrEngineIndexTest {
             System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
             System.out.println();
         }
+
+        TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.READY, study, catalogManager, userToken);
     }
 
     @Test
     public void testIndexClinicalAnalyses() throws CatalogException, IOException, CvdbException, SolrServerException {
         TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
+        TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 
         OpenCGAResult<ClinicalAnalysis> caResults = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),
                 QueryOptions.empty(), userToken);
@@ -187,11 +195,14 @@ public class CvdbSolrEngineIndexTest {
             System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
             System.out.println();
         }
+
+        TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.READY, study, catalogManager, userToken);
     }
 
     @Test
     public void testOverwriteTrue() throws CatalogException, IOException, CvdbException, SolrServerException {
         TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
+        TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 
         // CVDB index from catalog project
         cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
@@ -226,11 +237,14 @@ public class CvdbSolrEngineIndexTest {
         assertEquals(1, result.getNumResults());
         ClinicalAnalysis updatedClinicalAnalysis = result.first();
         assertEquals(newDescription, updatedClinicalAnalysis.getDescription());
+
+        TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.READY, study, catalogManager, userToken);
     }
 
     @Test
     public void testOverwriteFalse() throws CatalogException, IOException, CvdbException, SolrServerException {
         TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
+        TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 
         // CVDB index from catalog project
         cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
@@ -265,6 +279,8 @@ public class CvdbSolrEngineIndexTest {
         assertEquals(1, result.getNumResults());
         ClinicalAnalysis updatedClinicalAnalysis = result.first();
         assertTrue(StringUtils.isEmpty(updatedClinicalAnalysis.getDescription()));
+
+        TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.READY, study, catalogManager, userToken);
     }
 }
 

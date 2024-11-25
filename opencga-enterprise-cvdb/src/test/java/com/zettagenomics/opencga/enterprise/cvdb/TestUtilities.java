@@ -148,4 +148,12 @@ public class TestUtilities {
                     "user", new ClinicalAnalysisAclUpdateParams(null, "VIEW"), ParamUtils.AclAction.SET, false, adminToken);
         }
     }
+
+    public static void checkClinicalAnalysisIndexStatus(String indexStatus, Study study, CatalogManager catalogManager, String userToken) throws CatalogException {
+        OpenCGAResult<ClinicalAnalysis> caResult = catalogManager.getClinicalAnalysisManager().search(study.getId(), new Query(), QueryOptions.empty(), userToken);
+        for (ClinicalAnalysis ca : caResult.getResults()) {
+            assertEquals(indexStatus, ca.getInternal().getCvdbIndex().getId());
+            System.out.println("ca.getInternal().getCvdbIndex().getId() = " + ca.getInternal().getCvdbIndex().getId());
+        }
+    }
 }
