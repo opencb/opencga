@@ -51,6 +51,10 @@ public class VariantExporterDriver extends VariantDriver {
         super.parseAndValidateParameters();
 
         outputFormat = VariantWriterFactory.VariantOutputFormat.valueOf(getParam(OUTPUT_FORMAT_PARAM, "avro").toUpperCase());
+        if (outputFormat.isBinary()) {
+            // Binary outputs should be concatenated in a reduce step
+            useReduceStep = true;
+        }
     }
 
     @Override

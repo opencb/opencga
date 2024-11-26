@@ -50,7 +50,6 @@ public class SshMRExecutor extends MRExecutor {
     @Override
     public Result run(String executable, String[] args) throws StorageEngineException {
         MapReduceOutputFile mrOutput = initMrOutput(executable, args);
-        String commandLine = buildCommand(executable, args);
         List<String> env = buildEnv();
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -103,13 +102,10 @@ public class SshMRExecutor extends MRExecutor {
             }
         });
         Runtime.getRuntime().addShutdownHook(hook);
-        Command command = new Command(commandLine, env);
-        command.setErrorOutputStream(outputStream);
-        command.run();
-        int exitValue = command.getExitValue();
+        int exitValue = runRemote(executable, args, env, outputStream);
+        boolean succeed = exitValue == 0;
         Runtime.getRuntime().removeShutdownHook(hook);
         ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
-        boolean succeed = exitValue == 0;
         try {
             if (succeed) {
                 if (mrOutput != null) {
@@ -132,6 +128,14 @@ public class SshMRExecutor extends MRExecutor {
             throw new StorageEngineException(e.getMessage(), e);
         }
         return new Result(exitValue, result);
+    }
+
+    protected int runRemote(String executable, String[] args, List<String> env, ByteArrayOutputStream outputStream) {
+        String commandLine = buildCommand(executable, args);
+        Command command = new Command(commandLine, env);
+        command.setErrorOutputStream(outputStream);
+        command.run();
+        return command.getExitValue();
     }
 
     /**
@@ -198,7 +202,7 @@ public class SshMRExecutor extends MRExecutor {
 
     private Path copyOutputFiles(String output, List<String> env) throws StorageEngineException {
         URI targetOutputUri = UriUtils.createUriSafe(output);
-        if (MapReduceOutputFile.isLocal(targetOutputUri)) {
+        if (!MapReduceOutputFile.isLocal(targetOutputUri)) {
             logger.info("Output is not a file:// URI. Skipping copy file {}", targetOutputUri);
             return null;
         }

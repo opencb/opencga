@@ -3,6 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_EXECUTOR;
 
@@ -12,6 +14,8 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public final class MRExecutorFactory {
+
+    private static Logger logger = LoggerFactory.getLogger(SshMRExecutor.class);
 
     private MRExecutorFactory() {
     }
@@ -28,6 +32,7 @@ public final class MRExecutorFactory {
                 break;
             default:
                 try {
+                    logger.info("Creating new instance of MRExecutor '{}'", executor);
                     Class<? extends MRExecutor> aClass;
                     aClass = Class.forName(executor).asSubclass(MRExecutor.class);
                     mrExecutor = aClass.newInstance();

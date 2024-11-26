@@ -90,14 +90,17 @@ import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.executors.SshMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -394,13 +397,13 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
 
         engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
-        engine.mrExecutor = new TestMRExecutor(configuration.get());
+        engine.mrExecutor = null;
         engine.conf = conf;
         return engine;
     }
 
-    default TestMRExecutor getMrExecutor() {
-        return new TestMRExecutor(configuration.get());
+    default MRExecutor getMrExecutor() throws StorageEngineException {
+        return HadoopVariantStorageTest.manager.get().getMRExecutor();
     }
 
     static StorageConfiguration getStorageConfiguration(Configuration conf) throws IOException {
@@ -416,7 +419,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         StorageEngineConfiguration variantConfiguration = storageConfiguration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
         ObjectMap options = variantConfiguration.getOptions();
 
-        options.put(HadoopVariantStorageOptions.MR_EXECUTOR.key(), TestMRExecutor.class.getName());
+        options.put(HadoopVariantStorageOptions.MR_JAR_WITH_DEPENDENCIES.key(), "dummy-test-jar-with-depepdencies.jar");
+        options.put(HadoopVariantStorageOptions.MR_EXECUTOR.key(), TestSshMrExecutor.class.getName());
         TestMRExecutor.setStaticConfiguration(conf);
 
         options.put(HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(), false);
@@ -515,6 +519,29 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
             numRecords += fileMetadata.getStats().getTypeCount().getOrDefault(variantType.name(), 0L).intValue();
         }
         return numRecords;
+    }
+
+    class TestSshMrExecutor extends SshMRExecutor {
+        private final Configuration configuration;
+
+        public TestSshMrExecutor() {
+            this.configuration = new Configuration(TestMRExecutor.staticConfiguration);
+        }
+
+        @Override
+        protected int runRemote(String executable, String[] args, List<String> env, ByteArrayOutputStream outputStream) {
+            PrintStream out = System.out;
+            try {
+                return new TestMRExecutor(conf).run(executable, args).getExitValue();
+            } finally {
+                System.setOut(out);
+            }
+        }
+
+        @Override
+        protected List<String> buildEnv() {
+            return new LinkedList<>();
+        }
     }
 
     class TestMRExecutor extends MRExecutor {

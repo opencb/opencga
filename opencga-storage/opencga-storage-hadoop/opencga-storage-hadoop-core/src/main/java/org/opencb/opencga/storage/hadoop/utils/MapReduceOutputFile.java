@@ -133,7 +133,7 @@ public class MapReduceOutputFile {
         if (StringUtils.isEmpty(scheme)) {
             scheme = "file";
         }
-        return StringUtils.isEmpty(scheme) || "file".equals(scheme);
+        return "file".equals(scheme);
     }
 
     public static boolean isHdfs(Path dir, Configuration conf) {
