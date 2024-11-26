@@ -110,13 +110,6 @@ public class SshMRExecutor extends MRExecutor {
         Runtime.getRuntime().removeShutdownHook(hook);
         ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
         boolean succeed = exitValue == 0;
-        if (mrOutput != null) {
-            try {
-                mrOutput.postExecute(result, succeed);
-            } catch (IOException e) {
-                throw new StorageEngineException(e.getMessage(), e);
-            }
-        }
         try {
             if (succeed) {
                 if (mrOutput != null) {
