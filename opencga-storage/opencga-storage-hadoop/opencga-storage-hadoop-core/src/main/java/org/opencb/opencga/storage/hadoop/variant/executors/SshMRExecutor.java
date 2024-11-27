@@ -157,6 +157,8 @@ public class SshMRExecutor extends MRExecutor {
             String output = argsList.get(outputIdx + 1);
             URI outputUri = UriUtils.createUriSafe(output);
             if (MapReduceOutputFile.isLocal(outputUri)) {
+                logger.info("This MapReduce will produce some output. Change output location from file:// to a temporary hdfs:// file"
+                        + " so it can be copied to the local filesystem after the execution");
                 try {
                     int i = executable.lastIndexOf('.');
                     String tempFilePrefix;
@@ -171,7 +173,6 @@ public class SshMRExecutor extends MRExecutor {
                 } catch (IOException e) {
                     throw new StorageEngineException(e.getMessage(), e);
                 }
-                logger.info("Change output from file:// to hdfs://. Using MapReduceOutputFile: " + mrOutput.getOutdir());
                 // Replace output path with the temporary path
                 argsList.set(outputIdx + 1, mrOutput.getOutdir().toString());
             }
