@@ -87,11 +87,13 @@ public class VariantWalkerTool extends OpenCgaTool {
         });
         step("move-files", () -> {
             // Move files to final directory
-            IOManager ioManager = catalogManager.getIoManagerFactory().get(uris.get(0));
-            for (URI uri : uris) {
-                String fileName = UriUtils.fileName(uri);
-                logger.info("Moving file -- " + fileName);
-                ioManager.move(uri, getOutDir().resolve(fileName).toUri());
+            if (!uris.isEmpty()) {
+                IOManager ioManager = catalogManager.getIoManagerFactory().get(uris.get(0));
+                for (URI uri : uris) {
+                    String fileName = UriUtils.fileName(uri);
+                    logger.info("Moving file -- " + fileName);
+                    ioManager.move(uri, getOutDir().resolve(fileName).toUri());
+                }
             }
         });
     }

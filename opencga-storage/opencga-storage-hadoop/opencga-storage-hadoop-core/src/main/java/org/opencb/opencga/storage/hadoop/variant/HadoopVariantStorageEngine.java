@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.io.managers.IOConnector;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -342,7 +343,24 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                         .append(StreamVariantDriver.INPUT_FORMAT_PARAM, format.toString())
                         .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)
         ), "Walk data");
-        return Arrays.asList(outputFile, UriUtils.createUriSafe(outputFile.toString() + StreamVariantDriver.STDERR_TXT_GZ));
+        List<URI> uris = new ArrayList<>();
+        URI stderrFile = UriUtils.createUriSafe(outputFile.toString() + StreamVariantDriver.STDERR_TXT_GZ);
+        try {
+            IOConnector ioConnector = ioConnectorProvider.get(outputFile);
+            if (ioConnector.exists(outputFile)) {
+                uris.add(outputFile);
+            } else {
+                logger.warn("Output file not found: {}", outputFile);
+            }
+            if (ioConnector.exists(stderrFile)) {
+                uris.add(stderrFile);
+            } else {
+                logger.warn("Stderr file not found: {}", stderrFile);
+            }
+        } catch (IOException e) {
+            throw new StorageEngineException("Error checking output file", e);
+        }
+        return uris;
     }
 
     @Override
