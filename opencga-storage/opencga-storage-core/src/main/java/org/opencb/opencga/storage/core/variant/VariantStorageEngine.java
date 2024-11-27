@@ -24,14 +24,17 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.tools.variant.normalizer.extensions.VariantNormalizerExtensionFactory;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -153,7 +156,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             String loadSplitDataStr = options.getString(LOAD_SPLIT_DATA.key());
             boolean multiFile = options.getBoolean(LOAD_MULTI_FILE_DATA.key());
             if (StringUtils.isNotEmpty(loadSplitDataStr) && multiFile) {
-                throw new IllegalArgumentException("Unable to mix loadSplitFile and loadMultiFile");
+                if (loadSplitDataStr.equalsIgnoreCase("multi")) {
+                    return MULTI;
+                } else {
+                    throw new IllegalArgumentException("Unable to mix " + LOAD_MULTI_FILE_DATA.key() + "=true and "
+                            + LOAD_SPLIT_DATA.key() + "='" + loadSplitDataStr + "'");
+                }
             }
             if (StringUtils.isEmpty(loadSplitDataStr) && !multiFile) {
                 return null;
@@ -946,35 +954,78 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected TaskMetadata preRemove(String study, List<String> files, List<String> samples) throws StorageEngineException {
         AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
+        boolean force = getOptions().getBoolean(FORCE.key(), FORCE.defaultValue());
+        boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        metadataManager.updateStudyMetadata(study, studyMetadata -> {
-            List<Integer> fileIds = new ArrayList<>(files.size());
-            for (String file : files) {
-                FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), file);
-                if (fileMetadata == null) {
-                    throw VariantQueryException.fileNotFound(file, study);
-                }
-                if (fileMetadata.getType() == FileMetadata.Type.PARTIAL) {
-                    String virtualFileName = metadataManager.getFileName(
-                            studyMetadata.getId(),
-                            fileMetadata.getAttributes().getInt(FileMetadata.VIRTUAL_PARENT));
-                    throw new StorageEngineException("Unable to remove " + FileMetadata.Type.PARTIAL + " file. "
-                            + "Try removing its virtual file : '" + virtualFileName + "'");
-                }
-                fileIds.add(fileMetadata.getId());
-                if (!fileMetadata.isIndexed()) {
+
+        int studyId = metadataManager.getStudyId(study);
+        List<Integer> fileIds = new ArrayList<>(files.size());
+        for (String file : files) {
+            FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, file);
+            if (fileMetadata == null) {
+                throw VariantQueryException.fileNotFound(file, study);
+            }
+            if (fileMetadata.getType() == FileMetadata.Type.PARTIAL) {
+                String virtualFileName = metadataManager.getFileName(
+                        studyId,
+                        fileMetadata.getAttributes().getInt(FileMetadata.VIRTUAL_PARENT));
+                throw new StorageEngineException("Unable to remove " + FileMetadata.Type.PARTIAL + " file. "
+                        + "Try removing its virtual file : '" + virtualFileName + "'");
+            }
+            if (fileMetadata.getIndexStatus() == TaskMetadata.Status.NONE) {
+                if (force) {
+                    logger.info("Force remove. Removing non indexed file: " + fileMetadata.getName());
+                } else {
                     throw new StorageEngineException("Unable to remove non indexed file: " + fileMetadata.getName());
                 }
             }
+            if (fileMetadata.getIndexStatus() == TaskMetadata.Status.RUNNING) {
+                if (force) {
+                    logger.info("Force remove. Removing file while being indexed: " + fileMetadata.getName());
+                } else {
+                    throw new StorageEngineException("Unable to remove file while being indexed: " + fileMetadata.getName());
+                }
+            }
+            fileIds.add(fileMetadata.getId());
+        }
 
-            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+        metadataManager.updateStudyMetadata(study, studyMetadata -> {
+            List<TaskMetadata> tasksToAbort = new ArrayList<>();
+            HashSet<Integer> fileIdsSet = new HashSet<>(fileIds);
 
             batchFileOperation.set(metadataManager.addRunningTask(
                     studyMetadata.getId(),
                     REMOVE_OPERATION_NAME,
                     fileIds,
                     resume,
-                    TaskMetadata.Type.REMOVE));
+                    TaskMetadata.Type.REMOVE, runningTask -> {
+                        if (runningTask.getType() == TaskMetadata.Type.LOAD) {
+                            if (force && fileIdsSet.containsAll(runningTask.getFileIds())) {
+                                // Abort running load task as all files are being removed
+                                tasksToAbort.add(runningTask);
+                                return true;
+                            } else {
+                                if (force) {
+                                    logger.error("Unable to force remove the file while other files are being loaded.");
+                                }
+                                // Unable to remove files. Other files are being loaded.
+                                return false;
+                            }
+                        } else {
+                            // Unable to remove files. Other tasks are running.
+                            return false;
+                        }
+                    }));
+            // If the task was successfully created, abort other tasks.
+            for (TaskMetadata task : tasksToAbort) {
+                List<String> fileNames = task.getFileIds().stream()
+                        .map(fileId -> metadataManager.getFileName(studyMetadata.getId(), fileId))
+                        .collect(Collectors.toList());
+                TaskMetadata.Status status = TaskMetadata.Status.ABORTED;
+                logger.info("Force remove. Setting status to " + status + " of running task "
+                        + task.getName() + "('id=" + task.getId() + ") for files " + fileNames);
+                metadataManager.setStatus(studyMetadata.getId(), task.getId(), status);
+            }
 
             return studyMetadata;
         });
@@ -1192,8 +1243,36 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return get(query, options);
     }
 
-    public DataResult<Variant> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
-        return new VariantSampleDataManager(getDBAdaptor()).getSampleData(variant, study, options);
+    public DataResult<Variant> getSampleData(String variantStr, String study, QueryOptions options) throws StorageEngineException {
+        final Variant variant = getVariant(variantStr);
+        return getVariantSampleDataManager().getSampleData(variant, study, options);
+    }
+
+    public Variant getVariant(String variantStr) {
+        final Variant variant;
+        if (VariantQueryUtils.isVariantId(variantStr)) {
+            variant = VariantQueryUtils.toVariant(variantStr, true);
+        } else if (VariantQueryUtils.isVariantAccession(variantStr)) {
+            VariantQueryResult<Variant> result = get(new Query(VariantQueryParam.ANNOT_XREF.key(), variantStr),
+                    new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1).append(QueryOptions.COUNT, true));
+            if (result.getNumMatches() > 1) {
+                throw new VariantQueryException("Not unique variant identifier '" + variantStr + "'."
+                        + " Found " + result.getNumMatches() + " results");
+            } else if (result.getNumResults() == 1) {
+                variant = result.first();
+            } else {
+                throw VariantQueryException.variantNotFound(variantStr);
+            }
+        } else {
+            throw new VariantQueryException("Variant not valid. Variant = '" + variantStr + "'. Supported values:"
+                    + " {chr}:{start}:{end}:{ref}:{alt}, rs{id}");
+        }
+        variant.setId(variant.toString());
+        return variant;
+    }
+
+    protected VariantSampleDataManager getVariantSampleDataManager() throws StorageEngineException {
+        return new VariantSampleDataManager(getDBAdaptor());
     }
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
@@ -1205,8 +1284,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
         addDefaultLimit(options, getOptions());
         addDefaultSampleLimit(query, getOptions());
-        query = preProcessQuery(query, options);
-        return getVariantQueryExecutor(query, options).get(query, options);
+        ParsedVariantQuery variantQuery = parseQuery(query, options);
+        return getVariantQueryExecutor(variantQuery).get(variantQuery);
     }
 
     @Override
@@ -1223,8 +1302,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantDBIterator iterator(Query query, QueryOptions options) {
         query = VariantQueryUtils.copy(query);
         options = VariantQueryUtils.copy(options);
-        query = preProcessQuery(query, options);
-        return getVariantQueryExecutor(query, options).iterator(query, options);
+        ParsedVariantQuery variantQuery = parseQuery(query, options);
+        return getVariantQueryExecutor(variantQuery).iterator(variantQuery);
     }
 
     public final List<VariantQueryExecutor> getVariantQueryExecutors() throws StorageEngineException {
@@ -1246,7 +1325,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         executors.add(new CompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this));
         executors.add(new BreakendVariantQueryExecutor(
-                getMetadataManager(), getStorageEngineId(), getOptions(), new DBAdaptorVariantQueryExecutor(
+                getStorageEngineId(), getOptions(), new DBAdaptorVariantQueryExecutor(
                 getDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, configuration, getOptions()));
@@ -1265,12 +1344,22 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return VariantQueryExecutor to use
      */
     public VariantQueryExecutor getVariantQueryExecutor(Query query, QueryOptions options) {
+        return getVariantQueryExecutor(parseQuery(query, options));
+    }
+
+    /**
+     * Determine which {@link VariantQueryExecutor} should be used to execute the given query.
+     *
+     * @param variantQuery Parsed variant query
+     * @return VariantQueryExecutor to use
+     */
+    public VariantQueryExecutor getVariantQueryExecutor(ParsedVariantQuery variantQuery) {
         try {
             for (VariantQueryExecutor executor : getVariantQueryExecutors()) {
-                if (executor.canUseThisExecutor(query, options)) {
+                if (executor.canUseThisExecutor(variantQuery, variantQuery.getInputOptions())) {
                     logger.info("Using VariantQueryExecutor : " + executor.getClass().getName());
-                    logger.info("  Query : " + VariantQueryUtils.printQuery(query));
-                    logger.info("  Options : " + options.toJson());
+                    logger.info("  Query : " + VariantQueryUtils.printQuery(variantQuery.getInputQuery()));
+                    logger.info("  Options : " + variantQuery.getInputOptions().toJson());
                     return executor;
                 }
             }
@@ -1279,6 +1368,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
         // This should never happen, as the DBAdaptorVariantQueryExecutor can always run the query
         throw new VariantQueryException("No VariantQueryExecutor found to run the query!");
+    }
+
+    public final VariantQueryExecutor getVariantQueryExecutor(Class<? extends VariantQueryExecutor> clazz)
+            throws StorageEngineException {
+        Optional<VariantQueryExecutor> first = getVariantQueryExecutors()
+                .stream()
+                .filter(e -> e instanceof SearchIndexVariantQueryExecutor)
+                .findFirst();
+        if (first.isPresent()) {
+            return first.get();
+        } else {
+            throw new StorageEngineException("VariantQueryExecutor " + clazz + " not found");
+        }
     }
 
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {
@@ -1402,6 +1504,45 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             logger.warn(message);
         }
         throw new VariantQueryException("No VariantAggregationExecutor found to run the query. " + messages).setQuery(query);
+    }
+
+    public ObjectMap inferConfigurationParams(VariantSetupParams params) {
+        ObjectMap options = new ObjectMap();
+
+        List<String> normalizeExtensions = params.getNormalizeExtensions();
+        if (normalizeExtensions != null && !normalizeExtensions.isEmpty()) {
+            if (!normalizeExtensions.equals(Collections.singletonList(ParamConstants.ALL))) {
+                List<String> unsupportedExtensions = new ArrayList<>();
+                for (String normalizeExtension : normalizeExtensions) {
+                    if (!VariantNormalizerExtensionFactory.ALL_EXTENSIONS.contains(normalizeExtension)) {
+                        unsupportedExtensions.add(normalizeExtension);
+                    }
+                }
+                if (!unsupportedExtensions.isEmpty()) {
+                    throw new IllegalArgumentException("Unsupported normalize extensions: " + unsupportedExtensions + ". Supported "
+                            + "extensions are: " + VariantNormalizerExtensionFactory.ALL_EXTENSIONS);
+                }
+            }
+            options.put(NORMALIZATION_EXTENSIONS.key(), normalizeExtensions);
+        }
+        if (params.getDataDistribution() != null) {
+            switch (params.getDataDistribution()) {
+                case FILES_SPLIT_BY_CHROMOSOME:
+                    options.put(LOAD_SPLIT_DATA.key(), SplitData.CHROMOSOME);
+                    break;
+                case FILES_SPLIT_BY_REGION:
+                    options.put(LOAD_SPLIT_DATA.key(), SplitData.REGION);
+                    break;
+                case MULTIPLE_FILES_PER_SAMPLE:
+                    options.put(LOAD_MULTI_FILE_DATA.key(), true);
+                    options.put(LOAD_SPLIT_DATA.key(), SplitData.MULTI);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return options;
     }
 
     @Override

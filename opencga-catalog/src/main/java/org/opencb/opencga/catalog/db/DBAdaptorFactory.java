@@ -19,10 +19,8 @@ package org.opencb.opencga.catalog.db;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.Organization;
@@ -83,12 +81,11 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException;
 
-    OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options, String userId)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options, String userId) throws CatalogException;
 
     void deleteOrganization(Organization organization) throws CatalogDBException;
 
-    NotesDBAdaptor getCatalogSettingsDBAdaptor(String organization) throws CatalogDBException;
+    NoteDBAdaptor getCatalogNoteDBAdaptor(String organization) throws CatalogDBException;
 
     OrganizationDBAdaptor getCatalogOrganizationDBAdaptor(String organization) throws CatalogDBException;
 

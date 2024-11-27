@@ -373,10 +373,6 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public void validateCatalogFqn(CatalogFqn catalogFqn) {
-
-    }
-
     private OpenCGAResult<Study> getStudy(String organizationId, long projectUid, String studyUuid, QueryOptions options)
             throws CatalogDBException {
         Query query = new Query()
@@ -420,7 +416,7 @@ public class StudyManager extends AbstractManager {
         try {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
 
             long projectUid = project.getUid();
 
@@ -443,12 +439,6 @@ public class StudyManager extends AbstractManager {
             study.setAdditionalInfo(ParamUtils.defaultObject(study.getAdditionalInfo(), Collections::emptyList));
             study.setAttributes(ParamUtils.defaultObject(study.getAttributes(), HashMap::new));
 
-            study.setClinicalAnalyses(ParamUtils.defaultObject(study.getClinicalAnalyses(), ArrayList::new));
-            study.setCohorts(ParamUtils.defaultObject(study.getCohorts(), ArrayList::new));
-            study.setFamilies(ParamUtils.defaultObject(study.getFamilies(), ArrayList::new));
-            study.setPanels(ParamUtils.defaultObject(study.getPanels(), ArrayList::new));
-            study.setSamples(ParamUtils.defaultObject(study.getSamples(), ArrayList::new));
-            study.setIndividuals(ParamUtils.defaultObject(study.getIndividuals(), ArrayList::new));
             study.setVariableSets(ParamUtils.defaultObject(study.getVariableSets(), ArrayList::new));
 
             LinkedList<File> files = new LinkedList<>();
@@ -470,11 +460,10 @@ public class StudyManager extends AbstractManager {
                     new Group(MEMBERS, new ArrayList<>(users)),
                     new Group(ADMINS, new ArrayList<>(users))
             );
-            study.setFiles(files);
             study.setGroups(groups);
 
             /* CreateStudy */
-            getStudyDBAdaptor(organizationId).insert(project, study, options);
+            getStudyDBAdaptor(organizationId).insert(project, study, files, options);
             OpenCGAResult<Study> result = getStudy(organizationId, projectUid, study.getUuid(), options);
             study = result.getResults().get(0);
 
@@ -1107,7 +1096,7 @@ public class StudyManager extends AbstractManager {
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
 
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
             // Fix the groupId
             if (groupId != null && !groupId.startsWith("@")) {
@@ -1276,7 +1265,7 @@ public class StudyManager extends AbstractManager {
                 .append("recessiveGeneSummaryIndex", summaryIndex)
                 .append("token", token);
         try {
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
             ParamUtils.checkObj(summaryIndex, "RecessiveGeneSummaryIndex");
             summaryIndex.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(summaryIndex.getModificationDate(), "creationDate"));
@@ -1570,7 +1559,8 @@ public class StudyManager extends AbstractManager {
             }
 
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(organizationId, study.getUid(), userId);
-            OpenCGAResult result = getStudyDBAdaptor(organizationId).addFieldToVariableSet(variableSet.getUid(), variable, userId);
+            OpenCGAResult<VariableSet> result = getStudyDBAdaptor(organizationId).addFieldToVariableSet(study.getUid(),
+                    variableSet.getUid(), variable, userId);
             auditManager.audit(organizationId, userId, Enums.Action.ADD_VARIABLE_TO_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(),
                     "", study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1603,7 +1593,8 @@ public class StudyManager extends AbstractManager {
 
         try {
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(organizationId, study.getUid(), userId);
-            OpenCGAResult result = getStudyDBAdaptor(organizationId).removeFieldFromVariableSet(variableSet.getUid(), variableId, userId);
+            OpenCGAResult<VariableSet> result = getStudyDBAdaptor(organizationId).removeFieldFromVariableSet(study.getUid(),
+                    variableSet.getUid(), variableId, userId);
             auditManager.audit(organizationId, userId, Enums.Action.REMOVE_VARIABLE_FROM_VARIABLE_SET, Enums.Resource.STUDY,
                     variableSet.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1818,12 +1809,46 @@ public class StudyManager extends AbstractManager {
                         StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())),
                 tokenPayload);
 
-        authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
         StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
         if (configuration == null) {
             configuration = new StudyVariantEngineConfiguration();
         }
         configuration.setOptions(options);
+
+        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(), configuration);
+        getStudyDBAdaptor(organizationId).update(study.getUid(), parameters, QueryOptions.empty());
+    }
+
+    public void setVariantEngineSetupOptions(String studyStr, VariantSetupResult variantSetupResult, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = resolveId(studyFqn,
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(),
+                        StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())),
+                tokenPayload);
+
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+        StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
+        if (configuration == null) {
+            configuration = new StudyVariantEngineConfiguration();
+        }
+        if (configuration.getOptions() == null) {
+            configuration.setOptions(new ObjectMap());
+        }
+        VariantSetupResult prevSetupValue = configuration.getSetup();
+        if (prevSetupValue != null && prevSetupValue.getOptions() != null) {
+            // Variant setup was already executed.
+            // Remove the options from the previous execution before adding the new ones
+            // Check that both key/value matches, to avoid removing options that might have been modified manually
+            for (Map.Entry<String, Object> entry : prevSetupValue.getOptions().entrySet()) {
+                configuration.getOptions().remove(entry.getKey(), entry.getValue());
+            }
+        }
+        configuration.getOptions().putAll(variantSetupResult.getOptions());
+        configuration.setSetup(variantSetupResult);
 
         ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(), configuration);
         getStudyDBAdaptor(organizationId).update(study.getUid(), parameters, QueryOptions.empty());
@@ -1840,7 +1865,7 @@ public class StudyManager extends AbstractManager {
                         StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())),
                 tokenPayload);
 
-        authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
         StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
         if (configuration == null) {
             configuration = new StudyVariantEngineConfiguration();
@@ -1943,7 +1968,7 @@ public class StudyManager extends AbstractManager {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
 
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
             ParamUtils.checkParameter(filename, "File name");
             if (!filename.endsWith(".zip") && !filename.endsWith(".tar.gz")) {
@@ -2036,7 +2061,7 @@ public class StudyManager extends AbstractManager {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
 
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
             // We obtain the basic studyPath where we will upload the file temporarily
             java.nio.file.Path studyPath = Paths.get(study.getUri());

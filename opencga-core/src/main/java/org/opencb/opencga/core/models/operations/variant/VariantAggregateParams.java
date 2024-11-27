@@ -16,13 +16,17 @@
 
 package org.opencb.opencga.core.models.operations.variant;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class VariantAggregateParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant aggregate params.";
-    //    private String region;
+    //    private String region
+    @DataField(description = "Overwrite aggregation for all files and variants. Repeat operation for already processed variants.")
     private boolean overwrite;
+    @DataField(description = ParamConstants.RESUME_DESCRIPTION)
     private boolean resume;
 
     public VariantAggregateParams() {

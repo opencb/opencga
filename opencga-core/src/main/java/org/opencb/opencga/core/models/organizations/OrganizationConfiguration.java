@@ -3,29 +3,33 @@ package org.opencb.opencga.core.models.organizations;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Optimizations;
 
-import java.util.LinkedList;
 import java.util.List;
 
 public class OrganizationConfiguration {
 
     private List<AuthenticationOrigin> authenticationOrigins;
+    private String defaultUserExpirationDate;
     private Optimizations optimizations;
+    private TokenConfiguration token;
 
     public OrganizationConfiguration() {
-        this.authenticationOrigins = new LinkedList<>();
-        this.optimizations = new Optimizations();
     }
 
-    public OrganizationConfiguration(List<AuthenticationOrigin> authenticationOrigins, Optimizations optimizations) {
+    public OrganizationConfiguration(List<AuthenticationOrigin> authenticationOrigins, String defaultUserExpirationDate,
+                                     Optimizations optimizations, TokenConfiguration token) {
         this.authenticationOrigins = authenticationOrigins;
+        this.defaultUserExpirationDate = defaultUserExpirationDate;
         this.optimizations = optimizations;
+        this.token = token;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("OrganizationConfiguration{");
         sb.append("authenticationOrigins=").append(authenticationOrigins);
+        sb.append(", defaultUserExpirationDate='").append(defaultUserExpirationDate).append('\'');
         sb.append(", optimizations=").append(optimizations);
+        sb.append(", token=").append(token);
         sb.append('}');
         return sb.toString();
     }
@@ -39,12 +43,30 @@ public class OrganizationConfiguration {
         return this;
     }
 
+    public String getDefaultUserExpirationDate() {
+        return defaultUserExpirationDate;
+    }
+
+    public OrganizationConfiguration setDefaultUserExpirationDate(String defaultUserExpirationDate) {
+        this.defaultUserExpirationDate = defaultUserExpirationDate;
+        return this;
+    }
+
     public Optimizations getOptimizations() {
         return optimizations;
     }
 
     public OrganizationConfiguration setOptimizations(Optimizations optimizations) {
         this.optimizations = optimizations;
+        return this;
+    }
+
+    public TokenConfiguration getToken() {
+        return token;
+    }
+
+    public OrganizationConfiguration setToken(TokenConfiguration token) {
+        this.token = token;
         return this;
     }
 }

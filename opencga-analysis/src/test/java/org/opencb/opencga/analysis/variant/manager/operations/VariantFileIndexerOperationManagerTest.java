@@ -26,7 +26,6 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -43,8 +42,8 @@ import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternalVariantIndex;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -186,7 +185,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         Study study = catalogManager.getFileManager().getStudy(ORGANIZATION, inputFile, sessionId);
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("The status is READY");
+        thrown.expectMessage("Could not unlink file '" + inputFile.getId() + "'");
         catalogManager.getFileManager().unlink(study.getFqn(), inputFile.getId(), sessionId);
     }
 
@@ -200,7 +199,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), inputFile.getSampleIds().get(100));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Sample associated to the files");
-        DataResult delete = catalogManager.getSampleManager().delete(studyFqn, query, null, sessionId);
+        catalogManager.getSampleManager().delete(studyFqn, query, null, sessionId);
     }
 
     @Test
@@ -444,7 +443,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                         .append(ParamConstants.STUDY_PARAM, studyId)
                         .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false)
-                , outDir, null, sessionId);
+                , outDir, null, false, sessionId);
 
         assertEquals(Event.Type.WARNING, er.getEvents().get(0).getType());
         assertThat(er.getEvents().get(0).getMessage(), CoreMatchers.containsString("Found malformed variants"));
@@ -462,7 +461,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                         .append(ParamConstants.STUDY_PARAM, studyId)
                         .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false)
-                , outDir, null, sessionId);
+                , outDir, null, false, sessionId);
 
         assertEquals(Event.Type.WARNING, er.getEvents().get(0).getType());
         assertThat(er.getEvents().get(0).getMessage(), CoreMatchers.containsString("Found duplicated variants"));
@@ -483,7 +482,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                         .append(ParamConstants.STUDY_PARAM, studyId)
-                , outDir, null, sessionId);
+                , outDir, null, false, sessionId);
     }
 
     @Override

@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 
@@ -41,7 +40,7 @@ import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor.
 public class AuthorizationMongoDBUtils {
 
     static final String OPENCGA = "opencga";
-    private static final String PRIVATE_ACL = "_acl";
+    public static final String PRIVATE_ACL = "_acl";
     private static final String VARIABLE_SETS = "variableSets";
     private static final String ANNOTATION_SETS = AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key();
 
@@ -80,7 +79,7 @@ public class AuthorizationMongoDBUtils {
     }
 
     public static boolean checkStudyPermission(String organizationId, Document study, String user, String studyPermission) {
-        if (isOrganizationOwnerOrStudyAdmin(organizationId, study, user)) {
+        if (isAtLeastOrganizationOwnerOrStudyAdmin(organizationId, study, user)) {
             return true;
         }
 
@@ -100,7 +99,7 @@ public class AuthorizationMongoDBUtils {
         }
     }
 
-    public static boolean isOrganizationOwnerOrStudyAdmin(String organizationId, Document study, String user) {
+    public static boolean isAtLeastOrganizationOwnerOrStudyAdmin(String organizationId, Document study, String user) {
         if (isOpencgaAdministrator(organizationId, user)) {
             return true;
         }
@@ -200,35 +199,18 @@ public class AuthorizationMongoDBUtils {
     /**
      * If query contains {@link ParamConstants#ACL_PARAM}, it will parse the value to generate the corresponding mongo query documents.
      *
-     * @param study    Queried study document.
-     * @param query    Original query.
-     * @param resource Affected resource.
-     * @param user     User performing the query.
-     * @return A list of documents to satisfy the ACL query.
-     * @throws CatalogDBException            when there is a DB error.
-     * @throws CatalogParameterException     if there is any formatting error.
-     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
-     */
-    public static List<Document> parseAclQuery(Document study, Query query, Enums.Resource resource, String user)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return parseAclQuery(study, query, resource, user, null);
-    }
-
-    /**
-     * If query contains {@link ParamConstants#ACL_PARAM}, it will parse the value to generate the corresponding mongo query documents.
-     *
-     * @param study         Queried study document.
-     * @param query         Original query.
-     * @param resource      Affected resource.
-     * @param user          User performing the query.
-     * @param configuration Configuration object.
+     * @param study               Queried study document.
+     * @param query               Original query.
+     * @param resource            Affected resource.
+     * @param user                User performing the query.
+     * @param simplifyPermissions Boolean indicating whether permission check can be simplified.
      * @return A list of documents to satisfy the ACL query.
      * @throws CatalogDBException            when there is a DB error.
      * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     public static List<Document> parseAclQuery(Document study, Query query, Enums.Resource resource, String user,
-                                               Configuration configuration)
+                                               boolean simplifyPermissions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         List<Document> aclDocuments = new LinkedList<>();
         if (!query.containsKey(ParamConstants.ACL_PARAM)) {
@@ -264,11 +246,6 @@ public class AuthorizationMongoDBUtils {
                     + study.getString(StudyDBAdaptor.QueryParams.ID.key()));
         }
 
-        boolean simplifyPermissionCheck = false;
-        if (configuration != null && configuration.getOptimizations() != null) {
-            simplifyPermissionCheck = configuration.getOptimizations().isSimplifyPermissions();
-        }
-
         boolean isAnonymousPresent = false;
         boolean isRegisteredUsersPresent = false;
         List<String> groups;
@@ -302,7 +279,7 @@ public class AuthorizationMongoDBUtils {
             }
 
             Document queryDocument = getAuthorisedEntries(affectedUser, groups, permission, isRegisteredUsersPresent, isAnonymousPresent,
-                    simplifyPermissionCheck);
+                    simplifyPermissions);
             if (hasStudyPermissions) {
                 // The user has permissions defined globally, so we also have to check the entries where the user/groups/members/* have no
                 // permissions defined as the user will also be allowed to see them
@@ -317,13 +294,8 @@ public class AuthorizationMongoDBUtils {
         return aclDocuments;
     }
 
-    public static Document getQueryForAuthorisedEntries(Document study, String user, String permission, Enums.Resource resource)
-            throws CatalogAuthorizationException, CatalogParameterException {
-        return getQueryForAuthorisedEntries(study, user, permission, resource, null);
-    }
-
     public static Document getQueryForAuthorisedEntries(Document study, String user, String permission, Enums.Resource resource,
-                                                        Configuration configuration)
+                                                        boolean simplifyPermissions)
             throws CatalogAuthorizationException, CatalogParameterException {
         if (StringUtils.isEmpty(user)) {
             return new Document();
@@ -340,11 +312,6 @@ public class AuthorizationMongoDBUtils {
         if (!isUserInMembers(study, user)) {
             throw new CatalogAuthorizationException("User " + user + " does not have any permissions in study "
                     + study.getString(StudyDBAdaptor.QueryParams.ID.key()));
-        }
-
-        boolean simplifyPermissionCheck = false;
-        if (configuration != null && configuration.getOptimizations() != null) {
-            simplifyPermissionCheck = configuration.getOptimizations().isSimplifyPermissions();
         }
 
         String studyPermission = StudyPermissions.Permissions.getStudyPermission(permission, getPermissionType(resource)).name();
@@ -375,8 +342,8 @@ public class AuthorizationMongoDBUtils {
         }
 
         Document queryDocument = getAuthorisedEntries(user, groups, permission, isRegisteredUsersPresent, isAnonymousPresent,
-                simplifyPermissionCheck);
-        if (hasStudyPermissions && !simplifyPermissionCheck) {
+                simplifyPermissions);
+        if (hasStudyPermissions && !simplifyPermissions) {
             // The user has permissions defined globally, so we also have to check the entries where the user/groups/members/* have no
             // permissions defined as the user will also be allowed to see them
             queryDocument = new Document("$or", Arrays.asList(

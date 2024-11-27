@@ -5,6 +5,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -16,6 +17,9 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 public interface OrganizationDBAdaptor extends Iterable<Organization> {
 
+    String IS_ORGANIZATION_ADMIN_OPTION = "isOrgAdmin";
+    String AUTH_ORIGINS_FIELD = "authenticationOrigins";
+
     enum QueryParams implements QueryParam {
         UID("uid", LONG, ""),
         ID("id", STRING, ""),
@@ -26,10 +30,15 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
         INTERNAL("internal", OBJECT, ""),
         INTERNAL_MIGRATION_EXECUTIONS("internal.migrationExecutions", OBJECT, ""),
         CONFIGURATION("configuration", OBJECT, ""),
-        CONFIGURATION_AUTHENTICATION_ORIGINS("configuration.authenticationOrigins", OBJECT, ""),
+        CONFIGURATION_OPTIMIZATIONS("configuration.optimizations", OBJECT, ""),
+        CONFIGURATION_AUTHENTICATION_ORIGINS("configuration." + AUTH_ORIGINS_FIELD, OBJECT, ""),
+        CONFIGURATION_AUTHENTICATION_ORIGINS_ID("configuration." + AUTH_ORIGINS_FIELD + ".id", STRING, ""),
+        CONFIGURATION_AUTHENTICATION_ORIGINS_OPTIONS("configuration." + AUTH_ORIGINS_FIELD + ".options", OBJECT, ""),
+        CONFIGURATION_TOKEN("configuration.token", OBJECT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         PROJECTS("projects", OBJECT, ""),
+        NOTES("notes", OBJECT, ""),
         ATTRIBUTES("attributes", OBJECT, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
@@ -90,11 +99,10 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
 //
 //    OpenCGAResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 //
-    OpenCGAResult<Organization> insert(Organization organization, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-//
-//    OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
-//
+    OpenCGAResult<Organization> insert(Organization organization, QueryOptions options) throws CatalogException;
+
+    OpenCGAResult<Organization> get(String userId, QueryOptions options) throws CatalogDBException;
+
     OpenCGAResult<Organization> get(QueryOptions options) throws CatalogDBException;
 //
 //    OpenCGAResult incrementCurrentRelease(long projectId) throws CatalogDBException;

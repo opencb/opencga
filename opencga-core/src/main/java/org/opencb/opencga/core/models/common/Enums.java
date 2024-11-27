@@ -60,6 +60,7 @@ public final class Enums {
 
     public enum Resource {
         AUDIT,
+        NOTE,
         ORGANIZATION,
         USER,
         PROJECT,
@@ -245,9 +246,11 @@ public final class Enums {
         GREP,
         TREE,
         DOWNLOAD_AND_REGISTER,
+        MOVE,
         MOVE_AND_REGISTER,
 
         VISIT,
+        KILL_JOB,
 
         IMPORT,
 

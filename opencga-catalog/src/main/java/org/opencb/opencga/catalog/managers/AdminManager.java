@@ -47,9 +47,6 @@ public class AdminManager extends AbstractManager {
 
     public OpenCGAResult<User> userSearch(String organizationId, Query query, QueryOptions options, String token)
             throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
                 .append("query", query)
@@ -58,30 +55,23 @@ public class AdminManager extends AbstractManager {
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
         try {
             authorizationManager.checkIsOpencgaAdministrator(jwtPayload);
-
-            // Fix query object
-            if (query.containsKey(ParamConstants.USER)) {
-                query.put(UserDBAdaptor.QueryParams.ID.key(), query.get(ParamConstants.USER));
-                query.remove(ParamConstants.USER);
-            }
-            if (query.containsKey(ParamConstants.USER_AUTHENTICATION_ORIGIN)) {
-                query.put(UserDBAdaptor.QueryParams.ACCOUNT_AUTHENTICATION_ID.key(), query.get(ParamConstants.USER_AUTHENTICATION_ORIGIN));
-                query.remove(ParamConstants.USER_AUTHENTICATION_ORIGIN);
-            }
-            if (query.containsKey(ParamConstants.USER_CREATION_DATE)) {
-                query.put(UserDBAdaptor.QueryParams.ACCOUNT_CREATION_DATE.key(), query.get(ParamConstants.USER_CREATION_DATE));
-                query.remove(ParamConstants.USER_CREATION_DATE);
-            }
-
-            OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(query, options);
-            auditManager.auditSearch(organizationId, jwtPayload.getUserId(organizationId), Enums.Resource.USER, "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return userDataResult;
         } catch (CatalogException e) {
             auditManager.auditSearch(organizationId, jwtPayload.getUserId(organizationId), Enums.Resource.USER, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+
+        // Fix query object
+        if (query.containsKey(ParamConstants.USER)) {
+            query.put(UserDBAdaptor.QueryParams.ID.key(), query.get(ParamConstants.USER));
+            query.remove(ParamConstants.USER);
+        }
+        if (query.containsKey(ParamConstants.USER_CREATION_DATE)) {
+            query.put(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_CREATION_DATE.key(), query.get(ParamConstants.USER_CREATION_DATE));
+            query.remove(ParamConstants.USER_CREATION_DATE);
+        }
+
+        return catalogManager.getUserManager().search(organizationId, query, options, token);
     }
 
     public OpenCGAResult<Group> updateGroups(String organizationId, String userId, List<String> studyIds, List<String> groupIds,
@@ -144,7 +134,7 @@ public class AdminManager extends AbstractManager {
         JwtPayload payload = catalogManager.getUserManager().validateToken(token);
         try {
             authorizationManager.checkIsOpencgaAdministrator(payload);
-            List<String> organizationIds = catalogDBAdaptorFactory.getOrganizationIds();
+            List<String> organizationIds = getCatalogDBAdaptorFactory().getOrganizationIds();
 
             auditManager.audit(ParamConstants.ADMIN_ORGANIZATION, payload.getUserId(), Enums.Action.FETCH_ORGANIZATION_IDS,
                     Enums.Resource.STUDY, "", "", "", "", new ObjectMap(), new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -222,7 +212,7 @@ public class AdminManager extends AbstractManager {
         String userId = jwtPayload.getUserId(organizationId);
         try {
             Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, jwtPayload);
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
             ParamUtils.checkParameter(category, "category");
             ParamUtils.checkNotEmptyArray(entryIdList, "entry id list");

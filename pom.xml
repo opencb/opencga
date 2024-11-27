@@ -43,12 +43,13 @@
     </modules>
 
     <properties>
-        <pyopencga.version></pyopencga.version>
-        <opencgar.version>3.0.2</opencgar.version>
-        <cellbase.version>6.0.0</cellbase.version>
-        <biodata.version>3.0.0</biodata.version>
-        <java-common-libs.version>5.0.0</java-common-libs.version>
-        <iva.version>3.0.0</iva.version>
+        <pyopencga.version>3.4.0_dev</pyopencga.version>
+        <opencgar.version>3.4.0_dev</opencgar.version>
+        <cellbase.version>6.4.0-SNAPSHOT</cellbase.version>
+        <biodata.version>3.4.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>5.4.0-SNAPSHOT</java-common-libs.version>
+        <iva.version>3.4.0-SNAPSHOT</iva.version>
+
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.14.3</jackson.version>
@@ -59,10 +60,10 @@
         <grpc.version>1.28.1</grpc.version>
         <slf4j.version>1.7.36</slf4j.version>
         <log4j2.version>2.17.2</log4j2.version>
-        <solr.version>8.11.2</solr.version>
+        <solr.version>8.11.3</solr.version>
         <jjwt.version>0.11.2</jjwt.version>
 <!--        <jetty.version>9.4.17.v20190418</jetty.version>-->
-        <jetty.version>9.4.51.v20230217</jetty.version>
+        <jetty.version>9.4.53.v20231009</jetty.version>
         <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
         <guava.version>28.0-jre</guava.version>
         <htsjdk.version>2.23.0</htsjdk.version>
@@ -88,7 +89,7 @@
         <json-smart.version>2.3</json-smart.version>
         <gson.version>2.8.0</gson.version>
         <nimbus-jose-jwt.version>9.31</nimbus-jose-jwt.version>
-        <azure-client.version>1.5.4</azure-client.version>
+        <azure-client.version>1.7.14</azure-client.version>
         <azure-batch.version>4.0.1</azure-batch.version>
         <!-- Cannot upgrade the version until we upgrade GRPC version -->
         <azure.version>1.13.0</azure.version>
@@ -97,7 +98,7 @@
         <httpclient.version>4.5.6</httpclient.version>
         <oauth2-oidc-sdk.version>5.64.4</oauth2-oidc-sdk.version>
         <passay.version>1.6.1</passay.version>
-        <kubernetes.version>4.3.0</kubernetes.version>
+        <kubernetes.version>6.13.1</kubernetes.version>
         <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
         <ant.version>1.10.12</ant.version>
         <httpcore.version>4.4.13</httpcore.version>
@@ -153,7 +154,6 @@
          -->
         <sonar.scanner.force-deprecated-java-version>true</sonar.scanner.force-deprecated-java-version>
         <kryo.version>2.23.0</kryo.version>
-
         <lombok.version>1.18.30</lombok.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
     </properties>
@@ -845,6 +845,12 @@
                 <groupId>com.databricks</groupId>
                 <artifactId>SnpEff</artifactId>
                 <version>${snpeff.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>distlib</groupId>
+                        <artifactId>distlib</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.parquet</groupId>
@@ -968,6 +974,21 @@
             <dependency>
                 <groupId>io.fabric8</groupId>
                 <artifactId>kubernetes-model</artifactId>
+                <version>${kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-model-core</artifactId>
+                <version>${kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-client-api</artifactId>
+                <version>${kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-model-batch</artifactId>
                 <version>${kubernetes.version}</version>
             </dependency>
             <dependency>
@@ -1347,6 +1368,7 @@
                 <OPENCGA.ANALYSIS.SCRATCH.DIR></OPENCGA.ANALYSIS.SCRATCH.DIR>
                 <OPENCGA.DB.PREFIX>opencga</OPENCGA.DB.PREFIX>
                 <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
+                <OPENCGA.ACCOUNT.MAX_LOGIN_ATTEMPTS>5</OPENCGA.ACCOUNT.MAX_LOGIN_ATTEMPTS>
 
                 <!-- Client -->
                 <OPENCGA.CLIENT.REST.HOST>https://ws.opencb.org/opencga-prod</OPENCGA.CLIENT.REST.HOST>
@@ -1362,12 +1384,6 @@
                 <OPENCGA.CATALOG.DB.PASSWORD></OPENCGA.CATALOG.DB.PASSWORD>
                 <OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE></OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE>
                 <OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>20</OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>
-                <OPENCGA.CATALOG.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.CATALOG.SEARCH.HOST>
-                <OPENCGA.CATALOG.SEARCH.TIMEOUT>30000</OPENCGA.CATALOG.SEARCH.TIMEOUT>
-                <OPENCGA.CATALOG.SEARCH.BATCH>2000</OPENCGA.CATALOG.SEARCH.BATCH>
-
-                <!-- Optimizations -->
-                <OPENCGA_OPTIMIZATIONS_SIMPLIFY_PERMISSIONS>false</OPENCGA_OPTIMIZATIONS_SIMPLIFY_PERMISSIONS>
 
                 <!-- Storage -->
                 <OPENCGA.STORAGE.DEFAULT_ENGINE>hadoop</OPENCGA.STORAGE.DEFAULT_ENGINE>
@@ -1412,7 +1428,7 @@
 
                 <!-- cellbase -->
                 <OPENCGA.CELLBASE.REST.HOST>https://uk.ws.zettagenomics.com/cellbase/</OPENCGA.CELLBASE.REST.HOST>
-                <OPENCGA.CELLBASE.VERSION>v5.2</OPENCGA.CELLBASE.VERSION>
+                <OPENCGA.CELLBASE.VERSION>v5.8</OPENCGA.CELLBASE.VERSION>
             </properties>
         </profile>
 

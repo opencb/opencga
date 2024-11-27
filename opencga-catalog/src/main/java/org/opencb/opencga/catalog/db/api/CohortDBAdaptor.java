@@ -70,8 +70,6 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         ANNOTATION("annotation", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
@@ -135,8 +133,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     OpenCGAResult nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options) throws CatalogException;
 
     OpenCGAResult<Cohort> get(long cohortId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

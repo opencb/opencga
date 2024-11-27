@@ -16,19 +16,28 @@
 
 package org.opencb.opencga.analysis.variant.inferredSex;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.alignment.AlignmentConstants;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 
 import java.io.IOException;
+import java.util.List;
 
 @Tool(id = InferredSexAnalysis.ID, resource = Enums.Resource.VARIANT, description = InferredSexAnalysis.DESCRIPTION)
 public class InferredSexAnalysis extends OpenCgaTool {
@@ -38,10 +47,141 @@ public class InferredSexAnalysis extends OpenCgaTool {
 
     private String studyId;
     private String individualId;
+    private String sampleId;
+
+    // Internal members
+    private Individual individual;
+    private Sample sample;
 
     public InferredSexAnalysis() {
     }
 
+    @Override
+    protected void check() throws Exception {
+        super.check();
+        setUpStorageEngineExecutor(studyId);
+
+        if (StringUtils.isEmpty(studyId)) {
+            throw new ToolException("Missing study.");
+        }
+
+        try {
+            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+
+        // Main check (this function is shared with the endpoint individual/qc/run)
+        checkParameters(individualId, sampleId, studyId, catalogManager, token);
+
+        // Get individual
+        individual = IndividualQcUtils.getIndividualById(studyId, individualId, catalogManager, token);
+
+        // Get samples of that individual, but only germline samples
+        sample = null;
+        List<Sample> childGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(studyId, individualId, catalogManager,
+                token);
+        if (CollectionUtils.isEmpty(childGermlineSamples)) {
+            throw new ToolException("Germline sample not found for individual '" + individualId + "'");
+        }
+
+        if (StringUtils.isNotEmpty(sampleId)) {
+            for (Sample germlineSample : childGermlineSamples) {
+                if (sampleId.equals(germlineSample.getId())) {
+                    sample = germlineSample;
+                    break;
+                }
+            }
+            if (sample == null) {
+                throw new ToolException("The provided sample '" + sampleId + "' not found in the individual '" + individualId + "'");
+            }
+        } else {
+            // If multiple germline samples, we take the first one
+            sample = childGermlineSamples.get(0);
+        }
+    }
+
+    @Override
+    protected void run() throws ToolException {
+
+        step("inferred-sex", () -> {
+            InferredSexAnalysisExecutor inferredSexExecutor = getToolExecutor(InferredSexAnalysisExecutor.class);
+
+            inferredSexExecutor.setStudyId(studyId)
+                    .setIndividualId(individual.getId())
+                    .setSampleId(sample.getId())
+                    .execute();
+
+            // Get inferred sex report
+            InferredSexReport report = inferredSexExecutor.getInferredSexReport();
+
+            try {
+                // Save inferred sex report
+                JacksonUtils.getDefaultObjectMapper().writer().writeValue(getOutDir().resolve(ID + ".report.json").toFile(), report);
+            } catch (IOException e) {
+                throw new ToolException(e);
+            }
+        });
+    }
+
+    public static void checkParameters(String individualId, String sampleId, String studyId, CatalogManager catalogManager, String token) throws ToolException, CatalogException {
+        // Check individual and sample
+        if (StringUtils.isEmpty(individualId)) {
+            throw new ToolException("Missing individual ID");
+        }
+        Individual individual = IndividualQcUtils.getIndividualById(studyId, individualId, catalogManager, token);
+
+        // Get samples of that individual, but only germline samples
+        List<Sample> childGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(studyId, individualId, catalogManager,
+                token);
+        if (CollectionUtils.isEmpty(childGermlineSamples)) {
+            throw new ToolException("Germline sample not found for individual '" + individualId + "'");
+        }
+
+        Sample sample = null;
+        if (StringUtils.isNotEmpty(sampleId)) {
+            for (Sample germlineSample : childGermlineSamples) {
+                if (sampleId.equals(germlineSample.getId())) {
+                    sample = germlineSample;
+                    break;
+                }
+            }
+            if (sample == null) {
+                throw new ToolException("The provided sample '" + sampleId + "' not found in the individual '" + individualId + "'");
+            }
+        } else {
+            // Taking the first sample
+            sample = childGermlineSamples.get(0);
+        }
+
+        // Checking sample file BIGWIG required to compute inferred-sex
+        String bwFileId = null;
+        for (String fileId : sample.getFileIds()) {
+            if (fileId.endsWith(AlignmentConstants.BIGWIG_EXTENSION)) {
+                if (bwFileId != null) {
+                    throw new ToolException("Multiple BIGWIG files found for individual/sample (" + individual.getId() + "/"
+                            + sample.getId() + ")");
+                }
+                bwFileId = fileId;
+            }
+        }
+        checkSampleFile(bwFileId, "BIGWIG", sample, individual, studyId, catalogManager, token);
+    }
+
+    private static void checkSampleFile(String fileId, String label, Sample sample, Individual individual, String studyId,
+                                        CatalogManager catalogManager, String token)
+            throws ToolException, CatalogException {
+        if (StringUtils.isEmpty(fileId)) {
+            throw new ToolException("None " + label + " file registered for individual/sample (" + individual.getId() + "/"
+                    + sample.getId() + ")");
+        } else {
+            OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(studyId, fileId, QueryOptions.empty(), token);
+            if (fileResult.getNumResults() == 0) {
+                throw new ToolException(label + " file ID '" + fileId + "' not found in OpenCGA catalog for individual/sample ("
+                        + individual.getId() + "/" + sample.getId() + ")");
+            }
+        }
+    }
     /**
      * Study of the samples.
      * @param studyId Study ID
@@ -61,55 +201,12 @@ public class InferredSexAnalysis extends OpenCgaTool {
         return this;
     }
 
-    @Override
-    protected void check() throws Exception {
-        super.check();
-        setUpStorageEngineExecutor(studyId);
-
-        if (StringUtils.isEmpty(studyId)) {
-            throw new ToolException("Missing study.");
-        }
-
-        try {
-            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
-
-        // Check individual and sample
-        if (StringUtils.isEmpty(individualId)) {
-            throw new ToolException("Missing individual ID.");
-        }
-
-        // Check BAM and BW files for that individual/sample
-        File bamFile = AnalysisUtils.getBamFileBySampleId(individualId, studyId, getCatalogManager().getFileManager(), getToken());
-        if (bamFile == null) {
-            throw new ToolException("BAM file not found for individual/sample '" + individualId + "'");
-        }
-        if (!new java.io.File(bamFile.getUri().getPath() + ".bw").exists()) {
-            throw new ToolException("BigWig (BW) file not found for individual/sample '" + individualId + "'");
-        }
+    public String getSampleId() {
+        return sampleId;
     }
 
-    @Override
-    protected void run() throws ToolException {
-
-        step("inferred-sex", () -> {
-            InferredSexAnalysisExecutor inferredSexExecutor = getToolExecutor(InferredSexAnalysisExecutor.class);
-
-            inferredSexExecutor.setStudyId(studyId)
-                    .setIndividualId(individualId)
-                    .execute();
-
-            // Get inferred sex report
-            InferredSexReport report = inferredSexExecutor.getInferredSexReport();
-
-            try {
-                // Save inferred sex report
-                JacksonUtils.getDefaultObjectMapper().writer().writeValue(getOutDir().resolve(ID + ".report.json").toFile(), report);
-            } catch (IOException e) {
-                throw new ToolException(e);
-            }
-        });
+    public InferredSexAnalysis setSampleId(String sampleId) {
+        this.sampleId = sampleId;
+        return this;
     }
 }

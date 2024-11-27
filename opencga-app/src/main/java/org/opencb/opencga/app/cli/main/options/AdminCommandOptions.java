@@ -243,9 +243,6 @@ public class AdminCommandOptions {
         @Parameter(names = {"--user", "-u"}, description = "User ID", required = false, arity = 1)
         public String user; 
     
-        @Parameter(names = {"--account"}, description = "Account type [GUEST, FULL, ADMINISTRATOR]", required = false, arity = 1)
-        public String account; 
-    
         @Parameter(names = {"--authentication-id"}, description = "Authentication origin ID", required = false, arity = 1)
         public String authenticationId; 
     

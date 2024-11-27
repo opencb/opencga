@@ -26,12 +26,17 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
 public class VariantDeleteOperationManager extends OperationManager {
+
+    private final Logger logger = LoggerFactory.getLogger(VariantDeleteOperationManager.class);
 
     public VariantDeleteOperationManager(VariantStorageManager variantStorageManager, VariantStorageEngine engine) {
         super(variantStorageManager, engine);
@@ -52,6 +57,7 @@ public class VariantDeleteOperationManager extends OperationManager {
 
     public void removeFile(String study, List<String> inputFiles, URI outdir, String token) throws CatalogException, StorageEngineException {
         // Update study metadata BEFORE executing the operation and fetching files from Catalog
+        boolean force = variantStorageEngine.getOptions().getBoolean(VariantStorageOptions.FORCE.key());
         StudyMetadata studyMetadata = synchronizeCatalogStudyFromStorage(study, token, true);
 
         List<String> fileNames = new ArrayList<>();
@@ -61,19 +67,35 @@ public class VariantDeleteOperationManager extends OperationManager {
                 String catalogIndexStatus = file.getInternal().getVariant().getIndex().getStatus().getId();
                 if (!catalogIndexStatus.equals(VariantIndexStatus.READY)) {
                     // Might be partially loaded in VariantStorage. Check FileMetadata
-                    FileMetadata fileMetadata = variantStorageEngine.getMetadataManager().getFileMetadata(studyMetadata.getId(), fileStr);
-                    if (fileMetadata == null || fileMetadata.getIndexStatus() != TaskMetadata.Status.NONE) {
-                        throw new CatalogException("Unable to remove variants from file " + file.getName() + ". "
-                                + "IndexStatus = " + catalogIndexStatus);
+                    FileMetadata fileMetadata = variantStorageEngine.getMetadataManager()
+                            .getFileMetadata(studyMetadata.getId(), file.getName());
+                    if (fileMetadata != null && !fileMetadata.getPath().equals(file.getUri().getPath())) {
+                        // FileMetadata path does not match the catalog path. This file is not registered in the storage.
+                        throw new CatalogException("Unable to remove variants from file '" + file.getPath() + "'. "
+                                + "File is not registered in the storage. "
+                                + "Instead, found file with same name but different path '" + fileMetadata.getPath() + "'");
+                    }
+                    boolean canBeRemoved;
+                    if (force) {
+                        // When forcing remove, just require the file to be registered in the storage
+                        canBeRemoved = fileMetadata != null;
+                    } else {
+                        // Otherwise, require the file to be in status NONE
+                        canBeRemoved = fileMetadata != null && fileMetadata.getIndexStatus() != TaskMetadata.Status.NONE;
+                    }
+                    if (!canBeRemoved) {
+                        throw new CatalogException("Unable to remove variants from file '" + file.getPath() + "'. "
+                                + "IndexStatus = " + catalogIndexStatus + "."
+                                + (fileMetadata == null ? " File not found in storage." : ""));
                     }
                 }
                 fileNames.add(file.getName());
 //                        filePaths.add(file.getPath());
             }
 
-            if (fileNames.isEmpty()) {
-                throw new CatalogException("Nothing to do!");
-            }
+        }
+        if (fileNames.isEmpty()) {
+            throw new CatalogException("Nothing to do!");
         }
 
         variantStorageEngine.removeFiles(study, fileNames, outdir);

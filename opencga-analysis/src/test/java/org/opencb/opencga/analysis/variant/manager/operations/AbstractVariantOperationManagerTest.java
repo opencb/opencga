@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
+import org.opencb.opencga.analysis.variant.manager.VariantOperationsTest;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.operations.OperationTool;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
@@ -87,8 +88,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
  */
 public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
-    private String JOB_STATUS_FILE = "status.json";
-    private String OUT_LOG_EXTENSION = ".out";
+    private String OUT_LOG_EXTENSION = ".log";
     private String ERR_LOG_EXTENSION = ".err";
 
     protected CatalogManager catalogManager;
@@ -170,6 +170,10 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                 true, null, QueryOptions.empty(), sessionId).first().getId();
 
         files = Arrays.asList(new File[5]);
+
+
+        VariantOperationsTest.dummyVariantSetup(variantManager, studyFqn, sessionId);
+        VariantOperationsTest.dummyVariantSetup(variantManager, studyId2, sessionId);
     }
 
     @After
@@ -198,7 +202,11 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     }
 
     protected File create(String resourceName) throws IOException, CatalogException {
-        return create(studyId, getResourceUri(resourceName));
+        return create(resourceName, "data/vcfs/");
+    }
+
+    protected File create(String resourceName, String path) throws IOException, CatalogException {
+        return create(studyId, getResourceUri(resourceName), path);
     }
 
     protected File create(String studyId, URI uri) throws IOException, CatalogException {
@@ -403,8 +411,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         try {
             logger.info("Scanning files from {} to move to {}", tmpOutdirPath, outDir.getUri());
             // Avoid copy the job.status file!
-            Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE)
-                    && !ExecutionResultManager.isExecutionResultFile(uri.getPath())
+            Predicate<URI> fileStatusFilter = uri -> !ExecutionResultManager.isExecutionResultFile(uri.getPath())
                     && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
                     && !uri.getPath().endsWith(ERR_LOG_EXTENSION);
             files = fileScanner.scan(ORGANIZATION, outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, fileStatusFilter,

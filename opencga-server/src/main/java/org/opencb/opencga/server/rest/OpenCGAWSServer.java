@@ -852,42 +852,51 @@ public class OpenCGAWSServer {
         }
     }
 
-    public Response submitJob(String toolId, String project, String study, Map<String, Object> paramsMap,
-                              String jobName, String jobDescription, String jobDependsOne, String jobTags) {
-        return run(() -> submitJobRaw(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags));
+    public Response submitJob(String toolId, String project, String study, Map<String, Object> paramsMap, String jobName,
+                              String jobDescription, String jobDependsOne, String jobTags, String jobScheduledStartTime, String jobPriority,
+                              Boolean dryRun) {
+        return run(() -> submitJobRaw(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags, jobScheduledStartTime, jobPriority, dryRun));
     }
 
     public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobId, String jobDescription,
-                              String jobDependsOnStr, String jobTagsStr) {
-        return submitJob(toolId, null, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+                              String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority, Boolean dryRun) {
+        return submitJob(toolId, null, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun);
     }
 
     public Response submitJobAdmin(String toolId, ToolParams bodyParams, String jobId, String jobDescription,
-                                   String jobDependsOnStr, String jobTagsStr) {
+                                   String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority,
+                                   Boolean dryRun) {
         return run(() -> {
             JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
             catalogManager.getAuthorizationManager().checkIsOpencgaAdministrator(jwtPayload, "submit job from tool '" + toolId + "'");
-            return submitJobRaw(toolId, null, ADMIN_STUDY_FQN, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+            return submitJobRaw(toolId, null, ADMIN_STUDY_FQN, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun);
         });
     }
 
     public Response submitJob(String toolId, String project, String study, ToolParams bodyParams, String jobId, String jobDescription,
-                              String jobDependsOnStr, String jobTagsStr) {
-        return run(() -> submitJobRaw(toolId, project, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr));
+                              String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority, Boolean dryRun) {
+        return run(() -> submitJobRaw(toolId, project, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun));
     }
 
-    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, ToolParams bodyParams,
-                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, ToolParams bodyParams, String jobId,
+                                           String jobDescription, String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime,
+                                           String jobPriority, Boolean dryRun)
             throws CatalogException {
-        Map<String, Object> paramsMap = bodyParams.toParams();
+        Map<String, Object> paramsMap;
+        if (bodyParams != null) {
+            paramsMap = bodyParams.toParams();
+        } else {
+            paramsMap = new HashMap<>();
+        }
         if (StringUtils.isNotEmpty(study)) {
             paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
         }
-        return submitJobRaw(toolId, project, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+        return submitJobRaw(toolId, project, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun);
     }
 
-    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, Map<String, Object> paramsMap,
-                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, Map<String, Object> paramsMap, String jobId,
+                                           String jobDescription, String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime,
+                                           String jobPriority, Boolean dryRun)
             throws CatalogException {
 
         if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {
@@ -918,8 +927,13 @@ public class OpenCGAWSServer {
         } else {
             jobDependsOn = Collections.emptyList();
         }
+        Enums.Priority priority = Enums.Priority.MEDIUM;
+        if (!StringUtils.isEmpty(jobPriority)) {
+            priority = Enums.Priority.getPriority(jobPriority.toUpperCase());
+        }
         return catalogManager.getJobManager()
-                .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, token);
+                .submit(study, toolId, priority, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, null,
+                        jobScheduledStartTime, dryRun, token);
     }
 
     public Response createPendingResponse() {

@@ -54,8 +54,7 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
 
     OpenCGAResult nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Job job, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult insert(long studyId, Job job, QueryOptions options) throws CatalogException;
 
     default OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));
@@ -126,6 +125,7 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_WEBHOOK("internal.webhook", OBJECT, ""),
         INTERNAL_EVENTS("internal.events", OBJECT, ""),
+        INTERNAL_KILL_JOB_REQUESTED("internal.killJobRequested", BOOLEAN, ""),
         OUT_DIR("outDir", OBJECT, ""),
 
         INPUT("input", OBJECT, ""),

@@ -31,6 +31,9 @@ import org.opencb.opencga.core.models.common.Enums.PermissionRuleAction;
 import org.opencb.opencga.core.models.common.Enums.Resource;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.notes.Note;
+import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.study.CustomGroup;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupCreateParams;
@@ -111,6 +114,18 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "groups-users-update":
                 queryResponse = updateGroupsUsers();
                 break;
+            case "notes-create":
+                queryResponse = createNotes();
+                break;
+            case "notes-search":
+                queryResponse = searchNotes();
+                break;
+            case "notes-delete":
+                queryResponse = deleteNotes();
+                break;
+            case "notes-update":
+                queryResponse = updateNotes();
+                break;
             case "permissionrules":
                 queryResponse = permissionRules();
                 break;
@@ -163,9 +178,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), StudyAclUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
-            putNestedIfNotEmpty(beanParams, "template",commandOptions.template, true);
-            putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
+            putNestedIfNotEmpty(beanParams, "study", commandOptions.study, true);
+            putNestedIfNotEmpty(beanParams, "template", commandOptions.template, true);
+            putNestedIfNotEmpty(beanParams, "permissions", commandOptions.permissions, true);
 
             studyAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -197,18 +212,18 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), StudyCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
-            putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
-            putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "alias", commandOptions.alias, true);
+            putNestedIfNotEmpty(beanParams, "type.id", commandOptions.typeId, true);
+            putNestedIfNotEmpty(beanParams, "type.description", commandOptions.typeDescription, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "status.id", commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name", commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description", commandOptions.statusDescription, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             studyCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -321,8 +336,8 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), GroupCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotNull(beanParams, "users",commandOptions.users, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "users", commandOptions.users, true);
 
             groupCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -351,13 +366,111 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), GroupUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "users",commandOptions.users, true);
+            putNestedIfNotNull(beanParams, "users", commandOptions.users, true);
 
             groupUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GroupUpdateParams.class);
         }
         return openCGAClient.getStudyClient().updateGroupsUsers(commandOptions.study, commandOptions.group, groupUpdateParams, queryParams);
+    }
+
+    private RestResponse<Note> createNotes() throws Exception {
+        logger.debug("Executing createNotes in Studies command line");
+
+        StudiesCommandOptions.CreateNotesCommandOptions commandOptions = studiesCommandOptions.createNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+
+
+        NoteCreateParams noteCreateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Note> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/notes/create"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            noteCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), NoteCreateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
+            putNestedIfNotNull(beanParams, "valueType", commandOptions.valueType, true);
+
+            noteCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), NoteCreateParams.class);
+        }
+        return openCGAClient.getStudyClient().createNotes(commandOptions.study, noteCreateParams, queryParams);
+    }
+
+    private RestResponse<Note> searchNotes() throws Exception {
+        logger.debug("Executing searchNotes in Studies command line");
+
+        StudiesCommandOptions.SearchNotesCommandOptions commandOptions = studiesCommandOptions.searchNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("userId", commandOptions.userId);
+        queryParams.putIfNotEmpty("tags", commandOptions.tags);
+        queryParams.putIfNotEmpty("visibility", commandOptions.visibility);
+        queryParams.putIfNotEmpty("version", commandOptions.version);
+
+        return openCGAClient.getStudyClient().searchNotes(commandOptions.study, queryParams);
+    }
+
+    private RestResponse<Note> deleteNotes() throws Exception {
+        logger.debug("Executing deleteNotes in Studies command line");
+
+        StudiesCommandOptions.DeleteNotesCommandOptions commandOptions = studiesCommandOptions.deleteNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+
+        return openCGAClient.getStudyClient().deleteNotes(commandOptions.study, commandOptions.id, queryParams);
+    }
+
+    private RestResponse<Note> updateNotes() throws Exception {
+        logger.debug("Executing updateNotes in Studies command line");
+
+        StudiesCommandOptions.UpdateNotesCommandOptions commandOptions = studiesCommandOptions.updateNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("tagsAction", commandOptions.tagsAction);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+
+
+        NoteUpdateParams noteUpdateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Note> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/notes/{id}/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            noteUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), NoteUpdateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
+
+            noteUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), NoteUpdateParams.class);
+        }
+        return openCGAClient.getStudyClient().updateNotes(commandOptions.study, commandOptions.id, noteUpdateParams, queryParams);
     }
 
     private RestResponse<PermissionRule> permissionRules() throws Exception {
@@ -387,10 +500,10 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), PermissionRule.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotNull(beanParams, "query",commandOptions.query, true);
-            putNestedIfNotNull(beanParams, "members",commandOptions.members, true);
-            putNestedIfNotNull(beanParams, "permissions",commandOptions.permissions, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedMapIfNotEmpty(beanParams, "query", commandOptions.query, true);
+            putNestedIfNotNull(beanParams, "members", commandOptions.members, true);
+            putNestedIfNotNull(beanParams, "permissions", commandOptions.permissions, true);
 
             permissionRule = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -409,6 +522,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotNull("overwrite", commandOptions.overwrite);
         queryParams.putIfNotNull("resume", commandOptions.resume);
@@ -437,14 +553,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing deleteTemplates in Studies command line");
 
         StudiesCommandOptions.DeleteTemplatesCommandOptions commandOptions = studiesCommandOptions.deleteTemplatesCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getStudyClient().deleteTemplates(commandOptions.study, commandOptions.templateId, queryParams);
+        return openCGAClient.getStudyClient().deleteTemplates(commandOptions.study, commandOptions.templateId);
     }
 
     private RestResponse<Study> update() throws Exception {
@@ -469,17 +578,17 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), StudyUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
-            putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
-            putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
-            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "alias", commandOptions.alias, true);
+            putNestedIfNotEmpty(beanParams, "type.id", commandOptions.typeId, true);
+            putNestedIfNotEmpty(beanParams, "type.description", commandOptions.typeDescription, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "status.id", commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name", commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description", commandOptions.statusDescription, true);
 
             studyUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -519,11 +628,11 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), VariableSetCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotNull(beanParams, "unique",commandOptions.unique, true);
-            putNestedIfNotNull(beanParams, "confidential",commandOptions.confidential, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "unique", commandOptions.unique, true);
+            putNestedIfNotNull(beanParams, "confidential", commandOptions.confidential, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
 
             variableSetCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -552,18 +661,18 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), Variable.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "category",commandOptions.category, true);
-            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-            putNestedIfNotNull(beanParams, "required",commandOptions.required, true);
-            putNestedIfNotNull(beanParams, "multiValue",commandOptions.multiValue, true);
-            putNestedIfNotNull(beanParams, "allowedValues",commandOptions.allowedValues, true);
-            putNestedIfNotNull(beanParams, "allowedKeys",commandOptions.allowedKeys, true);
-            putNestedIfNotNull(beanParams, "rank",commandOptions.rank, true);
-            putNestedIfNotEmpty(beanParams, "dependsOn",commandOptions.dependsOn, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "category", commandOptions.category, true);
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "required", commandOptions.required, true);
+            putNestedIfNotNull(beanParams, "multiValue", commandOptions.multiValue, true);
+            putNestedIfNotNull(beanParams, "allowedValues", commandOptions.allowedValues, true);
+            putNestedIfNotNull(beanParams, "allowedKeys", commandOptions.allowedKeys, true);
+            putNestedIfNotNull(beanParams, "rank", commandOptions.rank, true);
+            putNestedIfNotEmpty(beanParams, "dependsOn", commandOptions.dependsOn, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             variable = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

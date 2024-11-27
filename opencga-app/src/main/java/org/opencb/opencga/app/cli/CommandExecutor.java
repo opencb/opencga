@@ -45,7 +45,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 19/04/16.
@@ -291,7 +294,6 @@ public abstract class CommandExecutor {
         return this;
     }
 
-
     public String getObjectAsJSON(String objectCategory, String objectPath, OpenCGAClient openCGAClient) throws Exception {
         StringBuilder jsonInString = new StringBuilder("\n");
         try {
@@ -299,26 +301,25 @@ public abstract class CommandExecutor {
             queryParams.putIfNotEmpty("category", objectCategory);
             RestResponse<List> response = openCGAClient.getMetaClient().api(queryParams);
             ObjectMapper jsonObjectMapper = new ObjectMapper();
+            boolean found = false;
             for (List list : response.getResponses().get(0).getResults()) {
                 List<RestCategory> categories = jsonObjectMapper.convertValue(list, new TypeReference<List<RestCategory>>() {});
                 for (RestCategory category : categories) {
                     for (RestEndpoint endpoint : category.getEndpoints()) {
                         if (objectPath.equals(endpoint.getPath())) {
-                            boolean enc = false;
                             for (RestParameter parameter : endpoint.getParameters()) {
-                                //jsonInString += parameter.getName()+":"+parameter.getAllowedValues()+"\n";
                                 if (parameter.getData() != null) {
-                                    enc = true;
-                                    jsonInString.append(printBody(parameter.getData(), ""));
+                                    found = true;
+                                    Map<String, Object> map = getExampleBody(parameter.getData());
+                                    jsonInString.append(jsonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(map));
                                 }
                             }
-                            if (!enc) {
-                                jsonInString.append("No model available");
-                            }
-                            //
                         }
                     }
                 }
+            }
+            if (!found) {
+                jsonInString.append("No model available");
             }
         } catch (Exception e) {
             jsonInString = new StringBuilder("Data model not found.");
@@ -327,36 +328,27 @@ public abstract class CommandExecutor {
         return jsonInString.toString();
     }
 
-    private String printBody(List<RestParameter> data, String tabs) {
-        String res = "";
-        res += "{\n";
-        String tab = "    " + tabs;
+    private Map<String, Object> getExampleBody(List<RestParameter> data) {
+        Map<String, Object> result = new HashMap<>();
         for (RestParameter parameter : data) {
             if (parameter.getData() == null) {
-                res += printParameter(parameter, tab);
+                result.put(parameter.getName(), getParameterExampleValue(parameter));
             } else {
-                res += tab + "\"" +parameter.getName() + "\"" + ": [" + printBody(parameter.getData(), tab) + "],\n";
+                result.put(parameter.getName(), getExampleBody(parameter.getData()));
             }
         }
-        res += tabs + "}";
-        return res;
-
+       return result;
     }
 
-    private String printParameter(RestParameter parameter, String tab) {
-
-        return tab + "\"" + parameter.getName() + "\"" + ":" + printParameterValue(parameter) + ",\n";
-    }
-
-    private String printParameterValue(RestParameter parameter) {
-
+    private Object getParameterExampleValue(RestParameter parameter) {
         if(!StringUtils.isEmpty(parameter.getAllowedValues())){
             return parameter.getAllowedValues().replace(" ", "|");
         }
+
         switch (parameter.getType()) {
             case "Boolean":
             case "java.lang.Boolean":
-                return "false";
+                return false;
             case "Long":
             case "Float":
             case "Double":
@@ -365,20 +357,20 @@ public abstract class CommandExecutor {
             case "double":
             case "float":
             case "long":
-                return "0";
+                return 0;
             case "List":
-                return "[\"\"]";
+                return Collections.singletonList("");
             case "Date":
-                return "\"dd/mm/yyyy\"";
+                return "dd/mm/yyyy";
             case "Map":
-                return "{\"key\": \"value\"}";
+                return Collections.singletonMap("key", "value");
             case "String":
-                return "\"\"";
+                return "";
             default:
-                return "\"-\"";
+                logger.debug("Unknown type: " + parameter.getType() + " for parameter: " + parameter.getName());
+                return "-";
         }
     }
-
 
     public Logger getLogger() {
         return logger;

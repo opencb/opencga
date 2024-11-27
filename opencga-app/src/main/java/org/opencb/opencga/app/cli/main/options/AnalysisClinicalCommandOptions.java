@@ -241,8 +241,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--family-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String familyId;
     
-        @Parameter(names = {"--panel-lock"}, description = "The body web service panelLock parameter", required = false, arity = 1)
-        public Boolean panelLock;
+        @Parameter(names = {"--panel-locked"}, description = "The body web service panelLocked parameter", required = false, arity = 1)
+        public Boolean panelLocked;
     
         @Parameter(names = {"--analyst-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String analystId;
@@ -300,6 +300,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--responsible-postcode"}, description = "The body web service postcode parameter", required = false, arity = 1)
         public String responsiblePostcode;
+    
+        @Parameter(names = {"--interpretation-name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String interpretationName;
     
         @Parameter(names = {"--interpretation-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String interpretationDescription;
@@ -423,6 +426,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
+        @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
+        public Integer snapshot; 
+    
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
     
@@ -454,6 +460,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Interpretation UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of Interpretation names up to a maximum of 100", required = false, arity = 1)
+        public String name; 
     
         @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical Analysis id", required = false, arity = 1)
         public String clinicalAnalysisId; 
@@ -522,6 +531,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Interpretation UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of Interpretation names up to a maximum of 100", required = false, arity = 1)
+        public String name; 
     
         @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical Analysis id", required = false, arity = 1)
         public String clinicalAnalysisId; 
@@ -611,6 +623,15 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
     
@@ -649,8 +670,20 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID.", required = false, arity = 1)
         public String clinicalAnalysis;
+    
+        @Parameter(names = {"--exomiser-version"}, description = "Exomiser version in the format X.Y where X is the major version and Y the minor version, e.g.: 14.0. If the version is not specified, the default version will be used. Refer to the configuration file to view all installed Exomiser versions and identify the default version.", required = false, arity = 1)
+        public String exomiserVersion;
     
     }
 
@@ -680,6 +713,15 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
     
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
@@ -722,6 +764,15 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
     
@@ -762,6 +813,15 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
     
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
@@ -944,6 +1004,15 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
     
         @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
         public String file;
@@ -1231,6 +1300,15 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
     
         @Parameter(names = {"--auxiliar-index"}, description = "Index auxiliar collection to improve performance assuming RGA is completely indexed.", required = false, help = true, arity = 0)
         public boolean auxiliarIndex = false; 
@@ -1674,6 +1752,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
+        @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
+        public Integer snapshot; 
+    
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
     
@@ -1721,7 +1802,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--include-interpretation"}, description = "Interpretation ID to include the fields related to this interpretation", required = false, arity = 1)
         public String includeInterpretation; 
     
-        @Parameter(names = {"--id"}, description = "List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
@@ -1802,7 +1883,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
         public String ct; 
     
-        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...", required = false, arity = 1)
+        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
         public String xref; 
     
         @Parameter(names = {"--biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
@@ -1961,8 +2042,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--disorder-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String disorderId;
     
-        @Parameter(names = {"--panel-lock"}, description = "The body web service panelLock parameter", required = false, arity = 1)
-        public Boolean panelLock;
+        @Parameter(names = {"--panel-locked"}, description = "The body web service panelLocked parameter", required = false, arity = 1)
+        public Boolean panelLocked;
     
         @Parameter(names = {"--proband-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String probandId;
@@ -2057,6 +2138,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
     
+        @Parameter(names = {"--panel-lock"}, description = "The body web service panelLock parameter", required = false, arity = 1)
+        public Boolean panelLock;
+    
     }
 
     @Parameters(commandNames = {"annotation-sets-annotations-update"}, commandDescription ="Update annotations from an annotationSet")
@@ -2106,6 +2190,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
+        @Parameter(names = {"--version"}, description = "Comma separated list of clinical versions. 'all' to get all the clinical versions. Not supported if multiple clinical ids are provided", required = false, arity = 1)
+        public String version; 
+    
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
         public boolean deleted = false; 
     
@@ -2140,6 +2227,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String name;
     
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
@@ -2277,6 +2367,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String name;
     
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;

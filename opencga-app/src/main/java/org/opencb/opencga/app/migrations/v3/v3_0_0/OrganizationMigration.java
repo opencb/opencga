@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.migrations.v3.v3_0_0;
 
+<<<<<<< HEAD
 import com.mongodb.client.*;
 import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
@@ -22,9 +23,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+=======
+>>>>>>> release-3.x.x
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationException;
 import org.opencb.opencga.catalog.migration.MigrationTool;
+<<<<<<< HEAD
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -53,16 +57,22 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
+=======
+import org.opencb.opencga.core.config.Configuration;
+>>>>>>> release-3.x.x
 
 import static org.opencb.opencga.core.config.storage.StorageConfiguration.Mode.READ_ONLY;
 
 @Migration(id = "add_organizations", description = "Add new Organization layer #TASK-4389", version = "3.0.0",
+<<<<<<< HEAD
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20231212, manual = true)
+=======
+        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20231212,
+        deprecatedSince = "3.1.0")
+>>>>>>> release-3.x.x
 public class OrganizationMigration extends MigrationTool {
-    private final Configuration configuration;
-    private final String adminPassword;
-    private String userId;
 
+<<<<<<< HEAD
     private MongoDBAdaptorFactory mongoDBAdaptorFactory;
     private String oldDatabase;
     private MongoDataStore oldDatastore;
@@ -225,10 +235,14 @@ public class OrganizationMigration extends MigrationTool {
         ParamUtils.checkIdentifier(this.organizationId, "Organization id");
         this.catalogManager = new CatalogManager(configuration);
         return MigrationStatus.PENDING_MIGRATION;
+=======
+    public OrganizationMigration(Configuration configuration, String adminPassword, String userId) {
+>>>>>>> release-3.x.x
     }
 
     @Override
     protected void run() throws Exception {
+<<<<<<< HEAD
         if (this.status == MigrationStatus.ERROR) {
             throw new CatalogException("Corrupted database '" + this.oldDatabase + "' found. Could not migrate.");
         } else if (this.status == MigrationStatus.MIGRATED) {
@@ -664,6 +678,8 @@ public class OrganizationMigration extends MigrationTool {
                 (document, bulk) -> bulk.add(new InsertOneModel<>(document)));
         // Remove data from the source collection
         sourceCol.deleteMany(Filters.eq("studyUid", studyUid));
+=======
+>>>>>>> release-3.x.x
     }
 
 }

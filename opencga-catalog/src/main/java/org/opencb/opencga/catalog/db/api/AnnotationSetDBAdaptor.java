@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.study.Variable;
@@ -58,12 +59,14 @@ public interface AnnotationSetDBAdaptor<T> extends CoreDBAdaptor<T> {
     /**
      * Add the variable to all the possible annotations from the variableSetId using the default value.
      *
+     * @param studyUid      Study uid.
      * @param variableSetId variable set id to identify the annotations that will add a new annotation.
-     * @param variable new variable that will be added.
+     * @param variable      new variable that will be added.
      * @return a OpenCGAResult object.
-     * @throws CatalogDBException if the variable could not be added to an existing annotationSet.
+     * @throws CatalogException if the variable could not be added to an existing annotationSet, there is any unexpected parameter or
+     *                          the operation is not authorized.
      */
-    OpenCGAResult addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
+    OpenCGAResult addVariableToAnnotations(long studyUid, long variableSetId, Variable variable) throws CatalogException;
 
 //    /**
 //     * This method will rename the id of all the annotations corresponding to the variableSetId changing oldName per newName.
@@ -80,21 +83,23 @@ public interface AnnotationSetDBAdaptor<T> extends CoreDBAdaptor<T> {
     /**
      * Remove the annotation with annotationName from the annotation set.
      *
-     * @param variableSetId variable set id for which the annotationSets have to delete the annotation.
+     * @param studyUid       Study uid.
+     * @param variableSetId  variable set id for which the annotationSets have to delete the annotation.
      * @param annotationName Annotation name.
      * @return a OpenCGAResult object.
-     * @throws CatalogDBException when there is an error in the database.
+     * @throws CatalogException when there is an error in the database, there is any unexpected parameter or the operation is not
+     *                          authorized.
      */
-    OpenCGAResult removeAnnotationField(long variableSetId, String annotationName) throws CatalogDBException;
+    OpenCGAResult removeAnnotationField(long studyUid, long variableSetId, String annotationName) throws CatalogException;
 
     /**
      * Makes a groupBy to obtain the different values that every annotation has and the total number of each.
      *
      *
-     * @param studyId study id.
+     * @param studyUid study uid.
      * @param variableSetId variable set id for which the group by will be done.
      * @return a list of Feature count with every different value.
      * @throws CatalogDBException when there is an error in the database.
      */
-    OpenCGAResult<VariableSummary> getAnnotationSummary(long studyId, long variableSetId) throws CatalogDBException;
+    OpenCGAResult<VariableSummary> getAnnotationSummary(long studyUid, long variableSetId) throws CatalogDBException;
 }

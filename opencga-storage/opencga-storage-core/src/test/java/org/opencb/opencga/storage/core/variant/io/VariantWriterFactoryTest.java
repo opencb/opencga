@@ -23,11 +23,13 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
@@ -85,8 +87,10 @@ public class VariantWriterFactoryTest {
                 new VariantFileHeaderComplexLine("contig", "chr3", null, null, null, Collections.singletonMap("length", ".")),
                 new VariantFileHeaderComplexLine("contig", "chr4", null, null, null, Collections.singletonMap("length", "1234"))
         ));
-        StudyMetadata study = dbAdaptor.getMetadataManager().createStudy("study");
-        dbAdaptor.getMetadataManager().unsecureUpdateStudyMetadata(study.setVariantHeader(header));
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        metadataManager.getAndUpdateProjectMetadata(new ObjectMap());
+        StudyMetadata study = metadataManager.createStudy("study");
+        metadataManager.unsecureUpdateStudyMetadata(study.setVariantHeader(header));
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream(10000);
         DataWriter<Variant> writer = new VariantWriterFactory(dbAdaptor).newDataWriter(
                 VariantWriterFactory.VariantOutputFormat.VCF,

@@ -31,15 +31,19 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.user.*;
@@ -59,8 +63,8 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.checkEmail;
  */
 public class UserManager extends AbstractManager {
 
-    static final QueryOptions INCLUDE_ACCOUNT = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-            UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key()));
+    static final QueryOptions INCLUDE_INTERNAL = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
+            UserDBAdaptor.QueryParams.INTERNAL.key(), UserDBAdaptor.QueryParams.DEPRECATED_ACCOUNT.key()));
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     private final CatalogIOManager catalogIOManager;
     private final AuthenticationFactory authenticationFactory;
@@ -82,6 +86,9 @@ public class UserManager extends AbstractManager {
         try {
             if (oldPassword.equals(newPassword)) {
                 throw new CatalogException("New password is the same as the old password.");
+            }
+            if (!PasswordUtils.isStrongPassword(newPassword)) {
+                throw new CatalogException("Invalid password. " + PasswordUtils.PASSWORD_REQUIREMENT);
             }
 
             getUserDBAdaptor(organizationId).checkId(userId);
@@ -118,40 +125,68 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("Creating '" + OPENCGA + "' user is forbidden in any organization.");
         }
 
+        Organization organization = getOrganizationDBAdaptor(organizationId).get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION)
+                .first();
+
         ObjectMap auditParams = new ObjectMap("user", user);
 
         // Initialise fields
         ParamUtils.checkObj(user, "User");
         ParamUtils.checkValidUserId(user.getId());
-        ParamUtils.checkParameter(user.getName(), "name");
+        user.setName(ParamUtils.defaultString(user.getName(), user.getId()));
         user.setEmail(ParamUtils.defaultString(user.getEmail(), ""));
         if (StringUtils.isNotEmpty(user.getEmail())) {
             checkEmail(user.getEmail());
         }
-        user.setAccount(ParamUtils.defaultObject(user.getAccount(), Account::new));
-        user.getAccount().setCreationDate(TimeUtils.getTime());
-        user.getAccount().setExpirationDate(ParamUtils.defaultString(user.getAccount().getExpirationDate(), ""));
-        user.setInternal(new UserInternal(new UserStatus(UserStatus.READY)));
+        user.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(user.getCreationDate(),
+                UserDBAdaptor.QueryParams.CREATION_DATE.key()));
+        user.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(user.getModificationDate(),
+                UserDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
+
+        user.setInternal(ParamUtils.defaultObject(user.getInternal(), UserInternal::new));
+        user.getInternal().setStatus(new UserStatus(InternalStatus.READY));
         user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
         user.setProjects(ParamUtils.defaultObject(user.getProjects(), Collections::emptyList));
         user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
         user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
         user.setAttributes(ParamUtils.defaultObject(user.getAttributes(), Collections::emptyMap));
 
+        // Init account
+        user.getInternal().setAccount(ParamUtils.defaultObject(user.getInternal().getAccount(), Account::new));
+        Account account = user.getInternal().getAccount();
+        account.setPassword(ParamUtils.defaultObject(account.getPassword(), Password::new));
+        if (StringUtils.isEmpty(account.getExpirationDate())) {
+            account.setExpirationDate(organization.getConfiguration().getDefaultUserExpirationDate());
+        } else {
+            // Validate expiration date is not over
+            ParamUtils.checkDateIsNotExpired(account.getExpirationDate(), UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_EXPIRATION_DATE.key());
+        }
         if (StringUtils.isEmpty(password)) {
             Map<String, AuthenticationManager> authOriginMap = authenticationFactory.getOrganizationAuthenticationManagers(organizationId);
-            if (!authOriginMap.containsKey(user.getAccount().getAuthentication().getId())) {
-                throw new CatalogException("Unknown authentication origin id '" + user.getAccount().getAuthentication() + "'");
+            if (!authOriginMap.containsKey(account.getAuthentication().getId())) {
+                throw new CatalogException("Unknown authentication origin id '" + account.getAuthentication() + "'");
             }
         } else {
-            user.getAccount().setAuthentication(new Account.AuthenticationOrigin(CatalogAuthenticationManager.INTERNAL, false));
+            account.setAuthentication(new Account.AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, false));
+        }
+
+        // Set password expiration
+        if (AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())) {
+            account.getPassword().setLastModified(TimeUtils.getTime());
+        }
+        if (!AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())
+                || configuration.getAccount().getPasswordExpirationDays() <= 0) {
+            // User password doesn't expire or it's not managed by OpenCGA
+            account.getPassword().setExpirationDate(null);
+        } else {
+            Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
+            account.getPassword().setExpirationDate(TimeUtils.getTime(date));
         }
 
         if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
             JwtPayload jwtPayload = validateToken(token);
             // If it's not one of the SUPERADMIN users or the owner or one of the admins of the organisation, we should not allow it
-            if (!authorizationManager.isOpencgaAdministrator(organizationId, jwtPayload.getUserId(organizationId))
-                    && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
+            if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
                 String errorMsg = "Please ask your administrator to create your account.";
                 auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
@@ -163,7 +198,7 @@ public class UserManager extends AbstractManager {
 
         try {
             if (StringUtils.isNotEmpty(password) && !PasswordUtils.isStrongPassword(password)) {
-                throw new CatalogException("Invalid password. Check password strength for user " + user.getId());
+                throw new CatalogException("Invalid password. " + PasswordUtils.PASSWORD_REQUIREMENT);
             }
             if (user.getProjects() != null && !user.getProjects().isEmpty()) {
                 throw new CatalogException("Creating user and projects in a single transaction is forbidden");
@@ -199,9 +234,50 @@ public class UserManager extends AbstractManager {
     public OpenCGAResult<User> create(String id, String name, String email, String password, String organization, Long quota, String token)
             throws CatalogException {
         User user = new User(id, name, email, organization, new UserInternal(new UserStatus()))
-                .setAccount(new Account("", "", null))
                 .setQuota(new UserQuota().setMaxDisk(quota != null ? quota : -1));
         return create(user, password, token);
+    }
+
+    /**
+     * Search users from Organization. Token must belong to at least an Organization administrator.
+     *
+     * @param organizationId Organization id.
+     * @param query          Query object.
+     * @param options        QueryOptions object.
+     * @param token          JWT token.
+     * @return               OpenCGAResult with the list of users.
+     * @throws CatalogException if the token does not belong to an Organization administrator or there are any parameters wrong.
+     */
+    public OpenCGAResult<User> search(@Nullable String organizationId, Query query, QueryOptions options, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
+                .append("query", query)
+                .append("options", options)
+                .append("token", token);
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        String myOrganizationId = StringUtils.isNotEmpty(organizationId) ? organizationId : tokenPayload.getOrganization();
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(myOrganizationId, tokenPayload.getUserId(myOrganizationId));
+
+            // Fix query params
+            if (query.containsKey(ParamConstants.USER_AUTHENTICATION_ORIGIN)) {
+                query.put(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_AUTHENTICATION_ID.key(),
+                        query.get(ParamConstants.USER_AUTHENTICATION_ORIGIN));
+                query.remove(ParamConstants.USER_AUTHENTICATION_ORIGIN);
+            }
+
+            OpenCGAResult<User> result = getUserDBAdaptor(myOrganizationId).get(query, options);
+            auditManager.auditSearch(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return result;
+        } catch (Exception e) {
+            auditManager.auditSearch(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "User search", e.getMessage())));
+            throw e;
+        }
     }
 
     public JwtPayload validateToken(String token) throws CatalogException {
@@ -211,13 +287,15 @@ public class UserManager extends AbstractManager {
 
         String authOrigin;
         if (ParamConstants.ANONYMOUS_USER_ID.equals(jwtPayload.getUserId())) {
-            authOrigin = CatalogAuthenticationManager.INTERNAL;
+            authOrigin = CatalogAuthenticationManager.OPENCGA;
         } else {
-            OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(), INCLUDE_ACCOUNT);
+            OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(),
+                    INCLUDE_INTERNAL);
             if (userResult.getNumResults() == 0) {
                 throw new CatalogException("User '" + jwtPayload.getUserId() + "' could not be found.");
             }
-            authOrigin = userResult.first().getAccount().getAuthentication().getId();
+            User user = userResult.first();
+            authOrigin = user.getInternal().getAccount().getAuthentication().getId();
         }
 
         authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, token);
@@ -422,8 +500,10 @@ public class UserManager extends AbstractManager {
                 }
             } else {
                 for (String applicationId : idList) {
-                    User application = new User(applicationId, new Account()
-                            .setAuthentication(new Account.AuthenticationOrigin(authOrigin, true)))
+                    Account account = new Account()
+                            .setAuthentication(new Account.AuthenticationOrigin(authOrigin, true));
+                    User application = new User(applicationId)
+                            .setInternal(new UserInternal(new UserStatus(UserStatus.READY), account))
                             .setEmail("mail@mail.co.uk");
                     application.setOrganization(organizationId);
                     create(application, null, token);
@@ -520,7 +600,7 @@ public class UserManager extends AbstractManager {
      * @return The requested users
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<User> get(String organizationId, List<String> userIdList, QueryOptions options, String token)
+    public OpenCGAResult<User> get(@Nullable String organizationId, List<String> userIdList, QueryOptions options, String token)
             throws CatalogException {
         ParamUtils.checkNotEmptyArray(userIdList, "userId");
         ParamUtils.checkParameter(token, "token");
@@ -533,7 +613,7 @@ public class UserManager extends AbstractManager {
                 .append("token", token);
         JwtPayload jwtPayload = validateToken(token);
 
-        if (userIdList.size() == 1 && jwtPayload.getUserId().equals(userIdList.get(0)) && StringUtils.isEmpty(organizationId)) {
+        if (StringUtils.isEmpty(organizationId)) {
             organizationId = jwtPayload.getOrganization();
         }
         String userId = jwtPayload.getUserId(organizationId);
@@ -541,9 +621,10 @@ public class UserManager extends AbstractManager {
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         auditManager.initAuditBatch(operationUuid);
         try {
-            // 1. If the user is an opencga administrator or the organization owner or admin - return info
-            if (authorizationManager.isOpencgaAdministrator(jwtPayload)
-                    || authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)
+            // 1. If the user is an opencga administrator or the organization owner or admin
+            // 2. Or the user is requesting its own data
+            //    - return info
+            if (authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)
                     || (userIdList.size() == 1 && userId.equals(userIdList.get(0)))) {
                 Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userIdList);
                 OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(query, options);
@@ -590,7 +671,7 @@ public class UserManager extends AbstractManager {
 
             userId = getValidUserId(userId, payload);
             for (String s : parameters.keySet()) {
-                if (!s.matches("name|email|organization|attributes")) {
+                if (!s.matches("name|email")) {
                     throw new CatalogDBException("Parameter '" + s + "' can't be changed");
                 }
             }
@@ -698,7 +779,7 @@ public class UserManager extends AbstractManager {
         JwtPayload jwtPayload = validateToken(token);
         String organizationId = jwtPayload.getOrganization();
         try {
-            authorizationManager.checkIsOpencgaAdministrator(jwtPayload, "reset password");
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId());
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
             OpenCGAResult writeResult = authenticationFactory.resetPassword(organizationId, authOrigin, userId);
 
@@ -728,7 +809,7 @@ public class UserManager extends AbstractManager {
             if (OPENCGA.equals(username)) {
                 organizationId = ParamConstants.ADMIN_ORGANIZATION;
             } else {
-                List<String> organizationIds = catalogDBAdaptorFactory.getOrganizationIds();
+                List<String> organizationIds = getCatalogDBAdaptorFactory().getOrganizationIds();
                 if (organizationIds.size() == 2) {
                     organizationId = organizationIds.stream().filter(s -> !ParamConstants.ADMIN_ORGANIZATION.equals(s)).findFirst().get();
                 } else {
@@ -737,15 +818,75 @@ public class UserManager extends AbstractManager {
             }
         }
 
-        OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_ACCOUNT);
+        OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_INTERNAL);
         if (userOpenCGAResult.getNumResults() == 1) {
-            authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
+            User user = userOpenCGAResult.first();
+            // Only local OPENCGA users that are not superadmins can be automatically banned or their accounts be expired
+            boolean userCanBeBanned = !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)
+                    && CatalogAuthenticationManager.OPENCGA.equals(user.getInternal().getAccount().getAuthentication().getId());
+            // We check
+            if (userCanBeBanned) {
+                // Check user is not banned, suspended or has an expired account
+                if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
+                    throw CatalogAuthenticationException.userIsBanned(username);
+                }
+                if (UserStatus.SUSPENDED.equals(user.getInternal().getStatus().getId())) {
+                    throw CatalogAuthenticationException.userIsSuspended(username);
+                }
+                Account account2 = user.getInternal().getAccount();
+                if (account2.getPassword().getExpirationDate() != null) {
+                    Account account1 = user.getInternal().getAccount();
+                    Date passwordExpirationDate = TimeUtils.toDate(account1.getPassword().getExpirationDate());
+                    if (passwordExpirationDate == null) {
+                        throw new CatalogException("Unexpected null 'passwordExpirationDate' for user '" + username + "'.");
+                    }
+                    if (passwordExpirationDate.before(new Date())) {
+                        Account account = user.getInternal().getAccount();
+                        throw CatalogAuthenticationException.passwordExpired(username, account.getPassword().getExpirationDate());
+                    }
+                }
+                if (user.getInternal().getAccount().getExpirationDate() != null) {
+                    Date date = TimeUtils.toDate(user.getInternal().getAccount().getExpirationDate());
+                    if (date == null) {
+                        throw new CatalogException("Unexpected null 'expirationDate' for user '" + username + "'.");
+                    }
+                    if (date.before(new Date())) {
+                        throw CatalogAuthenticationException.accountIsExpired(username,
+                                user.getInternal().getAccount().getExpirationDate());
+                    }
+                }
+            }
+            User user1 = userOpenCGAResult.first();
+            authId = user1.getInternal().getAccount().getAuthentication().getId();
             try {
                 response = authenticationFactory.authenticate(organizationId, authId, username, password);
             } catch (CatalogAuthenticationException e) {
+                if (userCanBeBanned) {
+                    // We can only lock the account if it is not the root user
+                    UserInternal userInternal = userOpenCGAResult.first().getInternal();
+                    int failedAttempts = userInternal.getAccount().getFailedAttempts();
+                    ObjectMap updateParams = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_FAILED_ATTEMPTS.key(),
+                            failedAttempts + 1);
+                    if (failedAttempts >= (configuration.getAccount().getMaxLoginAttempts() - 1)) {
+                        // Ban the account
+                        updateParams.append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), UserStatus.BANNED);
+                    }
+                    getUserDBAdaptor(organizationId).update(username, updateParams);
+                }
+
                 auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
                 throw e;
+            }
+
+            // If it was a local user and the counter of failed attempts was greater than 0, we reset it
+            if (userCanBeBanned) {
+                UserInternal userInternal = userOpenCGAResult.first().getInternal();
+                if (userInternal.getAccount().getFailedAttempts() > 0) {
+                    // Reset login failed attempts counter
+                    ObjectMap updateParams = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_FAILED_ATTEMPTS.key(), 0);
+                    getUserDBAdaptor(organizationId).update(username, updateParams);
+                }
             }
         } else {
             // We attempt to login the user with the different authentication managers
@@ -771,7 +912,7 @@ public class UserManager extends AbstractManager {
         auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
-        if (!CatalogAuthenticationManager.INTERNAL.equals(authId)) {
+        if (!CatalogAuthenticationManager.OPENCGA.equals(authId) && !CatalogAuthenticationManager.INTERNAL.equals(authId)) {
             // External authorization
             try {
                 // If the user is not registered, an exception will be raised
@@ -782,7 +923,7 @@ public class UserManager extends AbstractManager {
                         .get(0);
                 user.setOrganization(organizationId);
                 // Generate a root token to be able to create the user even if the installation is private
-                String rootToken = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.INTERNAL, OPENCGA);
+                String rootToken = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.OPENCGA, OPENCGA);
                 create(user, null, rootToken);
             }
 
@@ -809,7 +950,7 @@ public class UserManager extends AbstractManager {
             throw CatalogAuthenticationException.userNotFound(organizationId, ParamConstants.ANONYMOUS_USER_ID);
         }
 
-        String token = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.INTERNAL,
+        String token = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.OPENCGA,
                 ParamConstants.ANONYMOUS_USER_ID);
         return new AuthenticationResponse(token);
     }
@@ -817,12 +958,13 @@ public class UserManager extends AbstractManager {
     /**
      * Create a new token if the token provided corresponds to the user and it is not expired yet.
      *
-     * @param organizationId Organization id.
      * @param token          active token.
      * @return a new AuthenticationResponse object.
      * @throws CatalogException if the token does not correspond to the user or the token is expired.
      */
-    public AuthenticationResponse refreshToken(String organizationId, String token) throws CatalogException {
+    public AuthenticationResponse refreshToken(String token) throws CatalogException {
+        JwtPayload payload = new JwtPayload(token);
+        String organizationId = payload.getOrganization();
         AuthenticationResponse response = null;
         CatalogAuthenticationException exception = null;
         String userId = "";
@@ -836,7 +978,7 @@ public class UserManager extends AbstractManager {
                 break;
             } catch (CatalogAuthenticationException e) {
                 logger.debug("Could not refresh token with '{}' provider: {}", entry.getKey(), e.getMessage(), e);
-                if (CatalogAuthenticationManager.INTERNAL.equals(entry.getKey())) {
+                if (CatalogAuthenticationManager.OPENCGA.equals(entry.getKey())) {
                     exception = e;
                 }
             }
@@ -851,6 +993,70 @@ public class UserManager extends AbstractManager {
         auditManager.auditUser(organizationId, userId, Enums.Action.REFRESH_TOKEN, userId,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         return response;
+    }
+
+    public OpenCGAResult<User> changeStatus(String organizationId, String userId, String status, QueryOptions options, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = validateToken(token);
+        String userIdOrganization = StringUtils.isNotEmpty(organizationId) ? organizationId : tokenPayload.getOrganization();
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
+                .append("userId", userId)
+                .append("status", status)
+                .append("options", options)
+                .append("token", token);
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(userIdOrganization, tokenPayload.getUserId(userIdOrganization));
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+            // Validate user exists
+            getUserDBAdaptor(userIdOrganization).checkId(userId);
+
+            // Validate status is valid
+            if (!UserStatus.READY.equals(status) && !UserStatus.SUSPENDED.equals(status)) {
+                throw new CatalogParameterException("Invalid status '" + status + "'. Valid values are: " + UserStatus.READY + ", "
+                        + UserStatus.SUSPENDED);
+            }
+
+            if (UserStatus.SUSPENDED.equals(status)) {
+                // Get organization information
+                Set<String> ownerAndAdmins = catalogManager.getOrganizationManager().getOrganizationOwnerAndAdmins(userIdOrganization);
+                if (ownerAndAdmins.contains(userId)) {
+                    if (tokenPayload.getUserId().equals(userId)) {
+                        // The user is trying to suspend himself
+                        throw new CatalogAuthorizationException("You can't suspend your own account.");
+                    }
+                    if (!authorizationManager.isAtLeastOrganizationOwner(userIdOrganization, tokenPayload.getUserId(userIdOrganization))) {
+                        // One of the admins is trying to suspend the owner or one of the admins
+                        throw new CatalogAuthorizationException("Only the owner of the organization can suspend administrators.");
+                    }
+                }
+            }
+
+            // Update user status and reset failed attempts to 0
+            ObjectMap updateParams = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), status);
+            if (UserStatus.READY.equals(status)) {
+                updateParams.put(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_FAILED_ATTEMPTS.key(), 0);
+            }
+            OpenCGAResult<User> result = getUserDBAdaptor(userIdOrganization).update(userId, updateParams);
+
+            auditManager.auditUpdate(organizationId, tokenPayload.getUserId(userIdOrganization), Enums.Resource.USER, userId, "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated user
+                OpenCGAResult<User> tmpResult = getUserDBAdaptor(userIdOrganization).get(userId, options);
+                result.setResults(tmpResult.getResults());
+            }
+
+            return result;
+        } catch (Exception e) {
+            auditManager.auditUpdate(organizationId, tokenPayload.getUserId(userIdOrganization), Enums.Resource.USER, userId, "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, "Could not update user status",
+                            e.getMessage())));
+            throw e;
+        }
     }
 
     /**
@@ -898,9 +1104,10 @@ public class UserManager extends AbstractManager {
     }
 
     private AuthenticationManager getAuthenticationManagerForUser(String organizationId, String user) throws CatalogException {
-        OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(user, INCLUDE_ACCOUNT);
+        OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(user, INCLUDE_INTERNAL);
         if (userOpenCGAResult.getNumResults() == 1) {
-            String authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
+            User user1 = userOpenCGAResult.first();
+            String authId = user1.getInternal().getAccount().getAuthentication().getId();
             return authenticationFactory.getOrganizationAuthenticationManager(organizationId, authId);
         } else {
             throw new CatalogException("User '" + user + "' not found.");
@@ -1331,7 +1538,8 @@ public class UserManager extends AbstractManager {
         if (user == null || user.getNumResults() == 0) {
             throw new CatalogException(userId + " user not found");
         }
-        return user.first().getAccount().getAuthentication().getId();
+        User user1 = user.first();
+        return user1.getInternal().getAccount().getAuthentication().getId();
     }
 
     /**
@@ -1365,4 +1573,22 @@ public class UserManager extends AbstractManager {
         }
     }
 
+    public String getUserId(String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        return tokenPayload.getUserId();
+    }
+
+    public String getUserIdContextProject(String projectStr, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        return tokenPayload.getUserId(organizationId);
+    }
+
+    public String getUserIdContextStudy(String studyStr, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        return tokenPayload.getUserId(organizationId);
+    }
 }

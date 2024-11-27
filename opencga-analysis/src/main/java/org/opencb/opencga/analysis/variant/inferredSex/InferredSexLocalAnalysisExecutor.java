@@ -25,8 +25,6 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.individual.qc.InferredSexComputation;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
@@ -36,10 +34,11 @@ import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
 
 @ToolExecutor(id = "opencga-local", tool = InferredSexAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -47,57 +46,54 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
 
     @Override
     public void run() throws ToolException {
-        // IMPORTANT: we assume sample and individual have the same ID
-        AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
-        CatalogManager catalogManager = alignmentStorageManager.getCatalogManager();
-        FileManager fileManager = catalogManager.getFileManager();
-        String assembly;
+        File bwFile = AnalysisUtils.getBwFileBySampleId(sampleId, getStudyId(), getVariantStorageManager().getCatalogManager().getFileManager(),
+                    getToken());
 
-        // Get alignment file by individual
-        File inferredSexBamFile = AnalysisUtils.getBamFileBySampleId(getIndividualId(), getStudyId(), fileManager, getToken());
-        if (inferredSexBamFile == null) {
-            throw new ToolException("Alignment file not found for the individual/sample '" + getIndividualId() + "'");
+        if (bwFile == null) {
+            throw new ToolException("BIGWIG file not found for sample '" + sampleId + "' of individual '" + individualId + "'");
         }
 
-        // Ge assembly
+        // Get managers
+        AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
+
+        // Get assembly
+        String assembly;
         try {
             assembly = IndividualQcUtils.getAssembly(getStudyId(), alignmentStorageManager.getCatalogManager(), getToken());
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
 
+        // Infer the sex for that sample
         // Compute ratios: X-chrom / autosomic-chroms and Y-chrom / autosomic-chroms
-        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), inferredSexBamFile, assembly, alignmentStorageManager,
-                getToken());
+        double[] ratios = InferredSexComputation.computeRatios(studyId, bwFile, assembly, alignmentStorageManager, getToken());
 
+        // Infer sex from ratios
         double xAuto = ratios[0];
         double yAuto = ratios[1];
 
-        // Read the karyotypic sex tyhresholds
-        String inferredKaryotypicSex = "UNKNOWN";
         Map<String, Double> karyotypicSexThresholds = new HashMap<>();
+        String opencgaHome = getExecutorParams().getString("opencgaHome");
+        Path thresholdsPath = Paths.get(opencgaHome).resolve("analysis").resolve(IndividualQcAnalysis.ID)
+                .resolve("karyotypic_sex_thresholds.json");
         try {
-            String opencgaHome = getExecutorParams().getString("opencgaHome");
-            Path thresholdsPath = Paths.get(opencgaHome).resolve("analysis").resolve(IndividualQcAnalysis.ID)
-                    .resolve("karyotypic_sex_thresholds.json");
             karyotypicSexThresholds = JacksonUtils.getDefaultNonNullObjectMapper().readerFor(Map.class).readValue(thresholdsPath.toFile());
         } catch (IOException e) {
-            addWarning("Skipping inferring karyotypic sex: something wrong happened when loading the karyotypic sex thresholds file"
-                    + " (karyotypic_sex_thresholds.json)");
+            throw new ToolException("Skipping inferring karyotypic sex: something wrong happened when loading the karyotypic sex"
+                    + " thresholds file: " + thresholdsPath);
         }
-        if (MapUtils.isNotEmpty(karyotypicSexThresholds)) {
-            inferredKaryotypicSex = InferredSexComputation.inferKaryotypicSex(xAuto, yAuto, karyotypicSexThresholds);
+        if (MapUtils.isEmpty(karyotypicSexThresholds)) {
+            throw new ToolException("Impossible to infer karyotypic sex beacause sex thresholds are empty: " + thresholdsPath);
         }
+        String inferredKaryotypicSex = InferredSexComputation.inferKaryotypicSex(xAuto, yAuto, karyotypicSexThresholds);
 
-        // Set inferred sex report: ratios and files
+        // Set coverage ratio
         Map<String, Object> values = new HashMap<>();
         values.put("ratioX", xAuto);
         values.put("ratioY", yAuto);
 
-        List<String> reportedFiles = new ArrayList<>();
-        reportedFiles.add(inferredSexBamFile.getName());
-        reportedFiles.add(inferredSexBamFile.getName() + ".bw");
-
-        setInferredSexReport(new InferredSexReport(getIndividualId(), "CoverageRatio", inferredKaryotypicSex, values, reportedFiles));
+        // Set inferred sex report (individual fields will be set later)
+        inferredSexReport = new InferredSexReport(sampleId, COVERAGE_RATIO_INFERRED_SEX_METHOD, inferredKaryotypicSex, values,
+                Collections.singletonList(bwFile.getId()));
     }
 }

@@ -26,8 +26,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.query.Values;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
@@ -127,7 +127,7 @@ public class SampleIndexQueryParserTest {
     }
 
     private SampleIndexQuery parse(final Query query) {
-        Query newQuery = new VariantQueryParser(null, mm).preProcessQuery(query, new QueryOptions());
+        Query newQuery = new HadoopVariantQueryParser(null, mm).preProcessQuery(query, new QueryOptions());
         query.clear();
         query.putAll(newQuery);
         return sampleIndexQueryParser.parse(query);
@@ -1387,7 +1387,6 @@ public class SampleIndexQueryParserTest {
         checkIntergenic(null, new Query(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.REGULATORY_REGION_VARIANT));
         checkIntergenic(false, new Query(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.REGULATORY_REGION_VARIANT)
                 .append(ANNOT_BIOTYPE.key(), "protein_coding"));
-
         // Nonsense combination
         checkIntergenic(false, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant").append(ANNOT_BIOTYPE.key(), "protein_coding"));
     }

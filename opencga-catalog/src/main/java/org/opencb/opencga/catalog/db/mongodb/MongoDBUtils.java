@@ -364,29 +364,26 @@ public class MongoDBUtils {
         }
     }
 
-    static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
+    static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams)
+            throws CatalogDBException {
         filterObjectParams(parameters, filteredParams, acceptedMapParams, "");
     }
 
     static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams,
-                                   String dbKeyPrefix) {
+                                   String dbKeyPrefix) throws CatalogDBException {
         for (String s : acceptedMapParams) {
             if (parameters.containsKey(s)) {
                 Document document;
-                try {
-                    if (parameters.get(s) instanceof List<?>) {
-                        List<Object> originalList = parameters.getAsList(s);
-                        List<Document> documentList = new ArrayList<>(originalList.size());
-                        for (Object object : originalList) {
-                            documentList.add(getMongoDBDocument(object, s));
-                        }
-                        filteredParams.put(dbKeyPrefix + s, documentList);
-                    } else {
-                        document = getMongoDBDocument(parameters.get(s), s);
-                        filteredParams.put(dbKeyPrefix + s, document);
+                if (parameters.get(s) instanceof List<?>) {
+                    List<Object> originalList = parameters.getAsList(s);
+                    List<Document> documentList = new ArrayList<>(originalList.size());
+                    for (Object object : originalList) {
+                        documentList.add(getMongoDBDocument(object, s));
                     }
-                } catch (CatalogDBException e) {
-                    logger.warn("Skipping key '" + s + "': " + e.getMessage(), e);
+                    filteredParams.put(dbKeyPrefix + s, documentList);
+                } else {
+                    document = getMongoDBDocument(parameters.get(s), s);
+                    filteredParams.put(dbKeyPrefix + s, document);
                 }
             }
         }

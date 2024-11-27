@@ -26,12 +26,12 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StopWatch;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
@@ -39,6 +39,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -47,7 +48,6 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
@@ -55,10 +55,12 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
@@ -77,6 +79,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.sample.HBaseVariantSampleDataManager;
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDeleteHBaseColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutorFactory;
@@ -115,25 +118,16 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 
 public class HadoopVariantStorageEngine extends VariantStorageEngine implements Configurable {
     public static final String STORAGE_ENGINE_ID = "hadoop";
 
-    public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
-            VariantType.SNV, VariantType.SNP,
-            VariantType.INDEL,
-            VariantType.MNV, VariantType.MNP,
-            VariantType.INSERTION, VariantType.DELETION,
-            VariantType.CNV,
-            VariantType.COPY_NUMBER, VariantType.COPY_NUMBER_LOSS, VariantType.COPY_NUMBER_GAIN,
-            VariantType.DUPLICATION, VariantType.TANDEM_DUPLICATION, VariantType.TRANSLOCATION,
-            VariantType.BREAKEND,
-            VariantType.SV, VariantType.SYMBOLIC
+    public static final EnumSet<VariantType> UNSUPPORTED_VARIANT_TYPE_SET = EnumSet.of(
+            VariantType.NO_VARIATION, VariantType.MIXED
     );
+    public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.complementOf(UNSUPPORTED_VARIANT_TYPE_SET);
 
     public static final String FILE_ID = "fileId";
     public static final String STUDY_ID = "studyId";
@@ -699,6 +693,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
+    protected TaskMetadata preRemove(String study, List<String> files, List<String> samples) throws StorageEngineException {
+        return super.preRemove(study, files, samples);
+    }
+
+    @Override
     public void removeFiles(String study, List<String> files, URI outdir) throws StorageEngineException {
         remove(study, files, Collections.emptyList(), outdir);
     }
@@ -830,7 +829,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                         archiveColumns.add(family + ':' + ArchiveTableHelper.getRefColumnName(fileId));
                         archiveColumns.add(family + ':' + ArchiveTableHelper.getNonRefColumnName(fileId));
                     }
-                    String[] deleteFromArchiveArgs = DeleteHBaseColumnDriver.buildArgs(archiveTable, archiveColumns, options);
+                    ObjectMap thisOptions = new ObjectMap(options);
+                    ArchiveDeleteHBaseColumnTask.configureTask(thisOptions, fileIds);
+
+                    String[] deleteFromArchiveArgs = DeleteHBaseColumnDriver.buildArgs(archiveTable, archiveColumns, thisOptions);
                     getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromArchiveArgs, "Delete from archive table");
                     return stopWatch.now(TimeUnit.MILLISECONDS);
                 });
@@ -1031,45 +1033,47 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public ParsedVariantQuery parseQuery(Query originalQuery, QueryOptions options) {
         try {
-            Query query = preProcessQuery(originalQuery, options);
-            ParsedVariantQuery parsedVariantQuery = getVariantQueryParser().parseQuery(query, options, true);
-            parsedVariantQuery.setInputQuery(originalQuery);
-            return parsedVariantQuery;
+            return getVariantQueryParser().parseQuery(originalQuery, options);
         } catch (StorageEngineException e) {
             throw VariantQueryException.internalException(e).setQuery(originalQuery);
         }
     }
 
     @Override
-    public Query preProcessQuery(Query originalQuery, QueryOptions options) {
-        Query query = super.preProcessQuery(originalQuery, options);
-
-        VariantStorageMetadataManager metadataManager;
-        CellBaseUtils cellBaseUtils;
-        try {
-            metadataManager = getMetadataManager();
-            cellBaseUtils = getCellBaseUtils();
-        } catch (StorageEngineException e) {
-            throw VariantQueryException.internalException(e);
-        }
-        List<String> studyNames = metadataManager.getStudyNames();
-
-        if (isValidParam(query, STUDY) && studyNames.size() == 1) {
-            String study = query.getString(STUDY.key());
-            if (!isNegated(study)) {
-                try {
-                    // Check that study exists
-                    getMetadataManager().getStudyId(study);
-                } catch (StorageEngineException e) {
-                    throw VariantQueryException.internalException(e);
-                }
-                query.remove(STUDY.key());
-            }
-        }
-
-        convertGenesToRegionsQuery(query, cellBaseUtils);
-        return query;
+    protected VariantQueryParser getVariantQueryParser() throws StorageEngineException {
+        return new HadoopVariantQueryParser(getCellBaseUtils(), getMetadataManager());
     }
+
+//    @Override
+//    public Query preProcessQuery(Query originalQuery, QueryOptions options) {
+//        Query query = super.preProcessQuery(originalQuery, options);
+//
+//        VariantStorageMetadataManager metadataManager;
+//        CellBaseUtils cellBaseUtils;
+//        try {
+//            metadataManager = getMetadataManager();
+//            cellBaseUtils = getCellBaseUtils();
+//        } catch (StorageEngineException e) {
+//            throw VariantQueryException.internalException(e);
+//        }
+//        List<String> studyNames = metadataManager.getStudyNames();
+//
+//        if (isValidParam(query, STUDY) && studyNames.size() == 1) {
+//            String study = query.getString(STUDY.key());
+//            if (!isNegated(study)) {
+//                try {
+//                    // Check that study exists
+//                    getMetadataManager().getStudyId(study);
+//                } catch (StorageEngineException e) {
+//                    throw VariantQueryException.internalException(e);
+//                }
+//                query.remove(STUDY.key());
+//            }
+//        }
+//
+//        convertGenesToRegionsQuery(query, cellBaseUtils);
+//        return query;
+//    }
 
     @Override
     protected List<VariantAggregationExecutor> initVariantAggregationExecutors() {
@@ -1082,6 +1086,49 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             throw VariantQueryException.internalException(e);
         }
         return executors;
+    }
+
+    @Override
+    public ObjectMap inferConfigurationParams(VariantSetupParams params) {
+        ObjectMap options = super.inferConfigurationParams(params);
+        ObjectMap configuredOptions = getOptions();
+
+        long expectedHBaseRegionSize = IOUtils.fromHumanReadableToByte("7.5GiB");
+
+        options.put(EXPECTED_SAMPLES_NUMBER.key(), params.getExpectedSamples());
+        options.put(EXPECTED_FILES_NUMBER.key(), params.getExpectedFiles());
+
+        // Variant pre-split
+        int defaultVariantPreSplit = configuredOptions
+                .getInt(VARIANT_TABLE_PRESPLIT_SIZE.key(), VARIANT_TABLE_PRESPLIT_SIZE.defaultValue());
+        float variantsFileToHBaseMultiplier = 1.3f;
+        Long averageFileSize = IOUtils.fromHumanReadableToByte(params.getAverageFileSize(), true);
+        float variantsTableSize = params.getExpectedFiles() * averageFileSize * variantsFileToHBaseMultiplier;
+        int variantPreSplit = (int) (variantsTableSize / expectedHBaseRegionSize);
+        options.put(VARIANT_TABLE_PRESPLIT_SIZE.key(), Math.max(defaultVariantPreSplit, variantPreSplit));
+
+        // Archive pre-split
+        int filesPerBatch = configuredOptions
+                .getInt(ARCHIVE_FILE_BATCH_SIZE.key(), ARCHIVE_FILE_BATCH_SIZE.defaultValue());
+        float archiveFileToHBaseMultiplier = 1.2f;
+        float archiveTableSize = filesPerBatch * averageFileSize.floatValue() * archiveFileToHBaseMultiplier;
+        int archiveTablePreSplit = (int) (archiveTableSize / expectedHBaseRegionSize);
+        options.put(ARCHIVE_TABLE_PRESPLIT_SIZE.key(), Math.max(1, archiveTablePreSplit));
+
+        // SampleIndex pre-split
+        long averageSizePerVariant;
+        if (params.getVariantsPerSample() > 3500000) {
+            // With this many variants per sample, most of them won't have much data
+            averageSizePerVariant = IOUtils.fromHumanReadableToByte("13B");
+        } else {
+            // With a small number of variants per sample, most of them will have a lot of data
+            averageSizePerVariant = IOUtils.fromHumanReadableToByte("25B");
+        }
+        long sampleIndexSize = params.getVariantsPerSample() * averageSizePerVariant;
+        int samplesPerSplit = (int) (expectedHBaseRegionSize / sampleIndexSize);
+        options.put(SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(), samplesPerSplit);
+
+        return options;
     }
 
     @Override
@@ -1164,8 +1211,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public DataResult<Variant> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
-        return new HBaseVariantSampleDataManager(getDBAdaptor(), getCellBaseUtils()).getSampleData(variant, study, options);
+    protected VariantSampleDataManager getVariantSampleDataManager() throws StorageEngineException {
+        return new HBaseVariantSampleDataManager(getDBAdaptor());
     }
 
     @Override
@@ -1177,7 +1224,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         executors.add(new SampleIndexCompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this, getSampleIndexDBAdaptor(), getDBAdaptor()));
         executors.add(new BreakendVariantQueryExecutor(
-                getMetadataManager(), getStorageEngineId(), getOptions(), new SampleIndexVariantQueryExecutor(
+                getStorageEngineId(), getOptions(), new SampleIndexVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions()));

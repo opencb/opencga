@@ -218,7 +218,10 @@ public class StorageVariantCommandOptions {
                 splitter = CommaParameterSplitter.class, required = true)
         public List<String> file = null;
 
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
+        @Parameter(names = {"--force"}, description = "Force delete operation. This would allow deleting partially loaded files.")
+        public boolean force;
+
+        @Parameter(names = {"--resume"}, description = "Resume failed delete operation.")
         public boolean resume;
     }
 
