@@ -376,6 +376,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
 
+        @Parameter(names = {"--source"}, description = SOURCE_DESCR, arity = 1)
+        public String source;
+
         @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)
         public String family;
 

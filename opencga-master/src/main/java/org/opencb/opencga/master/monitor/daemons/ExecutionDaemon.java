@@ -195,7 +195,6 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             put(PicardWrapperAnalysis.ID, "alignment " + PicardWrapperAnalysis.ID + "-run");
 
             put(VariantIndexOperationTool.ID, "variant index-run");
-            put(VariantExportTool.ID, "variant export-run");
             put(VariantStatsAnalysis.ID, "variant stats-run");
             put("variant-stats-export", "variant stats-export-run");
             put(SampleVariantStatsAnalysis.ID, "variant sample-stats-run");
