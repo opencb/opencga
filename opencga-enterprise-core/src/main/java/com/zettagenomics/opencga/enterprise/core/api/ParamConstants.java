@@ -31,11 +31,12 @@ public class ParamConstants {
 
     public static final int DEFAULT_LIMIT = 100;
 
+    public static final String ORGANIZATION_PARAM_DESCRIPTION = "Organization ID";
+    public static final String ORGANIZATION_PARAM_NAME = "organizationId";
+
     public static final String PROJECT_PARAM_DESCRIPTION = "Project ID";
     public static final String PROJECT_PARAM_NAME = "project";
 
-    public static final String ALL_STUDIES_VALUE = "*";
-    public static final String STUDY_PARAM_DESCRIPTION = "Study ID (or list of study IDs separated by commas), or '" + ALL_STUDIES_VALUE
-            + "' for all studies of the current user";
+    public static final String STUDY_PARAM_DESCRIPTION = "Study ID (or list of study IDs separated by commas)";
     public static final String STUDY_PARAM_NAME = "study";
 }

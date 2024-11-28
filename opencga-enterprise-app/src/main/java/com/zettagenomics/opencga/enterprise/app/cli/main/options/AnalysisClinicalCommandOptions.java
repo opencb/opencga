@@ -377,10 +377,13 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
+        public String organizationId; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas)", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
@@ -485,7 +488,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
         public Integer ciVersion; 
     
-        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
@@ -655,10 +658,13 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
+        public String organizationId; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas)", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
@@ -775,7 +781,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
         public Integer ciVersion; 
     
-        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
@@ -989,10 +995,13 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
+        public String organizationId; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas)", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
@@ -1097,7 +1106,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
         public Integer ciVersion; 
     
-        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
@@ -1256,7 +1265,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
     
-        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: ciPanelId;ciAnalystEmail. For nested faceted fields use >>, e.g.: ciAnalystEmail>>ciPanelId. Accepted values: ciId, ciPrimary, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciLocked, ciStatusId, ciStatusName, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion", required = false, arity = 1)
+        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: ciPanelId;ciAnalystEmail. For nested faceted fields use >>, e.g.: ciAnalystEmail>>ciPanelId. Accepted values: ciPrimary, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciLocked, ciStatusId, ciStatusName, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion", required = false, arity = 1)
         public String field; 
     
     }
@@ -1267,10 +1276,13 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
+        public String organizationId; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas)", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
@@ -1387,7 +1399,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
         public Integer ciVersion; 
     
-        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
@@ -1554,10 +1566,13 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
+        public String organizationId; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas)", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
@@ -1662,7 +1677,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
         public Integer ciVersion; 
     
-        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
@@ -1821,7 +1836,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
     
-        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: cvType;cvGene. For nested faceted fields use >>, e.g.: cvGene>>cvType. Accepted values: cvId, cvPrimary, cvDiscussionAuthor, cvDiscussionDate, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvBiotype, cvCt, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType", required = false, arity = 1)
+        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: cvType;cvGene. For nested faceted fields use >>, e.g.: cvGene>>cvType. Accepted values: cvVariantId, cvPrimary, cvDiscussionAuthor, cvDiscussionDate, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvBiotype, cvCt, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType", required = false, arity = 1)
         public String field; 
     
     }
@@ -1832,10 +1847,13 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
+        public String organizationId; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas)", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
@@ -1952,7 +1970,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
         public Integer ciVersion; 
     
-        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
@@ -2119,10 +2137,13 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
+        public String organizationId; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = true, arity = 1)
+        @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = true, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
@@ -2136,10 +2157,13 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
+        public String organizationId; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas)", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
@@ -2244,7 +2268,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
         public Integer ciVersion; 
     
-        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
@@ -2403,7 +2427,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
     
-        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: cveGeneName;cveTier. For nested faceted fields use >>, e.g.: cveGeneName>>cveTier. Accepted values: cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer", required = false, arity = 1)
+        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: cveGeneName;cveTier. For nested faceted fields use >>, e.g.: cveGeneName>>cveTier. Accepted values: cveVariantId, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer", required = false, arity = 1)
         public String field; 
     
     }
@@ -2414,10 +2438,13 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
+        public String organizationId; 
+    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study ID (or list of study IDs separated by commas)", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
@@ -2534,7 +2561,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
         public Integer ciVersion; 
     
-        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)

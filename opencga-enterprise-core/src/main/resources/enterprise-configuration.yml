@@ -13,6 +13,7 @@ sso:
     groups: ${ENTERPRISE.SSO.ATTRIBUTES.GROUPS}
 cvdb:
   active: ${ENTERPRISE.CVDB.ACTIVE}
+  prefix: ${ENTERPRISE.CVDB.PREFIX}
   database:
     hosts:
       - ${ENTERPRISE.CVDB.DATABASE.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/

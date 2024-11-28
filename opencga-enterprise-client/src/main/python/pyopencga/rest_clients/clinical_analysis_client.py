@@ -102,9 +102,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Calculate and fetch clinical analysis aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/case/aggregationStats
 
+        :param str organization_id: Organization ID.
         :param str project: Project ID.
-        :param str study: Study ID (or list of study IDs separated by commas),
-            or '*' for all studies of the current user.
+        :param str study: Study ID (or list of study IDs separated by commas).
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
         :param str ca_description: Clinical analysis description (word or list
@@ -191,7 +191,8 @@ class ClinicalAnalysis(_ParentRestClient):
             start_date-end_date, e.g.: 20231001000000-20231101000000.
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
-        :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param str cv_id: Clinical variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -353,9 +354,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical analyses from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/case/query
 
+        :param str organization_id: Organization ID.
         :param str project: Project ID.
-        :param str study: Study ID (or list of study IDs separated by commas),
-            or '*' for all studies of the current user.
+        :param str study: Study ID (or list of study IDs separated by commas).
         :param str include: Fields included in the response, whole JSON path
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
@@ -448,7 +449,8 @@ class ClinicalAnalysis(_ParentRestClient):
             start_date-end_date, e.g.: 20231001000000-20231101000000.
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
-        :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param str cv_id: Clinical variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -633,9 +635,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Calculate and fetch clinical interpretation aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/interpretation/aggregationStats
 
+        :param str organization_id: Organization ID.
         :param str project: Project ID.
-        :param str study: Study ID (or list of study IDs separated by commas),
-            or '*' for all studies of the current user.
+        :param str study: Study ID (or list of study IDs separated by commas).
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
         :param str ca_description: Clinical analysis description (word or list
@@ -722,7 +724,8 @@ class ClinicalAnalysis(_ParentRestClient):
             start_date-end_date, e.g.: 20231001000000-20231101000000.
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
-        :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param str cv_id: Clinical variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -872,11 +875,11 @@ class ClinicalAnalysis(_ParentRestClient):
             separated by a semicolon, an AND will be applied).
         :param str field: List of facet fields separated by semicolons, e.g.:
             ciPanelId;ciAnalystEmail. For nested faceted fields use >>, e.g.:
-            ciAnalystEmail>>ciPanelId. Accepted values: ciId, ciPrimary,
-            ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail,
-            ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion,
-            ciMethodCommit, ciLocked, ciStatusId, ciStatusName, ciStatusDate,
-            ciCreationDate, ciModificationDate, ciVersion.
+            ciAnalystEmail>>ciPanelId. Accepted values: ciPrimary, ciPanelId,
+            ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy,
+            ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit,
+            ciLocked, ciStatusId, ciStatusName, ciStatusDate, ciCreationDate,
+            ciModificationDate, ciVersion.
         """
 
         return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdb/interpretation', **options)
@@ -886,9 +889,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical interpretations from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/interpretation/query
 
+        :param str organization_id: Organization ID.
         :param str project: Project ID.
-        :param str study: Study ID (or list of study IDs separated by commas),
-            or '*' for all studies of the current user.
+        :param str study: Study ID (or list of study IDs separated by commas).
         :param str include: Fields included in the response, whole JSON path
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
@@ -981,7 +984,8 @@ class ClinicalAnalysis(_ParentRestClient):
             start_date-end_date, e.g.: 20231001000000-20231101000000.
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
-        :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param str cv_id: Clinical variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -1138,9 +1142,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Calculate and fetch clinical variant aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variant/aggregationStats
 
+        :param str organization_id: Organization ID.
         :param str project: Project ID.
-        :param str study: Study ID (or list of study IDs separated by commas),
-            or '*' for all studies of the current user.
+        :param str study: Study ID (or list of study IDs separated by commas).
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
         :param str ca_description: Clinical analysis description (word or list
@@ -1227,7 +1231,8 @@ class ClinicalAnalysis(_ParentRestClient):
             start_date-end_date, e.g.: 20231001000000-20231101000000.
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
-        :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param str cv_id: Clinical variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -1377,7 +1382,7 @@ class ClinicalAnalysis(_ParentRestClient):
             separated by a semicolon, an AND will be applied).
         :param str field: List of facet fields separated by semicolons, e.g.:
             cvType;cvGene. For nested faceted fields use >>, e.g.:
-            cvGene>>cvType. Accepted values: cvId, cvPrimary,
+            cvGene>>cvType. Accepted values: cvVariantId, cvPrimary,
             cvDiscussionAuthor, cvDiscussionDate, cvConfidenceValue,
             cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvBiotype,
             cvCt, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType.
@@ -1390,9 +1395,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical variants from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variant/query
 
+        :param str organization_id: Organization ID.
         :param str project: Project ID.
-        :param str study: Study ID (or list of study IDs separated by commas),
-            or '*' for all studies of the current user.
+        :param str study: Study ID (or list of study IDs separated by commas).
         :param str include: Fields included in the response, whole JSON path
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
@@ -1485,7 +1490,8 @@ class ClinicalAnalysis(_ParentRestClient):
             start_date-end_date, e.g.: 20231001000000-20231101000000.
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
-        :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param str cv_id: Clinical variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -1642,8 +1648,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Get clinical variant summary from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variant/stats
 
-        :param str cv_id: Variant ID (or list of IDs separated by commas).
-            (REQUIRED)
+        :param str cv_id: Clinical variant ID (or list of IDs separated by
+            commas). (REQUIRED)
+        :param str organization_id: Organization ID.
         :param str project: Project ID.
         :param str ci_status_id: Clinical interpretation status ID (or list of
             IDs separated by commas).
@@ -1657,9 +1664,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Calculate and fetch clinical variant evidence aggregation stats.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variantEvidence/aggregationStats
 
+        :param str organization_id: Organization ID.
         :param str project: Project ID.
-        :param str study: Study ID (or list of study IDs separated by commas),
-            or '*' for all studies of the current user.
+        :param str study: Study ID (or list of study IDs separated by commas).
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
         :param str ca_description: Clinical analysis description (word or list
@@ -1746,7 +1753,8 @@ class ClinicalAnalysis(_ParentRestClient):
             start_date-end_date, e.g.: 20231001000000-20231101000000.
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
-        :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param str cv_id: Clinical variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -1896,11 +1904,12 @@ class ClinicalAnalysis(_ParentRestClient):
             separated by a semicolon, an AND will be applied).
         :param str field: List of facet fields separated by semicolons, e.g.:
             cveGeneName;cveTier. For nested faceted fields use >>, e.g.:
-            cveGeneName>>cveTier. Accepted values: cvePhenotypeName,
-            cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi,
-            cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance,
-            cveDrugResponse, cveTraitAssociation, cveFunctionalEffect,
-            cveTumorigenesis, cveOtherClassification, cveRolInCancer.
+            cveGeneName>>cveTier. Accepted values: cveVariantId,
+            cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId,
+            cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier,
+            cveClinicalSignificance, cveDrugResponse, cveTraitAssociation,
+            cveFunctionalEffect, cveTumorigenesis, cveOtherClassification,
+            cveRolInCancer.
         """
 
         return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdb/variantEvidence', **options)
@@ -1910,9 +1919,9 @@ class ClinicalAnalysis(_ParentRestClient):
         Filter and fetch clinical variant evidences from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variantEvidence/query
 
+        :param str organization_id: Organization ID.
         :param str project: Project ID.
-        :param str study: Study ID (or list of study IDs separated by commas),
-            or '*' for all studies of the current user.
+        :param str study: Study ID (or list of study IDs separated by commas).
         :param str include: Fields included in the response, whole JSON path
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
@@ -2005,7 +2014,8 @@ class ClinicalAnalysis(_ParentRestClient):
             start_date-end_date, e.g.: 20231001000000-20231101000000.
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
-        :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param str cv_id: Clinical variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of

@@ -152,8 +152,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Calculate and fetch clinical analysis aggregation stats.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       project: Project ID.
-     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       study: Study ID (or list of study IDs separated by commas).
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
      *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -198,7 +199,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciModificationDate: Clinical interpretation modification date (or list of dates separated by commas), with format
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
-     *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -293,8 +294,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical analyses from CVDB.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       project: Project ID.
-     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       study: Study ID (or list of study IDs separated by commas).
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
@@ -343,7 +345,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciModificationDate: Clinical interpretation modification date (or list of dates separated by commas), with format
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
-     *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -457,8 +459,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Calculate and fetch clinical interpretation aggregation stats.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       project: Project ID.
-     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       study: Study ID (or list of study IDs separated by commas).
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
      *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -503,7 +506,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciModificationDate: Clinical interpretation modification date (or list of dates separated by commas), with format
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
-     *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -585,7 +588,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveReviewText: Clinical variant evidence review text (word or list of words contained in the text, if the words are separated
      *            by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       field: List of facet fields separated by semicolons, e.g.: ciPanelId;ciAnalystEmail. For nested faceted fields use >>, e.g.:
-     *            ciAnalystEmail>>ciPanelId. Accepted values: ciId, ciPrimary, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail,
+     *            ciAnalystEmail>>ciPanelId. Accepted values: ciPrimary, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail,
      *            ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciLocked, ciStatusId, ciStatusName,
      *            ciStatusDate, ciCreationDate, ciModificationDate, ciVersion.
      * @return a RestResponse object.
@@ -599,8 +602,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical interpretations from CVDB.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       project: Project ID.
-     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       study: Study ID (or list of study IDs separated by commas).
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
@@ -649,7 +653,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciModificationDate: Clinical interpretation modification date (or list of dates separated by commas), with format
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
-     *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -741,8 +745,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Calculate and fetch clinical variant aggregation stats.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       project: Project ID.
-     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       study: Study ID (or list of study IDs separated by commas).
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
      *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -787,7 +792,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciModificationDate: Clinical interpretation modification date (or list of dates separated by commas), with format
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
-     *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -869,7 +874,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveReviewText: Clinical variant evidence review text (word or list of words contained in the text, if the words are separated
      *            by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       field: List of facet fields separated by semicolons, e.g.: cvType;cvGene. For nested faceted fields use >>, e.g.:
-     *            cvGene>>cvType. Accepted values: cvId, cvPrimary, cvDiscussionAuthor, cvDiscussionDate, cvConfidenceValue,
+     *            cvGene>>cvType. Accepted values: cvVariantId, cvPrimary, cvDiscussionAuthor, cvDiscussionDate, cvConfidenceValue,
      *            cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvBiotype, cvCt, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -882,8 +887,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical variants from CVDB.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       project: Project ID.
-     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       study: Study ID (or list of study IDs separated by commas).
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
@@ -932,7 +938,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciModificationDate: Clinical interpretation modification date (or list of dates separated by commas), with format
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
-     *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1023,8 +1029,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
 
     /**
      * Get clinical variant summary from CVDB.
-     * @param cvId Variant ID (or list of IDs separated by commas).
+     * @param cvId Clinical variant ID (or list of IDs separated by commas).
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       project: Project ID.
      *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
      * @return a RestResponse object.
@@ -1039,8 +1046,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Calculate and fetch clinical variant evidence aggregation stats.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       project: Project ID.
-     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       study: Study ID (or list of study IDs separated by commas).
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
      *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1085,7 +1093,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciModificationDate: Clinical interpretation modification date (or list of dates separated by commas), with format
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
-     *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1167,8 +1175,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveReviewText: Clinical variant evidence review text (word or list of words contained in the text, if the words are separated
      *            by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       field: List of facet fields separated by semicolons, e.g.: cveGeneName;cveTier. For nested faceted fields use >>, e.g.:
-     *            cveGeneName>>cveTier. Accepted values: cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId,
-     *            cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation,
+     *            cveGeneName>>cveTier. Accepted values: cveVariantId, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId,
+     *            cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation,
      *            cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -1181,8 +1189,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
     /**
      * Filter and fetch clinical variant evidences from CVDB.
      * @param params Map containing any of the following optional parameters.
+     *       organizationId: Organization ID.
      *       project: Project ID.
-     *       study: Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+     *       study: Study ID (or list of study IDs separated by commas).
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
@@ -1231,7 +1240,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciModificationDate: Clinical interpretation modification date (or list of dates separated by commas), with format
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
-     *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).

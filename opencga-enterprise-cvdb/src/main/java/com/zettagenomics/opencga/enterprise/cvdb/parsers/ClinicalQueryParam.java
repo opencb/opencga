@@ -250,6 +250,10 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // ---------- Clinical variant (aka CV)
 
+    public static final String CV_ID_NAME = "cvId";
+    public static final String CV_ID_DESCR = "Clinical variant ID (or list of IDs" + OPT_LIST;
+    public static final ClinicalQueryParam CV_ID = new ClinicalQueryParam(CV_ID_NAME, TEXT_ARRAY, CV_ID_DESCR);
+
     // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
     public static final String CV_PRIMARY_NAME = "cvPrimary";
     public static final String CV_PRIMARY_DESCR = "Clinical variant is a primary finding (true or false)";
@@ -314,9 +318,9 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam CV_STATUS = new ClinicalQueryParam(CV_STATUS_NAME, TEXT_ARRAY, CV_STATUS_DESCR);
 
     // Variant filters
-    public static final String CV_ID_NAME = "cvId";
-    public static final String CV_ID_DESCR = "Variant ID (or list of IDs" + OPT_LIST;
-    public static final ClinicalQueryParam CV_ID = new ClinicalQueryParam(CV_ID_NAME, TEXT_ARRAY, CV_ID_DESCR);
+    public static final String CV_VARIANT_ID_NAME = "cvVariantId";
+    public static final String CV_VARIANT_ID_DESCR = "Variant ID (or list of IDs" + OPT_LIST;
+    public static final ClinicalQueryParam CV_VARIANT_ID = new ClinicalQueryParam(CV_VARIANT_ID_NAME, TEXT_ARRAY, CV_VARIANT_ID_DESCR);
 
     public static final String CV_REGION_NAME = "cvRegion";
     public static final String CV_REGION_DESCR = "Variant region (or list of regions, these can be just a single chromosome name"
@@ -458,6 +462,14 @@ public final class ClinicalQueryParam implements QueryParam {
             CV_ANNOT_CLINICAL_DESCR);
 
     // ---------- Clinical variant evidence (aka CVE)
+
+    public static final String CVE_ID_NAME = "cveId";
+    public static final String CVE_ID_DESCR = "Clinical variant evidence ID (or list of IDs" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_ID = new ClinicalQueryParam(CVE_ID_NAME, TEXT_ARRAY, CVE_ID_DESCR);
+
+    public static final String CVE_VARIANT_ID_NAME = "cveVariantId";
+    public static final String CVE_VARIANT_ID_DESCR = "Variant ID (or list of IDs" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_VARIANT_ID = new ClinicalQueryParam(CVE_VARIANT_ID_NAME, TEXT_ARRAY, CVE_VARIANT_ID_DESCR);
 
     // <field name="phenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
     public static final String CVE_PHENOTYPE_NAME_NAME = "cvePhenotypeName";

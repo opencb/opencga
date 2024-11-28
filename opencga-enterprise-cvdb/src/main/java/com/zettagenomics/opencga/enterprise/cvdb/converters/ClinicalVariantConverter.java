@@ -129,10 +129,10 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
             try {
                 ClinicalVariant cv;
                 if (StringUtils.isNotEmpty(cvs.getJson())) {
-                    logger.info("Convert to clinical variant from JSON");
+                    //logger.info("Convert to clinical variant from JSON");
                     cv = clinicalVariantReader.readValue(cvs.getJson());
                 } else {
-                    logger.info("Convert to clinical variant from indexed fields");
+                    //logger.info("Convert to clinical variant from indexed fields");
                     cv = new ClinicalVariant();
 
                     // Status

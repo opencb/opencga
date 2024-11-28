@@ -91,8 +91,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Calculate and fetch clinical analysis aggregation stats
     * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.organizationId] - Organization ID.
     * @param {String} [params.project] - Project ID.
-    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
     * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -137,7 +138,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
-    * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -233,8 +234,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Filter and fetch clinical analyses from CVDB
     * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.organizationId] - Organization ID.
     * @param {String} [params.project] - Project ID.
-    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
@@ -283,7 +285,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
-    * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -395,8 +397,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Calculate and fetch clinical interpretation aggregation stats
     * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.organizationId] - Organization ID.
     * @param {String} [params.project] - Project ID.
-    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
     * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -441,7 +444,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
-    * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -527,9 +530,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveReviewText] - Clinical variant evidence review text (word or list of words contained in the text, if the
     *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.field] - List of facet fields separated by semicolons, e.g.: ciPanelId;ciAnalystEmail. For nested faceted
-    *     fields use >>, e.g.: ciAnalystEmail>>ciPanelId. Accepted values: ciId, ciPrimary, ciPanelId, ciAnalystId, ciAnalystName,
-    *     ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciLocked, ciStatusId, ciStatusName,
-    *     ciStatusDate, ciCreationDate, ciModificationDate, ciVersion.
+    *     fields use >>, e.g.: ciAnalystEmail>>ciPanelId. Accepted values: ciPrimary, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail,
+    *     ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciLocked, ciStatusId, ciStatusName, ciStatusDate,
+    *     ciCreationDate, ciModificationDate, ciVersion.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     aggregationStatsCvdbInterpretation(params) {
@@ -538,8 +541,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Filter and fetch clinical interpretations from CVDB
     * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.organizationId] - Organization ID.
     * @param {String} [params.project] - Project ID.
-    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
@@ -588,7 +592,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
-    * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -681,8 +685,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Calculate and fetch clinical variant aggregation stats
     * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.organizationId] - Organization ID.
     * @param {String} [params.project] - Project ID.
-    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
     * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -727,7 +732,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
-    * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -813,8 +818,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveReviewText] - Clinical variant evidence review text (word or list of words contained in the text, if the
     *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.field] - List of facet fields separated by semicolons, e.g.: cvType;cvGene. For nested faceted fields use >>,
-    *     e.g.: cvGene>>cvType. Accepted values: cvId, cvPrimary, cvDiscussionAuthor, cvDiscussionDate, cvConfidenceValue, cvConfidenceAuthor,
-    *     cvConfidenceDate, cvTag, cvStatus, cvBiotype, cvCt, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType.
+    *     e.g.: cvGene>>cvType. Accepted values: cvVariantId, cvPrimary, cvDiscussionAuthor, cvDiscussionDate, cvConfidenceValue,
+    *     cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvBiotype, cvCt, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     aggregationStatsCvdbVariant(params) {
@@ -823,8 +828,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Filter and fetch clinical variants from CVDB
     * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.organizationId] - Organization ID.
     * @param {String} [params.project] - Project ID.
-    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
@@ -873,7 +879,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
-    * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -965,8 +971,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     }
 
     /** Get clinical variant summary from CVDB
-    * @param {String} cvId - Variant ID (or list of IDs separated by commas).
+    * @param {String} cvId - Clinical variant ID (or list of IDs separated by commas).
     * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.organizationId] - Organization ID.
     * @param {String} [params.project] - Project ID.
     * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
     * @returns {Promise} Promise object in the form of RestResponse instance.
@@ -977,8 +984,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Calculate and fetch clinical variant evidence aggregation stats
     * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.organizationId] - Organization ID.
     * @param {String} [params.project] - Project ID.
-    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
     * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1023,7 +1031,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
-    * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1109,9 +1117,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveReviewText] - Clinical variant evidence review text (word or list of words contained in the text, if the
     *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.field] - List of facet fields separated by semicolons, e.g.: cveGeneName;cveTier. For nested faceted fields
-    *     use >>, e.g.: cveGeneName>>cveTier. Accepted values: cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId,
-    *     cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect,
-    *     cveTumorigenesis, cveOtherClassification, cveRolInCancer.
+    *     use >>, e.g.: cveGeneName>>cveTier. Accepted values: cveVariantId, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId,
+    *     cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation,
+    *     cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     aggregationStatsCvdbVariantEvidence(params) {
@@ -1120,8 +1128,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** Filter and fetch clinical variant evidences from CVDB
     * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.organizationId] - Organization ID.
     * @param {String} [params.project] - Project ID.
-    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
+    * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
@@ -1170,7 +1179,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
-    * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).

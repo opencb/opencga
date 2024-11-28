@@ -72,7 +72,6 @@ public class TestUtilities {
     public static ClinicalAnalysis getClinicalAnalyis(String caId, String projectId, CvdbSolrEngine cvdbEngine, String userToken)
             throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_ID_NAME, caId);
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());
@@ -83,7 +82,6 @@ public class TestUtilities {
     public static Interpretation getClinicalInterpretation(String ciId, String projectId, CvdbSolrEngine cvdbEngine, String userToken)
             throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_ID_NAME, ciId);
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());
@@ -91,14 +89,13 @@ public class TestUtilities {
         return result.first();
     }
 
-    public static ClinicalVariant getClinicalVariant(String cvId, String projectId, CvdbSolrEngine cvdbEngine, String userToken)
+    public static ClinicalVariant getClinicalVariant(String variantId, String projectId, CvdbSolrEngine cvdbEngine, String userToken)
             throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CV_ID_NAME, cvId);
+        query.put(CV_VARIANT_ID_NAME, variantId);
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());
-        assertEquals(cvId, result.first().getId());
+        assertEquals(variantId, result.first().getId());
         return result.first();
     }
 

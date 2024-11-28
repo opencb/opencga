@@ -58,12 +58,13 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(getOpencgaHome());
         cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, null);
         try {
-            if (!cvdbEngine.existCollections(project.getId())) {
-                cvdbEngine.createCollections(project.getId());
+            if (!cvdbEngine.existCollections(organizationId, project.getId())) {
+                cvdbEngine.createCollections(organizationId, project.getId());
             }
         } catch (CvdbException e) {
-            logger.error("Could not perform CVDB index for project {}", project.getId(), e);
-            throw new CvdbException("Could not CVDB index for project '" + project.getId() + "'.");
+            String msg = "Could not perform CVDB index for organization '" + organizationId + "' and project '" + project.getId() + "'";
+            logger.error(msg);
+            throw new CvdbException(msg);
         }
     }
 

@@ -41,7 +41,9 @@ import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryPar
 
 public class ClinicalQueryParser {
 
-    SolrQueryParser solrParser;
+    protected String collectionPrefix;
+
+    private SolrQueryParser solrParser;
 
     public static Set<String> CA_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CA_TYPE_NAME, CA_DISORDER_ID_NAME, CA_FILENAME_NAME,
             CA_PROBAND_ID_NAME, CA_FAMILY_ID_NAME, CA_FAMILY_PHENOTYPE_NAME_NAME, CA_FAMILY_MEMBER_ID_NAME, CA_STATUS_NAME,
@@ -51,20 +53,20 @@ public class ClinicalQueryParser {
             + CA_PROBAND_ID_NAME + ", " + CA_FAMILY_ID_NAME + ", " + CA_FAMILY_PHENOTYPE_NAME_NAME + ", " + CA_FAMILY_MEMBER_ID_NAME
             + ", " + CA_STATUS_NAME + ", " + CA_LOCKED_NAME;
 
-    public static Set<String> CI_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CI_ID_NAME, CI_PRIMARY_NAME, CI_PANEL_ID_NAME,
+    public static Set<String> CI_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CI_PRIMARY_NAME, CI_PANEL_ID_NAME,
             CI_ANALYIST_ID_NAME, CI_ANALYIST_NAME_NAME, CI_ANALYIST_EMAIL_NAME, CI_ANALYIST_ASSIGNED_BY_NAME, CI_ANALYIST_DATE_NAME,
             CI_METHOD_NAME_NAME, CI_METHOD_VERSION_NAME, CI_METHOD_COMMIT_NAME, CI_LOCKED_NAME, CI_STATUS_ID_NAME, CI_STATUS_NAME_NAME,
             CI_STATUS_DATE_NAME, CI_CREATION_DATE_NAME, CI_MODIFICATION_DATE_NAME, CI_VERSION_NAME));
 
-    public static final String CI_FACET_FIELDS = CI_ID_NAME + ", " + CI_PRIMARY_NAME + ", " + CI_PANEL_ID_NAME + ", " + CI_ANALYIST_ID_NAME
+    public static final String CI_FACET_FIELDS = CI_PRIMARY_NAME + ", " + CI_PANEL_ID_NAME + ", " + CI_ANALYIST_ID_NAME
             + ", " + CI_ANALYIST_NAME_NAME + ", " + CI_ANALYIST_EMAIL_NAME + ", " + CI_ANALYIST_ASSIGNED_BY_NAME + ", "
             + CI_ANALYIST_DATE_NAME + ", " + CI_METHOD_NAME_NAME + ", " + CI_METHOD_VERSION_NAME + ", " + CI_METHOD_COMMIT_NAME + ", "
             + CI_LOCKED_NAME + ", " + CI_STATUS_ID_NAME + ", " + CI_STATUS_NAME_NAME + ", " + CI_STATUS_DATE_NAME + ", "
             + CI_CREATION_DATE_NAME + ", " + CI_MODIFICATION_DATE_NAME + ", " + CI_VERSION_NAME;
 
-    public static Set<String> CV_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CV_ID_NAME, CV_PRIMARY_NAME, CV_DISCUSSION_AUTHOR_NAME,
-            CV_DISCUSSION_DATE_NAME, CV_CONFIDENCE_VALUE_NAME, CV_CONFIDENCE_AUTHOR_NAME, CV_CONFIDENCE_DATE_NAME, CV_TAG_NAME,
-            CV_STATUS_NAME, CV_ANNOT_BIOTYPE_NAME, CV_ANNOT_CONSEQUENCE_TYPE_NAME,
+    public static Set<String> CV_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CV_VARIANT_ID_NAME, CV_PRIMARY_NAME,
+            CV_DISCUSSION_AUTHOR_NAME, CV_DISCUSSION_DATE_NAME, CV_CONFIDENCE_VALUE_NAME, CV_CONFIDENCE_AUTHOR_NAME,
+            CV_CONFIDENCE_DATE_NAME, CV_TAG_NAME, CV_STATUS_NAME, CV_ANNOT_BIOTYPE_NAME, CV_ANNOT_CONSEQUENCE_TYPE_NAME,
             //CV_ANNOT_TRANSCRIPT_FLAG_NAME,
             CV_GENE_NAME,
             CV_ANNOT_XREF_NAME, CV_ANNOT_GENE_ROLE_IN_CANER_GENES_NAME, CV_TYPE_NAME
@@ -76,7 +78,7 @@ public class ClinicalQueryParser {
             //CV_ANNOT_EXPRESSION_GENES_NAME, CV_ANNOT_GENE_TRAIT_ID_NAME, CV_ANNOT_TRAIT_NAME, CV_ANNOT_PROTEIN_KEYWORD_NAME
     ));
 
-    public static final String CV_FACET_FIELDS = CV_ID_NAME + ", " + CV_PRIMARY_NAME + ", " + CV_DISCUSSION_AUTHOR_NAME + ", " +
+    public static final String CV_FACET_FIELDS = CV_VARIANT_ID_NAME + ", " + CV_PRIMARY_NAME + ", " + CV_DISCUSSION_AUTHOR_NAME + ", " +
             CV_DISCUSSION_DATE_NAME + ", " + CV_CONFIDENCE_VALUE_NAME + ", " + CV_CONFIDENCE_AUTHOR_NAME + ", " + CV_CONFIDENCE_DATE_NAME
             + ", " + CV_TAG_NAME + ", " + CV_STATUS_NAME + ", " + CV_ANNOT_BIOTYPE_NAME + ", " + CV_ANNOT_CONSEQUENCE_TYPE_NAME + ", "
             //+ CV_ANNOT_TRANSCRIPT_FLAG_NAME + ", "
@@ -91,12 +93,12 @@ public class ClinicalQueryParser {
             //+ CV_ANNOT_PROTEIN_KEYWORD_NAME
             ;
 
-    public static Set<String> CVE_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CVE_PHENOTYPE_NAME_NAME, CVE_GENE_NAME_NAME,
-            CVE_CONSEQUENCE_TYPE_ID_NAME, CVE_XREF_ID_NAME, CVE_PANEL_ID_NAME, CVE_MOI_NAME, CVE_PENETRANCE_NAME, CVE_ACGM_NAME,
-            CVE_TIER_NAME, CVE_CLINICAL_SIGNIFICANCE_NAME, CVE_DRUG_RESPONSE_NAME, CVE_TRAIT_ASSOCIATION_NAME, CVE_FUNCTIONAL_EFFECT_NAME,
-            CVE_TUMORIGENESIS_NAME, CVE_OTHER_CLASSIFICATION_NAME, CVE_ROL_IN_CANCER_NAME));
+    public static Set<String> CVE_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CVE_VARIANT_ID_NAME, CVE_PHENOTYPE_NAME_NAME,
+            CVE_GENE_NAME_NAME, CVE_CONSEQUENCE_TYPE_ID_NAME, CVE_XREF_ID_NAME, CVE_PANEL_ID_NAME, CVE_MOI_NAME, CVE_PENETRANCE_NAME,
+            CVE_ACGM_NAME, CVE_TIER_NAME, CVE_CLINICAL_SIGNIFICANCE_NAME, CVE_DRUG_RESPONSE_NAME, CVE_TRAIT_ASSOCIATION_NAME,
+            CVE_FUNCTIONAL_EFFECT_NAME, CVE_TUMORIGENESIS_NAME, CVE_OTHER_CLASSIFICATION_NAME, CVE_ROL_IN_CANCER_NAME));
 
-    public static final String CVE_FACET_FIELDS = CVE_PHENOTYPE_NAME_NAME + ", " + CVE_GENE_NAME_NAME + ", "
+    public static final String CVE_FACET_FIELDS = CVE_VARIANT_ID_NAME + ", " + CVE_PHENOTYPE_NAME_NAME + ", " + CVE_GENE_NAME_NAME + ", "
             + CVE_CONSEQUENCE_TYPE_ID_NAME + ", " + CVE_XREF_ID_NAME + ", " + CVE_PANEL_ID_NAME + ", " + CVE_MOI_NAME + ", "
             + CVE_PENETRANCE_NAME + ", " + CVE_ACGM_NAME + ", " + CVE_TIER_NAME + ", " + CVE_CLINICAL_SIGNIFICANCE_NAME + ", "
             + CVE_DRUG_RESPONSE_NAME + ", " + CVE_TRAIT_ASSOCIATION_NAME + ", " + CVE_FUNCTIONAL_EFFECT_NAME + ", "
@@ -104,8 +106,9 @@ public class ClinicalQueryParser {
 
     protected static Logger logger = LoggerFactory.getLogger(ClinicalQueryParser.class);
 
-    protected ClinicalQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
-        solrParser = new SolrQueryParser(variantStorageMetadataManager);
+    protected ClinicalQueryParser(String collectionPrefix, VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.collectionPrefix = collectionPrefix;
+        this.solrParser = new SolrQueryParser(variantStorageMetadataManager);
     }
 
     public SolrQuery parse(Query query, QueryOptions queryOptions) throws CvdbException {
@@ -239,9 +242,11 @@ public class ClinicalQueryParser {
             System.out.println(">>>>>>>>>>>>>>>>>>>>>> solrQuery.getFilterQueries() = " + solrQuery.getFilterQueries());
         }
 
-        // Clinical variant filters
+        addStringFilters("id", query.getString(ClinicalQueryParam.CV_ID_NAME), filters);
 
-        addStringFilters("variantId", query.getString("variantId"), filters);
+        // Clinical variant filters
+        // <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
+        addStringFilters(toSolrSchemaFields(CV_VARIANT_ID_NAME), query.getString(CV_VARIANT_ID_NAME), filters);
 
         // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
         addBooleanFilters("primary", query.getString(CV_PRIMARY_NAME), filters);
@@ -284,9 +289,14 @@ public class ClinicalQueryParser {
     public List<String> clinicalVariantEvidenceFilters(Query query) {
         List<String> filters = new ArrayList<>();
 
-        addStringFilters(ClinicalQueryParam.CA_ID_NAME, query.getString(ClinicalQueryParam.CA_ID_NAME), filters);
-        addStringFilters(ClinicalQueryParam.CI_ID_NAME, query.getString(ClinicalQueryParam.CI_ID_NAME), filters);
-        addStringFilters(ClinicalQueryParam.CV_ID_NAME, query.getString(ClinicalQueryParam.CV_ID_NAME), filters);
+        addStringFilters("id", query.getString(ClinicalQueryParam.CVE_ID_NAME), filters);
+
+        //        addStringFilters(ClinicalQueryParam.CA_ID_NAME, query.getString(ClinicalQueryParam.CA_ID_NAME), filters);
+//        addStringFilters(ClinicalQueryParam.CI_ID_NAME, query.getString(ClinicalQueryParam.CI_ID_NAME), filters);
+//        addStringFilters(ClinicalQueryParam.CV_ID_NAME, query.getString(ClinicalQueryParam.CV_ID_NAME), filters);
+
+        // <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
+        addStringFilters(CVE_VARIANT_ID_NAME, query.getString(CVE_VARIANT_ID_NAME), filters);
 
         // <field name="phenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
         addStringFilters("phenotypeNames", query.getString(ClinicalQueryParam.CVE_PHENOTYPE_NAME_NAME), filters);
@@ -696,6 +706,8 @@ public class ClinicalQueryParser {
 
             // Clinical variant
             case CV_ID_NAME:
+                return "cvId";
+            case CV_VARIANT_ID_NAME:
                 return "variantId";
             case CV_PRIMARY_NAME:
                 return "primary";
@@ -737,6 +749,10 @@ public class ClinicalQueryParser {
 //                return "";
 
             // Clinical variant evidence
+            case CVE_ID_NAME:
+                return "cveId";
+            case CVE_VARIANT_ID_NAME:
+                return "variantId";
             case CVE_PHENOTYPE_NAME_NAME:
                 return "phenotypeNames";
             case CVE_GENE_NAME_NAME:

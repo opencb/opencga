@@ -38,7 +38,6 @@ import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_ANALYSES_COLLECTION_SUFFIX;
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.getCollectionName;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CA_ID_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -52,10 +51,11 @@ public class CvdbSolrEngineIndexTest {
     protected Study study;
 
     @Rule
-    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);;
+//    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+    public OpenCGAEnterpriseCatalogManagerExternalResource catalogManagerResource = new OpenCGAEnterpriseCatalogManagerExternalResource();
 
     @Rule
-    public OpenCGAEnterpriseCatalogManagerExternalResource catalogManagerResource = new OpenCGAEnterpriseCatalogManagerExternalResource();
+    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
 
     protected CatalogManager catalogManager;
     private String opencgaToken;
@@ -76,8 +76,8 @@ public class CvdbSolrEngineIndexTest {
         cvdbEngine.setCatalogManager(catalogManager);
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
-        if (!cvdbEngine.existCollections(projectId)) {
-            cvdbEngine.createCollections(projectId);
+        if (!cvdbEngine.existCollections(organizationId, projectId)) {
+            cvdbEngine.createCollections(organizationId, projectId);
         }
     }
 
@@ -114,7 +114,8 @@ public class CvdbSolrEngineIndexTest {
         solrQuery.setRows(100);
 
         // Execute the Solr query
-        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+        QueryResponse response = cvdbEngine.getSolrClient().query(cvdbEngine.getCollectionName(organizationId, projectId,
+                        CLINICAL_ANALYSES_COLLECTION_SUFFIX),
                 solrQuery);
 
         // Print out the results
@@ -142,8 +143,8 @@ public class CvdbSolrEngineIndexTest {
         solrQuery.setRows(100);
 
         // Execute the Solr query
-        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
-                solrQuery);
+        QueryResponse response = cvdbEngine.getSolrClient().query(cvdbEngine.getCollectionName(organizationId, projectId,
+                        CLINICAL_ANALYSES_COLLECTION_SUFFIX), solrQuery);
 
         // Print out the results
         System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());
@@ -184,7 +185,8 @@ public class CvdbSolrEngineIndexTest {
         solrQuery.setRows(100);
 
         // Execute the Solr query
-        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+        QueryResponse response = cvdbEngine.getSolrClient().query(cvdbEngine.getCollectionName(organizationId, projectId,
+                        CLINICAL_ANALYSES_COLLECTION_SUFFIX),
                 solrQuery);
 
         // Print out the results
@@ -215,7 +217,7 @@ public class CvdbSolrEngineIndexTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(CA_ID_NAME, caId);
 
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
@@ -257,7 +259,7 @@ public class CvdbSolrEngineIndexTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(CA_ID_NAME, caId);
 
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
