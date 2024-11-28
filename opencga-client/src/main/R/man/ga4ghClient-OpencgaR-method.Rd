@@ -4,12 +4,12 @@
 \alias{ga4ghClient,OpencgaR-method}
 \title{GA4GHClient methods}
 \usage{
-\S4method{ga4ghClient}{OpencgaR}(OpencgaR, study, file, endpointName, params = NULL, ...)
+\S4method{ga4ghClient}{OpencgaR}(OpencgaR, file, study, endpointName, params = NULL, ...)
 }
 \arguments{
-\item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
-
 \item{file}{File id, name or path.}
+
+\item{study}{Study [\link{organization@}project:]study where study and project can be either the ID or UUID.}
 
 \item{referenceName}{Reference sequence name (Example: 'chr1', '1' or 'chrX'.}
 
