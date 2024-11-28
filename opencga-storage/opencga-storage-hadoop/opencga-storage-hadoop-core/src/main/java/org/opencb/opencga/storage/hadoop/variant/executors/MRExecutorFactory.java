@@ -15,7 +15,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public final class MRExecutorFactory {
 
-    private static Logger logger = LoggerFactory.getLogger(SshMRExecutor.class);
+    private static Logger logger = LoggerFactory.getLogger(MRExecutorFactory.class);
 
     private MRExecutorFactory() {
     }

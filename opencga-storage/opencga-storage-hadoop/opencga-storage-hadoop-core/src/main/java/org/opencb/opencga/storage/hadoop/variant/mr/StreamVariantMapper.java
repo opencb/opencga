@@ -278,7 +278,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
             LOG.info("Pruning docker images");
             int maxImages = 5;
             Command command = new Command(new String[]{"bash", "-c", "[ $(docker image ls  --format json | wc -l) -gt " + maxImages + " ] "
-                    + "&& echo 'Run docker image prune' && docker image prune -f -a "
+                    + "&& echo 'Run docker image prune' && docker image prune -f --all --filter label!=storage='do_not_delete'"
                     + "|| echo 'Skipping docker image prune. Less than " + maxImages + " images.'"}, Collections.emptyMap());
             command.run();
             int ecode = command.getExitValue();

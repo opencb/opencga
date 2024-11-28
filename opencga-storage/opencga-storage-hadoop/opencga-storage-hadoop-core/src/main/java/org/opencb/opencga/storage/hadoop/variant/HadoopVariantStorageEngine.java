@@ -321,7 +321,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format,
                               Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
         ParsedVariantQuery variantQuery = parseQuery(query, queryOptions);
-        int studyId = variantQuery.getStudyQuery().getDefaultStudy().getId();
+        int studyId;
+        if (variantQuery.getStudyQuery().getDefaultStudy() == null) {
+            studyId = -1;
+        } else {
+            studyId = variantQuery.getStudyQuery().getDefaultStudy().getId();
+        }
         ObjectMap params = new ObjectMap(getOptions()).appendAll(variantQuery.getQuery()).appendAll(variantQuery.getInputOptions());
         params.remove(StreamVariantDriver.COMMAND_LINE_PARAM);
 
