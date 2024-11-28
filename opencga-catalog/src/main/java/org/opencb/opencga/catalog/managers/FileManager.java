@@ -2469,6 +2469,8 @@ public class FileManager extends AnnotationSetManager<File> {
             File parentFolder = parents.first();
             if (file.isResource() && !parentFolder.isResource()) {
                 throw new CatalogException("Cannot move RESOURCE file to a non RESOURCE folder.");
+            } else if (!file.isResource() && parentFolder.isResource()) {
+                throw new CatalogException("Cannot move non RESOURCE file to a RESOURCE folder.");
             }
             if (!parentFolder.isResource()) {
                 // If it is RESOURCE, it was already checked that the user is at least a study administrator
