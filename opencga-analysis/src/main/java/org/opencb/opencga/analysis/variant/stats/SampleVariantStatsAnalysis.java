@@ -26,6 +26,7 @@ import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.BatchUtils;
@@ -62,6 +63,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
     @ToolParams
     protected SampleVariantStatsAnalysisParams toolParams;
     private ArrayList<String> checkedSamplesList;
+    private Query variantQuery;
     private SampleVariantStatsAnalysisExecutor toolExecutor;
     private List<List<String>> batches;
     private int numBatches;
@@ -165,6 +167,12 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
             }
         }
 
+
+        variantQuery = toolParams.getVariantQuery() == null ? new Query() : toolParams.getVariantQuery().toQuery();
+        variantQuery.put(VariantQueryParam.STUDY.key(), study);
+        variantQuery = new VariantCatalogQueryUtils(catalogManager)
+                .parseQuery(variantQuery, new QueryOptions(), variantStorageManager.getCellBaseUtils(study, token), token);
+
         checkedSamplesList = new ArrayList<>(allSamples);
         checkedSamplesList.sort(String::compareTo);
         if (checkedSamplesList.isEmpty()) {
@@ -173,7 +181,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
         } else {
             // check read permission
             variantStorageManager.checkQueryPermissions(
-                    new Query()
+                    new Query(variantQuery)
                             .append(VariantQueryParam.STUDY.key(), study)
                             .append(VariantQueryParam.INCLUDE_SAMPLE.key(), checkedSamplesList),
                     new QueryOptions(),
@@ -246,7 +254,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                         .setOutputFile(tmpOutputFile)
                         .setStudy(study)
                         .setSampleNames(batchSamples)
-                        .setVariantQuery(toolParams.getVariantQuery() == null ? new Query() : toolParams.getVariantQuery().toQuery())
+                        .setVariantQuery(variantQuery)
                         .execute();
 
                 if (tmpOutputFile != outputFile) {

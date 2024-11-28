@@ -346,7 +346,9 @@ public class VariantMapReduceUtil {
         job.setInputFormatClass(HBaseVariantRowTableInputFormat.class);
         job.getConfiguration().setBoolean(HBaseVariantRowTableInputFormat.MULTI_SCANS, scans.size() > 1);
         job.getConfiguration().setBoolean(HBaseVariantRowTableInputFormat.USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, useSampleIndex);
-        job.getConfiguration().set(HBaseVariantRowTableInputFormat.SAMPLE_INDEX_TABLE, sampleIndexTable);
+        if (sampleIndexTable != null) {
+            job.getConfiguration().set(HBaseVariantRowTableInputFormat.SAMPLE_INDEX_TABLE, sampleIndexTable);
+        }
     }
 
     public static void initVariantRowMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor,

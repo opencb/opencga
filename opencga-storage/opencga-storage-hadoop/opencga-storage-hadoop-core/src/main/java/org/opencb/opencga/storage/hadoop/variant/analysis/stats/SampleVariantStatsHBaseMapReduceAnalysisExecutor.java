@@ -1,11 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.analysis.stats;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
@@ -43,8 +45,9 @@ public class SampleVariantStatsHBaseMapReduceAnalysisExecutor
                 }
             }
 
+            ParsedVariantQuery variantQuery = engine.parseQuery(getVariantQuery(), new QueryOptions());
             ObjectMap params = new ObjectMap(engine.getOptions())
-                    .appendAll(getVariantQuery())
+                    .appendAll(variantQuery.getQuery())
                     .append(SampleVariantStatsDriver.SAMPLES, sampleNames)
                     .append(SampleVariantStatsDriver.OUTPUT, getOutputFile().toAbsolutePath().toUri());
             engine.getMRExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(

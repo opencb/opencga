@@ -430,6 +430,11 @@ public class VariantAnalysisTest {
     }
 
     @Test
+    public void testSampleStatsWithGeneFilter() throws Exception {
+        sampleVariantStats(null, "stats_BRCA1", false, 1, file.getSampleIds().subList(0, 2), false, new VariantQuery().gene("BRCA1"));
+    }
+
+    @Test
     public void testSampleStats() throws Exception {
         sampleVariantStats("1,2", "stats_1", false, 1, file.getSampleIds().subList(0, 2));
         sampleVariantStats("1,2", "stats_1", false, 1, file.getSampleIds().subList(2, 4));
