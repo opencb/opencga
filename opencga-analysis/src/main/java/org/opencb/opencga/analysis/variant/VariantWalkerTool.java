@@ -49,11 +49,11 @@ public class VariantWalkerTool extends OpenCgaTool {
     protected void check() throws Exception {
         super.check();
 
-        if (StringUtils.isEmpty(toolParams.getFileFormat())) {
-            toolParams.setFileFormat(VariantWriterFactory.VariantOutputFormat.VCF.toString());
+        if (StringUtils.isEmpty(toolParams.getInputFormat())) {
+            toolParams.setInputFormat(VariantWriterFactory.VariantOutputFormat.VCF.toString());
         }
 
-        format = VariantWriterFactory.toOutputFormat(toolParams.getFileFormat(), toolParams.getOutputFileName());
+        format = VariantWriterFactory.toOutputFormat(toolParams.getInputFormat(), toolParams.getOutputFileName());
         if (format.isBinary()) {
             throw new IllegalArgumentException("Binary format not supported for VariantWalkerTool");
         }

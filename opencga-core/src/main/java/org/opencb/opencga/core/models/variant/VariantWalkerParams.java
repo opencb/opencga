@@ -1,23 +1,23 @@
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantWalkerParams extends VariantQueryParams {
     public static final String DESCRIPTION = "Variant walker params";
-    private String outdir;
+
+    @DataField(description = "Output file name")
     private String outputFileName;
-    private String fileFormat;
+    @DataField(description = "Format that will be used as input for the variant walker")
+    private String inputFormat;
+    @DataField(description = "Docker image to use")
     private String dockerImage;
+    @DataField(description = "Command line to execute from the walker")
     private String commandLine;
+    @DataField(description = ParamConstants.INCLUDE_DESCRIPTION)
     private String include;
+    @DataField(description = ParamConstants.EXCLUDE_DESCRIPTION)
     private String exclude;
-
-    public String getOutdir() {
-        return outdir;
-    }
-
-    public VariantWalkerParams setOutdir(String outdir) {
-        this.outdir = outdir;
-        return this;
-    }
 
     public String getOutputFileName() {
         return outputFileName;
@@ -28,12 +28,12 @@ public class VariantWalkerParams extends VariantQueryParams {
         return this;
     }
 
-    public String getFileFormat() {
-        return fileFormat;
+    public String getInputFormat() {
+        return inputFormat;
     }
 
-    public VariantWalkerParams setFileFormat(String fileFormat) {
-        this.fileFormat = fileFormat;
+    public VariantWalkerParams setInputFormat(String inputFormat) {
+        this.inputFormat = inputFormat;
         return this;
     }
 

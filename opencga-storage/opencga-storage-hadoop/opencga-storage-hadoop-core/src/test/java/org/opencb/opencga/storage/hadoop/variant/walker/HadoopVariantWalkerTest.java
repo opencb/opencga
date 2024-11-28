@@ -1,10 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.walker;
 
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -34,7 +31,7 @@ public class HadoopVariantWalkerTest extends VariantStorageBaseTest implements H
 
     @ClassRule
     public static HadoopExternalResource externalResource = new HadoopExternalResource();
-    private static String _dockerImage;
+    private static String dockerImage;
 
     @Before
     public void before() throws Exception {
@@ -58,6 +55,14 @@ public class HadoopVariantWalkerTest extends VariantStorageBaseTest implements H
         );
 
         VariantHbaseTestUtils.printVariants(variantStorageManager.getDBAdaptor(), newOutputUri());
+
+        dockerImage = buildDocker();
+    }
+
+    @AfterClass
+    public static void afterClass() throws Exception {
+        pruneDocker(dockerImage);
+        dockerImage = null;
     }
 
     @Test
@@ -102,7 +107,6 @@ public class HadoopVariantWalkerTest extends VariantStorageBaseTest implements H
     @Test
     public void exportDocker() throws Exception {
         URI outdir = newOutputUri();
-        String dockerImage = buildDocker();
 
         String cmdPython1 = "python variant_walker.py walker_example Cut --length 30";
 
@@ -110,9 +114,6 @@ public class HadoopVariantWalkerTest extends VariantStorageBaseTest implements H
     }
 
     private static String buildDocker() throws IOException {
-        if (HadoopVariantWalkerTest._dockerImage != null) {
-            return HadoopVariantWalkerTest._dockerImage;
-        }
         String dockerImage = "local/variant-walker-test:latest";
         Path dockerFile = Paths.get(getResourceUri("variantWalker/Dockerfile").getPath());
 //        Path pythonDir = Paths.get("../../opencga-storage-core/src/main/python").toAbsolutePath();
@@ -120,9 +121,14 @@ public class HadoopVariantWalkerTest extends VariantStorageBaseTest implements H
         Command dockerBuild = new Command(new String[]{"docker", "build", "-t", dockerImage, "-f", dockerFile.toString(), pythonDir.toString()}, Collections.emptyMap());
         dockerBuild.run();
         assertEquals(0, dockerBuild.getExitValue());
-        HadoopVariantWalkerTest._dockerImage = dockerImage;
         return dockerImage;
     }
 
-
+    private static void pruneDocker(String dockerImage) throws IOException {
+        if (dockerImage != null) {
+            Command dockerPrune = new Command(new String[]{"docker", "rmi", dockerImage}, Collections.emptyMap());
+            dockerPrune.run();
+            assertEquals(0, dockerPrune.getExitValue());
+        }
+    }
 }

@@ -3113,25 +3113,22 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--sort"}, description = "The body web service sort parameter", required = false, help = true, arity = 0)
         public boolean sort = false;
     
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
-        public String outdir;
-    
-        @Parameter(names = {"--output-file-name"}, description = "The body web service outputFileName parameter", required = false, arity = 1)
+        @Parameter(names = {"--output-file-name"}, description = "Output file name", required = false, arity = 1)
         public String outputFileName;
     
-        @Parameter(names = {"--file-format"}, description = "The body web service fileFormat parameter", required = false, arity = 1)
-        public String fileFormat;
+        @Parameter(names = {"--input-format"}, description = "Format that will be used as input for the variant walker", required = false, arity = 1)
+        public String inputFormat;
     
-        @Parameter(names = {"--docker-image"}, description = "The body web service dockerImage parameter", required = false, arity = 1)
+        @Parameter(names = {"--docker-image"}, description = "Docker image to use", required = false, arity = 1)
         public String dockerImage;
     
-        @Parameter(names = {"--command-line"}, description = "The body web service commandLine parameter", required = false, arity = 1)
+        @Parameter(names = {"--command-line"}, description = "Command line to execute from the walker", required = false, arity = 1)
         public String commandLine;
     
-        @Parameter(names = {"--body_include"}, description = "The body web service include parameter", required = false, arity = 1)
+        @Parameter(names = {"--body_include"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String bodyInclude;
     
-        @Parameter(names = {"--body_exclude"}, description = "The body web service exclude parameter", required = false, arity = 1)
+        @Parameter(names = {"--body_exclude"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String bodyExclude;
     
     }
