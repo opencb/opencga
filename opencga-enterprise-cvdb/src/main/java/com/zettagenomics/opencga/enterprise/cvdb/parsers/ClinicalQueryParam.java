@@ -83,6 +83,19 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final String CA_PROBAND_ID_DESCR = "Clinical analysis proband ID (or list of IDs" + OPT_LIST;
     public static final ClinicalQueryParam CA_PROBAND_ID = new ClinicalQueryParam(CA_PROBAND_ID_NAME, TEXT_ARRAY, CA_PROBAND_ID_DESCR);
 
+    // <field name="probandDisorderIds" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CA_PROBAND_DISORDER_ID_NAME = "caProbandDisorderId";
+    public static final String CA_PROBAND_DISORDER_ID_DESCR = "Clinical analysis proband disorder ID (or list of disorder IDs" + OPT_LIST;
+    public static final ClinicalQueryParam CA_PROBAND_DISORDER_ID = new ClinicalQueryParam(CA_PROBAND_DISORDER_ID_NAME, TEXT_ARRAY,
+            CA_PROBAND_DISORDER_ID_DESCR);
+
+    // <field name="probandPhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CA_PROBAND_PHENOTYPE_NAME_NAME = "caProbandPhenotypeName";
+    public static final String CA_PROBAND_PHENOTYPE_NAME_DESCR = "Clinical analysis proband phenotype name (or list of phenotype names"
+            + OPT_LIST;
+    public static final ClinicalQueryParam CA_PROBAND_PHENOTYPE_NAME = new ClinicalQueryParam(CA_PROBAND_PHENOTYPE_NAME_NAME, TEXT_ARRAY,
+            CA_PROBAND_PHENOTYPE_NAME_DESCR);
+
     // <field name="familyId" type="string" indexed="true" stored="true" multiValued="false"/>
     public static final String CA_FAMILY_ID_NAME = "caFamilyId";
     public static final String CA_FAMILY_ID_DESCR = "Clinical analysis family ID (or list of IDs" + OPT_LIST;
@@ -484,15 +497,16 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // <field name="transcriptId" type="string" indexed="true" stored="true" multiValued="false"/>
     public static final String CVE_TRANSCRIPT_ID_NAME = "cveTranscriptId";
-    public static final String CVE_TRANSCRIPT_ID_DESCR = "Clinical variant evidence trancript ID (or IDs" + OPT_LIST;
+    public static final String CVE_TRANSCRIPT_ID_DESCR = "Clinical variant evidence transcript ID (or IDs" + OPT_LIST;
     public static final ClinicalQueryParam CVE_TRANSCRIPT_ID = new ClinicalQueryParam(CVE_TRANSCRIPT_ID_NAME, TEXT_ARRAY,
             CVE_TRANSCRIPT_ID_DESCR);
 
-    // <field name="consequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
-    public static final String CVE_CONSEQUENCE_TYPE_ID_NAME = "cveConsequenceTypeId";
-    public static final String CVE_CONSEQUENCE_TYPE_ID_DESCR = "Clinical variant evidence consequence type ID (or IDs" + OPT_LIST;
-    public static final ClinicalQueryParam CVE_CONSEQUENCE_TYPE_ID = new ClinicalQueryParam(CVE_CONSEQUENCE_TYPE_ID_NAME, TEXT_ARRAY,
-            CVE_CONSEQUENCE_TYPE_ID_DESCR);
+    // <field name="soTermAccessions" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CVE_SO_TERM_ACCESSION_NAME = "cveSoTermAccession";
+    public static final String CVE_SO_TERM_ACCESSION_DESCR = "Clinical variant evidence sequence ontology accession (or accessions"
+            + OPT_LIST;
+    public static final ClinicalQueryParam CVE_SO_TERM_ACCESSION = new ClinicalQueryParam(CVE_SO_TERM_ACCESSION_NAME, TEXT_ARRAY,
+            CVE_SO_TERM_ACCESSION_DESCR);
 
     // <field name="xrefIds" type="string" indexed="true" stored="true" multiValued="true"/>
     public static final String CVE_XREF_ID_NAME = "cveXrefId";
@@ -569,10 +583,10 @@ public final class ClinicalQueryParam implements QueryParam {
             CVE_OTHER_CLASSIFICATION_DESCR);
 
     // <field name="rolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
-    public static final String CVE_ROL_IN_CANCER_NAME = "cveRolInCancer";
-    public static final String CVE_ROL_IN_CANCER_DESCR = "Clinical variant evidence rol in cancer (or roles in cancer" + OPT_LIST;
-    public static final ClinicalQueryParam CVE_ROL_IN_CANCER = new ClinicalQueryParam(CVE_ROL_IN_CANCER_NAME, TEXT_ARRAY,
-            CVE_ROL_IN_CANCER_DESCR);
+    public static final String CVE_ROLE_IN_CANCER_NAME = "cveRoleInCancer";
+    public static final String CVE_ROLE_IN_CANCER_DESCR = "Clinical variant evidence roles in cancer (or roles in cancer" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_ROLE_IN_CANCER = new ClinicalQueryParam(CVE_ROLE_IN_CANCER_NAME, TEXT_ARRAY,
+            CVE_ROLE_IN_CANCER_DESCR);
 
     // <field name="reviewTier" type="string" indexed="true" stored="true" multiValued="false"/>
     public static final String CVE_REVIEW_TIER_NAME = "cveReviewTier";
@@ -581,7 +595,7 @@ public final class ClinicalQueryParam implements QueryParam {
             CVE_REVIEW_TIER_DESCR);
 
     // <field name="reviewAcmgs" type="string" indexed="true" stored="true" multiValued="true"/>
-    public static final String CVE_REVIEW_ACGM_NAME = "cveAcmg";
+    public static final String CVE_REVIEW_ACGM_NAME = "cveReviewAcmg";
     public static final String CVE_REVIEW_ACGM_DESCR = "Clinical variant evidence review ACMG (or ACGMs" + OPT_LIST;
     public static final ClinicalQueryParam CVE_REVIEW_ACGM = new ClinicalQueryParam(CVE_REVIEW_ACGM_NAME, TEXT_ARRAY,
             CVE_REVIEW_ACGM_DESCR);

@@ -207,6 +207,8 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
         caToCasFieldMap.put("disorder.id", "disorderId");
         caToCasFieldMap.put("files.name", "fileNames");
         caToCasFieldMap.put("proband.id", "probandId");
+        caToCasFieldMap.put("proband.disorder.id", "probandDisorderIds");
+        caToCasFieldMap.put("proband.phenotype.id", "probandPhenotypeIds");
         caToCasFieldMap.put("family.id", "familyId");
         caToCasFieldMap.put("family.phenotypes.name", "familyPhenotypeNames");
         caToCasFieldMap.put("family.members.id", "familyMemberIds");

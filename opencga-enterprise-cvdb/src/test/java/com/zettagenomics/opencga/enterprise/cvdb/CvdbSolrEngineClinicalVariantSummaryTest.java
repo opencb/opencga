@@ -169,7 +169,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantId, null, null, null, userToken);
         System.out.println("getClinicalVariantSummaryStats, result.first() = " + result.first());
 
-        Assert.assertEquals(caResult.getNumResults(), result.first().getNumCases());
+        Assert.assertEquals(caResult.getNumResults(), result.first().getNumClinicalAnalyses());
         Assert.assertEquals(ciPrim, result.first().getNumPrimaryInterpretations());
         Assert.assertEquals(ciSec, result.first().getNumSecondaryInterpretations());
 //        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().size());
@@ -190,15 +190,18 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantIds, null, organizationId,
                 projectId, userToken);
 
+        System.out.println("ClinicalVariantSummaryStats, result.getResults().get(0) = " + result.getResults().get(0));
+        System.out.println("ClinicalVariantSummaryStats, result.getResults().get(1) = " + result.getResults().get(1));
+
         Assert.assertEquals(2, result.getNumResults());
-        Assert.assertEquals(1L, result.first().getNumCases());
+        Assert.assertEquals(1L, result.first().getNumClinicalAnalyses());
 //        Assert.assertEquals(1, result.first().getNumPrimaryInterpretations());
 //        Assert.assertEquals(4, result.first().getNumSecondaryInterpretations());
 //        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().size());
 //        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().get("VACTERL-like phenotypes"));
 //        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().size());
 //        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().get("TIER3"));
-        Assert.assertEquals(1L, result.getResults().get(1).getNumCases());
+        Assert.assertEquals(1L, result.getResults().get(1).getNumClinicalAnalyses());
 //        Assert.assertEquals(1, result.getResults().get(1).getNumPrimaryInterpretations());
 //        Assert.assertEquals(3, result.getResults().get(1).getNumSecondaryInterpretations());
 //        Assert.assertEquals(1, result.getResults().get(1).getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().size());

@@ -26,10 +26,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalSolrIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.*;
 import com.zettagenomics.opencga.enterprise.cvdb.models.mappings.*;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParser;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalInterpretationQueryParser;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalVariantEvidenceQueryParser;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalVariantQueryParser;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -39,11 +36,9 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
-import org.opencb.biodata.models.clinical.ClinicalAcmg;
-import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
-import org.opencb.biodata.models.clinical.interpretation.stats.InterpretationSummaryStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
@@ -82,7 +77,6 @@ import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.*;
 import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.core.api.ParamConstants.ANONYMOUS_USER_ID;
 import static org.opencb.opencga.core.models.clinical.CvdbIndexStatus.ERROR;
@@ -402,9 +396,9 @@ public class CvdbSolrEngine {
     }
 
     public DataResult<FacetField> facetClinicalAnalyses(Query query, QueryOptions queryOptions, String token)
-            throws IOException, CvdbException {
+            throws IOException, CvdbException, CatalogException {
         // Check
-        checkFacet(query, queryOptions, CA_FACET_FIELD_SET);
+        checkFacet(query, queryOptions, token);
 
         // Parse query
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(catalogManager.getConfiguration().getDatabasePrefix(),
@@ -418,7 +412,7 @@ public class CvdbSolrEngine {
                     CLINICAL_ANALYSES_COLLECTION_SUFFIX);
             SolrCollection solrCollection = solrManager.getCollection(collection);
             facetResult = solrCollection.facet(solrQuery);
-            postProcessing(facetResult, new CaFieldMapping());
+//            postProcessing(facetResult, new CaFieldMapping());
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
@@ -530,9 +524,9 @@ public class CvdbSolrEngine {
     }
 
     public DataResult<FacetField> facetClinicalInterpretations(Query query, QueryOptions queryOptions, String token)
-            throws IOException, CvdbException {
+            throws IOException, CvdbException, CatalogException {
         // Check
-        checkFacet(query, queryOptions, CI_FACET_FIELD_SET);
+        checkFacet(query, queryOptions, token);
 
         // Parse query
         ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(
@@ -546,7 +540,7 @@ public class CvdbSolrEngine {
                     INTERPRETATIONS_COLLECTION_SUFFIX);
             SolrCollection solrCollection = solrManager.getCollection(collection);
             facetResult = solrCollection.facet(solrQuery);
-            postProcessing(facetResult, new CiFieldMapping());
+//            postProcessing(facetResult, new CiFieldMapping());
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
@@ -638,9 +632,9 @@ public class CvdbSolrEngine {
     }
 
     public DataResult<FacetField> facetClinicalVariants(Query query, QueryOptions queryOptions, String token)
-            throws IOException, CvdbException {
+            throws IOException, CvdbException, CatalogException {
         // Check
-        checkFacet(query, queryOptions, CV_FACET_FIELD_SET);
+        checkFacet(query, queryOptions, token);
 
         // Parse query
         ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(catalogManager.getConfiguration().getDatabasePrefix(),
@@ -654,7 +648,7 @@ public class CvdbSolrEngine {
                     CLINICAL_VARIANTS_COLLECTION_SUFFIX);
             SolrCollection solrCollection = solrManager.getCollection(collection);
             facetResult = solrCollection.facet(solrQuery);
-            postProcessing(facetResult, new CvFieldMapping());
+//            postProcessing(facetResult, new CvFieldMapping());
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
@@ -733,9 +727,9 @@ public class CvdbSolrEngine {
     }
 
     public DataResult<FacetField> facetClinicalVariantEvidences(Query query, QueryOptions queryOptions, String token)
-            throws IOException, CvdbException {
+            throws IOException, CvdbException, CatalogException {
         // Check
-        checkFacet(query, queryOptions, CVE_FACET_FIELD_SET);
+        checkFacet(query, queryOptions, token);
 
         // Parse query
         ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(
@@ -749,7 +743,7 @@ public class CvdbSolrEngine {
                     CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
             SolrCollection solrCollection = solrManager.getCollection(collection);
             facetResult = solrCollection.facet(solrQuery);
-            postProcessing(facetResult, new CveFieldMapping());
+//            postProcessing(facetResult, new CveFieldMapping());
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
@@ -807,46 +801,52 @@ public class CvdbSolrEngine {
         List<ClinicalVariantSummaryStats> variantStatsList = new ArrayList<>(variantIds.size());
 
         Query query;
-        QueryOptions queryOptions;
-        DataResult<FacetField> facetResult;
-        Map<String, Map<String, Long>> facetMap = new HashMap<>();;
+        Map<String, Map<String, Long>> facetMap = new HashMap<>();
 
         for (String variantId : variantIds) {
             ClinicalVariantSummaryStats variantStats = new ClinicalVariantSummaryStats();
 
             for (String targetProjectId : targetProjectIds) {
-                ClinicalVariantSummaryStats projectStats = new ClinicalVariantSummaryStats();
-
                 query = new Query()
                         .append(ORGANIZATION_PARAM_NAME, organizationId)
                         .append(PROJECT_PARAM_NAME, targetProjectId)
                         .append(CV_VARIANT_ID_NAME, variantId);
 
-                // Clinical analysis stats: num. cases and disorder IDs
-                computeClinicalAnalysisStats(query, projectStats, token);
+                ClinicalVariantSummaryStats projectStats = new ClinicalVariantSummaryStats();
 
-                // Clinical interpretation stats: num. primary and secondary interpretations
-                computeClinicalInterpretationStats(query, projectStats, token);
-
-                // Clinical variant stats: status and confidence value
+                // Clinical analysis stats: num. cases, disorder IDs, proband disorder IDs and phenotype names
                 facetMap.clear();
-                facetMap.put(CV_STATUS_NAME, projectStats.getVariantStatusCounts());
-                facetMap.put(CV_CONFIDENCE_VALUE_NAME, projectStats.getVariantConfidenceCounts());
-                performFacet(query, facetMap, "variant", token);
+                facetMap.put("disorderId", projectStats.getClinicalAnalysis().getDisorders());
+                facetMap.put("probandDisorderIds", projectStats.getClinicalAnalysis().getProbandDisorders());
+                facetMap.put("probandPhenotypeNames", projectStats.getClinicalAnalysis().getProbandPhenotypes());
+                performFacet(query, facetMap, "case", projectStats, token);
 
-                // Clinical variant evidence stats: gene name, transcript ID, panel ID, MoI, ACMG, and for review tier, ACMG
-                // and clinical significance
+                // Clinical interpretation stats: num. primary and secondary interpretations; panel IDs and method names
                 facetMap.clear();
-                facetMap.put(CVE_GENE_NAME_NAME, projectStats.getInterpretationSummaryStats().getEvidenceGeneNameCounts());
-//                facetMap.put(CVE_TRANSCRIPT_ID_NAME, projectStats.getInterpretationSummaryStats().getEvidenceTranscriptCounts());
-                facetMap.put(CVE_PANEL_ID_NAME, projectStats.getInterpretationSummaryStats().getEvidencePanelCounts());
-                facetMap.put(CVE_MOI_NAME, projectStats.getInterpretationSummaryStats().getEvidenceModeOfInheritanceCounts());
-                facetMap.put(CVE_ACGM_NAME, projectStats.getInterpretationSummaryStats().getEvidenceClassificationAcmgCounts());
-                facetMap.put(CVE_ACGM_NAME, projectStats.getInterpretationSummaryStats().getEvidenceReviewAcmgCounts());
-                facetMap.put(CVE_TIER_NAME, projectStats.getInterpretationSummaryStats().getEvidenceReviewTierCounts());
-                facetMap.put(CVE_CLINICAL_SIGNIFICANCE_NAME, projectStats.getInterpretationSummaryStats()
-                        .getEvidenceReviewClinicalSignificanceCounts());
-                performFacet(query, facetMap, "evidence", token);
+                facetMap.put("primary", null);
+                facetMap.put("panelIds", projectStats.getInterpretation().getPanels());
+                facetMap.put("methodName", projectStats.getInterpretation().getMethods());
+                performFacet(query, facetMap, "interpretation", projectStats, token);
+
+                // Clinical variant stats: status and confidence values
+                facetMap.clear();
+                facetMap.put("status", projectStats.getVariant().getStatus());
+                facetMap.put("confidenceValue", projectStats.getVariant().getConfidences());
+                performFacet(query, facetMap, "variant", projectStats, token);
+
+                // Clinical variant evidence stats: gene names, transcript IDs, SO term accessions, panel IDs, MoIs, ACMGs, and for review
+                // tiers, ACMGs and clinical significances
+                facetMap.clear();
+                facetMap.put("geneName", projectStats.getEvidence().getGenes());
+                facetMap.put("transcriptId", projectStats.getEvidence().getTranscripts());
+                facetMap.put("soTermAccessions", projectStats.getEvidence().getSoTerms());
+                facetMap.put("panelId", projectStats.getEvidence().getPanels());
+                facetMap.put("mois", projectStats.getEvidence().getMois());
+                facetMap.put("acmgs", projectStats.getEvidence().getAcmgs());
+                facetMap.put("reviewAcmgs", projectStats.getEvidence().getReviewAcmgs());
+                facetMap.put("reviewTier", projectStats.getEvidence().getReviewTiers());
+                facetMap.put("reviewClinicalSignificance", projectStats.getEvidence().getReviewClinicalSignificances());
+                performFacet(query, facetMap, "evidence", projectStats, token);
 
                 updateSummaryStats(projectStats, variantStats);
             }
@@ -858,48 +858,21 @@ public class CvdbSolrEngine {
         return new DataResult<>(dbTime, null, variantStatsList.size(), variantStatsList, variantStatsList.size());
     }
 
-    private void computeClinicalAnalysisStats(Query query, ClinicalVariantSummaryStats stats, String token)
-            throws IOException, CvdbException {
-        StopWatch watch = StopWatch.createStarted();
-        QueryOptions queryOptions = new QueryOptions(FACET, CA_DISORDER_ID_NAME);
-        // Execute facet
-        DataResult<FacetField> facetResult = facetClinicalAnalyses(query, queryOptions, token);
-        logger.info("{} facet, time: {} ms", queryOptions.getString(FACET), (int) watch.getTime(TimeUnit.MILLISECONDS));
-        logger.info("facet result = {}", facetResult.first().toString());
-
-        // Parse facet result
-        stats.setNumCases(facetResult.first().getCount());
-        for (FacetField.Bucket bucket : facetResult.first().getBuckets()) {
-            stats.getClinicalAnalysisDisorderCounts().put(bucket.getValue(), bucket.getCount());
-        }
-    }
-
-    private void computeClinicalInterpretationStats(Query query, ClinicalVariantSummaryStats stats, String token)
-            throws IOException, CvdbException {
-        StopWatch watch = StopWatch.createStarted();
-        QueryOptions queryOptions = new QueryOptions(FACET, CI_PRIMARY_NAME);
-        // Execute facet
-        DataResult<FacetField> facetResult = facetClinicalInterpretations(query, queryOptions, token);
-        logger.info("{} facet, time: {} ms", queryOptions.getString(FACET), (int) watch.getTime(TimeUnit.MILLISECONDS));
-        logger.info("facet result = {}", facetResult.first().toString());
-
-        // Parse facet result
-        for (FacetField.Bucket bucket : facetResult.first().getBuckets()) {
-            if (Boolean.TRUE.equals(Boolean.valueOf(bucket.getValue()))) {
-                stats.setNumPrimaryInterpretations(bucket.getCount());
-            } else if (Boolean.FALSE.equals(Boolean.valueOf(bucket.getValue()))) {
-                stats.setNumSecondaryInterpretations(bucket.getCount());
-            }
-        }
-    }
-
-    private void performFacet(Query query, Map<String, Map<String, Long>> facetMap, String type, String token)
-            throws IOException, CvdbException {
+    private void performFacet(Query query, Map<String, Map<String, Long>> facetMap, String type, ClinicalVariantSummaryStats stats,
+                              String token) throws IOException, CvdbException, CatalogException {
         StopWatch watch = StopWatch.createStarted();
         DataResult<FacetField> facetResult;
         List<String> facetNames = new ArrayList<>(facetMap.keySet());
         QueryOptions queryOptions = new QueryOptions(FACET, StringUtils.join(facetNames, FacetQueryParser.FACET_SEPARATOR));
         switch (type) {
+            case "case": {
+                facetResult = facetClinicalAnalyses(query, queryOptions, token);
+                break;
+            }
+            case "interpretation": {
+                facetResult = facetClinicalInterpretations(query, queryOptions, token);
+                break;
+            }
             case "variant": {
                 facetResult = facetClinicalVariants(query, queryOptions, token);
                 break;
@@ -912,12 +885,24 @@ public class CvdbSolrEngine {
                 throw new CvdbException("Invalid type: " + type);
             }
         }
-        logger.info("{} facet, time: {} ms", type, (int) watch.getTime(TimeUnit.MILLISECONDS));
         for (FacetField facetField : facetResult.getResults()) {
-            logger.info("facet result = {}", facetField.toString());
-            Map<String, Long> counts = facetMap.get(facetField.getName());
-            for (FacetField.Bucket bucket : facetField.getBuckets()) {
-                counts.put(bucket.getValue(), bucket.getCount());
+            if ("primary".equals(facetField.getName())) {
+                for (FacetField.Bucket bucket : facetField.getBuckets()) {
+                    if (Boolean.TRUE.equals(Boolean.valueOf(bucket.getValue()))) {
+                        stats.setNumPrimaryInterpretations(bucket.getCount());
+                    } else if (Boolean.FALSE.equals(Boolean.valueOf(bucket.getValue()))) {
+                        stats.setNumSecondaryInterpretations(bucket.getCount());
+                    }
+                }
+            } else {
+                if ("disorderId".equals(facetField.getName())) {
+                    stats.setNumClinicalAnalyses(facetField.getCount());
+                }
+
+                Map<String, Long> counts = facetMap.get(facetField.getName());
+                for (FacetField.Bucket bucket : facetField.getBuckets()) {
+                    counts.put(bucket.getValue(), bucket.getCount());
+                }
             }
         }
     }
@@ -970,9 +955,9 @@ public class CvdbSolrEngine {
         } else if (StringUtils.isEmpty(projectInputValue)) {
             // Project is undefined, only study is provided
             // Check study ID
-            OpenCGAResult<Study> studytResult = catalogManager.getStudyManager().get(studyInputValue, empty(), token);
-            query.put(PROJECT_PARAM_NAME, FqnUtils.getProject(studytResult.first().getFqn()));
-            query.put(STUDY_PARAM_NAME, studytResult.first().getId());
+            OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(studyInputValue, empty(), token);
+            query.put(PROJECT_PARAM_NAME, FqnUtils.getProject(studyResult.first().getFqn()));
+            query.put(STUDY_PARAM_NAME, studyResult.first().getId());
         } else {
             // Both project and study are defined, check congruency
             OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().get(projectInputValue, empty(), token);
@@ -986,14 +971,8 @@ public class CvdbSolrEngine {
         }
     }
 
-    private void checkFacet(Query query, QueryOptions queryOptions, Set<String> fieldSet) throws CvdbException {
-        if (!query.containsKey(ORGANIZATION_PARAM_NAME) || StringUtils.isEmpty(query.getString(ORGANIZATION_PARAM_NAME))) {
-            throw new CvdbException("Missing organization ID");
-        }
-
-        if (!query.containsKey(PROJECT_PARAM_NAME) || StringUtils.isEmpty(query.getString(PROJECT_PARAM_NAME))) {
-            throw new CvdbException("Missing project ID");
-        }
+    private void checkFacet(Query query, QueryOptions queryOptions, String token) throws CvdbException, CatalogException {
+        checkQuery(query, queryOptions, token);
 
         if (!queryOptions.containsKey(FACET) || StringUtils.isEmpty(queryOptions.getString(FACET))) {
             throw new CvdbException("Missing facet field to aggregation stats");
@@ -1286,119 +1265,35 @@ public class CvdbSolrEngine {
         }
     }
 
-    private void updateGenomicFeatureCounts(GenomicFeature genomicFeature, InterpretationSummaryStats stats) {
-        if (genomicFeature != null) {
-            // Gene name counts
-            if (StringUtils.isNotEmpty(genomicFeature.getGeneName())) {
-                updateCount(genomicFeature.getGeneName(), stats.getEvidenceGeneNameCounts());
-            }
-
-            // Transcript ID counts
-            if (StringUtils.isNotEmpty(genomicFeature.getTranscriptId())) {
-                updateCount(genomicFeature.getTranscriptId(), stats.getEvidenceTranscriptCounts());
-            }
-        }
-    }
-
-    private void updateModeOfInheritanceCounts(List<ClinicalProperty.ModeOfInheritance> mois, InterpretationSummaryStats stats) {
-        if (CollectionUtils.isNotEmpty(mois)) {
-            for (ClinicalProperty.ModeOfInheritance moi : mois) {
-                updateCount(moi.name(), stats.getEvidenceModeOfInheritanceCounts());
-            }
-        }
-    }
-
-    private void updatePanelCounts(String panelId, InterpretationSummaryStats stats) {
-        if (StringUtils.isNotEmpty(panelId)) {
-            updateCount(panelId, stats.getEvidencePanelCounts());
-        }
-    }
-
-    private void updateReviewCounts(ClinicalEvidenceReview review, InterpretationSummaryStats stats) {
-        if (review != null) {
-            // Review tier counts
-            updateCount(review.getTier(), stats.getEvidenceReviewTierCounts());
-
-            // Review ACMG counts
-            updateAcmgCounts(review.getAcmg(), stats.getEvidenceReviewAcmgCounts());
-
-            // Review clinical significance counts
-            if (review.getClinicalSignificance() != null) {
-                updateCount(review.getClinicalSignificance().name(), stats.getEvidenceReviewClinicalSignificanceCounts());
-            }
-        }
-    }
-
-    private void updateClassificationCounts(VariantClassification variantClassification, InterpretationSummaryStats stats) {
-        if (variantClassification != null) {
-            // Classification ACMG counts
-            updateAcmgCounts(variantClassification.getAcmg(), stats.getEvidenceClassificationAcmgCounts());
-        }
-    }
-
-    private void updateAcmgCounts(List<ClinicalAcmg> acmgs, Map<String, Long> counts) {
-        if (CollectionUtils.isNotEmpty(acmgs)) {
-            for (ClinicalAcmg acmg : acmgs) {
-                if (StringUtils.isNotEmpty(acmg.getClassification())) {
-                    updateCount(acmg.getClassification(), counts);
-                }
-            }
-        }
-    }
-
-    private void updateCount(String key, Map<String, Long> counts) {
-        if (StringUtils.isNotEmpty(key)) {
-            if (!counts.containsKey(key)) {
-                counts.put(key, 1L);
-            } else {
-                counts.put(key, 1 + counts.get(key));
-            }
-        }
-    }
-
-    private void updateCount(List<String> keys, Map<String, Long> counts) {
-        if (CollectionUtils.isNotEmpty(keys)) {
-            for (String key : keys) {
-                if (!counts.containsKey(key)) {
-                    counts.put(key, 1L);
-                } else {
-                    counts.put(key, 1 + counts.get(key));
-                }
-            }
-        }
-    }
 
     public void updateSummaryStats(ClinicalVariantSummaryStats srcStats, ClinicalVariantSummaryStats destStats) {
-        // Num. cases
-        destStats.setNumCases(destStats.getNumCases() + srcStats.getNumCases());
-        // Clinical analysis disorder counts
-        updateStatsMap(srcStats.getClinicalAnalysisDisorderCounts(), destStats.getClinicalAnalysisDisorderCounts());
+        // Clinical analysis stats: num. cases, disorder IDs, proband disorder IDs and phenotype names
+        destStats.setNumClinicalAnalyses(destStats.getNumClinicalAnalyses() + srcStats.getNumClinicalAnalyses());
+        updateStatsMap(srcStats.getClinicalAnalysis().getDisorders(), destStats.getClinicalAnalysis().getDisorders());
+        updateStatsMap(srcStats.getClinicalAnalysis().getProbandDisorders(), destStats.getClinicalAnalysis().getProbandDisorders());
+        updateStatsMap(srcStats.getClinicalAnalysis().getProbandPhenotypes(), destStats.getClinicalAnalysis().getProbandPhenotypes());
 
-        // Variant status counts
-        updateStatsMap(srcStats.getVariantStatusCounts(), destStats.getVariantStatusCounts());
-
-        // Num. primary interpretations
+        // Clinical interpretation stats: num. primary and secondary interpretations; panel IDs and method names
         destStats.setNumPrimaryInterpretations(destStats.getNumPrimaryInterpretations() + srcStats.getNumPrimaryInterpretations());
-
-        // Num. secondary interpretations
         destStats.setNumSecondaryInterpretations(destStats.getNumSecondaryInterpretations() + srcStats.getNumSecondaryInterpretations());
+        updateStatsMap(srcStats.getInterpretation().getPanels(), destStats.getInterpretation().getPanels());
+        updateStatsMap(srcStats.getInterpretation().getMethods(), destStats.getInterpretation().getMethods());
 
-        // Variant confidence counts
-        updateStatsMap(srcStats.getVariantConfidenceCounts(), destStats.getVariantConfidenceCounts());
+        // Clinical variant stats: status and confidence values
+        updateStatsMap(srcStats.getVariant().getStatus(), destStats.getVariant().getStatus());
+        updateStatsMap(srcStats.getVariant().getConfidences(), destStats.getVariant().getConfidences());
 
-        // Interpretation summary stats: clinical variant evidences stats
-        updateInterpretationSummaryStats(srcStats.getInterpretationSummaryStats(), destStats.getInterpretationSummaryStats());
-    }
-
-    private void updateInterpretationSummaryStats(InterpretationSummaryStats srcStats, InterpretationSummaryStats destStats) {
-        updateStatsMap(srcStats.getEvidenceTranscriptCounts(), destStats.getEvidenceTranscriptCounts());
-        updateStatsMap(srcStats.getEvidenceGeneNameCounts(), destStats.getEvidenceGeneNameCounts());
-        updateStatsMap(srcStats.getEvidenceModeOfInheritanceCounts(), destStats.getEvidenceModeOfInheritanceCounts());
-        updateStatsMap(srcStats.getEvidencePanelCounts(), destStats.getEvidencePanelCounts());
-        updateStatsMap(srcStats.getEvidenceReviewTierCounts(), destStats.getEvidenceReviewTierCounts());
-        updateStatsMap(srcStats.getEvidenceReviewAcmgCounts(), destStats.getEvidenceReviewAcmgCounts());
-        updateStatsMap(srcStats.getEvidenceReviewClinicalSignificanceCounts(), destStats.getEvidenceReviewClinicalSignificanceCounts());
-        updateStatsMap(srcStats.getEvidenceClassificationAcmgCounts(), destStats.getEvidenceClassificationAcmgCounts());
+        // Clinical variant evidence stats: gene names, transcript IDs, SO term accessions, panel IDs, MoIs, ACMGs, and for review
+        // tiers, ACMGs and clinical significances
+        updateStatsMap(srcStats.getEvidence().getGenes(), destStats.getEvidence().getGenes());
+        updateStatsMap(srcStats.getEvidence().getTranscripts(), destStats.getEvidence().getTranscripts());
+        updateStatsMap(srcStats.getEvidence().getSoTerms(), destStats.getEvidence().getSoTerms());
+        updateStatsMap(srcStats.getEvidence().getPanels(), destStats.getEvidence().getPanels());
+        updateStatsMap(srcStats.getEvidence().getMois(), destStats.getEvidence().getMois());
+        updateStatsMap(srcStats.getEvidence().getAcmgs(), destStats.getEvidence().getAcmgs());
+        updateStatsMap(srcStats.getEvidence().getReviewTiers(), destStats.getEvidence().getReviewTiers());
+        updateStatsMap(srcStats.getEvidence().getReviewAcmgs(), destStats.getEvidence().getReviewAcmgs());
+        updateStatsMap(srcStats.getEvidence().getReviewClinicalSignificances(), destStats.getEvidence().getReviewClinicalSignificances());
     }
 
     private void updateStatsMap(Map<String, Long> srcMap, Map<String, Long> destMap) {

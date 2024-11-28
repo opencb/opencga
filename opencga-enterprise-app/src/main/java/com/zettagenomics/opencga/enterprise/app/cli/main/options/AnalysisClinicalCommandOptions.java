@@ -404,6 +404,12 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caProbandId; 
     
+        @Parameter(names = {"--ca-proband-disorder-id"}, description = "Clinical analysis proband disorder ID (or list of disorder IDs separated by commas)", required = false, arity = 1)
+        public String caProbandDisorderId; 
+    
+        @Parameter(names = {"--ca-proband-phenotype-name"}, description = "Clinical analysis proband phenotype name (or list of phenotype names separated by commas)", required = false, arity = 1)
+        public String caProbandPhenotypeName; 
+    
         @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyId; 
     
@@ -599,11 +605,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
-        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence transcript ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveTranscriptId; 
     
-        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
-        public String cveConsequenceTypeId; 
+        @Parameter(names = {"--cve-so-term-accession"}, description = "Clinical variant evidence sequence ontology accession (or accessions separated by commas)", required = false, arity = 1)
+        public String cveSoTermAccession; 
     
         @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveXrefId; 
@@ -641,13 +647,22 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
-        public String cveRolInCancer; 
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRoleInCancer; 
+    
+        @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveReviewAcmg; 
+    
+        @Parameter(names = {"--cve-review-tier"}, description = "Clinical variant evidence review tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveReviewTier; 
+    
+        @Parameter(names = {"--cve-review-clinical-significance"}, description = "Clinical variant evidence review clinical significance (or list of clinical significances separated by commas)", required = false, arity = 1)
+        public String cveReviewClinicalSignificance; 
     
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
     
-        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: caType;caDisorderId. For nested faceted fields use >>, e.g.: caType>>caDisorderId. Accepted values: caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caStatus, caLocked", required = false, arity = 1)
+        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: type;disorderId. For nested faceted fields use >>, e.g.: type>>disorderId. Accepted values: studyId, type, disorderId, fileNames, probandId, probandDisorderIds, probandPhenotypeNames, familyId, familyPhenotypeNames, familyMemberIds, panelIds, status", required = false, arity = 1)
         public String field; 
     
     }
@@ -697,6 +712,12 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caProbandId; 
     
+        @Parameter(names = {"--ca-proband-disorder-id"}, description = "Clinical analysis proband disorder ID (or list of disorder IDs separated by commas)", required = false, arity = 1)
+        public String caProbandDisorderId; 
+    
+        @Parameter(names = {"--ca-proband-phenotype-name"}, description = "Clinical analysis proband phenotype name (or list of phenotype names separated by commas)", required = false, arity = 1)
+        public String caProbandPhenotypeName; 
+    
         @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyId; 
     
@@ -892,11 +913,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
-        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence transcript ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveTranscriptId; 
     
-        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
-        public String cveConsequenceTypeId; 
+        @Parameter(names = {"--cve-so-term-accession"}, description = "Clinical variant evidence sequence ontology accession (or accessions separated by commas)", required = false, arity = 1)
+        public String cveSoTermAccession; 
     
         @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveXrefId; 
@@ -934,8 +955,17 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
-        public String cveRolInCancer; 
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRoleInCancer; 
+    
+        @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveReviewAcmg; 
+    
+        @Parameter(names = {"--cve-review-tier"}, description = "Clinical variant evidence review tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveReviewTier; 
+    
+        @Parameter(names = {"--cve-review-clinical-significance"}, description = "Clinical variant evidence review clinical significance (or list of clinical significances separated by commas)", required = false, arity = 1)
+        public String cveReviewClinicalSignificance; 
     
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
@@ -1022,6 +1052,12 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caProbandId; 
     
+        @Parameter(names = {"--ca-proband-disorder-id"}, description = "Clinical analysis proband disorder ID (or list of disorder IDs separated by commas)", required = false, arity = 1)
+        public String caProbandDisorderId; 
+    
+        @Parameter(names = {"--ca-proband-phenotype-name"}, description = "Clinical analysis proband phenotype name (or list of phenotype names separated by commas)", required = false, arity = 1)
+        public String caProbandPhenotypeName; 
+    
         @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyId; 
     
@@ -1217,11 +1253,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
-        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence transcript ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveTranscriptId; 
     
-        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
-        public String cveConsequenceTypeId; 
+        @Parameter(names = {"--cve-so-term-accession"}, description = "Clinical variant evidence sequence ontology accession (or accessions separated by commas)", required = false, arity = 1)
+        public String cveSoTermAccession; 
     
         @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveXrefId; 
@@ -1259,13 +1295,22 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
-        public String cveRolInCancer; 
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRoleInCancer; 
+    
+        @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveReviewAcmg; 
+    
+        @Parameter(names = {"--cve-review-tier"}, description = "Clinical variant evidence review tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveReviewTier; 
+    
+        @Parameter(names = {"--cve-review-clinical-significance"}, description = "Clinical variant evidence review clinical significance (or list of clinical significances separated by commas)", required = false, arity = 1)
+        public String cveReviewClinicalSignificance; 
     
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
     
-        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: ciPanelId;ciAnalystEmail. For nested faceted fields use >>, e.g.: ciAnalystEmail>>ciPanelId. Accepted values: ciPrimary, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciLocked, ciStatusId, ciStatusName, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion", required = false, arity = 1)
+        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: panelIds;methodName. For nested faceted fields use >>, e.g.: panelIds>>methodName. Accepted values: caId, studyId, primary, panelIds, analystId, analystName, analystEmail, analystAssignedBy, analystDate, methodName, methodVersion, methodCommit, statusId, statusDescription, statusType, statusDate, creationDate, modificationDate, version", required = false, arity = 1)
         public String field; 
     
     }
@@ -1315,6 +1360,12 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caProbandId; 
     
+        @Parameter(names = {"--ca-proband-disorder-id"}, description = "Clinical analysis proband disorder ID (or list of disorder IDs separated by commas)", required = false, arity = 1)
+        public String caProbandDisorderId; 
+    
+        @Parameter(names = {"--ca-proband-phenotype-name"}, description = "Clinical analysis proband phenotype name (or list of phenotype names separated by commas)", required = false, arity = 1)
+        public String caProbandPhenotypeName; 
+    
         @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyId; 
     
@@ -1510,11 +1561,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
-        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence transcript ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveTranscriptId; 
     
-        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
-        public String cveConsequenceTypeId; 
+        @Parameter(names = {"--cve-so-term-accession"}, description = "Clinical variant evidence sequence ontology accession (or accessions separated by commas)", required = false, arity = 1)
+        public String cveSoTermAccession; 
     
         @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveXrefId; 
@@ -1552,8 +1603,17 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
-        public String cveRolInCancer; 
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRoleInCancer; 
+    
+        @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveReviewAcmg; 
+    
+        @Parameter(names = {"--cve-review-tier"}, description = "Clinical variant evidence review tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveReviewTier; 
+    
+        @Parameter(names = {"--cve-review-clinical-significance"}, description = "Clinical variant evidence review clinical significance (or list of clinical significances separated by commas)", required = false, arity = 1)
+        public String cveReviewClinicalSignificance; 
     
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
@@ -1593,6 +1653,12 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caProbandId; 
     
+        @Parameter(names = {"--ca-proband-disorder-id"}, description = "Clinical analysis proband disorder ID (or list of disorder IDs separated by commas)", required = false, arity = 1)
+        public String caProbandDisorderId; 
+    
+        @Parameter(names = {"--ca-proband-phenotype-name"}, description = "Clinical analysis proband phenotype name (or list of phenotype names separated by commas)", required = false, arity = 1)
+        public String caProbandPhenotypeName; 
+    
         @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyId; 
     
@@ -1788,11 +1854,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
-        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence transcript ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveTranscriptId; 
     
-        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
-        public String cveConsequenceTypeId; 
+        @Parameter(names = {"--cve-so-term-accession"}, description = "Clinical variant evidence sequence ontology accession (or accessions separated by commas)", required = false, arity = 1)
+        public String cveSoTermAccession; 
     
         @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveXrefId; 
@@ -1830,13 +1896,22 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
-        public String cveRolInCancer; 
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRoleInCancer; 
+    
+        @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveReviewAcmg; 
+    
+        @Parameter(names = {"--cve-review-tier"}, description = "Clinical variant evidence review tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveReviewTier; 
+    
+        @Parameter(names = {"--cve-review-clinical-significance"}, description = "Clinical variant evidence review clinical significance (or list of clinical significances separated by commas)", required = false, arity = 1)
+        public String cveReviewClinicalSignificance; 
     
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
     
-        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: cvType;cvGene. For nested faceted fields use >>, e.g.: cvGene>>cvType. Accepted values: cvVariantId, cvPrimary, cvDiscussionAuthor, cvDiscussionDate, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvBiotype, cvCt, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType", required = false, arity = 1)
+        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: type;biotypes. For nested faceted fields use >>, e.g.: type>>biotypes. Accepted values: caId, ciId, variantId, studyId, primary, discussionAuthor, discussionDate,discussionText, confidenceValue, confidenceAuthor, confidenceDate, tags, status, chromosome, start, end, xrefs, type, release, studies, phastCons, phylop, gerp, caddRaw, caddScaled, sift, siftDesc, polyphen, polyphenDesc, genes, biotypes, soAcc, clinicalSig", required = false, arity = 1)
         public String field; 
     
     }
@@ -1886,6 +1961,12 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caProbandId; 
     
+        @Parameter(names = {"--ca-proband-disorder-id"}, description = "Clinical analysis proband disorder ID (or list of disorder IDs separated by commas)", required = false, arity = 1)
+        public String caProbandDisorderId; 
+    
+        @Parameter(names = {"--ca-proband-phenotype-name"}, description = "Clinical analysis proband phenotype name (or list of phenotype names separated by commas)", required = false, arity = 1)
+        public String caProbandPhenotypeName; 
+    
         @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyId; 
     
@@ -2081,11 +2162,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
-        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence transcript ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveTranscriptId; 
     
-        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
-        public String cveConsequenceTypeId; 
+        @Parameter(names = {"--cve-so-term-accession"}, description = "Clinical variant evidence sequence ontology accession (or accessions separated by commas)", required = false, arity = 1)
+        public String cveSoTermAccession; 
     
         @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveXrefId; 
@@ -2123,8 +2204,17 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
-        public String cveRolInCancer; 
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRoleInCancer; 
+    
+        @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveReviewAcmg; 
+    
+        @Parameter(names = {"--cve-review-tier"}, description = "Clinical variant evidence review tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveReviewTier; 
+    
+        @Parameter(names = {"--cve-review-clinical-significance"}, description = "Clinical variant evidence review clinical significance (or list of clinical significances separated by commas)", required = false, arity = 1)
+        public String cveReviewClinicalSignificance; 
     
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
@@ -2184,6 +2274,12 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caProbandId; 
     
+        @Parameter(names = {"--ca-proband-disorder-id"}, description = "Clinical analysis proband disorder ID (or list of disorder IDs separated by commas)", required = false, arity = 1)
+        public String caProbandDisorderId; 
+    
+        @Parameter(names = {"--ca-proband-phenotype-name"}, description = "Clinical analysis proband phenotype name (or list of phenotype names separated by commas)", required = false, arity = 1)
+        public String caProbandPhenotypeName; 
+    
         @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyId; 
     
@@ -2379,11 +2475,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
-        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence transcript ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveTranscriptId; 
     
-        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
-        public String cveConsequenceTypeId; 
+        @Parameter(names = {"--cve-so-term-accession"}, description = "Clinical variant evidence sequence ontology accession (or accessions separated by commas)", required = false, arity = 1)
+        public String cveSoTermAccession; 
     
         @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveXrefId; 
@@ -2421,13 +2517,22 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
-        public String cveRolInCancer; 
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRoleInCancer; 
+    
+        @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveReviewAcmg; 
+    
+        @Parameter(names = {"--cve-review-tier"}, description = "Clinical variant evidence review tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveReviewTier; 
+    
+        @Parameter(names = {"--cve-review-clinical-significance"}, description = "Clinical variant evidence review clinical significance (or list of clinical significances separated by commas)", required = false, arity = 1)
+        public String cveReviewClinicalSignificance; 
     
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
     
-        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: cveGeneName;cveTier. For nested faceted fields use >>, e.g.: cveGeneName>>cveTier. Accepted values: cveVariantId, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer", required = false, arity = 1)
+        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: geneName;tier. For nested faceted fields use >>, e.g.: geneName>>tier. Accepted values: caId, ciId, cvId, variantId, studyId, phenotypeNames, geneName, transcriptId, soTermAccessions, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation, functionalEffect, tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance", required = false, arity = 1)
         public String field; 
     
     }
@@ -2477,6 +2582,12 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caProbandId; 
     
+        @Parameter(names = {"--ca-proband-disorder-id"}, description = "Clinical analysis proband disorder ID (or list of disorder IDs separated by commas)", required = false, arity = 1)
+        public String caProbandDisorderId; 
+    
+        @Parameter(names = {"--ca-proband-phenotype-name"}, description = "Clinical analysis proband phenotype name (or list of phenotype names separated by commas)", required = false, arity = 1)
+        public String caProbandPhenotypeName; 
+    
         @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyId; 
     
@@ -2672,11 +2783,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
         public String cveGeneName; 
     
-        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence trancript ID (or IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-transcript-id"}, description = "Clinical variant evidence transcript ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveTranscriptId; 
     
-        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
-        public String cveConsequenceTypeId; 
+        @Parameter(names = {"--cve-so-term-accession"}, description = "Clinical variant evidence sequence ontology accession (or accessions separated by commas)", required = false, arity = 1)
+        public String cveSoTermAccession; 
     
         @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
         public String cveXrefId; 
@@ -2714,8 +2825,17 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
-        public String cveRolInCancer; 
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRoleInCancer; 
+    
+        @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveReviewAcmg; 
+    
+        @Parameter(names = {"--cve-review-tier"}, description = "Clinical variant evidence review tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveReviewTier; 
+    
+        @Parameter(names = {"--cve-review-clinical-significance"}, description = "Clinical variant evidence review clinical significance (or list of clinical significances separated by commas)", required = false, arity = 1)
+        public String cveReviewClinicalSignificance; 
     
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 

@@ -139,6 +139,10 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_DISORDER_ID_NAME, value = CA_PROBAND_DISORDER_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_PHENOTYPE_NAME_NAME, value = CA_PROBAND_PHENOTYPE_NAME_DESCR, dataType = "string",
+                    paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
                     paramType = "query"),
@@ -236,7 +240,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+            @ApiImplicitParam(name = CVE_SO_TERM_ACCESSION_NAME, value = CVE_SO_TERM_ACCESSION_DESCR, dataType = "string",
                     paramType = "query"),
             @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
@@ -254,11 +258,11 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
                     paramType = "query"),
-            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
-//                    dataType = "string"),
+            @ApiImplicitParam(name = CVE_ROLE_IN_CANCER_NAME, value = CVE_ROLE_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
+                    dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_REVIEW_TEXT_NAME, value = CVE_REVIEW_TEXT_DESCR, dataType = "string", paramType = "query")
 
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
@@ -298,6 +302,10 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_DISORDER_ID_NAME, value = CA_PROBAND_DISORDER_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_PHENOTYPE_NAME_NAME, value = CA_PROBAND_PHENOTYPE_NAME_DESCR, dataType = "string",
+                    paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
                     paramType = "query"),
@@ -395,7 +403,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+            @ApiImplicitParam(name = CVE_SO_TERM_ACCESSION_NAME, value = CVE_SO_TERM_ACCESSION_DESCR, dataType = "string",
                     paramType = "query"),
             @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
@@ -413,11 +421,11 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
                     paramType = "query"),
-            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
-//                    dataType = "string"),
+            @ApiImplicitParam(name = CVE_ROLE_IN_CANCER_NAME, value = CVE_ROLE_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
+                    dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_REVIEW_TEXT_NAME, value = CVE_REVIEW_TEXT_DESCR, dataType = "string", paramType = "query")
 
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
@@ -457,6 +465,10 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_DISORDER_ID_NAME, value = CA_PROBAND_DISORDER_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_PHENOTYPE_NAME_NAME, value = CA_PROBAND_PHENOTYPE_NAME_DESCR, dataType = "string",
+                    paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
                     paramType = "query"),
@@ -554,7 +566,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+            @ApiImplicitParam(name = CVE_SO_TERM_ACCESSION_NAME, value = CVE_SO_TERM_ACCESSION_DESCR, dataType = "string",
                     paramType = "query"),
             @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
@@ -572,11 +584,11 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
                     paramType = "query"),
-            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
-//                    dataType = "string"),
+            @ApiImplicitParam(name = CVE_ROLE_IN_CANCER_NAME, value = CVE_ROLE_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
+                    dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_REVIEW_TEXT_NAME, value = CVE_REVIEW_TEXT_DESCR, dataType = "string", paramType = "query")
 
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
@@ -617,6 +629,10 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_DISORDER_ID_NAME, value = CA_PROBAND_DISORDER_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_PHENOTYPE_NAME_NAME, value = CA_PROBAND_PHENOTYPE_NAME_DESCR, dataType = "string",
+                    paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
                     paramType = "query"),
@@ -714,7 +730,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+            @ApiImplicitParam(name = CVE_SO_TERM_ACCESSION_NAME, value = CVE_SO_TERM_ACCESSION_DESCR, dataType = "string",
                     paramType = "query"),
             @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
@@ -732,11 +748,11 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
                     paramType = "query"),
-            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
-//                    dataType = "string"),
+            @ApiImplicitParam(name = CVE_ROLE_IN_CANCER_NAME, value = CVE_ROLE_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
+                    dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_REVIEW_TEXT_NAME, value = CVE_REVIEW_TEXT_DESCR, dataType = "string", paramType = "query")
 
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
@@ -758,7 +774,8 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     @Path("/cvdb/case/aggregationStats")
     @ApiOperation(value = "Calculate and fetch clinical analysis aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = ORGANIZATION_PARAM_NAME, value = ORGANIZATION_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = ORGANIZATION_PARAM_NAME, value = ORGANIZATION_PARAM_DESCRIPTION, dataType = "string",
+                    paramType = "query"),
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = STUDY_PARAM_NAME, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
 
@@ -770,6 +787,10 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_DISORDER_ID_NAME, value = CA_PROBAND_DISORDER_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_PHENOTYPE_NAME_NAME, value = CA_PROBAND_PHENOTYPE_NAME_DESCR, dataType = "string",
+                    paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
                     paramType = "query"),
@@ -867,7 +888,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+            @ApiImplicitParam(name = CVE_SO_TERM_ACCESSION_NAME, value = CVE_SO_TERM_ACCESSION_DESCR, dataType = "string",
                     paramType = "query"),
             @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
@@ -885,18 +906,18 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
                     paramType = "query"),
-            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
-//                    dataType = "string"),
+            @ApiImplicitParam(name = CVE_ROLE_IN_CANCER_NAME, value = CVE_ROLE_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
+                    dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_REVIEW_TEXT_NAME, value = CVE_REVIEW_TEXT_DESCR, dataType = "string", paramType = "query")
 
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
-    public Response clinicalAnalsysAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: "
-            + CA_TYPE_NAME + ";" + CA_DISORDER_ID_NAME + ". For nested faceted fields use >>, e.g.: " + CA_TYPE_NAME + ">>"
-            + CA_DISORDER_ID_NAME + ". Accepted values: " + CA_FACET_FIELDS) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
+    public Response clinicalAnalsysAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: type;disorderId"
+            + ". For nested faceted fields use >>, e.g.: type>>disorderId. Accepted values: "
+            + CA_FACET_FIELDS) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -922,6 +943,10 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_DISORDER_ID_NAME, value = CA_PROBAND_DISORDER_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_PHENOTYPE_NAME_NAME, value = CA_PROBAND_PHENOTYPE_NAME_DESCR, dataType = "string",
+                    paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
                     paramType = "query"),
@@ -1019,7 +1044,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+            @ApiImplicitParam(name = CVE_SO_TERM_ACCESSION_NAME, value = CVE_SO_TERM_ACCESSION_DESCR, dataType = "string",
                     paramType = "query"),
             @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
@@ -1037,18 +1062,18 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
                     paramType = "query"),
-            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
-//                    dataType = "string"),
+            @ApiImplicitParam(name = CVE_ROLE_IN_CANCER_NAME, value = CVE_ROLE_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
+                    dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_REVIEW_TEXT_NAME, value = CVE_REVIEW_TEXT_DESCR, dataType = "string", paramType = "query")
 
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
     public Response clinicalInterpretationAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: "
-            + CI_PANEL_ID_NAME + ";" + CI_ANALYIST_EMAIL_NAME + ". For nested faceted fields use >>, e.g.: " + CI_ANALYIST_EMAIL_NAME
-            + ">>" + CI_PANEL_ID_NAME + ". Accepted values: " + CI_FACET_FIELDS) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
+            + "panelIds;methodName. For nested faceted fields use >>, e.g.: panelIds>>methodName. Accepted values: "
+            + CI_FACET_FIELDS) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -1074,6 +1099,10 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_DISORDER_ID_NAME, value = CA_PROBAND_DISORDER_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_PHENOTYPE_NAME_NAME, value = CA_PROBAND_PHENOTYPE_NAME_DESCR, dataType = "string",
+                    paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
                     paramType = "query"),
@@ -1171,7 +1200,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+            @ApiImplicitParam(name = CVE_SO_TERM_ACCESSION_NAME, value = CVE_SO_TERM_ACCESSION_DESCR, dataType = "string",
                     paramType = "query"),
             @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
@@ -1189,18 +1218,18 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
                     paramType = "query"),
-            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
-//                    dataType = "string"),
+            @ApiImplicitParam(name = CVE_ROLE_IN_CANCER_NAME, value = CVE_ROLE_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
+                    dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_REVIEW_TEXT_NAME, value = CVE_REVIEW_TEXT_DESCR, dataType = "string", paramType = "query")
 
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
     public Response clinicalVariantAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: "
-            + CV_TYPE_NAME + ";" + CV_GENE_NAME + ". For nested faceted fields use >>, e.g.: " + CV_GENE_NAME + ">>" + CV_TYPE_NAME
-            + ". Accepted values: " + CV_FACET_FIELDS) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
+            + "type;biotypes. For nested faceted fields use >>, e.g.: type>>biotypes. Accepted values: "
+            + CV_FACET_FIELDS) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -1226,6 +1255,10 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_DISORDER_ID_NAME, value = CA_PROBAND_DISORDER_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_PHENOTYPE_NAME_NAME, value = CA_PROBAND_PHENOTYPE_NAME_DESCR, dataType = "string",
+                    paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
                     paramType = "query"),
@@ -1323,7 +1356,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+            @ApiImplicitParam(name = CVE_SO_TERM_ACCESSION_NAME, value = CVE_SO_TERM_ACCESSION_DESCR, dataType = "string",
                     paramType = "query"),
             @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
@@ -1341,18 +1374,18 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
                     paramType = "query"),
-            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
-//                    dataType = "string"),
+            @ApiImplicitParam(name = CVE_ROLE_IN_CANCER_NAME, value = CVE_ROLE_IN_CANCER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_ACGM_NAME, value = CVE_REVIEW_ACGM_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_TIER_NAME, value = CVE_REVIEW_TIER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CVE_REVIEW_CLINICAL_SIGNIFICANCE_NAME, value = CVE_REVIEW_CLINICAL_SIGNIFICANCE_DESCR,
+                    dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_REVIEW_TEXT_NAME, value = CVE_REVIEW_TEXT_DESCR, dataType = "string", paramType = "query")
 
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
     public Response clinicalVariantEvidenceAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: "
-            + CVE_GENE_NAME_NAME + ";" + CVE_TIER_NAME + ". For nested faceted fields use >>, e.g.: " + CVE_GENE_NAME_NAME + ">>"
-            + CVE_TIER_NAME + ". Accepted values: " + CVE_FACET_FIELDS) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
+            + "geneName;tier. For nested faceted fields use >>, e.g.: geneName>>tier. Accepted values: "
+            + CVE_FACET_FIELDS) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);

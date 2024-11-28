@@ -119,6 +119,10 @@ class ClinicalAnalysis(_ParentRestClient):
             filenames separated by commas).
         :param str ca_proband_id: Clinical analysis proband ID (or list of IDs
             separated by commas).
+        :param str ca_proband_disorder_id: Clinical analysis proband disorder
+            ID (or list of disorder IDs separated by commas).
+        :param str ca_proband_phenotype_name: Clinical analysis proband
+            phenotype name (or list of phenotype names separated by commas).
         :param str ca_family_id: Clinical analysis family ID (or list of IDs
             separated by commas).
         :param str ca_family_phenotype_name: Clinical analysis family
@@ -300,10 +304,10 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
-        :param str cve_transcript_id: Clinical variant evidence trancript ID
+        :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_consequence_type_id: Clinical variant evidence
-            consequence type ID (or IDs separated by commas).
+        :param str cve_so_term_accession: Clinical variant evidence sequence
+            ontology accession (or accessions separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -334,17 +338,24 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
-            (or roles in cancer separated by commas).
+        :param str cve_role_in_cancer: Clinical variant evidence roles in
+            cancer (or roles in cancer separated by commas).
+        :param str cve_review_acmg: Clinical variant evidence review ACMG (or
+            ACGMs separated by commas).
+        :param str cve_review_tier: Clinical variant evidence review tier (or
+            list of tier values separated by commas).
+        :param str cve_review_clinical_significance: Clinical variant evidence
+            review clinical significance (or list of clinical significances
+            separated by commas).
         :param str cve_review_text: Clinical variant evidence review text
             (word or list of words contained in the text, if the words are
             separated by a comma an OR will be applied; if the words are
             separated by a semicolon, an AND will be applied).
         :param str field: List of facet fields separated by semicolons, e.g.:
-            caType;caDisorderId. For nested faceted fields use >>, e.g.:
-            caType>>caDisorderId. Accepted values: caType, caDisorderId,
-            caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName,
-            caFamilyMemberId, caStatus, caLocked.
+            type;disorderId. For nested faceted fields use >>, e.g.:
+            type>>disorderId. Accepted values: studyId, type, disorderId,
+            fileNames, probandId, probandDisorderIds, probandPhenotypeNames,
+            familyId, familyPhenotypeNames, familyMemberIds, panelIds, status.
         """
 
         return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdb/case', **options)
@@ -377,6 +388,10 @@ class ClinicalAnalysis(_ParentRestClient):
             filenames separated by commas).
         :param str ca_proband_id: Clinical analysis proband ID (or list of IDs
             separated by commas).
+        :param str ca_proband_disorder_id: Clinical analysis proband disorder
+            ID (or list of disorder IDs separated by commas).
+        :param str ca_proband_phenotype_name: Clinical analysis proband
+            phenotype name (or list of phenotype names separated by commas).
         :param str ca_family_id: Clinical analysis family ID (or list of IDs
             separated by commas).
         :param str ca_family_phenotype_name: Clinical analysis family
@@ -558,10 +573,10 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
-        :param str cve_transcript_id: Clinical variant evidence trancript ID
+        :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_consequence_type_id: Clinical variant evidence
-            consequence type ID (or IDs separated by commas).
+        :param str cve_so_term_accession: Clinical variant evidence sequence
+            ontology accession (or accessions separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -592,8 +607,15 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
-            (or roles in cancer separated by commas).
+        :param str cve_role_in_cancer: Clinical variant evidence roles in
+            cancer (or roles in cancer separated by commas).
+        :param str cve_review_acmg: Clinical variant evidence review ACMG (or
+            ACGMs separated by commas).
+        :param str cve_review_tier: Clinical variant evidence review tier (or
+            list of tier values separated by commas).
+        :param str cve_review_clinical_significance: Clinical variant evidence
+            review clinical significance (or list of clinical significances
+            separated by commas).
         :param str cve_review_text: Clinical variant evidence review text
             (word or list of words contained in the text, if the words are
             separated by a comma an OR will be applied; if the words are
@@ -652,6 +674,10 @@ class ClinicalAnalysis(_ParentRestClient):
             filenames separated by commas).
         :param str ca_proband_id: Clinical analysis proband ID (or list of IDs
             separated by commas).
+        :param str ca_proband_disorder_id: Clinical analysis proband disorder
+            ID (or list of disorder IDs separated by commas).
+        :param str ca_proband_phenotype_name: Clinical analysis proband
+            phenotype name (or list of phenotype names separated by commas).
         :param str ca_family_id: Clinical analysis family ID (or list of IDs
             separated by commas).
         :param str ca_family_phenotype_name: Clinical analysis family
@@ -833,10 +859,10 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
-        :param str cve_transcript_id: Clinical variant evidence trancript ID
+        :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_consequence_type_id: Clinical variant evidence
-            consequence type ID (or IDs separated by commas).
+        :param str cve_so_term_accession: Clinical variant evidence sequence
+            ontology accession (or accessions separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -867,19 +893,26 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
-            (or roles in cancer separated by commas).
+        :param str cve_role_in_cancer: Clinical variant evidence roles in
+            cancer (or roles in cancer separated by commas).
+        :param str cve_review_acmg: Clinical variant evidence review ACMG (or
+            ACGMs separated by commas).
+        :param str cve_review_tier: Clinical variant evidence review tier (or
+            list of tier values separated by commas).
+        :param str cve_review_clinical_significance: Clinical variant evidence
+            review clinical significance (or list of clinical significances
+            separated by commas).
         :param str cve_review_text: Clinical variant evidence review text
             (word or list of words contained in the text, if the words are
             separated by a comma an OR will be applied; if the words are
             separated by a semicolon, an AND will be applied).
         :param str field: List of facet fields separated by semicolons, e.g.:
-            ciPanelId;ciAnalystEmail. For nested faceted fields use >>, e.g.:
-            ciAnalystEmail>>ciPanelId. Accepted values: ciPrimary, ciPanelId,
-            ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy,
-            ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit,
-            ciLocked, ciStatusId, ciStatusName, ciStatusDate, ciCreationDate,
-            ciModificationDate, ciVersion.
+            panelIds;methodName. For nested faceted fields use >>, e.g.:
+            panelIds>>methodName. Accepted values: caId, studyId, primary,
+            panelIds, analystId, analystName, analystEmail, analystAssignedBy,
+            analystDate, methodName, methodVersion, methodCommit, statusId,
+            statusDescription, statusType, statusDate, creationDate,
+            modificationDate, version.
         """
 
         return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdb/interpretation', **options)
@@ -912,6 +945,10 @@ class ClinicalAnalysis(_ParentRestClient):
             filenames separated by commas).
         :param str ca_proband_id: Clinical analysis proband ID (or list of IDs
             separated by commas).
+        :param str ca_proband_disorder_id: Clinical analysis proband disorder
+            ID (or list of disorder IDs separated by commas).
+        :param str ca_proband_phenotype_name: Clinical analysis proband
+            phenotype name (or list of phenotype names separated by commas).
         :param str ca_family_id: Clinical analysis family ID (or list of IDs
             separated by commas).
         :param str ca_family_phenotype_name: Clinical analysis family
@@ -1093,10 +1130,10 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
-        :param str cve_transcript_id: Clinical variant evidence trancript ID
+        :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_consequence_type_id: Clinical variant evidence
-            consequence type ID (or IDs separated by commas).
+        :param str cve_so_term_accession: Clinical variant evidence sequence
+            ontology accession (or accessions separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -1127,8 +1164,15 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
-            (or roles in cancer separated by commas).
+        :param str cve_role_in_cancer: Clinical variant evidence roles in
+            cancer (or roles in cancer separated by commas).
+        :param str cve_review_acmg: Clinical variant evidence review ACMG (or
+            ACGMs separated by commas).
+        :param str cve_review_tier: Clinical variant evidence review tier (or
+            list of tier values separated by commas).
+        :param str cve_review_clinical_significance: Clinical variant evidence
+            review clinical significance (or list of clinical significances
+            separated by commas).
         :param str cve_review_text: Clinical variant evidence review text
             (word or list of words contained in the text, if the words are
             separated by a comma an OR will be applied; if the words are
@@ -1159,6 +1203,10 @@ class ClinicalAnalysis(_ParentRestClient):
             filenames separated by commas).
         :param str ca_proband_id: Clinical analysis proband ID (or list of IDs
             separated by commas).
+        :param str ca_proband_disorder_id: Clinical analysis proband disorder
+            ID (or list of disorder IDs separated by commas).
+        :param str ca_proband_phenotype_name: Clinical analysis proband
+            phenotype name (or list of phenotype names separated by commas).
         :param str ca_family_id: Clinical analysis family ID (or list of IDs
             separated by commas).
         :param str ca_family_phenotype_name: Clinical analysis family
@@ -1340,10 +1388,10 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
-        :param str cve_transcript_id: Clinical variant evidence trancript ID
+        :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_consequence_type_id: Clinical variant evidence
-            consequence type ID (or IDs separated by commas).
+        :param str cve_so_term_accession: Clinical variant evidence sequence
+            ontology accession (or accessions separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -1374,18 +1422,27 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
-            (or roles in cancer separated by commas).
+        :param str cve_role_in_cancer: Clinical variant evidence roles in
+            cancer (or roles in cancer separated by commas).
+        :param str cve_review_acmg: Clinical variant evidence review ACMG (or
+            ACGMs separated by commas).
+        :param str cve_review_tier: Clinical variant evidence review tier (or
+            list of tier values separated by commas).
+        :param str cve_review_clinical_significance: Clinical variant evidence
+            review clinical significance (or list of clinical significances
+            separated by commas).
         :param str cve_review_text: Clinical variant evidence review text
             (word or list of words contained in the text, if the words are
             separated by a comma an OR will be applied; if the words are
             separated by a semicolon, an AND will be applied).
         :param str field: List of facet fields separated by semicolons, e.g.:
-            cvType;cvGene. For nested faceted fields use >>, e.g.:
-            cvGene>>cvType. Accepted values: cvVariantId, cvPrimary,
-            cvDiscussionAuthor, cvDiscussionDate, cvConfidenceValue,
-            cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvBiotype,
-            cvCt, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType.
+            type;biotypes. For nested faceted fields use >>, e.g.:
+            type>>biotypes. Accepted values: caId, ciId, variantId, studyId,
+            primary, discussionAuthor, discussionDate,discussionText,
+            confidenceValue, confidenceAuthor, confidenceDate, tags, status,
+            chromosome, start, end, xrefs, type, release, studies, phastCons,
+            phylop, gerp, caddRaw, caddScaled, sift, siftDesc, polyphen,
+            polyphenDesc, genes, biotypes, soAcc, clinicalSig.
         """
 
         return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdb/variant', **options)
@@ -1418,6 +1475,10 @@ class ClinicalAnalysis(_ParentRestClient):
             filenames separated by commas).
         :param str ca_proband_id: Clinical analysis proband ID (or list of IDs
             separated by commas).
+        :param str ca_proband_disorder_id: Clinical analysis proband disorder
+            ID (or list of disorder IDs separated by commas).
+        :param str ca_proband_phenotype_name: Clinical analysis proband
+            phenotype name (or list of phenotype names separated by commas).
         :param str ca_family_id: Clinical analysis family ID (or list of IDs
             separated by commas).
         :param str ca_family_phenotype_name: Clinical analysis family
@@ -1599,10 +1660,10 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
-        :param str cve_transcript_id: Clinical variant evidence trancript ID
+        :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_consequence_type_id: Clinical variant evidence
-            consequence type ID (or IDs separated by commas).
+        :param str cve_so_term_accession: Clinical variant evidence sequence
+            ontology accession (or accessions separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -1633,8 +1694,15 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
-            (or roles in cancer separated by commas).
+        :param str cve_role_in_cancer: Clinical variant evidence roles in
+            cancer (or roles in cancer separated by commas).
+        :param str cve_review_acmg: Clinical variant evidence review ACMG (or
+            ACGMs separated by commas).
+        :param str cve_review_tier: Clinical variant evidence review tier (or
+            list of tier values separated by commas).
+        :param str cve_review_clinical_significance: Clinical variant evidence
+            review clinical significance (or list of clinical significances
+            separated by commas).
         :param str cve_review_text: Clinical variant evidence review text
             (word or list of words contained in the text, if the words are
             separated by a comma an OR will be applied; if the words are
@@ -1681,6 +1749,10 @@ class ClinicalAnalysis(_ParentRestClient):
             filenames separated by commas).
         :param str ca_proband_id: Clinical analysis proband ID (or list of IDs
             separated by commas).
+        :param str ca_proband_disorder_id: Clinical analysis proband disorder
+            ID (or list of disorder IDs separated by commas).
+        :param str ca_proband_phenotype_name: Clinical analysis proband
+            phenotype name (or list of phenotype names separated by commas).
         :param str ca_family_id: Clinical analysis family ID (or list of IDs
             separated by commas).
         :param str ca_family_phenotype_name: Clinical analysis family
@@ -1862,10 +1934,10 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
-        :param str cve_transcript_id: Clinical variant evidence trancript ID
+        :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_consequence_type_id: Clinical variant evidence
-            consequence type ID (or IDs separated by commas).
+        :param str cve_so_term_accession: Clinical variant evidence sequence
+            ontology accession (or accessions separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -1896,20 +1968,27 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
-            (or roles in cancer separated by commas).
+        :param str cve_role_in_cancer: Clinical variant evidence roles in
+            cancer (or roles in cancer separated by commas).
+        :param str cve_review_acmg: Clinical variant evidence review ACMG (or
+            ACGMs separated by commas).
+        :param str cve_review_tier: Clinical variant evidence review tier (or
+            list of tier values separated by commas).
+        :param str cve_review_clinical_significance: Clinical variant evidence
+            review clinical significance (or list of clinical significances
+            separated by commas).
         :param str cve_review_text: Clinical variant evidence review text
             (word or list of words contained in the text, if the words are
             separated by a comma an OR will be applied; if the words are
             separated by a semicolon, an AND will be applied).
         :param str field: List of facet fields separated by semicolons, e.g.:
-            cveGeneName;cveTier. For nested faceted fields use >>, e.g.:
-            cveGeneName>>cveTier. Accepted values: cveVariantId,
-            cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId,
-            cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier,
-            cveClinicalSignificance, cveDrugResponse, cveTraitAssociation,
-            cveFunctionalEffect, cveTumorigenesis, cveOtherClassification,
-            cveRolInCancer.
+            geneName;tier. For nested faceted fields use >>, e.g.:
+            geneName>>tier. Accepted values: caId, ciId, cvId, variantId,
+            studyId, phenotypeNames, geneName, transcriptId, soTermAccessions,
+            xrefIds, panelId, mois, penetrance, acmgs, tier,
+            clinicalSignificance, drugResponse, traitAssociation,
+            functionalEffect, tumorigenesis, otherClassifications,
+            rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance.
         """
 
         return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdb/variantEvidence', **options)
@@ -1942,6 +2021,10 @@ class ClinicalAnalysis(_ParentRestClient):
             filenames separated by commas).
         :param str ca_proband_id: Clinical analysis proband ID (or list of IDs
             separated by commas).
+        :param str ca_proband_disorder_id: Clinical analysis proband disorder
+            ID (or list of disorder IDs separated by commas).
+        :param str ca_proband_phenotype_name: Clinical analysis proband
+            phenotype name (or list of phenotype names separated by commas).
         :param str ca_family_id: Clinical analysis family ID (or list of IDs
             separated by commas).
         :param str ca_family_phenotype_name: Clinical analysis family
@@ -2123,10 +2206,10 @@ class ClinicalAnalysis(_ParentRestClient):
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
             names separated by commas).
-        :param str cve_transcript_id: Clinical variant evidence trancript ID
+        :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_consequence_type_id: Clinical variant evidence
-            consequence type ID (or IDs separated by commas).
+        :param str cve_so_term_accession: Clinical variant evidence sequence
+            ontology accession (or accessions separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -2157,8 +2240,15 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_rol_in_cancer: Clinical variant evidence rol in cancer
-            (or roles in cancer separated by commas).
+        :param str cve_role_in_cancer: Clinical variant evidence roles in
+            cancer (or roles in cancer separated by commas).
+        :param str cve_review_acmg: Clinical variant evidence review ACMG (or
+            ACGMs separated by commas).
+        :param str cve_review_tier: Clinical variant evidence review tier (or
+            list of tier values separated by commas).
+        :param str cve_review_clinical_significance: Clinical variant evidence
+            review clinical significance (or list of clinical significances
+            separated by commas).
         :param str cve_review_text: Clinical variant evidence review text
             (word or list of words contained in the text, if the words are
             separated by a comma an OR will be applied; if the words are
