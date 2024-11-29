@@ -360,7 +360,9 @@ public class MapReduceOutputFile {
             LOGGER.info(" Target {}: {}", getCompression(localOutput.getName()), localOutput.toUri());
             LOGGER.info(" ---- ");
 
-            try (OutputStream os = getOutputStreamPlain(localOutput.getName(), localOutput.getFileSystem(getConf()).create(localOutput))) {
+            FileSystem localFfileSystem = localOutput.getFileSystem(getConf());
+            localFfileSystem.setWriteChecksum(false);
+            try (OutputStream os = getOutputStreamPlain(localOutput.getName(), localFfileSystem.create(localOutput))) {
                 for (int i = 0; i < paths.size(); i++) {
                     Path partFile = paths.get(i);
                     long partFileSize = fileSystem.getFileStatus(partFile).getLen();
