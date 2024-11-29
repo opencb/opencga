@@ -497,6 +497,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
+        @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvVariantId; 
+    
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
@@ -598,6 +601,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
         public String cvProteinKeyword; 
+    
+        @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cveVariantId; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -805,6 +811,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
+        @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvVariantId; 
+    
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
@@ -906,6 +915,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
         public String cvProteinKeyword; 
+    
+        @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cveVariantId; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -1145,6 +1157,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
+        @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvVariantId; 
+    
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
@@ -1246,6 +1261,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
         public String cvProteinKeyword; 
+    
+        @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cveVariantId; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -1453,6 +1471,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
+        @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvVariantId; 
+    
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
@@ -1554,6 +1575,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
         public String cvProteinKeyword; 
+    
+        @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cveVariantId; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -1746,6 +1770,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
+        @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvVariantId; 
+    
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
@@ -1847,6 +1874,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
         public String cvProteinKeyword; 
+    
+        @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cveVariantId; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -2054,6 +2084,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
+        @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvVariantId; 
+    
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
@@ -2156,6 +2189,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
         public String cvProteinKeyword; 
     
+        @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cveVariantId; 
+    
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
     
@@ -2233,8 +2269,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = true, arity = 1)
-        public String cvId; 
+        @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = true, arity = 1)
+        public String cvVariantId; 
     
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
@@ -2367,6 +2403,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
+        @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvVariantId; 
+    
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
@@ -2468,6 +2507,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
         public String cvProteinKeyword; 
+    
+        @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cveVariantId; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -2675,6 +2717,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-id"}, description = "Clinical variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
+        @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvVariantId; 
+    
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
@@ -2776,6 +2821,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
         public String cvProteinKeyword; 
+    
+        @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cveVariantId; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 

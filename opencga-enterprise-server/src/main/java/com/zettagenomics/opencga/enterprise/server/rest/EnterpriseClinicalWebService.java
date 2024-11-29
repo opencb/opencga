@@ -183,6 +183,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_VARIANT_ID_NAME, value = CV_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CV_COMMENTS_NAME, value = CV_COMMENTS_DESCR, dataType = "string", paramType = "query"),
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
@@ -237,6 +238,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
 
             // Clinical variant evidence filters
 
+            @ApiImplicitParam(name = CVE_VARIANT_ID_NAME, value = CVE_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
@@ -346,6 +348,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_VARIANT_ID_NAME, value = CV_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CV_COMMENTS_NAME, value = CV_COMMENTS_DESCR, dataType = "string", paramType = "query"),
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
@@ -400,6 +403,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
 
             // Clinical variant evidence filters
 
+            @ApiImplicitParam(name = CVE_VARIANT_ID_NAME, value = CVE_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
@@ -509,6 +513,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_VARIANT_ID_NAME, value = CV_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CV_COMMENTS_NAME, value = CV_COMMENTS_DESCR, dataType = "string", paramType = "query"),
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
@@ -563,6 +568,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
 
             // Clinical variant evidence filters
 
+            @ApiImplicitParam(name = CVE_VARIANT_ID_NAME, value = CVE_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
@@ -673,6 +679,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_VARIANT_ID_NAME, value = CV_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CV_COMMENTS_NAME, value = CV_COMMENTS_DESCR, dataType = "string", paramType = "query"),
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
@@ -727,6 +734,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
 
             // Clinical variant evidence filters
 
+            @ApiImplicitParam(name = CVE_VARIANT_ID_NAME, value = CVE_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
@@ -831,6 +839,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_VARIANT_ID_NAME, value = CV_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CV_COMMENTS_NAME, value = CV_COMMENTS_DESCR, dataType = "string", paramType = "query"),
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
@@ -885,6 +894,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
 
             // Clinical variant evidence filters
 
+            @ApiImplicitParam(name = CVE_VARIANT_ID_NAME, value = CVE_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
@@ -987,6 +997,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_VARIANT_ID_NAME, value = CV_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CV_COMMENTS_NAME, value = CV_COMMENTS_DESCR, dataType = "string", paramType = "query"),
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
@@ -1041,6 +1052,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
 
             // Clinical variant evidence filters
 
+            @ApiImplicitParam(name = CVE_VARIANT_ID_NAME, value = CVE_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
@@ -1143,6 +1155,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_VARIANT_ID_NAME, value = CV_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CV_COMMENTS_NAME, value = CV_COMMENTS_DESCR, dataType = "string", paramType = "query"),
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
@@ -1197,6 +1210,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
 
             // Clinical variant evidence filters
 
+            @ApiImplicitParam(name = CVE_VARIANT_ID_NAME, value = CVE_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
@@ -1299,6 +1313,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_VARIANT_ID_NAME, value = CV_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CV_COMMENTS_NAME, value = CV_COMMENTS_DESCR, dataType = "string", paramType = "query"),
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
@@ -1353,6 +1368,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
 
             // Clinical variant evidence filters
 
+            @ApiImplicitParam(name = CVE_VARIANT_ID_NAME, value = CVE_VARIANT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CVE_TRANSCRIPT_ID_NAME, value = CVE_TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
@@ -1405,7 +1421,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     public Response getClinicalVariantSummaryStats(
             @ApiParam(value = ORGANIZATION_PARAM_DESCRIPTION) @QueryParam(ORGANIZATION_PARAM_NAME) String organizationId,
             @ApiParam(value = PROJECT_PARAM_DESCRIPTION) @QueryParam(PROJECT_PARAM_NAME) String projectId,
-            @ApiParam(value = CV_ID_DESCR, required = true) @QueryParam(CV_ID_NAME) String variantIds,
+            @ApiParam(value = CV_VARIANT_ID_DESCR, required = true) @QueryParam(CV_VARIANT_ID_NAME) String variantIds,
             @ApiParam(value = CI_STATUS_ID_DESCR) @QueryParam(CI_STATUS_ID_NAME) String interpretationStatusId) {
         return run(() -> {
             return getCvdbEngine().getClinicalVariantSummaryStats(variantIds, interpretationStatusId, organizationId, projectId, token);

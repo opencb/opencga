@@ -142,6 +142,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -200,6 +201,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvTrait] - Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs,
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+    * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -297,6 +299,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -355,6 +358,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvTrait] - Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs,
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+    * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -464,6 +468,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -522,6 +527,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvTrait] - Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs,
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+    * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -620,6 +626,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -678,6 +685,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvTrait] - Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs,
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+    * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -768,6 +776,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -826,6 +835,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvTrait] - Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs,
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+    * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -924,6 +934,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -982,6 +993,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvTrait] - Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs,
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+    * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -1020,15 +1032,15 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     }
 
     /** Get clinical variant summary from CVDB
-    * @param {String} cvId - Clinical variant ID (or list of IDs separated by commas).
+    * @param {String} cvVariantId - Variant ID (or list of IDs separated by commas).
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.organizationId] - Organization ID.
     * @param {String} [params.project] - Project ID.
     * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    statsCvdbVariant(cvId, params) {
-        return this._get("analysis", null, "clinical/cvdb/variant", null, "stats", {cvId, ...params});
+    statsCvdbVariant(cvVariantId, params) {
+        return this._get("analysis", null, "clinical/cvdb/variant", null, "stats", {cvVariantId, ...params});
     }
 
     /** Calculate and fetch clinical variant evidence aggregation stats
@@ -1084,6 +1096,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1142,6 +1155,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvTrait] - Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs,
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+    * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -1240,6 +1254,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
+    * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1298,6 +1313,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvTrait] - Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs,
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+    * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).

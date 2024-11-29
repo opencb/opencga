@@ -202,6 +202,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
+     *       cvVariantId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -258,6 +259,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvTrait: Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies,
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+     *       cveVariantId: Variant ID (or list of IDs separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -354,6 +356,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
+     *       cvVariantId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -410,6 +413,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvTrait: Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies,
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+     *       cveVariantId: Variant ID (or list of IDs separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -521,6 +525,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
+     *       cvVariantId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -577,6 +582,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvTrait: Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies,
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+     *       cveVariantId: Variant ID (or list of IDs separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -674,6 +680,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
+     *       cvVariantId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -730,6 +737,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvTrait: Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies,
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+     *       cveVariantId: Variant ID (or list of IDs separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -819,6 +827,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
+     *       cvVariantId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -875,6 +884,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvTrait: Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies,
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+     *       cveVariantId: Variant ID (or list of IDs separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -973,6 +983,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
+     *       cvVariantId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1029,6 +1040,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvTrait: Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies,
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+     *       cveVariantId: Variant ID (or list of IDs separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -1067,7 +1079,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
 
     /**
      * Get clinical variant summary from CVDB.
-     * @param cvId Clinical variant ID (or list of IDs separated by commas).
+     * @param cvVariantId Variant ID (or list of IDs separated by commas).
      * @param params Map containing any of the following optional parameters.
      *       organizationId: Organization ID.
      *       project: Project ID.
@@ -1075,9 +1087,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ClinicalVariantSummaryStats> statsCvdbVariant(String cvId, ObjectMap params) throws ClientException {
+    public RestResponse<ClinicalVariantSummaryStats> statsCvdbVariant(String cvVariantId, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        params.putIfNotNull("cvId", cvId);
+        params.putIfNotNull("cvVariantId", cvVariantId);
         return execute("analysis", null, "clinical/cvdb/variant", null, "stats", params, GET, ClinicalVariantSummaryStats.class);
     }
 
@@ -1134,6 +1146,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
+     *       cvVariantId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1190,6 +1203,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvTrait: Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies,
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+     *       cveVariantId: Variant ID (or list of IDs separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -1287,6 +1301,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
+     *       cvVariantId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1343,6 +1358,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvTrait: Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies,
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
+     *       cveVariantId: Variant ID (or list of IDs separated by commas).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).

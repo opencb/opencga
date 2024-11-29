@@ -197,6 +197,8 @@ class ClinicalAnalysis(_ParentRestClient):
             of versions separated by commas).
         :param str cv_id: Clinical variant ID (or list of IDs separated by
             commas).
+        :param str cv_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -300,6 +302,8 @@ class ClinicalAnalysis(_ParentRestClient):
             descriptions,...
         :param str cv_protein_keyword: Uniprot protein variant annotation
             keyword (or list of keywords separated by commas).
+        :param str cve_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -466,6 +470,8 @@ class ClinicalAnalysis(_ParentRestClient):
             of versions separated by commas).
         :param str cv_id: Clinical variant ID (or list of IDs separated by
             commas).
+        :param str cv_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -569,6 +575,8 @@ class ClinicalAnalysis(_ParentRestClient):
             descriptions,...
         :param str cv_protein_keyword: Uniprot protein variant annotation
             keyword (or list of keywords separated by commas).
+        :param str cve_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -752,6 +760,8 @@ class ClinicalAnalysis(_ParentRestClient):
             of versions separated by commas).
         :param str cv_id: Clinical variant ID (or list of IDs separated by
             commas).
+        :param str cv_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -855,6 +865,8 @@ class ClinicalAnalysis(_ParentRestClient):
             descriptions,...
         :param str cv_protein_keyword: Uniprot protein variant annotation
             keyword (or list of keywords separated by commas).
+        :param str cve_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -1023,6 +1035,8 @@ class ClinicalAnalysis(_ParentRestClient):
             of versions separated by commas).
         :param str cv_id: Clinical variant ID (or list of IDs separated by
             commas).
+        :param str cv_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -1126,6 +1140,8 @@ class ClinicalAnalysis(_ParentRestClient):
             descriptions,...
         :param str cv_protein_keyword: Uniprot protein variant annotation
             keyword (or list of keywords separated by commas).
+        :param str cve_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -1281,6 +1297,8 @@ class ClinicalAnalysis(_ParentRestClient):
             of versions separated by commas).
         :param str cv_id: Clinical variant ID (or list of IDs separated by
             commas).
+        :param str cv_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -1384,6 +1402,8 @@ class ClinicalAnalysis(_ParentRestClient):
             descriptions,...
         :param str cv_protein_keyword: Uniprot protein variant annotation
             keyword (or list of keywords separated by commas).
+        :param str cve_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -1553,6 +1573,8 @@ class ClinicalAnalysis(_ParentRestClient):
             of versions separated by commas).
         :param str cv_id: Clinical variant ID (or list of IDs separated by
             commas).
+        :param str cv_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -1656,6 +1678,8 @@ class ClinicalAnalysis(_ParentRestClient):
             descriptions,...
         :param str cv_protein_keyword: Uniprot protein variant annotation
             keyword (or list of keywords separated by commas).
+        :param str cve_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -1711,12 +1735,12 @@ class ClinicalAnalysis(_ParentRestClient):
 
         return self._get(category='analysis', resource='query', subcategory='clinical/cvdb/variant', **options)
 
-    def stats_cvdb_variant(self, cv_id, **options):
+    def stats_cvdb_variant(self, cv_variant_id, **options):
         """
         Get clinical variant summary from CVDB.
         PATH: /{apiVersion}/analysis/clinical/cvdb/variant/stats
 
-        :param str cv_id: Clinical variant ID (or list of IDs separated by
+        :param str cv_variant_id: Variant ID (or list of IDs separated by
             commas). (REQUIRED)
         :param str organization_id: Organization ID.
         :param str project: Project ID.
@@ -1724,7 +1748,7 @@ class ClinicalAnalysis(_ParentRestClient):
             IDs separated by commas).
         """
 
-        options['cvId'] = cv_id
+        options['cvVariantId'] = cv_variant_id
         return self._get(category='analysis', resource='stats', subcategory='clinical/cvdb/variant', **options)
 
     def aggregation_stats_cvdb_variant_evidence(self, **options):
@@ -1827,6 +1851,8 @@ class ClinicalAnalysis(_ParentRestClient):
             of versions separated by commas).
         :param str cv_id: Clinical variant ID (or list of IDs separated by
             commas).
+        :param str cv_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -1930,6 +1956,8 @@ class ClinicalAnalysis(_ParentRestClient):
             descriptions,...
         :param str cv_protein_keyword: Uniprot protein variant annotation
             keyword (or list of keywords separated by commas).
+        :param str cve_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -2099,6 +2127,8 @@ class ClinicalAnalysis(_ParentRestClient):
             of versions separated by commas).
         :param str cv_id: Clinical variant ID (or list of IDs separated by
             commas).
+        :param str cv_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
         :param str cv_comments: Clinical variant comment text (word or list of
@@ -2202,6 +2232,8 @@ class ClinicalAnalysis(_ParentRestClient):
             descriptions,...
         :param str cv_protein_keyword: Uniprot protein variant annotation
             keyword (or list of keywords separated by commas).
+        :param str cve_variant_id: Variant ID (or list of IDs separated by
+            commas).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
