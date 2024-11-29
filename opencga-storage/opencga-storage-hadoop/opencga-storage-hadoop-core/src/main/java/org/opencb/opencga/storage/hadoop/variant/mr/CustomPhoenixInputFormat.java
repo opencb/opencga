@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
@@ -23,6 +24,7 @@ import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.util.PhoenixRuntime;
 import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +72,22 @@ public class CustomPhoenixInputFormat<T extends DBWritable> extends InputFormat<
             super.initialize(split, context);
             if (split instanceof PhoenixInputSplit) {
                 PhoenixInputSplit phoenixInputSplit = (PhoenixInputSplit) split;
-                logger.info("Key range : " + phoenixInputSplit.getKeyRange());
+                KeyRange keyRange = phoenixInputSplit.getKeyRange();
+                logger.info("Key range : " + keyRange);
+
+                try {
+                    Pair<String, Integer> chrPosStart = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(keyRange.getLowerRange());
+                    Pair<String, Integer> chrPosEnd = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(keyRange.getUpperRange());
+                    logger.info("Variants key range : "
+                            + (keyRange.isLowerInclusive() ? "[" : "(")
+                            + chrPosStart.getFirst() + ":" + chrPosStart.getSecond()
+                            + " - "
+                            + chrPosEnd.getFirst() + ":" + chrPosEnd.getSecond()
+                            + (keyRange.isUpperInclusive() ? "]" : ")"));
+                } catch (Exception e) {
+                    logger.error("Error parsing key range: {}", e.getMessage());
+                }
+
                 logger.info("Split: " + phoenixInputSplit.getScans().size() + " scans");
                 int i = 0;
                 for (Scan scan : phoenixInputSplit.getScans()) {
@@ -116,17 +133,23 @@ public class CustomPhoenixInputFormat<T extends DBWritable> extends InputFormat<
                 List<Scan> splitScans = new ArrayList<>(numScans);
                 Scan scan = scans.get(0);
                 byte[] startRow = scan.getStartRow();
+                if (startRow == null || startRow.length == 0) {
+                    startRow = Bytes.toBytesBinary("1\\x00\\x00\\x00\\x00\\x00");
+                    logger.info("Scan with empty startRow. Set default start. "
+                            + "[" + Bytes.toStringBinary(startRow) + "-" + Bytes.toStringBinary(scan.getStopRow()) + ")");
+                }
                 byte[] stopRow = scan.getStopRow();
-                if (startRow != null && startRow.length != 0 && stopRow != null && stopRow.length != 0) {
-                    byte[][] ranges = Bytes.split(startRow, stopRow, numScans - 1);
-                    for (int i = 1; i < ranges.length; i++) {
-                        Scan splitScan = new Scan(scan);
-                        splitScan.withStartRow(ranges[i - 1]);
-                        splitScan.withStopRow(ranges[i], false);
-                        splitScans.add(splitScan);
-                    }
-                } else {
-                    splitScans.add(scan);
+                if (stopRow == null || stopRow.length == 0) {
+                    stopRow = Bytes.toBytesBinary("Z\\x00\\x00\\x00\\x00\\x00");
+                    logger.info("Scan with empty stopRow. Set default stop. "
+                            + "[" + Bytes.toStringBinary(startRow) + "-" + Bytes.toStringBinary(stopRow) + ")");
+                }
+                byte[][] ranges = Bytes.split(startRow, stopRow, numScans - 1);
+                for (int i = 1; i < ranges.length; i++) {
+                    Scan splitScan = new Scan(scan);
+                    splitScan.withStartRow(ranges[i - 1]);
+                    splitScan.withStopRow(ranges[i], false);
+                    splitScans.add(splitScan);
                 }
                 for (Scan splitScan : splitScans) {
                     psplits.add(new PhoenixInputSplit(Collections.singletonList(splitScan)));

@@ -67,6 +67,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
     private String trios;
     private String fileData;
     private String sampleData;
+    private Set<Integer> includeSample;
 
     @Override
     protected Map<String, String> getParams() {
@@ -91,7 +92,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
         List<String> samples = Arrays.asList(samplesStr.split(","));
         StringBuilder trios = new StringBuilder();
-        Set<Integer> includeSample = new LinkedHashSet<>();
+        includeSample = new LinkedHashSet<>();
         if (samples.size() == 1 && (samples.get(0).equals("auto") || samples.get(0).equals("all"))) {
             boolean all = samples.get(0).equals("all");
             metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
@@ -101,16 +102,18 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                     }
                 }
             });
+            sampleIds = new ArrayList<>(includeSample);
         } else {
+            sampleIds = new ArrayList<>(samples.size());
             for (String sample : samples) {
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sample, metadataManager.getStudyName(studyId));
                 }
+                sampleIds.add(sampleId);
                 addTrio(trios, includeSample, metadataManager.getSampleMetadata(studyId, sampleId));
             }
         }
-        sampleIds = new ArrayList<>(includeSample);
         if (sampleIds.isEmpty()) {
             throw new IllegalArgumentException("Nothing to do!");
         }
@@ -172,7 +175,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
     protected Query getQuery() {
         Query query = super.getQuery()
                 .append(VariantQueryParam.STUDY.key(), getStudyId())
-                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSample);
         query.remove(VariantQueryParam.SAMPLE_DATA.key());
         query.remove(VariantQueryParam.FILE_DATA.key());
         return query;
