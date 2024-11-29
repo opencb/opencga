@@ -308,13 +308,32 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
                 variantDataWriter.post();
                 variantDataWriter.close();
             }
+        } catch (Throwable th) {
+            addException(th);
+        } finally {
+            variantDataWriter = null;
+        }
 
-            // Close stdin to the process. This will cause the process to finish.
-            if (stdin != null) {
+        try {
+            // Close the stream to the process
+            // This will cause the process to finish
+            // (if the process is reading from stdin, it will receive EOF)
+            // If the process has already finished, the stdin.close() will throw an exception
+            if (stdin != null && process.isAlive()) {
                 stdin.close();
-                stdin = null;
             }
+        } catch (Throwable th) {
+            if (th instanceof IOException && "Stream closed".equals(th.getMessage())) {
+                // Ignore "Stream closed" exception
+            } else {
+                addException(th);
+            }
+        } finally {
+            // Clear stdin even if it fails to avoid closing it twice
+            stdin = null;
+        }
 
+        try {
             if (process != null) {
                 // Wait for the process to finish
                 int exitVal = process.waitFor();
@@ -333,19 +352,24 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
             if (stdout != null) {
                 stdoutThread.join();
                 stdout.close();
-                stdout = null;
             }
         } catch (Throwable th) {
             addException(th);
+        } finally {
+            // Clear stdout even if it fails to avoid closing it twice
+            stdout = null;
         }
+
         try {
             if (stderr != null) {
                 stderrThread.join();
                 stderr.close();
-                stderr = null;
             }
         } catch (Throwable th) {
             addException(th);
+        } finally {
+            // Clear stderr even if it fails to avoid closing it twice
+            stderr = null;
         }
 
         try {
