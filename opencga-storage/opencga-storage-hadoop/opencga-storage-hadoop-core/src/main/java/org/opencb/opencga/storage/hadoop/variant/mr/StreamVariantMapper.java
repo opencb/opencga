@@ -248,8 +248,8 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         if (hasExceptions()) {
             String message = "StreamVariantMapper failed:";
             if (stderrThread != null) {
-                String stderr = String.join("\n", stderrThread.stderrBuffer);
-                message += "\nSTDERR: " + stderr;
+                String stderr = String.join("\n[STDERR] - ", stderrThread.stderrBuffer);
+                message += "\n[STDERR] - " + stderr;
             }
             if (throwables.size() == 1) {
                 Throwable cause = throwables.get(0);
