@@ -48,7 +48,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.STUDY_ID;
 
@@ -341,10 +340,10 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
     public static class DistributedSampleVariantStatsCalculator extends SampleVariantStatsCalculator {
 
-        private int[] sampleIds;
+        private List<Integer> sampleIds;
 
-        public DistributedSampleVariantStatsCalculator(Pedigree pedigree, int[] samples) {
-            super(pedigree, IntStream.of(samples).mapToObj(String::valueOf).collect(Collectors.toList()));
+        public DistributedSampleVariantStatsCalculator(Pedigree pedigree, List<Integer> samples) {
+            super(pedigree, samples.stream().map(String::valueOf).collect(Collectors.toList()));
             sampleIds = samples;
         }
 
@@ -363,7 +362,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             List<SampleVariantStatsWritable> writables = new ArrayList<>(statsList.size());
             for (int i = 0; i < statsList.size(); i++) {
                 writables.add(new SampleVariantStatsWritable(
-                        sampleIds[i], ti[i], tv[i], qualCount[i], qualSum[i], qualSumSq[i], statsList.get(i)));
+                        sampleIds.get(i), ti[i], tv[i], qualCount[i], qualSum[i], qualSumSq[i], statsList.get(i)));
             }
             return writables;
         }
@@ -373,8 +372,8 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
     public static class SampleVariantStatsMapper extends VariantRowMapper<IntWritable, SampleVariantStatsWritable> {
 
         private int studyId;
-        private int[] samples;
-        private int[] includeSamples;
+        private LinkedHashSet<Integer> samples;
+        private LinkedHashSet<Integer> includeSamples;
 
         protected final Logger logger = LoggerFactory.getLogger(SampleVariantStatsMapper.class);
         private VariantStorageMetadataManager vsm;
@@ -391,8 +390,12 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
             studyId = context.getConfiguration().getInt(STUDY_ID, -1);
-            samples = context.getConfiguration().getInts(SAMPLE_IDS);
-            includeSamples = context.getConfiguration().getInts(INCLUDE_SAMPLE_IDS);
+            int[] samplesArray = context.getConfiguration().getInts(SAMPLE_IDS);
+            samples = new LinkedHashSet<>(samplesArray.length);
+            Arrays.stream(samplesArray).forEach(samples::add);
+            int[] includeSamplesArray = context.getConfiguration().getInts(INCLUDE_SAMPLE_IDS);
+            includeSamples = new LinkedHashSet<>(includeSamplesArray.length);
+            Arrays.stream(includeSamplesArray).forEach(includeSamples::add);
 
             String fileDataQuery = context.getConfiguration().get(VariantQueryParam.FILE_DATA.key());
             String sampleDataQuery = context.getConfiguration().get(VariantQueryParam.SAMPLE_DATA.key());
@@ -403,13 +406,13 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             sampleDataDpIdx = fixedFormat.indexOf(VCFConstants.DEPTH_KEY);
             fileDataDpIdx = fileAttributes.indexOf(VCFConstants.DEPTH_KEY);
 
-            sampleIdsPosition = new HashMap<>(includeSamples.length);
-            for (int i = 0; i < includeSamples.length; i++) {
-                sampleIdsPosition.put(includeSamples[i], i);
+            sampleIdsPosition = new HashMap<>(includeSamples.size());
+            for (Integer sampleId : includeSamples) {
+                sampleIdsPosition.put(sampleId, sampleIdsPosition.size());
             }
 
             Pedigree pedigree = readPedigree(context.getConfiguration());
-            calculator = new DistributedSampleVariantStatsCalculator(pedigree, samples);
+            calculator = new DistributedSampleVariantStatsCalculator(pedigree, new ArrayList<>(samples));
             calculator.pre();
 
             fileDataFilter = filterFactory.buildFileDataFilter(fileDataQuery);
@@ -431,8 +434,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         private int getSamplePosition(Integer sampleId) {
             Integer samplePosition = sampleIdsPosition.get(sampleId);
             if (samplePosition == null) {
-                throw new IllegalStateException("Sample " + sampleId + " not found in includeSamples "
-                        + Arrays.toString(includeSamples));
+                throw new IllegalStateException("Sample " + sampleId + " not found in includeSamples " + includeSamples);
             }
             return samplePosition;
         }
@@ -441,19 +443,24 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         protected void map(Object key, VariantRow row, Context context) throws IOException, InterruptedException {
             VariantAnnotation[] annotation = new VariantAnnotation[1];
 
-            List<String> gts = Arrays.asList(new String[samples.length]);
-            List<String> dps = Arrays.asList(new String[samples.length]);
-            List<String> quals = Arrays.asList(new String[samples.length]);
-            List<String> filters = Arrays.asList(new String[samples.length]);
+            List<String> gts = Arrays.asList(new String[includeSamples.size()]);
+            List<String> dps = Arrays.asList(new String[includeSamples.size()]);
+            List<String> quals = Arrays.asList(new String[includeSamples.size()]);
+            List<String> filters = Arrays.asList(new String[includeSamples.size()]);
             // All samples valid by default.
             // If any filter (either sample-data or file-data) fails, then the sample would become invalid.
-            boolean[] invalidSamples = new boolean[samples.length];
+            boolean[] invalidSamples = new boolean[includeSamples.size()];
 
             Variant variant = row.walker().onSample(sampleCell -> {
                 int sampleId = sampleCell.getSampleId();
                 int samplePosition = getSamplePosition(sampleId);
-                if (!sampleDataFilter.test(sampleCell)) {
+                if (sampleCell.getStudyId() != studyId || !includeSamples.contains(sampleId)) {
+                    context.getCounter(COUNTER_GROUP_NAME, "unexpected_sample_discarded").increment(1);
+                    return;
+                }
+                if (samples.contains(sampleId) && !sampleDataFilter.test(sampleCell)) {
                     // Invalidate sample
+                    // Do not invalidate extra samples, as might be used for calculating other stats
                     invalidSamples[samplePosition] = true;
                     return;
                 }
@@ -519,7 +526,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                 }
             }
             context.getCounter(COUNTER_GROUP_NAME, "variants_total").increment(1);
-            if (invalidSamplesCount == samples.length) {
+            if (invalidSamplesCount == samples.size()) {
                 context.getCounter(COUNTER_GROUP_NAME, "variants_discarded").increment(1);
             } else {
                 context.getCounter(COUNTER_GROUP_NAME, "variants_used").increment(1);
