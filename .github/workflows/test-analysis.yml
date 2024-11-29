@@ -92,7 +92,7 @@ jobs:
       - name: Build Junit log file name
         id: BuildJunitLogFileName
         run: |
-          MODULE=$(basename ${{ inputs.module }})
+          MODULE=$(basename ${{ (inputs.module == '' || inputs.module == 'all') && 'opencga' || inputs.module }} )
           if [[ -z "$MODULE" ]]; then
             MODULE="opencga"
           fi
