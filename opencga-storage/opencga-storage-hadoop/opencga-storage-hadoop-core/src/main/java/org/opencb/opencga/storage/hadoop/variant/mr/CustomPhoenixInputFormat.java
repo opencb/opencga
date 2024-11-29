@@ -125,26 +125,27 @@ public class CustomPhoenixInputFormat<T extends DBWritable> extends InputFormat<
         Preconditions.checkNotNull(qplan);
         Preconditions.checkNotNull(splits);
         final List<InputSplit> psplits = Lists.newArrayListWithExpectedSize(splits.size());
+        int undividedSplits = 0;
+        int numScanSplit = configuration.getInt(HadoopVariantStorageOptions.MR_HBASE_PHOENIX_SCAN_SPLIT.key(),
+                HadoopVariantStorageOptions.MR_HBASE_PHOENIX_SCAN_SPLIT.defaultValue());
         for (List<Scan> scans : qplan.getScans()) {
             if (scans.size() == 1) {
                 // Split scans into multiple smaller scans
-                int numScans = configuration.getInt(HadoopVariantStorageOptions.MR_HBASE_PHOENIX_SCAN_SPLIT.key(),
-                        HadoopVariantStorageOptions.MR_HBASE_PHOENIX_SCAN_SPLIT.defaultValue());
-                List<Scan> splitScans = new ArrayList<>(numScans);
+                List<Scan> splitScans = new ArrayList<>(numScanSplit);
                 Scan scan = scans.get(0);
                 byte[] startRow = scan.getStartRow();
                 if (startRow == null || startRow.length == 0) {
                     startRow = Bytes.toBytesBinary("1\\x00\\x00\\x00\\x00\\x00");
                     logger.info("Scan with empty startRow. Set default start. "
-                            + "[" + Bytes.toStringBinary(startRow) + "-" + Bytes.toStringBinary(scan.getStopRow()) + ")");
+                            + "[" + Bytes.toStringBinary(startRow) + " - " + Bytes.toStringBinary(scan.getStopRow()) + ")");
                 }
                 byte[] stopRow = scan.getStopRow();
                 if (stopRow == null || stopRow.length == 0) {
                     stopRow = Bytes.toBytesBinary("Z\\x00\\x00\\x00\\x00\\x00");
                     logger.info("Scan with empty stopRow. Set default stop. "
-                            + "[" + Bytes.toStringBinary(startRow) + "-" + Bytes.toStringBinary(stopRow) + ")");
+                            + "[" + Bytes.toStringBinary(startRow) + " - " + Bytes.toStringBinary(stopRow) + ")");
                 }
-                byte[][] ranges = Bytes.split(startRow, stopRow, numScans - 1);
+                byte[][] ranges = Bytes.split(startRow, stopRow, numScanSplit - 1);
                 for (int i = 1; i < ranges.length; i++) {
                     Scan splitScan = new Scan(scan);
                     splitScan.withStartRow(ranges[i - 1]);
@@ -156,7 +157,13 @@ public class CustomPhoenixInputFormat<T extends DBWritable> extends InputFormat<
                 }
             } else {
                 psplits.add(new PhoenixInputSplit(scans));
+                undividedSplits++;
             }
+        }
+        logger.info("Subdivided " + qplan.getScans().size() + " splits into " + psplits.size() + " splits. "
+                + "Intended sub-splits per split: " + numScanSplit);
+        if (undividedSplits > 0) {
+            logger.info("There are " + undividedSplits + " splits that were not subdivided.");
         }
         return psplits;
     }

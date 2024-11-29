@@ -381,7 +381,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         private final Map<Integer, List<Integer>> fileToSampleIds = new HashMap<>();
         private DistributedSampleVariantStatsCalculator calculator;
         private final HBaseToVariantAnnotationConverter annotationConverter = new HBaseToVariantAnnotationConverter();
-        private int[] sampleIdsPosition;
+        private Map<Integer, Integer> sampleIdsPosition;
         private int sampleDataDpIdx;
         private int fileDataDpIdx;
         private Predicate<VariantRow.FileColumn> fileDataFilter;
@@ -393,7 +393,6 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             studyId = context.getConfiguration().getInt(STUDY_ID, -1);
             samples = context.getConfiguration().getInts(SAMPLE_IDS);
             includeSamples = context.getConfiguration().getInts(INCLUDE_SAMPLE_IDS);
-            sampleIdsPosition = new int[IntStream.of(includeSamples).max().orElse(0) + 1];
 
             String fileDataQuery = context.getConfiguration().get(VariantQueryParam.FILE_DATA.key());
             String sampleDataQuery = context.getConfiguration().get(VariantQueryParam.SAMPLE_DATA.key());
@@ -404,9 +403,9 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             sampleDataDpIdx = fixedFormat.indexOf(VCFConstants.DEPTH_KEY);
             fileDataDpIdx = fileAttributes.indexOf(VCFConstants.DEPTH_KEY);
 
-            Arrays.fill(sampleIdsPosition, -1);
+            sampleIdsPosition = new HashMap<>(includeSamples.length);
             for (int i = 0; i < includeSamples.length; i++) {
-                sampleIdsPosition[includeSamples[i]] = i;
+                sampleIdsPosition.put(includeSamples[i], i);
             }
 
             Pedigree pedigree = readPedigree(context.getConfiguration());
@@ -424,9 +423,18 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                     id -> {
                         ArrayList<Integer> sampleIds = new ArrayList<>(vsm.getFileMetadata(studyId, id).getSamples());
                         // Discard unused samples
-                        sampleIds.removeIf(s -> sampleIdsPosition.length <= s || sampleIdsPosition[s] < 0);
+                        sampleIds.removeIf(s -> !sampleIdsPosition.containsKey(s));
                         return sampleIds;
                     });
+        }
+
+        private int getSamplePosition(Integer sampleId) {
+            Integer samplePosition = sampleIdsPosition.get(sampleId);
+            if (samplePosition == null) {
+                throw new IllegalStateException("Sample " + sampleId + " not found in includeSamples "
+                        + Arrays.toString(includeSamples));
+            }
+            return samplePosition;
         }
 
         @Override
@@ -443,9 +451,10 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
             Variant variant = row.walker().onSample(sampleCell -> {
                 int sampleId = sampleCell.getSampleId();
+                int samplePosition = getSamplePosition(sampleId);
                 if (!sampleDataFilter.test(sampleCell)) {
                     // Invalidate sample
-                    invalidSamples[sampleIdsPosition[sampleId]] = true;
+                    invalidSamples[samplePosition] = true;
                     return;
                 }
 
@@ -454,19 +463,19 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                 if (gt == null || gt.isEmpty()) {
                     // This is a really weird situation, most likely due to errors in the input files
                     logger.error("Empty genotype at sample " + sampleId + " in variant " + row.getVariant());
-                    gts.set(sampleIdsPosition[sampleId], GenotypeClass.NA_GT_VALUE);
+                    gts.set(samplePosition, GenotypeClass.NA_GT_VALUE);
                 } else if (gt.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
                     // skip unknown genotypes
                     context.getCounter(COUNTER_GROUP_NAME, "unknownGt").increment(1);
                 } else {
-                    gts.set(sampleIdsPosition[sampleId], gt);
+                    gts.set(samplePosition, gt);
                 }
 
                 if (sampleDataDpIdx > 0) {
                     String dp = sampleCell.getSampleData(sampleDataDpIdx);
                     // Do not set invalid values
                     if (StringUtils.isNumeric(dp)) {
-                        dps.set(sampleIdsPosition[sampleId], dp);
+                        dps.set(samplePosition, dp);
                     }
                 }
             }).onFile(fileCell -> {
@@ -474,15 +483,16 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
                 if (fileDataFilter.test(fileCell)) {
                     for (Integer sampleId : getSamplesFromFileId(fileId)) {
-                        filters.set(sampleIdsPosition[sampleId], fileCell.getFilter());
-                        quals.set(sampleIdsPosition[sampleId], fileCell.getQualString());
+                        int samplePosition = getSamplePosition(sampleId);
+                        filters.set(samplePosition, fileCell.getFilter());
+                        quals.set(samplePosition, fileCell.getQualString());
                         if (fileDataDpIdx > 0) {
                             String dp = fileCell.getFileData(fileDataDpIdx);
                             // Do not set invalid values
                             if (StringUtils.isNumeric(dp)) {
                                 // Prioritize DP value from FORMAT. Do not overwrite if present.
-                                if (StringUtils.isEmpty(dps.get(sampleIdsPosition[sampleId]))) {
-                                    dps.set(sampleIdsPosition[sampleId], dp);
+                                if (StringUtils.isEmpty(dps.get(samplePosition))) {
+                                    dps.set(samplePosition, dp);
                                 }
                             }
                         }
@@ -490,7 +500,8 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                 } else {
                     // Invalidate samples from this file
                     for (Integer sampleId : getSamplesFromFileId(fileId)) {
-                        invalidSamples[sampleIdsPosition[sampleId]] = true;
+                        int samplePosition = getSamplePosition(sampleId);
+                        invalidSamples[samplePosition] = true;
                     }
                 }
             }).onVariantAnnotation(variantAnnotationColumn -> {
