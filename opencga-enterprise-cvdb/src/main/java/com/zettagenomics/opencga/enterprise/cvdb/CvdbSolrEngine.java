@@ -1144,7 +1144,10 @@ public class CvdbSolrEngine {
             solrClient.rollback();
             throw new CvdbException("Error when adding Solr documents (status = " + status + ")");
         } catch (SolrServerException | IOException e) {
-            throw new CvdbException("Error when rollingback Solr after adding documents (status = " + status + ")", e);
+            e.printStackTrace();
+            String msg = "Error when rollingback Solr after adding documents (status = " + status + ")";
+            logger.error(msg, e);
+            throw new CvdbException(msg, e);
         }
     }
 
@@ -1153,7 +1156,10 @@ public class CvdbSolrEngine {
             solrClient.rollback();
             throw new CvdbException("Solr exception", exception);
         } catch (SolrServerException | IOException e) {
-            throw new CvdbException("Error when rollingback after Solr exception (" + exception.getMessage() + ")", e);
+            e.printStackTrace();
+            String msg = "Error when rollingback after Solr exception (" + exception.getMessage() + ")";
+            logger.error(msg, e);
+            throw new CvdbException(msg, e);
         }
     }
 
@@ -1166,8 +1172,11 @@ public class CvdbSolrEngine {
             }
             return true;
         } catch (SolrException e) {
-            throw new CvdbException("Checking if Solr CVDB collections exist for organization '" + organizationId + " and 'project '"
-                    + projectId + "'", e);
+            e.printStackTrace();
+            String msg = "Checking if Solr CVDB collections exist for organization '" + organizationId + " and 'project '" + projectId
+                    + "'";
+            logger.error(msg, e);
+            throw new CvdbException(msg, e);
         }
     }
 
@@ -1176,13 +1185,15 @@ public class CvdbSolrEngine {
             for (int i = 0 ; i < COLLECTION_SUFFIXES.size() ; i++) {
                 String name = getCollectionName(organizationId, projectId, COLLECTION_SUFFIXES.get(i));
                 if (!solrManager.exists(name)) {
-                    logger.info("collection name = {}, config set = {}", name, COLLECTION_CONFIGSETS.get(i));
+                    logger.info("Creating collection name = {}, config set = {}", name, COLLECTION_CONFIGSETS.get(i));
                     solrManager.create(name, COLLECTION_CONFIGSETS.get(i));
                 }
             }
         } catch (SolrException e) {
-            throw new CvdbException("Creating Solr CVDB collections for organization '" + organizationId + " and 'project '"
-                    + projectId + "'", e);
+            e.printStackTrace();
+            String msg = "Creating Solr CVDB collections for organization '" + organizationId + " and 'project '" + projectId + "'";
+            logger.error(msg, e);
+            throw new CvdbException(msg, e);
         }
     }
 
