@@ -20,17 +20,13 @@ import org.apache.solr.common.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.catalog.io.IOManager;
-import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 
-import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -75,29 +71,14 @@ public class VariantWalkerTool extends OpenCgaTool {
 
     @Override
     protected void run() throws Exception {
-        List<URI> uris = new ArrayList<>(2);
         step(ID, () -> {
-            // Use scratch directory to store intermediate files. Move files to final directory at the end
-            // The scratch directory is expected to be faster than the final directory
-            // This also avoids moving files to final directory if the tool fails
-            Path outDir = getScratchDir();
+            Path outDir = getOutDir();
             String outputFile = outDir.resolve(toolParams.getOutputFileName()).toString();
             Query query = toolParams.toQuery();
             QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, toolParams.getInclude())
                     .append(QueryOptions.EXCLUDE, toolParams.getExclude());
-            uris.addAll(variantStorageManager.walkData(outputFile,
-                    format, query, queryOptions, toolParams.getDockerImage(), toolParams.getCommandLine(), token));
-        });
-        step("move-files", () -> {
-            // Move files to final directory
-            if (!uris.isEmpty()) {
-                IOManager ioManager = catalogManager.getIoManagerFactory().get(uris.get(0));
-                for (URI uri : uris) {
-                    String fileName = UriUtils.fileName(uri);
-                    logger.info("Moving file -- " + fileName);
-                    ioManager.move(uri, getOutDir().resolve(fileName).toUri());
-                }
-            }
+            variantStorageManager.walkData(outputFile,
+                    format, query, queryOptions, toolParams.getDockerImage(), toolParams.getCommandLine(), token);
         });
     }
 }
