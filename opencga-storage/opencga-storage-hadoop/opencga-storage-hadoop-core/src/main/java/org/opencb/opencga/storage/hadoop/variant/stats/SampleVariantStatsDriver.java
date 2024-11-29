@@ -63,11 +63,15 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
     private static final String STATS_OPERATION_NAME = "sample_stats";
     private static final String FIXED_FORMAT = "FIXED_FORMAT";
     private static final String FIXED_FILE_ATTRIBUTES = "FIXED_FILE_ATTRIBUTES";
+    // List of sampleIds to calculate stats
     private List<Integer> sampleIds;
+    // List of sampleIds to include in the query needed to calculate stats. Might include parents
+    private Set<Integer> includeSample;
     private String trios;
     private String fileData;
     private String sampleData;
-    private Set<Integer> includeSample;
+    public static final String SAMPLE_IDS = "SampleVariantStatsDriver.sample_ids";
+    public static final String INCLUDE_SAMPLE_IDS = "SampleVariantStatsDriver.include_sample_ids";
 
     @Override
     protected Map<String, String> getParams() {
@@ -244,7 +248,8 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyMetadata);
         List<String> fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
 
-        job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
+        job.getConfiguration().set(SAMPLE_IDS, sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
+        job.getConfiguration().set(INCLUDE_SAMPLE_IDS, includeSample.stream().map(Objects::toString).collect(Collectors.joining(",")));
         job.getConfiguration().setStrings(FIXED_FORMAT, fixedFormat.toArray(new String[0]));
         job.getConfiguration().setStrings(FIXED_FILE_ATTRIBUTES, fileAttributes.toArray(new String[0]));
         if (StringUtils.isNotEmpty(fileData)) {
@@ -364,10 +369,12 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         }
     }
 
+
     public static class SampleVariantStatsMapper extends VariantRowMapper<IntWritable, SampleVariantStatsWritable> {
 
         private int studyId;
         private int[] samples;
+        private int[] includeSamples;
 
         protected final Logger logger = LoggerFactory.getLogger(SampleVariantStatsMapper.class);
         private VariantStorageMetadataManager vsm;
@@ -384,8 +391,9 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
             studyId = context.getConfiguration().getInt(STUDY_ID, -1);
-            samples = context.getConfiguration().getInts(SAMPLES);
-            sampleIdsPosition = new int[IntStream.of(samples).max().orElse(0) + 1];
+            samples = context.getConfiguration().getInts(SAMPLE_IDS);
+            includeSamples = context.getConfiguration().getInts(INCLUDE_SAMPLE_IDS);
+            sampleIdsPosition = new int[IntStream.of(includeSamples).max().orElse(0) + 1];
 
             String fileDataQuery = context.getConfiguration().get(VariantQueryParam.FILE_DATA.key());
             String sampleDataQuery = context.getConfiguration().get(VariantQueryParam.SAMPLE_DATA.key());
@@ -397,8 +405,8 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             fileDataDpIdx = fileAttributes.indexOf(VCFConstants.DEPTH_KEY);
 
             Arrays.fill(sampleIdsPosition, -1);
-            for (int i = 0; i < samples.length; i++) {
-                sampleIdsPosition[samples[i]] = i;
+            for (int i = 0; i < includeSamples.length; i++) {
+                sampleIdsPosition[includeSamples[i]] = i;
             }
 
             Pedigree pedigree = readPedigree(context.getConfiguration());
