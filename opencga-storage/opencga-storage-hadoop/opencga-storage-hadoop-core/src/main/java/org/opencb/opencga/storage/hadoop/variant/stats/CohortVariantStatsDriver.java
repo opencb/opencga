@@ -316,8 +316,14 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
                 if (fileIds.contains(fileColumn.getFileId())) {
                     if (fileColumn.getOverlappingStatus().equals(VariantOverlappingStatus.NONE)) {
                         HashMap<String, String> attributes = new HashMap<>(2);
-                        attributes.put(StudyEntry.QUAL, fileColumn.getQualString());
-                        attributes.put(StudyEntry.FILTER, fileColumn.getFilter());
+                        String qualString = fileColumn.getQualString();
+                        if (qualString != null) {
+                            attributes.put(StudyEntry.QUAL, qualString);
+                        }
+                        String filter = fileColumn.getFilter();
+                        if (filter != null) {
+                            attributes.put(StudyEntry.FILTER, filter);
+                        }
                         entries.add(new FileEntry(String.valueOf(fileColumn.getFileId()), fileColumn.getCall(), attributes));
                     }
                 }
