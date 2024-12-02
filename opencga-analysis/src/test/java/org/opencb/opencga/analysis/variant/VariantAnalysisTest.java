@@ -80,10 +80,7 @@ import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleQualityControl;
-import org.opencb.opencga.core.models.sample.SampleReferenceParam;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -184,7 +181,6 @@ public class VariantAnalysisTest {
             VariantOperationsTest.dummyVariantSetup(variantStorageManager, CANCER_STUDY, token);
 
             file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
-            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
 
             for (int i = 0; i < file.getSampleIds().size(); i++) {
                 String id = file.getSampleIds().get(i);
@@ -232,6 +228,9 @@ public class VariantAnalysisTest {
                     new Family("f1", "f1", Collections.singletonList(phenotype), disorderList, null, null, 3, null, null),
                     individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
                     token);
+
+            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
+            variantStorageManager.familyIndexBySamples(STUDY, file.getSampleIds(), new ObjectMap(), token);
 
             // Cancer (SV)
             ObjectMap config = new ObjectMap();
@@ -411,6 +410,7 @@ public class VariantAnalysisTest {
 
     @Test
     public void testSampleStatsSampleFilter() throws Exception {
+        clearSampleVariantStats();
         Assume.assumeThat(storageEngine, CoreMatchers.is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
         // Reset quality control stats
         for (Sample sample : catalogManager.getSampleManager().search(STUDY, new Query(), new QueryOptions(), token).getResults()) {
@@ -431,11 +431,27 @@ public class VariantAnalysisTest {
 
     @Test
     public void testSampleStatsWithGeneFilter() throws Exception {
+        clearSampleVariantStats();
         sampleVariantStats(null, "stats_BRCA1", false, 1, file.getSampleIds().subList(0, 2), false, new VariantQuery().gene("BRCA1"));
     }
 
     @Test
+    public void testSampleStatsFromOffspringFilter() throws Exception {
+        clearSampleVariantStats();
+        sampleVariantStats(null, "stats_offspring", false, 1, Collections.singletonList(daughter));
+    }
+
+    private void clearSampleVariantStats() throws CatalogException {
+        for (String sampleId : file.getSampleIds()) {
+            SampleQualityControl qualityControl = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first().getQualityControl();
+            qualityControl.getVariant().getVariantStats().clear();
+            catalogManager.getSampleManager().update(STUDY, sampleId, new SampleUpdateParams().setQualityControl(qualityControl), new QueryOptions(), token);
+        }
+    }
+
+    @Test
     public void testSampleStats() throws Exception {
+        clearSampleVariantStats();
         sampleVariantStats("1,2", "stats_1", false, 1, file.getSampleIds().subList(0, 2));
         sampleVariantStats("1,2", "stats_1", false, 1, file.getSampleIds().subList(2, 4));
         sampleVariantStats("1,2", "stats_2", false, 2, Collections.singletonList(ParamConstants.ALL));

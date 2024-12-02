@@ -88,7 +88,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
@@ -469,8 +468,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return synchronizer;
     }
 
-    public DataResult<Trio> familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
+    public DataResult<Trio> familyIndexBySamples(String inputStudy, Collection<String> samples, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
+        String study = getStudyFqn(inputStudy, token);
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             Collection<String> thisSamples = samples;
             boolean allSamples;

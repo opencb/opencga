@@ -95,16 +95,17 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
         List<String> samples = Arrays.asList(samplesStr.split(","));
         StringBuilder trios = new StringBuilder();
+        int triosCount = 0;
         includeSample = new LinkedHashSet<>();
         if (samples.size() == 1 && (samples.get(0).equals("auto") || samples.get(0).equals("all"))) {
             boolean all = samples.get(0).equals("all");
-            metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
+            for (SampleMetadata sampleMetadata : metadataManager.sampleMetadataIterable(studyId)) {
                 if (sampleMetadata.isIndexed()) {
                     if (all || sampleMetadata.getStats() == null || MapUtils.isEmpty(sampleMetadata.getStats().getBiotypeCount())) {
-                        addTrio(trios, includeSample, sampleMetadata);
+                        triosCount += addTrio(trios, includeSample, sampleMetadata);
                     }
                 }
-            });
+            }
             sampleIds = new ArrayList<>(includeSample);
         } else {
             sampleIds = new ArrayList<>(samples.size());
@@ -114,12 +115,15 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                     throw VariantQueryException.sampleNotFound(sample, metadataManager.getStudyName(studyId));
                 }
                 sampleIds.add(sampleId);
-                addTrio(trios, includeSample, metadataManager.getSampleMetadata(studyId, sampleId));
+                triosCount += addTrio(trios, includeSample, metadataManager.getSampleMetadata(studyId, sampleId));
             }
         }
         if (sampleIds.isEmpty()) {
             throw new IllegalArgumentException("Nothing to do!");
         }
+        LOGGER.info(" * samples : " + (samples.size() > 10 ? (samples.subList(0, 10) + "...") : samples) + " (" + samples.size() + ")");
+        LOGGER.info(" * includeSamples : " + includeSample.size());
+        LOGGER.info(" * familyTrios : " + triosCount);
         fileData = getParam(VariantQueryParam.FILE_DATA.key());
         if (StringUtils.isNotEmpty(fileData)) {
             LOGGER.info(" * fileData : " + fileData);
@@ -133,7 +137,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
     }
 
 
-    private void addTrio(StringBuilder trios, Set<Integer> includeSample, SampleMetadata sampleMetadata) {
+    private int addTrio(StringBuilder trios, Set<Integer> includeSample, SampleMetadata sampleMetadata) {
         includeSample.add(sampleMetadata.getId());
         if (sampleMetadata.getFather() != null || sampleMetadata.getMother() != null) {
             // Make sure parents are included in the query
@@ -149,7 +153,9 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                     .append(",")
                     .append(sampleMetadata.getMother() == null ? "0" : sampleMetadata.getMother())
                     .append(";");
+            return 1;
         }
+        return 0;
     }
 
     private static Pedigree readPedigree(Configuration conf) {
@@ -340,11 +346,13 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
     public static class DistributedSampleVariantStatsCalculator extends SampleVariantStatsCalculator {
 
-        private List<Integer> sampleIds;
+        private Set<Integer> sampleIds;
+        private List<Integer> includeSampleIds;
 
-        public DistributedSampleVariantStatsCalculator(Pedigree pedigree, List<Integer> samples) {
-            super(pedigree, samples.stream().map(String::valueOf).collect(Collectors.toList()));
+        public DistributedSampleVariantStatsCalculator(Pedigree pedigree, Set<Integer> samples, List<Integer> includeSamples) {
+            super(pedigree, includeSamples.stream().map(String::valueOf).collect(Collectors.toList()));
             sampleIds = samples;
+            includeSampleIds = includeSamples;
         }
 
         public DistributedSampleVariantStatsCalculator(SampleVariantStatsWritable statsWritable) {
@@ -361,8 +369,13 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         public List<SampleVariantStatsWritable> getWritables() {
             List<SampleVariantStatsWritable> writables = new ArrayList<>(statsList.size());
             for (int i = 0; i < statsList.size(); i++) {
-                writables.add(new SampleVariantStatsWritable(
-                        sampleIds.get(i), ti[i], tv[i], qualCount[i], qualSum[i], qualSumSq[i], statsList.get(i)));
+                Integer sampleId = includeSampleIds.get(i);
+                if (sampleIds.contains(sampleId)) {
+                    // Only write samples that were requested
+                    // Skip samples that were included but not requested, as they are used for calculating other stats
+                    writables.add(new SampleVariantStatsWritable(
+                            sampleId, ti[i], tv[i], qualCount[i], qualSum[i], qualSumSq[i], statsList.get(i)));
+                }
             }
             return writables;
         }
@@ -412,7 +425,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             }
 
             Pedigree pedigree = readPedigree(context.getConfiguration());
-            calculator = new DistributedSampleVariantStatsCalculator(pedigree, new ArrayList<>(samples));
+            calculator = new DistributedSampleVariantStatsCalculator(pedigree, samples, new ArrayList<>(includeSamples));
             calculator.pre();
 
             fileDataFilter = filterFactory.buildFileDataFilter(fileDataQuery);

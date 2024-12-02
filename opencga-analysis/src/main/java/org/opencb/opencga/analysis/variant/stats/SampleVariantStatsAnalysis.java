@@ -43,6 +43,7 @@ import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.OutputStream;
@@ -254,7 +255,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                         .setOutputFile(tmpOutputFile)
                         .setStudy(study)
                         .setSampleNames(batchSamples)
-                        .setVariantQuery(variantQuery)
+                        .setVariantQuery(new VariantQuery(variantQuery).includeSample(batchSamples))
                         .execute();
 
                 if (tmpOutputFile != outputFile) {
