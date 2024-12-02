@@ -36,7 +36,7 @@ public class CalculatePedigreeGraphMigration extends MigrationTool {
         MigrationRun migrationRun = getMigrationRun();
 
         // Map study studyFqn -> job
-        Map<String, Job> jobs = new HashMap<>();
+        Map<String, List<Job>> jobsMap = new HashMap<>();
         for (JobReferenceParam jobReference : migrationRun.getJobs()) {
             Job job = catalogManager.getJobManager().get(jobReference.getStudyId(), jobReference.getId(), new QueryOptions(), token)
                     .first();
@@ -44,7 +44,7 @@ public class CalculatePedigreeGraphMigration extends MigrationTool {
                     job.getId(),
                     job.getStudy().getId(),
                     job.getInternal().getStatus().getId());
-            jobs.put(job.getStudy().getId(), job);
+            jobsMap.computeIfAbsent(job.getStudy().getId(), k -> new ArrayList<>()).add(job);
         }
 
         Set<String> studies = new LinkedHashSet<>(getStudies());
@@ -57,20 +57,38 @@ public class CalculatePedigreeGraphMigration extends MigrationTool {
                 StringUtils.join(studies, ", "));
 
         for (String study : studies) {
-            Job job = jobs.get(study);
-            if (job != null) {
-                String status = job.getInternal().getStatus().getId();
-                if (status.equals(Enums.ExecutionStatus.DONE)) {
-                    // Skip this study. Already migrated
-                    logger.info("Study {} already migrated", study);
-                    continue;
-                } else if (status.equals(Enums.ExecutionStatus.ERROR) || status.equals(Enums.ExecutionStatus.ABORTED)) {
-                    logger.info("Retry migration job for study {}", study);
-                } else {
-                    logger.info("Job {} for migrating study {} in status {}. Wait for completion", job.getId(), study, status);
-                    continue;
+            List<Job> jobs = jobsMap.get(study);
+            boolean migrated = false;
+            boolean running = false;
+            List<Job> errorJobs = new ArrayList<>();
+            if (jobs != null) {
+                for (Job job : jobs) {
+                    String status = job.getInternal().getStatus().getId();
+                    if (status.equals(Enums.ExecutionStatus.DONE)) {
+                        migrated = true;
+                    } else if (status.equals(Enums.ExecutionStatus.ERROR) || status.equals(Enums.ExecutionStatus.ABORTED)) {
+                        logger.info("Retry migration job for study {}", study);
+                        errorJobs.add(job);
+                    } else {
+                        running = true;
+                        logger.info("Job {} for migrating study {} in status {}. Wait for completion", job.getId(), study, status);
+                    }
                 }
-                getMigrationRun().removeJob(job);
+            }
+            if (running) {
+                // Skip this study. There is a job running
+                logger.info("Study {} has a job running. Skip", study);
+                continue;
+            }
+            // Remove error jobs if any
+            for (Job errorJob : errorJobs) {
+                logger.info("Remove error job {} for study {}", errorJob.getId(), study);
+                getMigrationRun().removeJob(errorJob);
+            }
+            if (migrated) {
+                // Skip this study. Already migrated
+                logger.info("Study {} already migrated", study);
+                continue;
             }
 
             logger.info("Adding new job to migrate/initialize pedigree graph for study {}", study);
