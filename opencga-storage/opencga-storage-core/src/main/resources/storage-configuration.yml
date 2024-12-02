@@ -11,17 +11,15 @@ cellbase:
   ## URL host to annotate variants, for example: https://uk.ws.zettagenomics.com/cellbase/
   url: "${OPENCGA.CELLBASE.REST.HOST}"
   version: "${OPENCGA.CELLBASE.VERSION}"
-  dataRelease: "2"
+  dataRelease: "7"
 
 ## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
 ## is launched in the specified port.
 server:
   rest:
     port: ${OPENCGA.SERVER.REST.PORT}
-    logFile: null
   grpc:
     port: ${OPENCGA.SERVER.GRPC.PORT}
-    logFile: null
 
 ## Solr Search Configuration
 search:

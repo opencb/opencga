@@ -16,10 +16,12 @@
 
 package org.opencb.opencga.core.models.operations.variant;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class VariantAnnotationDeleteParams extends ToolParams {
 
+    @DataField(description = "Variant Annotation identifier")
     private String annotationId;
 
     public VariantAnnotationDeleteParams() {

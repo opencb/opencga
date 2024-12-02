@@ -1,15 +1,14 @@
 package org.opencb.opencga.storage.core.variant.query.executors;
 
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.*;
@@ -36,7 +35,8 @@ public class NoOpVariantQueryExecutor extends VariantQueryExecutor {
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException {
+        VariantQuery query = variantQuery.getQuery();
         boolean sampleQuery = false;
         String sample = null;
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.GENOTYPE)) {
@@ -126,14 +126,11 @@ public class NoOpVariantQueryExecutor extends VariantQueryExecutor {
     }
 
     @Override
-    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
+    protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) throws StorageEngineException {
         if (iterator) {
             return VariantDBIterator.emptyIterator();
         } else {
-            VariantQueryResult<Variant> result = new VariantQueryResult<>(0, 0, 0, Collections.emptyList(), Collections.emptyList());
-            result.setSource(NO_OP);
-            VariantQueryUtils.addSamplesMetadataIfRequested(result, query, options, metadataManager);
-            return result;
+            return new VariantQueryResult<>(0, 0, 0, Collections.emptyList(), Collections.emptyList(), NO_OP, variantQuery);
         }
     }
 }

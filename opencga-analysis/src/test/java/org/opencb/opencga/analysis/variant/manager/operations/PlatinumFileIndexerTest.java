@@ -26,12 +26,15 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.operations.VariantFileIndexJobLauncherTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.operations.variant.VariantFileIndexJobLauncherParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -49,6 +52,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 
 /**
  * Created on 15/07/16
@@ -103,9 +107,8 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
         ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                 .append(ParamConstants.STUDY_PARAM, studyId), outDir, null, sessionId);
 
-        assertEquals(2, er.getSteps().size());
+        assertEquals(1, er.getSteps().size());
         assertEquals("variant-index", er.getSteps().get(0).getId());
-        assertEquals("family-index", er.getSteps().get(1).getId());
 
         variantManager.iterator(new Query(VariantQueryParam.STUDY.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);
@@ -201,11 +204,48 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
     @Test
     public void testLauncher() throws CatalogException, IOException, ToolException {
         ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
+        int numFiles = 0;
         for (int i = 77; i <= 93; i++) {
             create("platinum/1K.end.platinum-genomes-vcf-NA128" + i + "_S1.genome.vcf.gz");
+            numFiles++;
         }
-        toolRunner.execute(VariantFileIndexJobLauncherTool.class, studyFqn, new VariantFileIndexJobLauncherParams().setDirectory("data/vcfs"),
-                Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), "", sessionId);
+        VariantFileIndexJobLauncherParams params = new VariantFileIndexJobLauncherParams().setDirectory("data/vcfs");
+        List<String> tags = Arrays.asList("tag1", "tag2");
+        Job job = catalogManager.getJobManager().submit(studyFqn, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
+                params.toParams(STUDY_PARAM, studyFqn), null, null, null, tags, sessionId).first();
+        ExecutionResult result = toolRunner.execute(job, Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), sessionId);
+
+        List<String> tagsFromResult = result.getAttributes().getAsStringList(VariantFileIndexJobLauncherTool.JOB_TAGS_ATTRIBUTE);
+        assertTrue(tagsFromResult.containsAll(tags));
+        for (String tag : tagsFromResult) {
+            List<Job> results = catalogManager.getJobManager().search(studyFqn,
+                    new Query()
+                            .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), VariantIndexOperationTool.ID)
+                            .append(JobDBAdaptor.QueryParams.TAGS.key(), tag),
+                    new QueryOptions(), sessionId).getResults();
+            assertEquals(numFiles, results.size());
+        }
+        assertEquals(numFiles, result.getAttributes().getInt(VariantFileIndexJobLauncherTool.SUBMITTED_JOBS_ATTRIBUTE));
+        assertEquals(numFiles, result.getAttributes().getInt(VariantFileIndexJobLauncherTool.SCANNED_FILES_ATTRIBUTE));
+
+        //// Execute again, no new jobs should be submitted
+        tags = Arrays.asList("tag10", "tag20");
+        job = catalogManager.getJobManager().submit(studyFqn, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
+                params.toParams(STUDY_PARAM, studyFqn), null, null, null, tags, sessionId).first();
+        result = toolRunner.execute(job, Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), sessionId);
+
+        tagsFromResult = result.getAttributes().getAsStringList(VariantFileIndexJobLauncherTool.JOB_TAGS_ATTRIBUTE);
+        assertTrue(tagsFromResult.containsAll(tags));
+        for (String tag : tagsFromResult) {
+            List<Job> results = catalogManager.getJobManager().search(studyFqn,
+                    new Query()
+                            .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), VariantIndexOperationTool.ID)
+                            .append(JobDBAdaptor.QueryParams.TAGS.key(), tag),
+                    new QueryOptions(), sessionId).getResults();
+            assertEquals(0, results.size());
+        }
+        assertEquals(0, result.getAttributes().getInt(VariantFileIndexJobLauncherTool.SUBMITTED_JOBS_ATTRIBUTE));
+        assertEquals(numFiles, result.getAttributes().getInt(VariantFileIndexJobLauncherTool.SCANNED_FILES_ATTRIBUTE));
     }
 
 }

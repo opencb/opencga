@@ -2,15 +2,21 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import com.google.common.base.Throwables;
 import org.junit.ClassRule;
+import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
 
 /**
  * Created on 22/12/17.
@@ -86,5 +92,33 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
         } catch (Exception e) {
             throw Throwables.propagate(e);
         }
+    }
+
+    @Test
+    public void testQueryExecutor() {
+        assertThat(variantStorageEngine.get(new VariantQuery(), new QueryOptions()
+                        .append(QueryOptions.LIMIT, 10)
+                        .append(QueryOptions.COUNT, false)
+                        .append(QueryOptions.SKIP, 0)).getSource(),
+                not(containsString(SEARCH_ENGINE_ID)));
+
+        assertThat(variantStorageEngine.get(new VariantQuery(), new QueryOptions()
+                        .append(QueryOptions.LIMIT, 10)
+                        .append(QueryOptions.COUNT, true)
+                        .append(QueryOptions.SKIP, 0)).getSource(),
+                containsString(SEARCH_ENGINE_ID));
+
+        assertThat(variantStorageEngine.get(new VariantQuery(), new QueryOptions()
+                        .append(QueryOptions.LIMIT, 10)
+                        .append(QueryOptions.COUNT, false)
+                        .append(QueryOptions.SKIP, 100)).getSource(),
+                not(containsString(SEARCH_ENGINE_ID)));
+
+        assertThat(variantStorageEngine.get(new VariantQuery(), new QueryOptions()
+                        .append(QueryOptions.LIMIT, 10)
+                        .append(QueryOptions.COUNT, false)
+                        .append(QueryOptions.SKIP, 1000)).getSource(),
+                containsString(SEARCH_ENGINE_ID));
+
     }
 }

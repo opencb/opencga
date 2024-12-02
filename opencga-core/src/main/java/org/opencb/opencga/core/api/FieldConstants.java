@@ -3,6 +3,7 @@ package org.opencb.opencga.core.api;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
+import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
 public class FieldConstants {
 
@@ -37,9 +38,7 @@ public class FieldConstants {
     public static final String QUALITY_CONTROL_COMMENTS_DESCRIPTION = "Comments related to the quality control.";
 
     //Sample
-    public static final String SAMPLE_ID_DESCRIPTION = "Sample data model hosts information about any biological material, normally "
-            + "extracted from an _Individual_, that is used for a particular analysis. This is the main data model, it stores the most "
-            + "basic and important information.";
+    public static final String SAMPLE_ID_DESCRIPTION = "Sample ID.";
     public static final String SAMPLE_PROCESSING_DESCRIPTION = "Describes how the sample was processed in the lab.";
     public static final String SAMPLE_SAMPLE_COLLECTION_DESCRIPTION = "Describes how the sample was collected.";
     public static final String SAMPLE_QUALITY_CONTROL_DESCRIPTION = "Contains different metrics to evaluate the quality of the sample.";
@@ -153,10 +152,18 @@ public class FieldConstants {
 
     //FamilyQualityControl
     public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION = "Reports of family relationship.";
+
+
+    // Individual quality control
+    public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION = "Individual ID";
+    public static final String INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION = "Sample ID (required when the individual has multiple samples)";
+    public static final String INFERRED_SEX_METHOD_DESCRIPTION = "Inferred sex method. Valid values: "
+            + IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
     public static final String INDIVIDUAL_QUALITY_CONTROL_INFERRED_SEX_REPORT_DESCRIPTION = "List of inferred sex reports, it depends on"
             + " the method (currently by coverage ratio).";
     public static final String INDIVIDUAL_QUALITY_CONTROL_SAMPLE_RELATEDNESS_REPORT_DESCRIPTION = "Reports of samples relatedness.";
     public static final String INDIVIDUAL_QUALITY_CONTROL_MENDELIAN_ERRORS_DESCRIPTION = "Mendelian errors.";
+
 
     //Status
     public static final String STATUS_DATE_DESCRIPTION = "Date has setted the status.";
@@ -187,8 +194,10 @@ public class FieldConstants {
     public static final String CLINICAL_ANALYSIS_INTERPRETATION = "Interpretation of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_SECONDARY_INTERPRETATION = "List of Interpretations containing the second and consecutive.";
     public static final String CLINICAL_ANALYSIS_CONSENT = "Object contains consent annotations of clinical analysis.";
-    public static final String CLINICAL_ANALYSIS_ANALYST = "The analyst of the clinical analysis.";
+    public static final String CLINICAL_ANALYSIS_ANALYST = "The analysts of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_REPORT = "Report of the clinical analysis.";
+    public static final String CLINICAL_ANALYSIS_REQUEST = "Request of the clinical analysis.";
+    public static final String CLINICAL_ANALYSIS_RESPONSIBLE = "Responsible of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_PRIORITY = "Priority of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_FLAGS = "List of flags for the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_DUE_DATE_DESCRIPTION = "Due date of the clinical analysis.";
@@ -212,6 +221,9 @@ public class FieldConstants {
     public static final String CLINICAL_REPORT_SIGNED_BY = "Indicates who has signed the report.";
     public static final String CLINICAL_REPORT_SIGNATURE = "Report signature.";
     public static final String CLINICAL_REPORT_DATE = "Report date.";
+    public static final String CLINICAL_REPORT_COMMENTS = "Report comments.";
+    public static final String CLINICAL_REPORT_SUPPORTING_EVIDENCES = "Report supporting evidences.";
+    public static final String CLINICAL_REPORT_FILES = "Report files.";
 
     //ClinicalPriorityAnnotation
     public static final String CLINICAL_PRIORITY_ANNOTATION_RANK_DESCRIPTION = "ClinicalPriorityAnnotation rank.";
@@ -471,6 +483,16 @@ public class FieldConstants {
     public static final String VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Variant stats description.";
     public static final String VARIANT_STATS_QUERY_DESCRIPTION = "Variant stats query in JSON format.";
 
+    // Alignment index parameter descriptions
+    public static final String ALIGNMENT_INDEX_FILE_ID_DESCRIPTION = "File ID, (i.e., BAM/CRAM file ID).";
+    public static final String ALIGNMENT_INDEX_OVERWRITE_DESCRIPTION = "Flag to force indexing.";
+
+    // Coverage index parameter descriptions
+    public static final String COVERAGE_INDEX_BAM_FILE_ID_DESCRIPTION = "BAM file ID.";
+    public static final String COVERAGE_INDEX_BAI_FILE_ID_DESCRIPTION = "BAI file ID.";
+    public static final String COVERAGE_INDEX_OVERWRITE_DESCRIPTION = "Window size (i.e., the size of the bins, in bases, for the output"
+        + " of the BIGWIG file).";
+
     // Alignment QC analysis (asample-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
     public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"
@@ -478,4 +500,6 @@ public class FieldConstants {
             + AlignmentQcParams.FASTQC_METRICS_SKIP_VALUE;
     public static final String ALIGNMENT_QC_OVERWRITE_DESCRIPTION = "To overwrite the QC metrics already computed.";
 
+    // Exomiser
+    public static final String EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION = "Clinical analysis type: SINGLE or FAMILY.";
 }

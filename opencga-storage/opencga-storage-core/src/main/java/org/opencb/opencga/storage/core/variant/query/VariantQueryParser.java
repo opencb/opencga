@@ -3,23 +3,25 @@ package org.opencb.opencga.storage.core.variant.query;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
@@ -148,21 +150,38 @@ public class VariantQueryParser {
         return parseQuery(query, options, false);
     }
 
-    public ParsedVariantQuery parseQuery(Query query, QueryOptions options, boolean skipPreProcess) {
-        if (query == null) {
-            query = new Query();
+    public ParsedVariantQuery parseQuery(Query inputQuery, QueryOptions options, boolean skipPreProcess) {
+        if (inputQuery == null) {
+            inputQuery = new Query();
         }
         if (options == null) {
             options = new QueryOptions();
         }
 
-        ParsedVariantQuery variantQuery = new ParsedVariantQuery(new Query(query), new QueryOptions(options));
+        ParsedVariantQuery variantQuery = new ParsedVariantQuery(new Query(inputQuery), new QueryOptions(options));
+        int limit = options.getInt(QueryOptions.LIMIT, -1);
+        variantQuery.setLimit(limit == -1 ? null : limit);
+        variantQuery.setSkip(options.getInt(QueryOptions.SKIP, 0));
+        variantQuery.setCount(options.getBoolean(QueryOptions.COUNT, false));
+        variantQuery.setApproximateCountSamplingSize(options.getInt(
+                VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
+                VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
 
+        VariantQuery query;
         if (!skipPreProcess) {
-            query = preProcessQuery(query, options);
+            query = new VariantQuery(preProcessQuery(inputQuery, options));
+        } else {
+            query = new VariantQuery(inputQuery);
         }
         variantQuery.setQuery(query);
         variantQuery.setProjection(projectionParser.parseVariantQueryProjection(query, options));
+
+        List<Region> geneRegions = Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()));
+        variantQuery.setGeneRegions(geneRegions == null ? Collections.emptyList() : geneRegions);
+        List<Region> regions = Region.parseRegions(query.region(), true);
+        variantQuery.setRegions(regions == null ? Collections.emptyList() : regions);
+        variantQuery.setClinicalCombination(VariantQueryParser.parseClinicalCombination(query, false));
+        variantQuery.setClinicalCombinationList(VariantQueryParser.parseClinicalCombinationsList(query, false));
 
         ParsedVariantQuery.VariantStudyQuery studyQuery = variantQuery.getStudyQuery();
 
@@ -173,7 +192,7 @@ public class VariantQueryParser {
         }
         if (isValidParam(query, GENOTYPE)) {
             HashMap<Object, List<String>> map = new HashMap<>();
-            QueryOperation op = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
+            QueryOperation op = VariantQueryUtils.parseGenotypeFilter(query.genotype(), map);
 
             if (defaultStudy == null) {
                 List<String> studyNames = metadataManager.getStudyNames();
@@ -198,10 +217,7 @@ public class VariantQueryParser {
                     = new ParsedQuery<>(sampleDataQuery.getKey(), sampleDataQuery.getOperation(), new ArrayList<>(sampleDataQuery.size()));
             for (KeyValues<String, KeyOpValue<String, String>> keyValues : sampleDataQuery) {
                 sampleDataQueryWithMetadata.getValues().add(
-                        keyValues.mapKey(sample -> {
-                            int sampleId = metadataManager.getSampleIdOrFail(defaultStudy.getId(), sample);
-                            return metadataManager.getSampleMetadata(defaultStudy.getId(), sampleId);
-                        }));
+                        keyValues.mapKey(sample -> metadataManager.getSampleMetadata(defaultStudy.getId(), sample)));
             }
             studyQuery.setSampleDataQuery(sampleDataQueryWithMetadata);
         }
@@ -433,6 +449,19 @@ public class VariantQueryParser {
             }
         }
 
+        if (isValidParam(query, FILE)) {
+            ParsedQuery<String> files = splitValue(query, FILE);
+            for (String file : files.getValues()) {
+                Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(file, false, defaultStudy);
+                if (fileIdPair == null) {
+                    throw VariantQueryException.fileNotFound(file, defaultStudy.getName());
+                }
+                if (!metadataManager.isFileIndexed(fileIdPair.getKey(), fileIdPair.getValue())) {
+                    throw VariantQueryException.fileNotIndexed(file, metadataManager.getStudyName(fileIdPair.getKey()));
+                }
+            }
+        }
+
         QueryOperation genotypeOperator = null;
         VariantQueryParam genotypeParam = null;
 
@@ -573,10 +602,13 @@ public class VariantQueryParser {
 
         if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)
                 || isValidParam(query, SAMPLE_DE_NOVO)
-                || isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+                || isValidParam(query, SAMPLE_DE_NOVO_STRICT)
+                || isValidParam(query, SAMPLE_COMPOUND_HETEROZYGOUS)) {
+            boolean requireMendelianReady = false;
             QueryParam param = null;
             if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
                 param = SAMPLE_MENDELIAN_ERROR;
+                requireMendelianReady = true;
             }
             if (isValidParam(query, SAMPLE_DE_NOVO)) {
                 if (param != null) {
@@ -584,6 +616,7 @@ public class VariantQueryParser {
                             param, query.getString(param.key()),
                             SAMPLE_DE_NOVO, query.getString(SAMPLE_DE_NOVO.key()));
                 }
+                requireMendelianReady = true;
                 param = SAMPLE_DE_NOVO;
             }
             if (isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
@@ -592,7 +625,20 @@ public class VariantQueryParser {
                             param, query.getString(param.key()),
                             SAMPLE_DE_NOVO_STRICT, query.getString(SAMPLE_DE_NOVO_STRICT.key()));
                 }
+                requireMendelianReady = true;
                 param = SAMPLE_DE_NOVO_STRICT;
+            }
+            if (isValidParam(query, SAMPLE_COMPOUND_HETEROZYGOUS)) {
+                if (param != null) {
+                    throw VariantQueryException.unsupportedParamsCombination(
+                            param, query.getString(param.key()),
+                            SAMPLE_COMPOUND_HETEROZYGOUS, query.getString(SAMPLE_COMPOUND_HETEROZYGOUS.key()));
+                }
+                requireMendelianReady = false;
+                param = SAMPLE_COMPOUND_HETEROZYGOUS;
+            }
+            if (param == null) {
+                throw new IllegalStateException("Unknown param");
             }
             if (defaultStudy == null) {
                 throw VariantQueryException.missingStudyForSamples(query.getAsStringList(param.key()),
@@ -605,15 +651,18 @@ public class VariantQueryParser {
                         genotypeParam, query.getString(genotypeParam.key())
                 );
             }
-            List<String> samples = query.getAsStringList(param.key());
+            Object value = query.get(param.key());
+            List<String> samples;
+            if (value instanceof Trio) {
+                samples = Collections.singletonList(((Trio) value).getChild());
+            } else {
+                samples = query.getAsStringList(param.key());
+            }
             Set<String> samplesAndParents = new LinkedHashSet<>(samples);
             for (String sample : samples) {
-                Integer sampleId = metadataManager.getSampleId(defaultStudy.getId(), sample);
-                if (sampleId == null) {
-                    throw VariantQueryException.sampleNotFound(sample, defaultStudy.getName());
-                }
-                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(defaultStudy.getId(), sampleId);
-                if (TaskMetadata.Status.READY != sampleMetadata.getMendelianErrorStatus()) {
+                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(defaultStudy.getId(), sample);
+                if (requireMendelianReady
+                        && TaskMetadata.Status.READY != sampleMetadata.getMendelianErrorStatus()) {
                     throw VariantQueryException.malformedParam(param, "Sample \"" + sampleMetadata.getName()
                             + "\" does not have the Mendelian Errors precomputed yet");
                 }
@@ -633,6 +682,21 @@ public class VariantQueryParser {
                 }
             } else {
                 query.put(INCLUDE_SAMPLE.key(), new ArrayList<>(samplesAndParents));
+            }
+            if (param == SAMPLE_COMPOUND_HETEROZYGOUS) {
+                int studyId = defaultStudy.getId();
+                if (!(value instanceof Trio)) {
+                    if (samples.size() > 1) {
+                        throw VariantQueryException.malformedParam(SAMPLE, value.toString(),
+                                "More than one sample provided for compound heterozygous filter.");
+                    }
+                    SampleMetadata sm = metadataManager.getSampleMetadata(studyId, samples.get(0));
+                    Trio trio = new Trio(null,
+                            metadataManager.getSampleName(studyId, sm.getFather()),
+                            metadataManager.getSampleName(studyId, sm.getMother()),
+                            sm.getName());
+                    query.put(SAMPLE_COMPOUND_HETEROZYGOUS.key(), trio);
+                }
             }
         }
 
@@ -661,22 +725,21 @@ public class VariantQueryParser {
         if (!isValidParam(query, INCLUDE_STUDY)
                 || !isValidParam(query, INCLUDE_SAMPLE)
                 || !isValidParam(query, INCLUDE_FILE)
-                || !isValidParam(query, SAMPLE_SKIP)
-                || !isValidParam(query, SAMPLE_LIMIT)
+                || isValidParam(query, SAMPLE_SKIP)
+                || isValidParam(query, SAMPLE_LIMIT)
         ) {
-            VariantQueryProjection selectVariantElements =
-                    VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager);
+            VariantQueryProjection projection = projectionParser.parseVariantQueryProjection(query, options);
             // Apply the sample pagination.
             // Remove the sampleLimit and sampleSkip to avoid applying the pagination twice
             query.remove(SAMPLE_SKIP.key());
             query.remove(SAMPLE_LIMIT.key());
-            query.put(NUM_TOTAL_SAMPLES.key(), selectVariantElements.getNumTotalSamples());
-            query.put(NUM_SAMPLES.key(), selectVariantElements.getNumSamples());
+            query.put(NUM_TOTAL_SAMPLES.key(), projection.getNumTotalSamples());
+            query.put(NUM_SAMPLES.key(), projection.getNumSamples());
 
             if (!isValidParam(query, INCLUDE_STUDY)) {
                 List<String> includeStudy = new ArrayList<>();
-                for (Integer studyId : selectVariantElements.getStudyIds()) {
-                    includeStudy.add(selectVariantElements.getStudy(studyId).getStudyMetadata().getName());
+                for (Integer studyId : projection.getStudyIds()) {
+                    includeStudy.add(projection.getStudy(studyId).getStudyMetadata().getName());
                 }
                 if (includeStudy.isEmpty()) {
                     query.put(INCLUDE_STUDY.key(), NONE);
@@ -684,22 +747,17 @@ public class VariantQueryParser {
                     query.put(INCLUDE_STUDY.key(), includeStudy);
                 }
             }
-            if (!isValidParam(query, INCLUDE_SAMPLE) || selectVariantElements.getSamplePagination()) {
-                List<String> includeSample = selectVariantElements.getSamples()
-                        .entrySet()
-                        .stream()
-                        .flatMap(e -> e.getValue()
-                                .stream()
-                                .map(s -> metadataManager.getSampleName(e.getKey(), s)))
-                        .collect(Collectors.toList());
+            if (!isValidParam(query, INCLUDE_SAMPLE) || projection.getSamplePagination()) {
+                List<String> includeSample = projection.getSampleNames().values()
+                        .stream().flatMap(Collection::stream).collect(Collectors.toList());
                 if (includeSample.isEmpty()) {
                     query.put(INCLUDE_SAMPLE.key(), NONE);
                 } else {
                     query.put(INCLUDE_SAMPLE.key(), includeSample);
                 }
             }
-            if (!isValidParam(query, INCLUDE_FILE) || selectVariantElements.getSamplePagination()) {
-                List<String> includeFile = selectVariantElements.getFiles()
+            if (!isValidParam(query, INCLUDE_FILE) || projection.getSamplePagination()) {
+                List<String> includeFile = projection.getFiles()
                         .entrySet()
                         .stream()
                         .flatMap(e -> e.getValue()
@@ -851,15 +909,28 @@ public class VariantQueryParser {
                 if (variant != null) {
                     xrefs.getVariants().add(variant);
                 } else {
-                    if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
+                    if (isVariantAccession(value)
+                            || isClinicalAccession(value)
+                            || isGeneAccession(value)
+                            || isHGVS(value)
+                            || isProteinFeatureId(value)) {
                         xrefs.getOtherXrefs().add(value);
                     } else {
                         genes.add(value);
                     }
                 }
             }
-
         }
+
+        if (!xrefs.getVariants().isEmpty()) {
+            List<Variant> normalizedVariants = normalizeVariants(xrefs.getVariants());
+            for (Variant normalizedVariant : normalizedVariants) {
+                if (!xrefs.getVariants().contains(normalizedVariant)) {
+                    xrefs.getVariants().add(normalizedVariant);
+                }
+            }
+        }
+
         if (isValidParam(query, ANNOT_GENE_ROLE_IN_CANER_GENES)) {
             List<String> thisGenes = query.getAsStringList(ANNOT_GENE_ROLE_IN_CANER_GENES.key());
             if (thisGenes.size() != 1 || !thisGenes.get(0).equals(NONE)) {
@@ -884,6 +955,21 @@ public class VariantQueryParser {
         xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_CLINVAR.key(), OR));
 
         return xrefs;
+    }
+
+    public static Variant normalizeVariant(Variant variant) {
+        return normalizeVariants(Collections.singletonList(variant)).get(0);
+    }
+
+    public static List<Variant> normalizeVariants(List<Variant> variants) {
+        VariantNormalizer variantNormalizer = new VariantNormalizer();
+        List<Variant> normalizedVariants;
+        try {
+            normalizedVariants = variantNormalizer.normalize(variants, false);
+        } catch (NonStandardCompliantSampleField e) {
+            throw VariantQueryException.internalException(e);
+        }
+        return normalizedVariants;
     }
 
     public static ParsedQuery<KeyOpValue<String, Float>> parseFreqFilter(Query query, QueryParam queryParam) {

@@ -62,6 +62,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.operations.variant.*;
@@ -887,6 +888,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 variantCommandOptions.internalJobOptions.jobId, token);
         inferredSexAnalysis.setStudyId(cliOptions.study)
                 .setIndividualId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
                 .start();
     }
 
@@ -1016,6 +1018,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         ObjectMap params = new ExomiserWrapperParams(
                 cliOptions.sample,
+                cliOptions.clinicalAnalysisType,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 

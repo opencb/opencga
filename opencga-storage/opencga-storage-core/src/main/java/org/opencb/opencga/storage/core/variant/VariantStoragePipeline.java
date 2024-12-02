@@ -61,6 +61,7 @@ import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -176,9 +177,14 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 Integer fileId = getMetadataManager().getFileId(studyMetadata.getId(), fileName, true);
                 if (fileId != null) {
                     // File is indexed. Mark as non indexed.
-                    getMetadataManager().updateFileMetadata(studyMetadata.getId(), fileId, fileMetadata -> {
-                        fileMetadata.setIndexStatus(TaskMetadata.Status.NONE);
-                    });
+                    FileMetadata fileMetadata = getMetadataManager().getFileMetadata(studyMetadata.getId(), fileId);
+                    if (fileMetadata.getIndexStatus() == TaskMetadata.Status.INVALID) {
+                        throw StorageEngineException.invalidFileStatus(fileId, fileName);
+                    } else if (fileMetadata.getIndexStatus() != TaskMetadata.Status.NONE) {
+                        getMetadataManager().updateFileMetadata(studyMetadata.getId(), fileId, fm -> {
+                            fm.setIndexStatus(TaskMetadata.Status.NONE);
+                        });
+                    }
                     logger.info("File '{}' already loaded. Force reload!", fileName);
                 }
             }

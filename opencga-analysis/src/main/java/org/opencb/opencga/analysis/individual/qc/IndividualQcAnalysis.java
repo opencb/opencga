@@ -20,13 +20,13 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
@@ -64,11 +64,11 @@ public class IndividualQcAnalysis extends OpenCgaTool {
     private Sample sample;
     private String motherSampleId;
     private String fatherSampleId;
-    private Map<String, Double> karyotypicSexThresholds;
     private IndividualQualityControl qualityControl;
     private IndividualQcAnalysisExecutor executor;
 
     public IndividualQcAnalysis() {
+        super();
     }
 
     @Override
@@ -80,19 +80,15 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             throw new ToolException("Missing study ID.");
         }
 
-        // Check permissions
-        try {
-            Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
-            String userId = catalogManager.getUserManager().getUserId(token);
-            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_INDIVIDUALS);
-        } catch (CatalogException e) {
-            throw new ToolException(e);
+        // Set default inferred sex method, if empty
+        if (StringUtils.isEmpty(inferredSexMethod)) {
+            inferredSexMethod = COVERAGE_RATIO_INFERRED_SEX_METHOD;
         }
 
+        // Main check (this function is shared with the endpoint individual/qc/run)
+        checkParameters(individualId, sampleId, inferredSexMethod, studyId, catalogManager, token);
+
         // Get individual
-        if (StringUtils.isEmpty(individualId)) {
-            throw new ToolException("Missing individual ID.");
-        }
         individual = IndividualQcUtils.getIndividualById(studyId, individualId, catalogManager, token);
 
         // Get samples of that individual, but only germline samples
@@ -103,22 +99,18 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             throw new ToolException("Germline sample not found for individual '" + individualId + "'");
         }
 
-        if (childGermlineSamples.size() > 1) {
-            if (StringUtils.isNotEmpty(sampleId)) {
-                for (Sample germlineSample : childGermlineSamples) {
-                    if (sampleId.equals(germlineSample.getId())) {
-                        sample = germlineSample;
-                        break;
-                    }
+        if (StringUtils.isNotEmpty(sampleId)) {
+            for (Sample germlineSample : childGermlineSamples) {
+                if (sampleId.equals(germlineSample.getId())) {
+                    sample = germlineSample;
+                    break;
                 }
-                if (sample == null) {
-                    throw new ToolException("The provided sample '" + sampleId + "' not found in the individual '" + individualId + "'");
-                }
-            } else {
-                // If multiple germline samples, we take the first one
-                sample = childGermlineSamples.get(0);
+            }
+            if (sample == null) {
+                throw new ToolException("The provided sample '" + sampleId + "' not found in the individual '" + individualId + "'");
             }
         } else {
+            // If multiple germline samples, we take the first one
             sample = childGermlineSamples.get(0);
         }
 
@@ -136,10 +128,6 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             if (CollectionUtils.isNotEmpty(fatherGermlineSamples)) {
                 fatherSampleId = fatherGermlineSamples.get(0).getId();
             }
-        }
-
-        if (StringUtils.isEmpty(inferredSexMethod)) {
-            inferredSexMethod = COVERAGE_RATIO_INFERRED_SEX_METHOD;
         }
     }
 
@@ -175,8 +163,8 @@ public class IndividualQcAnalysis extends OpenCgaTool {
                 .setInferredSexMethod(inferredSexMethod)
                 .setQualityControl(qualityControl);
 
-        step(INFERRED_SEX_STEP, () -> runInferredSex());
-        step(MENDELIAN_ERRORS_STEP, () -> runMendelianError());
+        step(INFERRED_SEX_STEP, this::runInferredSex);
+        step(MENDELIAN_ERRORS_STEP, this::runMendelianError);
 
         // Finally, update individual quality control
         try {
@@ -195,38 +183,23 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         if (CollectionUtils.isNotEmpty(qualityControl.getInferredSexReports())) {
             for (InferredSexReport inferredSexReport : qualityControl.getInferredSexReports()) {
                 if (inferredSexReport.getMethod().equals(inferredSexMethod)) {
-                    addWarning("Skipping inferred sex: it was already computed using method '" + inferredSexMethod + "'");
+                    String msg = "Skipping inferred sex: it was already computed using method '" + inferredSexMethod + "'";
+                    logger.warn(msg);
+                    addWarning(msg);
                     return;
                 }
             }
         }
 
-        if (!COVERAGE_RATIO_INFERRED_SEX_METHOD.equals(inferredSexMethod)) {
-            addWarning("Skipping inferred sex: unknown inferred sex method '" + inferredSexMethod + "'. Please, use '"
-                    + COVERAGE_RATIO_INFERRED_SEX_METHOD + "'");
-            return;
-        }
-
-        File inferredSexBamFile;
+        Map<String, Double> karyotypicSexThresholds;
+        Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(ID).resolve("karyotypic_sex_thresholds.json");
         try {
-            inferredSexBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), studyId,
-                    getVariantStorageManager().getCatalogManager().getFileManager(), getToken());
-        } catch (ToolException e) {
-            throw new ToolException(e);
-        }
-
-        if (inferredSexBamFile == null) {
-            addWarning("Skipping inferred sex: BAM file not found for sample '" + sample.getId() + "' of individual '" +
-                    individual.getId() + "'");
-            return;
-        }
-
-        try {
-            Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(ID).resolve("karyotypic_sex_thresholds.json");
             karyotypicSexThresholds = JacksonUtils.getDefaultNonNullObjectMapper().readerFor(Map.class).readValue(thresholdsPath.toFile());
         } catch (IOException e) {
-            addWarning("Skipping inferred sex: something wrong happened when loading the karyotypic sex thresholds file"
-                    + " (karyotypic_sex_thresholds.json)");
+            String msg = "Skipping inferred sex: something wrong happened when loading the karyotypic sex thresholds file: "
+                    + thresholdsPath.toAbsolutePath();
+            logger.warn(msg);
+            addWarning(msg);
             return;
         }
         executor.setQcType(IndividualQcAnalysisExecutor.QcType.INFERRED_SEX)
@@ -236,23 +209,49 @@ public class IndividualQcAnalysis extends OpenCgaTool {
 
     private void runMendelianError() throws ToolException {
         if (CollectionUtils.isNotEmpty(qualityControl.getMendelianErrorReports())) {
-            addWarning("Skipping mendelian error: it was already computed");
+            String msg = "Skipping mendelian error: it was already computed";
+            logger.warn(msg);
+            addWarning(msg);
             return;
         }
 
         // Sanity check
         if (sample == null || StringUtils.isEmpty(sample.getId())) {
-            addWarning("Skipping mendelian error: missing child sample ID.");
+            String msg = "Skipping mendelian error: missing child sample ID";
+            logger.warn(msg);
+            addWarning(msg);
             return;
         }
 
         if (StringUtils.isEmpty(motherSampleId) && StringUtils.isEmpty(fatherSampleId)) {
-            addWarning("Skipping mendelian error: both mother and father sample IDs are empty but in order to compute mendelian"
-                    + " errors at least one of them has to be not empty.");
+            String msg = "Skipping mendelian error: both mother and father sample IDs are empty but in order to compute mendelian"
+                    + " errors at least one of them has to be not empty";
+            logger.warn(msg);
+            addWarning(msg);
             return;
         }
 
         executor.setQcType(IndividualQcAnalysisExecutor.QcType.MENDELIAN_ERRORS).execute();
+    }
+
+    public static void checkParameters(String individualId, String sampleId, String inferredSexMethod, String studyId,
+                                       CatalogManager catalogManager, String token) throws ToolException, CatalogException {
+        // Check permissions
+        try {
+            Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
+            String userId = catalogManager.getUserManager().getUserId(token);
+            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_INDIVIDUALS);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+
+        if (StringUtils.isNotEmpty(inferredSexMethod) && !inferredSexMethod.equals(COVERAGE_RATIO_INFERRED_SEX_METHOD)) {
+            throw new ToolException("Unknown inferred sex method: '" + inferredSexMethod + "'. Valid values: "
+                    + COVERAGE_RATIO_INFERRED_SEX_METHOD);
+        }
+
+        // Check inferred sex analysis parameters
+        InferredSexAnalysis.checkParameters(individualId, sampleId, studyId, catalogManager, token);
     }
 
     public String getStudyId() {

@@ -10,7 +10,8 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -111,9 +112,8 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     protected VariantQueryResult<Variant> query(Query query, QueryOptions options) {
-        options = options == null ? QueryOptions.empty() : options;
-        query = variantStorageEngine.preProcessQuery(query, options);
-        return dbAdaptor.get(query, options);
+        ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
+        return dbAdaptor.get(variantQuery);
     }
 
     protected ObjectMap getOptions() {
@@ -381,18 +381,22 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         VariantQueryResult<Variant> result = query(new Query(SAMPLE_METADATA.key(), true).append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL), options);
         System.out.println("samples(ALL) = " + result.getSamples());
 
-        for (int i : new int[]{1, 3, 6, 8, 10}) {
-            result = query(new Query(VariantQueryParam.SAMPLE_SKIP.key(), i).append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL).append(SAMPLE_METADATA.key(), true), options);
+        int numSamples = metadataManager.getStudyIds().stream().mapToInt(id -> metadataManager.getIndexedSamples(id).size()).sum();
+        assertEquals(8, numSamples);
+        for (int i : new int[]{1, 3, 6, numSamples, 10}) {
+            result = query(new VariantQuery().sampleSkip(i).includeSampleAll().sampleMetadata(true), options);
 //            System.out.println("samples(SKIP=" + i + ") = " + result.getSamples());
-            assertEquals(Math.max(0, 8 - i), result.getSamples().values().stream().mapToInt(List::size).sum());
-            assertEquals(Math.max(0, 8 - i), result.getNumSamples().intValue());
-            assertEquals(8, result.getNumTotalSamples().intValue());
+            int expected = Math.max(0, numSamples - i);
+            assertEquals("Skip = " + i + " , expected " + expected + " out of 8 samples", expected, result.getSamples().values().stream().mapToInt(List::size).sum());
+            assertEquals("Skip = " + i + " , expected " + expected + " out of 8 samples", expected, result.getNumSamples().intValue());
+            assertEquals(numSamples, result.getNumTotalSamples().intValue());
 
-            result = query(new Query(VariantQueryParam.SAMPLE_LIMIT.key(), i).append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL).append(SAMPLE_METADATA.key(), true), options);
+            result = query(new VariantQuery().sampleLimit(i).includeSampleAll().sampleMetadata(true), options);
 //            System.out.println("samples(LIMIT=" + i + ") = " + result.getSamples());
-            assertEquals(Math.min(8, i), result.getSamples().values().stream().mapToInt(List::size).sum());
-            assertEquals(Math.min(8, i), result.getNumSamples().intValue());
-            assertEquals(8, result.getNumTotalSamples().intValue());
+            expected = Math.min(numSamples, i);
+            assertEquals("Limit = " + i + " , expected " + expected + " out of 8 samples", expected, result.getSamples().values().stream().mapToInt(List::size).sum());
+            assertEquals("Limit = " + i + " , expected " + expected + " out of 8 samples", expected, result.getNumSamples().intValue());
+            assertEquals(numSamples, result.getNumTotalSamples().intValue());
         }
     }
 
@@ -1333,6 +1337,16 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         assertEquals(0, variant.getStudies().get(0).getFiles().size());
     }
 
+    @Test
+    public void testSampleDataUnnormalized() throws Exception {
+        // Check unnormalized queries
+        Variant variant = variantStorageEngine.getSampleData("1:10352:T:TA", study1, new QueryOptions()).first();
+        assertEquals("1:10353:-:A", variant.toString());
+        System.out.println("variant = " + variant.toJson());
+        assertNotNull(variant.getStudies().get(0).getStats(DEFAULT_COHORT));
+        assertEquals(4, variant.getStudies().get(0).getSamples().size());
+        assertEquals(4, variant.getStudies().get(0).getFiles().size());
+    }
 
     @Test
     public void testCount() throws StorageEngineException {

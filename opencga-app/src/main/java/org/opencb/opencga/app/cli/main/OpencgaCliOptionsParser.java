@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-10-31 OpenCB
+* Copyright 2015-2024-04-25 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -128,6 +128,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("clinical", analysisClinicalCommandOptions);
         JCommander analysisClinicalSubCommands = jCommander.getCommands().get("clinical");
         analysisClinicalSubCommands.addCommand("acl-update", analysisClinicalCommandOptions.updateAclCommandOptions);
+        analysisClinicalSubCommands.addCommand("annotation-sets-load", analysisClinicalCommandOptions.loadAnnotationSetsCommandOptions);
         analysisClinicalSubCommands.addCommand("clinical-configuration-update", analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions);
         analysisClinicalSubCommands.addCommand("create", analysisClinicalCommandOptions.createCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);
@@ -152,12 +153,14 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("acl", analysisClinicalCommandOptions.aclCommandOptions);
         analysisClinicalSubCommands.addCommand("delete", analysisClinicalCommandOptions.deleteCommandOptions);
         analysisClinicalSubCommands.addCommand("update", analysisClinicalCommandOptions.updateCommandOptions);
+        analysisClinicalSubCommands.addCommand("annotation-sets-annotations-update", analysisClinicalCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
         analysisClinicalSubCommands.addCommand("info", analysisClinicalCommandOptions.infoCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-create", analysisClinicalCommandOptions.createInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-clear", analysisClinicalCommandOptions.clearInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-delete", analysisClinicalCommandOptions.deleteInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-revert", analysisClinicalCommandOptions.revertInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-update", analysisClinicalCommandOptions.updateInterpretationCommandOptions);
+        analysisClinicalSubCommands.addCommand("report-update", analysisClinicalCommandOptions.updateReportCommandOptions);
 
         jobsCommandOptions = new JobsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("jobs", jobsCommandOptions);
@@ -188,6 +191,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
         adminSubCommands.addCommand("users-search", adminCommandOptions.searchUsersCommandOptions);
         adminSubCommands.addCommand("users-sync", adminCommandOptions.syncUsersCommandOptions);
+        adminSubCommands.addCommand("update-groups-users", adminCommandOptions.usersUpdateGroupsCommandOptions);
 
         individualsCommandOptions = new IndividualsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("individuals", individualsCommandOptions);
@@ -326,6 +330,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         filesSubCommands.addCommand("grep", filesCommandOptions.grepCommandOptions);
         filesSubCommands.addCommand("head", filesCommandOptions.headCommandOptions);
         filesSubCommands.addCommand("image", filesCommandOptions.imageCommandOptions);
+        filesSubCommands.addCommand("move", filesCommandOptions.moveCommandOptions);
         filesSubCommands.addCommand("refresh", filesCommandOptions.refreshCommandOptions);
         filesSubCommands.addCommand("tail", filesCommandOptions.tailCommandOptions);
         filesSubCommands.addCommand("list", filesCommandOptions.listCommandOptions);

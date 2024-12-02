@@ -21,7 +21,7 @@ import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.common.VersionUtils;
+import org.opencb.commons.utils.VersionUtils;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -55,19 +55,10 @@ public class CellBaseUtilsTest {
     @Parameters(name = "{0}{1}/?assembly={2}%dataRelease={3}")
     public static List<Object[]> data() {
         return Arrays.asList(
-                new Object[]{"http://ws.opencb.org/cellbase-4.7.3/", "v4", "grch37", null},
-                new Object[]{"http://ws.opencb.org/cellbase-4.8.2/", "v4", "grch37", null},
-//                new Object[]{"http://ws.opencb.org/cellbase-4.8.3/", "v4", "grch37", null},
-//                new Object[]{"http://ws.opencb.org/cellbase-4.9.0/", "v4", "grch37", null},
-//                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37", null},
-
-//                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch37", "1"},
-//                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch38", "2"},
-                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38", null},
-                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "1"},
-                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "2"},
                 new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch37", "1"},
-                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch38", "2"});
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch38", "3"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.8", "grch37", "1"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.8", "grch38", "3"});
     }
 
     @Parameter(0)
@@ -205,7 +196,6 @@ public class CellBaseUtilsTest {
 
     @Test
     public void validateGeneNames() {
-        Assume.assumeTrue(!version.startsWith("v4"));
         Assume.assumeFalse("HGNC ids not supported in GRCH37", assembly.equalsIgnoreCase("grch37"));
         List<String> validated = cellBaseUtils.validateGenes(Arrays.asList("BRCA2", "NonExistingGene", "HGNC:12363"), true);
         assertEquals(Arrays.asList("BRCA2", "TSC2"), validated);
@@ -214,6 +204,7 @@ public class CellBaseUtilsTest {
     @Test
     @Ignore
     public void testGetVariant() throws Exception {
+        Assume.assumeFalse(assembly.equalsIgnoreCase("grch37"));
         assertEquals(new Variant("19:44934489:G:A"), cellBaseUtils.getVariant("rs2571174"));
         assertEquals(Arrays.asList(new Variant("19:44934489:G:A"), new Variant("1:7797503:C:G")),
                 cellBaseUtils.getVariants(Arrays.asList("rs2571174", "rs41278952")));
@@ -254,10 +245,10 @@ public class CellBaseUtilsTest {
     }
 
     @Test
-    public void testAnnotationWithHGMDToken() throws IOException {
-        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.3.0"));
-        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch37"));
-        String hgmdToken = System.getenv("CELLBASE_HGMD_TOKEN");
+    public void testAnnotationWithHGMDApiKey() throws IOException {
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.4.0"));
+        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch38"));
+        String hgmdToken = System.getenv("CELLBASE_HGMD_APIKEY");
         Assume.assumeTrue(StringUtils.isNotEmpty(hgmdToken));
 
         cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, hgmdToken,
@@ -270,14 +261,14 @@ public class CellBaseUtilsTest {
                 .getAnnotationByVariantIds(Collections.singletonList("10:113588287:G:A"), queryOptions);
         VariantAnnotation variantAnnotation = v.firstResult();
         assertEquals(2, variantAnnotation.getTraitAssociation().size());
-        assertEquals("clinvar", variantAnnotation.getTraitAssociation().get(0).getSource().getName());
-        assertEquals("hgmd", variantAnnotation.getTraitAssociation().get(1).getSource().getName());
+        assertTrue(variantAnnotation.getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("clinvar")));
+        assertTrue(variantAnnotation.getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
     }
 
     @Test
-    public void testAnnotationWithoutHGMDToken() throws IOException {
-        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.3.0"));
-        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch37"));
+    public void testAnnotationWithoutHGMDAPiKey() throws IOException {
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.4.0"));
+        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch38"));
 
         cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, "",
                 new ClientConfiguration().setVersion(version)

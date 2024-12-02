@@ -17,11 +17,11 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.DataModelsUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
@@ -36,6 +36,9 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.opencga.server.generator.models.RestParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,14 +224,13 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         return this;
     }
 
-    public String getObjectAsJSON(Object o) throws Exception {
-        String jsonInString = "Data model not found.";
-        try {
-            jsonInString = DataModelsUtils.dataModelToJsonString(o.getClass());
-        } catch (Exception e) {
-            CommandLineUtils.error(e);
-        }
-        return jsonInString;
+    public String getObjectAsJSON(String objectCategory, String objectPath) throws Exception {
+        return super.getObjectAsJSON(objectCategory, objectPath, openCGAClient);
+    }
+
+    private boolean isNumeric(String type) {
+
+        return "int".equals(type) || "Long".equals(type) || "Float".equals(type) || "double".equals(type);
     }
 
     public RestResponse<AuthenticationResponse> saveSession(String user, AuthenticationResponse response) throws ClientException, IOException {

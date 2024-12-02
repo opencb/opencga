@@ -7,6 +7,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
@@ -17,6 +18,9 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor {
@@ -26,6 +30,8 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
 
     public static final String STDOUT_FILENAME = "stdout.txt";
     public static final String STDERR_FILENAME = "stderr.txt";
+
+    public static final String DOCKER_CLI_MSG = "Docker CLI: ";
 
     public String getDockerImageName() {
         return "opencb/opencga-ext-tools";

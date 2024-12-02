@@ -16,31 +16,30 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.VariableSet;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAnalysis> {
+public class ClinicalAnalysisConverter extends AnnotableConverter<ClinicalAnalysis> {
 
     public ClinicalAnalysisConverter() {
         super(ClinicalAnalysis.class);
     }
 
     @Override
-    public Document convertToStorageType(ClinicalAnalysis clinicalAnalysis) {
-        Document document = super.convertToStorageType(clinicalAnalysis);
+    public Document convertToStorageType(ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList) {
+        Document document = super.convertToStorageType(clinicalAnalysis, variableSetList);
         document.put(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), clinicalAnalysis.getUid());
         document.put(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), clinicalAnalysis.getStudyUid());
 
@@ -56,6 +55,24 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         validateProbandToUpdate(document);
         validatePanelsToUpdate(document);
         validateFilesToUpdate(document);
+        validateReportToUpdate(document);
+    }
+
+    public void validateReportToUpdate(Document document) {
+        Document report = document.get(ClinicalAnalysisDBAdaptor.QueryParams.REPORT.key(), Document.class);
+        if (report != null) {
+            List<Document> files = report.getList(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), Document.class);
+            if (CollectionUtils.isNotEmpty(files)) {
+                List<Document> filteredFiles = getReducedFileDocuments(files);
+                report.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), filteredFiles);
+            }
+
+            files = report.getList(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), Document.class);
+            if (CollectionUtils.isNotEmpty(files)) {
+                List<Document> filteredFiles = getReducedFileDocuments(files);
+                report.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), filteredFiles);
+            }
+        }
     }
 
     public void validateInterpretationToUpdate(Document document) {
@@ -139,8 +156,17 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         }
     }
 
+    public void validateFilesToUpdate(Document document, String key) {
+        List<Document> files = (List) document.get(key);
+        List<Document> reducedFiles = getReducedFileDocuments(files);
+        document.put(key, reducedFiles);
+    }
+
     public void validateFilesToUpdate(Document document) {
-        List<Document> files = (List) document.get(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key());
+        validateFilesToUpdate(document, ClinicalAnalysisDBAdaptor.QueryParams.FILES.key());
+    }
+
+    private static List<Document> getReducedFileDocuments(List<Document> files) {
         if (files != null) {
             // We make sure we don't store duplicates
             Map<Long, File> fileMap = new HashMap<>();
@@ -154,12 +180,13 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
                 }
             }
 
-            document.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(),
-                    fileMap.entrySet().stream()
-                            .map(entry -> new Document()
-                                    .append(FileDBAdaptor.QueryParams.PATH.key(), entry.getValue().getPath())
-                                    .append(FileDBAdaptor.QueryParams.UID.key(), entry.getValue().getUid()))
-                            .collect(Collectors.toList()));
+            return fileMap.values().stream()
+                    .map(file -> new Document()
+                            .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath())
+                            .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid()))
+                    .collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
         }
     }
 

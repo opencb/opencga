@@ -56,6 +56,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         public GrepCommandOptions grepCommandOptions;
         public HeadCommandOptions headCommandOptions;
         public ImageCommandOptions imageCommandOptions;
+        public MoveCommandOptions moveCommandOptions;
         public RefreshCommandOptions refreshCommandOptions;
         public TailCommandOptions tailCommandOptions;
         public ListCommandOptions listCommandOptions;
@@ -88,6 +89,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         this.grepCommandOptions = new GrepCommandOptions();
         this.headCommandOptions = new HeadCommandOptions();
         this.imageCommandOptions = new ImageCommandOptions();
+        this.moveCommandOptions = new MoveCommandOptions();
         this.refreshCommandOptions = new RefreshCommandOptions();
         this.tailCommandOptions = new TailCommandOptions();
         this.listCommandOptions = new ListCommandOptions();
@@ -265,7 +267,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--type"}, description = "Enum param allowed values: FILE, VIRTUAL, DIRECTORY", required = false, arity = 1)
         public String type;
     
-        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, PDF, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
         public String format;
     
         @Parameter(names = {"--bioformat"}, description = "Enum param allowed values: MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, OTHER_PLINK, OTHER_VCF, OTHER_PED, VCF4, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, REFERENCE_GENOME, NONE, UNKNOWN", required = false, arity = 1)
@@ -327,19 +329,19 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of file IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list file UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of file names", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of file names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String name; 
     
-        @Parameter(names = {"--path"}, description = "Comma separated list of paths", required = false, arity = 1)
+        @Parameter(names = {"--path"}, description = "Comma separated list of paths. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String path; 
     
-        @Parameter(names = {"--uri", "--input", "-i"}, description = "Comma separated list of uris", required = false, arity = 1)
+        @Parameter(names = {"--uri", "--input", "-i"}, description = "Comma separated list of uris. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String uri; 
     
         @Parameter(names = {"--type"}, description = "File type, either FILE or DIRECTORY", required = false, arity = 1)
@@ -378,7 +380,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
         public String description; 
     
-        @Parameter(names = {"--tags"}, description = "Tags", required = false, arity = 1)
+        @Parameter(names = {"--tags"}, description = "Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String tags; 
     
         @Parameter(names = {"--size"}, description = "File size", required = false, arity = 1)
@@ -609,19 +611,19 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of file IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list file UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of file names", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of file names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String name; 
     
-        @Parameter(names = {"--path"}, description = "Comma separated list of paths", required = false, arity = 1)
+        @Parameter(names = {"--path"}, description = "Comma separated list of paths. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String path; 
     
-        @Parameter(names = {"--uri", "--input", "-i"}, description = "Comma separated list of uris", required = false, arity = 1)
+        @Parameter(names = {"--uri", "--input", "-i"}, description = "Comma separated list of uris. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String uri; 
     
         @Parameter(names = {"--type"}, description = "File type, either FILE or DIRECTORY", required = false, arity = 1)
@@ -660,7 +662,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
         public String description; 
     
-        @Parameter(names = {"--tags"}, description = "Tags", required = false, arity = 1)
+        @Parameter(names = {"--tags"}, description = "Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String tags; 
     
         @Parameter(names = {"--size"}, description = "File size", required = false, arity = 1)
@@ -790,9 +792,6 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--sample-ids-action"}, description = "Action to be performed if the array of samples is being updated.", required = false, arity = 1)
         public String sampleIdsAction = "ADD"; 
     
-        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String name;
-    
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
@@ -805,10 +804,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--sample-ids"}, description = "The body web service sampleIds parameter", required = false, arity = 1)
         public String sampleIds;
     
-        @Parameter(names = {"--checksum"}, description = "The body web service checksum parameter", required = false, arity = 1)
-        public String checksum;
-    
-        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, PDF, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
         public String format;
     
         @Parameter(names = {"--bioformat"}, description = "Enum param allowed values: MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, OTHER_PLINK, OTHER_VCF, OTHER_PED, VCF4, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, REFERENCE_GENOME, NONE, UNKNOWN", required = false, arity = 1)
@@ -870,9 +866,6 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
-    
-        @Parameter(names = {"--size"}, description = "The body web service size parameter", required = false, arity = 1)
-        public Long size;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
@@ -988,6 +981,35 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
+    
+    }
+
+    @Parameters(commandNames = {"move"}, commandDescription ="Move file to a different path")
+    public class MoveCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--file"}, description = "File id, UUID or name.", required = true, arity = 1)
+        public String file; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--path"}, description = "The body web service path parameter", required = false, arity = 1)
+        public String path;
     
     }
 

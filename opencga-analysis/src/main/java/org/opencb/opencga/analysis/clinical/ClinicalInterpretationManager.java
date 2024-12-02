@@ -61,7 +61,7 @@ import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantEngine;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantException;
@@ -824,7 +824,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             OpenCGAResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
                     Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
             User user = userQueryResult.first();
-            return new ClinicalAnalyst(userId, user.getName(), user.getEmail(), "", "");
+            return new ClinicalAnalyst(userId, user.getName(), user.getEmail(), "", Collections.emptyMap());
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

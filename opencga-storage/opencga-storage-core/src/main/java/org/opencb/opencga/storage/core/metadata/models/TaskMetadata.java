@@ -34,10 +34,39 @@ public class TaskMetadata {
 
     public enum Status {
         NONE,
+        /**
+         * Active task.
+         * Running, but not finished
+         */
         RUNNING,
-        DONE,       // Finished, but some work still needed (optional)
+        /**
+         * Active task.
+         * Finished, but some work still needed (optional status)
+         */
+        DONE,
+        /**
+         * Active task.
+         * Currently, paused.
+         * Errors found during the execution. Needs to be resumed or cleaned.
+         */
+        ERROR,
+        /**
+         * Finished.
+         * Ready to be used
+         */
         READY,
-        ERROR
+        /**
+         * Finished.
+         * Task was aborted, cancelled or rolled back.
+         * Any needed clean might be executed by other running tasks
+         */
+        ABORTED,
+        /**
+         * Finished.
+         * Task finished with invalid results.
+         * Similar to "ERROR" status, but this can't be resumed. Needs to be cleaned first.
+         */
+        INVALID,
     }
 
     public enum Type {

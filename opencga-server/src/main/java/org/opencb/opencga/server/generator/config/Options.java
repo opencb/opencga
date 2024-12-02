@@ -7,6 +7,7 @@ import java.util.List;
 public class Options {
 
     private String outputDir;
+    private String version;
 
     private List<String> ignoreTypes;
 
@@ -19,6 +20,15 @@ public class Options {
 
     public Options setOutputDir(String outputDir) {
         this.outputDir = outputDir;
+        return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public Options setVersion(String version) {
+        this.version = version;
         return this;
     }
 

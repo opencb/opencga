@@ -9,7 +9,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.tools.commons.Converter;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -17,7 +16,6 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -26,7 +24,7 @@ import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
@@ -50,7 +48,6 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.addSamplesMetadataIfRequested;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BATCH;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BUFFER;
 import static org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor.SAMPLE_INDEX_TABLE_SOURCE;
@@ -64,7 +61,6 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
 
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final VariantHadoopDBAdaptor dbAdaptor;
-    private final VariantQueryParser variantQueryParser;
     private final VariantQueryProjectionParser variantQueryProjectionParser;
     private static Logger logger = LoggerFactory.getLogger(SampleIndexOnlyVariantQueryExecutor.class);
 
@@ -82,7 +78,6 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         super(dbAdaptor.getMetadataManager(), storageEngineId, options);
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.dbAdaptor = dbAdaptor;
-        variantQueryParser = new VariantQueryParser(null, getMetadataManager());
         variantQueryProjectionParser = new VariantQueryProjectionParser(getMetadataManager());
         partialDataBufferSize = options.getInt(SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BUFFER.key(),
                 SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BUFFER.defaultValue());
@@ -91,7 +86,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     }
 
     @Override
-    public boolean canUseThisExecutor(Query query, QueryOptions options) {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) {
+        VariantQuery query = variantQuery.getQuery();
         if (SampleIndexQueryParser.validSampleIndexQuery(query)) {
 
             if (isFullyCoveredQuery(query, options)) {
@@ -101,26 +97,16 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         return false;
     }
 
-    @Override
-    public DataResult<Long> count(Query query) {
-        StopWatch stopWatch = StopWatch.createStarted();
-        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
-        long count = sampleIndexDBAdaptor.count(sampleIndexQuery);
-        return new DataResult<>(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), Collections.emptyList(), 1,
-                Collections.singletonList(count), count);
-    }
-
     /**
      * Fetch results exclusively from SampleSecondaryIndex.
      *
-     * @param inputQuery Query
-     * @param options    Options
+     * @param variantQuery Query
      * @param iterator   Shall the resulting object be an iterator instead of a DataResult
      * @return           DataResult or Iterator with the variants that matches the query
      */
     @Override
-    protected Object getOrIterator(Query inputQuery, QueryOptions options, boolean iterator) {
-        Query query = new Query(inputQuery);
+    protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) {
+        Query query = new Query(variantQuery.getQuery());
         query.put(SampleIndexQueryParser.INCLUDE_PARENTS_COLUMN, true);
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
 
@@ -128,7 +114,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
 
         boolean count;
         Future<Long> asyncCountFuture;
-        if (shouldGetCount(options, iterator)) {
+        if (shouldGetCount(variantQuery.getInputOptions(), iterator)) {
             count = true;
             asyncCountFuture = THREAD_POOL.submit(() -> {
                 StopWatch stopWatch = StopWatch.createStarted();
@@ -141,13 +127,12 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             asyncCountFuture = null;
         }
 
-        VariantDBIterator variantIterator = getVariantDBIterator(sampleIndexQuery, inputQuery, options);
+        VariantDBIterator variantIterator = getVariantDBIterator(sampleIndexQuery, variantQuery);
 
         if (iterator) {
             return variantIterator;
         } else {
-            VariantQueryResult<Variant> result =
-                    addSamplesMetadataIfRequested(variantIterator.toDataResult(), inputQuery, options, getMetadataManager());
+            VariantQueryResult<Variant> result = variantIterator.toDataResult(variantQuery);
             if (count) {
                 result.setApproximateCount(false);
                 try {
@@ -161,8 +146,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         }
     }
 
-    private VariantDBIterator getVariantDBIterator(SampleIndexQuery sampleIndexQuery, Query inputQuery, QueryOptions options) {
-        ParsedVariantQuery parsedQuery = variantQueryParser.parseQuery(inputQuery, options, true);
+    private VariantDBIterator getVariantDBIterator(SampleIndexQuery sampleIndexQuery, ParsedVariantQuery parsedQuery) {
+        QueryOptions options = parsedQuery.getInputOptions();
         VariantDBIterator variantIterator;
         if (parsedQuery.getProjection().getStudyIds().isEmpty()) {
             logger.info("Using sample index iterator Iterator<Variant>");
@@ -174,9 +159,9 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             try {
                 rawIterator = sampleIndexDBAdaptor.rawIterator(sampleIndexQuery, options);
             } catch (IOException e) {
-                throw VariantQueryException.internalException(e).setQuery(inputQuery);
+                throw VariantQueryException.internalException(e).setQuery(parsedQuery.getInputQuery());
             }
-            boolean includeAll = inputQuery.getBoolean("includeAllFromSampleIndex", false);
+            boolean includeAll = parsedQuery.getInputQuery().getBoolean("includeAllFromSampleIndex", false);
             SampleVariantIndexEntryToVariantConverter converter = new SampleVariantIndexEntryToVariantConverter(
                     parsedQuery, sampleIndexQuery, dbAdaptor.getMetadataManager(), includeAll);
             variantIterator = VariantDBIterator.wrapper(Iterators.transform(rawIterator, converter::convert));
@@ -198,7 +183,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
 //        ParsedVariantQuery parsedVariantQuery = variantQueryProjectionParser.parseQuery(query, options, true);
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
 
-        return isQueryCovered(query) && isIncludeCovered(sampleIndexQuery, inputQuery, options);
+        return isQueryCovered(sampleIndexQuery.getUncoveredQuery())
+                && isIncludeCovered(sampleIndexQuery, inputQuery, options);
     }
 
     private boolean isQueryCovered(Query query) {

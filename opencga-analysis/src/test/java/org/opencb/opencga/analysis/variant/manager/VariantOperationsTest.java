@@ -54,8 +54,8 @@ import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -349,12 +349,25 @@ public class VariantOperationsTest {
             assertEquals(sample, 1, sampleIndex.getVersion().intValue());
         }
 
+        try {
+            toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, STUDY,
+                    new VariantSecondarySampleIndexParams()
+                            .setFamilyIndex(true)
+                            .setSample(Arrays.asList(mother)),
+                    Paths.get(opencga.createTmpOutdir()), "index", token);
+            fail("Expected to fail");
+        } catch (ToolException e) {
+            assertEquals("Exception from step 'familyIndex'", e.getMessage());
+            assertEquals("No trios found for samples [" + mother + "]", e.getCause().getMessage());
+        }
+
         // Run family index. The family index status should be READY on offspring
-        toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, STUDY,
+        ExecutionResult result = toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, STUDY,
                 new VariantSecondarySampleIndexParams()
                         .setFamilyIndex(true)
                         .setSample(Arrays.asList(ParamConstants.ALL)),
                 Paths.get(opencga.createTmpOutdir()), "index", token);
+        assertEquals(0, result.getEvents().size());
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
@@ -503,12 +516,19 @@ public class VariantOperationsTest {
 
         String newCellbase = "https://uk.ws.zettagenomics.com/cellbase/";
         String newCellbaseVersion = "v5.2";
+        String newCellbaseDataRelease = "1";
 
         assertNotEquals(newCellbase, cellBaseUtils.getURL());
         assertNotEquals(newCellbaseVersion, cellBaseUtils.getVersion());
+        assertNotEquals(newCellbaseDataRelease, cellBaseUtils.getDataRelease());
 
-        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase, newCellbaseVersion, "1", ""), false, null, token);
+        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase, newCellbaseVersion, newCellbaseDataRelease, ""), false, null, token);
         CellBaseConfiguration cellbaseConfiguration = catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getCellbase();
+
+        assertEquals(newCellbase, cellbaseConfiguration.getUrl());
+        assertEquals(newCellbaseVersion, cellbaseConfiguration.getVersion());
+        assertEquals(newCellbaseDataRelease, cellbaseConfiguration.getDataRelease());
+
 //        assertTrue(family.getPedigreeGraph() != null);
     }
 

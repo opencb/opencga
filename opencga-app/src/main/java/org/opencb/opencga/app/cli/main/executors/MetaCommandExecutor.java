@@ -32,6 +32,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class MetaCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "meta";
     public MetaCommandOptions metaCommandOptions;
 
     public MetaCommandExecutor(MetaCommandOptions metaCommandOptions) throws CatalogAuthenticationException {
@@ -105,7 +106,11 @@ public class MetaCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing model in Meta command line");
 
         MetaCommandOptions.ModelCommandOptions commandOptions = metaCommandOptions.modelCommandOptions;
-        return openCGAClient.getMetaClient().model();
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("model", commandOptions.model);
+
+        return openCGAClient.getMetaClient().model(queryParams);
     }
 
     private RestResponse<String> ping() throws Exception {

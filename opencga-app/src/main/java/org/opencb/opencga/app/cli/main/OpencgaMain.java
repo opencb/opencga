@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.processors.CommandProcessor;
@@ -48,6 +49,7 @@ public class OpencgaMain {
             parser.printUsage();
             System.exit(0);
         }
+        PrintUtils.printSpace();
         checkLogLevel(args);
         checkMode(args);
         logger.debug(Arrays.toString(args));
@@ -62,6 +64,8 @@ public class OpencgaMain {
             logger.error("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
         }
     }
+
+
 
     private static void checkMode(String[] args) {
         if (ArrayUtils.contains(args, "--shell")) {
@@ -128,7 +132,7 @@ public class OpencgaMain {
             }
             Shell.printShellHeaderMessage();
             // Create a shell executor instance
-            shell = new Shell(options);
+            shell = new Shell(options, new OpenCgaCompleterImpl(), new CommandProcessor());
             logger.debug("Shell created ");
             // Launch execute command to begin the execution
             shell.execute();
@@ -160,7 +164,7 @@ public class OpencgaMain {
         }
         logger.debug("CLI parsed params ::: " + CommandLineUtils.argsToString(args));
         String shortcut = CommandLineUtils.getShortcut(args);
-        args = CommandLineUtils.processShortCuts(args);
+        args = CommandLineUtils.processShortCuts(args, new OpencgaCliOptionsParser());
         if (args != null) {
             logger.debug("Process shortcut result ::: " + CommandLineUtils.argsToString(args));
         } else {

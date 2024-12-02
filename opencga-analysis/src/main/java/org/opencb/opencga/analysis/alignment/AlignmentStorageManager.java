@@ -34,12 +34,16 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.models.FileInfo;
 import org.opencb.opencga.analysis.models.StudyInfo;
+import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
+import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -87,22 +91,18 @@ public class AlignmentStorageManager extends StorageManager {
         initStatsMap();
     }
 
-    //-------------------------------------------------------------------------
-    // INDEX
-    //-------------------------------------------------------------------------
-
-    public void index(String study, String inputFile, boolean overwrite, String outdir, String token) throws ToolException {
-        ObjectMap params = new ObjectMap();
-
-        AlignmentIndexOperation indexOperation = new AlignmentIndexOperation();
-        indexOperation.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
-
-        indexOperation.setStudy(study);
-        indexOperation.setInputFile(inputFile);
-        indexOperation.setOverwrite(overwrite);
-
-        indexOperation.start();
-    }
+//    //-------------------------------------------------------------------------
+//    // INDEX
+//    //-------------------------------------------------------------------------
+//
+//    public void index(String study, String inputFile, String outdir, String token) throws ToolException {
+//        ToolRunner toolRunner = new ToolRunner("", catalogManager, storageEngineFactory);
+//
+//        AlignmentIndexParams params = new AlignmentIndexParams();
+//        params.setFileId(inputFile);
+//        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study), Paths.get(outdir),
+//                jobId, token);
+//    }
 
     //-------------------------------------------------------------------------
     // QUERY
@@ -230,7 +230,7 @@ public class AlignmentStorageManager extends StorageManager {
         String species = projectQueryResult.first().getOrganism().getScientificName();
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
         String dataRelease = projectQueryResult.first().getCellbase().getDataRelease();
-        String cellbaseToken = projectQueryResult.first().getCellbase().getToken();
+        String cellbaseToken = projectQueryResult.first().getCellbase().getApiKey();
 
         for (String geneName : geneNames) {
 
@@ -451,7 +451,7 @@ public class AlignmentStorageManager extends StorageManager {
         String species = projectQueryResult.first().getOrganism().getScientificName();
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
         String dataRelease = projectQueryResult.first().getCellbase().getDataRelease();
-        String cellbaseToken = projectQueryResult.first().getCellbase().getToken();
+        String cellbaseToken = projectQueryResult.first().getCellbase().getApiKey();
         CellBaseClient cellBaseClient = new CellBaseClient(species, assembly, dataRelease, cellbaseToken,
                 projectQueryResult.first().getCellbase().toClientConfiguration());
         GeneClient geneClient = cellBaseClient.getGeneClient();

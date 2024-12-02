@@ -26,8 +26,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.List;
@@ -38,7 +40,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 05/06/17.
  */
-public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysis> {
+public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<ClinicalAnalysis> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -67,10 +69,15 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         CONSENT("consent", OBJECT, ""),
         PRIORITY("priority", OBJECT, ""),
         PRIORITY_ID("priority.id", TEXT, ""),
-        ANALYST("analyst", TEXT_ARRAY, ""),
-        ANALYST_ID("analyst.id", TEXT, ""),
-        ANALYST_ASSIGNED_BY("analyst.assignedBy", TEXT, ""),
+        ANALYSTS("analysts", TEXT_ARRAY, ""),
+        ANALYSTS_ID("analysts.id", TEXT, ""),
+        ANALYSTS_ASSIGNED_BY("analysts.assignedBy", TEXT, ""),
         REPORT("report", OBJECT, ""),
+        REPORT_UPDATE("report_update", OBJECT, ""),   // Made up key to be able to set inner fields and not the entire object
+        REPORT_SUPPORTING_EVIDENCES("report.supportingEvidences", TEXT_ARRAY, ""),
+        REPORT_FILES("report.files", TEXT_ARRAY, ""),
+        REQUEST("request", OBJECT, ""),
+        RESPONSIBLE("responsible", OBJECT, ""),
         FLAGS("flags", OBJECT, ""),
         FLAGS_ID("flags.id", TEXT, ""),
         RELEASE("release", INTEGER, ""),
@@ -109,7 +116,11 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
-        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
+        STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
+
+        ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
+        ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
+        ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
 
@@ -154,6 +165,61 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         }
     }
 
+    enum ReportQueryParams implements QueryParam {
+        TITLE("title", STRING, ""),
+        OVERVIEW("overview", STRING, ""),
+        DISCUSSION("discussion", OBJECT, ""),
+        LOGO("logo", STRING, ""),
+        SIGNED_BY("signedBy", STRING, ""),
+        SIGNATURE("signature", STRING, ""),
+        DATE("date", STRING, ""),
+        COMMENTS("comments", OBJECT, ""),
+        SUPPORTING_EVIDENCES("supportingEvidences", TEXT_ARRAY, ""),
+        FILES("files", TEXT_ARRAY, "");
+
+        private static Map<String, ReportQueryParams> map;
+
+        static {
+            map = new LinkedMap();
+            for (ReportQueryParams params : ReportQueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        ReportQueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, ReportQueryParams> getMap() {
+            return map;
+        }
+
+        public static ReportQueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
     default boolean exists(long clinicalAnalysisId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), clinicalAnalysisId)).getNumMatches() > 0;
     }
@@ -170,14 +236,16 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
 
     OpenCGAResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<ClinicalAudit> clinicalAuditList, QueryOptions options)
+    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList,
+                         List<ClinicalAudit> clinicalAuditList, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<ClinicalAnalysis> update(long id, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
+    OpenCGAResult<ClinicalAnalysis> update(long id, ObjectMap parameters, List<VariableSet> variableSetList,
+                                           List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<ClinicalAnalysis> update(Query query, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList,
-                                           QueryOptions queryOptions)
+    OpenCGAResult<ClinicalAnalysis> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList,
+                                           List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options)

@@ -26,7 +26,6 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StopWatch;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -47,7 +46,6 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
@@ -55,10 +53,12 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
@@ -115,25 +115,16 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 
 public class HadoopVariantStorageEngine extends VariantStorageEngine implements Configurable {
     public static final String STORAGE_ENGINE_ID = "hadoop";
 
-    public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
-            VariantType.SNV, VariantType.SNP,
-            VariantType.INDEL,
-            VariantType.MNV, VariantType.MNP,
-            VariantType.INSERTION, VariantType.DELETION,
-            VariantType.CNV,
-            VariantType.COPY_NUMBER, VariantType.COPY_NUMBER_LOSS, VariantType.COPY_NUMBER_GAIN,
-            VariantType.DUPLICATION, VariantType.TANDEM_DUPLICATION, VariantType.TRANSLOCATION,
-            VariantType.BREAKEND,
-            VariantType.SV, VariantType.SYMBOLIC
+    public static final EnumSet<VariantType> UNSUPPORTED_VARIANT_TYPE_SET = EnumSet.of(
+            VariantType.NO_VARIATION, VariantType.MIXED
     );
+    public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.complementOf(UNSUPPORTED_VARIANT_TYPE_SET);
 
     public static final String FILE_ID = "fileId";
     public static final String STUDY_ID = "studyId";
@@ -699,6 +690,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
+    protected TaskMetadata preRemove(String study, List<String> files, List<String> samples) throws StorageEngineException {
+        return super.preRemove(study, files, samples);
+    }
+
+    @Override
     public void removeFiles(String study, List<String> files, URI outdir) throws StorageEngineException {
         remove(study, files, Collections.emptyList(), outdir);
     }
@@ -1031,45 +1027,47 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public ParsedVariantQuery parseQuery(Query originalQuery, QueryOptions options) {
         try {
-            Query query = preProcessQuery(originalQuery, options);
-            ParsedVariantQuery parsedVariantQuery = getVariantQueryParser().parseQuery(query, options, true);
-            parsedVariantQuery.setInputQuery(originalQuery);
-            return parsedVariantQuery;
+            return getVariantQueryParser().parseQuery(originalQuery, options);
         } catch (StorageEngineException e) {
             throw VariantQueryException.internalException(e).setQuery(originalQuery);
         }
     }
 
     @Override
-    public Query preProcessQuery(Query originalQuery, QueryOptions options) {
-        Query query = super.preProcessQuery(originalQuery, options);
-
-        VariantStorageMetadataManager metadataManager;
-        CellBaseUtils cellBaseUtils;
-        try {
-            metadataManager = getMetadataManager();
-            cellBaseUtils = getCellBaseUtils();
-        } catch (StorageEngineException e) {
-            throw VariantQueryException.internalException(e);
-        }
-        List<String> studyNames = metadataManager.getStudyNames();
-
-        if (isValidParam(query, STUDY) && studyNames.size() == 1) {
-            String study = query.getString(STUDY.key());
-            if (!isNegated(study)) {
-                try {
-                    // Check that study exists
-                    getMetadataManager().getStudyId(study);
-                } catch (StorageEngineException e) {
-                    throw VariantQueryException.internalException(e);
-                }
-                query.remove(STUDY.key());
-            }
-        }
-
-        convertGenesToRegionsQuery(query, cellBaseUtils);
-        return query;
+    protected VariantQueryParser getVariantQueryParser() throws StorageEngineException {
+        return new HadoopVariantQueryParser(getCellBaseUtils(), getMetadataManager());
     }
+
+//    @Override
+//    public Query preProcessQuery(Query originalQuery, QueryOptions options) {
+//        Query query = super.preProcessQuery(originalQuery, options);
+//
+//        VariantStorageMetadataManager metadataManager;
+//        CellBaseUtils cellBaseUtils;
+//        try {
+//            metadataManager = getMetadataManager();
+//            cellBaseUtils = getCellBaseUtils();
+//        } catch (StorageEngineException e) {
+//            throw VariantQueryException.internalException(e);
+//        }
+//        List<String> studyNames = metadataManager.getStudyNames();
+//
+//        if (isValidParam(query, STUDY) && studyNames.size() == 1) {
+//            String study = query.getString(STUDY.key());
+//            if (!isNegated(study)) {
+//                try {
+//                    // Check that study exists
+//                    getMetadataManager().getStudyId(study);
+//                } catch (StorageEngineException e) {
+//                    throw VariantQueryException.internalException(e);
+//                }
+//                query.remove(STUDY.key());
+//            }
+//        }
+//
+//        convertGenesToRegionsQuery(query, cellBaseUtils);
+//        return query;
+//    }
 
     @Override
     protected List<VariantAggregationExecutor> initVariantAggregationExecutors() {
@@ -1164,8 +1162,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public DataResult<Variant> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
-        return new HBaseVariantSampleDataManager(getDBAdaptor(), getCellBaseUtils()).getSampleData(variant, study, options);
+    protected VariantSampleDataManager getVariantSampleDataManager() throws StorageEngineException {
+        return new HBaseVariantSampleDataManager(getDBAdaptor());
     }
 
     @Override
@@ -1177,7 +1175,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         executors.add(new SampleIndexCompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this, getSampleIndexDBAdaptor(), getDBAdaptor()));
         executors.add(new BreakendVariantQueryExecutor(
-                getMetadataManager(), getStorageEngineId(), getOptions(), new SampleIndexVariantQueryExecutor(
+                getStorageEngineId(), getOptions(), new SampleIndexVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions()));

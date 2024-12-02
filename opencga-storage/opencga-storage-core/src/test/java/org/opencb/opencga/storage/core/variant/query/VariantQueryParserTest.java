@@ -101,10 +101,17 @@ public class VariantQueryParserTest implements DummyVariantStorageTest {
 
     @Test
     public void testParseClinicalCombinations() {
-        assertEquals(Arrays.asList("cosmic"), VariantQueryParser.parseClinicalCombinationsList(new Query(ANNOT_CLINICAL.key(), "cosmic")));
-        assertEquals(Arrays.asList("clinvar", "cosmic"), VariantQueryParser.parseClinicalCombinationsList(new Query(ANNOT_CLINICAL.key(), "clinvar,cosmic")));
-        assertEquals(Arrays.asList("cosmic_pathogenic"), VariantQueryParser.parseClinicalCombinationsList(new Query(ANNOT_CLINICAL.key(), "cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic")));
-        assertEquals(Arrays.asList("cosmic_confirmed"), VariantQueryParser.parseClinicalCombinationsList(new Query(ANNOT_CLINICAL.key(), "cosmic").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true)));
-        assertEquals(Arrays.asList("clinvar_pathogenic_confirmed", "clinvar_likely_pathogenic_confirmed", "cosmic_pathogenic_confirmed", "cosmic_likely_pathogenic_confirmed"), VariantQueryParser.parseClinicalCombinationsList(new Query(ANNOT_CLINICAL.key(), "clinvar,cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic,likely_pathogenic").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true)));
+        assertEquals(Arrays.asList("cosmic"), variantQueryParser.parseQuery(
+                new Query(ANNOT_CLINICAL.key(), "cosmic"), new QueryOptions()).getClinicalCombinationsList());
+        assertEquals(Arrays.asList("clinvar", "cosmic"), variantQueryParser.parseQuery(
+                new Query(ANNOT_CLINICAL.key(), "clinvar,cosmic"), new QueryOptions()).getClinicalCombinationsList());
+        assertEquals(Arrays.asList("cosmic_pathogenic"), variantQueryParser.parseQuery(
+                new Query(ANNOT_CLINICAL.key(), "cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic"), new QueryOptions()).getClinicalCombinationsList());
+        assertEquals(Arrays.asList("cosmic_confirmed"), variantQueryParser.parseQuery(
+                new Query(ANNOT_CLINICAL.key(), "cosmic").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true), new QueryOptions()).getClinicalCombinationsList());
+        assertEquals(Arrays.asList("clinvar_pathogenic_confirmed", "clinvar_likely_pathogenic_confirmed", "cosmic_pathogenic_confirmed", "cosmic_likely_pathogenic_confirmed"), variantQueryParser.parseQuery(new Query()
+                .append(ANNOT_CLINICAL.key(), "clinvar,cosmic")
+                .append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic,likely_pathogenic")
+                .append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true), new QueryOptions()).getClinicalCombinationsList());
     }
 }

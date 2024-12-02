@@ -110,9 +110,12 @@ public class StudyManager extends AbstractManager {
     public static final QueryOptions INCLUDE_STUDY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UUID.key(),
             StudyDBAdaptor.QueryParams.FQN.key()));
-    static final QueryOptions INCLUDE_VARIABLE_SET = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
-    static final QueryOptions INCLUDE_CONFIGURATION =
-            new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
+    static final QueryOptions INCLUDE_VARIABLE_SET = keepFieldInQueryOptions(INCLUDE_STUDY_IDS,
+            StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
+    static final QueryOptions INCLUDE_CONFIGURATION = keepFieldInQueryOptions(INCLUDE_STUDY_IDS,
+            StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
+    static final QueryOptions INCLUDE_VARIABLE_SET_AND_CONFIGURATION = keepFieldsInQueryOptions(INCLUDE_STUDY_IDS,
+            Arrays.asList(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key(), StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
     protected Logger logger;
 
@@ -1426,7 +1429,7 @@ public class StudyManager extends AbstractManager {
             }
 
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
-            OpenCGAResult result = studyDBAdaptor.addFieldToVariableSet(variableSet.getUid(), variable, userId);
+            OpenCGAResult result = studyDBAdaptor.addFieldToVariableSet(study.getUid(), variableSet.getUid(), variable, userId);
             auditManager.audit(userId, Enums.Action.ADD_VARIABLE_TO_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1454,7 +1457,7 @@ public class StudyManager extends AbstractManager {
 
         try {
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
-            OpenCGAResult result = studyDBAdaptor.removeFieldFromVariableSet(variableSet.getUid(), variableId, userId);
+            OpenCGAResult result = studyDBAdaptor.removeFieldFromVariableSet(study.getUid(), variableSet.getUid(), variableId, userId);
             auditManager.audit(userId, Enums.Action.REMOVE_VARIABLE_FROM_VARIABLE_SET, Enums.Resource.STUDY,
                     variableSet.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

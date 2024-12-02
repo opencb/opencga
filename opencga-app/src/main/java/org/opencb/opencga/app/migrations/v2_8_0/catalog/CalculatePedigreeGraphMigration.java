@@ -8,6 +8,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.family.PedigreeGraphInitAnalysis;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationRun;
 import org.opencb.opencga.catalog.migration.MigrationTool;
@@ -103,12 +104,11 @@ public class CalculatePedigreeGraphMigration extends MigrationTool {
     public List<String> getStudies() throws CatalogException {
         Set<String> studies = new LinkedHashSet<>();
         QueryOptions projectOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("id", "studies"));
-        QueryOptions familyOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("id", "members", "pedigreeGraph"));
         for (Project project : catalogManager.getProjectManager().search(new Query(), projectOptions, token).getResults()) {
             if (CollectionUtils.isNotEmpty(project.getStudies())) {
                 for (Study study : project.getStudies()) {
                     String id = study.getFqn();
-                    try (DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(id, new Query(), familyOptions, token)) {
+                    try (DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(id, new Query(), FamilyManager.INCLUDE_FAMILY_FOR_PEDIGREE, token)) {
                         while (iterator.hasNext()) {
                             Family family = iterator.next();
                             if (PedigreeGraphUtils.hasMinTwoGenerations(family)

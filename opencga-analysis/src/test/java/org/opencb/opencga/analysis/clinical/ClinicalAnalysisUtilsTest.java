@@ -76,6 +76,10 @@ public class ClinicalAnalysisUtilsTest {
         variantStorageManager.index(clinicalTest.studyFqn, "HG005.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
         variantStorageManager.index(clinicalTest.studyFqn, "HG006.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
         variantStorageManager.index(clinicalTest.studyFqn, "HG007.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG104.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG105.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG106.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG107.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
 
         return clinicalTest;
     }
