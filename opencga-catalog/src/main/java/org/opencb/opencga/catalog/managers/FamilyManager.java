@@ -83,6 +83,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.UUID.key(),
             FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
             FamilyDBAdaptor.QueryParams.MEMBERS.key()));
+    public static final QueryOptions INCLUDE_FAMILY_FOR_PEDIGREE = keepFieldsInQueryOptions(INCLUDE_FAMILY_IDS, Arrays.asList(
+            FamilyDBAdaptor.QueryParams.PEDIGREE_GRAPH.key(), FamilyDBAdaptor.QueryParams.DISORDERS.key(),
+            FamilyDBAdaptor.QueryParams.MEMBERS.key() + "." + IndividualDBAdaptor.QueryParams.ID.key(),
+            FamilyDBAdaptor.QueryParams.MEMBERS.key() + "." + IndividualDBAdaptor.QueryParams.SEX.key(),
+            FamilyDBAdaptor.QueryParams.MEMBERS.key() + "." + IndividualDBAdaptor.QueryParams.DISORDERS.key(),
+            FamilyDBAdaptor.QueryParams.MEMBERS.key() + "." + IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
+            FamilyDBAdaptor.QueryParams.MEMBERS.key() + "." + IndividualDBAdaptor.QueryParams.FATHER.key()
+                    + "." + IndividualDBAdaptor.QueryParams.ID.key(),
+            FamilyDBAdaptor.QueryParams.MEMBERS.key() + "." + IndividualDBAdaptor.QueryParams.MOTHER.key()
+                    + "." + IndividualDBAdaptor.QueryParams.ID.key()));
     protected static Logger logger = LoggerFactory.getLogger(FamilyManager.class);
     private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize;numMembers[0..20]:2";
     private UserManager userManager;
