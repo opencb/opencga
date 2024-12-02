@@ -4,7 +4,6 @@ public class SsoConfiguration extends AbstractModuleConfiguration {
 
     private String casServerPrefixUrl;
     private String serverName;
-    private String pythonBin;
 
     private String protocol; // CAS, SAML1 values supported
     private SsoPrincipalAttributesConfiguration attributes;
@@ -13,12 +12,11 @@ public class SsoConfiguration extends AbstractModuleConfiguration {
         super();
     }
 
-    public SsoConfiguration(boolean active, String casServerPrefixUrl, String serverName, String pythonBin,
-                            String protocol, SsoPrincipalAttributesConfiguration attributes) {
+    public SsoConfiguration(boolean active, String casServerPrefixUrl, String serverName, String protocol,
+                            SsoPrincipalAttributesConfiguration attributes) {
         super(active);
         this.casServerPrefixUrl = casServerPrefixUrl;
         this.serverName = serverName;
-        this.pythonBin = pythonBin;
         this.protocol = protocol;
         this.attributes = attributes;
     }
@@ -28,7 +26,6 @@ public class SsoConfiguration extends AbstractModuleConfiguration {
         final StringBuilder sb = new StringBuilder("SsoConfiguration{");
         sb.append("casServerPrefixUrl='").append(casServerPrefixUrl).append('\'');
         sb.append(", serverName='").append(serverName).append('\'');
-        sb.append(", pythonBin='").append(pythonBin).append('\'');
         sb.append(", protocol='").append(protocol).append('\'');
         sb.append(", attributes=").append(attributes);
         sb.append(", active=").append(active);
@@ -51,15 +48,6 @@ public class SsoConfiguration extends AbstractModuleConfiguration {
 
     public SsoConfiguration setServerName(String serverName) {
         this.serverName = serverName;
-        return this;
-    }
-
-    public String getPythonBin() {
-        return pythonBin;
-    }
-
-    public SsoConfiguration setPythonBin(String pythonBin) {
-        this.pythonBin = pythonBin;
         return this;
     }
 

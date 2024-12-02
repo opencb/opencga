@@ -224,6 +224,8 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);
         usersSubCommands.addCommand("search", usersCommandOptions.searchCommandOptions);
+        usersSubCommands.addCommand("sso-login", usersCommandOptions.loginSsoCommandOptions);
+        usersSubCommands.addCommand("sso-logout", usersCommandOptions.logoutSsoCommandOptions);
         usersSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
         usersSubCommands.addCommand("configs", usersCommandOptions.configsCommandOptions);
         usersSubCommands.addCommand("configs-update", usersCommandOptions.updateConfigsCommandOptions);

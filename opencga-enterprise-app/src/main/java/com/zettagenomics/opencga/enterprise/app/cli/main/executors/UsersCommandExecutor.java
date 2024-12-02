@@ -81,6 +81,9 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             case "search":
                 queryResponse = search();
                 break;
+            case "sso-login":
+                queryResponse = loginSso();
+                break;
             case "info":
                 queryResponse = info();
                 break;
@@ -208,6 +211,14 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         queryParams.putIfNotEmpty("authenticationId", commandOptions.authenticationId);
 
         return enterpriseOpenCGAClient.getEnterpriseUserClient().search(queryParams);
+    }
+
+    private RestResponse<AuthenticationResponse> loginSso() throws Exception {
+        logger.debug("Executing loginSso in Users command line");
+
+        ObjectMap queryParams = new ObjectMap();
+        com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor customUsersCommandExecutor = new com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
+        return customUsersCommandExecutor.loginSso();
     }
 
     private RestResponse<User> info() throws Exception {
