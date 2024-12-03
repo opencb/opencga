@@ -15,6 +15,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.mr.StreamVariantMapper;
 
 import java.io.IOException;
 import java.net.URI;
@@ -109,8 +110,14 @@ public class HadoopVariantWalkerTest extends VariantStorageBaseTest implements H
         URI outdir = newOutputUri();
 
         String cmdPython1 = "python variant_walker.py walker_example Cut --length 30";
-
+        variantStorageEngine.getOptions().put(StreamVariantMapper.DOCKER_PRUNE_OPTS, " --filter label!=opencga_scope='test'");
         variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), dockerImage, cmdPython1);
+
+        // Ensure that the docker image is not pruned
+        Command dockerImages = new Command(new String[]{"docker", "images", "--filter", "label=opencga_scope=test"}, Collections.emptyMap());
+        dockerImages.run();
+        assertEquals(0, dockerImages.getExitValue());
+        assertEquals(2, dockerImages.getOutput().split("\n").length);
     }
 
     private static String buildDocker() throws IOException {

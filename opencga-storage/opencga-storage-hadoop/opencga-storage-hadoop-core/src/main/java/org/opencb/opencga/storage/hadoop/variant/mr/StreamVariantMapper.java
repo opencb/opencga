@@ -44,6 +44,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
     public static final String COMMANDLINE_BASE64 = "opencga.variant.stream.commandline_base64";
     public static final String ADDENVIRONMENT_PARAM = "opencga.variant.stream.addenvironment";
     public static final String HAS_REDUCE = "opencga.variant.stream.hasReduce";
+    public static final String DOCKER_PRUNE_OPTS = "opencga.variant.stream.docker.prune.opts";
 
     private final boolean verboseStdout = false;
     private static final long REPORTER_OUT_DELAY = 10 * 1000L;
@@ -269,16 +270,20 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
     @Override
     protected void cleanup(Mapper<Object, Variant, VariantLocusKey, Text>.Context context) throws IOException, InterruptedException {
         closeProcess(context, true);
-        dockerPruneImages();
+        dockerPruneImages(context.getConfiguration());
         super.cleanup(context);
     }
 
-    private void dockerPruneImages() {
+    private void dockerPruneImages(Configuration conf) {
         try {
             LOG.info("Pruning docker images");
             int maxImages = 5;
+
+
+            String dockerPruneOpts = conf.get(DOCKER_PRUNE_OPTS, "");
+
             Command command = new Command(new String[]{"bash", "-c", "[ $(docker image ls  --format json | wc -l) -gt " + maxImages + " ] "
-                    + "&& echo 'Run docker image prune' && docker image prune -f --all --filter label!=storage='do_not_delete'"
+                    + "&& echo 'Run docker image prune' && docker image prune -f --all " + dockerPruneOpts
                     + "|| echo 'Skipping docker image prune. Less than " + maxImages + " images.'"}, Collections.emptyMap());
             command.run();
             int ecode = command.getExitValue();

@@ -6,7 +6,7 @@ WORKDIR /app
 
 ARG PYTHON_PATH="."
 
-LABEL storage="do_not_delete"
+LABEL opencga_scope="test"
 
 RUN echo ${PYTHON_PATH}
 # Copy the python directory contents into the container at /app
