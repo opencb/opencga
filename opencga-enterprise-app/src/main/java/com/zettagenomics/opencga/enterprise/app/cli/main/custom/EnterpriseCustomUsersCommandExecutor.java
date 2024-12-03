@@ -1,6 +1,7 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.custom;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.zettagenomics.opencga.enterprise.app.cli.main.options.UsersCommandOptions;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
@@ -66,7 +67,7 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
         }
     }
 
-    public RestResponse<AuthenticationResponse> loginSso() throws Exception {
+    public RestResponse<AuthenticationResponse> loginSso(UsersCommandOptions.LoginSsoCommandOptions commandOptions) throws Exception {
         logger.debug("Executing loginSso in Users command line");
 
         Path pythonScriptPath = Paths.get(appHome)
@@ -152,4 +153,7 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
         return res;
     }
 
+    public RestResponse<AuthenticationResponse> logoutSso(UsersCommandOptions.LogoutSsoCommandOptions logoutSsoCommandOptions) throws Exception {
+        return null;
+    }
 }
