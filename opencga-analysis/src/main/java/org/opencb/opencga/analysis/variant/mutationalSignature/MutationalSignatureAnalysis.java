@@ -199,7 +199,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
         List<String> resourceKeys = Arrays.asList(GRCH38_FA, GRCH38_FAI, GRCH38_GZI, GRCH37_FA, GRCH37_FAI, GRCH37_FAI);
         for (String resourceKey : resourceKeys) {
-            String resourceName = ConfigurationUtils.getToolResource(REFERENCE_GENOMES, null, resourceKey, configuration);
+            String resourceName = ConfigurationUtils.getToolResource(ID, null, resourceKey, configuration);
             resourceManager.checkResourcePath(resourceName);
         }
 

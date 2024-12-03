@@ -227,8 +227,9 @@ public class ExomiserAnalysisUtils  {
         List<String> resourceKeys = new ArrayList<>();
         resourceKeys.add(PHENOTYPE_RESOURCE_KEY);
 
-        // Check assembly
-        checkAssembly(study, catalogManager, token);
+        // Check assembly and add its resource key
+        String assemblyKey = checkAssembly(study, catalogManager, token);
+        resourceKeys.add(assemblyKey.toUpperCase(Locale.ROOT));
 
         // Check exomiser version
         String exomiserVersion = inputVersion;
