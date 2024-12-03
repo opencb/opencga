@@ -166,9 +166,10 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
     }
 
+    @Deprecated
     @GET
     @Path("/sso/login")
-    @ApiOperation(httpMethod = "GET", value = "Single Sign On.", response = Map.class)
+    @ApiOperation(httpMethod = "GET", value = "Single Sign On.", response = Map.class, hidden = true)
     public Response singleSignOn(@ApiParam(value = "Callback URL") @QueryParam("url") String service) {
         if (StringUtils.isEmpty(service)) {
             return createErrorResponse(new CatalogParameterException("Missing mandatory field 'service'"));
@@ -197,9 +198,10 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         return Response.temporaryRedirect(targetURIForRedirection).build();
     }
 
+    @Deprecated
     @GET
     @Path("/sso/logout")
-    @ApiOperation(httpMethod = "GET", value = "Logout from Single Sign On.", response = Map.class)
+    @ApiOperation(httpMethod = "GET", value = "Logout from Single Sign On.", response = Map.class, hidden = true)
     public Response singleSignOnLogout(
             @ApiParam(value = "Callback URL") @QueryParam("url") String service,
             @ApiParam(value = "Successfully logout from CAS service", hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout
