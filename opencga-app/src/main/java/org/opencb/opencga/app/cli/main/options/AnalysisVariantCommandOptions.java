@@ -723,9 +723,6 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--sort"}, description = "The body web service sort parameter", required = false, help = true, arity = 0)
         public boolean sort = false;
     
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
-        public String outdir;
-    
         @Parameter(names = {"--output-file-name"}, description = "The body web service outputFileName parameter", required = false, arity = 1)
         public String outputFileName;
     

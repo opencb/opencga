@@ -559,7 +559,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "unknownGenotype", commandOptions.unknownGenotype, true);
             putNestedIfNotNull(beanParams, "sampleMetadata", commandOptions.sampleMetadata, true);
             putNestedIfNotNull(beanParams, "sort", commandOptions.sort, true);
-            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
             putNestedIfNotEmpty(beanParams, "outputFileName", commandOptions.outputFileName, true);
             putNestedIfNotEmpty(beanParams, "outputFileFormat", commandOptions.outputFileFormat, true);
             putNestedIfNotEmpty(beanParams, "variantsFile", commandOptions.variantsFile, true);

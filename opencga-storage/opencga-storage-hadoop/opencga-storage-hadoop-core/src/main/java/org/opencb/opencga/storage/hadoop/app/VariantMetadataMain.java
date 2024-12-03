@@ -56,7 +56,10 @@ public class VariantMetadataMain extends AbstractMain {
         public VariantMetadataCommandExecutor(String argsContext) {
             super(argsContext);
             addSubCommand(Arrays.asList("tables", "table"), "[help|list]", new HBaseTablesCommandExecutor());
-            addSubCommand(Arrays.asList("study-metadata", "sm", "study", "studies"), "[help|list|id|read|write|rename] <metadata_table> ..",
+            addSubCommand(Arrays.asList("project-metadata", "p", "pm", "project"), "[help|read|write|replace] <metadata_table> ..",
+                    new ProjectCommandExecutor());
+            addSubCommand(Arrays.asList("study-metadata", "sm", "study", "studies"), "[help|list|id|read|write|replace|rename] "
+                            + "<metadata_table> ..",
                     new StudyCommandExecutor());
             addSubCommand(Arrays.asList("file-metadata", "fm", "file", "files"), "[help|list|id|read|write] <metadata_table> ...",
                     new FileCommandExecutor());
@@ -115,6 +118,37 @@ public class VariantMetadataMain extends AbstractMain {
         }
     }
 
+    private static class ProjectCommandExecutor extends VariantStorageMetadataManagerCommandExecutor {
+        ProjectCommandExecutor() {
+            addSubCommand(Arrays.asList("read", "info"),
+                    "<metadata_table>",
+                    args -> {
+                        print(mm.getProjectMetadata());
+                    }
+            );
+            addSubCommand(Arrays.asList("write", "update"),
+                    "<metadata_table> <projectMetadata.json>",
+                    args -> {
+                        ProjectMetadata projectMetadata = readFile(getArg(args, 1), ProjectMetadata.class);
+                        mm.updateProjectMetadata(pm -> projectMetadata);
+                    }
+            );
+            addSubCommand(Arrays.asList("replace"),
+                    "<metadata_table> <origProjectMetadata.json> <newProjectMetadata.json>",
+                    args -> {
+                        ProjectMetadata origProjectMetadata = readFile(getArg(args, 1), ProjectMetadata.class);
+                        ProjectMetadata newProjectMetadata = readFile(getArg(args, 2), ProjectMetadata.class);
+                        mm.updateProjectMetadata(pm -> {
+                            if (!pm.equals(origProjectMetadata)) {
+                                throw new IllegalStateException("Original ProjectMetadata does not match!");
+                            }
+                            return newProjectMetadata;
+                        });
+                    }
+            );
+        }
+    }
+
     private static class StudyCommandExecutor extends VariantStorageMetadataManagerCommandExecutor {
         StudyCommandExecutor() {
             addSubCommand(Arrays.asList("list", "search"),
@@ -129,12 +163,34 @@ public class VariantMetadataMain extends AbstractMain {
                         print(mm.getStudyMetadata(getArg(args, 1)));
                     }
             );
+            addSubCommand(Arrays.asList("id"),
+                    "<metadata_table> <study>",
+                    args -> {
+                        print(mm.getStudyId(getArg(args, 1)));
+                    }
+            );
             addSubCommand(Arrays.asList("write", "update"),
                     "<metadata_table> <studyMetadata.json>",
                     args -> {
                         mm.unsecureUpdateStudyMetadata(readFile(getArg(args, 1), StudyMetadata.class));
                     }
             );
+            addSubCommand(Arrays.asList("replace"),
+                    "<metadata_table> <origStudyMetadata.json> <newStudyMetadata.json>",
+                    args -> {
+                        StudyMetadata origStudyMetadata = readFile(getArg(args, 1), StudyMetadata.class);
+                        StudyMetadata newStudyMetadata = readFile(getArg(args, 2), StudyMetadata.class);
+                        if (origStudyMetadata.getId() != newStudyMetadata.getId()) {
+                            throw new IllegalStateException("StudyMetadata IDs do not match!");
+                        }
+                        mm.updateStudyMetadata(origStudyMetadata.getId(), sm -> {
+                            if (!sm.equals(origStudyMetadata)) {
+                                throw new IllegalStateException("Original StudyMetadata does not match!");
+                            }
+                            return newStudyMetadata;
+                        });
+                    });
+
             addSubCommand(Arrays.asList("rename"),
                     "<metadata_table> <currentStudyName> <newStudyName>",
                     args -> {
