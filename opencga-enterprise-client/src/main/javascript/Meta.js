@@ -76,24 +76,6 @@ export default class Meta extends OpenCGAParentClass {
         return this._get("meta", null, null, null, "ping");
     }
 
-    /** Single Sign On.
-    * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.url] - Callback URL.
-    * @returns {Promise} Promise object in the form of RestResponse instance.
-    */
-    loginSso(params) {
-        return this._get("meta", null, "sso", null, "login", params);
-    }
-
-    /** Logout from Single Sign On.
-    * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.url] - Callback URL.
-    * @returns {Promise} Promise object in the form of RestResponse instance.
-    */
-    logoutSso(params) {
-        return this._get("meta", null, "sso", null, "logout", params);
-    }
-
     /** Database status.
     * 
     * @returns {Promise} Promise object in the form of RestResponse instance.

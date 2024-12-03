@@ -38,8 +38,6 @@ public class MetaCommandOptions {
         public FailCommandOptions failCommandOptions;
         public ModelCommandOptions modelCommandOptions;
         public PingCommandOptions pingCommandOptions;
-        public LoginSsoCommandOptions loginSsoCommandOptions;
-        public LogoutSsoCommandOptions logoutSsoCommandOptions;
         public StatusCommandOptions statusCommandOptions;
 
 
@@ -52,8 +50,6 @@ public class MetaCommandOptions {
         this.failCommandOptions = new FailCommandOptions();
         this.modelCommandOptions = new ModelCommandOptions();
         this.pingCommandOptions = new PingCommandOptions();
-        this.loginSsoCommandOptions = new LoginSsoCommandOptions();
-        this.logoutSsoCommandOptions = new LogoutSsoCommandOptions();
         this.statusCommandOptions = new StatusCommandOptions();
     
     }
@@ -101,28 +97,6 @@ public class MetaCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-    }
-
-    @Parameters(commandNames = {"sso-login"}, commandDescription ="Single Sign On.")
-    public class LoginSsoCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--url"}, description = "Callback URL", required = false, arity = 1)
-        public String url; 
-    
-    }
-
-    @Parameters(commandNames = {"sso-logout"}, commandDescription ="Logout from Single Sign On.")
-    public class LogoutSsoCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--url"}, description = "Callback URL", required = false, arity = 1)
-        public String url; 
     
     }
 

@@ -67,7 +67,7 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
         }
     }
 
-    public RestResponse<AuthenticationResponse> loginSso(UsersCommandOptions.LoginSsoCommandOptions commandOptions) throws Exception {
+    public RestResponse<AuthenticationResponse> loginSso(UsersCommandOptions.LoginSsoCommandOptions loginSsoCommandOptions) throws Exception {
         logger.debug("Executing loginSso in Users command line");
 
         Path pythonScriptPath = Paths.get(appHome)
@@ -154,6 +154,8 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
     }
 
     public RestResponse<AuthenticationResponse> logoutSso(UsersCommandOptions.LogoutSsoCommandOptions logoutSsoCommandOptions) throws Exception {
-        return null;
+        logger.debug("Executing logout SSO in Users command line");
+        return super.logout(null);
     }
+
 }

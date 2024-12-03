@@ -24,8 +24,6 @@
 #' | fail | /{apiVersion}/meta/fail |  |
 #' | model | /{apiVersion}/meta/model | model |
 #' | ping | /{apiVersion}/meta/ping |  |
-#' | loginSso | /{apiVersion}/meta/sso/login | url |
-#' | logoutSso | /{apiVersion}/meta/sso/logout | url |
 #' | status | /{apiVersion}/meta/status |  |
 #'
 #' @md
@@ -66,18 +64,6 @@ setMethod("metaClient", "OpencgaR", function(OpencgaR, endpointName, params=NULL
 
         ping=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="ping", params=params, httpMethod="GET", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/meta/sso/login:
-        #' Single Sign On.
-        #' @param url Callback URL.
-        loginSso=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory="sso", subcategoryId=NULL,
-                action="login", params=params, httpMethod="GET", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/meta/sso/logout:
-        #' Logout from Single Sign On.
-        #' @param url Callback URL.
-        logoutSso=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory="sso",
-                subcategoryId=NULL, action="logout", params=params, httpMethod="GET", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/meta/status:
         #' Database status.

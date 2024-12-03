@@ -274,8 +274,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         metaSubCommands.addCommand("fail", metaCommandOptions.failCommandOptions);
         metaSubCommands.addCommand("model", metaCommandOptions.modelCommandOptions);
         metaSubCommands.addCommand("ping", metaCommandOptions.pingCommandOptions);
-        metaSubCommands.addCommand("sso-login", metaCommandOptions.loginSsoCommandOptions);
-        metaSubCommands.addCommand("sso-logout", metaCommandOptions.logoutSsoCommandOptions);
         metaSubCommands.addCommand("status", metaCommandOptions.statusCommandOptions);
 
         organizationsCommandOptions = new OrganizationsCommandOptions(commonCommandOptions, jCommander);

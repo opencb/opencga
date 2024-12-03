@@ -99,30 +99,6 @@ public class MetaClient extends AbstractParentClient {
     }
 
     /**
-     * Single Sign On.
-     * @param params Map containing any of the following optional parameters.
-     *       url: Callback URL.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> loginSso(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("meta", null, "sso", null, "login", params, GET, ObjectMap.class);
-    }
-
-    /**
-     * Logout from Single Sign On.
-     * @param params Map containing any of the following optional parameters.
-     *       url: Callback URL.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> logoutSso(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("meta", null, "sso", null, "logout", params, GET, ObjectMap.class);
-    }
-
-    /**
      * Database status.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
