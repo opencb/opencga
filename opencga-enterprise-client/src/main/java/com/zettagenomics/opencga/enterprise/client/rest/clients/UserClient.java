@@ -128,9 +128,9 @@ public class UserClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> loginSso(ObjectMap params) throws ClientException {
+    public RestResponse<AuthenticationResponse> loginSso(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("users", null, "sso", null, "login", params, GET, ObjectMap.class);
+        return execute("users", null, "sso", null, "login", params, GET, AuthenticationResponse.class);
     }
 
     /**
@@ -140,9 +140,9 @@ public class UserClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> logoutSso(ObjectMap params) throws ClientException {
+    public RestResponse<AuthenticationResponse> logoutSso(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("users", null, "sso", null, "logout", params, GET, ObjectMap.class);
+        return execute("users", null, "sso", null, "logout", params, GET, AuthenticationResponse.class);
     }
 
     /**

@@ -165,6 +165,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<StudyAclEntryList> updateAcl() throws Exception {
         logger.debug("Executing updateAcl in Studies command line");
 
+        ObjectMap queryParams = new ObjectMap();
         StudiesCommandOptions.UpdateAclCommandOptions commandOptions = studiesCommandOptions.updateAclCommandOptions;
 
         StudyAclUpdateParams studyAclUpdateParams = null;
@@ -192,9 +193,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Study> create() throws Exception {
         logger.debug("Executing create in Studies command line");
 
-        StudiesCommandOptions.CreateCommandOptions commandOptions = studiesCommandOptions.createCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.CreateCommandOptions commandOptions = studiesCommandOptions.createCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("project", commandOptions.project);
@@ -235,9 +235,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Study> search() throws Exception {
         logger.debug("Executing search in Studies command line");
 
-        StudiesCommandOptions.SearchCommandOptions commandOptions = studiesCommandOptions.searchCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.SearchCommandOptions commandOptions = studiesCommandOptions.searchCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -260,9 +259,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<AclEntryList> acl() throws Exception {
         logger.debug("Executing acl in Studies command line");
 
-        StudiesCommandOptions.AclCommandOptions commandOptions = studiesCommandOptions.aclCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.AclCommandOptions commandOptions = studiesCommandOptions.aclCommandOptions;
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
 
@@ -272,9 +270,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Study> info() throws Exception {
         logger.debug("Executing info in Studies command line");
 
-        StudiesCommandOptions.InfoCommandOptions commandOptions = studiesCommandOptions.infoCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.InfoCommandOptions commandOptions = studiesCommandOptions.infoCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
 
@@ -284,9 +281,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<AuditRecord> searchAudit() throws Exception {
         logger.debug("Executing searchAudit in Studies command line");
 
-        StudiesCommandOptions.SearchAuditCommandOptions commandOptions = studiesCommandOptions.searchAuditCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.SearchAuditCommandOptions commandOptions = studiesCommandOptions.searchAuditCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -307,9 +303,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<CustomGroup> groups() throws Exception {
         logger.debug("Executing groups in Studies command line");
 
-        StudiesCommandOptions.GroupsCommandOptions commandOptions = studiesCommandOptions.groupsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.GroupsCommandOptions commandOptions = studiesCommandOptions.groupsCommandOptions;
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotNull("silent", commandOptions.silent);
 
@@ -319,9 +314,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Group> updateGroups() throws Exception {
         logger.debug("Executing updateGroups in Studies command line");
 
-        StudiesCommandOptions.UpdateGroupsCommandOptions commandOptions = studiesCommandOptions.updateGroupsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.UpdateGroupsCommandOptions commandOptions = studiesCommandOptions.updateGroupsCommandOptions;
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
@@ -349,9 +343,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Group> updateGroupsUsers() throws Exception {
         logger.debug("Executing updateGroupsUsers in Studies command line");
 
-        StudiesCommandOptions.UpdateGroupsUsersCommandOptions commandOptions = studiesCommandOptions.updateGroupsUsersCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.UpdateGroupsUsersCommandOptions commandOptions = studiesCommandOptions.updateGroupsUsersCommandOptions;
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
@@ -378,9 +371,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Note> createNotes() throws Exception {
         logger.debug("Executing createNotes in Studies command line");
 
-        StudiesCommandOptions.CreateNotesCommandOptions commandOptions = studiesCommandOptions.createNotesCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.CreateNotesCommandOptions commandOptions = studiesCommandOptions.createNotesCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
@@ -412,9 +404,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Note> searchNotes() throws Exception {
         logger.debug("Executing searchNotes in Studies command line");
 
-        StudiesCommandOptions.SearchNotesCommandOptions commandOptions = studiesCommandOptions.searchNotesCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.SearchNotesCommandOptions commandOptions = studiesCommandOptions.searchNotesCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
@@ -432,9 +423,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Note> deleteNotes() throws Exception {
         logger.debug("Executing deleteNotes in Studies command line");
 
-        StudiesCommandOptions.DeleteNotesCommandOptions commandOptions = studiesCommandOptions.deleteNotesCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.DeleteNotesCommandOptions commandOptions = studiesCommandOptions.deleteNotesCommandOptions;
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
         return enterpriseOpenCGAClient.getEnterpriseStudyClient().deleteNotes(commandOptions.study, commandOptions.id, queryParams);
@@ -443,9 +433,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Note> updateNotes() throws Exception {
         logger.debug("Executing updateNotes in Studies command line");
 
-        StudiesCommandOptions.UpdateNotesCommandOptions commandOptions = studiesCommandOptions.updateNotesCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.UpdateNotesCommandOptions commandOptions = studiesCommandOptions.updateNotesCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("tagsAction", commandOptions.tagsAction);
@@ -476,6 +465,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<PermissionRule> permissionRules() throws Exception {
         logger.debug("Executing permissionRules in Studies command line");
 
+        ObjectMap queryParams = new ObjectMap();
         StudiesCommandOptions.PermissionRulesCommandOptions commandOptions = studiesCommandOptions.permissionRulesCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseStudyClient().permissionRules(commandOptions.study, commandOptions.entity);
     }
@@ -483,9 +473,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<PermissionRule> updatePermissionRules() throws Exception {
         logger.debug("Executing updatePermissionRules in Studies command line");
 
-        StudiesCommandOptions.UpdatePermissionRulesCommandOptions commandOptions = studiesCommandOptions.updatePermissionRulesCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.UpdatePermissionRulesCommandOptions commandOptions = studiesCommandOptions.updatePermissionRulesCommandOptions;
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
@@ -515,8 +504,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Job> runTemplates() throws Exception {
         logger.debug("Executing runTemplates in Studies command line");
 
-        CustomStudiesCommandOptions.RunTemplatesCommandOptions commandOptions = studiesCommandOptions.runTemplatesCommandOptions;
         ObjectMap queryParams = new ObjectMap();
+        CustomStudiesCommandOptions.RunTemplatesCommandOptions commandOptions = studiesCommandOptions.runTemplatesCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -538,8 +527,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<String> uploadTemplates() throws Exception {
         logger.debug("Executing uploadTemplates in Studies command line");
 
-        CustomStudiesCommandOptions.UploadTemplatesCommandOptions commandOptions = studiesCommandOptions.uploadTemplatesCommandOptions;
         ObjectMap queryParams = new ObjectMap();
+        CustomStudiesCommandOptions.UploadTemplatesCommandOptions commandOptions = studiesCommandOptions.uploadTemplatesCommandOptions;
         queryParams.putIfNotNull("file", commandOptions.file);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -552,6 +541,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Boolean> deleteTemplates() throws Exception {
         logger.debug("Executing deleteTemplates in Studies command line");
 
+        ObjectMap queryParams = new ObjectMap();
         StudiesCommandOptions.DeleteTemplatesCommandOptions commandOptions = studiesCommandOptions.deleteTemplatesCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseStudyClient().deleteTemplates(commandOptions.study, commandOptions.templateId);
     }
@@ -559,9 +549,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Study> update() throws Exception {
         logger.debug("Executing update in Studies command line");
 
-        StudiesCommandOptions.UpdateCommandOptions commandOptions = studiesCommandOptions.updateCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.UpdateCommandOptions commandOptions = studiesCommandOptions.updateCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
@@ -600,9 +589,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<VariableSet> variableSets() throws Exception {
         logger.debug("Executing variableSets in Studies command line");
 
-        StudiesCommandOptions.VariableSetsCommandOptions commandOptions = studiesCommandOptions.variableSetsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.VariableSetsCommandOptions commandOptions = studiesCommandOptions.variableSetsCommandOptions;
         queryParams.putIfNotEmpty("id", commandOptions.id);
 
         return enterpriseOpenCGAClient.getEnterpriseStudyClient().variableSets(commandOptions.study, queryParams);
@@ -611,9 +599,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<VariableSet> updateVariableSets() throws Exception {
         logger.debug("Executing updateVariableSets in Studies command line");
 
-        StudiesCommandOptions.UpdateVariableSetsCommandOptions commandOptions = studiesCommandOptions.updateVariableSetsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.UpdateVariableSetsCommandOptions commandOptions = studiesCommandOptions.updateVariableSetsCommandOptions;
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
@@ -644,9 +631,8 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<VariableSet> updateVariableSetsVariables() throws Exception {
         logger.debug("Executing updateVariableSetsVariables in Studies command line");
 
-        StudiesCommandOptions.UpdateVariableSetsVariablesCommandOptions commandOptions = studiesCommandOptions.updateVariableSetsVariablesCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        StudiesCommandOptions.UpdateVariableSetsVariablesCommandOptions commandOptions = studiesCommandOptions.updateVariableSetsVariablesCommandOptions;
         queryParams.putIfNotNull("action", commandOptions.action);
 
 

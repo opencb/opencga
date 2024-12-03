@@ -124,6 +124,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<JobAclEntryList> updateAcl() throws Exception {
         logger.debug("Executing updateAcl in Jobs command line");
 
+        ObjectMap queryParams = new ObjectMap();
         JobsCommandOptions.UpdateAclCommandOptions commandOptions = jobsCommandOptions.updateAclCommandOptions;
 
         JobAclUpdateParams jobAclUpdateParams = null;
@@ -150,9 +151,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<Job> create() throws Exception {
         logger.debug("Executing create in Jobs command line");
 
-        JobsCommandOptions.CreateCommandOptions commandOptions = jobsCommandOptions.createCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        JobsCommandOptions.CreateCommandOptions commandOptions = jobsCommandOptions.createCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -200,9 +200,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<Object> distinct() throws Exception {
         logger.debug("Executing distinct in Jobs command line");
 
-        JobsCommandOptions.DistinctCommandOptions commandOptions = jobsCommandOptions.distinctCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        JobsCommandOptions.DistinctCommandOptions commandOptions = jobsCommandOptions.distinctCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("otherStudies", commandOptions.otherStudies);
         queryParams.putIfNotEmpty("id", commandOptions.id);
@@ -232,9 +231,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<Job> retry() throws Exception {
         logger.debug("Executing retry in Jobs command line");
 
-        JobsCommandOptions.RetryCommandOptions commandOptions = jobsCommandOptions.retryCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        JobsCommandOptions.RetryCommandOptions commandOptions = jobsCommandOptions.retryCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -271,9 +269,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<Job> search() throws Exception {
         logger.debug("Executing search in Jobs command line");
 
-        JobsCommandOptions.SearchCommandOptions commandOptions = jobsCommandOptions.searchCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        JobsCommandOptions.SearchCommandOptions commandOptions = jobsCommandOptions.searchCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -308,8 +305,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<JobTop> top() throws Exception {
         logger.debug("Executing top in Jobs command line");
 
-        CustomJobsCommandOptions.TopCommandOptions commandOptions = jobsCommandOptions.topCommandOptions;
         ObjectMap queryParams = new ObjectMap();
+        CustomJobsCommandOptions.TopCommandOptions commandOptions = jobsCommandOptions.topCommandOptions;
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
@@ -326,9 +323,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<JobAclEntryList> acl() throws Exception {
         logger.debug("Executing acl in Jobs command line");
 
-        JobsCommandOptions.AclCommandOptions commandOptions = jobsCommandOptions.aclCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        JobsCommandOptions.AclCommandOptions commandOptions = jobsCommandOptions.aclCommandOptions;
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
 
@@ -338,9 +334,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<Job> delete() throws Exception {
         logger.debug("Executing delete in Jobs command line");
 
-        JobsCommandOptions.DeleteCommandOptions commandOptions = jobsCommandOptions.deleteCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        JobsCommandOptions.DeleteCommandOptions commandOptions = jobsCommandOptions.deleteCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -352,9 +347,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<Job> info() throws Exception {
         logger.debug("Executing info in Jobs command line");
 
-        JobsCommandOptions.InfoCommandOptions commandOptions = jobsCommandOptions.infoCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        JobsCommandOptions.InfoCommandOptions commandOptions = jobsCommandOptions.infoCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -369,9 +363,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<Job> update() throws Exception {
         logger.debug("Executing update in Jobs command line");
 
-        JobsCommandOptions.UpdateCommandOptions commandOptions = jobsCommandOptions.updateCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        JobsCommandOptions.UpdateCommandOptions commandOptions = jobsCommandOptions.updateCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -407,9 +400,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<Job> kill() throws Exception {
         logger.debug("Executing kill in Jobs command line");
 
-        JobsCommandOptions.KillCommandOptions commandOptions = jobsCommandOptions.killCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        JobsCommandOptions.KillCommandOptions commandOptions = jobsCommandOptions.killCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -421,9 +413,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<FileContent> headLog() throws Exception {
         logger.debug("Executing headLog in Jobs command line");
 
-        JobsCommandOptions.HeadLogCommandOptions commandOptions = jobsCommandOptions.headLogCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        JobsCommandOptions.HeadLogCommandOptions commandOptions = jobsCommandOptions.headLogCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("offset", commandOptions.offset);
         queryParams.putIfNotNull("lines", commandOptions.lines);
@@ -438,9 +429,8 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<FileContent> tailLog() throws Exception {
         logger.debug("Executing tailLog in Jobs command line");
 
-        JobsCommandOptions.TailLogCommandOptions commandOptions = jobsCommandOptions.tailLogCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        JobsCommandOptions.TailLogCommandOptions commandOptions = jobsCommandOptions.tailLogCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("lines", commandOptions.lines);
         queryParams.putIfNotEmpty("type", commandOptions.type);

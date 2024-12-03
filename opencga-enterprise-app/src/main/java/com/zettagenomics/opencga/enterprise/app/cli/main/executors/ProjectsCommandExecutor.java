@@ -85,9 +85,8 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Project> create() throws Exception {
         logger.debug("Executing create in Projects command line");
 
-        ProjectsCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        ProjectsCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
@@ -128,9 +127,8 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Project> search() throws Exception {
         logger.debug("Executing search in Projects command line");
 
-        ProjectsCommandOptions.SearchCommandOptions commandOptions = projectsCommandOptions.searchCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        ProjectsCommandOptions.SearchCommandOptions commandOptions = projectsCommandOptions.searchCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -156,9 +154,8 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Project> info() throws Exception {
         logger.debug("Executing info in Projects command line");
 
-        ProjectsCommandOptions.InfoCommandOptions commandOptions = projectsCommandOptions.infoCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        ProjectsCommandOptions.InfoCommandOptions commandOptions = projectsCommandOptions.infoCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
 
@@ -168,6 +165,7 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Integer> incRelease() throws Exception {
         logger.debug("Executing incRelease in Projects command line");
 
+        ObjectMap queryParams = new ObjectMap();
         ProjectsCommandOptions.IncReleaseCommandOptions commandOptions = projectsCommandOptions.incReleaseCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseProjectClient().incRelease(commandOptions.project);
     }
@@ -175,9 +173,8 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Study> studies() throws Exception {
         logger.debug("Executing studies in Projects command line");
 
-        ProjectsCommandOptions.StudiesCommandOptions commandOptions = projectsCommandOptions.studiesCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        ProjectsCommandOptions.StudiesCommandOptions commandOptions = projectsCommandOptions.studiesCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -189,9 +186,8 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Project> update() throws Exception {
         logger.debug("Executing update in Projects command line");
 
-        ProjectsCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        ProjectsCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);

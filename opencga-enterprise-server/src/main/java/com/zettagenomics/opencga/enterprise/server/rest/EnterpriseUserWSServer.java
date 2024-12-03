@@ -17,6 +17,7 @@ import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.TokenConfiguration;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
@@ -50,7 +51,7 @@ public class EnterpriseUserWSServer extends UserWSServer {
 
     @GET
     @Path("/sso/login")
-    @ApiOperation(httpMethod = "GET", value = "Single Sign On.", response = Map.class)
+    @ApiOperation(httpMethod = "GET", value = "Single Sign On.", response = AuthenticationResponse.class)
     public Response singleSignOn(@ApiParam(value = "Callback URL") @QueryParam("url") String service) {
         if (StringUtils.isEmpty(service)) {
             return createErrorResponse(new CatalogParameterException("Missing mandatory field 'service'"));
@@ -81,7 +82,7 @@ public class EnterpriseUserWSServer extends UserWSServer {
 
     @GET
     @Path("/sso/logout")
-    @ApiOperation(httpMethod = "GET", value = "Logout from Single Sign On.", response = Map.class)
+    @ApiOperation(httpMethod = "GET", value = "Logout from Single Sign On.", response = AuthenticationResponse.class)
     public Response singleSignOnLogout(
             @ApiParam(value = "Callback URL") @QueryParam("url") String service,
             @ApiParam(value = "Successfully logout from CAS service", hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout

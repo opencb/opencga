@@ -101,9 +101,8 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<ObjectMap> groupByAudit() throws Exception {
         logger.debug("Executing groupByAudit in Admin command line");
 
-        AdminCommandOptions.GroupByAuditCommandOptions commandOptions = adminCommandOptions.groupByAuditCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AdminCommandOptions.GroupByAuditCommandOptions commandOptions = adminCommandOptions.groupByAuditCommandOptions;
         queryParams.putIfNotNull("count", commandOptions.count);
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotEmpty("action", commandOptions.action);
@@ -117,6 +116,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<ObjectMap> installCatalog() throws Exception {
         logger.debug("Executing installCatalog in Admin command line");
 
+        ObjectMap queryParams = new ObjectMap();
         AdminCommandOptions.InstallCatalogCommandOptions commandOptions = adminCommandOptions.installCatalogCommandOptions;
 
         InstallationParams installationParams = null;
@@ -144,9 +144,8 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<ObjectMap> jwtCatalog() throws Exception {
         logger.debug("Executing jwtCatalog in Admin command line");
 
-        AdminCommandOptions.JwtCatalogCommandOptions commandOptions = adminCommandOptions.jwtCatalogCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AdminCommandOptions.JwtCatalogCommandOptions commandOptions = adminCommandOptions.jwtCatalogCommandOptions;
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
 
 
@@ -173,6 +172,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<User> createUsers() throws Exception {
         logger.debug("Executing createUsers in Admin command line");
 
+        ObjectMap queryParams = new ObjectMap();
         AdminCommandOptions.CreateUsersCommandOptions commandOptions = adminCommandOptions.createUsersCommandOptions;
 
         UserCreateParams userCreateParams = null;
@@ -202,9 +202,8 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<User> importUsers() throws Exception {
         logger.debug("Executing importUsers in Admin command line");
 
-        AdminCommandOptions.ImportUsersCommandOptions commandOptions = adminCommandOptions.importUsersCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AdminCommandOptions.ImportUsersCommandOptions commandOptions = adminCommandOptions.importUsersCommandOptions;
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
 
 
@@ -235,9 +234,8 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<Acl> permissionsUsers() throws Exception {
         logger.debug("Executing permissionsUsers in Admin command line");
 
-        AdminCommandOptions.PermissionsUsersCommandOptions commandOptions = adminCommandOptions.permissionsUsersCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AdminCommandOptions.PermissionsUsersCommandOptions commandOptions = adminCommandOptions.permissionsUsersCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("entryIds", commandOptions.entryIds);
         queryParams.putIfNotEmpty("permissions", commandOptions.permissions);
@@ -252,9 +250,8 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<Sample> searchUsers() throws Exception {
         logger.debug("Executing searchUsers in Admin command line");
 
-        AdminCommandOptions.SearchUsersCommandOptions commandOptions = adminCommandOptions.searchUsersCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AdminCommandOptions.SearchUsersCommandOptions commandOptions = adminCommandOptions.searchUsersCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -270,9 +267,8 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<Group> syncUsers() throws Exception {
         logger.debug("Executing syncUsers in Admin command line");
 
-        AdminCommandOptions.SyncUsersCommandOptions commandOptions = adminCommandOptions.syncUsersCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AdminCommandOptions.SyncUsersCommandOptions commandOptions = adminCommandOptions.syncUsersCommandOptions;
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
 
 
@@ -304,9 +300,8 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<Group> usersUpdateGroups() throws Exception {
         logger.debug("Executing usersUpdateGroups in Admin command line");
 
-        AdminCommandOptions.UsersUpdateGroupsCommandOptions commandOptions = adminCommandOptions.usersUpdateGroupsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AdminCommandOptions.UsersUpdateGroupsCommandOptions commandOptions = adminCommandOptions.usersUpdateGroupsCommandOptions;
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotNull("action", commandOptions.action);
 

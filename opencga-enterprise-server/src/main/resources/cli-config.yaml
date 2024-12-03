@@ -59,12 +59,19 @@ apiConfig:
           executorExtended: True
           optionExtended: True
           executorExtendedClassName: com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor
-        - name: sso-login
+        - name: login-sso
           executorExtended: True
-          optionExtended: True
           executorExtendedClassName: com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor
           subcommands:
             - name: url
+              ignore: True
+        - name: logout-sso
+          executorExtended: True
+          executorExtendedClassName: com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor
+          subcommands:
+            - name: url
+              ignore: True
+            - name: logout
               ignore: True
         - name: logout
           executorExtended: True

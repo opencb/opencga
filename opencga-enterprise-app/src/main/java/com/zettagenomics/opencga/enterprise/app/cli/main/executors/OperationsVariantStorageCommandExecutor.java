@@ -175,9 +175,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> configureCellbase() throws Exception {
         logger.debug("Executing configureCellbase in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.ConfigureCellbaseCommandOptions commandOptions = operationsVariantStorageCommandOptions.configureCellbaseCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.ConfigureCellbaseCommandOptions commandOptions = operationsVariantStorageCommandOptions.configureCellbaseCommandOptions;
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotNull("annotationUpdate", commandOptions.annotationUpdate);
         queryParams.putIfNotEmpty("annotationSaveId", commandOptions.annotationSaveId);
@@ -209,9 +208,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> aggregateVariant() throws Exception {
         logger.debug("Executing aggregateVariant in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.AggregateVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.aggregateVariantCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.AggregateVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.aggregateVariantCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -249,9 +247,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> deleteVariantAnnotation() throws Exception {
         logger.debug("Executing deleteVariantAnnotation in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.DeleteVariantAnnotationCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantAnnotationCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.DeleteVariantAnnotationCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantAnnotationCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -268,9 +265,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> indexVariantAnnotation() throws Exception {
         logger.debug("Executing indexVariantAnnotation in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.IndexVariantAnnotationCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantAnnotationCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.IndexVariantAnnotationCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantAnnotationCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -316,9 +312,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> saveVariantAnnotation() throws Exception {
         logger.debug("Executing saveVariantAnnotation in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.SaveVariantAnnotationCommandOptions commandOptions = operationsVariantStorageCommandOptions.saveVariantAnnotationCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.SaveVariantAnnotationCommandOptions commandOptions = operationsVariantStorageCommandOptions.saveVariantAnnotationCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -352,9 +347,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<ObjectMap> configureVariant() throws Exception {
         logger.debug("Executing configureVariant in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.ConfigureVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.configureVariantCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.ConfigureVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.configureVariantCommandOptions;
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -385,9 +379,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> deleteVariant() throws Exception {
         logger.debug("Executing deleteVariant in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.DeleteVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.DeleteVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -426,9 +419,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> aggregateVariantFamily() throws Exception {
         logger.debug("Executing aggregateVariantFamily in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.AggregateVariantFamilyCommandOptions commandOptions = operationsVariantStorageCommandOptions.aggregateVariantFamilyCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.AggregateVariantFamilyCommandOptions commandOptions = operationsVariantStorageCommandOptions.aggregateVariantFamilyCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -467,9 +459,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> indexVariantFamily() throws Exception {
         logger.debug("Executing indexVariantFamily in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.IndexVariantFamilyCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantFamilyCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.IndexVariantFamilyCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantFamilyCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -509,9 +500,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> indexVariant() throws Exception {
         logger.debug("Executing indexVariant in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.IndexVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.IndexVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -577,9 +567,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> launcherVariantIndex() throws Exception {
         logger.debug("Executing launcherVariantIndex in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.LauncherVariantIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.launcherVariantIndexCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.LauncherVariantIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.launcherVariantIndexCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -650,9 +639,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> runVariantJulie() throws Exception {
         logger.debug("Executing runVariantJulie in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.RunVariantJulieCommandOptions commandOptions = operationsVariantStorageCommandOptions.runVariantJulieCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.RunVariantJulieCommandOptions commandOptions = operationsVariantStorageCommandOptions.runVariantJulieCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -688,9 +676,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> repairVariantMetadata() throws Exception {
         logger.debug("Executing repairVariantMetadata in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.RepairVariantMetadataCommandOptions commandOptions = operationsVariantStorageCommandOptions.repairVariantMetadataCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.RepairVariantMetadataCommandOptions commandOptions = operationsVariantStorageCommandOptions.repairVariantMetadataCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -724,9 +711,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> synchronizeVariantMetadata() throws Exception {
         logger.debug("Executing synchronizeVariantMetadata in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.SynchronizeVariantMetadataCommandOptions commandOptions = operationsVariantStorageCommandOptions.synchronizeVariantMetadataCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.SynchronizeVariantMetadataCommandOptions commandOptions = operationsVariantStorageCommandOptions.synchronizeVariantMetadataCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -764,9 +750,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> pruneVariant() throws Exception {
         logger.debug("Executing pruneVariant in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.PruneVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.pruneVariantCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.PruneVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.pruneVariantCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -801,9 +786,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> deleteVariantSample() throws Exception {
         logger.debug("Executing deleteVariantSample in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.DeleteVariantSampleCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantSampleCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.DeleteVariantSampleCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantSampleCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -842,9 +826,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> indexVariantSample() throws Exception {
         logger.debug("Executing indexVariantSample in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.IndexVariantSampleCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantSampleCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.IndexVariantSampleCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantSampleCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -885,9 +868,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> variantSampleIndexConfigure() throws Exception {
         logger.debug("Executing variantSampleIndexConfigure in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.VariantSampleIndexConfigureCommandOptions commandOptions = operationsVariantStorageCommandOptions.variantSampleIndexConfigureCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.VariantSampleIndexConfigureCommandOptions commandOptions = operationsVariantStorageCommandOptions.variantSampleIndexConfigureCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("skipRebuild", commandOptions.skipRebuild);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -911,9 +893,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> deleteVariantScore() throws Exception {
         logger.debug("Executing deleteVariantScore in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.DeleteVariantScoreCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantScoreCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.DeleteVariantScoreCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantScoreCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -935,9 +916,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> indexVariantScore() throws Exception {
         logger.debug("Executing indexVariantScore in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.IndexVariantScoreCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantScoreCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.IndexVariantScoreCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantScoreCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -979,9 +959,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> variantSecondaryAnnotationIndex() throws Exception {
         logger.debug("Executing variantSecondaryAnnotationIndex in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.VariantSecondaryAnnotationIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.variantSecondaryAnnotationIndexCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.VariantSecondaryAnnotationIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.variantSecondaryAnnotationIndexCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -1021,9 +1000,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> variantSecondarySampleIndex() throws Exception {
         logger.debug("Executing variantSecondarySampleIndex in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.VariantSecondarySampleIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.variantSecondarySampleIndexCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.VariantSecondarySampleIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.variantSecondarySampleIndexCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -1064,9 +1042,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> configureVariantSecondarySampleIndex() throws Exception {
         logger.debug("Executing configureVariantSecondarySampleIndex in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.ConfigureVariantSecondarySampleIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.configureVariantSecondarySampleIndexCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.ConfigureVariantSecondarySampleIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.configureVariantSecondarySampleIndexCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("skipRebuild", commandOptions.skipRebuild);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -1090,9 +1067,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> secondaryIndexVariant() throws Exception {
         logger.debug("Executing secondaryIndexVariant in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.SecondaryIndexVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.secondaryIndexVariantCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.SecondaryIndexVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.secondaryIndexVariantCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -1132,9 +1108,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> deleteVariantSecondaryIndex() throws Exception {
         logger.debug("Executing deleteVariantSecondaryIndex in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.DeleteVariantSecondaryIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantSecondaryIndexCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.DeleteVariantSecondaryIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantSecondaryIndexCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -1154,9 +1129,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<VariantSetupResult> setupVariant() throws Exception {
         logger.debug("Executing setupVariant in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.SetupVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.setupVariantCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.SetupVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.setupVariantCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -1193,9 +1167,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> deleteVariantStats() throws Exception {
         logger.debug("Executing deleteVariantStats in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.DeleteVariantStatsCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantStatsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.DeleteVariantStatsCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantStatsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1233,9 +1206,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> indexVariantStats() throws Exception {
         logger.debug("Executing indexVariantStats in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.IndexVariantStatsCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantStatsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.IndexVariantStatsCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantStatsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1277,9 +1249,8 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
     private RestResponse<Job> deleteVariantStudy() throws Exception {
         logger.debug("Executing deleteVariantStudy in Operations - Variant Storage command line");
 
-        OperationsVariantStorageCommandOptions.DeleteVariantStudyCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantStudyCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        OperationsVariantStorageCommandOptions.DeleteVariantStudyCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantStudyCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
