@@ -24,7 +24,7 @@ public class AnalysisResource {
     private String url;
     private String md5;
     private String localRelativePath;
-    private List<String> target;
+    private String key;
     private List<AnalysisResourceAction> action;
 
     public enum AnalysisResourceAction {
@@ -32,14 +32,14 @@ public class AnalysisResource {
     }
 
     public AnalysisResource() {
-        this("", "", "", new ArrayList<>(), new ArrayList<>());
+        this("", "", "", "", new ArrayList<>());
     }
 
-    public AnalysisResource(String localRelativePath, String url, String md5, List<String> target, List<AnalysisResourceAction> action) {
+    public AnalysisResource(String localRelativePath, String url, String md5, String key, List<AnalysisResourceAction> action) {
         this.localRelativePath = localRelativePath;
         this.url = url;
         this.md5 = md5;
-        this.target = target;
+        this.key = key;
         this.action = action;
     }
 
@@ -49,7 +49,7 @@ public class AnalysisResource {
         sb.append("localRelativePath='").append(localRelativePath).append('\'');
         sb.append(", url='").append(url).append('\'');
         sb.append(", md5='").append(md5).append('\'');
-        sb.append(", target=").append(target);
+        sb.append(", key=").append(key);
         sb.append(", action=").append(action);
         sb.append('}');
         return sb.toString();
@@ -82,12 +82,12 @@ public class AnalysisResource {
         return this;
     }
 
-    public List<String> getTarget() {
-        return target;
+    public String getKey() {
+        return key;
     }
 
-    public AnalysisResource setTarget(List<String> target) {
-        this.target = target;
+    public AnalysisResource setKey(String key) {
+        this.key = key;
         return this;
     }
 

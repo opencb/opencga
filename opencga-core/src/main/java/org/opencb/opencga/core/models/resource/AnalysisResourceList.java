@@ -22,14 +22,16 @@ import java.util.List;
 public class AnalysisResourceList {
 
     private String analysisId;
+    private String analysisVersion;
     private List<AnalysisResource> resources;
 
     public AnalysisResourceList() {
-        this("", new ArrayList<>());
+        this("", "", new ArrayList<>());
     }
 
-    public AnalysisResourceList(String analysisId, List<AnalysisResource> resources) {
+    public AnalysisResourceList(String analysisId, String analysisVersion, List<AnalysisResource> resources) {
         this.analysisId = analysisId;
+        this.analysisVersion = analysisVersion;
         this.resources = resources;
     }
 
@@ -37,6 +39,7 @@ public class AnalysisResourceList {
     public String toString() {
         final StringBuilder sb = new StringBuilder("AnalysisResourceList{");
         sb.append("analysisId='").append(analysisId).append('\'');
+        sb.append(", analysisVersion='").append(analysisVersion).append('\'');
         sb.append(", resources=").append(resources);
         sb.append('}');
         return sb.toString();
@@ -48,6 +51,15 @@ public class AnalysisResourceList {
 
     public AnalysisResourceList setAnalysisId(String analysisId) {
         this.analysisId = analysisId;
+        return this;
+    }
+
+    public String getAnalysisVersion() {
+        return analysisVersion;
+    }
+
+    public AnalysisResourceList setAnalysisVersion(String analysisVersion) {
+        this.analysisVersion = analysisVersion;
         return this;
     }
 

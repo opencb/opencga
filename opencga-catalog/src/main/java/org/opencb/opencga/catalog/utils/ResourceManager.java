@@ -24,9 +24,9 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.opencb.opencga.core.models.resource.AnalysisResource.AnalysisResourceAction.UNZIP;
 
@@ -43,7 +43,8 @@ public class ResourceManager  {
     private Configuration configuration;
 
     // Flag to track if all resources are fetching
-    private boolean isFetchingAll = false;
+    private boolean isFetching = false;
+    private static final Pattern RESOURCE_PATTERN = Pattern.compile("([a-zA-Z0-9]+)(?:@([a-zA-Z0-9.]+))?(?::([a-zA-Z0-9]+))?");
 
     public static final String CONFIGURATION_FILENAME = "configuration.yml";
     public static final String CONF_DIRNAME = "conf";
@@ -63,24 +64,45 @@ public class ResourceManager  {
 
     public synchronized void fetchAllResources(String version, Path tmpPath, CatalogManager catalogManager, String token)
             throws ResourceException {
+        fetchResources(version, null, tmpPath, catalogManager, token);
+    }
+
+    public synchronized void fetchResources(List<String> resources, Path tmpPath, CatalogManager catalogManager, String token)
+            throws ResourceException {
+        fetchResources(getVersion(), resources, tmpPath, catalogManager, token);
+    }
+
+    public synchronized void fetchResources(String version, List<String> resources, Path tmpPath, CatalogManager catalogManager,
+                                            String token) throws ResourceException {
         // Check if the resource is already being downloaded
-        if (isFetchingAll) {
+        if (isFetching) {
             throw new ResourceException("Resources are already being fetched.");
         }
 
         // Mark fetching as started
         try {
-            isFetchingAll = true;
+            isFetching = true;
             loadConfiguration();
 
             // Only installation administrators can fetch all resources
             JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
             catalogManager.getAuthorizationManager().checkIsOpencgaAdministrator(jwtPayload, "fetch all resources");
 
-            // Download resources
+            // Check resources
+            List<AnalysisResourceList> list = new ArrayList<>();
             ResourceMetadata metadata = getResourceMetadata(version, tmpPath);
-            for (AnalysisResourceList list : metadata.getAnalysisResourceLists()) {
-                fetchResourceFiles(list, tmpPath);
+            if (CollectionUtils.isEmpty(resources)) {
+                // Download all resources
+                list.addAll(metadata.getAnalysisResourceLists());
+            } else {
+                // Check input resources before fetching
+                for (String resource : resources) {
+                    prepareAnalysisResources(resource, metadata, list);
+                }
+            }
+            // Download resources
+            for (AnalysisResourceList analysisResourceList : list) {
+                fetchResourceFiles(analysisResourceList, tmpPath);
             }
 
             // Move resources to installation folder
@@ -91,8 +113,61 @@ public class ResourceManager  {
             throw e;
         } finally {
             // Reset the flag after fetch completes or fails
-            isFetchingAll = false;
+            isFetching = false;
         }
+    }
+
+    private void prepareAnalysisResources(String resource, ResourceMetadata metadata, List<AnalysisResourceList> updatedList)
+            throws ResourceException {
+        Matcher matcher = RESOURCE_PATTERN.matcher(resource);
+        if (!matcher.matches()) {
+            throw new ResourceException("Invalid resource format: " + resource
+                    + ". Valid format: analysisId[@analysisVersion][:resourceKey]");
+        }
+        String analysisId = matcher.group(1);
+        String analysisVersion = matcher.group(2);
+        String resourceKey = matcher.group(3);
+        for (AnalysisResourceList list : metadata.getAnalysisResourceLists()) {
+            if (analysisId.equalsIgnoreCase(list.getAnalysisId()) && (StringUtils.isEmpty(analysisVersion)
+                    || (StringUtils.isNotEmpty(analysisVersion) && analysisVersion.equalsIgnoreCase(list.getAnalysisVersion())))) {
+                // Check if analysis contains multiple versions
+                if (StringUtils.isEmpty(analysisVersion)) {
+                    Set<String> multiple = new HashSet<>();
+                    for (AnalysisResourceList arl : metadata.getAnalysisResourceLists()) {
+                        if (analysisId.equalsIgnoreCase(arl.getAnalysisId()) && StringUtils.isNotEmpty(arl.getAnalysisVersion())) {
+                            multiple.add(arl.getAnalysisVersion());
+                        }
+                    }
+                    if (multiple.size() > 1) {
+                        throw new ResourceException("Missing version for resource " + resource + " since multiple versions are"
+                                + " available: " + StringUtils.join(multiple.toArray(), ", "));
+                    }
+                }
+
+                // Check key
+                if (StringUtils.isEmpty(resourceKey)) {
+                    updatedList.add(list);
+                    return;
+                } else {
+                    for (AnalysisResource analysisResource : list.getResources()) {
+                        if (resourceKey.equalsIgnoreCase(analysisResource.getKey())) {
+                            for (AnalysisResourceList analysisResourceList : updatedList) {
+                                if (analysisResourceList.getAnalysisId().equals(analysisId)) {
+                                    analysisResourceList.getResources().add(analysisResource);
+                                    return;
+                                }
+                            }
+                            AnalysisResourceList analysisResourceList = new AnalysisResourceList(list.getAnalysisId(),
+                                    list.getAnalysisVersion(), Arrays.asList(analysisResource));
+                            updatedList.add(analysisResourceList);
+                            return;
+                        }
+                    }
+                    throw new ResourceException("Resource " + resource + " not found in metadata");
+                }
+            }
+        }
+        throw new ResourceException("Resource " + resource + " not found in metadata");
     }
 
     public List<File> getResourceFiles(String analysisId) throws ResourceException {
@@ -100,7 +175,7 @@ public class ResourceManager  {
     }
 
     public List<File> getResourceFiles(String analysisId, String version) throws ResourceException {
-        if (isFetchingAll) {
+        if (isFetching) {
             throw new ResourceException("Resources are not ready yet; they are currently being fetched.");
         }
 
@@ -148,7 +223,7 @@ public class ResourceManager  {
     }
 
     public File getResourceFile(String analysisId, String resourceName, String version) throws ResourceException {
-        if (isFetchingAll) {
+        if (isFetching) {
             throw new ResourceException("Resources are not ready yet; they are currently being fetched.");
         }
 
