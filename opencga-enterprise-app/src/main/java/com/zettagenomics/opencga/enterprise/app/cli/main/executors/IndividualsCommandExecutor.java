@@ -114,9 +114,8 @@ public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterp
     private RestResponse<IndividualAclEntryList> updateAcl() throws Exception {
         logger.debug("Executing updateAcl in Individuals command line");
 
-        IndividualsCommandOptions.UpdateAclCommandOptions commandOptions = individualsCommandOptions.updateAclCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        IndividualsCommandOptions.UpdateAclCommandOptions commandOptions = individualsCommandOptions.updateAclCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("propagate", commandOptions.propagate);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -149,9 +148,8 @@ public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterp
     private RestResponse<Job> loadAnnotationSets() throws Exception {
         logger.debug("Executing loadAnnotationSets in Individuals command line");
 
-        IndividualsCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = individualsCommandOptions.loadAnnotationSetsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        IndividualsCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = individualsCommandOptions.loadAnnotationSetsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("parents", commandOptions.parents);
         queryParams.putIfNotEmpty("annotationSetId", commandOptions.annotationSetId);
@@ -183,9 +181,8 @@ public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterp
     private RestResponse<Individual> create() throws Exception {
         logger.debug("Executing create in Individuals command line");
 
-        IndividualsCommandOptions.CreateCommandOptions commandOptions = individualsCommandOptions.createCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        IndividualsCommandOptions.CreateCommandOptions commandOptions = individualsCommandOptions.createCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -254,9 +251,8 @@ public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterp
     private RestResponse<Object> distinct() throws Exception {
         logger.debug("Executing distinct in Individuals command line");
 
-        IndividualsCommandOptions.DistinctCommandOptions commandOptions = individualsCommandOptions.distinctCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        IndividualsCommandOptions.DistinctCommandOptions commandOptions = individualsCommandOptions.distinctCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
@@ -293,9 +289,8 @@ public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterp
     private RestResponse<Individual> search() throws Exception {
         logger.debug("Executing search in Individuals command line");
 
-        IndividualsCommandOptions.SearchCommandOptions commandOptions = individualsCommandOptions.searchCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        IndividualsCommandOptions.SearchCommandOptions commandOptions = individualsCommandOptions.searchCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -338,9 +333,8 @@ public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterp
     private RestResponse<IndividualAclEntryList> acl() throws Exception {
         logger.debug("Executing acl in Individuals command line");
 
-        IndividualsCommandOptions.AclCommandOptions commandOptions = individualsCommandOptions.aclCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        IndividualsCommandOptions.AclCommandOptions commandOptions = individualsCommandOptions.aclCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
@@ -354,9 +348,8 @@ public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterp
     private RestResponse<Individual> delete() throws Exception {
         logger.debug("Executing delete in Individuals command line");
 
-        IndividualsCommandOptions.DeleteCommandOptions commandOptions = individualsCommandOptions.deleteCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        IndividualsCommandOptions.DeleteCommandOptions commandOptions = individualsCommandOptions.deleteCommandOptions;
         queryParams.putIfNotNull("force", commandOptions.force);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -369,9 +362,8 @@ public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterp
     private RestResponse<Individual> info() throws Exception {
         logger.debug("Executing info in Individuals command line");
 
-        IndividualsCommandOptions.InfoCommandOptions commandOptions = individualsCommandOptions.infoCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        IndividualsCommandOptions.InfoCommandOptions commandOptions = individualsCommandOptions.infoCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);
@@ -388,9 +380,8 @@ public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterp
     private RestResponse<Individual> update() throws Exception {
         logger.debug("Executing update in Individuals command line");
 
-        IndividualsCommandOptions.UpdateCommandOptions commandOptions = individualsCommandOptions.updateCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        IndividualsCommandOptions.UpdateCommandOptions commandOptions = individualsCommandOptions.updateCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -459,9 +450,8 @@ public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterp
     private RestResponse<Individual> updateAnnotationSetsAnnotations() throws Exception {
         logger.debug("Executing updateAnnotationSetsAnnotations in Individuals command line");
 
-        IndividualsCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = individualsCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        IndividualsCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = individualsCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("action", commandOptions.action);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -485,9 +475,8 @@ public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterp
     private RestResponse<Individual> relatives() throws Exception {
         logger.debug("Executing relatives in Individuals command line");
 
-        IndividualsCommandOptions.RelativesCommandOptions commandOptions = individualsCommandOptions.relativesCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        IndividualsCommandOptions.RelativesCommandOptions commandOptions = individualsCommandOptions.relativesCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);

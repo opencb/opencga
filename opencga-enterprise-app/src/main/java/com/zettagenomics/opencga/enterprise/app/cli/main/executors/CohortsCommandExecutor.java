@@ -108,9 +108,8 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<CohortAclEntryList> updateAcl() throws Exception {
         logger.debug("Executing updateAcl in Cohorts command line");
 
-        CohortsCommandOptions.UpdateAclCommandOptions commandOptions = cohortsCommandOptions.updateAclCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        CohortsCommandOptions.UpdateAclCommandOptions commandOptions = cohortsCommandOptions.updateAclCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -141,9 +140,8 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Job> loadAnnotationSets() throws Exception {
         logger.debug("Executing loadAnnotationSets in Cohorts command line");
 
-        CohortsCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = cohortsCommandOptions.loadAnnotationSetsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        CohortsCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = cohortsCommandOptions.loadAnnotationSetsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("parents", commandOptions.parents);
         queryParams.putIfNotEmpty("annotationSetId", commandOptions.annotationSetId);
@@ -175,9 +173,8 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Cohort> create() throws Exception {
         logger.debug("Executing create in Cohorts command line");
 
-        CohortsCommandOptions.CreateCommandOptions commandOptions = cohortsCommandOptions.createCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        CohortsCommandOptions.CreateCommandOptions commandOptions = cohortsCommandOptions.createCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -221,9 +218,8 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Object> distinct() throws Exception {
         logger.debug("Executing distinct in Cohorts command line");
 
-        CohortsCommandOptions.DistinctCommandOptions commandOptions = cohortsCommandOptions.distinctCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        CohortsCommandOptions.DistinctCommandOptions commandOptions = cohortsCommandOptions.distinctCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("name", commandOptions.name);
@@ -249,9 +245,8 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Cohort> generate() throws Exception {
         logger.debug("Executing generate in Cohorts command line");
 
-        CohortsCommandOptions.GenerateCommandOptions commandOptions = cohortsCommandOptions.generateCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        CohortsCommandOptions.GenerateCommandOptions commandOptions = cohortsCommandOptions.generateCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -306,9 +301,8 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Cohort> search() throws Exception {
         logger.debug("Executing search in Cohorts command line");
 
-        CohortsCommandOptions.SearchCommandOptions commandOptions = cohortsCommandOptions.searchCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        CohortsCommandOptions.SearchCommandOptions commandOptions = cohortsCommandOptions.searchCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -340,9 +334,8 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<CohortAclEntryList> acl() throws Exception {
         logger.debug("Executing acl in Cohorts command line");
 
-        CohortsCommandOptions.AclCommandOptions commandOptions = cohortsCommandOptions.aclCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        CohortsCommandOptions.AclCommandOptions commandOptions = cohortsCommandOptions.aclCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
@@ -356,9 +349,8 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Cohort> delete() throws Exception {
         logger.debug("Executing delete in Cohorts command line");
 
-        CohortsCommandOptions.DeleteCommandOptions commandOptions = cohortsCommandOptions.deleteCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        CohortsCommandOptions.DeleteCommandOptions commandOptions = cohortsCommandOptions.deleteCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -370,9 +362,8 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Cohort> info() throws Exception {
         logger.debug("Executing info in Cohorts command line");
 
-        CohortsCommandOptions.InfoCommandOptions commandOptions = cohortsCommandOptions.infoCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        CohortsCommandOptions.InfoCommandOptions commandOptions = cohortsCommandOptions.infoCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);
@@ -388,9 +379,8 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Cohort> update() throws Exception {
         logger.debug("Executing update in Cohorts command line");
 
-        CohortsCommandOptions.UpdateCommandOptions commandOptions = cohortsCommandOptions.updateCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        CohortsCommandOptions.UpdateCommandOptions commandOptions = cohortsCommandOptions.updateCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -432,9 +422,8 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Cohort> updateAnnotationSetsAnnotations() throws Exception {
         logger.debug("Executing updateAnnotationSetsAnnotations in Cohorts command line");
 
-        CohortsCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = cohortsCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        CohortsCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = cohortsCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("action", commandOptions.action);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {

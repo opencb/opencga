@@ -3,7 +3,6 @@ sso:
   active: ${ENTERPRISE.SSO.ACTIVE}
   casServerPrefixUrl: ${ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL}
   serverName: ${ENTERPRISE.SSO.SERVER.NAME}
-  pythonBin: ${ENTERPRISE.SSO.PYTHON.BIN}
   protocol: ${ENTERPRISE.SSO.PROTOCOL}
   attributes:
     name: ${ENTERPRISE.SSO.ATTRIBUTES.NAME}

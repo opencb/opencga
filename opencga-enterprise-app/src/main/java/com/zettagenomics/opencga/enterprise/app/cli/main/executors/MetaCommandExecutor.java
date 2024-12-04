@@ -80,6 +80,7 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<ObjectMap> about() throws Exception {
         logger.debug("Executing about in Meta command line");
 
+        ObjectMap queryParams = new ObjectMap();
         MetaCommandOptions.AboutCommandOptions commandOptions = metaCommandOptions.aboutCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseMetaClient().about();
     }
@@ -87,9 +88,8 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<List> api() throws Exception {
         logger.debug("Executing api in Meta command line");
 
-        MetaCommandOptions.ApiCommandOptions commandOptions = metaCommandOptions.apiCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        MetaCommandOptions.ApiCommandOptions commandOptions = metaCommandOptions.apiCommandOptions;
         queryParams.putIfNotEmpty("category", commandOptions.category);
 
         return enterpriseOpenCGAClient.getEnterpriseMetaClient().api(queryParams);
@@ -98,6 +98,7 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<ObjectMap> fail() throws Exception {
         logger.debug("Executing fail in Meta command line");
 
+        ObjectMap queryParams = new ObjectMap();
         MetaCommandOptions.FailCommandOptions commandOptions = metaCommandOptions.failCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseMetaClient().fail();
     }
@@ -105,9 +106,8 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<String> model() throws Exception {
         logger.debug("Executing model in Meta command line");
 
-        MetaCommandOptions.ModelCommandOptions commandOptions = metaCommandOptions.modelCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        MetaCommandOptions.ModelCommandOptions commandOptions = metaCommandOptions.modelCommandOptions;
         queryParams.putIfNotEmpty("model", commandOptions.model);
 
         return enterpriseOpenCGAClient.getEnterpriseMetaClient().model(queryParams);
@@ -116,6 +116,7 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<String> ping() throws Exception {
         logger.debug("Executing ping in Meta command line");
 
+        ObjectMap queryParams = new ObjectMap();
         MetaCommandOptions.PingCommandOptions commandOptions = metaCommandOptions.pingCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseMetaClient().ping();
     }
@@ -123,6 +124,7 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     private RestResponse<ObjectMap> status() throws Exception {
         logger.debug("Executing status in Meta command line");
 
+        ObjectMap queryParams = new ObjectMap();
         MetaCommandOptions.StatusCommandOptions commandOptions = metaCommandOptions.statusCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseMetaClient().status();
     }

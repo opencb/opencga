@@ -219,9 +219,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<QueryResponse> aggregationStats() throws Exception {
         logger.debug("Executing aggregationStats in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.AggregationStatsCommandOptions commandOptions = analysisVariantCommandOptions.aggregationStatsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.AggregationStatsCommandOptions commandOptions = analysisVariantCommandOptions.aggregationStatsCommandOptions;
         queryParams.putIfNotEmpty("savedFilter", commandOptions.savedFilter);
         queryParams.putIfNotEmpty("region", commandOptions.region);
         queryParams.putIfNotEmpty("type", commandOptions.type);
@@ -269,9 +268,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<ObjectMap> metadataAnnotation() throws Exception {
         logger.debug("Executing metadataAnnotation in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.MetadataAnnotationCommandOptions commandOptions = analysisVariantCommandOptions.metadataAnnotationCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.MetadataAnnotationCommandOptions commandOptions = analysisVariantCommandOptions.metadataAnnotationCommandOptions;
         queryParams.putIfNotEmpty("annotationId", commandOptions.annotationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
 
@@ -281,9 +279,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<VariantAnnotation> queryAnnotation() throws Exception {
         logger.debug("Executing queryAnnotation in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.QueryAnnotationCommandOptions commandOptions = analysisVariantCommandOptions.queryAnnotationCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.QueryAnnotationCommandOptions commandOptions = analysisVariantCommandOptions.queryAnnotationCommandOptions;
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("region", commandOptions.region);
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -298,9 +295,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<String> runCircos() throws Exception {
         logger.debug("Executing runCircos in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunCircosCommandOptions commandOptions = analysisVariantCommandOptions.runCircosCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunCircosCommandOptions commandOptions = analysisVariantCommandOptions.runCircosCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -333,9 +329,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<SampleVariantStats> deleteCohortStats() throws Exception {
         logger.debug("Executing deleteCohortStats in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.DeleteCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.deleteCohortStatsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.DeleteCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.deleteCohortStatsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("cohort", commandOptions.cohort);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -348,9 +343,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<VariantSetStats> infoCohortStats() throws Exception {
         logger.debug("Executing infoCohortStats in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.InfoCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.infoCohortStatsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.InfoCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.infoCohortStatsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -362,9 +356,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runCohortStats() throws Exception {
         logger.debug("Executing runCohortStats in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.runCohortStatsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.runCohortStatsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -405,9 +398,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runExomiser() throws Exception {
         logger.debug("Executing runExomiser in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunExomiserCommandOptions commandOptions = analysisVariantCommandOptions.runExomiserCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunExomiserCommandOptions commandOptions = analysisVariantCommandOptions.runExomiserCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -447,9 +439,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runExport() throws Exception {
         logger.debug("Executing runExport in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunExportCommandOptions commandOptions = analysisVariantCommandOptions.runExportCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunExportCommandOptions commandOptions = analysisVariantCommandOptions.runExportCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("project", commandOptions.project);
@@ -575,9 +566,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<ObjectMap> genotypesFamily() throws Exception {
         logger.debug("Executing genotypesFamily in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.GenotypesFamilyCommandOptions commandOptions = analysisVariantCommandOptions.genotypesFamilyCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.GenotypesFamilyCommandOptions commandOptions = analysisVariantCommandOptions.genotypesFamilyCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("family", commandOptions.family);
         queryParams.putIfNotEmpty("clinicalAnalysis", commandOptions.clinicalAnalysis);
@@ -593,9 +583,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runFamilyQc() throws Exception {
         logger.debug("Executing runFamilyQc in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunFamilyQcCommandOptions commandOptions = analysisVariantCommandOptions.runFamilyQcCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunFamilyQcCommandOptions commandOptions = analysisVariantCommandOptions.runFamilyQcCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -635,9 +624,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> deleteFile() throws Exception {
         logger.debug("Executing deleteFile in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.DeleteFileCommandOptions commandOptions = analysisVariantCommandOptions.deleteFileCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.DeleteFileCommandOptions commandOptions = analysisVariantCommandOptions.deleteFileCommandOptions;
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -658,9 +646,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runGatk() throws Exception {
         logger.debug("Executing runGatk in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunGatkCommandOptions commandOptions = analysisVariantCommandOptions.runGatkCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunGatkCommandOptions commandOptions = analysisVariantCommandOptions.runGatkCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -699,9 +686,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runGenomePlot() throws Exception {
         logger.debug("Executing runGenomePlot in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunGenomePlotCommandOptions commandOptions = analysisVariantCommandOptions.runGenomePlotCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunGenomePlotCommandOptions commandOptions = analysisVariantCommandOptions.runGenomePlotCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -742,9 +728,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runGwas() throws Exception {
         logger.debug("Executing runGwas in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunGwasCommandOptions commandOptions = analysisVariantCommandOptions.runGwasCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunGwasCommandOptions commandOptions = analysisVariantCommandOptions.runGwasCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -792,9 +777,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runHrDetect() throws Exception {
         logger.debug("Executing runHrDetect in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunHrDetectCommandOptions commandOptions = analysisVariantCommandOptions.runHrDetectCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunHrDetectCommandOptions commandOptions = analysisVariantCommandOptions.runHrDetectCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -843,9 +827,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runIndex() throws Exception {
         logger.debug("Executing runIndex in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunIndexCommandOptions commandOptions = analysisVariantCommandOptions.runIndexCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunIndexCommandOptions commandOptions = analysisVariantCommandOptions.runIndexCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -911,9 +894,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runIndividualQc() throws Exception {
         logger.debug("Executing runIndividualQc in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunIndividualQcCommandOptions commandOptions = analysisVariantCommandOptions.runIndividualQcCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunIndividualQcCommandOptions commandOptions = analysisVariantCommandOptions.runIndividualQcCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -953,9 +935,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runInferredSex() throws Exception {
         logger.debug("Executing runInferredSex in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunInferredSexCommandOptions commandOptions = analysisVariantCommandOptions.runInferredSexCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunInferredSexCommandOptions commandOptions = analysisVariantCommandOptions.runInferredSexCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -994,9 +975,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<KnockoutByGene> queryKnockoutGene() throws Exception {
         logger.debug("Executing queryKnockoutGene in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.QueryKnockoutGeneCommandOptions commandOptions = analysisVariantCommandOptions.queryKnockoutGeneCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.QueryKnockoutGeneCommandOptions commandOptions = analysisVariantCommandOptions.queryKnockoutGeneCommandOptions;
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -1011,9 +991,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<KnockoutByIndividual> queryKnockoutIndividual() throws Exception {
         logger.debug("Executing queryKnockoutIndividual in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.QueryKnockoutIndividualCommandOptions commandOptions = analysisVariantCommandOptions.queryKnockoutIndividualCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.QueryKnockoutIndividualCommandOptions commandOptions = analysisVariantCommandOptions.queryKnockoutIndividualCommandOptions;
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -1028,9 +1007,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runKnockout() throws Exception {
         logger.debug("Executing runKnockout in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunKnockoutCommandOptions commandOptions = analysisVariantCommandOptions.runKnockoutCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunKnockoutCommandOptions commandOptions = analysisVariantCommandOptions.runKnockoutCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1076,9 +1054,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runMendelianError() throws Exception {
         logger.debug("Executing runMendelianError in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunMendelianErrorCommandOptions commandOptions = analysisVariantCommandOptions.runMendelianErrorCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunMendelianErrorCommandOptions commandOptions = analysisVariantCommandOptions.runMendelianErrorCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1118,9 +1095,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<VariantMetadata> metadata() throws Exception {
         logger.debug("Executing metadata in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.MetadataCommandOptions commandOptions = analysisVariantCommandOptions.metadataCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.MetadataCommandOptions commandOptions = analysisVariantCommandOptions.metadataCommandOptions;
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("file", commandOptions.file);
@@ -1140,9 +1116,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Signature> queryMutationalSignature() throws Exception {
         logger.debug("Executing queryMutationalSignature in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.QueryMutationalSignatureCommandOptions commandOptions = analysisVariantCommandOptions.queryMutationalSignatureCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.QueryMutationalSignatureCommandOptions commandOptions = analysisVariantCommandOptions.queryMutationalSignatureCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("sample", commandOptions.sample);
         queryParams.putIfNotEmpty("type", commandOptions.type);
@@ -1171,9 +1146,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runMutationalSignature() throws Exception {
         logger.debug("Executing runMutationalSignature in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunMutationalSignatureCommandOptions commandOptions = analysisVariantCommandOptions.runMutationalSignatureCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunMutationalSignatureCommandOptions commandOptions = analysisVariantCommandOptions.runMutationalSignatureCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1225,9 +1199,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runPlink() throws Exception {
         logger.debug("Executing runPlink in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunPlinkCommandOptions commandOptions = analysisVariantCommandOptions.runPlinkCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunPlinkCommandOptions commandOptions = analysisVariantCommandOptions.runPlinkCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1265,9 +1238,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Variant> query() throws Exception {
         logger.debug("Executing query in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.QueryCommandOptions commandOptions = analysisVariantCommandOptions.queryCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.QueryCommandOptions commandOptions = analysisVariantCommandOptions.queryCommandOptions;
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -1355,9 +1327,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runRelatedness() throws Exception {
         logger.debug("Executing runRelatedness in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunRelatednessCommandOptions commandOptions = analysisVariantCommandOptions.runRelatednessCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunRelatednessCommandOptions commandOptions = analysisVariantCommandOptions.runRelatednessCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1398,9 +1369,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runRvtests() throws Exception {
         logger.debug("Executing runRvtests in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunRvtestsCommandOptions commandOptions = analysisVariantCommandOptions.runRvtestsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunRvtestsCommandOptions commandOptions = analysisVariantCommandOptions.runRvtestsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1439,9 +1409,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<FacetField> aggregationStatsSample() throws Exception {
         logger.debug("Executing aggregationStatsSample in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.AggregationStatsSampleCommandOptions commandOptions = analysisVariantCommandOptions.aggregationStatsSampleCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.AggregationStatsSampleCommandOptions commandOptions = analysisVariantCommandOptions.aggregationStatsSampleCommandOptions;
         queryParams.putIfNotEmpty("savedFilter", commandOptions.savedFilter);
         queryParams.putIfNotEmpty("region", commandOptions.region);
         queryParams.putIfNotEmpty("type", commandOptions.type);
@@ -1474,9 +1443,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runSampleEligibility() throws Exception {
         logger.debug("Executing runSampleEligibility in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunSampleEligibilityCommandOptions commandOptions = analysisVariantCommandOptions.runSampleEligibilityCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunSampleEligibilityCommandOptions commandOptions = analysisVariantCommandOptions.runSampleEligibilityCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1515,9 +1483,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runSampleQc() throws Exception {
         logger.debug("Executing runSampleQc in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunSampleQcCommandOptions commandOptions = analysisVariantCommandOptions.runSampleQcCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunSampleQcCommandOptions commandOptions = analysisVariantCommandOptions.runSampleQcCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1600,9 +1567,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Variant> querySample() throws Exception {
         logger.debug("Executing querySample in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.QuerySampleCommandOptions commandOptions = analysisVariantCommandOptions.querySampleCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.QuerySampleCommandOptions commandOptions = analysisVariantCommandOptions.querySampleCommandOptions;
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotEmpty("variant", commandOptions.variant);
@@ -1618,9 +1584,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runSample() throws Exception {
         logger.debug("Executing runSample in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunSampleCommandOptions commandOptions = analysisVariantCommandOptions.runSampleCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunSampleCommandOptions commandOptions = analysisVariantCommandOptions.runSampleCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1686,9 +1651,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<SampleVariantStats> querySampleStats() throws Exception {
         logger.debug("Executing querySampleStats in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.QuerySampleStatsCommandOptions commandOptions = analysisVariantCommandOptions.querySampleStatsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.QuerySampleStatsCommandOptions commandOptions = analysisVariantCommandOptions.querySampleStatsCommandOptions;
         queryParams.putIfNotEmpty("region", commandOptions.region);
         queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -1714,9 +1678,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runSampleStats() throws Exception {
         logger.debug("Executing runSampleStats in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunSampleStatsCommandOptions commandOptions = analysisVariantCommandOptions.runSampleStatsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunSampleStatsCommandOptions commandOptions = analysisVariantCommandOptions.runSampleStatsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1788,9 +1751,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runStatsExport() throws Exception {
         logger.debug("Executing runStatsExport in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunStatsExportCommandOptions commandOptions = analysisVariantCommandOptions.runStatsExportCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunStatsExportCommandOptions commandOptions = analysisVariantCommandOptions.runStatsExportCommandOptions;
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
@@ -1832,9 +1794,8 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
     private RestResponse<Job> runStats() throws Exception {
         logger.debug("Executing runStats in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunStatsCommandOptions commandOptions = analysisVariantCommandOptions.runStatsCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
+        AnalysisVariantCommandOptions.RunStatsCommandOptions commandOptions = analysisVariantCommandOptions.runStatsCommandOptions;
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
