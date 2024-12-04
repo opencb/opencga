@@ -25,8 +25,11 @@ import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalSolrIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.*;
-import com.zettagenomics.opencga.enterprise.cvdb.models.mappings.*;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.*;
+import com.zettagenomics.opencga.enterprise.cvdb.models.mappings.FieldMapping;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParser;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalInterpretationQueryParser;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalVariantEvidenceQueryParser;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalVariantQueryParser;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -804,7 +807,9 @@ public class CvdbSolrEngine {
         Map<String, Map<String, Long>> facetMap = new HashMap<>();
 
         for (String variantId : variantIds) {
-            ClinicalVariantSummaryStats variantStats = new ClinicalVariantSummaryStats();
+            ClinicalVariantSummaryStats aggVariantStats = new ClinicalVariantSummaryStats();
+            aggVariantStats.setId(organizationId);
+            aggVariantStats.setVariantId(variantId);
 
             for (String targetProjectId : targetProjectIds) {
                 query = new Query()
@@ -812,46 +817,56 @@ public class CvdbSolrEngine {
                         .append(PROJECT_PARAM_NAME, targetProjectId)
                         .append(CV_VARIANT_ID_NAME, variantId);
 
-                ClinicalVariantSummaryStats projectStats = new ClinicalVariantSummaryStats();
+                ClinicalVariantSummaryStats variantStats = new ClinicalVariantSummaryStats();
+                variantStats.setId(organizationId + "@" + targetProjectId);
+                variantStats.setVariantId(variantId);
 
                 // Clinical analysis stats: num. cases, disorder IDs, proband disorder IDs and phenotype names
                 facetMap.clear();
-                facetMap.put("disorderId", projectStats.getClinicalAnalysis().getDisorders());
-                facetMap.put("probandDisorderIds", projectStats.getClinicalAnalysis().getProbandDisorders());
-                facetMap.put("probandPhenotypeNames", projectStats.getClinicalAnalysis().getProbandPhenotypes());
-                performFacet(query, facetMap, "case", projectStats, token);
+                facetMap.put("disorderId", variantStats.getClinicalAnalysis().getDisorders());
+                facetMap.put("probandDisorderIds", variantStats.getClinicalAnalysis().getProbandDisorders());
+                facetMap.put("probandPhenotypeNames", variantStats.getClinicalAnalysis().getProbandPhenotypes());
+                performFacet(query, facetMap, "case", variantStats, token);
 
                 // Clinical interpretation stats: num. primary and secondary interpretations; panel IDs and method names
                 facetMap.clear();
                 facetMap.put("primary", null);
-                facetMap.put("panelIds", projectStats.getInterpretation().getPanels());
-                facetMap.put("methodName", projectStats.getInterpretation().getMethods());
-                performFacet(query, facetMap, "interpretation", projectStats, token);
+                facetMap.put("panelIds", variantStats.getInterpretation().getPanels());
+                facetMap.put("methodName", variantStats.getInterpretation().getMethods());
+                performFacet(query, facetMap, "interpretation", variantStats, token);
 
                 // Clinical variant stats: status and confidence values
                 facetMap.clear();
-                facetMap.put("status", projectStats.getVariant().getStatus());
-                facetMap.put("confidenceValue", projectStats.getVariant().getConfidences());
-                performFacet(query, facetMap, "variant", projectStats, token);
+                facetMap.put("status", variantStats.getVariant().getStatus());
+                facetMap.put("confidenceValue", variantStats.getVariant().getConfidences());
+                performFacet(query, facetMap, "variant", variantStats, token);
 
                 // Clinical variant evidence stats: gene names, transcript IDs, SO term accessions, panel IDs, MoIs, ACMGs, and for review
                 // tiers, ACMGs and clinical significances
                 facetMap.clear();
-                facetMap.put("geneName", projectStats.getEvidence().getGenes());
-                facetMap.put("transcriptId", projectStats.getEvidence().getTranscripts());
-                facetMap.put("soTermAccessions", projectStats.getEvidence().getSoTerms());
-                facetMap.put("panelId", projectStats.getEvidence().getPanels());
-                facetMap.put("mois", projectStats.getEvidence().getMois());
-                facetMap.put("acmgs", projectStats.getEvidence().getAcmgs());
-                facetMap.put("reviewAcmgs", projectStats.getEvidence().getReviewAcmgs());
-                facetMap.put("reviewTier", projectStats.getEvidence().getReviewTiers());
-                facetMap.put("reviewClinicalSignificance", projectStats.getEvidence().getReviewClinicalSignificances());
-                performFacet(query, facetMap, "evidence", projectStats, token);
+                facetMap.put("geneName", variantStats.getEvidence().getGenes());
+                facetMap.put("transcriptId", variantStats.getEvidence().getTranscripts());
+                facetMap.put("soTermAccessions", variantStats.getEvidence().getSoTerms());
+                facetMap.put("panelId", variantStats.getEvidence().getPanels());
+                facetMap.put("mois", variantStats.getEvidence().getMois());
+                facetMap.put("acmgs", variantStats.getEvidence().getAcmgs());
+                facetMap.put("reviewAcmgs", variantStats.getEvidence().getReviewAcmgs());
+                facetMap.put("reviewTier", variantStats.getEvidence().getReviewTiers());
+                facetMap.put("reviewClinicalSignificance", variantStats.getEvidence().getReviewClinicalSignificances());
+                performFacet(query, facetMap, "evidence", variantStats, token);
 
-                updateSummaryStats(projectStats, variantStats);
+                if (variantStats.getNumClinicalAnalyses() > 0) {
+                    variantStatsList.add(variantStats);
+
+                    if (targetProjectIds.size() > 1) {
+                        updateSummaryStats(variantStats, aggVariantStats);
+                    }
+                }
             }
 
-            variantStatsList.add(variantStats);
+            if (targetProjectIds.size() > 1 && aggVariantStats.getNumClinicalAnalyses() > 1) {
+                variantStatsList.add(aggVariantStats);
+            }
         }
 
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);

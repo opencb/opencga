@@ -170,6 +170,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         System.out.println("getClinicalVariantSummaryStats, result.first() = " + result.first());
 
         Assert.assertEquals(caResult.getNumResults(), result.first().getNumClinicalAnalyses());
+        Assert.assertEquals(variantId, result.first().getVariantId());
         Assert.assertEquals(ciPrim, result.first().getNumPrimaryInterpretations());
         Assert.assertEquals(ciSec, result.first().getNumSecondaryInterpretations());
 //        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().size());
