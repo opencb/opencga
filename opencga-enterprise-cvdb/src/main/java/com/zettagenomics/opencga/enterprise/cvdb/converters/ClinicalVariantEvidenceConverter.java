@@ -64,8 +64,7 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
                 cves.setTranscriptId(genomicFeature.getTranscriptId());
 
                 if (CollectionUtils.isNotEmpty(genomicFeature.getConsequenceTypes())) {
-                    cves.setSoTermAccessions(genomicFeature.getConsequenceTypes().stream().map(so -> so.getAccession())
-                            .collect(Collectors.toList()));
+                    cves.setSoTermNames(genomicFeature.getConsequenceTypes().stream().map(so -> so.getName()).collect(Collectors.toList()));
                 }
 
                 if (CollectionUtils.isNotEmpty(genomicFeature.getXrefs())) {

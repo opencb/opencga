@@ -61,8 +61,8 @@ public class ClinicalVariantEvidenceSearch {
     @Field("transcriptId")
     private String transcriptId;
 
-    @Field("soTermAccessions")
-    private List<String> soTermAccessions;
+    @Field("soTermNames")
+    private List<String> soTermNames;
 
     @Field("xrefIds")
     private List<String> xrefIds;
@@ -125,7 +125,7 @@ public class ClinicalVariantEvidenceSearch {
     public ClinicalVariantEvidenceSearch() {
         viewers = new ArrayList<>();
         phenotypeNames = new ArrayList<>();
-        soTermAccessions = new ArrayList<>();
+        soTermNames = new ArrayList<>();
         xrefIds = new ArrayList<>();
         mois = new ArrayList<>();
         acmgs = new ArrayList<>();
@@ -148,7 +148,7 @@ public class ClinicalVariantEvidenceSearch {
         sb.append(", phenotypeNames=").append(phenotypeNames);
         sb.append(", geneName='").append(geneName).append('\'');
         sb.append(", transcriptId='").append(transcriptId).append('\'');
-        sb.append(", soTermAccessions=").append(soTermAccessions);
+        sb.append(", soTermNames=").append(soTermNames);
         sb.append(", xrefIds=").append(xrefIds);
         sb.append(", panelId='").append(panelId).append('\'');
         sb.append(", mois=").append(mois);
@@ -262,12 +262,12 @@ public class ClinicalVariantEvidenceSearch {
         return this;
     }
 
-    public List<String> getSoTermAccessions() {
-        return soTermAccessions;
+    public List<String> getSoTermNames() {
+        return soTermNames;
     }
 
-    public ClinicalVariantEvidenceSearch setSoTermAccessions(List<String> soTermAccessions) {
-        this.soTermAccessions = soTermAccessions;
+    public ClinicalVariantEvidenceSearch setSoTermNames(List<String> soTermNames) {
+        this.soTermNames = soTermNames;
         return this;
     }
 

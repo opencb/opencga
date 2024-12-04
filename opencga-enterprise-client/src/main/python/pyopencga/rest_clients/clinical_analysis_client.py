@@ -310,8 +310,8 @@ class ClinicalAnalysis(_ParentRestClient):
             names separated by commas).
         :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_so_term_accession: Clinical variant evidence sequence
-            ontology accession (or accessions separated by commas).
+        :param str cve_so_term_name: Clinical variant evidence sequence
+            ontology name (or names separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -583,8 +583,8 @@ class ClinicalAnalysis(_ParentRestClient):
             names separated by commas).
         :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_so_term_accession: Clinical variant evidence sequence
-            ontology accession (or accessions separated by commas).
+        :param str cve_so_term_name: Clinical variant evidence sequence
+            ontology name (or names separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -873,8 +873,8 @@ class ClinicalAnalysis(_ParentRestClient):
             names separated by commas).
         :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_so_term_accession: Clinical variant evidence sequence
-            ontology accession (or accessions separated by commas).
+        :param str cve_so_term_name: Clinical variant evidence sequence
+            ontology name (or names separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -1148,8 +1148,8 @@ class ClinicalAnalysis(_ParentRestClient):
             names separated by commas).
         :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_so_term_accession: Clinical variant evidence sequence
-            ontology accession (or accessions separated by commas).
+        :param str cve_so_term_name: Clinical variant evidence sequence
+            ontology name (or names separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -1410,8 +1410,8 @@ class ClinicalAnalysis(_ParentRestClient):
             names separated by commas).
         :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_so_term_accession: Clinical variant evidence sequence
-            ontology accession (or accessions separated by commas).
+        :param str cve_so_term_name: Clinical variant evidence sequence
+            ontology name (or names separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -1686,8 +1686,8 @@ class ClinicalAnalysis(_ParentRestClient):
             names separated by commas).
         :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_so_term_accession: Clinical variant evidence sequence
-            ontology accession (or accessions separated by commas).
+        :param str cve_so_term_name: Clinical variant evidence sequence
+            ontology name (or names separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -1964,8 +1964,8 @@ class ClinicalAnalysis(_ParentRestClient):
             names separated by commas).
         :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_so_term_accession: Clinical variant evidence sequence
-            ontology accession (or accessions separated by commas).
+        :param str cve_so_term_name: Clinical variant evidence sequence
+            ontology name (or names separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs
@@ -2012,7 +2012,7 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str field: List of facet fields separated by semicolons, e.g.:
             geneName;tier. For nested faceted fields use >>, e.g.:
             geneName>>tier. Accepted values: caId, ciId, cvId, variantId,
-            studyId, phenotypeNames, geneName, transcriptId, soTermAccessions,
+            studyId, phenotypeNames, geneName, transcriptId, soTermNames,
             xrefIds, panelId, mois, penetrance, acmgs, tier,
             clinicalSignificance, drugResponse, traitAssociation,
             functionalEffect, tumorigenesis, otherClassifications,
@@ -2240,8 +2240,8 @@ class ClinicalAnalysis(_ParentRestClient):
             names separated by commas).
         :param str cve_transcript_id: Clinical variant evidence transcript ID
             (or IDs separated by commas).
-        :param str cve_so_term_accession: Clinical variant evidence sequence
-            ontology accession (or accessions separated by commas).
+        :param str cve_so_term_name: Clinical variant evidence sequence
+            ontology name (or names separated by commas).
         :param str cve_xref_id: Clinical variant evidence Xref ID (or IDs
             separated by commas).
         :param str cve_panel_id: Clinical variant evidence panel ID (or IDs

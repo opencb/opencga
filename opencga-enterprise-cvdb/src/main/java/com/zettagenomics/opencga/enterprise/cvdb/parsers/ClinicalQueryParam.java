@@ -501,12 +501,12 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam CVE_TRANSCRIPT_ID = new ClinicalQueryParam(CVE_TRANSCRIPT_ID_NAME, TEXT_ARRAY,
             CVE_TRANSCRIPT_ID_DESCR);
 
-    // <field name="soTermAccessions" type="string" indexed="true" stored="true" multiValued="true"/>
-    public static final String CVE_SO_TERM_ACCESSION_NAME = "cveSoTermAccession";
-    public static final String CVE_SO_TERM_ACCESSION_DESCR = "Clinical variant evidence sequence ontology accession (or accessions"
+    // <field name="soTermNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CVE_SO_TERM_NAME_NAME = "cveSoTermName";
+    public static final String CVE_SO_TERM_NAME_DESCR = "Clinical variant evidence sequence ontology name (or names"
             + OPT_LIST;
-    public static final ClinicalQueryParam CVE_SO_TERM_ACCESSION = new ClinicalQueryParam(CVE_SO_TERM_ACCESSION_NAME, TEXT_ARRAY,
-            CVE_SO_TERM_ACCESSION_DESCR);
+    public static final ClinicalQueryParam CVE_SO_TERM_NAME = new ClinicalQueryParam(CVE_SO_TERM_NAME_NAME, TEXT_ARRAY,
+            CVE_SO_TERM_NAME_DESCR);
 
     // <field name="xrefIds" type="string" indexed="true" stored="true" multiValued="true"/>
     public static final String CVE_XREF_ID_NAME = "cveXrefId";

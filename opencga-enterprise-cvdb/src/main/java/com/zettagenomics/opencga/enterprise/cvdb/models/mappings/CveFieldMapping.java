@@ -11,7 +11,7 @@ public class CveFieldMapping extends FieldMapping {
         modelToSchema = new HashMap();
         modelToSchema.put(CVE_PHENOTYPE_NAME_NAME, "phenotypeNames");
         modelToSchema.put(CVE_GENE_NAME_NAME, "geneName");
-        modelToSchema.put(CVE_SO_TERM_ACCESSION_NAME, "consequenceTypeIds");
+        modelToSchema.put(CVE_SO_TERM_NAME_NAME, "consequenceTypeIds");
         modelToSchema.put(CVE_XREF_ID_NAME, "xrefIds");
         modelToSchema.put(CVE_PANEL_ID_NAME, "panelId");
         modelToSchema.put(CVE_MOI_NAME, "mois");

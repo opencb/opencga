@@ -58,7 +58,7 @@ public class ClinicalQueryParser {
         + " clinicalSig";
 
     public static final String CVE_FACET_FIELDS =  "caId, ciId, cvId, variantId, studyId, phenotypeNames, geneName, transcriptId,"
-        + " soTermAccessions, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation,"
+        + " soTermNames, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation,"
         + " functionalEffect, tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance";
 
     protected static Logger logger = LoggerFactory.getLogger(ClinicalQueryParser.class);
@@ -270,8 +270,8 @@ public class ClinicalQueryParser {
         // <field name="transcriptId" type="string" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("transcriptId", query.getString(ClinicalQueryParam.CVE_TRANSCRIPT_ID_NAME), filters);
 
-        // <field name="soTermAccessions" type="string" indexed="true" stored="true" multiValued="true"/>
-        addStringFilters("soTermAccessions", query.getString(ClinicalQueryParam.CVE_SO_TERM_ACCESSION_NAME), filters);
+        // <field name="soTermNames" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("soTermNames", query.getString(ClinicalQueryParam.CVE_SO_TERM_NAME_NAME), filters);
 
         // <field name="xrefIds" type="string" indexed="true" stored="true" multiValued="true"/>
         addStringFilters("xrefIds", query.getString(ClinicalQueryParam.CVE_XREF_ID_NAME), filters);
@@ -726,7 +726,7 @@ public class ClinicalQueryParser {
                 return "geneName";
             case CVE_TRANSCRIPT_ID_NAME:
                 return "transcriptId";
-            case CVE_SO_TERM_ACCESSION_NAME:
+            case CVE_SO_TERM_NAME_NAME:
                 return "soTermAccessions";
             case CVE_XREF_ID_NAME:
                 return "xrefIds";

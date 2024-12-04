@@ -263,7 +263,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
-     *       cveSoTermAccession: Clinical variant evidence sequence ontology accession (or accessions separated by commas).
+     *       cveSoTermName: Clinical variant evidence sequence ontology name (or names separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
      *       cveMoi: Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values:
@@ -417,7 +417,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
-     *       cveSoTermAccession: Clinical variant evidence sequence ontology accession (or accessions separated by commas).
+     *       cveSoTermName: Clinical variant evidence sequence ontology name (or names separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
      *       cveMoi: Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values:
@@ -586,7 +586,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
-     *       cveSoTermAccession: Clinical variant evidence sequence ontology accession (or accessions separated by commas).
+     *       cveSoTermName: Clinical variant evidence sequence ontology name (or names separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
      *       cveMoi: Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values:
@@ -741,7 +741,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
-     *       cveSoTermAccession: Clinical variant evidence sequence ontology accession (or accessions separated by commas).
+     *       cveSoTermName: Clinical variant evidence sequence ontology name (or names separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
      *       cveMoi: Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values:
@@ -888,7 +888,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
-     *       cveSoTermAccession: Clinical variant evidence sequence ontology accession (or accessions separated by commas).
+     *       cveSoTermName: Clinical variant evidence sequence ontology name (or names separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
      *       cveMoi: Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values:
@@ -1044,7 +1044,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
-     *       cveSoTermAccession: Clinical variant evidence sequence ontology accession (or accessions separated by commas).
+     *       cveSoTermName: Clinical variant evidence sequence ontology name (or names separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
      *       cveMoi: Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values:
@@ -1207,7 +1207,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
-     *       cveSoTermAccession: Clinical variant evidence sequence ontology accession (or accessions separated by commas).
+     *       cveSoTermName: Clinical variant evidence sequence ontology name (or names separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
      *       cveMoi: Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values:
@@ -1234,7 +1234,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       field: List of facet fields separated by semicolons, e.g.: geneName;tier. For nested faceted fields use >>, e.g.:
      *            geneName>>tier. Accepted values: caId, ciId, cvId, variantId, studyId, phenotypeNames, geneName, transcriptId,
-     *            soTermAccessions, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation,
+     *            soTermNames, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation,
      *            functionalEffect, tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -1362,7 +1362,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
-     *       cveSoTermAccession: Clinical variant evidence sequence ontology accession (or accessions separated by commas).
+     *       cveSoTermName: Clinical variant evidence sequence ontology name (or names separated by commas).
      *       cveXrefId: Clinical variant evidence Xref ID (or IDs separated by commas).
      *       cvePanelId: Clinical variant evidence panel ID (or IDs separated by commas).
      *       cveMoi: Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values:

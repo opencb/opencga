@@ -205,8 +205,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
-    * @param {String} [params.cveSoTermAccession] - Clinical variant evidence sequence ontology accession (or accessions separated by
-    *     commas).
+    * @param {String} [params.cveSoTermName] - Clinical variant evidence sequence ontology name (or names separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
     * @param {String} [params.cveMoi] - Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas),
@@ -362,8 +361,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
-    * @param {String} [params.cveSoTermAccession] - Clinical variant evidence sequence ontology accession (or accessions separated by
-    *     commas).
+    * @param {String} [params.cveSoTermName] - Clinical variant evidence sequence ontology name (or names separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
     * @param {String} [params.cveMoi] - Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas),
@@ -531,8 +529,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
-    * @param {String} [params.cveSoTermAccession] - Clinical variant evidence sequence ontology accession (or accessions separated by
-    *     commas).
+    * @param {String} [params.cveSoTermName] - Clinical variant evidence sequence ontology name (or names separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
     * @param {String} [params.cveMoi] - Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas),
@@ -689,8 +686,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
-    * @param {String} [params.cveSoTermAccession] - Clinical variant evidence sequence ontology accession (or accessions separated by
-    *     commas).
+    * @param {String} [params.cveSoTermName] - Clinical variant evidence sequence ontology name (or names separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
     * @param {String} [params.cveMoi] - Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas),
@@ -839,8 +835,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
-    * @param {String} [params.cveSoTermAccession] - Clinical variant evidence sequence ontology accession (or accessions separated by
-    *     commas).
+    * @param {String} [params.cveSoTermName] - Clinical variant evidence sequence ontology name (or names separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
     * @param {String} [params.cveMoi] - Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas),
@@ -997,8 +992,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
-    * @param {String} [params.cveSoTermAccession] - Clinical variant evidence sequence ontology accession (or accessions separated by
-    *     commas).
+    * @param {String} [params.cveSoTermName] - Clinical variant evidence sequence ontology name (or names separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
     * @param {String} [params.cveMoi] - Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas),
@@ -1159,8 +1153,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
-    * @param {String} [params.cveSoTermAccession] - Clinical variant evidence sequence ontology accession (or accessions separated by
-    *     commas).
+    * @param {String} [params.cveSoTermName] - Clinical variant evidence sequence ontology name (or names separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
     * @param {String} [params.cveMoi] - Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas),
@@ -1188,7 +1181,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveReviewText] - Clinical variant evidence review text (word or list of words contained in the text, if the
     *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.field] - List of facet fields separated by semicolons, e.g.: geneName;tier. For nested faceted fields use >>,
-    *     e.g.: geneName>>tier. Accepted values: caId, ciId, cvId, variantId, studyId, phenotypeNames, geneName, transcriptId, soTermAccessions,
+    *     e.g.: geneName>>tier. Accepted values: caId, ciId, cvId, variantId, studyId, phenotypeNames, geneName, transcriptId, soTermNames,
     *     xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation, functionalEffect,
     *     tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance.
     * @returns {Promise} Promise object in the form of RestResponse instance.
@@ -1317,8 +1310,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
-    * @param {String} [params.cveSoTermAccession] - Clinical variant evidence sequence ontology accession (or accessions separated by
-    *     commas).
+    * @param {String} [params.cveSoTermName] - Clinical variant evidence sequence ontology name (or names separated by commas).
     * @param {String} [params.cveXrefId] - Clinical variant evidence Xref ID (or IDs separated by commas).
     * @param {String} [params.cvePanelId] - Clinical variant evidence panel ID (or IDs separated by commas).
     * @param {String} [params.cveMoi] - Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas),
