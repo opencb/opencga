@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -399,12 +398,12 @@ public class IOUtils {
             value = value.substring(0, value.length() - 1);
         }
         final boolean si;
-        if (assumeBinary) {
+        if (value.endsWith("i")) {
             si = false;
+            value = value.substring(0, value.length() - 1);
         } else {
-            if (value.endsWith("i")) {
+            if (assumeBinary) {
                 si = false;
-                value = value.substring(0, value.length() - 1);
             } else {
                 si = true;
             }
