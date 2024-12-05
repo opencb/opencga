@@ -846,7 +846,7 @@ public class CvdbSolrEngine {
                 facetMap.clear();
                 facetMap.put("geneName", variantStats.getEvidence().getGenes());
                 facetMap.put("transcriptId", variantStats.getEvidence().getTranscripts());
-                facetMap.put("soTermAccessions", variantStats.getEvidence().getSoTerms());
+                facetMap.put("soTermNames", variantStats.getEvidence().getSoTerms());
                 facetMap.put("panelId", variantStats.getEvidence().getPanels());
                 facetMap.put("mois", variantStats.getEvidence().getMois());
                 facetMap.put("acmgs", variantStats.getEvidence().getAcmgs());
