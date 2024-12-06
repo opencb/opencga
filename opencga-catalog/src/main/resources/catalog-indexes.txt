@@ -253,9 +253,10 @@
 {"collections": ["audit"], "fields": {"status.name": 1, "studyUuid": 1}, "options": {}}
 {"collections": ["audit"], "fields": {"date": 1, "studyUuid": 1}, "options": {}}
 
-{"collections": ["note", "note_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["note", "note_archive"], "fields": {"id": 1, "studyUid": 1, "type": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["note", "note_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["note", "note_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["note", "note_archive"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
 {"collections": ["note", "note_archive"], "fields": {"scope": 1, "studyUid": 1}, "options": {}}
 {"collections": ["note", "note_archive"], "fields": {"studyUid": 1}, "options": {}}
 {"collections": ["note", "note_archive"], "fields": {"visibility": 1, "studyUid": 1}, "options": {}}
