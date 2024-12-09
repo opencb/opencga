@@ -192,6 +192,9 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--uuid"}, description = "Comma separated list of job UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
     
+        @Parameter(names = {"--type"}, description = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)", required = false, arity = 1)
+        public String type; 
+    
         @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String toolId; 
     
@@ -327,6 +330,9 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of job UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
+    
+        @Parameter(names = {"--type"}, description = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)", required = false, arity = 1)
+        public String type; 
     
         @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String toolId; 

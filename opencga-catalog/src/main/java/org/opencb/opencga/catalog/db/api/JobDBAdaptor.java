@@ -109,6 +109,7 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
 
+        TYPE("type", STRING, ""),
         TOOL("tool", OBJECT, ""),
         TOOL_ID("tool.id", TEXT, ""),
         TOOL_EXTERNAL_EXECUTOR_ID("tool.externalExecutor.id", TEXT, ""),

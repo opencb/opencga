@@ -63,6 +63,7 @@ export default class Job extends OpenCGAParentClass {
     * @param {String} [params.id] - Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the
     *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.uuid] - Comma separated list of job UUIDs up to a maximum of 100.
+    * @param {String} [params.type] - Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
     * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
@@ -123,6 +124,7 @@ export default class Job extends OpenCGAParentClass {
     * @param {String} [params.id] - Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the
     *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.uuid] - Comma separated list of job UUIDs up to a maximum of 100.
+    * @param {String} [params.type] - Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
     * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].

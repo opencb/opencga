@@ -64,6 +64,7 @@ class Job(_ParentRestClient):
             case insensitive search.
         :param str uuid: Comma separated list of job UUIDs up to a maximum of
             100.
+        :param str type: Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
         :param str tool_id: Tool ID executed by the job. Also admits basic
             regular expressions using the operator '~', i.e. '~{perl-regex}'
             e.g. '~value' for case sensitive, '~/value/i' for case insensitive
@@ -147,6 +148,7 @@ class Job(_ParentRestClient):
             case insensitive search.
         :param str uuid: Comma separated list of job UUIDs up to a maximum of
             100.
+        :param str type: Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
         :param str tool_id: Tool ID executed by the job. Also admits basic
             regular expressions using the operator '~', i.e. '~{perl-regex}'
             e.g. '~value' for case sensitive, '~/value/i' for case insensitive

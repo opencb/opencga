@@ -882,8 +882,9 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                                 QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     case ID:
-                    case UUID:
                     case USER_ID:
+                    case TYPE:
+                    case UUID:
                     case TOOL_TYPE:
                     case PRIORITY:
                     case TOOL_EXTERNAL_EXECUTOR_ID:

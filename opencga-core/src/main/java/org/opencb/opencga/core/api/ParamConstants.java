@@ -564,11 +564,13 @@ public class ParamConstants {
     public static final String JOB_TOOL_EXTERNAL_EXECUTOR_ID_DESCRIPTION = "Id of the external executor. This field is only applicable for "
             + "jobs executed by an external executor.";
     public static final String JOB_DRY_RUN_PARAM = "dryRun";
+    public static final String JOB_TYPE_PARAM = "type";
     public static final String JOB_PARENT_ID_PARAM = "parentId";
     public static final String JOB_PARENT_ID_DESCRIPTION = "Job id that generated this job (if any).";
     public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_PARAM = "internal.killJobRequested";
     public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION = "Flag indicating that the user requested to kill the job.";
     public static final String JOB_TOOL_TYPE_PARAM = "toolType";
+    public static final String JOB_TYPE_DESCRIPTION = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)";
     public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job" + REGEX_SUPPORT;
     public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
     public static final String JOB_USER_PARAM = "userId";

@@ -221,6 +221,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("otherStudies", commandOptions.otherStudies);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
         queryParams.putIfNotEmpty("toolExternalExecutorId", commandOptions.toolExternalExecutorId);
@@ -301,6 +302,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("otherStudies", commandOptions.otherStudies);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
         queryParams.putIfNotEmpty("toolExternalExecutorId", commandOptions.toolExternalExecutorId);
