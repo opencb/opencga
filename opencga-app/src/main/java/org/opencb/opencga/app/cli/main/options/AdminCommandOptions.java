@@ -173,6 +173,9 @@ public class AdminCommandOptions {
         @Parameter(names = {"--base-url"}, description = "Base URL where the resources are located, this is an optional parameter, by default the resources will be downloaded from the OpenCB repository.", required = false, arity = 1)
         public String baseUrl;
     
+        @Parameter(names = {"--resources"}, description = "List of resources to fetch; use 'all' to fetch all resources.", required = false, arity = 1)
+        public String resources;
+    
     }
 
     @Parameters(commandNames = {"users-create"}, commandDescription ="Create a new user")

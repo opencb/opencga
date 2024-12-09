@@ -17,17 +17,14 @@
 package org.opencb.opencga.core.config;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class Analysis {
 
     private List<String> packages;
 
     private String scratchDir;
-    private String resourceUrl;
-    private Boolean fetchResourcesOnInit;
+    private ResourceConfiguration resourceConfiguration;
 
     private String opencgaExtTools;
     private List<AnalysisTool> tools;
@@ -61,21 +58,12 @@ public class Analysis {
         return this;
     }
 
-    public String getResourceUrl() {
-        return resourceUrl;
+    public ResourceConfiguration getResourceConfiguration() {
+        return resourceConfiguration;
     }
 
-    public Analysis setResourceUrl(String resourceUrl) {
-        this.resourceUrl = resourceUrl;
-        return this;
-    }
-
-    public Boolean getFetchResourcesOnInit() {
-        return fetchResourcesOnInit;
-    }
-
-    public Analysis setFetchResourcesOnInit(Boolean fetchResourcesOnInit) {
-        this.fetchResourcesOnInit = fetchResourcesOnInit;
+    public Analysis setResourceConfiguration(ResourceConfiguration resourceConfiguration) {
+        this.resourceConfiguration = resourceConfiguration;
         return this;
     }
 

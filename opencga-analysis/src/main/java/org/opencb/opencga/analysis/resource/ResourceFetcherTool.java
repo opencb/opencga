@@ -1,8 +1,10 @@
 package org.opencb.opencga.analysis.resource;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.utils.ResourceManager;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -24,6 +26,8 @@ public class ResourceFetcherTool extends OpenCgaTool {
 
     public static final String ID = "resource-fetcher";
     public static final String DESCRIPTION = "Fetch all resources from the public server and save them into the OpenCGA local installation";
+
+    public static final String ALL_RESOURCES = "all";
 
     private Path resourcePath;
 
@@ -47,8 +51,16 @@ public class ResourceFetcherTool extends OpenCgaTool {
         step(ID, this::fetchResources);
     }
 
-    private void fetchResources() throws ResourceException {
+    private void fetchResources() throws ResourceException, ToolException {
+        if (CollectionUtils.isEmpty(analysisParams.getResources())) {
+            addWarning("Nothing to fetch since input resource list is empty");
+            return;
+        }
         ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
-        resourceManager.fetchAllResources(getOutDir().resolve(RESOURCES_DIRNAME), catalogManager, token);
+        if (analysisParams.getResources().contains(ALL_RESOURCES)) {
+            resourceManager.fetchAllResources(getOutDir().resolve(RESOURCES_DIRNAME), catalogManager, token);
+        } else {
+            resourceManager.fetchResources(analysisParams.getResources(), getOutDir().resolve(RESOURCES_DIRNAME), catalogManager, token);
+        }
     }
 }

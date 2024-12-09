@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.master.monitor;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -29,6 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.ResourceConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -119,9 +121,7 @@ public class MonitorService {
 
         this.port = configuration.getMonitor().getPort();
 
-        if (configuration.getAnalysis().getFetchResourcesOnInit()) {
-            fetchResources(token);
-        }
+        fetchResources(token);
     }
 
     public void start() throws Exception {
@@ -209,11 +209,18 @@ public class MonitorService {
     }
 
     private void fetchResources(String token) {
-        ResourceFetcherToolParams params = new ResourceFetcherToolParams();
-        params.setBaseUrl("http://resources.opencb.org/task-6766/");
-//        params.setOverwrite(true);
+        if (CollectionUtils.isEmpty(configuration.getAnalysis().getResourceConfiguration().getFetchOnInit())) {
+            // Nothing to do
+            return;
+        }
 
         try {
+            ResourceConfiguration resourceConfig = configuration.getAnalysis().getResourceConfiguration();
+
+            ResourceFetcherToolParams params = new ResourceFetcherToolParams();
+            params.setBaseUrl(resourceConfig.getBaseUrl());
+            params.setResources(resourceConfig.getFetchOnInit());
+
             catalogManager.getJobManager()
                     .submit(null, ResourceFetcherTool.ID, Enums.Priority.URGENT, params.toParams(), null, null, null, null, null, null,
                             false, token);

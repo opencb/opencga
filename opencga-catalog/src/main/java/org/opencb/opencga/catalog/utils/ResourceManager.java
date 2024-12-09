@@ -24,8 +24,9 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.regex.Matcher;
+import java.util.ArrayList;
+import java.util.InputMismatchException;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.opencb.opencga.core.models.resource.AnalysisResource.AnalysisResourceAction.UNZIP;
@@ -44,7 +45,6 @@ public class ResourceManager  {
 
     // Flag to track if all resources are fetching
     private boolean isFetching = false;
-    private static final Pattern RESOURCE_PATTERN = Pattern.compile("([a-zA-Z0-9]+)(?:@([a-zA-Z0-9.]+))?(?::([a-zA-Z0-9]+))?");
 
     public static final String CONFIGURATION_FILENAME = "configuration.yml";
     public static final String CONF_DIRNAME = "conf";
@@ -119,55 +119,36 @@ public class ResourceManager  {
 
     private void prepareAnalysisResources(String resource, ResourceMetadata metadata, List<AnalysisResourceList> updatedList)
             throws ResourceException {
-        Matcher matcher = RESOURCE_PATTERN.matcher(resource);
-        if (!matcher.matches()) {
-            throw new ResourceException("Invalid resource format: " + resource
-                    + ". Valid format: analysisId[@analysisVersion][:resourceKey]");
-        }
-        String analysisId = matcher.group(1);
-        String analysisVersion = matcher.group(2);
-        String resourceKey = matcher.group(3);
-        for (AnalysisResourceList list : metadata.getAnalysisResourceLists()) {
-            if (analysisId.equalsIgnoreCase(list.getAnalysisId()) && (StringUtils.isEmpty(analysisVersion)
-                    || (StringUtils.isNotEmpty(analysisVersion) && analysisVersion.equalsIgnoreCase(list.getAnalysisVersion())))) {
-                // Check if analysis contains multiple versions
-                if (StringUtils.isEmpty(analysisVersion)) {
-                    Set<String> multiple = new HashSet<>();
-                    for (AnalysisResourceList arl : metadata.getAnalysisResourceLists()) {
-                        if (analysisId.equalsIgnoreCase(arl.getAnalysisId()) && StringUtils.isNotEmpty(arl.getAnalysisVersion())) {
-                            multiple.add(arl.getAnalysisVersion());
-                        }
-                    }
-                    if (multiple.size() > 1) {
-                        throw new ResourceException("Missing version for resource " + resource + " since multiple versions are"
-                                + " available: " + StringUtils.join(multiple.toArray(), ", "));
-                    }
-                }
+        // Convert the wildcard to a regex and compile the pattern
+        String regex = resource.replace("*", ".*");
+        Pattern pattern = Pattern.compile(regex);
 
-                // Check key
-                if (StringUtils.isEmpty(resourceKey)) {
-                    updatedList.add(list);
-                    return;
-                } else {
-                    for (AnalysisResource analysisResource : list.getResources()) {
-                        if (resourceKey.equalsIgnoreCase(analysisResource.getKey())) {
-                            for (AnalysisResourceList analysisResourceList : updatedList) {
-                                if (analysisResourceList.getAnalysisId().equals(analysisId)) {
-                                    analysisResourceList.getResources().add(analysisResource);
-                                    return;
-                                }
-                            }
-                            AnalysisResourceList analysisResourceList = new AnalysisResourceList(list.getAnalysisId(),
-                                    list.getAnalysisVersion(), Arrays.asList(analysisResource));
-                            updatedList.add(analysisResourceList);
-                            return;
+        int added = 0;
+        for (AnalysisResourceList analysisResourceList : metadata.getAnalysisResourceLists()) {
+            for (AnalysisResource analysisResource : analysisResourceList.getResources()) {
+                if (pattern.matcher(analysisResource.getKey()).matches()) {
+                    boolean found = false;
+                    AnalysisResourceList newItem = null;
+                    for (AnalysisResourceList updatedAnalysisResourceList : updatedList) {
+                        if (updatedAnalysisResourceList.getAnalysisId().equals(analysisResourceList.getAnalysisId())
+                                && updatedAnalysisResourceList.getAnalysisVersion().equals(analysisResourceList.getAnalysisVersion())) {
+                            newItem = updatedAnalysisResourceList;
+                            break;
                         }
                     }
-                    throw new ResourceException("Resource " + resource + " not found in metadata");
+                    if (newItem == null) {
+                         newItem = new AnalysisResourceList()
+                                 .setAnalysisId(analysisResourceList.getAnalysisId())
+                                 .setAnalysisVersion(analysisResourceList.getAnalysisVersion());
+                    }
+                    newItem.getResources().add(analysisResource);
+                    added++;
                 }
             }
         }
-        throw new ResourceException("Resource " + resource + " not found in metadata");
+        if (added == 0) {
+            throw new ResourceException("No resource found in metada, matching the expression '" + resource + "'");
+        }
     }
 
     public List<File> getResourceFiles(String analysisId) throws ResourceException {
@@ -429,8 +410,9 @@ public class ResourceManager  {
             throws ResourceException, NoSuchAlgorithmException, IOException {
         String resourceMetaFilename = getResourceMetaFilename(version);
 
-        String resourceUrl = configuration.getAnalysis().getResourceUrl()
-                + (configuration.getAnalysis().getResourceUrl().endsWith("/") ? "" : "/") + RELEASES_DIRNAME + "/" + resourceMetaFilename;
+        String resourceUrl = configuration.getAnalysis().getResourceConfiguration().getBaseUrl()
+                + (configuration.getAnalysis().getResourceConfiguration().getBaseUrl().endsWith("/") ? "" : "/")
+                + RELEASES_DIRNAME + "/" + resourceMetaFilename;
 
         // Download MD5
         Path md5ResourceMetaPath = downloadPath.resolve(resourceMetaFilename + MD5_EXT);

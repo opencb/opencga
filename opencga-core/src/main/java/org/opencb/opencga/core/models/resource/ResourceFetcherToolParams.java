@@ -20,24 +20,33 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ResourceFetcherToolParams extends ToolParams {
 
     public static final String DESCRIPTION = "Download-resources tool parameters";
 
-    @DataField(id = "baseUrl", description = FieldConstants.DOWNLOAD_ALL_RESOURCES_BASEURL_DESCRIPTION)
+    @DataField(id = "baseUrl", description = FieldConstants.FETCH_RESOURCES_BASEURL_DESCRIPTION)
     private String baseUrl;
 
+    @DataField(id = "resources", description = FieldConstants.FETCH_RESOURCES_DESCRIPTION)
+    private List<String> resources;
+
     public ResourceFetcherToolParams() {
+        this.resources = new ArrayList<>();
     }
 
-    public ResourceFetcherToolParams(String baseUrl) {
+    public ResourceFetcherToolParams(String baseUrl, List<String> resources) {
         this.baseUrl = baseUrl;
+        this.resources = resources;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("DownloadResourcesParams{");
+        final StringBuilder sb = new StringBuilder("ResourceFetcherToolParams{");
         sb.append("baseUrl='").append(baseUrl).append('\'');
+        sb.append(", resources=").append(resources);
         sb.append('}');
         return sb.toString();
     }
@@ -48,6 +57,15 @@ public class ResourceFetcherToolParams extends ToolParams {
 
     public ResourceFetcherToolParams setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
+        return this;
+    }
+
+    public List<String> getResources() {
+        return resources;
+    }
+
+    public ResourceFetcherToolParams setResources(List<String> resources) {
+        this.resources = resources;
         return this;
     }
 }

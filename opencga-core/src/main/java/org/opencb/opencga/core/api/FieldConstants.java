@@ -557,8 +557,7 @@ public class FieldConstants {
             + " file to view all installed Exomiser versions and identify the default version.";
 
     // Download all resources
-    public static final String DOWNLOAD_ALL_RESOURCES_BASEURL_DESCRIPTION = "Base URL where the resources are located, this is an optional"
+    public static final String FETCH_RESOURCES_BASEURL_DESCRIPTION = "Base URL where the resources are located, this is an optional"
             + " parameter, by default the resources will be downloaded from the OpenCB repository.";
-    public static final String DOWNLOAD_ALL_RESOURCES_OVERWRITE_DESCRIPTION = "Download and overwrite previously downloaded resources if"
-            + " they already exist.";
+    public static final String FETCH_RESOURCES_DESCRIPTION = "List of resources to fetch; use 'all' to fetch all resources.";
 }
