@@ -44,7 +44,7 @@ public class AnalysisClinicalCommandOptions {
         public QueryCvdbInterpretationCommandOptions queryCvdbInterpretationCommandOptions;
         public AggregationStatsCvdbVariantCommandOptions aggregationStatsCvdbVariantCommandOptions;
         public QueryCvdbVariantCommandOptions queryCvdbVariantCommandOptions;
-        public StatsCvdbVariantCommandOptions statsCvdbVariantCommandOptions;
+        public CvdbVariantStatsCommandOptions cvdbVariantStatsCommandOptions;
         public AggregationStatsCvdbVariantEvidenceCommandOptions aggregationStatsCvdbVariantEvidenceCommandOptions;
         public QueryCvdbVariantEvidenceCommandOptions queryCvdbVariantEvidenceCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
@@ -95,7 +95,7 @@ public class AnalysisClinicalCommandOptions {
         this.queryCvdbInterpretationCommandOptions = new QueryCvdbInterpretationCommandOptions();
         this.aggregationStatsCvdbVariantCommandOptions = new AggregationStatsCvdbVariantCommandOptions();
         this.queryCvdbVariantCommandOptions = new QueryCvdbVariantCommandOptions();
-        this.statsCvdbVariantCommandOptions = new StatsCvdbVariantCommandOptions();
+        this.cvdbVariantStatsCommandOptions = new CvdbVariantStatsCommandOptions();
         this.aggregationStatsCvdbVariantEvidenceCommandOptions = new AggregationStatsCvdbVariantEvidenceCommandOptions();
         this.queryCvdbVariantEvidenceCommandOptions = new QueryCvdbVariantEvidenceCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
@@ -2257,20 +2257,20 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"cvdb-variant-stats"}, commandDescription ="Get clinical variant summary from CVDB")
-    public class StatsCvdbVariantCommandOptions {
+    @Parameters(commandNames = {"variant-stats-cvdb"}, commandDescription ="Get clinical variant summary from CVDB")
+    public class CvdbVariantStatsCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--variant-ids"}, description = "Comma separated list of variant IDs", required = true, arity = 1)
+        public String variantIds; 
     
         @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
         public String organizationId; 
     
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
-    
-        @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = true, arity = 1)
-        public String cvVariantId; 
     
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 

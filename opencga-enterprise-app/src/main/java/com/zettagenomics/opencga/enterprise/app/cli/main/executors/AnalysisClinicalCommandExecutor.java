@@ -136,8 +136,8 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
             case "cvdb-variant-query":
                 queryResponse = queryCvdbVariant();
                 break;
-            case "cvdb-variant-stats":
-                queryResponse = statsCvdbVariant();
+            case "variant-stats-cvdb":
+                queryResponse = cvdbVariantStats();
                 break;
             case "cvdb-variant-evidence-aggregation-stats":
                 queryResponse = aggregationStatsCvdbVariantEvidence();
@@ -1140,17 +1140,17 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdbVariant(queryParams);
     }
 
-    private RestResponse<ClinicalVariantSummaryStats> statsCvdbVariant() throws Exception {
-        logger.debug("Executing statsCvdbVariant in Analysis - Clinical command line");
+    private RestResponse<ClinicalVariantSummaryStats> cvdbVariantStats() throws Exception {
+        logger.debug("Executing cvdbVariantStats in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.StatsCvdbVariantCommandOptions commandOptions = analysisClinicalCommandOptions.statsCvdbVariantCommandOptions;
+        AnalysisClinicalCommandOptions.CvdbVariantStatsCommandOptions commandOptions = analysisClinicalCommandOptions.cvdbVariantStatsCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
 
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().statsCvdbVariant(commandOptions.cvVariantId, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().cvdbVariantStats(commandOptions.variantIds, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsCvdbVariantEvidence() throws Exception {

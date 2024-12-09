@@ -122,7 +122,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("cvdb-interpretation-query", analysisClinicalCommandOptions.queryCvdbInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("cvdb-variant-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsCvdbVariantCommandOptions);
         analysisClinicalSubCommands.addCommand("cvdb-variant-query", analysisClinicalCommandOptions.queryCvdbVariantCommandOptions);
-        analysisClinicalSubCommands.addCommand("cvdb-variant-stats", analysisClinicalCommandOptions.statsCvdbVariantCommandOptions);
+        analysisClinicalSubCommands.addCommand("variant-stats-cvdb", analysisClinicalCommandOptions.cvdbVariantStatsCommandOptions);
         analysisClinicalSubCommands.addCommand("cvdb-variant-evidence-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsCvdbVariantEvidenceCommandOptions);
         analysisClinicalSubCommands.addCommand("cvdb-variant-evidence-query", analysisClinicalCommandOptions.queryCvdbVariantEvidenceCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);

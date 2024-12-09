@@ -1079,7 +1079,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
 
     /**
      * Get clinical variant summary from CVDB.
-     * @param cvVariantId Variant ID (or list of IDs separated by commas).
+     * @param variantIds Comma separated list of variant IDs.
      * @param params Map containing any of the following optional parameters.
      *       organizationId: Organization ID.
      *       project: Project ID.
@@ -1087,10 +1087,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ClinicalVariantSummaryStats> statsCvdbVariant(String cvVariantId, ObjectMap params) throws ClientException {
+    public RestResponse<ClinicalVariantSummaryStats> cvdbVariantStats(String variantIds, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        params.putIfNotNull("cvVariantId", cvVariantId);
-        return execute("analysis", null, "clinical/cvdb/variant", null, "stats", params, GET, ClinicalVariantSummaryStats.class);
+        return execute("analysis", null, "clinical/cvdb/variant", variantIds, "stats", params, GET, ClinicalVariantSummaryStats.class);
     }
 
     /**

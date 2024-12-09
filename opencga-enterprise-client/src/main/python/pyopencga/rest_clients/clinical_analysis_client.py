@@ -1735,21 +1735,20 @@ class ClinicalAnalysis(_ParentRestClient):
 
         return self._get(category='analysis', resource='query', subcategory='clinical/cvdb/variant', **options)
 
-    def stats_cvdb_variant(self, cv_variant_id, **options):
+    def cvdb_variant_stats(self, variant_ids, **options):
         """
         Get clinical variant summary from CVDB.
-        PATH: /{apiVersion}/analysis/clinical/cvdb/variant/stats
+        PATH: /{apiVersion}/analysis/clinical/cvdb/variant/{variantIds}/stats
 
-        :param str cv_variant_id: Variant ID (or list of IDs separated by
-            commas). (REQUIRED)
+        :param str variant_ids: Comma separated list of variant IDs.
+            (REQUIRED)
         :param str organization_id: Organization ID.
         :param str project: Project ID.
         :param str ci_status_id: Clinical interpretation status ID (or list of
             IDs separated by commas).
         """
 
-        options['cvVariantId'] = cv_variant_id
-        return self._get(category='analysis', resource='stats', subcategory='clinical/cvdb/variant', **options)
+        return self._get(category='analysis', resource='stats', subcategory='clinical/cvdb/variant', second_query_id=variant_ids, **options)
 
     def aggregation_stats_cvdb_variant_evidence(self, **options):
         """
