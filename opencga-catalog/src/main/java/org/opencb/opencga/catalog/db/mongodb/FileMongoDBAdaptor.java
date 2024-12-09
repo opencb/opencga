@@ -738,7 +738,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         List<Event> events = new ArrayList<>();
         logger.debug("Update file. Query: {}, Update: {}", query.toBsonDocument(), fileUpdate.toBsonDocument());
 
-        DataResult<?> result = fileCollection.update(clientSession, query, fileUpdate, null);
+        DataResult<?> result = fileCollection.update(clientSession, query, fileUpdate, new QueryOptions(MongoDBCollection.MULTI, true));
         logger.debug("{} file(s) successfully updated", result.getNumUpdated());
 
         return endWrite(tmpStartTime, result.getNumMatches(), result.getNumUpdated(), events);
@@ -1340,11 +1340,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     void removeFileReferences(ClientSession clientSession, long studyUid, long fileUid, Document fileDoc)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         File file = fileConverter.convertToDataModelType(fileDoc);
+
+        // Remove file references from relatedFiles array
         FileRelatedFile relatedFile = new FileRelatedFile(file, null);
         ObjectMap parameters = new ObjectMap(QueryParams.RELATED_FILES.key(), Collections.singletonList(relatedFile));
         ObjectMap actionMap = new ObjectMap(QueryParams.RELATED_FILES.key(), ParamUtils.BasicUpdateAction.REMOVE);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
-
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(QueryParams.RELATED_FILES_FILE_UID.key(), fileUid);
@@ -1355,6 +1356,37 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             OpenCGAResult<File> result = transactionalUpdate(clientSession, studyUid, bsonQuery, updateDocument);
             if (result.getNumUpdated() > 0) {
                 logger.debug("File '{}' removed from related files array from {} files.", file.getPath(), result.getNumUpdated());
+            }
+        }
+
+        // Remove file references from alignment indexes
+        FileInternalAlignmentIndex alignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.DELETED), null, null);
+        parameters = new ObjectMap(QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), alignmentIndex);
+        query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.INTERNAL_ALIGNMENT_INDEX_FILE_ID.key(), file.getId());
+        updateDocument = getValidatedUpdateParams(clientSession, studyUid, parameters, query, options);
+        updateDoc = updateDocument.toFinalUpdateDocument();
+        if (!updateDoc.isEmpty()) {
+            Bson bsonQuery = parseQuery(query);
+            OpenCGAResult<File> result = transactionalUpdate(clientSession, studyUid, bsonQuery, updateDocument);
+            if (result.getNumUpdated() > 0) {
+                logger.debug("File '{}' removed from internal.alignment.index object", file.getPath());
+            }
+        }
+
+        FileInternalCoverageIndex coverageIndex = new FileInternalCoverageIndex(new InternalStatus(InternalStatus.DELETED), null, null, 0);
+        parameters = new ObjectMap(QueryParams.INTERNAL_ALIGNMENT_COVERAGE.key(), coverageIndex);
+        query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.INTERNAL_ALIGNMENT_COVERAGE_FILE_ID.key(), file.getId());
+        updateDocument = getValidatedUpdateParams(clientSession, studyUid, parameters, query, options);
+        updateDoc = updateDocument.toFinalUpdateDocument();
+        if (!updateDoc.isEmpty()) {
+            Bson bsonQuery = parseQuery(query);
+            OpenCGAResult<File> result = transactionalUpdate(clientSession, studyUid, bsonQuery, updateDocument);
+            if (result.getNumUpdated() > 0) {
+                logger.debug("File '{}' removed from internal.alignment.coverage object", file.getPath());
             }
         }
     }
@@ -1818,6 +1850,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case SIZE:
                     case SOFTWARE_NAME:
                     case RELATED_FILES_FILE_UID:
+                    case INTERNAL_ALIGNMENT_INDEX_FILE_ID:
+                    case INTERNAL_ALIGNMENT_COVERAGE_FILE_ID:
                     case JOB_ID:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;

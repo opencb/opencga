@@ -461,6 +461,15 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(1, baiFile.getRelatedFiles().size());
         assertEquals(FileRelatedFile.Relation.ALIGNMENT, baiFile.getRelatedFiles().get(0).getRelation());
         assertEquals(bamFile.getId(), baiFile.getRelatedFiles().get(0).getFile().getId());
+
+        // Unlink BAI file
+        query = new Query(FileDBAdaptor.QueryParams.UID.key(), baiFile.getUid());
+        setToPendingDelete(studyFqn, query);
+        fileManager.unlink(studyFqn, baiFile.getPath(), ownerToken);
+        bamFile = fileManager.get(studyFqn, bamFile.getPath(), QueryOptions.empty(), ownerToken).first();
+        assertNotNull(bamFile.getInternal().getAlignment().getIndex());
+        assertNull(bamFile.getInternal().getAlignment().getIndex().getFileId());
+        assertEquals(FileStatus.DELETED, bamFile.getInternal().getAlignment().getIndex().getStatus().getId());
     }
 
     @Test
