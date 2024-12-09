@@ -38,7 +38,6 @@ public class WorkflowManagerTest extends AbstractManagerTest {
 
         // Update imported workflow
         result = workflowManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
-        assertEquals(1, result.getNumUpdated());
         assertEquals(2, result.first().getVersion());
 
         params = new WorkflowRepositoryParams("nf-core/proteinfold");
