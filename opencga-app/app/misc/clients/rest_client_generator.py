@@ -219,6 +219,7 @@ class RestClientGenerator(ABC):
                 method_name = '_'.join([items[2], items[0]])
         elif len(items) == 4:
             # e.g. /{apiVersion}/operation/variant/sample/genotype/index
+            #analysis/clinical/cvdb/variant/{variantIds}/stats
             if not self.any_arg(items):
                 method_name = '_'.join([items[0], items[1], items[2], items[3]])
             # /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge
@@ -227,6 +228,9 @@ class RestClientGenerator(ABC):
             # /{apiVersion}/admin/users/{user}/groups/update
             elif self.all_arg([items[1]]) and not self.any_arg([items[0], items[2], items[3]]):
                 method_name = '_'.join([items[0], items[3], items[2]])
+            # /{apiVersion}/analysis/clinical/cvdb/variant/{variantIds}/stats
+            elif self.all_arg([items[2]]) and not self.any_arg([items[0], items[1], items[3]]):
+                method_name = '_'.join([items[0], items[1], items[3]])
         elif len(items) == 5:
             # e.g. /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update
             if self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3], items[4]]):
