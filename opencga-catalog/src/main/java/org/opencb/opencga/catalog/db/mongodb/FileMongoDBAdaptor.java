@@ -1360,7 +1360,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         // Remove file references from alignment indexes
-        FileInternalAlignmentIndex alignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.DELETED), null, null);
+        FileInternalAlignmentIndex alignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.DELETED), "", "");
         parameters = new ObjectMap(QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), alignmentIndex);
         query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
@@ -1375,7 +1375,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             }
         }
 
-        FileInternalCoverageIndex coverageIndex = new FileInternalCoverageIndex(new InternalStatus(InternalStatus.DELETED), null, null, 0);
+        FileInternalCoverageIndex coverageIndex = new FileInternalCoverageIndex(new InternalStatus(InternalStatus.DELETED), "", "", 0);
         parameters = new ObjectMap(QueryParams.INTERNAL_ALIGNMENT_COVERAGE.key(), coverageIndex);
         query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
