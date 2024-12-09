@@ -1408,12 +1408,12 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/cvdb/variant/stats")
+    @Path("/cvdb/variant/{variantIds}/stats")
     @ApiOperation(value = CLINICAL_VARIANT_SUMMARY_DESCRIPTION, response = ClinicalVariantSummaryStats.class)
     public Response getClinicalVariantSummaryStats(
+            @ApiParam(value = "Comma separated list of variant IDs") @PathParam(value = "variantIds") String variantIds,
             @ApiParam(value = ORGANIZATION_PARAM_DESCRIPTION) @QueryParam(ORGANIZATION_PARAM_NAME) String organizationId,
             @ApiParam(value = PROJECT_PARAM_DESCRIPTION) @QueryParam(PROJECT_PARAM_NAME) String projectId,
-            @ApiParam(value = CV_VARIANT_ID_DESCR, required = true) @QueryParam(CV_VARIANT_ID_NAME) String variantIds,
             @ApiParam(value = CI_STATUS_ID_DESCR) @QueryParam(CI_STATUS_ID_NAME) String interpretationStatusId) {
         return run(() -> {
             return getCvdbEngine().getClinicalVariantSummaryStats(variantIds, interpretationStatusId, organizationId, projectId, token);
