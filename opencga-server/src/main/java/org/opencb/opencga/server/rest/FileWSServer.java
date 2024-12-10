@@ -177,7 +177,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "File format") @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
             @ApiParam(value = "File bioformat") @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,
             @ApiParam(value = "Expected MD5 file checksum") @DefaultValue("") @FormDataParam("checksum") String expectedChecksum,
-            @ApiParam(value = "File resource") @FormDataParam("resource") Boolean resource,
+            @ApiParam(value = ParamConstants.FILE_RESOURCE_DESCRIPTION) @FormDataParam("resource") Boolean resource,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Path within catalog where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
             @ApiParam(value = "description") @DefaultValue("") @FormDataParam("description")

@@ -715,20 +715,20 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     private String getResourcesPath(String path) {
-        Path resourcesPath = Paths.get("RESOURCES/");
+        Path resourcesPath = Paths.get(ParamConstants.RESOURCES_FOLDER + "/");
         if (StringUtils.isEmpty(path)) {
             return resourcesPath.toString();
-        } else if (path.startsWith("RESOURCES/")) {
+        } else if (path.startsWith(ParamConstants.RESOURCES_FOLDER + "/")) {
             return path;
-        } else if (path.startsWith("resources/")) {
-            return path.replaceFirst("resources/", "RESOURCES/");
+        } else if (path.startsWith(ParamConstants.RESOURCES_FOLDER.toLowerCase() + "/")) {
+            return path.replaceFirst(ParamConstants.RESOURCES_FOLDER.toLowerCase() + "/", ParamConstants.RESOURCES_FOLDER + "/");
         } else {
             return resourcesPath.resolve(path).toString();
         }
     }
 
     private boolean isResourcesPath(String path) {
-        return path.startsWith("RESOURCES/") || path.startsWith("resources/");
+        return path.toUpperCase().startsWith(ParamConstants.RESOURCES_FOLDER + "/");
     }
 
     List<Event> validateNewFile(String organizationId, Study study, File file, boolean overwrite) throws CatalogException {
