@@ -213,6 +213,9 @@ public class MigrationManager {
         for (Class<? extends MigrationTool> migration : runnableMigrations) {
             run(organizationId, migration, appHomePath, params, token);
         }
+
+        // 5. Execute install indexes just in case there are new indexes
+        catalogManager.installIndexes(organizationId, token);
     }
 
     public List<Class<? extends MigrationTool>> getPendingMigrations(String organizationId, String version, String token)
