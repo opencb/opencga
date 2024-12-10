@@ -69,6 +69,8 @@
 {"collections": ["file"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"internal.variant.index.status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"internal.alignment.coverage.fileId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"internal.alignment.index.fileId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
 {"collections": ["file"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {}}
 {"collections": ["file"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {}}
