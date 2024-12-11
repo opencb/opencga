@@ -24,7 +24,7 @@ public class Analysis {
     private List<String> packages;
 
     private String scratchDir;
-    private ResourceConfiguration resourceConfiguration;
+    private Resource resource;
 
     private String opencgaExtTools;
     private List<AnalysisTool> tools;
@@ -38,6 +38,20 @@ public class Analysis {
         tools = new ArrayList<>();
         execution = new Execution();
         frameworks = new ArrayList<>();
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Analysis{");
+        sb.append("packages=").append(packages);
+        sb.append(", scratchDir='").append(scratchDir).append('\'');
+        sb.append(", resource=").append(resource);
+        sb.append(", opencgaExtTools='").append(opencgaExtTools).append('\'');
+        sb.append(", tools=").append(tools);
+        sb.append(", execution=").append(execution);
+        sb.append(", frameworks=").append(frameworks);
+        sb.append('}');
+        return sb.toString();
     }
 
     public List<String> getPackages() {
@@ -58,12 +72,12 @@ public class Analysis {
         return this;
     }
 
-    public ResourceConfiguration getResourceConfiguration() {
-        return resourceConfiguration;
+    public Resource getResource() {
+        return resource;
     }
 
-    public Analysis setResourceConfiguration(ResourceConfiguration resourceConfiguration) {
-        this.resourceConfiguration = resourceConfiguration;
+    public Analysis setResource(Resource resource) {
+        this.resource = resource;
         return this;
     }
 

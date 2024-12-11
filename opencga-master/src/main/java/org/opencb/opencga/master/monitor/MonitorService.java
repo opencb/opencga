@@ -30,7 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.config.ResourceConfiguration;
+import org.opencb.opencga.core.config.Resource;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -215,7 +215,7 @@ public class MonitorService {
         }
 
         try {
-            ResourceConfiguration resourceConfig = configuration.getAnalysis().getResourceConfiguration();
+            Resource resourceConfig = configuration.getAnalysis().getResourceConfiguration();
 
             ResourceFetcherToolParams params = new ResourceFetcherToolParams();
             params.setBaseUrl(resourceConfig.getBaseUrl());

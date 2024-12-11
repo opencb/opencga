@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.config;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AnalysisTool {
 
@@ -26,13 +26,13 @@ public class AnalysisTool {
     private boolean defaultVersion;
     private String dockerId;
     private String params;
-    private Map<String, String> resources;
+    private List<String> resources;
 
     public AnalysisTool() {
-        resources = new HashMap<>();
+        resources = new ArrayList<>();
     }
 
-    public AnalysisTool(String id, String version, boolean defaultVersion, String dockerId, String params, Map<String, String> resources) {
+    public AnalysisTool(String id, String version, boolean defaultVersion, String dockerId, String params, List<String> resources) {
         this.id = id;
         this.version = version;
         this.defaultVersion = defaultVersion;
@@ -99,11 +99,11 @@ public class AnalysisTool {
         return this;
     }
 
-    public Map<String, String> getResources() {
+    public List<String> getResources() {
         return resources;
     }
 
-    public AnalysisTool setResources(Map<String, String> resources) {
+    public AnalysisTool setResources(List<String> resources) {
         this.resources = resources;
         return this;
     }

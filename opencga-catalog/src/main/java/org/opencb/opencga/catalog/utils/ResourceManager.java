@@ -1,20 +1,17 @@
 package org.opencb.opencga.catalog.utils;
 
-import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.AnalysisTool;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.Resource;
+import org.opencb.opencga.core.config.ResourceFile;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
-import org.opencb.opencga.core.models.resource.AnalysisResource;
-import org.opencb.opencga.core.models.resource.AnalysisResourceList;
-import org.opencb.opencga.core.models.resource.ResourceMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,9 +24,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.List;
-import java.util.regex.Pattern;
-
-import static org.opencb.opencga.core.models.resource.AnalysisResource.AnalysisResourceAction.UNZIP;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class ResourceManager  {
 
@@ -44,13 +40,13 @@ public class ResourceManager  {
     private Configuration configuration;
 
     // Flag to track if all resources are fetching
-    private boolean isFetching = false;
+    private static final AtomicBoolean IS_FETCHING = new AtomicBoolean(false);
 
     public static final String CONFIGURATION_FILENAME = "configuration.yml";
     public static final String CONF_DIRNAME = "conf";
     public static final String ANALYSIS_DIRNAME = "analysis";
     public static final String RESOURCES_DIRNAME = "resources";
-    public static final String RELEASES_DIRNAME = "releases";
+//    public static final String RELEASES_DIRNAME = "releases";
 
     protected static Logger logger = LoggerFactory.getLogger(ResourceManager.class);
 
@@ -58,105 +54,69 @@ public class ResourceManager  {
         this.openCgaHome = openCgaHome;
     }
 
-    public synchronized void fetchAllResources(Path tmpPath, CatalogManager catalogManager, String token) throws ResourceException {
-        fetchAllResources(getVersion(), tmpPath, catalogManager, token);
-    }
+    public synchronized void fetchAllResources(Path tmpPath, CatalogManager catalogManager, String token)
+            throws ResourceException, IOException {
+        loadConfiguration();
 
-    public synchronized void fetchAllResources(String version, Path tmpPath, CatalogManager catalogManager, String token)
-            throws ResourceException {
-        fetchResources(version, null, tmpPath, catalogManager, token);
+        // Get all resources from the configuration file
+        List<String> resources = configuration.getAnalysis().getResource().getFiles().stream().map(ResourceFile::getId)
+                .collect(Collectors.toList());
+        fetchResources(resources, tmpPath, catalogManager, token);
     }
 
     public synchronized void fetchResources(List<String> resources, Path tmpPath, CatalogManager catalogManager, String token)
-            throws ResourceException {
-        fetchResources(getVersion(), resources, tmpPath, catalogManager, token);
-    }
+            throws ResourceException, IOException {
+        loadConfiguration();
 
-    public synchronized void fetchResources(String version, List<String> resources, Path tmpPath, CatalogManager catalogManager,
-                                            String token) throws ResourceException {
         // Check if the resource is already being downloaded
-        if (isFetching) {
-            throw new ResourceException("Resources are already being fetched.");
-        }
+        if (IS_FETCHING.compareAndSet(false, true)) {
+            try {
+                // Only installation administrators can fetch all resources
+                JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+                catalogManager.getAuthorizationManager().checkIsOpencgaAdministrator(jwtPayload, "fetch all resources");
 
-        // Mark fetching as started
-        try {
-            isFetching = true;
-            loadConfiguration();
-
-            // Only installation administrators can fetch all resources
-            JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
-            catalogManager.getAuthorizationManager().checkIsOpencgaAdministrator(jwtPayload, "fetch all resources");
-
-            // Check resources
-            List<AnalysisResourceList> list = new ArrayList<>();
-            ResourceMetadata metadata = getResourceMetadata(version, tmpPath);
-            if (CollectionUtils.isEmpty(resources)) {
-                // Download all resources
-                list.addAll(metadata.getAnalysisResourceLists());
-            } else {
-                // Check input resources before fetching
+                // Check resources before fetching
+                List<ResourceFile> resourceFiles = new ArrayList<>();
                 for (String resource : resources) {
-                    prepareAnalysisResources(resource, metadata, list);
-                }
-            }
-            // Download resources
-            for (AnalysisResourceList analysisResourceList : list) {
-                fetchResourceFiles(analysisResourceList, tmpPath);
-            }
-
-            // Move resources to installation folder
-            move(tmpPath, openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME));
-        } catch (IOException | NoSuchAlgorithmException | CatalogException | ToolException e) {
-            throw new ResourceException(e);
-        } catch (ResourceException e) {
-            throw e;
-        } finally {
-            // Reset the flag after fetch completes or fails
-            isFetching = false;
-        }
-    }
-
-    private void prepareAnalysisResources(String resource, ResourceMetadata metadata, List<AnalysisResourceList> updatedList)
-            throws ResourceException {
-        // Convert the wildcard to a regex and compile the pattern
-        String regex = resource.replace("*", ".*");
-        Pattern pattern = Pattern.compile(regex);
-
-        int added = 0;
-        for (AnalysisResourceList analysisResourceList : metadata.getAnalysisResourceLists()) {
-            for (AnalysisResource analysisResource : analysisResourceList.getResources()) {
-                if (pattern.matcher(analysisResource.getKey()).matches()) {
                     boolean found = false;
-                    AnalysisResourceList newItem = null;
-                    for (AnalysisResourceList updatedAnalysisResourceList : updatedList) {
-                        if (updatedAnalysisResourceList.getAnalysisId().equals(analysisResourceList.getAnalysisId())
-                                && updatedAnalysisResourceList.getAnalysisVersion().equals(analysisResourceList.getAnalysisVersion())) {
-                            newItem = updatedAnalysisResourceList;
+                    for (ResourceFile resourceFile : configuration.getAnalysis().getResource().getFiles()) {
+                        if (resource.equalsIgnoreCase(resourceFile.getId())) {
+                            resourceFiles.add(resourceFile);
+                            found = true;
                             break;
                         }
                     }
-                    if (newItem == null) {
-                         newItem = new AnalysisResourceList()
-                                 .setAnalysisId(analysisResourceList.getAnalysisId())
-                                 .setAnalysisVersion(analysisResourceList.getAnalysisVersion());
+                    if (!found) {
+                        throw new ResourceException("Unknown resource ID '" + resource + "'. Check the configuration file.");
                     }
-                    newItem.getResources().add(analysisResource);
-                    added++;
                 }
+
+                // Download resources
+                for (ResourceFile resourceFile: resourceFiles) {
+                    fetchResourceFile(resourceFile, tmpPath);
+                }
+
+                // Move resources to installation folder
+                move(tmpPath, openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME));
+            } catch (CatalogException | NoSuchAlgorithmException | ToolException e) {
+                throw new ResourceException(e);
+            } finally {
+                // Ensure the flag is reset after fetching is done
+                IS_FETCHING.set(false);
             }
-        }
-        if (added == 0) {
-            throw new ResourceException("No resource found in metada, matching the expression '" + resource + "'");
+        } else {
+            throw new ResourceException("Resources are already being fetched.");
         }
     }
 
-    public List<File> getResourceFiles(String analysisId) throws ResourceException {
-        return getResourceFiles(analysisId, getVersion());
+    public List<File> checkResourcePaths(String analysisId) throws ResourceException, ToolException, IOException {
+        return checkResourcePaths(analysisId, null);
     }
 
-    public List<File> getResourceFiles(String analysisId, String version) throws ResourceException {
-        if (isFetching) {
+    public List<File> checkResourcePaths(String analysisId, String version) throws ResourceException, ToolException, IOException {
+        loadConfiguration();
+
+        if (IS_FETCHING.get()) {
             throw new ResourceException("Resources are not ready yet; they are currently being fetched.");
         }
 
@@ -165,111 +125,79 @@ public class ResourceManager  {
             throw new ResourceException("Analysis ID is empty.");
         }
 
-        Path resourcePath = openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME);
-        Path metaPath = resourcePath.resolve(getResourceMetaFilename(version));
-        if (!Files.exists(metaPath)) {
-            throw new ResourceException("Resources for analysis '" + analysisId + "' are not ready. Please fetch them first.");
-        }
+        List<File> files = new ArrayList<>();
+        Resource resourceConfig = configuration.getAnalysis().getResource();
 
-        ObjectReader objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(ResourceMetadata.class);
-        ResourceMetadata metadata;
-        try {
-            metadata = objectReader.readValue(metaPath.toFile());
-        } catch (IOException e) {
-            throw new ResourceException("Error parsing resource metafile '" + metaPath.toAbsolutePath() + "'", e);
-        }
-
-        List<File> resourceFiles = new ArrayList<>();
-        for (AnalysisResourceList list : metadata.getAnalysisResourceLists()) {
-            if (analysisId.equalsIgnoreCase(list.getAnalysisId())) {
-                for (AnalysisResource resource : list.getResources()) {
-                    Path analysisResourcePath = resourcePath.resolve(resource.getLocalRelativePath());
-                    if (!Files.exists(analysisResourcePath)) {
-                        throw new ResourceException(RESOURCE_MSG + resource.getLocalRelativePath() + "' is missing. Please fetch them"
-                                + " first.");
-                    }
-                    resourceFiles.add(analysisResourcePath.toFile());
+        AnalysisTool analysisTool = null;
+        for (AnalysisTool tool : configuration.getAnalysis().getTools()) {
+            if (analysisId.equals(tool.getId())) {
+                if (StringUtils.isEmpty(version) || version.equals(tool.getVersion())) {
+                    analysisTool = tool;
+                    break;
                 }
-                break;
             }
         }
-        if (CollectionUtils.isEmpty(resourceFiles)) {
+        if (analysisTool == null) {
+            String msg = "Missing analysis tool (ID = " + analysisId + (!StringUtils.isEmpty(version) ? (", version = " + version) : "")
+                    + ") in the configuration file";
+            throw new ToolException(msg);
+        }
+
+        for (String resourceId : analysisTool.getResources()) {
+            boolean found = false;
+            for (ResourceFile resourceFile : resourceConfig.getFiles()) {
+                if (resourceId.equalsIgnoreCase(resourceFile.getId())) {
+                    // Found
+                    Path analysisResourcePath = resourceConfig.getBasePath().resolve(resourceFile.getPath());
+                    if (!Files.exists(analysisResourcePath)) {
+                        throw new ResourceException(RESOURCE_MSG + resourceFile.getId() + "' is not fetched: " + analysisResourcePath
+                                + ". Please fetch them first.");
+                    }
+                    files.add(analysisResourcePath.toFile());
+                    found = true;
+                    break;
+                }
+            }
+            // Sanity check
+            if (!found) {
+                throw new ResourceException("Unmatched configuration: resource '" + resourceId + "' of analysis '" + analysisId + "' not"
+                        + " found in the configuration file.");
+            }
+        }
+
+        if (CollectionUtils.isEmpty(files)) {
             throw new ResourceException("No resources found for analysis ID '" + analysisId + "'.");
         }
-        return resourceFiles;
+        return files;
     }
 
-    public File getResourceFile(String analysisId, String resourceName) throws ResourceException {
-        return getResourceFile(analysisId, resourceName, getVersion());
-    }
+    public Path checkResourcePath(String resourceId) throws ResourceException, IOException {
+        loadConfiguration();
 
-    public File getResourceFile(String analysisId, String resourceName, String version) throws ResourceException {
-        if (isFetching) {
+        if (IS_FETCHING.get()) {
             throw new ResourceException("Resources are not ready yet; they are currently being fetched.");
         }
 
         // Sanity check
-        if (StringUtils.isEmpty(analysisId)) {
-            throw new ResourceException("Analysis ID is empty.");
-        }
-        if (StringUtils.isEmpty(resourceName)) {
-            throw new ResourceException("Resource name is empty.");
+        if (StringUtils.isEmpty(resourceId)) {
+            throw new ResourceException("Resource ID is empty.");
         }
 
-        Path resourcePath = openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME);
-        Path metaPath = resourcePath.resolve(getResourceMetaFilename(version));
-        if (!Files.exists(metaPath)) {
-            throw new ResourceException("Resources for analysis '" + analysisId + "' are not ready. Please fetch them first.");
-        }
-
-        ObjectReader objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(ResourceMetadata.class);
-        ResourceMetadata metadata;
-        try {
-            metadata = objectReader.readValue(metaPath.toFile());
-        } catch (IOException e) {
-            throw new ResourceException("Error parsing resource metafile '" + metaPath.toAbsolutePath() + "'.", e);
-        }
-
-        for (AnalysisResourceList list : metadata.getAnalysisResourceLists()) {
-            if (analysisId.equalsIgnoreCase(list.getAnalysisId())) {
-                for (AnalysisResource resource : list.getResources()) {
-                    Path analysisResourcePath = resourcePath.resolve(resource.getLocalRelativePath());
-                    String name = analysisResourcePath.getFileName().toString();
-                    if (resourceName.equals(name)) {
-                        if (!Files.exists(analysisResourcePath)) {
-                            throw new ResourceException(RESOURCE_MSG + name + FOR_ANALYSIS_MSG + analysisId + "' is missing. Please"
-                                    + " fetch them first.");
-                        }
-                        return analysisResourcePath.toFile();
-                    }
+        Resource resourceConfig = configuration.getAnalysis().getResource();
+        for (ResourceFile resourceFile : resourceConfig.getFiles()) {
+            if (resourceId.equalsIgnoreCase(resourceFile.getId())) {
+                // Resource found, exists?
+                Path analysisResourcePath = resourceConfig.getBasePath().resolve(resourceFile.getPath());
+                if (!Files.exists(analysisResourcePath)) {
+                    throw new ResourceException(RESOURCE_MSG + resourceFile.getId() + "' is not fetched: " + analysisResourcePath
+                            + ". Please fetch it first.");
                 }
-                throw new ResourceException(RESOURCE_MSG + resourceName + "' for '" + analysisId + "' not found in resource"
-                        + " directory.");
+                return analysisResourcePath;
             }
         }
-        throw new ResourceException("Analysis ID '" + analysisId + "' not found in resource directory.");
-    }
 
-    public Path checkResourcePath(String analysisId, String resourceName) throws ResourceException {
-        Path resourcePath = Paths.get(openCgaHome.toAbsolutePath().toString(), ANALYSIS_DIRNAME, RESOURCES_DIRNAME, analysisId,
-                resourceName);
-        if (!Files.exists(resourcePath)) {
-            throw new ResourceException(RESOURCE_MSG + resourceName + FOR_ANALYSIS_MSG + analysisId + "' is missing. Please fetch"
-                    + " them first.");
-        }
-        return resourcePath;
-    }
-
-    public Path checkResourcePath(String resourceName) throws ResourceException {
-        Path resourcePath = Paths.get(openCgaHome.toAbsolutePath().toString(), ANALYSIS_DIRNAME, RESOURCES_DIRNAME, resourceName);
-        if (!Files.exists(resourcePath)) {
-            throw new ResourceException(RESOURCE_MSG + resourceName + "' is missing. Please fetch them first.");
-        }
-        return resourcePath;
-    }
-
-    public static String getResourceMetaFilename(String version) {
-        return String.format("resources-v%s.json", version);
+        // Resource not found !!
+        throw new ResourceException("Unmatched configuration: resource '" + resourceId + "' not found in the configuration file.");
     }
 
     //-------------------------------------------------------------------------
@@ -283,62 +211,35 @@ public class ResourceManager  {
         }
     }
 
-    private static String getVersion() {
-        return GitRepositoryState.getInstance().getBuildVersion();
-    }
-
-    private List<File> fetchResourceFiles(AnalysisResourceList analysisResourceList, Path resourceTmpPath)
+    private Path fetchResourceFile(ResourceFile resourceFile, Path downloadedPath)
             throws IOException, NoSuchAlgorithmException, ResourceException, ToolException {
-        List<File> fetchedFiles = new ArrayList<>();
+        Resource resourceConfig = configuration.getAnalysis().getResource();
 
-        String analysisId = analysisResourceList.getAnalysisId();
-        Path analysisResourcesPath = resourceTmpPath.resolve(analysisId);
-        if (!Files.exists(analysisResourcesPath)) {
-            logger.info("Creating directory '{}' for analysis '{}'", analysisResourcesPath, analysisId);
-            Files.createDirectories(analysisResourcesPath);
-        }
-        for (AnalysisResource resource : analysisResourceList.getResources()) {
-            Path downloadedPath = fetchFile(analysisId, resource, resourceTmpPath);
-            fetchedFiles.add(downloadedPath.toFile());
-        }
-        return fetchedFiles;
-    }
-
-    private Path fetchFile(String analysisId, AnalysisResource resource, Path downloadedPath)
-            throws IOException, NoSuchAlgorithmException, ResourceException, ToolException {
-        String resourceName = Paths.get(resource.getLocalRelativePath()).getFileName().toString();
-
-        // First check installation directory, and check MD5 (it exists)
-        Path installationFile = openCgaHome.resolve(ANALYSIS_DIRNAME).resolve(RESOURCES_DIRNAME).resolve(resource.getLocalRelativePath());
+        // First check installation directory, and check MD5 (if it exists)
+        Path installationFile = resourceConfig.getBasePath().resolve(resourceFile.getPath());
         if (Files.exists(installationFile)) {
             try {
-                validateMD5(installationFile, resource.getMd5());
-                logger.info("Resource '{}' has already been downloaded and MD5 validation passed: skipping download", resourceName);
+                validateMD5(installationFile, resourceFile.getMd5());
+                logger.info("Resource '{}' has already been downloaded and MD5 validation passed: skipping download", resourceFile.getId());
                 return installationFile;
             } catch (Exception e) {
-                logger.warn("Resource '{}' has already been downloaded but MD5 validation failed: downloading again", resourceName);
+                logger.warn("Resource '{}' has already been downloaded but MD5 validation failed: downloading again", resourceFile.getId());
             }
         }
 
         // Download resource file
-        String fileUrl = resource.getUrl();
-        Path fetchedFile = downloadedPath.resolve(resource.getLocalRelativePath());
+        String fileUrl = resourceConfig.getBaseUrl() + resourceFile.getUrl();
+        Path fetchedFile = downloadedPath.resolve(resourceFile.getPath());
         logger.info("Downloading resource '{}' to '{}' ...", fileUrl, fetchedFile.toAbsolutePath());
         donwloadFile(new URL(fileUrl), fetchedFile);
         logger.info(OK);
 
         // Checking MD5
-        validateMD5(fetchedFile, resource.getMd5());
+        validateMD5(fetchedFile, resourceFile.getMd5());
 
-        // Any action to perform ?
-        if (CollectionUtils.isNotEmpty(resource.getAction())) {
-            for (AnalysisResource.AnalysisResourceAction action : resource.getAction()) {
-                if (UNZIP == action) {
-                    unzip(fetchedFile, analysisId);
-                } else {
-                    throw new ResourceException("Unknown action '" + action + "'.");
-                }
-            }
+        // Any action to perform, e.g.: Exomiser resources need to be unzipped
+        if (resourceFile.getId().startsWith("EXOMISER_")) {
+            unzip(fetchedFile, "exomiser");
         }
         return fetchedFile;
     }
@@ -402,33 +303,6 @@ public class ResourceManager  {
         return sb.toString();
     }
 
-    private ResourceMetadata getResourceMetadata(Path downloadPath) throws ResourceException, NoSuchAlgorithmException, IOException {
-        return getResourceMetadata(getVersion(), downloadPath);
-    }
-
-    private ResourceMetadata getResourceMetadata(String version, Path downloadPath)
-            throws ResourceException, NoSuchAlgorithmException, IOException {
-        String resourceMetaFilename = getResourceMetaFilename(version);
-
-        String resourceUrl = configuration.getAnalysis().getResourceConfiguration().getBaseUrl()
-                + (configuration.getAnalysis().getResourceConfiguration().getBaseUrl().endsWith("/") ? "" : "/")
-                + RELEASES_DIRNAME + "/" + resourceMetaFilename;
-
-        // Download MD5
-        Path md5ResourceMetaPath = downloadPath.resolve(resourceMetaFilename + MD5_EXT);
-        donwloadFile(new URL(resourceUrl + MD5_EXT), md5ResourceMetaPath);
-
-        // Download resource metadata file
-        Path resourceMetaPath = downloadPath.resolve(resourceMetaFilename);
-        donwloadFile(new URL(resourceUrl), resourceMetaPath);
-
-        // Checking MD5
-        validateMD5(resourceMetaPath, md5ResourceMetaPath);
-
-        ObjectReader objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(ResourceMetadata.class);
-        return objectReader.readValue(resourceMetaPath.toFile());
-    }
-
     private void move(Path sourceDir, Path targetDir) throws IOException {
         // Ensure the target directory exists
         if (!Files.exists(targetDir)) {
@@ -489,17 +363,6 @@ public class ResourceManager  {
         }
         Files.delete(stdoutPath);
         Files.delete(stderrPath);
-    }
-    //-------------------------------------------------------------------------
-    //  T O     S T R I N G
-    //-------------------------------------------------------------------------
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("ResourceManager{");
-        sb.append("configuration=").append(configuration);
-        sb.append('}');
-        return sb.toString();
     }
 
     //-------------------------------------------------------------------------

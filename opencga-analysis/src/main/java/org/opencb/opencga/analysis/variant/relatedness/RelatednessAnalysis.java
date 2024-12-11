@@ -170,7 +170,7 @@ public class RelatednessAnalysis extends OpenCgaTool {
         ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
         List<String> resourceKeys = Arrays.asList(VARIANTS_PRUNE_IN, VARIANTS_FRQ);
         for (String resourceKey : resourceKeys) {
-            String resourceName = ConfigurationUtils.getToolResource(RelatednessAnalysis.ID, null, resourceKey, configuration);
+            String resourceName = ConfigurationUtils.getToolResourcePath(RelatednessAnalysis.ID, null, resourceKey, configuration);
             resourceManager.checkResourcePath(resourceName);
         }
     }

@@ -16,33 +16,34 @@
 
 package org.opencb.opencga.core.config;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-public class ResourceConfiguration {
+public class Resource {
 
     private String baseUrl;
+    private Path basePath;
     private List<String> fetchOnInit;
+    private List<ResourceFile> files;
 
-    private Map<String, String> files;
-
-    public ResourceConfiguration() {
+    public Resource() {
         this.fetchOnInit = new ArrayList<>();
-        this.files = new HashMap<>();
+        this.files = new ArrayList<>();
     }
 
-    public ResourceConfiguration(String baseUrl, List<String> fetchOnInit, Map<String, String> files) {
+    public Resource(String baseUrl, Path basePath, List<String> fetchOnInit, List<ResourceFile> files) {
         this.baseUrl = baseUrl;
+        this.basePath = basePath;
         this.fetchOnInit = fetchOnInit;
         this.files = files;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ResourceConfiguration{");
+        final StringBuilder sb = new StringBuilder("Resource{");
         sb.append("baseUrl='").append(baseUrl).append('\'');
+        sb.append(", basePath=").append(basePath);
         sb.append(", fetchOnInit=").append(fetchOnInit);
         sb.append(", files=").append(files);
         sb.append('}');
@@ -53,8 +54,17 @@ public class ResourceConfiguration {
         return baseUrl;
     }
 
-    public ResourceConfiguration setBaseUrl(String baseUrl) {
+    public Resource setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
+        return this;
+    }
+
+    public Path getBasePath() {
+        return basePath;
+    }
+
+    public Resource setBasePath(Path basePath) {
+        this.basePath = basePath;
         return this;
     }
 
@@ -62,16 +72,16 @@ public class ResourceConfiguration {
         return fetchOnInit;
     }
 
-    public ResourceConfiguration setFetchOnInit(List<String> fetchOnInit) {
+    public Resource setFetchOnInit(List<String> fetchOnInit) {
         this.fetchOnInit = fetchOnInit;
         return this;
     }
 
-    public Map<String, String> getFiles() {
+    public List<ResourceFile> getFiles() {
         return files;
     }
 
-    public ResourceConfiguration setFiles(Map<String, String> files) {
+    public Resource setFiles(List<ResourceFile> files) {
         this.files = files;
         return this;
     }

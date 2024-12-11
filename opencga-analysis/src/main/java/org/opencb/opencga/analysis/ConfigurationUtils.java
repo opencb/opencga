@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.config.AnalysisTool;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.ResourceFile;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.slf4j.Logger;
@@ -134,14 +135,26 @@ public class ConfigurationUtils {
         throw new ToolException("Missing analysis tool (ID = " + toolId + ", version = " + version + ") in configuration file");
     }
 
-    public static String getToolResource(String toolId, String version, String resourceKey, Configuration configuration)
-            throws ToolException {
+    public static Path getToolResourcePath(String resourceId, Configuration configuration) throws ToolException {
         // Get resources from the configuration file
-        AnalysisTool tool = ConfigurationUtils.getAnalysisTool(toolId, version, configuration);
-        if (!tool.getResources().containsKey(resourceKey)) {
-            throw new ToolException("Error getting resource " + resourceKey + " of analysis tool (ID = " + toolId + ", version =  "
-                    + version + "): it does not exist in the configuration file");
+        for (ResourceFile resourceFile : configuration.getAnalysis().getResource().getFiles()) {
+            if (resourceFile.getId().equalsIgnoreCase(resourceId)) {
+                Path resourcePath = configuration.getAnalysis().getResource().getBasePath().resolve(resourceFile.getPath());
+                if (!Files.exists(resourcePath)) {
+                    throw new ToolException("Error getting resource '" + resourceId + "': it is not installed (i.e., missing file '"
+                            + resourcePath + "')");
+                }
+                return resourcePath;
+            }
         }
-        return tool.getResources().get(resourceKey);
+        throw new ToolException("Error getting resource '" + resourceId + "': it does not exist in the configuration file");
+    }
+
+    public static void checkAnalysisResources(String toolId, String version, Configuration configuration) throws ToolException {
+        AnalysisTool analysisTool = getAnalysisTool(toolId, version, configuration);
+        for (String resourceId : analysisTool.getResources()) {
+            getToolResourcePath(resourceId, configuration);
+        }
+
     }
 }

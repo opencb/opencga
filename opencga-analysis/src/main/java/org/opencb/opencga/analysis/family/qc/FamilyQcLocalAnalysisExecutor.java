@@ -122,9 +122,9 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
 
         // Run IBD/IBS computation using PLINK in docker
         ResourceManager resourceManager = new ResourceManager(Paths.get(getExecutorParams().getString("opencgaHome")));
-        String resourceName = ConfigurationUtils.getToolResource(RelatednessAnalysis.ID, null, VARIANTS_PRUNE_IN, getConfiguration());
+        String resourceName = ConfigurationUtils.getToolResourcePath(RelatednessAnalysis.ID, null, VARIANTS_PRUNE_IN, getConfiguration());
         Path pruneInPath = resourceManager.checkResourcePath(resourceName);
-        resourceName = ConfigurationUtils.getToolResource(RelatednessAnalysis.ID, null, VARIANTS_FRQ, getConfiguration());
+        resourceName = ConfigurationUtils.getToolResourcePath(RelatednessAnalysis.ID, null, VARIANTS_FRQ, getConfiguration());
         Path freqPath = resourceManager.checkResourcePath(resourceName);
 
         RelatednessReport report = IBDComputation.compute(getStudyId(), getFamily(), sampleIds, getRelatednessMaf(),

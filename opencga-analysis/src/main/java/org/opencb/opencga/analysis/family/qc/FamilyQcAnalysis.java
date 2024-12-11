@@ -38,7 +38,6 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.FamilyQcAnalysisExecutor;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -108,12 +107,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
         relatednessThresholds = AnalysisUtils.parseRelatednessThresholds(thresholdsPath);
 
         // Check resources
-        ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
-        List<String> resourceKeys = Arrays.asList(VARIANTS_PRUNE_IN, VARIANTS_FRQ);
-        for (String resourceKey : resourceKeys) {
-            String resourceName = ConfigurationUtils.getToolResource(RelatednessAnalysis.ID, null, resourceKey, configuration);
-            resourceManager.checkResourcePath(resourceName);
-        }
+        ConfigurationUtils.checkAnalysisResources(RelatednessAnalysis.ID, null, configuration);
     }
 
     @Override

@@ -54,8 +54,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.opencb.opencga.catalog.utils.ResourceManager.REFERENCE_GENOMES;
-
 @Tool(id = MutationalSignatureAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
 
@@ -199,7 +197,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
         List<String> resourceKeys = Arrays.asList(GRCH38_FA, GRCH38_FAI, GRCH38_GZI, GRCH37_FA, GRCH37_FAI, GRCH37_FAI);
         for (String resourceKey : resourceKeys) {
-            String resourceName = ConfigurationUtils.getToolResource(ID, null, resourceKey, configuration);
+            String resourceName = ConfigurationUtils.getToolResourcePath(ID, null, resourceKey, configuration);
             resourceManager.checkResourcePath(resourceName);
         }
 
