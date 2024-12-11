@@ -552,9 +552,9 @@ public class FieldConstants {
     public static final String EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION = "Clinical analysis ID to be analysed.";
     public static final String EXOMISER_SAMPLE_DESCRIPTION = "Sample ID to be analysed.";
     public static final String EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION = "Clinical analysis type: SINGLE or FAMILY.";
-    public static final String EXOMISER_VERSION_DESCRIPTION = "Exomiser version in the format X.Y where X is the major version and Y the"
-            + " minor version, e.g.: 14.0. If the version is not specified, the default version will be used. Refer to the configuration"
-            + " file to view all installed Exomiser versions and identify the default version.";
+    public static final String EXOMISER_VERSION_DESCRIPTION = "Exomiser version, e.g.: 14.0.0. If the version is not specified,"
+        + " the default version will be used. Refer to the configuration file to view all installed Exomiser versions and identify the"
+        + " default version.";
 
     // Download all resources
     public static final String FETCH_RESOURCES_BASEURL_DESCRIPTION = "Base URL where the resources are located, this is an optional"

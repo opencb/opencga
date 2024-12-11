@@ -220,16 +220,9 @@ public class ExomiserAnalysisUtils  {
     }
 
     public static void checkResources(String inputVersion, String study, CatalogManager catalogManager, String token, Path openCgaHome)
-            throws ToolException, CatalogException, ResourceException {
-        ResourceManager resourceManager = new ResourceManager(openCgaHome);
-
-        // Resources keys (dependent on assembly)
-        List<String> resourceKeys = new ArrayList<>();
-        resourceKeys.add(PHENOTYPE_RESOURCE_KEY);
-
-        // Check assembly and add its resource key
-        String assemblyKey = checkAssembly(study, catalogManager, token);
-        resourceKeys.add(assemblyKey.toUpperCase(Locale.ROOT));
+            throws ToolException, CatalogException, ResourceException, IOException {
+        // Check assembly
+        checkAssembly(study, catalogManager, token);
 
         // Check exomiser version
         String exomiserVersion = inputVersion;
@@ -241,11 +234,8 @@ public class ExomiserAnalysisUtils  {
         }
 
         // Check resources
-        for (String resouceKey : resourceKeys) {
-            String resource = ConfigurationUtils.getToolResourcePath(ExomiserWrapperAnalysis.ID, exomiserVersion, resouceKey,
-                    catalogManager.getConfiguration());
-            resourceManager.checkResourcePath(resource);
-        }
+        ResourceManager resourceManager = new ResourceManager(openCgaHome);
+        resourceManager.checkResourcePaths(ExomiserWrapperAnalysis.ID, exomiserVersion);
     }
 
     public static Path getSamplePath(String sampleId, Path outDir) {
