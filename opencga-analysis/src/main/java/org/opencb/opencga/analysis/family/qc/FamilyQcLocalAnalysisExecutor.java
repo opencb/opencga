@@ -20,9 +20,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
-import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
@@ -35,14 +33,15 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.FamilyQcAnalysisExecutor;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis.VARIANTS_FRQ;
-import static org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis.VARIANTS_PRUNE_IN;
+import static org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis.RELATEDNESS_VARIANTS_FRQ;
+import static org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis.RELATEDNESS_VARIANTS_PRUNE_IN;
 
 @ToolExecutor(id="opencga-local", tool = FamilyQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -121,14 +120,17 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
         }
 
         // Run IBD/IBS computation using PLINK in docker
-        ResourceManager resourceManager = new ResourceManager(Paths.get(getExecutorParams().getString("opencgaHome")));
-        String resourceName = ConfigurationUtils.getToolResourcePath(RelatednessAnalysis.ID, null, VARIANTS_PRUNE_IN, getConfiguration());
-        Path pruneInPath = resourceManager.checkResourcePath(resourceName);
-        resourceName = ConfigurationUtils.getToolResourcePath(RelatednessAnalysis.ID, null, VARIANTS_FRQ, getConfiguration());
-        Path freqPath = resourceManager.checkResourcePath(resourceName);
+        RelatednessReport report;
+        try {
+            ResourceManager resourceManager = new ResourceManager(Paths.get(getExecutorParams().getString("opencgaHome")));
+            Path pruneInPath = resourceManager.checkResourcePath(RELATEDNESS_VARIANTS_PRUNE_IN);
+            Path freqPath = resourceManager.checkResourcePath(RELATEDNESS_VARIANTS_FRQ);
 
-        RelatednessReport report = IBDComputation.compute(getStudyId(), getFamily(), sampleIds, getRelatednessMaf(),
-                getRelatednessThresholds(), pruneInPath, freqPath, getOutDir(), getVariantStorageManager(), getToken());
+            report = IBDComputation.compute(getStudyId(), getFamily(), sampleIds, getRelatednessMaf(), getRelatednessThresholds(),
+                    pruneInPath, freqPath, getOutDir(), getVariantStorageManager(), getToken());
+        } catch (IOException e) {
+            throw new ToolException(e);
+        }
 
         // Sanity check
         if (report == null) {

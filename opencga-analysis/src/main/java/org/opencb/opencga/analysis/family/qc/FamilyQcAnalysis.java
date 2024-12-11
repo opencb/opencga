@@ -25,8 +25,6 @@ import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
-
-import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
@@ -42,8 +40,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis.VARIANTS_FRQ;
-import static org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis.VARIANTS_PRUNE_IN;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
 
 @Tool(id = FamilyQcAnalysis.ID, resource = Enums.Resource.FAMILY, description = FamilyQcAnalysis.DESCRIPTION)
@@ -132,7 +128,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
                 .setRelatednessMethod(relatednessMethod)
                 .setRelatednessMaf(relatednessMaf)
                 .setRelatednessThresholds(relatednessThresholds)
-                .setRelatednesResourcePath(getOpencgaHome().resolve("analysis/resources").resolve(RelatednessAnalysis.ID))
+                .setRelatednesResourcePath(configuration.getAnalysis().getResource().getBasePath().resolve(RelatednessAnalysis.ID))
                 .setQualityControl(qualityControl);
 
         // Step by step
