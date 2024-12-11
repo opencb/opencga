@@ -26,6 +26,13 @@ import java.util.*;
 
 public class AnalysisUtils {
 
+    public static String REFERENCE_GENOME_GRCH38_FA = "REFERENCE_GENOME_GRCH38_FA";
+    public static String REFERENCE_GENOME_GRCH38_FAI= "REFERENCE_GENOME_GRCH38_FAI";
+    public static String REFERENCE_GENOME_GRCH38_GZI = "REFERENCE_GENOME_GRCH38_GZI";
+    public static String REFERENCE_GENOME_GRCH37_FA= "REFERENCE_GENOME_GRCH37_FA";
+    public static String REFERENCE_GENOME_GRCH37_FAI = "REFERENCE_GENOME_GRCH37_FAI";
+    public static String REFERENCE_GENOME_GRCH37_GZI= "REFERENCE_GENOME_GRCH37_GZI";
+
     public static boolean isSupportedCommand(String commands) {
         Set<String> commandSet = new HashSet<>(Arrays.asList(commands.replace(" ", "").split(",")));
         if (!commandSet.contains(commands)) {
