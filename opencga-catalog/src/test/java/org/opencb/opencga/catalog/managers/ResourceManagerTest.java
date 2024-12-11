@@ -1,27 +1,17 @@
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.utils.ResourceManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.resource.AnalysisResource;
-import org.opencb.opencga.core.models.resource.AnalysisResourceList;
-import org.opencb.opencga.core.models.resource.ResourceMetadata;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_DIRNAME;
