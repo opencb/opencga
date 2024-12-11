@@ -185,7 +185,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     List<Event> insert(ClientSession clientSession, long studyId, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
-                       List<VariableSet> variableSetList) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+                       List<VariableSet> variableSetList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (filePathExists(clientSession, studyId, file.getPath())) {
             throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath());
         }
