@@ -67,8 +67,8 @@ class Admin(_ParentRestClient):
 
     def download_all_resource(self, data=None, **options):
         """
-        Fetch all resources from the public server and save them into the
-            OpenCGA local installation.
+        Fetch resources from the public server and save them into the OpenCGA
+            local installation.
         PATH: /{apiVersion}/admin/resource/downloadAll
 
         :param dict data: Download-resources tool parameters. (REQUIRED)

@@ -209,16 +209,16 @@ public class MonitorService {
     }
 
     private void fetchResources(String token) {
-        if (CollectionUtils.isEmpty(configuration.getAnalysis().getResourceConfiguration().getFetchOnInit())) {
+        if (CollectionUtils.isEmpty(configuration.getAnalysis().getResource().getFetchOnInit())) {
             // Nothing to do
+            logger.info("There are no resources to fetch because the configuration parameter 'fetchOnInit' is empty.");
             return;
         }
 
         try {
-            Resource resourceConfig = configuration.getAnalysis().getResourceConfiguration();
+            Resource resourceConfig = configuration.getAnalysis().getResource();
 
             ResourceFetcherToolParams params = new ResourceFetcherToolParams();
-            params.setBaseUrl(resourceConfig.getBaseUrl());
             params.setResources(resourceConfig.getFetchOnInit());
 
             catalogManager.getJobManager()

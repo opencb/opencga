@@ -431,7 +431,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID to be analysed.", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--exomiser-version"}, description = "Exomiser version in the format X.Y where X is the major version and Y the minor version, e.g.: 14.0. If the version is not specified, the default version will be used. Refer to the configuration file to view all installed Exomiser versions and identify the default version.", required = false, arity = 1)
+        @Parameter(names = {"--exomiser-version"}, description = "Exomiser version, e.g.: 14.0.0. If the version is not specified, the default version will be used. Refer to the configuration file to view all installed Exomiser versions and identify the default version.", required = false, arity = 1)
         public String exomiserVersion;
     
         @Parameter(names = {"--clinical-analysis-type"}, description = "Clinical analysis type: SINGLE or FAMILY.", required = false, arity = 1)

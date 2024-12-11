@@ -201,7 +201,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), ResourceFetcherToolParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "baseUrl", commandOptions.baseUrl, true);
             putNestedIfNotNull(beanParams, "resources", commandOptions.resources, true);
 
             resourceFetcherToolParams = JacksonUtils.getDefaultObjectMapper().copy()

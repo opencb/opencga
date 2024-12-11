@@ -557,7 +557,5 @@ public class FieldConstants {
         + " default version.";
 
     // Download all resources
-    public static final String FETCH_RESOURCES_BASEURL_DESCRIPTION = "Base URL where the resources are located, this is an optional"
-            + " parameter, by default the resources will be downloaded from the OpenCB repository.";
-    public static final String FETCH_RESOURCES_DESCRIPTION = "List of resources to fetch; use 'all' to fetch all resources.";
+    public static final String FETCH_RESOURCES_DESCRIPTION = "List of resources to fetch; use '*' to fetch all resources.";
 }

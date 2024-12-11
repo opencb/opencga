@@ -137,7 +137,7 @@ public class AdminCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"resource-download-all"}, commandDescription ="Fetch all resources from the public server and save them into the OpenCGA local installation")
+    @Parameters(commandNames = {"resource-download-all"}, commandDescription ="Fetch resources from the public server and save them into the OpenCGA local installation")
     public class DownloadAllResourceCommandOptions {
     
         @ParametersDelegate
@@ -170,10 +170,7 @@ public class AdminCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--base-url"}, description = "Base URL where the resources are located, this is an optional parameter, by default the resources will be downloaded from the OpenCB repository.", required = false, arity = 1)
-        public String baseUrl;
-    
-        @Parameter(names = {"--resources"}, description = "List of resources to fetch; use 'all' to fetch all resources.", required = false, arity = 1)
+        @Parameter(names = {"--resources"}, description = "List of resources to fetch; use '*' to fetch all resources.", required = false, arity = 1)
         public String resources;
     
     }
