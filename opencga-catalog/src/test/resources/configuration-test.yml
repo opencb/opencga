@@ -17,34 +17,101 @@ analysis:
   packages: # List of packages where to find analysis tools
     - "org.opencb.opencga"
   scratchDir: "/tmp/"    # Scratch folder for the analysis.
-  # Default URL for downloading analysis resources.
-  resourceUrl: "http://resources.opencb.org/opencb/opencga/analysis/resources-test/"
-  fetchResourcesOnInit: true
+  resource:
+    # Base URL from fetching/downloading analysis resources.
+    baseUrl: "http://resources.opencb.org/opencb/opencga/analysis/resources-test/"
+    # Base path where to download the analysis resources.
+    basePath: "${OPENCGA.INSTALLATION.DIR}/analysis/resources"
+    # List of resources to fetch during initialization; the willcard '*' can be used, e.g.: to fetch all resources, use '*';
+    # to fetch only Exomiser resources, use 'EXOMISER_*'
+    fetchOnInit: []
+    # List of resources
+    files:
+      # Exomiser resources
+      - id: "EXOMISER_13_1_0_HG19"
+        url: "exomiser/13.1.0/2109_hg19.zip"
+        md5: ""
+        path: "exomiser/13.1.0/2109_hg19"
+      - id: "EXOMISER_13_1_0_HG38"
+        url: "exomiser/13.1.0/2109_hg38.zip"
+        md5: ""
+        path: "exomiser/13.1.0/2109_hg38"
+      - id: "EXOMISER_13_1_0_PHENOTYPE"
+        url: "exomiser/13.1.0/2109_phenotype.zip"
+        md5: ""
+        path: "exomiser/13.1.0/2109_phenotype"
+      - id: "EXOMISER_14_0_0_HG19"
+        url: "exomiser/14.0.0/2402_hg19.zip"
+        md5: ""
+        path: "exomiser/2402_hg19"
+      - id: "EXOMISER_14_0_0_HG38"
+        url: "exomiser/14.0.0/2402_hg38.zip"
+        md5: ""
+        path: "exomiser/2402_hg38"
+      - id: "EXOMISER_14_0_0_PHENOTYPE"
+        url: "exomiser/14.0.0/2402_phenotype.zip"
+        md5: ""
+        path: "exomiser/14.0.0/2402_phenotype"
+
+      # Reference genomes
+      - id: "REFERENCE_GENOME_GRCH38_FA"
+        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+        md5: ""
+        path: "reference-genome/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+      - id: "REFERENCE_GENOME_GRCH38_FAI"
+        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.fai"
+        md5: ""
+        path: "reference-genome/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.fai"
+      - id: "REFERENCE_GENOME_GRCH38_GZI"
+        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.gzi"
+        md5: ""
+        path: "reference-genome/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.gzi"
+      - id: "REFERENCE_GENOME_GRCH37_FA"
+        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
+        md5: ""
+        path: "reference-genome/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
+      - id: "REFERENCE_GENOME_GRCH37_FAI"
+        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai"
+        md5: ""
+        path: "reference-genome/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai"
+      - id: "REFERENCE_GENOME_GRCH37_GZI"
+        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
+        md5: ""
+        path: "reference-genome/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
+
+      # Relatedness resources
+      - id: "RELATEDNESS_VARIANTS_PRUNE_IN"
+        url: "relatedness/20240812_091434/variants.prune.in"
+        md5: ""
+        path: "relatedness/variants.prune.in"
+      - id: "RELATEDNESS_VARIANTS_FRQ"
+        url: "relatedness/20240812_091434/variants.frq"
+        md5: ""
+        path: "relatedness/variants.frq"
+
   # Docker used by OpenCGA analysis and containing external tools such as samtools, bcftools, tabix, fastqc, plink1.9, bwa and r-base
   # You can indicate the version, e.g: opencb/opencga-ext-tools:2.12.0, otherwise the current OpenCGA version will be used
   opencgaExtTools: "opencb/opencga-ext-tools"
   tools:
     - id: "exomiser"
-      version: "13.1"
+      version: "13.1.0"
       dockerId: "exomiser/exomiser-cli:13.1.0"
-      resources:
-        HG38: "2109_hg38"
-        PHENOTYPE: "2109_phenotype"
+      resources: ["EXOMISER_13_1_0_HG19", "EXOMISER_13_1_0_HG38", "EXOMISER_13_1_0_PHENOTYPE"]
     - id: "exomiser"
-      version: "14.0"
+      version: "14.0.0"
       defaultVersion: true
       dockerId: "exomiser/exomiser-cli:14.0.0"
-      resources:
-        HG38: "2402_hg38"
-        PHENOTYPE: "2402_phenotype"
+      resources: ["EXOMISER_14_0_0_HG19", "EXOMISER_14_0_0_HG38", "EXOMISER_14_0_0_PHENOTYPE"]
     - id: "mutational-signature"
       resources:
-        GRCH38_FA: "reference-genomes/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
-        GRCH38_FAI: "reference-genomes/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.fai"
-        GRCH38_GZI: "reference-genomes/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.gzi"
-        GRCH37_FA: "reference-genomes/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
-        GRCH37_FAI: "reference-genomes/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai"
-        GRCH37_GZI: "reference-genomes/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
+        - "REFERENCE_GENOME_GRCH38_FA"
+        - "REFERENCE_GENOME_GRCH38_FAI"
+        - "REFERENCE_GENOME_GRCH38_GZI"
+        - "REFERENCE_GENOME_GRCH37_FA"
+        - "REFERENCE_GENOME_GRCH37_FAI"
+        - "REFERENCE_GENOME_GRCH37_GZI"
+    - id: "relatedness"
+      resources: ["RELATEDNESS_VARIANTS_PRUNE_IN", "RELATEDNESS_VARIANTS_FRQ"]
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory

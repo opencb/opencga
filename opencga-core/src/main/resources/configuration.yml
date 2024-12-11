@@ -79,7 +79,7 @@ analysis:
     basePath: "${OPENCGA.INSTALLATION.DIR}/analysis/resources"
     # List of resources to fetch during initialization; the willcard '*' can be used, e.g.: to fetch all resources, use '*';
     # to fetch only Exomiser resources, use 'EXOMISER_*'
-    fetchOnInit: [*]
+    fetchOnInit: []
     # List of resources
     files:
       # Exomiser resources
@@ -151,22 +151,22 @@ analysis:
     - id: "exomiser"
       version: "13.1.0"
       dockerId: "exomiser/exomiser-cli:13.1.0"
-      resources: [EXOMISER_13_1_0_HG19, EXOMISER_13_1_0_HG38, EXOMISER_13_1_0_PHENOTYPE]
+      resources: ["EXOMISER_13_1_0_HG19", "EXOMISER_13_1_0_HG38", "EXOMISER_13_1_0_PHENOTYPE"]
     - id: "exomiser"
       version: "14.0.0"
       defaultVersion: true
       dockerId: "exomiser/exomiser-cli:14.0.0"
-      resources: [EXOMISER_14_0_0_HG19, EXOMISER_14_0_0_HG38, EXOMISER_14_0_0_PHENOTYPE]
+      resources: ["EXOMISER_14_0_0_HG19", "EXOMISER_14_0_0_HG38", "EXOMISER_14_0_0_PHENOTYPE"]
     - id: "mutational-signature"
       resources:
-        - REFERENCE_GENOME_GRCH38_FA
-        - REFERENCE_GENOME_GRCH38_FAI
-        - REFERENCE_GENOME_GRCH38_GZI
-        - REFERENCE_GENOME_GRCH37_FA
-        - REFERENCE_GENOME_GRCH37_FAI
-        - REFERENCE_GENOME_GRCH37_GZI
+        - "REFERENCE_GENOME_GRCH38_FA"
+        - "REFERENCE_GENOME_GRCH38_FAI"
+        - "REFERENCE_GENOME_GRCH38_GZI"
+        - "REFERENCE_GENOME_GRCH37_FA"
+        - "REFERENCE_GENOME_GRCH37_FAI"
+        - "REFERENCE_GENOME_GRCH37_GZI"
     - id: "relatedness"
-      resources: [RELATEDNESS_VARIANTS_PRUNE_IN, RELATEDNESS_VARIANTS_FRQ]
+      resources: ["RELATEDNESS_VARIANTS_PRUNE_IN", "RELATEDNESS_VARIANTS_FRQ"]
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory

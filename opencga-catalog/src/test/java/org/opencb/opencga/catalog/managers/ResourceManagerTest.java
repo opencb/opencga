@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog.managers;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
@@ -38,12 +37,7 @@ public class ResourceManagerTest extends AbstractManagerTest {
     }
 
     @Test(expected = ResourceException.class)
-    public void testFetchRelatednessResource() throws ResourceException, ToolException, IOException {
-        String analysisId = "qc"; //""relatedness";
-        String resourceName = "relatedness_thresholds.tsv"; //""variants.prune.in";
-
-        Assert.assertFalse(Files.exists(analysisResourcePath.resolve(analysisId).resolve(resourceName)));
-
+    public void testNotFetchedResource() throws ResourceException, ToolException, IOException {
         resourceManager.checkResourcePaths("relatedness");
     }
 

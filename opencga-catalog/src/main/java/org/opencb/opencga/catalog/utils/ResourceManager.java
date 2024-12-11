@@ -150,8 +150,8 @@ public class ResourceManager  {
                     // Found
                     Path analysisResourcePath = resourceConfig.getBasePath().resolve(resourceFile.getPath());
                     if (!Files.exists(analysisResourcePath)) {
-                        throw new ResourceException(RESOURCE_MSG + resourceFile.getId() + "' is not fetched: " + analysisResourcePath
-                                + ". Please fetch them first.");
+                        throw new ResourceException(RESOURCE_MSG + resourceFile.getId() + "' is not fetched yet (file '"
+                                + analysisResourcePath + "' is missing). Please fetch it first.");
                     }
                     files.add(analysisResourcePath.toFile());
                     found = true;
@@ -189,8 +189,8 @@ public class ResourceManager  {
                 // Resource found, exists?
                 Path analysisResourcePath = resourceConfig.getBasePath().resolve(resourceFile.getPath());
                 if (!Files.exists(analysisResourcePath)) {
-                    throw new ResourceException(RESOURCE_MSG + resourceFile.getId() + "' is not fetched: " + analysisResourcePath
-                            + ". Please fetch it first.");
+                    throw new ResourceException(RESOURCE_MSG + resourceFile.getId() + "' is not fetched yet (file '" + analysisResourcePath
+                            + "' is missing). Please fetch it first.");
                 }
                 return analysisResourcePath;
             }
