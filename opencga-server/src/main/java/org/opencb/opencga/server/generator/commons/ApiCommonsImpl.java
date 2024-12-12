@@ -33,6 +33,7 @@ public class ApiCommonsImpl implements ApiCommons {
         classes.add(MetaWSServer.class);
         classes.add(Ga4ghWSServer.class);
         classes.add(AdminWSServer.class);
+
         return classes;
     }
 }

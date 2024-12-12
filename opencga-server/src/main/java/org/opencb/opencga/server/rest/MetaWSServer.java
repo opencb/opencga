@@ -164,17 +164,17 @@ public class MetaWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/openapi")
-    @ApiOperation(value = "Opencga openapi json", response = String.class)
-    public Response openApi(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr, @QueryParam("summary") boolean summary) {
+    @ApiOperation(value = "Opencga openapi json", response = Swagger.class)
+    public String openApi(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr, @QueryParam("summary") boolean summary) {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
         Swagger swagger = generator.generateJsonOpenApi(new ApiCommonsImpl());
-        String swaggerJson ="ERROR: Swagger could not be generated";
+       String swaggerJson ="ERROR: Swagger could not be generated";
         ObjectMapper mapper = new ObjectMapper();
         try {
              swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(DataModelsUtils.dataModelToJsonString(swaggerJson, false)), 1));
+        return swaggerJson;
     }
 }
