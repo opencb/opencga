@@ -73,8 +73,8 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
             case "catalog-jwt":
                 queryResponse = jwtCatalog();
                 break;
-            case "resource-download-all":
-                queryResponse = downloadAllResource();
+            case "resource-fetch":
+                queryResponse = fetchResource();
                 break;
             case "users-create":
                 queryResponse = createUsers();
@@ -175,10 +175,10 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getAdminClient().jwtCatalog(jWTParams, queryParams);
     }
 
-    private RestResponse<Job> downloadAllResource() throws Exception {
-        logger.debug("Executing downloadAllResource in Admin command line");
+    private RestResponse<Job> fetchResource() throws Exception {
+        logger.debug("Executing fetchResource in Admin command line");
 
-        AdminCommandOptions.DownloadAllResourceCommandOptions commandOptions = adminCommandOptions.downloadAllResourceCommandOptions;
+        AdminCommandOptions.FetchResourceCommandOptions commandOptions = adminCommandOptions.fetchResourceCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
@@ -194,7 +194,7 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/resource/downloadAll"));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/resource/fetch"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             resourceFetcherToolParams = JacksonUtils.getDefaultObjectMapper()
@@ -207,7 +207,7 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ResourceFetcherToolParams.class);
         }
-        return openCGAClient.getAdminClient().downloadAllResource(resourceFetcherToolParams, queryParams);
+        return openCGAClient.getAdminClient().fetchResource(resourceFetcherToolParams, queryParams);
     }
 
     private RestResponse<User> createUsers() throws Exception {

@@ -83,8 +83,8 @@ export default class Admin extends OpenCGAParentClass {
     *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    downloadAllResource(data, params) {
-        return this._post("admin", null, "resource", null, "downloadAll", data, params);
+    fetchResource(data, params) {
+        return this._post("admin", null, "resource", null, "fetch", data, params);
     }
 
     /** Create a new user

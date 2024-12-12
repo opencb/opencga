@@ -541,7 +541,7 @@ public class FieldConstants {
     public static final String COVERAGE_INDEX_BAM_FILE_ID_DESCRIPTION = "BAM file ID.";
     public static final String COVERAGE_INDEX_BAI_FILE_ID_DESCRIPTION = "BAI file ID.";
     public static final String COVERAGE_INDEX_OVERWRITE_DESCRIPTION = "Window size (i.e., the size of the bins, in bases, for the output"
-        + " of the BIGWIG file).";
+            + " of the BIGWIG file).";
 
     // Alignment QC analysis (asample-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
@@ -555,9 +555,11 @@ public class FieldConstants {
     public static final String EXOMISER_SAMPLE_DESCRIPTION = "Sample ID to be analysed.";
     public static final String EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION = "Clinical analysis type: SINGLE or FAMILY.";
     public static final String EXOMISER_VERSION_DESCRIPTION = "Exomiser version, e.g.: 14.0.0. If the version is not specified,"
-        + " the default version will be used. Refer to the configuration file to view all installed Exomiser versions and identify the"
-        + " default version.";
+            + " the default version will be used. Refer to the configuration file to view all installed Exomiser versions and identify the"
+            + " default version.";
 
-    // Download all resources
-    public static final String FETCH_RESOURCES_DESCRIPTION = "List of resources to fetch; use '*' to fetch all resources.";
+    // Fetch resources
+    public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"
+            + " specified in the configuration file). The wildcard '*' can be used: for example, use '*' to fetch all resources, or"
+            + " 'EXOMISER_*' to fetch only Exomiser resources.";
 }

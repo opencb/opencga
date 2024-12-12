@@ -117,10 +117,10 @@ public class AdminClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> downloadAllResource(ResourceFetcherToolParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> fetchResource(ResourceFetcherToolParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("admin", null, "resource", null, "downloadAll", params, POST, Job.class);
+        return execute("admin", null, "resource", null, "fetch", params, POST, Job.class);
     }
 
     /**

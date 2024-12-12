@@ -36,7 +36,7 @@ public class AdminCommandOptions {
         public GroupByAuditCommandOptions groupByAuditCommandOptions;
         public InstallCatalogCommandOptions installCatalogCommandOptions;
         public JwtCatalogCommandOptions jwtCatalogCommandOptions;
-        public DownloadAllResourceCommandOptions downloadAllResourceCommandOptions;
+        public FetchResourceCommandOptions fetchResourceCommandOptions;
         public CreateUsersCommandOptions createUsersCommandOptions;
         public ImportUsersCommandOptions importUsersCommandOptions;
         public PermissionsUsersCommandOptions permissionsUsersCommandOptions;
@@ -52,7 +52,7 @@ public class AdminCommandOptions {
         this.groupByAuditCommandOptions = new GroupByAuditCommandOptions();
         this.installCatalogCommandOptions = new InstallCatalogCommandOptions();
         this.jwtCatalogCommandOptions = new JwtCatalogCommandOptions();
-        this.downloadAllResourceCommandOptions = new DownloadAllResourceCommandOptions();
+        this.fetchResourceCommandOptions = new FetchResourceCommandOptions();
         this.createUsersCommandOptions = new CreateUsersCommandOptions();
         this.importUsersCommandOptions = new ImportUsersCommandOptions();
         this.permissionsUsersCommandOptions = new PermissionsUsersCommandOptions();
@@ -137,8 +137,8 @@ public class AdminCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"resource-download-all"}, commandDescription ="Fetch resources from the public server and save them into the OpenCGA local installation")
-    public class DownloadAllResourceCommandOptions {
+    @Parameters(commandNames = {"resource-fetch"}, commandDescription ="Fetch resources from the public server and save them into the OpenCGA local installation")
+    public class FetchResourceCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -170,7 +170,7 @@ public class AdminCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--resources"}, description = "List of resources to fetch; use '*' to fetch all resources.", required = false, arity = 1)
+        @Parameter(names = {"--resources"}, description = "List of resource IDs, separated by commas, to fetch (available resources are specified in the configuration file). The wildcard '*' can be used: for example, use '*' to fetch all resources, or 'EXOMISER_*' to fetch only Exomiser resources.", required = false, arity = 1)
         public String resources;
     
     }

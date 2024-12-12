@@ -65,11 +65,11 @@ class Admin(_ParentRestClient):
 
         return self._post(category='admin', resource='jwt', subcategory='catalog', data=data, **options)
 
-    def download_all_resource(self, data=None, **options):
+    def fetch_resource(self, data=None, **options):
         """
         Fetch resources from the public server and save them into the OpenCGA
             local installation.
-        PATH: /{apiVersion}/admin/resource/downloadAll
+        PATH: /{apiVersion}/admin/resource/fetch
 
         :param dict data: Download-resources tool parameters. (REQUIRED)
         :param str job_id: Job ID. It must be a unique string within the
@@ -87,7 +87,7 @@ class Admin(_ParentRestClient):
             execution, but the job will not actually run.
         """
 
-        return self._post(category='admin', resource='downloadAll', subcategory='resource', data=data, **options)
+        return self._post(category='admin', resource='fetch', subcategory='resource', data=data, **options)
 
     def create_users(self, data=None, **options):
         """
