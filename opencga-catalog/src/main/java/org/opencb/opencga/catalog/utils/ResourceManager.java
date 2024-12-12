@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.utils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -330,7 +331,9 @@ public class ResourceManager  {
                 // Move each file to target directory
                 Path targetFile = targetDir.resolve(sourceDir.relativize(file));
                 logger.info("Moving {} to {} ...", file.toAbsolutePath(), targetFile.toAbsolutePath());
-                Files.move(file, targetFile, StandardCopyOption.REPLACE_EXISTING);
+                FileUtils.copyFile(file.toFile(), targetFile.toFile());
+                Files.delete(file);
+//                Files.move(file, targetFile, StandardCopyOption.REPLACE_EXISTING);
                 logger.info(OK);
                 return FileVisitResult.CONTINUE;
             }
