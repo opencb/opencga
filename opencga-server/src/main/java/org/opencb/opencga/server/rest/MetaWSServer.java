@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.DataModelsUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -27,6 +29,8 @@ import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.OpenCGAHealthCheckMonitor;
 import org.opencb.opencga.server.generator.RestApiParser;
 import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.models.openapi.Swagger;
+import org.opencb.opencga.server.generator.openapi.JsonOpenApiGenerator;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
@@ -154,5 +158,22 @@ public class MetaWSServer extends OpenCGAWSServer {
         }
         RestApi restApi = new RestApiParser().parse(classes, summary);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
+    }
+
+
+    @GET
+    @Path("/openapi")
+    @ApiOperation(value = "Opencga openapi json", response = String.class)
+    public Response openApi(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr, @QueryParam("summary") boolean summary) {
+        JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
+        Swagger swagger = generator.generateJsonOpenApi();
+        String swaggerJson ="ERROR: Swagger could not be generated";
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+             swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(DataModelsUtils.dataModelToJsonString(swaggerJson, false)), 1));
     }
 }

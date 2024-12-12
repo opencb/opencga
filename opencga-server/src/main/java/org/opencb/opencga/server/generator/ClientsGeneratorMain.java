@@ -3,6 +3,7 @@ package org.opencb.opencga.server.generator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.opencb.opencga.server.generator.commons.ApiCommons;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.RestCategory;
@@ -33,25 +34,7 @@ public class ClientsGeneratorMain {
         System.setProperty("opencga.log.level", "info");
         Configurator.reconfigure();
 
-        List<Class<?>> classes = new ArrayList<>();
-        classes.add(OrganizationWSServer.class);
-        classes.add(UserWSServer.class);
-        classes.add(ProjectWSServer.class);
-        classes.add(StudyWSServer.class);
-        classes.add(FileWSServer.class);
-        classes.add(JobWSServer.class);
-        classes.add(SampleWSServer.class);
-        classes.add(IndividualWSServer.class);
-        classes.add(FamilyWSServer.class);
-        classes.add(CohortWSServer.class);
-        classes.add(PanelWSServer.class);
-        classes.add(AlignmentWebService.class);
-        classes.add(VariantWebService.class);
-        classes.add(ClinicalWebService.class);
-        classes.add(VariantOperationWebService.class);
-        classes.add(MetaWSServer.class);
-        classes.add(Ga4ghWSServer.class);
-        classes.add(AdminWSServer.class);
+        List<Class<?>> classes = ApiCommons.getApiClasses();
 
         try {
             // Create CommandLineConfiguration and ClientsGenerator
