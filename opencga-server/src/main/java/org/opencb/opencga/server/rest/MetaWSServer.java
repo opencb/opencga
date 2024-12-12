@@ -28,6 +28,7 @@ import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.OpenCGAHealthCheckMonitor;
 import org.opencb.opencga.server.generator.RestApiParser;
+import org.opencb.opencga.server.generator.commons.ApiCommonsImpl;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.openapi.Swagger;
 import org.opencb.opencga.server.generator.openapi.JsonOpenApiGenerator;
@@ -166,7 +167,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Opencga openapi json", response = String.class)
     public Response openApi(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr, @QueryParam("summary") boolean summary) {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
-        Swagger swagger = generator.generateJsonOpenApi();
+        Swagger swagger = generator.generateJsonOpenApi(new ApiCommonsImpl());
         String swaggerJson ="ERROR: Swagger could not be generated";
         ObjectMapper mapper = new ObjectMapper();
         try {
