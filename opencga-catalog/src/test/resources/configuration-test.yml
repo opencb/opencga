@@ -81,12 +81,12 @@ analysis:
 
       # Relatedness resources
       - id: "RELATEDNESS_VARIANTS_PRUNE_IN"
-        url: "relatedness/20240812_091434/variants.prune.in"
-        md5: ""
+        url: "data/relatedness/relatedness_thresholds.tsv"
+        md5: "97175d1574f14fe45bae13ffe277f295"
         path: "relatedness/variants.prune.in"
       - id: "RELATEDNESS_VARIANTS_FRQ"
-        url: "relatedness/20240812_091434/variants.frq"
-        md5: ""
+        url: "data/ibd/prune-20241015.out"
+        md5: "0d7ce55d5c48870698633ca7694e95d3"
         path: "relatedness/variants.frq"
 
   # Docker used by OpenCGA analysis and containing external tools such as samtools, bcftools, tabix, fastqc, plink1.9, bwa and r-base
