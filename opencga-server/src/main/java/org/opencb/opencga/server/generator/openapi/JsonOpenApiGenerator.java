@@ -40,7 +40,7 @@ public class JsonOpenApiGenerator {
                     Operation operation = new Operation();
                     operation.setSummary(apiOperation.value());
                     operation.setDescription(apiOperation.notes());
-                    operation.setTags(Collections.singletonList(clazz.getSimpleName()));
+                    operation.setTags(Collections.singletonList(api.value()));
                     operation.setResponses(Collections.singletonMap("200", new Response()));
 
                     // Obtener el método HTTP
