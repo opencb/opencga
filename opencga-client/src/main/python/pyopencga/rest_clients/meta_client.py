@@ -55,6 +55,16 @@ class Meta(_ParentRestClient):
 
         return self._get(category='meta', resource='model', **options)
 
+    def openapi(self, **options):
+        """
+        Opencga openapi json.
+        PATH: /{apiVersion}/meta/openapi
+
+        :param str category: List of categories to get API from.
+        """
+
+        return self._get(category='meta', resource='openapi', **options)
+
     def ping(self, **options):
         """
         Ping Opencga webservices.
