@@ -154,7 +154,7 @@ public class VariantQueryProjectionParser {
                             message += " The statistics have been calculated with " + invalidStatsNumSamples + " samples, "
                                     + "while the total number of samples in the cohort is " + numSampmles + ".";
                         }
-                        message += " To display updated statistics, please execute variant-stats-index.";
+                        message += " To display updated statistics, please contact your Organization / Study Administrator.";
                         events.add(new Event(Event.Type.WARNING, message));
                     } else if (status == TaskMetadata.Status.RUNNING) {
                         String message = "Please note that the Cohort Stats for "
