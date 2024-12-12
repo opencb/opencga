@@ -3,7 +3,7 @@ import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiImplicitParam;
 import org.opencb.opencga.core.tools.annotations.ApiImplicitParams;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
-import org.opencb.opencga.server.generator.commons.ApiCommons;
+import org.opencb.opencga.server.generator.commons.ApiCommonsImpl;
 import org.opencb.opencga.server.generator.models.openapi.*;
 import org.opencb.opencga.server.generator.models.openapi.Path;
 
@@ -13,8 +13,8 @@ import java.util.*;
 
 public class JsonOpenApiGenerator {
 
-    public Swagger generateJsonOpenApi() {
-        List<Class<?>> classes = ApiCommons.getApiClasses();
+    public Swagger generateJsonOpenApi(ApiCommonsImpl apiCommons) {
+        List<Class<?>> classes = apiCommons.getApiClasses();
                 Swagger swagger = new Swagger();
         Map<String, Path> paths = new HashMap<>();
         List<Tag> tags = new ArrayList<>();
