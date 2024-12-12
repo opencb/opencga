@@ -18,7 +18,7 @@
 {"collections": ["job"], "fields": {"uuid": 1}, "options": {"unique": true}}
 {"collections": ["job"], "fields": {"uid": 1}, "options": {"unique": true}}
 {"collections": ["job"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true}}
-{"collections": ["job"], "fields": {"type": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["job"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"tool.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"tool.type": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"userId": 1, "studyUid": 1}, "options": {}}
