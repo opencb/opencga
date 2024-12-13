@@ -98,9 +98,9 @@ class File(_ParentRestClient):
             study owners or administrators can query by this field. .
         :param bool deleted: Boolean to retrieve deleted entries.
         :param str release: Release when it was created.
-        :param str aggregation_fields: List of fields, separated by
-            semicolons, for applying aggregation stats, e.g.:
-            studies;type;numSamples[0..10]:1.
+        :param str aggregation_fields: List of fields separated by semicolons
+            to apply aggregation statistics, e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
         """
 
         return self._get(category='files', resource='aggregationStats', **options)

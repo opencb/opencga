@@ -227,7 +227,7 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--stats-consequence-type-count"}, description = "Sample variant stats ConsequenceTypeCount", required = false, arity = 1)
         public String statsConsequenceTypeCount; 
     
-        @Parameter(names = {"--aggregation-fields"}, description = "List of fields, separated by semicolons, for applying aggregation stats, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
+        @Parameter(names = {"--aggregation-fields"}, description = "List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
         public String aggregationFields; 
     
     }

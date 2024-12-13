@@ -94,8 +94,8 @@ export default class Sample extends OpenCGAParentClass {
     * @param {String} [params.statsBiotypeCount] - Sample variant stats BiotypeCount.
     * @param {String} [params.statsClinicalSignificanceCount] - Sample variant stats ClinicalSignificanceCount.
     * @param {String} [params.statsConsequenceTypeCount] - Sample variant stats ConsequenceTypeCount.
-    * @param {String} [params.aggregationFields] - List of fields, separated by semicolons, for applying aggregation stats, e.g.:
-    *     studies;type;numSamples[0..10]:1.
+    * @param {String} [params.aggregationFields] - List of fields separated by semicolons to apply aggregation statistics, e.g.:
+    *     studies;type;numSamples[0..10]:1;format:sum(size).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     aggregationStats(params) {

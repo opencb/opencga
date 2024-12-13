@@ -75,8 +75,8 @@ export default class Family extends OpenCGAParentClass {
     *     permissions. Only study owners or administrators can query by this field. .
     * @param {String} [params.release] - Release when it was created.
     * @param {Number} [params.snapshot] - Snapshot value (Latest version of the entry in the specified release).
-    * @param {String} [params.aggregationFields] - List of fields, separated by semicolons, for applying aggregation stats, e.g.:
-    *     studies;type;numSamples[0..10]:1.
+    * @param {String} [params.aggregationFields] - List of fields separated by semicolons to apply aggregation statistics, e.g.:
+    *     studies;type;numSamples[0..10]:1;format:sum(size).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     aggregationStats(params) {

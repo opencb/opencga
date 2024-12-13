@@ -94,8 +94,8 @@ public class JobClient extends AbstractParentClient {
      *            permissions. Only study owners or administrators can query by this field. .
      *       release: Release when it was created.
      *       deleted: Boolean to retrieve deleted entries.
-     *       aggregationFields: List of fields, separated by semicolons, for applying aggregation stats, e.g.:
-     *            studies;type;numSamples[0..10]:1.
+     *       aggregationFields: List of fields separated by semicolons to apply aggregation statistics, e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

@@ -91,7 +91,7 @@ setMethod("sampleClient", "OpencgaR", function(OpencgaR, annotationSet, members,
         #' @param statsBiotypeCount Sample variant stats BiotypeCount.
         #' @param statsClinicalSignificanceCount Sample variant stats ClinicalSignificanceCount.
         #' @param statsConsequenceTypeCount Sample variant stats ConsequenceTypeCount.
-        #' @param aggregationFields List of fields, separated by semicolons, for applying aggregation stats, e.g.: studies;type;numSamples[0..10]:1.
+        #' @param aggregationFields List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
         aggregationStats=fetchOpenCGA(object=OpencgaR, category="samples", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),

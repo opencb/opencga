@@ -105,9 +105,9 @@ class Individual(_ParentRestClient):
         :param str release: Release when it was created.
         :param int snapshot: Snapshot value (Latest version of the entry in
             the specified release).
-        :param str aggregation_fields: List of fields, separated by
-            semicolons, for applying aggregation stats, e.g.:
-            studies;type;numSamples[0..10]:1.
+        :param str aggregation_fields: List of fields separated by semicolons
+            to apply aggregation statistics, e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
         """
 
         return self._get(category='individuals', resource='aggregationStats', **options)

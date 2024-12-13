@@ -65,9 +65,9 @@ class Cohort(_ParentRestClient):
         :param str samples: Cohort sample IDs.
         :param str num_samples: Number of samples.
         :param str release: release.
-        :param str aggregation_fields: List of fields, separated by
-            semicolons, for applying aggregation stats, e.g.:
-            studies;type;numSamples[0..10]:1.
+        :param str aggregation_fields: List of fields separated by semicolons
+            to apply aggregation statistics, e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
         """
 
         return self._get(category='cohorts', resource='aggregationStats', **options)
