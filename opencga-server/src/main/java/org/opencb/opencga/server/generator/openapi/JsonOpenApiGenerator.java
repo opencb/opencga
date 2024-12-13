@@ -52,7 +52,9 @@ public class JsonOpenApiGenerator {
                     // Extraer parámetros
                     List<Parameter> parameters = extractParameters(wsmethod);
                     method.setParameters(parameters);
-                    method.getConsumes().addAll(Arrays.asList(consumes.value()));
+                    if (consumes != null){
+                        method.getConsumes().addAll(Arrays.asList(consumes.value()));
+                    }
                     method.getProduces().add(String.valueOf(apiOperation.response()));
                     // Ruta completa del endpoint
                     javax.ws.rs.Path methodPathAnnotation = wsmethod.getAnnotation(javax.ws.rs.Path.class);
