@@ -13,7 +13,7 @@ public class Swagger {
     private String host;
     private String basePath;
     private List<Tag> tags;
-    private Map<String, Path> paths;
+    private Map<String, Map<String,Method>> paths;
     private Map<String, Definition> definitions;
 
     // Getters y Setters
@@ -49,12 +49,13 @@ public class Swagger {
         this.basePath = basePath;
     }
 
-    public Map<String, Path> getPaths() {
+    public Map<String, Map<String, Method>> getPaths() {
         return paths;
     }
 
-    public void setPaths(Map<String, Path> paths) {
+    public Swagger setPaths(Map<String, Map<String, Method>> paths) {
         this.paths = paths;
+        return this;
     }
 
     public Map<String, Definition> getDefinitions() {

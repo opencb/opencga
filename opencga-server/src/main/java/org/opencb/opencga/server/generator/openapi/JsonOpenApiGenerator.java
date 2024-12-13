@@ -5,7 +5,6 @@ import org.opencb.opencga.core.tools.annotations.ApiImplicitParams;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
 import org.opencb.opencga.server.generator.models.openapi.*;
-import org.opencb.opencga.server.generator.models.openapi.Path;
 
 import javax.ws.rs.*;
 import java.util.*;
@@ -15,7 +14,7 @@ public class JsonOpenApiGenerator {
     public Swagger generateJsonOpenApi(ApiCommons apiCommons) {
         List<Class<?>> classes = apiCommons.getApiClasses();
                 Swagger swagger = new Swagger();
-        Map<String, Path> paths = new HashMap<>();
+        Map<String, Map<String,Method>> paths = new HashMap<>();
         List<Tag> tags = new ArrayList<>();
 
         for (Class<?> clazz : classes) {
@@ -62,8 +61,8 @@ public class JsonOpenApiGenerator {
                     method.setOperationId(methodPathAnnotation != null ? methodPathAnnotation.value() : "");
 
                     // Crear o actualizar el Path
-                    paths.put(fullPath, new Path());
-                    paths.get(fullPath).getMethod().put(httpMethod, method);
+                    paths.put(fullPath, new HashMap<>());
+                    paths.get(fullPath).put(httpMethod, method);
                 }
             }
         }
