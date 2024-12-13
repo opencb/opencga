@@ -10,6 +10,7 @@ public class Path {
     private Map<String,Method> method; // GET, POST, PUT, DELETE
 
     public Path() {
+        method = new HashMap<>();
     }
 
     public Map<String, Method> getMethod() {
