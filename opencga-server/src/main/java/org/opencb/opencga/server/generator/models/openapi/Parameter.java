@@ -6,46 +6,74 @@ public class Parameter {
     private String description;
     private boolean required;
     private String type;
+    private String format;
+
+    public Parameter() {
+    }
+
+    public Parameter(String name, String in, String description, boolean required, String type, String format) {
+        this.name = name;
+        this.in = in;
+        this.description = description;
+        this.required = required;
+        this.type = type;
+        this.format = format;
+    }
 
     // Getters y Setters
+
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Parameter setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getIn() {
         return in;
     }
 
-    public void setIn(String in) {
+    public Parameter setIn(String in) {
         this.in = in;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Parameter setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     public boolean isRequired() {
         return required;
     }
 
-    public void setRequired(boolean required) {
+    public Parameter setRequired(boolean required) {
         this.required = required;
+        return this;
     }
 
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public Parameter setType(String type) {
         this.type = type;
+        return this;
+    }
+
+    public String getFormat() {
+        return format;
+    }
+
+    public Parameter setFormat(String format) {
+        this.format = format;
+        return this;
     }
 }
 

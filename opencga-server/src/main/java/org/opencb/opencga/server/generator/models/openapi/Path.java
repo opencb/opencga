@@ -7,22 +7,17 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Path {
 
-    private Map<String, Operation> operations;
+    private Map<String,Method> method; // GET, POST, PUT, DELETE
 
     public Path() {
-        this.operations = new HashMap<String, Operation>();
     }
 
-    public Path(Map<String, Operation> operations) {
-        this.operations = operations;
+    public Map<String, Method> getMethod() {
+        return method;
     }
 
-    // Getters y Setters
-    public Map<String, Operation> getOperations() {
-        return operations;
-    }
-
-    public void setOperations(Map<String, Operation> operations) {
-        this.operations = operations;
+    public Path setMethod(Map<String, Method> method) {
+        this.method = method;
+        return this;
     }
 }

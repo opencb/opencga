@@ -4,12 +4,10 @@ import org.opencb.opencga.core.tools.annotations.ApiImplicitParam;
 import org.opencb.opencga.core.tools.annotations.ApiImplicitParams;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
-import org.opencb.opencga.server.generator.commons.ApiCommonsImpl;
 import org.opencb.opencga.server.generator.models.openapi.*;
 import org.opencb.opencga.server.generator.models.openapi.Path;
 
 import javax.ws.rs.*;
-import java.lang.reflect.Method;
 import java.util.*;
 
 public class JsonOpenApiGenerator {
@@ -33,32 +31,37 @@ public class JsonOpenApiGenerator {
                 continue;
             }
             // Procesar métodos
-            for (Method method : clazz.getDeclaredMethods()) {
-                ApiOperation apiOperation = method.getAnnotation(ApiOperation.class);
+            for (java.lang.reflect.Method wsmethod : clazz.getDeclaredMethods()) {
+                ApiOperation apiOperation = wsmethod.getAnnotation(ApiOperation.class);
                 if (apiOperation != null) {
                     // Crear operación Swagger
-                    Operation operation = new Operation();
-                    operation.setSummary(apiOperation.value());
-                    operation.setDescription(apiOperation.notes());
-                    operation.setTags(Collections.singletonList(api.value()));
-                    operation.setResponses(Collections.singletonMap("200", new Response()));
+                    Method method = new Method();
+                    method.setSummary(apiOperation.value());
+                    method.setDescription(apiOperation.notes());
+                    method.setTags(Collections.singletonList(api.value()));
+                    Map<String,String> responses=new HashMap<>();
+                    responses.put("type", String.valueOf(apiOperation.response()));
+                    method.getResponses().add(new Response("200", responses));
 
                     // Obtener el método HTTP
-                    String httpMethod = extractHttpMethod(method);
+                    String httpMethod = extractHttpMethod(wsmethod);
                     if (httpMethod == null) continue;
 
+
+                    Consumes consumes = wsmethod.getAnnotation(Consumes.class);
                     // Extraer parámetros
-                    List<Parameter> parameters = extractParameters(method);
-                    operation.setParameters(parameters);
-
+                    List<Parameter> parameters = extractParameters(wsmethod);
+                    method.setParameters(parameters);
+                    method.getConsumes().addAll(Arrays.asList(consumes.value()));
+                    method.getProduces().add(String.valueOf(apiOperation.response()));
                     // Ruta completa del endpoint
-                    javax.ws.rs.Path methodPathAnnotation = method.getAnnotation(javax.ws.rs.Path.class);
+                    javax.ws.rs.Path methodPathAnnotation = wsmethod.getAnnotation(javax.ws.rs.Path.class);
                     String fullPath = basePath + (methodPathAnnotation != null ? methodPathAnnotation.value() : "");
-
+                    method.setOperationId(methodPathAnnotation != null ? methodPathAnnotation.value() : "");
 
                     // Crear o actualizar el Path
                     paths.put(fullPath, new Path());
-                    paths.get(fullPath).getOperations().put(httpMethod.toLowerCase(), operation);
+                    paths.get(fullPath).getMethod().put(httpMethod, method);
                 }
             }
         }
@@ -67,7 +70,7 @@ public class JsonOpenApiGenerator {
         return swagger;
     }
 
-    private String extractHttpMethod(Method method) {
+    private String extractHttpMethod(java.lang.reflect.Method method) {
         if (method.isAnnotationPresent(GET.class)) {
             return "GET";
         } else if (method.isAnnotationPresent(POST.class)) {
@@ -80,7 +83,7 @@ public class JsonOpenApiGenerator {
         return null;
     }
 
-    private List<Parameter> extractParameters(Method method) {
+    private List<Parameter> extractParameters(java.lang.reflect.Method method) {
         List<Parameter> parameters = new ArrayList<>();
         ApiImplicitParams implicitParams = method.getAnnotation(ApiImplicitParams.class);
         if (implicitParams != null) {
