@@ -216,6 +216,8 @@ public class ResourceManager  {
             throws IOException, NoSuchAlgorithmException, ResourceException, ToolException {
         Resource resourceConfig = configuration.getAnalysis().getResource();
 
+        boolean isExomiserResource = resourceFile.getId().startsWith("EXOMISER_");
+
         // First check installation directory, and check MD5 (if it exists)
         Path installationFile = resourceConfig.getBasePath().resolve(resourceFile.getPath());
         if (Files.exists(installationFile)) {
@@ -225,6 +227,18 @@ public class ResourceManager  {
                 return installationFile;
             } catch (Exception e) {
                 logger.warn("Resource '{}' has already been downloaded but MD5 validation failed: downloading again", resourceFile.getId());
+            }
+        } else if (isExomiserResource) {
+            // Remove extension: .zip
+            Path exomiserPath = installationFile.toAbsolutePath();
+            int dotIndex = installationFile.toAbsolutePath().toString().lastIndexOf('.');
+            if (dotIndex > 0) { // Check if there's an extension
+                exomiserPath = Paths.get(exomiserPath.toAbsolutePath().toString().substring(0, dotIndex));
+            }
+
+            if (Files.exists(exomiserPath) && Files.isDirectory(exomiserPath)) {
+                logger.info("Resource '{}' has already been downloaded: skipping download", resourceFile.getId());
+                return exomiserPath;
             }
         }
 
@@ -239,7 +253,7 @@ public class ResourceManager  {
         validateMD5(fetchedFile, resourceFile.getMd5());
 
         // Any action to perform, e.g.: Exomiser resources need to be unzipped
-        if (resourceFile.getId().startsWith("EXOMISER_")) {
+        if (isExomiserResource) {
             unzip(fetchedFile, "exomiser");
         }
         return fetchedFile;
