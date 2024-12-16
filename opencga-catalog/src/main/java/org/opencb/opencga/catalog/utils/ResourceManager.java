@@ -23,6 +23,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.InputMismatchException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -255,6 +256,14 @@ public class ResourceManager  {
         // Any action to perform, e.g.: Exomiser resources need to be unzipped
         if (isExomiserResource) {
             unzip(fetchedFile, "exomiser");
+            // Delete Exomiser files .zip, .sha256
+            List<String> exts = Arrays.asList(".zip", ".sha256");
+            for (String ext : exts) {
+                if (Files.exists(downloadedPath.resolve(resourceFile.getPath() + ext))) {
+                    logger.info("Deleting Exomiser file {} after unzipping", downloadedPath.resolve(resourceFile.getPath() + ext));
+                    Files.delete(downloadedPath.resolve(resourceFile.getPath() + ext));
+                }
+            }
             return downloadedPath.resolve(resourceFile.getPath());
         }
         return fetchedFile;
