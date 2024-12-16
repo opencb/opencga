@@ -76,9 +76,9 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @Test
     public void singleExomiserAnalysis() throws IOException, CatalogException, ToolException {
-//        String exomiserVersion = "13.1";
+//        String exomiserVersion = "13.1.0";
 //        String resourceVersion = "2109";
-        String exomiserVersion = "14.0";
+        String exomiserVersion = "14.0.0";
         String resourceVersion = "2402";
         assertTrue(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ExomiserWrapperAnalysis.ID).resolve(exomiserVersion).toFile().exists());
 
@@ -126,9 +126,9 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @Test
     public void familyExomiserAnalysis() throws IOException, CatalogException, ToolException {
-//        String exomiserVersion = "13.1";
+//        String exomiserVersion = "13.1.0";
 //        String resourceVersion = "2109";
-        String exomiserVersion = "14.0";
+        String exomiserVersion = "14.0.0";
         String resourceVersion = "2402";
         assertTrue(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ExomiserWrapperAnalysis.ID).resolve(exomiserVersion).toFile().exists());
 
@@ -175,9 +175,9 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @Test
     public void trioSingleExomiserAnalysis() throws IOException, CatalogException, ToolException {
-//        String exomiserVersion = "13.1";
+//        String exomiserVersion = "13.1.0";
 //        String resourceVersion = "2109";
-        String exomiserVersion = "14.0";
+        String exomiserVersion = "14.0.0";
         String resourceVersion = "2402";
         assertTrue(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ExomiserWrapperAnalysis.ID).resolve(exomiserVersion).toFile().exists());
 
