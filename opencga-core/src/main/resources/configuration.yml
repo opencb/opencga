@@ -143,12 +143,12 @@ analysis:
     - id: "exomiser"
       version: "13.1.0"
       dockerId: "exomiser/exomiser-cli:13.1.0"
-      resources: ["EXOMISER_13_1_0_HG19", "EXOMISER_13_1_0_HG38", "EXOMISER_13_1_0_PHENOTYPE"]
+      resources: ["EXOMISER_13_1_0_HG38", "EXOMISER_13_1_0_PHENOTYPE"]
     - id: "exomiser"
       version: "14.0.0"
       defaultVersion: true
       dockerId: "exomiser/exomiser-cli:14.0.0"
-      resources: ["EXOMISER_14_0_0_HG19", "EXOMISER_14_0_0_HG38", "EXOMISER_14_0_0_PHENOTYPE"]
+      resources: ["EXOMISER_14_0_0_HG38", "EXOMISER_14_0_0_PHENOTYPE"]
     - id: "mutational-signature"
       resources:
         - "REFERENCE_GENOME_GRCH38_FA"

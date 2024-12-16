@@ -251,10 +251,11 @@ public class ExomiserAnalysisUtils  {
         String assembly = IndividualQcUtils.getAssembly(studyId, catalogManager, token);
         if (assembly.equalsIgnoreCase("GRCh38") || assembly.equalsIgnoreCase("HG38")) {
             return "hg38";
-        } else if (assembly.equalsIgnoreCase("GRCh37") || assembly.equalsIgnoreCase("HG19")) {
-            return "hg19";
+//        } else if (assembly.equalsIgnoreCase("GRCh37") || assembly.equalsIgnoreCase("HG19")) {
+//            return "hg19";
         }
-        throw new ToolException("Invalid assembly '" + assembly + "'. Supported assemblies are: GRCh38, GRCh37, HG38 and HG19");
+        throw new ToolException("Invalid assembly '" + assembly + "'. Supported assemblies are: GRCh38 and HG38");
+//        throw new ToolException("Invalid assembly '" + assembly + "'. Supported assemblies are: GRCh38, GRCh37, HG38 and HG19");
     }
 
     private static File createPedigreeFile(Family family, Pedigree pedigree, Path outDir) throws ToolException {

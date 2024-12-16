@@ -388,7 +388,7 @@ public class ResourceManager  {
             throw new ToolException("Error unzipping resource file '" + filename + FOR_ANALYSIS_MSG + analysisId + "'. Check log files: "
                     + stdoutPath + ", " + stderrPath, e);
         }
-        
+
         // Deleting stdout and stderr after unzipping
         if (Files.exists(stdoutPath)) {
             Files.delete(stdoutPath);
