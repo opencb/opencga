@@ -216,35 +216,35 @@ public class ResourceManager  {
             throws IOException, NoSuchAlgorithmException, ResourceException, ToolException {
         Resource resourceConfig = configuration.getAnalysis().getResource();
 
-        boolean isExomiserResource = resourceFile.getId().startsWith("EXOMISER_");
+
+        boolean isExomiserResource = false;
+        Path fetchedFile = downloadedPath.resolve(resourceFile.getPath());
+        if (resourceFile.getId().startsWith("EXOMISER_")) {
+            isExomiserResource = true;
+            fetchedFile = downloadedPath.resolve(resourceFile.getPath() + ".zip");
+        }
 
         // First check installation directory, and check MD5 (if it exists)
         Path installationFile = resourceConfig.getBasePath().resolve(resourceFile.getPath());
         if (Files.exists(installationFile)) {
-            try {
-                validateMD5(installationFile, resourceFile.getMd5());
-                logger.info("Resource '{}' has already been downloaded and MD5 validation passed: skipping download", resourceFile.getId());
-                return installationFile;
-            } catch (Exception e) {
-                logger.warn("Resource '{}' has already been downloaded but MD5 validation failed: downloading again", resourceFile.getId());
-            }
-        } else if (isExomiserResource) {
-            // Remove extension: .zip
-            Path exomiserPath = installationFile.toAbsolutePath();
-            int dotIndex = installationFile.toAbsolutePath().toString().lastIndexOf('.');
-            if (dotIndex > 0) { // Check if there's an extension
-                exomiserPath = Paths.get(exomiserPath.toAbsolutePath().toString().substring(0, dotIndex));
-            }
-
-            if (Files.exists(exomiserPath) && Files.isDirectory(exomiserPath)) {
+            if (isExomiserResource && Files.isDirectory(installationFile)) {
                 logger.info("Resource '{}' has already been downloaded: skipping download", resourceFile.getId());
-                return exomiserPath;
+                return installationFile;
+            } else {
+                try {
+                    validateMD5(installationFile, resourceFile.getMd5());
+                    logger.info("Resource '{}' has already been downloaded and MD5 validation passed: skipping download",
+                            resourceFile.getId());
+                    return installationFile;
+                } catch (Exception e) {
+                    logger.warn("Resource '{}' has already been downloaded but MD5 validation failed: downloading again",
+                            resourceFile.getId());
+                }
             }
         }
 
         // Download resource file
         String fileUrl = resourceConfig.getBaseUrl() + resourceFile.getUrl();
-        Path fetchedFile = downloadedPath.resolve(resourceFile.getPath());
         logger.info("Downloading resource '{}' to '{}' ...", fileUrl, fetchedFile.toAbsolutePath());
         donwloadFile(new URL(fileUrl), fetchedFile);
         logger.info(OK);
@@ -255,6 +255,7 @@ public class ResourceManager  {
         // Any action to perform, e.g.: Exomiser resources need to be unzipped
         if (isExomiserResource) {
             unzip(fetchedFile, "exomiser");
+            return downloadedPath.resolve(resourceFile.getPath());
         }
         return fetchedFile;
     }
