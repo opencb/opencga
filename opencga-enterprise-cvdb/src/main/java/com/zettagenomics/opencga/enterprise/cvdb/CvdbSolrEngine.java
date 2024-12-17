@@ -1118,16 +1118,17 @@ public class CvdbSolrEngine {
                 solrClient.rollback();
             }
 
+            int evidenceIndex = 0;
             for (ClinicalVariantEvidence evidence : clinicalVariant.getEvidences()) {
-                index(evidence, clinicalVariant.getId(), interpretationId, clinicalAnalysisId, organizationId, projectId, studyId, viewers,
-                        solrClient);
+                index(evidence, evidenceIndex++, clinicalVariant.getId(), interpretationId, clinicalAnalysisId, organizationId, projectId,
+                        studyId, viewers, solrClient);
             }
         } catch (SolrServerException | IOException e) {
             rollback(solrClient, e);
         }
     }
 
-    private void index(ClinicalVariantEvidence clinicalVariantEvidence, String variantId, String interpretationId,
+    private void index(ClinicalVariantEvidence clinicalVariantEvidence, int evidenceIndex, String variantId, String interpretationId,
                        String clinicalAnalysisId, String organizationId, String projectId, String studyId, List<String> viewers,
                        SolrClient solrClient)
             throws CvdbException {
@@ -1141,8 +1142,8 @@ public class CvdbSolrEngine {
             clinicalVariantEvidence.getAttributes().put(CA_ID_NAME, clinicalAnalysisId);
             clinicalVariantEvidence.getAttributes().put(CI_ID_NAME, interpretationId);
             clinicalVariantEvidence.getAttributes().put(CV_VARIANT_ID_NAME, variantId);
-            ClinicalVariantEvidenceSearch cves = cveConverter.toClinicalVariantEvidenceSearch(clinicalVariantEvidence, variantId,
-                    interpretationId, clinicalAnalysisId, FqnUtils.getStudy(studyId), viewers);
+            ClinicalVariantEvidenceSearch cves = cveConverter.toClinicalVariantEvidenceSearch(clinicalVariantEvidence, evidenceIndex,
+                    variantId, interpretationId, clinicalAnalysisId, FqnUtils.getStudy(studyId), viewers);
 
             updateResponse = solrClient.addBean(getCollectionName(organizationId, projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
                     cves);

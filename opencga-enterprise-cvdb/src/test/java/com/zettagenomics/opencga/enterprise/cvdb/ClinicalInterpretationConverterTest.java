@@ -70,8 +70,13 @@ public class ClinicalInterpretationConverterTest {
 
         // Clinical variant evidence
         ClinicalVariantEvidenceConverter cveConverter = new ClinicalVariantEvidenceConverter();
-        List<ClinicalVariantEvidenceSearch> cvesList = cveConverter.toClinicalVariantEvidenceSearch(ci.getPrimaryFindings()
-                .get(0).getEvidences(), ci.getPrimaryFindings().get(0).toStringSimple(), ci.getId(), ca.getId(), studyId, viewers);
+        List<ClinicalVariantEvidenceSearch> cvesList = new ArrayList<>();
+        int evidenceIndex = 0;
+        for (ClinicalVariantEvidence cve : ci.getPrimaryFindings().get(0).getEvidences()) {
+            ClinicalVariantEvidenceSearch cves = cveConverter.toClinicalVariantEvidenceSearch(cve, evidenceIndex++,
+                    ci.getPrimaryFindings().get(0).toStringSimple(), ci.getId(), ca.getId(), studyId, viewers);
+            cvesList.add(cves);
+        }
         assertEquals(ci.getPrimaryFindings().get(0).getEvidences().size(), cvesList.size());
         assertEquals(studyId, cvesList.get(0).getStudyId());
         assertEquals(viewers.size(), cvesList.get(0).getViewers().size());
