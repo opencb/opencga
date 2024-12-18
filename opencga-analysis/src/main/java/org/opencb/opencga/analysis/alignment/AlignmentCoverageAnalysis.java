@@ -23,7 +23,9 @@ import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysisEx
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternalCoverageIndex;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
@@ -40,7 +42,7 @@ import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "coverage-index-run";
-    public static final String DESCRIPTION = "Compute the coverage from a given alignment file, e.g., create a "
+    public static final String DESCRIPTION = "Compute the coverage from a given BAM alignment file, e.g., create a "
             + AlignmentConstants.BIGWIG_EXTENSION + " file from a " + AlignmentConstants.BAM_EXTENSION + " file";
 
     @ToolParams
@@ -64,37 +66,36 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
 
         //  Checking BAM file ID
         try {
-            bamCatalogFile = catalogManager.getFileManager().get(getStudy(), coverageParams.getBamFileId(), QueryOptions.empty(),
+            bamCatalogFile = catalogManager.getFileManager().get(getStudy(), coverageParams.getFileId(), QueryOptions.empty(),
                     getToken()).first();
             if (bamCatalogFile == null) {
-                throw new ToolException("Could not find BAM file from ID '" + coverageParams.getBamFileId() + "'");
+                throw new ToolException("Could not find BAM file from ID '" + coverageParams.getFileId() + "'");
             }
         } catch (Exception e) {
-            throw new ToolException("Could not get BAM file from ID " + coverageParams.getBamFileId());
+            throw new ToolException("Could not get BAM file from ID " + coverageParams.getFileId());
         }
 
         // Check if the input file is .bam
         if (!bamCatalogFile.getName().endsWith(AlignmentConstants.BAM_EXTENSION)) {
-            throw new ToolException("Invalid input alignment file '" + coverageParams.getBamFileId() + "' (" + bamCatalogFile.getName()
+            throw new ToolException("Invalid input alignment file '" + coverageParams.getFileId() + "' (" + bamCatalogFile.getName()
                     + "): it must be in BAM format");
         }
 
         // Getting BAI file
-        String baiFileId = coverageParams.getBaiFileId();
+        String baiFileId;
+        try {
+            baiFileId = bamCatalogFile.getInternal().getAlignment().getIndex().getFileId();
+        } catch (Exception e) {
+            throw new ToolException("Could not get internal alignment index file Id from BAM file ID '" + bamCatalogFile.getId() + "'");
+        }
         if (StringUtils.isEmpty(baiFileId)) {
-            // BAI file ID was not provided, looking for it
-            logger.info("BAI file ID was not provided, getting it from the internal alignment index of the BAM file ID {}",
-                    bamCatalogFile.getId());
-            try {
-                baiFileId = bamCatalogFile.getInternal().getAlignment().getIndex().getFileId();
-            } catch (Exception e) {
-                throw new ToolException("Could not get internal alignment index file Id from BAM file ID '" + bamCatalogFile.getId());
-            }
+            throw new ToolException("Could not find the alignment index file for the BAM file ID '" + bamCatalogFile.getId() + "'. Please,"
+                    + " create the alignment index file before computing the coverage");
         }
         try {
             baiCatalogFile = catalogManager.getFileManager().get(getStudy(), baiFileId, QueryOptions.empty(), getToken()).first();
             if (baiCatalogFile == null) {
-                throw new ToolException("Could not find BAI file from ID '" + coverageParams.getBaiFileId() + "'");
+                throw new ToolException("Could not find BAI file from ID '" + baiFileId + "'");
             }
         } catch (Exception e) {
             throw new ToolException("Could not get BAI file from file ID " + baiFileId);
@@ -114,6 +115,18 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
         if (coverageParams.getWindowSize() <= 0) {
             coverageParams.setWindowSize(Integer.parseInt(COVERAGE_WINDOW_SIZE_DEFAULT));
             logger.info("Window size is set to {}", coverageParams.getWindowSize());
+        }
+
+        // Check overwrite
+        String bwFileId;
+        try {
+            bwFileId = bamCatalogFile.getInternal().getAlignment().getCoverage().getFileId();
+        } catch (Exception e) {
+            bwFileId = null;
+        }
+        if (StringUtils.isNotEmpty(bwFileId) && !coverageParams.isOverwrite()) {
+            throw new ToolException("Coverage file ID '" + bwFileId + "' already exists for file ID '" + bamCatalogFile.getId()
+                    + "'. To overwrite the BIGWIG file use the flag --overwrite");
         }
     }
 
@@ -192,7 +205,12 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
             }
 
             // Link generated BIGWIG file and update samples info
-            AlignmentAnalysisUtils.linkAndUpdate(bamCatalogFile, bwPath, getJobId(), study, catalogManager, token);
+            File bwCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(bamCatalogFile, bwPath, getJobId(), study, catalogManager, token);
+
+            // Update BAM file internal in order to set the coverage index (BIGWIG)
+            FileInternalCoverageIndex fileCoverageIndex = new FileInternalCoverageIndex(new InternalStatus(InternalStatus.READY),
+                    bwCatalogFile.getId(), "deeptools bamCoverage", coverageParams.getWindowSize());
+            catalogManager.getFileManager().updateFileInternalCoverageIndex(study, bamCatalogFile, fileCoverageIndex, token);
         });
     }
 }

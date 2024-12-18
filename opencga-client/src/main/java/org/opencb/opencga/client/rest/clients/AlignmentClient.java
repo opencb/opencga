@@ -79,7 +79,7 @@ public class AlignmentClient extends AbstractParentClient {
     }
 
     /**
-     * Compute coverage for a list of alignment files.
+     * Compute the coverage from a given BAM alignment file, e.g., create a .bw file from a .bam file.
      * @param data Coverage computation parameters.
      * @param params Map containing any of the following optional parameters.
      *       study: study.
@@ -232,7 +232,7 @@ public class AlignmentClient extends AbstractParentClient {
     }
 
     /**
-     * Index alignment file.
+     * Index a given alignment file BAM/CRAM, e.g., create a .bai file from a .bam file.
      * @param data Alignment index params.
      * @param params Map containing any of the following optional parameters.
      *       study: study.

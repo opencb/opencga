@@ -6,19 +6,13 @@ OpenCGA constitutes the big data analysis component of [OpenCB](http://www.openc
 ### Documentation
 You can find OpenCGA documentation and tutorials at: https://github.com/opencb/opencga/wiki.
 
-### Issues Tracking
-You can report bugs or request new features at [GitHub issue tracking](https://github.com/opencb/opencga/issues).
+### Feedback and Feature Requests
+Found a bug or have an idea for a new feature? Let us know at zettagenomics.com/academic.
 
 ### Release Notes and Roadmap
-Releases notes are available at [GitHub releases](https://github.com/opencb/opencga/releases).
-
-Roadmap is available at [GitHub milestones](https://github.com/opencb/opencga/milestones). You can report bugs or request new features at [GitHub issue tracking](https://github.com/opencb/opencga/issues).
-
-### Versioning
-OpenCGA is versioned following the rules from [Semantic versioning](https://semver.org/).
+Releases notes are available at https://zettagenomics.com/release-notes/
 
 ### Maintainers
-We recommend to contact OpenCGA developers by writing to OpenCB mailing list opencb@googlegroups.com. Current main developers and maintainers are:
 * Ignacio Medina (im411@cam.ac.uk) (_Founder and Project Leader_)
 * Jacobo Coll (jacobo.coll-moragon@genomicsengland.co.uk)
 * Pedro Furio (pedro.furio@genomicsengland.co.uk)
@@ -33,7 +27,7 @@ We recommend to contact OpenCGA developers by writing to OpenCB mailing list ope
 * Franscisco Salavert (fsalavert@cipf.es)
 
 ##### Contributing
-OpenCGA is an open-source and collaborative project. We appreciate any help and feedback from users, you can contribute in many different ways such as simple bug reporting and feature request. Dependending on your skills you are more than welcome to develop client tools, new features or even fixing bugs.
+OpenCGA is an open-source and collaborative project. We appreciate any help and feedback from users, you can contribute in many different ways such as simple bug reporting and feature request. Dependending on your skills you are more than welcome to develop client tools, new features, or even fix bugs.
 
 
 # How to build
