@@ -43,13 +43,13 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: [build-hdp, deploy-python]
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images python-notebook --tag ${{ needs.build-hdp.outputs.version }} --version ${{ needs.build-hdp.outputs.version }}
+      cli: python3 ./build/cloud/docker/docker-build.py push --images python-notebook --tag ${{ needs.build-hdp.outputs.version }} --docker-build-args "-e VERSION=${{ needs.build-hdp.outputs.version }}"
     secrets: inherit
 
   # Add the release job that depends on all the previous jobs
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: [ build-hdp, deploy-docker-hdp, deploy-maven, deploy-python]
+    needs: [ build-hdp, deploy-docker-hdp, deploy-maven, deploy-python, deploy-docker-python-notebook]
     with:
       artifact: build-folder
       file: |

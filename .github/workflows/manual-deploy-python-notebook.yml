@@ -16,6 +16,10 @@ on:
         description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
         required: false
         default: "hdp3.1"
+      pyopencga_version:
+        type: string
+        description: 'PyOpenCGA version.'
+        required: true
 
 jobs:
   build:
@@ -51,6 +55,6 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images python-notebook --tag ${{ inputs.tag }}
+      cli: python3 ./build/cloud/docker/docker-build.py push --images python-notebook --tag ${{ inputs.tag }} --docker-build-args "-e VERSION=${{ inputs.pyopencga_version }}"
     secrets: inherit
 
