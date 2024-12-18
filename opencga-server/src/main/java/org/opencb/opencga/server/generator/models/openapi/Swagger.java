@@ -13,40 +13,66 @@ public class Swagger {
     private String host;
     private String basePath;
     private List<Tag> tags;
+    private List<String> schemes;
     private Map<String, Map<String,Method>> paths;
+    private Map<String, Map<String, Object>> securityDefinitions;
     private Map<String, Definition> definitions;
 
-    // Getters y Setters
+    public Swagger() {
+    }
+
     public String getSwagger() {
         return swagger;
     }
 
-    public void setSwagger(String swagger) {
+    public Swagger setSwagger(String swagger) {
         this.swagger = swagger;
+        return this;
     }
 
     public Info getInfo() {
         return info;
     }
 
-    public void setInfo(Info info) {
+    public Swagger setInfo(Info info) {
         this.info = info;
+        return this;
     }
 
     public String getHost() {
         return host;
     }
 
-    public void setHost(String host) {
+    public Swagger setHost(String host) {
         this.host = host;
+        return this;
     }
 
     public String getBasePath() {
         return basePath;
     }
 
-    public void setBasePath(String basePath) {
+    public Swagger setBasePath(String basePath) {
         this.basePath = basePath;
+        return this;
+    }
+
+    public List<Tag> getTags() {
+        return tags;
+    }
+
+    public Swagger setTags(List<Tag> tags) {
+        this.tags = tags;
+        return this;
+    }
+
+    public List<String> getSchemes() {
+        return schemes;
+    }
+
+    public Swagger setSchemes(List<String> schemes) {
+        this.schemes = schemes;
+        return this;
     }
 
     public Map<String, Map<String, Method>> getPaths() {
@@ -58,19 +84,21 @@ public class Swagger {
         return this;
     }
 
+    public Map<String, Map<String, Object>> getSecurityDefinitions() {
+        return securityDefinitions;
+    }
+
+    public Swagger setSecurityDefinitions(Map<String, Map<String, Object>> securityDefinitions) {
+        this.securityDefinitions = securityDefinitions;
+        return this;
+    }
+
     public Map<String, Definition> getDefinitions() {
         return definitions;
     }
 
-    public void setDefinitions(Map<String, Definition> definitions) {
+    public Swagger setDefinitions(Map<String, Definition> definitions) {
         this.definitions = definitions;
-    }
-
-    public List<Tag> getTags() {
-        return tags;
-    }
-
-    public void setTags(List<Tag> tags) {
-        this.tags = tags;
+        return this;
     }
 }

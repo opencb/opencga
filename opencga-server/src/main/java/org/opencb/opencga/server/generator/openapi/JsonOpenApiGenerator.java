@@ -22,9 +22,18 @@ public class JsonOpenApiGenerator {
                 swagger.setInfo(info);
                 swagger.setHost("https://test.app.zettagenomics.com/");
                 swagger.setBasePath("/opencga/webservices/rest/v2/");
+        List<String> schemes = new ArrayList<>();
+        schemes.add("https");
+        swagger.setSchemes(schemes);
         Map<String, Map<String,Method>> paths = new HashMap<>();
         List<Tag> tags = new ArrayList<>();
-
+        Map<String, Map<String, Object>> securityDefinitions = new HashMap<>();
+        Map<String, Object> api_key = new HashMap<>();
+        api_key.put("type", "apiKey");
+        api_key.put("name", "api_key");
+        api_key.put("in", "header");
+        securityDefinitions.put("api_key", api_key);
+        swagger.setSecurityDefinitions(securityDefinitions);
         for (Class<?> clazz : classes) {
             Api api = clazz.getAnnotation(Api.class);
             if (api == null) {
@@ -70,7 +79,7 @@ public class JsonOpenApiGenerator {
 
                     // Crear o actualizar el Path
                     paths.put(fullPath, new HashMap<>());
-                    paths.get(fullPath).put(httpMethod, method);
+                    paths.get(fullPath).put(httpMethod.toLowerCase(Locale.ROOT), method);
                 }
             }
         }
