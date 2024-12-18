@@ -3,6 +3,7 @@ package org.opencb.opencga.server.generator.models.openapi;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,7 +17,7 @@ public class Method {
     private List<String> consumes;
     private List<String> produces;
     private List<Parameter> parameters;
-    private List<Response> responses;
+    private Map<String,Map<String,Object>> responses;
     private Map<String, List<String>> security;
 
     public Method() {
@@ -24,10 +25,10 @@ public class Method {
         consumes = new ArrayList<>();
         produces = new ArrayList<>();
         parameters = new ArrayList<>();
-        responses = new ArrayList<>();
+        responses = new HashMap<>();
     }
 
-    public Method(List<String> tags, String summary, String description, String operationId, List<String> consumes, List<String> produces, List<Parameter> parameters, List<Response> responses, Map<String, List<String>> security) {
+    public Method(List<String> tags, String summary, String description, String operationId, List<String> consumes, List<String> produces, List<Parameter> parameters, Map<String,Map<String,Object>> responses, Map<String, List<String>> security) {
         this.tags = tags;
         this.summary = summary;
         this.description = description;
@@ -102,11 +103,11 @@ public class Method {
         return this;
     }
 
-    public List<Response> getResponses() {
+    public Map<String,Map<String,Object>> getResponses() {
         return responses;
     }
 
-    public Method setResponses(List<Response> responses) {
+    public Method setResponses(Map<String,Map<String,Object>> responses) {
         this.responses = responses;
         return this;
     }

@@ -1,4 +1,5 @@
 package org.opencb.opencga.server.generator.openapi;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiImplicitParam;
 import org.opencb.opencga.core.tools.annotations.ApiImplicitParams;
@@ -14,6 +15,13 @@ public class JsonOpenApiGenerator {
     public Swagger generateJsonOpenApi(ApiCommons apiCommons) {
         List<Class<?>> classes = apiCommons.getApiClasses();
                 Swagger swagger = new Swagger();
+                Info info = new Info();
+                info.setTitle("OpenCGA RESTful Web Services");
+                info.setDescription("OpenCGA RESTful Web Services API");
+                info.setVersion(GitRepositoryState.getInstance().getBuildVersion());
+                swagger.setInfo(info);
+                swagger.setHost("https://test.app.zettagenomics.com/");
+                swagger.setBasePath("/opencga/webservices/rest/v2/");
         Map<String, Map<String,Method>> paths = new HashMap<>();
         List<Tag> tags = new ArrayList<>();
 
@@ -38,9 +46,9 @@ public class JsonOpenApiGenerator {
                     method.setSummary(apiOperation.value());
                     method.setDescription(apiOperation.notes());
                     method.setTags(Collections.singletonList(api.value()));
-                    Map<String,String> responses=new HashMap<>();
+                    Map<String,Object> responses=new HashMap<>();
                     responses.put("type", String.valueOf(apiOperation.response()));
-                    method.getResponses().add(new Response("200", responses));
+                    method.getResponses().put("200", responses);
 
                     // Obtener el método HTTP
                     String httpMethod = extractHttpMethod(wsmethod);
