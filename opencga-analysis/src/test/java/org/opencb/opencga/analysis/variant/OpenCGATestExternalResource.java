@@ -268,6 +268,11 @@ public class OpenCGATestExternalResource extends ExternalResource {
             Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
         }
 
+        // Relatedness analysis
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/family-qc")).toAbsolutePath();
+        inputStream = new FileInputStream("../opencga-app/app/analysis/family-qc/relatedness_thresholds.csv");
+        Files.copy(inputStream, analysisPath.resolve("relatedness_thresholds.csv"), StandardCopyOption.REPLACE_EXISTING);
+
         // Exomiser analysis files
         List<String> exomiserVersions = Arrays.asList("13.1", "14.0");
         List<String> exomiserFiles = Arrays.asList("application.properties", "exomiser-analysis.yml", "output.yml");

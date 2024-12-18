@@ -289,8 +289,8 @@ class Variant(_ParentRestClient):
         PATH: /{apiVersion}/analysis/variant/family/qc/run
 
         :param dict data: Family QC analysis params. Family ID. Relatedness
-            method, by default 'PLINK/IBD'. Minor  allele frequence (MAF) is
-            used to filter variants before computing relatedness, e.g.:
+            method based on the PLINK/IBD method. Minor allele frequency (MAF)
+            is used to filter variants before computing relatedness, e.g.:
             1000G:CEU>0.35 or cohort:ALL>0.05. (REQUIRED)
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.

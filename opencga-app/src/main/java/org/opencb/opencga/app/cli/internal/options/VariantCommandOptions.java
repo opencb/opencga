@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
+import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
@@ -1562,6 +1563,10 @@ public class VariantCommandOptions {
                 + " 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
         public String minorAlleleFreq;
 
+        @Parameter(names = {"--haploid-call-mode"}, description = org.opencb.biodata.models.constants.FieldConstants
+                .RELATEDNESS_REPORT_HAPLOID_CALL_MODE_DESCRIPTION)
+        public String haploidCallMode = RelatednessReport.HAPLOID_CALL_MODE_DEFAUT_VALUE;
+
         @Parameter(names = {"--method"}, description = "Method to compute relatedness.")
         public String method = "IBD";
 
@@ -1585,12 +1590,13 @@ public class VariantCommandOptions {
         @Parameter(names = {"--family"}, description = "Family ID.", required = true)
         public String family;
 
-        @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
-        public String relatednessMethod = "PLINK/IBD";
-
         @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35,"
                 + " cohort:ALL>0.05")
         public String relatednessMaf = "cohort:ALL>0.05";
+
+        @Parameter(names = {"--haploid-call-mode"}, description = org.opencb.biodata.models.constants.FieldConstants
+                .RELATEDNESS_REPORT_HAPLOID_CALL_MODE_DESCRIPTION)
+        public String haploidCallMode = RelatednessReport.HAPLOID_CALL_MODE_DEFAUT_VALUE;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
