@@ -1,7 +1,6 @@
-package org.opencb.opencga.server.generator.models.openapi;
+package org.opencb.opencga.server.generator.openapi.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 import java.util.Map;

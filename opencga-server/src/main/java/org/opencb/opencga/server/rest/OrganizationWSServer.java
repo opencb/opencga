@@ -35,7 +35,6 @@ import org.opencb.opencga.core.models.user.OrganizationUserUpdateParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserStatusUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.ApiBeanDefinition;
 import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -48,7 +47,6 @@ import java.util.Map;
 @Path("/{apiVersion}/organizations")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Organizations", description = "Methods for working with 'organizations' endpoint")
-@ApiBeanDefinition("org.opencb.opencga.core.models.organizations.Organization")
 public class OrganizationWSServer extends OpenCGAWSServer {
 
     public OrganizationWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {

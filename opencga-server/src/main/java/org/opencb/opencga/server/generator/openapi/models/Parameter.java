@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.generator.models.openapi;
+package org.opencb.opencga.server.generator.openapi.models;
 
 public class Parameter {
     private String name;

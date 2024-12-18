@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.generator.models.openapi;
+package org.opencb.opencga.server.generator.openapi.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -19,6 +19,7 @@ public class Method {
     private List<Parameter> parameters;
     private Map<String,Map<String,Object>> responses;
     private Map<String, List<String>> security;
+
 
     public Method() {
         tags= new ArrayList<>();

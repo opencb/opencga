@@ -30,7 +30,7 @@ import org.opencb.opencga.server.OpenCGAHealthCheckMonitor;
 import org.opencb.opencga.server.generator.RestApiParser;
 import org.opencb.opencga.server.generator.commons.ApiCommonsImpl;
 import org.opencb.opencga.server.generator.models.RestApi;
-import org.opencb.opencga.server.generator.models.openapi.Swagger;
+import org.opencb.opencga.server.generator.openapi.models.Swagger;
 import org.opencb.opencga.server.generator.openapi.JsonOpenApiGenerator;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;

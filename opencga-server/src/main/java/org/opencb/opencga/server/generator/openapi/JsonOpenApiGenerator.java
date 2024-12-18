@@ -5,7 +5,8 @@ import org.opencb.opencga.core.tools.annotations.ApiImplicitParam;
 import org.opencb.opencga.core.tools.annotations.ApiImplicitParams;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
-import org.opencb.opencga.server.generator.models.openapi.*;
+import org.opencb.opencga.server.generator.openapi.models.*;
+import org.opencb.opencga.server.generator.openapi.common.SwaggerDefinitionGenerator;
 
 import javax.ws.rs.*;
 import java.util.*;
@@ -14,6 +15,7 @@ public class JsonOpenApiGenerator {
 
     public Swagger generateJsonOpenApi(ApiCommons apiCommons) {
         List<Class<?>> classes = apiCommons.getApiClasses();
+        List<Class<?>> beansDefinitions= new ArrayList<>();
                 Swagger swagger = new Swagger();
                 Info info = new Info();
                 info.setTitle("OpenCGA RESTful Web Services");
@@ -25,7 +27,7 @@ public class JsonOpenApiGenerator {
         List<String> schemes = new ArrayList<>();
         schemes.add("https");
         swagger.setSchemes(schemes);
-        Map<String, Map<String,Method>> paths = new HashMap<>();
+        Map<String, Map<String, Method>> paths = new HashMap<>();
         List<Tag> tags = new ArrayList<>();
         Map<String, Map<String, Object>> securityDefinitions = new HashMap<>();
         Map<String, Object> api_key = new HashMap<>();
@@ -57,6 +59,10 @@ public class JsonOpenApiGenerator {
                     method.setTags(Collections.singletonList(api.value()));
                     Map<String,Object> responses=new HashMap<>();
                     responses.put("type", String.valueOf(apiOperation.response()));
+                    if(apiOperation.response() instanceof Class){
+                        beansDefinitions.add((Class) apiOperation.response());
+                    }
+
                     method.getResponses().put("200", responses);
 
                     // Obtener el método HTTP
@@ -83,8 +89,10 @@ public class JsonOpenApiGenerator {
                 }
             }
         }
+        Map<String, Definition> definitions = SwaggerDefinitionGenerator.getDefinitions(beansDefinitions);
         swagger.setTags(tags);
         swagger.setPaths(paths);
+        swagger.setDefinitions(definitions);
         return swagger;
     }
 

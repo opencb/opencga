@@ -2,7 +2,7 @@ package org.opencb.opencga.server.generator.openapi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.opencga.server.generator.commons.ApiCommonsImpl;
-import org.opencb.opencga.server.generator.models.openapi.Swagger;
+import org.opencb.opencga.server.generator.openapi.models.Swagger;
 
 public class SwaggerJsonSerializer {
     public static void main(String[] args) throws Exception {
