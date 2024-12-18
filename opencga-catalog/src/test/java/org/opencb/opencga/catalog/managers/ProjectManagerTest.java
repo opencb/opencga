@@ -55,6 +55,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
 
     @Test
     public void createProjectQuotaTest() throws CatalogException {
+        catalogManager.getConfiguration().getQuota().setMaxNumProjects(5);
         try (CatalogManager mockCatalogManager = mockCatalogManager()) {
             ProjectDBAdaptor projectDBAdaptor = mockCatalogManager.getProjectManager().getProjectDBAdaptor(organizationId);
 

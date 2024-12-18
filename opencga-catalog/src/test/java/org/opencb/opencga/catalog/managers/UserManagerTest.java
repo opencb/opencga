@@ -508,6 +508,7 @@ public class UserManagerTest extends AbstractManagerTest {
 
     @Test
     public void createUserQuotaTest() throws CatalogException {
+        catalogManager.getConfiguration().getQuota().setMaxNumUsers(15);
         try (CatalogManager mockCatalogManager = mockCatalogManager()) {
             UserDBAdaptor userDBAdaptor = mockCatalogManager.getUserManager().getUserDBAdaptor(organizationId);
 
