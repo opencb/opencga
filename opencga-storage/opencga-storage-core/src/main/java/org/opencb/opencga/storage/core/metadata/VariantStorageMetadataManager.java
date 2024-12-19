@@ -569,6 +569,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      */
     public void updateVariantIndexTimestamp() throws StorageEngineException {
         updateProjectMetadata(pm -> {
+            if (pm == null) {
+                pm = new ProjectMetadata();
+            }
             pm.setVariantIndexLastTimestamp();
             // As new variants have been added, the annotation and secondary-annotation are outdated.
             pm.setAnnotationIndexStatus(TaskMetadata.Status.NONE);
