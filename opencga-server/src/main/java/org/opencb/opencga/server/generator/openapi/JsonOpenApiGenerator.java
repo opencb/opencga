@@ -1,9 +1,6 @@
 package org.opencb.opencga.server.generator.openapi;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.tools.annotations.Api;
-import org.opencb.opencga.core.tools.annotations.ApiImplicitParam;
-import org.opencb.opencga.core.tools.annotations.ApiImplicitParams;
-import org.opencb.opencga.core.tools.annotations.ApiOperation;
+import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
 import org.opencb.opencga.server.generator.openapi.models.*;
 import org.opencb.opencga.server.generator.openapi.common.SwaggerDefinitionGenerator;
@@ -22,8 +19,8 @@ public class JsonOpenApiGenerator {
         info.setDescription("OpenCGA RESTful Web Services API");
         info.setVersion(GitRepositoryState.getInstance().getBuildVersion());
         swagger.setInfo(info);
-        swagger.setHost("https://test.app.zettagenomics.com/");
-        swagger.setBasePath("/opencga/webservices/rest/v2/");
+        swagger.setHost("test.app.zettagenomics.com");
+        swagger.setBasePath("/opencga/webservices/rest");
 
         List<String> schemes = new ArrayList<>();
         schemes.add("https");
@@ -78,7 +75,7 @@ public class JsonOpenApiGenerator {
 
                     Consumes consumes = wsmethod.getAnnotation(Consumes.class);
                     // Extraer parámetros
-                    List<Parameter> parameters = extractParameters(wsmethod);
+                    List<Parameter> parameters = extractParameters(wsmethod, token);
                     method.setParameters(parameters);
                     if (consumes != null){
                         method.getConsumes().addAll(Arrays.asList(consumes.value()));
@@ -89,21 +86,9 @@ public class JsonOpenApiGenerator {
                     String fullPath = basePath + (methodPathAnnotation != null ? methodPathAnnotation.value() : "");
                     method.setOperationId(methodPathAnnotation != null ? methodPathAnnotation.value() : "");
 
-                    // Añadir encabezado de token preconfigurado
-                    List<Parameter> headers = new ArrayList<>();
-                    Parameter authorizationHeader = new Parameter();
-                    authorizationHeader.setName("Authorization");
-                    authorizationHeader.setIn("header");
-                    authorizationHeader.setDescription("Bearer token for authorization");
-                    authorizationHeader.setRequired(true);
-                    authorizationHeader.setType("string");
-                    authorizationHeader.setDefaultValue("Bearer " + token);
-                    headers.add(authorizationHeader);
-
-                    method.getParameters().addAll(headers);
                     // Crear o actualizar el Path
                     paths.put(fullPath, new HashMap<>());
-                    paths.get(fullPath).put(httpMethod.toLowerCase(Locale.ROOT), method);
+                    paths.get(fullPath).put(httpMethod, method);
                 }
             }
         }
@@ -116,19 +101,21 @@ public class JsonOpenApiGenerator {
 
     private String extractHttpMethod(java.lang.reflect.Method method) {
         if (method.isAnnotationPresent(GET.class)) {
-            return "GET";
+            return "get";
         } else if (method.isAnnotationPresent(POST.class)) {
-            return "POST";
+            return "post";
         } else if (method.isAnnotationPresent(PUT.class)) {
-            return "PUT";
+            return "put";
         } else if (method.isAnnotationPresent(DELETE.class)) {
-            return "DELETE";
+            return "delete";
         }
         return null;
     }
 
-    private List<Parameter> extractParameters(java.lang.reflect.Method method) {
+    private List<Parameter> extractParameters(java.lang.reflect.Method method, String token) {
         List<Parameter> parameters = new ArrayList<>();
+
+        // Procesar parámetros definidos con @ApiImplicitParams
         ApiImplicitParams implicitParams = method.getAnnotation(ApiImplicitParams.class);
         if (implicitParams != null) {
             for (ApiImplicitParam implicitParam : implicitParams.value()) {
@@ -143,6 +130,70 @@ public class JsonOpenApiGenerator {
                 parameters.add(parameter);
             }
         }
+
+        // Procesar parámetros individuales del método
+        for (java.lang.reflect.Parameter methodParam : method.getParameters()) {
+            // Procesar ApiParam
+            ApiParam apiParam = methodParam.getAnnotation(ApiParam.class);
+            if (apiParam != null) {
+                Parameter parameter = new Parameter();
+                parameter.setName(apiParam.value());
+                parameter.setDescription(apiParam.value());
+                parameter.setRequired(apiParam.required());
+                parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
+                parameter.setIn(determineParameterLocation(methodParam));
+                parameters.add(parameter);
+            }
+
+            // Procesar PathParam
+            PathParam pathParam = methodParam.getAnnotation(PathParam.class);
+            if (pathParam != null) {
+                Parameter parameter = new Parameter();
+                parameter.setName(pathParam.value());
+                parameter.setIn("path");
+                parameter.setDescription("Path parameter: " + pathParam.value());
+                parameter.setRequired(true);
+                parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
+                parameters.add(parameter);
+            }
+
+            // Procesar QueryParam
+            QueryParam queryParam = methodParam.getAnnotation(QueryParam.class);
+            if (queryParam != null) {
+                Parameter parameter = new Parameter();
+                parameter.setName(queryParam.value());
+                parameter.setIn("query");
+                parameter.setDescription("Query parameter: " + queryParam.value());
+                parameter.setRequired(false); // Por defecto, no requerido
+                parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
+                parameters.add(parameter);
+            }
+        }
+
+        // Añadir encabezado Authorization con el token preconfigurado
+        Parameter authorizationHeader = new Parameter();
+        authorizationHeader.setName("Authorization");
+        authorizationHeader.setIn("header");
+        authorizationHeader.setDescription("Bearer token for authorization");
+        authorizationHeader.setRequired(true);
+        authorizationHeader.setType("string");
+        authorizationHeader.setDefaultValue("Bearer " + token);
+        parameters.add(authorizationHeader);
+
         return parameters;
+    }
+
+    /**
+     * Determina la ubicación del parámetro (query, path, etc.).
+     */
+    private String determineParameterLocation(java.lang.reflect.Parameter parameter) {
+        if (parameter.isAnnotationPresent(PathParam.class)) {
+            return "path";
+        } else if (parameter.isAnnotationPresent(QueryParam.class)) {
+            return "query";
+        } else if (parameter.isAnnotationPresent(ApiParam.class)) {
+            return "query"; // Por defecto si no se especifica
+        }
+        return "query"; // Predeterminado
     }
 }
