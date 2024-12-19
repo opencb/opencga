@@ -24,6 +24,7 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteType;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -396,6 +397,7 @@ public class NoteManager extends AbstractManager {
         ParamUtils.checkObj(note.getValueType(), NoteDBAdaptor.QueryParams.VALUE_TYPE.key());
         ParamUtils.checkObj(note.getValue(), NoteDBAdaptor.QueryParams.VALUE.key());
 
+        note.setType(ParamUtils.defaultObject(note.getType(), NoteType.UNKNOWN));
         note.setTags(CollectionUtils.isNotEmpty(note.getTags()) ? note.getTags() : Collections.emptyList());
         note.setUserId(userId);
 
