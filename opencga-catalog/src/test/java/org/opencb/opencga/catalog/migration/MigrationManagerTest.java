@@ -18,6 +18,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -125,7 +126,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
             String fqn = catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).first().getFqn();
             getMigrationRun().getJobs().clear();
 
-            getMigrationRun().addJob(catalogManager.getJobManager().submitProject(fqn, "my-tool", null, Collections.emptyMap(), null, null,
+            getMigrationRun().addJob(catalogManager.getJobManager().submitProject(fqn, JobType.NATIVE, "my-tool", null, Collections.emptyMap(), null, null,
                     null, null, token).first());
         }
     }

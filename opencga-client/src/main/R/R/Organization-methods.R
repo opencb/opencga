@@ -21,9 +21,9 @@
 #' | -- | :-- | --: |
 #' | create | /{apiVersion}/organizations/create | include, exclude, includeResult, body[*] |
 #' | createNotes | /{apiVersion}/organizations/notes/create | include, exclude, includeResult, body[*] |
-#' | searchNotes | /{apiVersion}/organizations/notes/search | include, exclude, creationDate, modificationDate, id, scope, visibility, uuid, userId, tags, version |
+#' | searchNotes | /{apiVersion}/organizations/notes/search | include, exclude, creationDate, modificationDate, id, type, scope, visibility, uuid, userId, tags, version |
 #' | deleteNotes | /{apiVersion}/organizations/notes/{id}/delete | id[*], includeResult |
-#' | updateNotes | /{apiVersion}/organizations/notes/{id}/update | include, exclude, id[*], includeResult, body[*] |
+#' | updateNotes | /{apiVersion}/organizations/notes/{id}/update | include, exclude, id[*], tagsAction, includeResult, body[*] |
 #' | userUpdateStatus | /{apiVersion}/organizations/user/{user}/status/update | include, exclude, user[*], organization, includeResult, body[*] |
 #' | updateUser | /{apiVersion}/organizations/user/{user}/update | include, exclude, user[*], organization, includeResult, body[*] |
 #' | updateConfiguration | /{apiVersion}/organizations/{organization}/configuration/update | include, exclude, organization[*], includeResult, authenticationOriginsAction, body[*] |
@@ -64,6 +64,7 @@ setMethod("organizationClient", "OpencgaR", function(OpencgaR, id, organization,
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param id Note unique identifier.
+        #' @param type Note type.
         #' @param scope Scope of the Note.
         #' @param visibility Visibility of the Note.
         #' @param uuid Unique 32-character identifier assigned automatically by OpenCGA.
@@ -85,6 +86,7 @@ setMethod("organizationClient", "OpencgaR", function(OpencgaR, id, organization,
         #' @param include Fields included in the response, whole JSON path must be provided.
         #' @param exclude Fields excluded in the response, whole JSON path must be provided.
         #' @param id Note unique identifier.
+        #' @param tagsAction Action to be performed if the array of tags is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
         #' @param data JSON containing the Note fields to be updated.
         updateNotes=fetchOpenCGA(object=OpencgaR, category="organizations", categoryId=NULL, subcategory="notes",

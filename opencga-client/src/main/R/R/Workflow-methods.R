@@ -22,6 +22,7 @@
 #' | updateAcl | /{apiVersion}/workflows/acl/{members}/update | study, members[*], action[*], body[*] |
 #' | create | /{apiVersion}/workflows/create | include, exclude, study, includeResult, body[*] |
 #' | distinct | /{apiVersion}/workflows/distinct | study, id, name, uuid, tags, draft, internal.registrationUserId, manager.id, type, creationDate, modificationDate, acl, release, snapshot, deleted, field[*] |
+#' | importWorkflow | /{apiVersion}/workflows/import | study, body[*] |
 #' | run | /{apiVersion}/workflows/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | search | /{apiVersion}/workflows/search | include, exclude, limit, skip, count, study, id, name, uuid, tags, draft, internal.registrationUserId, manager.id, type, creationDate, modificationDate, acl, release, snapshot, deleted |
 #' | update | /{apiVersion}/workflows/{workflowId}/update | include, exclude, workflowId[*], study, includeResult, body |
@@ -78,6 +79,13 @@ setMethod("workflowClient", "OpencgaR", function(OpencgaR, members, workflowId, 
         #' @param field Comma separated list of fields for which to obtain the distinct values.
         distinct=fetchOpenCGA(object=OpencgaR, category="workflows", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="distinct", params=params, httpMethod="GET", as.queryParam=c("field"), ...),
+
+        #' @section Endpoint /{apiVersion}/workflows/import:
+        #' Execute a Nextflow analysis.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param data Repository parameters.
+        importWorkflow=fetchOpenCGA(object=OpencgaR, category="workflows", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="import", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/workflows/run:
         #' Execute a Nextflow analysis.

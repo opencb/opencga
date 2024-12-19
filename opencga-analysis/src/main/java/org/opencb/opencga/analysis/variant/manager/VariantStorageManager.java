@@ -63,6 +63,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
@@ -71,8 +72,9 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.models.study.VariantSetupResult;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -88,6 +90,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -490,6 +493,18 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
+    public VariantSetupResult variantSetup(String studyStr, VariantSetupParams params, String token)
+            throws CatalogException, StorageEngineException {
+        return secureOperation(VariantSetupOperationManager.ID, studyStr, params.toObjectMap(), token,
+                engine -> new VariantSetupOperationManager(this, engine).setup(getStudyFqn(studyStr, token), params, token));
+    }
+
+    public boolean hasVariantSetup(String studyStr, String token) throws CatalogException {
+        Study study = catalogManager.getStudyManager().get(studyStr,
+                new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key()), token).first();
+        return VariantSetupOperationManager.hasVariantSetup(study);
+    }
+
     public ObjectMap configureProject(String projectStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
         return secureOperationByProject("configure", projectStr, params, token, engine -> {
             DataStore dataStore = getDataStoreByProjectId(projectStr, token);
@@ -554,7 +569,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 // If changes, launch sample-index-run
                 ToolParams params =
                         new VariantSecondarySampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, true, false);
-                return catalogManager.getJobManager().submit(studyFqn, VariantSecondarySampleIndexOperationTool.ID, null,
+                return catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, VariantSecondarySampleIndexOperationTool.ID, null,
                         params.toParams(STUDY_PARAM, studyFqn), token);
             }
         });
@@ -601,7 +616,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 if (StringUtils.isNotEmpty(annotationSaveId)) {
                     VariantAnnotationSaveParams params = new VariantAnnotationSaveParams(annotationSaveId);
                     OpenCGAResult<Job> saveResult = catalogManager.getJobManager()
-                            .submitProject(project, VariantAnnotationSaveOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
+                            .submitProject(project, JobType.NATIVE, VariantAnnotationSaveOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
                                     null, "Save variant annotation before changing cellbase configuration", null, null, token);
                     result.getResults().add(saveResult.first());
                     if (saveResult.getEvents() != null) {
@@ -612,7 +627,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 if (annotate) {
                     VariantAnnotationIndexParams params = new VariantAnnotationIndexParams().setOverwriteAnnotations(true);
                     OpenCGAResult<Job> annotResult = catalogManager.getJobManager()
-                            .submitProject(project, VariantAnnotationIndexOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
+                            .submitProject(project, JobType.NATIVE, VariantAnnotationIndexOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
                                     null, "Forced re-annotation after changing cellbase configuration", jobDependsOn, null, token);
                     result.getResults().add(annotResult.first());
                     if (annotResult.getEvents() != null) {
@@ -1181,7 +1196,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private <R> R secureOperationByProject(String operationName, String project, ObjectMap params, String token, VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
         try (VariantStorageEngine variantStorageEngine = getVariantStorageEngineByProject(project, params, token)) {
-            return secureTool(operationName, true, params, token, variantStorageEngine, operation);
+            return secureTool(operationName, true, null, params, token, variantStorageEngine, operation);
         } catch (IOException e) {
             throw new StorageEngineException("Error closing the VariantStorageEngine", e);
         }
@@ -1190,7 +1205,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private <R> R secureOperation(String operationName, String study, ObjectMap params, String token, VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
         try (VariantStorageEngine variantStorageEngine = getVariantStorageEngineForStudyOperation(study, params, token)) {
-            return secureTool(operationName, true, params, token, variantStorageEngine, operation);
+            return secureTool(operationName, true, study, params, token, variantStorageEngine, operation);
         } catch (IOException e) {
             throw new StorageEngineException("Error closing the VariantStorageEngine", e);
         }
@@ -1199,7 +1214,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private <R> R secureAnalysis(String operationName, String study, ObjectMap params, String token, VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
         try (VariantStorageEngine variantStorageEngine = getVariantStorageEngineForStudyOperation(study, params, token)) {
-            return secureTool(operationName, false, params, token, variantStorageEngine, operation);
+            return secureTool(operationName, false, study, params, token, variantStorageEngine, operation);
         } catch (IOException e) {
             throw new StorageEngineException("Error closing the VariantStorageEngine", e);
         }
@@ -1221,7 +1236,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secureOperationByProject(operationName, projectStr, params, token, operation);
     }
 
-    private <R> R secureTool(String toolId, boolean isOperation, ObjectMap params, String token,
+    private <R> R secureTool(String toolId, boolean isOperation, String study, ObjectMap params, String token,
                              VariantStorageEngine variantStorageEngine, VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
 
@@ -1240,6 +1255,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             if (isOperation && storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
                 throw new StorageEngineException("Unable to execute operation '" + toolId + "'. "
                         + "The storage engine is in mode=" + storageConfiguration.getMode());
+            }
+            if (isOperation && study != null && !VariantSetupOperationManager.ID.equals(toolId)) {
+                // Ensure that the variant setup has been executed
+                //   do not check for the setup operation itself
+                // Project level operations can not be checked for setup.
+                if (!hasVariantSetup(study, token)) {
+                    throw new StorageEngineException("Unable to execute operation '" + toolId + "'. "
+                            + "The variant storage has not been setup for study '" + study + "'");
+                }
             }
             result = operation.apply(variantStorageEngine);
             return result;

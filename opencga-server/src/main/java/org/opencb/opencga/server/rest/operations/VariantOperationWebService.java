@@ -28,7 +28,9 @@ import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.operations.variant.*;
+import org.opencb.opencga.core.models.study.VariantSetupResult;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.Api;
@@ -96,6 +98,23 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             }
             return new DataResult<>()
                     .setResults(Collections.singletonList(newConfiguration))
+                    .setNumResults(1)
+                    .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
+        });
+    }
+
+    @POST
+    @Path("/variant/setup")
+    @ApiOperation(value = "Execute Variant Setup to allow using the variant engine. This setup is necessary before starting any variant operation.",
+            response = VariantSetupResult.class)
+    public Response variantConfigure(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Variant setup params") VariantSetupParams params) {
+        return run(() -> {
+            StopWatch stopWatch = StopWatch.createStarted();
+            VariantSetupResult result = variantManager.variantSetup(study, params, token);
+            return new DataResult<>()
+                    .setResults(Collections.singletonList(result))
                     .setNumResults(1)
                     .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
         });
@@ -178,7 +197,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantStorageMetadataSynchronizeParams.DESCRIPTION) VariantStorageMetadataSynchronizeParams params) {
-        return submitJobAdmin(VariantStorageMetadataSynchronizeOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJobAdmin(JobType.NATIVE, VariantStorageMetadataSynchronizeOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -193,7 +212,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantStorageMetadataRepairToolParams.DESCRIPTION) VariantStorageMetadataRepairToolParams params) {
-        return submitJobAdmin(VariantStorageMetadataRepairTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJobAdmin(JobType.NATIVE, VariantStorageMetadataRepairTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -209,7 +228,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantStatsAnalysisParams.DESCRIPTION, required = true) VariantStatsIndexParams params) {
-        return submitJob(VariantStatsIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, VariantStatsIndexOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -225,7 +244,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantStatsDeleteParams.DESCRIPTION, required = true) VariantStatsDeleteParams params) {
-        return submitJob(VariantStatsDeleteOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, VariantStatsDeleteOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
 
@@ -575,7 +594,12 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response submitOperation(String toolId, String project, String study, ToolParams params, String jobName, String jobDescription,
                                     String jobDependsOn, String jobTags, String jobScheduledStartTime, String jobPriority, Boolean dryRun) {
         try {
-            Map<String, Object> paramsMap = params.toParams();
+            Map<String, Object> paramsMap;
+            if (params != null) {
+                paramsMap = params.toParams();
+            } else {
+                paramsMap = new HashMap<>();
+            }
             if (StringUtils.isNotEmpty(study)) {
                 paramsMap.put(ParamConstants.STUDY_PARAM, study);
             }
@@ -617,6 +641,6 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         if (dynamicParamsMap.size() > 0) {
             paramsMap.put("dynamicParams", dynamicParamsMap);
         }
-        return submitJob(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags, jobScheduledStartTime, jobPriority, dryRun);
+        return submitJob(project, study, JobType.NATIVE, toolId, paramsMap, jobName, jobDescription, jobDependsOne, jobTags, jobScheduledStartTime, jobPriority, dryRun);
     }
 }

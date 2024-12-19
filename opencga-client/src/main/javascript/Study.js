@@ -188,6 +188,7 @@ export default class Study extends OpenCGAParentClass {
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.id] - Note unique identifier.
+    * @param {String} [params.type] - Note type.
     * @param {String} [params.uuid] - Unique 32-character identifier assigned automatically by OpenCGA.
     * @param {String} [params.userId] - User that wrote that Note.
     * @param {String} [params.tags] - Note tags.
@@ -219,6 +220,8 @@ export default class Study extends OpenCGAParentClass {
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
+    * @param {"ADD SET REMOVE"} [params.tagsAction = "ADD"] - Action to be performed if the array of tags is being updated. The default
+    *     value is ADD.
     * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.
     *     The default value is false.
     * @returns {Promise} Promise object in the form of RestResponse instance.
@@ -279,7 +282,7 @@ export default class Study extends OpenCGAParentClass {
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     uploadTemplates(study, params) {
-        return this._post("studies", study, "templates", null, "upload", params);
+        return this._post("studies", study, "templates", null, "upload", null, params);
     }
 
     /** Delete template

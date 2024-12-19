@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.WorkflowConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.WorkflowCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -93,15 +94,14 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
                 ? TimeUtils.toDate(workflow.getModificationDate()) : TimeUtils.getDate());
 
         logger.debug("Inserting workflow '{}' ({})...", workflow.getId(), workflow.getUid());
-        versionedMongoDBAdaptor.insert(clientSession, workflowObject, workflow.getRelease());
+        versionedMongoDBAdaptor.insert(clientSession, workflowObject);
         logger.debug("Workflow '{}' successfully inserted", workflow.getId());
 
         return workflow;
     }
 
     @Override
-    public OpenCGAResult<Workflow> insert(long studyUid, Workflow workflow, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Workflow> insert(long studyUid, Workflow workflow, QueryOptions options) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting workflow insert transaction for workflow id '{}'", workflow.getId());
@@ -259,7 +259,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, query, parameters, queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update workflows for query {}", query.toJson(), e);
             throw new CatalogDBException("Could not update workflows based on query " + query.toJson(), e);
         }
@@ -383,7 +383,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
                 throw new CatalogDBException("Could not find workflow " + workflow.getId() + " with uid " + workflow.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete workflow {}: {}", workflow.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete workflow " + workflow.getId() + ": " + e.getMessage(), e);
         }
@@ -399,7 +399,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
 
                 try {
                     result.append(runTransaction(clientSession -> privateDelete(clientSession, workflow)));
-                } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+                } catch (CatalogException e) {
                     logger.error("Could not delete workflow {}: {}", workflowId, e.getMessage(), e);
                     result.getEvents().add(new Event(Event.Type.ERROR, workflowId, e.getMessage()));
                     result.setNumMatches(result.getNumMatches() + 1);

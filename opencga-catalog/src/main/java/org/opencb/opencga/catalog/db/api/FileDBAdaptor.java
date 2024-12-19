@@ -96,8 +96,13 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         INTERNAL_VARIANT_SECONDARY_INDEX("internal.variant.secondaryIndex", TEXT_ARRAY, ""),
         @Deprecated // Deprecated filter. Should use INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID once the migration is completed
         INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID("internal.variant.secondaryIndex.status.id", TEXT_ARRAY, ""),
+        INTERNAL_ALIGNMENT("internal.alignment", OBJECT, ""),
         INTERNAL_ALIGNMENT_INDEX("internal.alignment.index", TEXT_ARRAY, ""),
         INTERNAL_ALIGNMENT_INDEX_STATUS_ID("internal.alignment.index.status.id", TEXT_ARRAY, ""),
+        INTERNAL_ALIGNMENT_INDEX_FILE_ID("internal.alignment.index.fileId", STRING, ""),
+        INTERNAL_ALIGNMENT_COVERAGE("internal.alignment.coverage", TEXT_ARRAY, ""),
+        INTERNAL_ALIGNMENT_COVERAGE_FILE_ID("internal.alignment.coverage.fileId", STRING, ""),
+        INTERNAL_ALIGNMENT_COVERAGE_STATUS_ID("internal.alignment.coverage.status.id", TEXT_ARRAY, ""),
         INTERNAL_MISSING_SAMPLES("internal.missingSamples", OBJECT, ""),
         INTERNAL_MISSING_SAMPLES_EXISTING("internal.missingSamples.existing", TEXT_ARRAY, ""),
         INTERNAL_MISSING_SAMPLES_NON_EXISTING("internal.missingSamples.nonExisting", TEXT_ARRAY, ""),
@@ -233,13 +238,10 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param variableSetList Variable set list.
      * @param options Options to filter the output that will be returned after the insertion of the file.
      * @return A OpenCGAResult object containing the time spent.
-     * @throws CatalogDBException when the file could not be inserted due to different reasons.
-     * @throws CatalogParameterException if there is any formatting error.
-     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
+     * @throws CatalogException when the file could not be inserted due to any formatting error or the user is not authorised.
      */
     OpenCGAResult insert(long studyId, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
-                         List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+                         List<VariableSet> variableSetList, QueryOptions options) throws CatalogException;
 
     /***
      * Inserts the passed file in the database.
@@ -252,13 +254,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param variableSetList Variable set list.
      * @param options Options to filter the output that will be returned after the insertion of the file.
      * @return A OpenCGAResult object containing the time spent.
-     * @throws CatalogDBException when the file could not be inserted due to different reasons.
-     * @throws CatalogParameterException if there is any formatting error.
-     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
+     * @throws CatalogException when the file could not be inserted due any formatting error or the user is not authorised.
      */
     OpenCGAResult insertWithVirtualFile(long studyId, File file, File virtualFile, List<Sample> existingSamples,
                                         List<Sample> nonExistingSamples, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+            throws CatalogException;
 
     /***
      * Retrieves the file from the database containing the fileId given.
@@ -320,6 +320,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     OpenCGAResult delete(Query query, String status) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    void associateAlignmentFiles(long studyUid) throws CatalogException;
 
     int getFileSampleLinkThreshold();
 

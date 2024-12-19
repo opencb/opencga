@@ -27,10 +27,8 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.managers.NoteManager;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -39,6 +37,7 @@ import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteType;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationSummary;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -261,7 +260,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     @Override
     public OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options, String userId)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+            throws CatalogException {
         OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organization.getId(), false);
         if (orgFactory != null && orgFactory.isCatalogDBReady()) {
             throw new CatalogDBException("Organization '" + organization.getId() + "' already exists.");
@@ -275,7 +274,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
             OrganizationSummary organizationSummary = new OrganizationSummary(organization.getId(),
                     organizationDBAdaptorFactory.getMongoDataStore().getDatabaseName(), OrganizationTag.ACTIVE.name(), null);
-            NoteCreateParams noteCreateParams = new NoteCreateParams(ORGANIZATION_PREFIX + organization.getId(),
+            NoteCreateParams noteCreateParams = new NoteCreateParams(ORGANIZATION_PREFIX + organization.getId(), NoteType.ORGANIZATION,
                     Collections.singletonList(OrganizationTag.ACTIVE.name()), Note.Visibility.PRIVATE, Note.Type.OBJECT, null);
             try {
                 String orgSummaryString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(organizationSummary);

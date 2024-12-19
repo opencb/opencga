@@ -97,7 +97,18 @@ public class WorkflowWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = NextFlowRunParams.DESCRIPTION, required = true) NextFlowRunParams params) {
-        return submitJob(NextFlowExecutor.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return run(() -> catalogManager.getWorkflowManager().submit(study, params, jobName, jobDescription, dependsOn, jobTags,
+                scheduledStartTime, jobPriority, dryRun, token));
+    }
+
+    @POST
+    @Path("/import")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = NextFlowExecutor.DESCRIPTION, response = Job.class)
+    public Response importWorkflow(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Repository parameters", required = true) WorkflowRepositoryParams params) {
+        return run(() -> catalogManager.getWorkflowManager().importWorkflow(study, params, queryOptions, token));
     }
 
     @GET

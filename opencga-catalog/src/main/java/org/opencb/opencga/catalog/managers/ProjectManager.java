@@ -78,6 +78,8 @@ public class ProjectManager extends AbstractManager {
     public static final QueryOptions INCLUDE_PROJECT_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.UUID.key(),
             ProjectDBAdaptor.QueryParams.FQN.key()));
+    public static final QueryOptions INCLUDE_CELLBASE = keepFieldInQueryOptions(INCLUDE_PROJECT_IDS,
+            ProjectDBAdaptor.QueryParams.CELLBASE.key());
 
     ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                    DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration) {
@@ -227,13 +229,13 @@ public class ProjectManager extends AbstractManager {
             CellBaseConfiguration cellBaseConfiguration = ParamUtils.defaultObject(project.getCellbase(),
                     new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION,
                             defaultDataRelease, ParamConstants.CELLBASE_APIKEY));
-            cellBaseConfiguration = CellBaseValidator.validate(cellBaseConfiguration, project.getOrganism().getScientificName(),
+            cellBaseConfiguration = CellBaseValidator.validate(cellBaseConfiguration,
+                    project.getOrganism().getScientificName(),
                     project.getOrganism().getAssembly(), true);
             project.setCellbase(cellBaseConfiguration);
         } catch (IOException e) {
             throw new CatalogParameterException(e);
         }
-
         project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
         if (project.getStudies() != null && !project.getStudies().isEmpty()) {
             throw new CatalogParameterException("Creating project and studies in a single transaction is forbidden");
@@ -562,7 +564,7 @@ public class ProjectManager extends AbstractManager {
         }
 
         OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(owner, new QueryOptions(QueryOptions.INCLUDE,
-                Collections.singletonList(UserDBAdaptor.QueryParams.ACCOUNT.key())));
+                Collections.singletonList(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT.key())));
         if (userDataResult.getNumResults() == 0) {
             throw new CatalogException("User " + owner + " not found");
         }

@@ -7,7 +7,9 @@ workspace: ${OPENCGA.USER.WORKSPACE}
 jobDir: ${OPENCGA.USER.WORKSPACE}/jobs
 
 # Maximum number of login attempts before banning a user account
-maxLoginAttempts: ${OPENCGA.MAX_LOGIN_ATTEMPTS}
+account:
+  maxLoginAttempts: ${OPENCGA.ACCOUNT.MAX_LOGIN_ATTEMPTS}
+  passwordExpirationDays: 90
 
 panel:
   host: "http://resources.opencb.org/opencb/opencga/disease-panels"
@@ -65,11 +67,44 @@ healthCheck:
 
 
 analysis:
-  packages: # List of packages where to find analysis tools
+  # List of packages where to find analysis tools
+  packages:
     - "org.opencb.opencga"
-  scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"    # Scratch folder for the analysis.
+  workflow:
+    # Minimum requirements to run a workflow
+    minRequirements:
+      cpu: 2
+      memory: 8 # In GB
+      disk: 100 # In GB
+    # List of supported workflow managers and the version to be launched by default
+    managers:
+      - id: "NEXTFLOW"
+        version: "24.04.4"
+  # Scratch folder for the analysis.
+  scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"
+  # Default URL for downloading analysis resources.
+  resourceUrl: "http://resources.opencb.org/opencb/opencga/analysis/"
+  # Docker used by OpenCGA analysis and containing external tools such as samtools, bcftools, tabix, fastqc, plink1.9, bwa and r-base
+  # You can indicate the version, e.g: opencb/opencga-ext-tools:2.12.0, otherwise the current OpenCGA version will be used
+  opencgaExtTools: "opencb/opencga-ext-tools"
+  tools:
+    - id: "exomiser"
+      version: "13.1"
+      dockerId: "exomiser/exomiser-cli:13.1.0"
+      resources:
+        HG19: "exomiser/2109_hg19.zip"
+        HG38: "exomiser/2109_hg38.zip"
+        PHENOTYPE: "exomiser/2109_phenotype.zip"
+    - id: "exomiser"
+      version: "14.0"
+      defaultVersion: true
+      dockerId: "exomiser/exomiser-cli:14.0.0"
+      resources:
+        HG19: "exomiser/2402_hg19.zip"
+        HG38: "exomiser/2402_hg38.zip"
+        PHENOTYPE: "exomiser/2402_phenotype.zip"
   execution:
-    # Accepted values are "local", "SGE", "azure-batch", "k8s"
+    # Accepted values are "local", "SGE", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
     id: "${OPENCGA.EXECUTION.MODE}"
     defaultQueue: ""            # Default queue to be used to submit jobs
@@ -112,13 +147,6 @@ analysis:
         - "variant-secondary-sample-index"
       ## Local executor configuration
       local.maxConcurrentJobs: 2    # Max number of concurrent jobs to be executed locally in the master
-      ## Azure Batch Service configuration example
-      # azure.batchAccount : "batchAccount"
-      # azure.batchKey : "batchKey"
-      # azure.batchUri : "https://batchservice.uksouth.batch.azure.com"
-      # azure.batchPoolId : "poolId"
-      # azure.dockerImageName : "openCGADockerImageName"
-      # azure.dockerArgs : "dockerRunOptions"
 
       ## Kubernetes executor configuration example
       # k8s.masterUrl: "https://192.168.99.100:8443/"
@@ -145,14 +173,7 @@ analysis:
       k8s.nodeSelector:
         agentpool: jobs
         kubernetes.io/os: linux
-        kubernetes.io/role: agent
       # FOR ACI:
-      # k8s.requests:
-      #   cpu: 2
-      #   memory: "12G"
-      # k8s.limits:
-      #   cpu: 2
-      #   memory: "12G"
       # k8s.nodeSelector:
       #   kubernetes.io/role: agent
       #   kubernetes.io/os: linux

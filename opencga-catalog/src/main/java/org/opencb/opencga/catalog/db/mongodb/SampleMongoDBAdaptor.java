@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.SampleCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
@@ -187,7 +188,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         sampleObject.put(PRIVATE_INDIVIDUAL_UID, individualUid);
 
         logger.debug("Inserting sample '{}' ({})...", sample.getId(), sample.getUid());
-        versionedMongoDBAdaptor.insert(clientSession, sampleObject, sample.getRelease());
+        versionedMongoDBAdaptor.insert(clientSession, sampleObject);
         logger.debug("Sample '{}' successfully inserted", sample.getId());
 
         if (individualUid > 0) {
@@ -199,7 +200,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     @Override
     public OpenCGAResult<Sample> insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+            throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting sample insert transaction for sample id '{}'", sample.getId());
@@ -262,7 +263,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, documentResult.first(), parameters, variableSetList,
                     queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
             throw new CatalogDBException("Could not update sample " + sampleId + ": " + e.getMessage(), e.getCause());
         }
@@ -297,7 +298,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             try {
                 result.append(runTransaction(clientSession -> privateUpdate(clientSession, sampleDocument, parameters, variableSetList,
                         queryOptions)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, sampleId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -857,8 +858,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex) throws CatalogException {
         ObjectMap params;
         try {
             params = new ObjectMap(getDefaultObjectMapper().writeValueAsString(rgaIndex));
@@ -943,7 +943,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 throw new CatalogDBException("Could not find sample " + sample.getId() + " with uid " + sample.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete sample {}: {}", sample.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete sample " + sample.getId() + ": " + e.getMessage(), e);
         }
@@ -960,7 +960,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, sample)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete sample {}: {}", sampleId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, sampleId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);

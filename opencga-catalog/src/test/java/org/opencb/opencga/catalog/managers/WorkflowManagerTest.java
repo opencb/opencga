@@ -30,6 +30,23 @@ public class WorkflowManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void importWorkflow() throws CatalogException {
+        WorkflowRepositoryParams params = new WorkflowRepositoryParams("nf-core/rnaseq");
+        OpenCGAResult<Workflow> result = workflowManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumInserted());
+        assertEquals(1, result.first().getVersion());
+
+        // Update imported workflow
+        result = workflowManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
+        assertEquals(2, result.first().getVersion());
+
+        params = new WorkflowRepositoryParams("nf-core/proteinfold");
+        result = workflowManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumInserted());
+        assertEquals(1, result.first().getVersion());
+    }
+
+    @Test
     public void createWorkflowTest() throws CatalogException {
         Workflow workflow = new Workflow()
                 .setId("workflow")

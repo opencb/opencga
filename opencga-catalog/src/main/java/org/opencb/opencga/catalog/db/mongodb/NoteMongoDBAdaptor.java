@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.NoteConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -51,8 +52,7 @@ public class NoteMongoDBAdaptor extends CatalogMongoDBAdaptor implements NoteDBA
     }
 
     @Override
-    public OpenCGAResult<Note> insert(Note note)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Note> insert(Note note) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting note insert transaction for note id '{}'", note.getId());
@@ -142,7 +142,7 @@ public class NoteMongoDBAdaptor extends CatalogMongoDBAdaptor implements NoteDBA
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, uid, parameters, queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update note: {}", e.getMessage(), e);
             throw new CatalogDBException("Could not update note: " + e.getMessage(), e.getCause());
         }
@@ -208,7 +208,7 @@ public class NoteMongoDBAdaptor extends CatalogMongoDBAdaptor implements NoteDBA
 //            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
 //        }
 
-        final String[] acceptedStringParams = {QueryParams.USER_ID.key(), QueryParams.VISIBILITY.key()};
+        final String[] acceptedStringParams = {QueryParams.USER_ID.key(), QueryParams.VISIBILITY.key(), QueryParams.TYPE.key()};
         filterStringParams(parameters, document.getSet(), acceptedStringParams);
 
         Object value = parameters.get(QueryParams.VALUE.key());
@@ -234,7 +234,7 @@ public class NoteMongoDBAdaptor extends CatalogMongoDBAdaptor implements NoteDBA
                     filterStringListParams(parameters, document.getSet(), tagsParams);
                     break;
                 case REMOVE:
-                    filterStringListParams(parameters, document.getPull(), tagsParams);
+                    filterStringListParams(parameters, document.getPullAll(), tagsParams);
                     break;
                 case ADD:
                     filterStringListParams(parameters, document.getAddToSet(), tagsParams);
@@ -262,7 +262,7 @@ public class NoteMongoDBAdaptor extends CatalogMongoDBAdaptor implements NoteDBA
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> privateDelete(clientSession, note));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             throw new CatalogDBException("Could not delete note " + note.getId() + ": " + e.getMessage(), e);
         }
     }
@@ -399,6 +399,7 @@ public class NoteMongoDBAdaptor extends CatalogMongoDBAdaptor implements NoteDBA
                         break;
                     case ID:
                     case UUID:
+                    case TYPE:
                     case SCOPE:
                     case USER_ID:
                     case TAGS:

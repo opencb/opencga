@@ -60,6 +60,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     public static final String PRIVATE_STUDY_UID = "studyUid";
     public static final String VERSION = "version";
+    public static final String RELEASE = "release";
 
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
     static final String FILTER_ROUTE_COHORTS = "projects.studies.cohorts.";
@@ -93,16 +94,15 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     public interface TransactionBodyWithException<T> {
-        T execute(ClientSession session) throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+        T execute(ClientSession session) throws CatalogException;
     }
 
-    protected <T> T runTransaction(TransactionBodyWithException<T> body)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    protected <T> T runTransaction(TransactionBodyWithException<T> body) throws CatalogException {
         return runTransaction(body, null);
     }
 
     protected <T> T runTransaction(TransactionBodyWithException<T> inputBody, Consumer<CatalogException> onException)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+            throws CatalogException {
         ClientSession session = dbAdaptorFactory.getMongoDataStore().startSession();
         try {
             TransactionBodyWithException<T> body;
@@ -124,7 +124,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
             return session.withTransaction(() -> {
                 try {
                     return body.execute(session);
-                } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
+                } catch (CatalogException e) {
                     throw new CatalogDBRuntimeException(e);
                 }
             });
@@ -143,6 +143,12 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
                 throw cause;
             } else if (e.getCause() instanceof CatalogParameterException) {
                 CatalogParameterException cause = (CatalogParameterException) e.getCause();
+                if (onException != null) {
+                    onException.accept(cause);
+                }
+                throw cause;
+            } else if (e.getCause() instanceof CatalogAuthenticationException) {
+                CatalogAuthenticationException cause = (CatalogAuthenticationException) e.getCause();
                 if (onException != null) {
                     onException.accept(cause);
                 }

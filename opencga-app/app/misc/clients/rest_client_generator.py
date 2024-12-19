@@ -32,7 +32,8 @@ class RestClientGenerator(ABC):
                 'method_name': 'update_interpretation'},
             'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {
                 'method_name': 'delete_interpretation'},
-            'panels/import': {'method_name': 'import_panels'}
+            'panels/import': {'method_name': 'import_panels'},
+            'workflows/import': {'method_name': 'import_workflow'}
         }
         self.categories = {
             'Organizations': 'Organization',
@@ -41,12 +42,13 @@ class RestClientGenerator(ABC):
             'Studies': 'Study',
             'Files': 'File',
             'Jobs': 'Job',
-            'Workflows': 'Workflow',
             'Samples': 'Sample',
             'Individuals': 'Individual',
             'Families': 'Family',
             'Cohorts': 'Cohort',
             'Disease Panels': 'DiseasePanel',
+            'Notes': 'Note',
+            'Workflows': 'Workflow',
             'Analysis - Alignment': 'Alignment',
             'Analysis - Variant': 'Variant',
             'Analysis - Clinical': 'ClinicalAnalysis',

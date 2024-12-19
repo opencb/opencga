@@ -101,6 +101,18 @@ class Workflow(_ParentRestClient):
         options['field'] = field
         return self._get(category='workflows', resource='distinct', **options)
 
+    def import_workflow(self, data=None, **options):
+        """
+        Execute a Nextflow analysis.
+        PATH: /{apiVersion}/workflows/import
+
+        :param dict data: Repository parameters. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        return self._post(category='workflows', resource='import', data=data, **options)
+
     def run(self, data=None, **options):
         """
         Execute a Nextflow analysis.

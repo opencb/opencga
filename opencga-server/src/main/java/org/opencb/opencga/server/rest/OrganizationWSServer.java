@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.NoteDBAdaptor;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -160,6 +161,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = FieldConstants.NOTES_TYPE_DESCRIPTION) @QueryParam(FieldConstants.NOTES_TYPE_PARAM) String type,
             @ApiParam(value = FieldConstants.NOTES_SCOPE_DESCRIPTION) @QueryParam(FieldConstants.NOTES_SCOPE_PARAM) String scope,
             @ApiParam(value = FieldConstants.NOTES_VISIBILITY_DESCRIPTION) @QueryParam(FieldConstants.NOTES_VISIBILITY_PARAM) String visibility,
             @ApiParam(value = FieldConstants.GENERIC_UUID_DESCRIPTION) @QueryParam("uuid") String uuid,
@@ -204,9 +206,17 @@ public class OrganizationWSServer extends OpenCGAWSServer {
     })
     public Response updateNote(
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,REMOVE,SET", defaultValue = "ADD")
+                @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
         try {
+            if (tagsAction == null) {
+                tagsAction = ParamUtils.BasicUpdateAction.ADD;
+            }
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(NoteDBAdaptor.QueryParams.TAGS.key(), tagsAction);
+            queryOptions.put(Constants.ACTIONS, actionMap);
             OpenCGAResult<Note> result = catalogManager.getNotesManager().updateOrganizationNote(noteId, parameters, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {

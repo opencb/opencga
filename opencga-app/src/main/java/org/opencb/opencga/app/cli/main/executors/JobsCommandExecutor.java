@@ -29,9 +29,10 @@ import org.opencb.opencga.core.models.job.JobRunParams;
 import org.opencb.opencga.core.models.job.JobToolBuildDockerParams;
 import org.opencb.opencga.core.models.job.JobToolBuildParams;
 import org.opencb.opencga.core.models.job.JobTop;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
+import org.opencb.opencga.core.models.job.MinimumRequirements;
 import org.opencb.opencga.core.models.job.ToolInfo;
-import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -149,8 +150,8 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), JobAclUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-            putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
+            putNestedIfNotEmpty(beanParams, "permissions", commandOptions.permissions, true);
+            putNestedIfNotEmpty(beanParams, "job", commandOptions.job, true);
 
             jobAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -182,25 +183,26 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), JobCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotEmpty(beanParams, "tool.id",commandOptions.toolId, true);
-            putNestedIfNotEmpty(beanParams, "tool.description",commandOptions.toolDescription, true);
-            putNestedIfNotNull(beanParams, "tool.scope",commandOptions.toolScope, true);
-            putNestedIfNotNull(beanParams, "tool.type",commandOptions.toolType, true);
-            putNestedIfNotNull(beanParams, "tool.resource",commandOptions.toolResource, true);
-            putNestedIfNotNull(beanParams, "priority",commandOptions.priority, true);
-            putNestedIfNotEmpty(beanParams, "commandLine",commandOptions.commandLine, true);
-            putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-            putNestedIfNotEmpty(beanParams, "outDir.path",commandOptions.outDirPath, true);
-            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-            putNestedIfNotEmpty(beanParams, "result.id",commandOptions.resultId, true);
-            putNestedIfNotNull(beanParams, "result.attributes",commandOptions.resultAttributes, true);
-            putNestedIfNotEmpty(beanParams, "stdout.path",commandOptions.stdoutPath, true);
-            putNestedIfNotEmpty(beanParams, "stderr.path",commandOptions.stderrPath, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "tool.id", commandOptions.toolId, true);
+            putNestedIfNotEmpty(beanParams, "tool.description", commandOptions.toolDescription, true);
+            putNestedIfNotNull(beanParams, "tool.scope", commandOptions.toolScope, true);
+            putNestedIfNotNull(beanParams, "tool.type", commandOptions.toolType, true);
+            putNestedIfNotNull(beanParams, "tool.resource", commandOptions.toolResource, true);
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "priority", commandOptions.priority, true);
+            putNestedIfNotEmpty(beanParams, "commandLine", commandOptions.commandLine, true);
+            putNestedMapIfNotEmpty(beanParams, "params", commandOptions.params, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "outDir.path", commandOptions.outDirPath, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotEmpty(beanParams, "result.id", commandOptions.resultId, true);
+            putNestedMapIfNotEmpty(beanParams, "result.attributes", commandOptions.resultAttributes, true);
+            putNestedIfNotEmpty(beanParams, "stdout.path", commandOptions.stdoutPath, true);
+            putNestedIfNotEmpty(beanParams, "stderr.path", commandOptions.stderrPath, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             jobCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -219,6 +221,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("otherStudies", commandOptions.otherStudies);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
         queryParams.putIfNotEmpty("toolExternalExecutorId", commandOptions.toolExternalExecutorId);
@@ -273,9 +276,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), JobRetryParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
-            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
-            putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
+            putNestedIfNotEmpty(beanParams, "job", commandOptions.job, true);
+            putNestedIfNotNull(beanParams, "force", commandOptions.force, true);
+            putNestedMapIfNotEmpty(beanParams, "params", commandOptions.params, true);
 
             jobRetryParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -299,6 +302,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("otherStudies", commandOptions.otherStudies);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
         queryParams.putIfNotEmpty("toolExternalExecutorId", commandOptions.toolExternalExecutorId);
@@ -355,14 +359,14 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), JobToolBuildParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "gitRepository",commandOptions.gitRepository, true);
-            putNestedIfNotEmpty(beanParams, "aptGet",commandOptions.aptGet, true);
-            putNestedIfNotNull(beanParams, "installR",commandOptions.installR, true);
-            putNestedIfNotEmpty(beanParams, "docker.organisation",commandOptions.dockerOrganisation, true);
-            putNestedIfNotEmpty(beanParams, "docker.name",commandOptions.dockerName, true);
-            putNestedIfNotEmpty(beanParams, "docker.tag",commandOptions.dockerTag, true);
-            putNestedIfNotEmpty(beanParams, "docker.user",commandOptions.dockerUser, true);
-            putNestedIfNotEmpty(beanParams, "docker.password",commandOptions.dockerPassword, true);
+            putNestedIfNotEmpty(beanParams, "gitRepository", commandOptions.gitRepository, true);
+            putNestedIfNotEmpty(beanParams, "aptGet", commandOptions.aptGet, true);
+            putNestedIfNotNull(beanParams, "installR", commandOptions.installR, true);
+            putNestedIfNotEmpty(beanParams, "docker.organisation", commandOptions.dockerOrganisation, true);
+            putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
+            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
+            putNestedIfNotEmpty(beanParams, "docker.user", commandOptions.dockerUser, true);
+            putNestedIfNotEmpty(beanParams, "docker.password", commandOptions.dockerPassword, true);
 
             jobToolBuildParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -401,12 +405,12 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), JobRunParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "commandLine",commandOptions.commandLine, true);
-            putNestedIfNotEmpty(beanParams, "docker.id",commandOptions.dockerId, true);
-            putNestedIfNotEmpty(beanParams, "docker.tag",commandOptions.dockerTag, true);
-            putNestedIfNotEmpty(beanParams, "docker.token",commandOptions.dockerToken, true);
-            putNestedIfNotEmpty(beanParams, "git.repository",commandOptions.gitRepository, true);
-            putNestedIfNotEmpty(beanParams, "git.reference",commandOptions.gitReference, true);
+            putNestedIfNotEmpty(beanParams, "commandLine", commandOptions.commandLine, true);
+            putNestedIfNotEmpty(beanParams, "docker.id", commandOptions.dockerId, true);
+            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
+            putNestedIfNotEmpty(beanParams, "docker.token", commandOptions.dockerToken, true);
+            putNestedIfNotEmpty(beanParams, "git.repository", commandOptions.gitRepository, true);
+            putNestedIfNotEmpty(beanParams, "git.reference", commandOptions.gitReference, true);
 
             jobRunParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -502,10 +506,10 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), JobUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-            putNestedIfNotNull(beanParams, "visited",commandOptions.visited, true);
-            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visited", commandOptions.visited, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             jobUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

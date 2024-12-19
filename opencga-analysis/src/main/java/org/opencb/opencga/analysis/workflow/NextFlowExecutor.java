@@ -12,6 +12,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaDockerToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor;
 import org.opencb.opencga.catalog.utils.InputFileUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -22,6 +23,7 @@ import org.opencb.opencga.core.models.workflow.Workflow;
 import org.opencb.opencga.core.models.workflow.WorkflowScript;
 import org.opencb.opencga.core.models.workflow.WorkflowVariable;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.ToolDependency;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.result.Status;
@@ -42,7 +44,7 @@ import java.util.stream.Stream;
 @Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.WORKFLOW, description = NextFlowExecutor.DESCRIPTION)
 public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
-    public final static String ID = "workflow";
+    public final static String ID = "nextflow";
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
@@ -99,8 +101,12 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
             }
         }
 
+        if (StringUtils.isEmpty(workflow.getManager().getVersion())) {
+            workflow.getManager().setVersion(ParamConstants.DEFAULT_MIN_NEXTFLOW_VERSION);
+        }
         // Update job tags and attributes
-        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(workflow.getManager().getId().name(), workflow.getManager().getVersion());
+        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(workflow.getManager().getId().name().toLowerCase(),
+                workflow.getManager().getVersion());
         Set<String> tags = new HashSet<>();
         tags.add(ID);
         tags.add(workflow.getManager().getId().name());
@@ -109,7 +115,15 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         if (CollectionUtils.isNotEmpty(workflow.getTags())) {
             tags.addAll(workflow.getTags());
         }
-//        updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
+        List<ToolDependency> dependencyList = new ArrayList<>(4);
+        dependencyList.add(new ToolDependency("opencb/opencga-workflow", "TASK-6445"));
+        dependencyList.add(new ToolDependency("nextflow", workflow.getManager().getVersion()));
+        dependencyList.add(new ToolDependency(workflow.getId(), String.valueOf(workflow.getVersion())));
+        if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getId())) {
+            dependencyList.add(new ToolDependency(workflow.getRepository().getId(), workflow.getRepository().getVersion()));
+        }
+        addDependencies(dependencyList);
+        updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
         StringBuilder cliParamsBuilder = new StringBuilder();
         if (MapUtils.isNotEmpty(nextflowParams.getParams())) {
@@ -136,7 +150,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
                         cliParamsBuilder.append(workflowVariable.getDefaultValue()).append(" ");
                     } else if (workflowVariable.isOutput()) {
                         processOutputCli("", inputFileUtils, cliParamsBuilder);
-                    } else if (workflowVariable.isRequired() && workflowVariable.getType() != WorkflowVariable.WorkflowType.FLAG) {
+                    } else if (workflowVariable.isRequired() && workflowVariable.getType() != WorkflowVariable.WorkflowVariableType.FLAG) {
                         throw new ToolException("Missing value for mandatory parameter: '" + variableId + "'.");
                     }
                 }
@@ -194,10 +208,14 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
         String dockerImage = "opencb/opencga-workflow:TASK-6445";
         StringBuilder stringBuilder = new StringBuilder()
-                .append("bash -c \"NXF_VER=").append(workflow.getManager().getVersion()).append(" nextflow -c ").append(nextflowConfigPath).append(" run ");
-        if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getImage())) {
+                .append("bash -c \"NXF_VER=")
+                .append(workflow.getManager().getVersion())
+                .append(" nextflow -c ")
+                .append(nextflowConfigPath)
+                .append(" run ");
+        if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getId())) {
 //            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
-            stringBuilder.append(workflow.getRepository().getImage());
+            stringBuilder.append(workflow.getRepository().getId());
         } else {
             for (WorkflowScript script : workflow.getScripts()) {
                 if (script.isMain()) {
@@ -217,6 +235,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         // Set HOME environment variable to the temporal input directory. This is because nextflow creates a hidden folder there and,
         // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
         dockerParams.put("-e", "HOME=" + temporalInputDir);
+        dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
 
         // Execute docker image
         StopWatch stopWatch = StopWatch.createStarted();

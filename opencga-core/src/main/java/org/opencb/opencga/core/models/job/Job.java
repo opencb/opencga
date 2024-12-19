@@ -45,6 +45,9 @@ public class Job extends PrivateStudyUid {
     @DataField(id = "description", defaultValue = "", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(id = "type", indexed = true, description = FieldConstants.JOB_TYPE)
+    private JobType type;
+
     @DataField(id = "tool", indexed = true, description = FieldConstants.JOB_TOOL)
     private ToolInfo tool;
 
@@ -118,15 +121,16 @@ public class Job extends PrivateStudyUid {
     public Job() {
     }
 
-    public Job(String id, String uuid, String description, ToolInfo tool, String userId, String commandLine, Map<String, Object> params,
-               String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal, File outDir,
-               List<File> input, List<File> output, List<Job> dependsOn, String parentId, String scheduledStartTime, boolean dryRun,
-               List<String> tags, ExecutionResult execution, boolean visited, File stdout, File stderr, int release, JobStudyParam study,
-               Map<String, Object> attributes) {
+    public Job(String id, String uuid, String description, JobType type, ToolInfo tool, String userId, String commandLine,
+               Map<String, Object> params, String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal,
+               File outDir, List<File> input, List<File> output, List<Job> dependsOn, String parentId, String scheduledStartTime,
+               boolean dryRun, List<String> tags, ExecutionResult execution, boolean visited, File stdout, File stderr, int release,
+               JobStudyParam study, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
         this.tool = tool;
         this.description = description;
+        this.type = type;
         this.userId = userId;
         this.commandLine = commandLine;
         this.params = params;
@@ -157,6 +161,7 @@ public class Job extends PrivateStudyUid {
         sb.append("id='").append(id).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", type=").append(type);
         sb.append(", tool=").append(tool);
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", commandLine='").append(commandLine).append('\'');
@@ -223,6 +228,15 @@ public class Job extends PrivateStudyUid {
 
     public Job setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public JobType getType() {
+        return type;
+    }
+
+    public Job setType(JobType type) {
+        this.type = type;
         return this;
     }
 

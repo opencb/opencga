@@ -133,6 +133,9 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--tool-resource"}, description = "Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.", required = false, arity = 1)
         public String toolResource;
     
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: NATIVE, WORKFLOW, CUSTOM, WALKER", required = false, arity = 1)
+        public String type;
+    
         @Parameter(names = {"--priority"}, description = "The body web service priority parameter", required = false, arity = 1)
         public String priority;
     
@@ -188,6 +191,9 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of job UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
+    
+        @Parameter(names = {"--type"}, description = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)", required = false, arity = 1)
+        public String type; 
     
         @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String toolId; 
@@ -324,6 +330,9 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of job UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
+    
+        @Parameter(names = {"--type"}, description = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)", required = false, arity = 1)
+        public String type; 
     
         @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String toolId; 

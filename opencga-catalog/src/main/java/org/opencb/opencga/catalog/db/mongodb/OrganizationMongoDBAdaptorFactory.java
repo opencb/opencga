@@ -49,6 +49,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String INDIVIDUAL_ARCHIVE_COLLECTION = "individual_archive";
     public static final String FAMILY_ARCHIVE_COLLECTION = "family_archive";
     public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
+    public static final String CLINICAL_ANALYSIS_ARCHIVE_COLLECTION = "clinical_archive";
     public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
     public static final String WORKFLOW_ARCHIVE_COLLECTION = "workflow_archive";
 
@@ -93,6 +94,7 @@ public class OrganizationMongoDBAdaptorFactory {
             INDIVIDUAL_ARCHIVE_COLLECTION,
             FAMILY_ARCHIVE_COLLECTION,
             PANEL_ARCHIVE_COLLECTION,
+            CLINICAL_ANALYSIS_ARCHIVE_COLLECTION,
             INTERPRETATION_ARCHIVE_COLLECTION,
             WORKFLOW_ARCHIVE_COLLECTION,
 
@@ -125,7 +127,7 @@ public class OrganizationMongoDBAdaptorFactory {
 
     private final NoteMongoDBAdaptor notesDBAdaptor;
     private final OrganizationMongoDBAdaptor organizationDBAdaptor;
-    private final UserMongoDBAdaptor userDBAdaptor;
+    private UserMongoDBAdaptor userDBAdaptor;
     private final ProjectMongoDBAdaptor projectDBAdaptor;
     private final StudyMongoDBAdaptor studyDBAdaptor;
     private final IndividualMongoDBAdaptor individualDBAdaptor;
@@ -184,6 +186,7 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection individualArchivedCollection = mongoDataStore.getCollection(INDIVIDUAL_ARCHIVE_COLLECTION);
         MongoDBCollection familyArchivedCollection = mongoDataStore.getCollection(FAMILY_ARCHIVE_COLLECTION);
         MongoDBCollection panelArchivedCollection = mongoDataStore.getCollection(PANEL_ARCHIVE_COLLECTION);
+        MongoDBCollection clinicalArchivedCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_ARCHIVE_COLLECTION);
         MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
         MongoDBCollection workflowArchivedCollection = mongoDataStore.getCollection(WORKFLOW_ARCHIVE_COLLECTION);
 
@@ -221,7 +224,8 @@ public class OrganizationMongoDBAdaptorFactory {
         userDBAdaptor = new UserMongoDBAdaptor(userCollection, deletedUserCollection, configuration, this);
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, configuration, this);
         panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, panelArchivedCollection, deletedPanelCollection, configuration, this);
-        clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, configuration, this);
+        clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, clinicalArchivedCollection, deletedClinicalCollection,
+                configuration, this);
         interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, interpretationArchivedCollection,
                 deletedInterpretationCollection, configuration, this);
         workflowDBAdaptor = new WorkflowMongoDBAdaptor(workflowCollection, workflowArchivedCollection, deletedWorkflowCollection,

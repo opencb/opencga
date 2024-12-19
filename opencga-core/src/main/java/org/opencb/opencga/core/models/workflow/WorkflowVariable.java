@@ -5,22 +5,24 @@ public class WorkflowVariable {
     private String id;
     private String name;
     private String description;
-    private WorkflowType type;
+    private WorkflowVariableType type;
     private boolean required;
     private String defaultValue;
     private boolean output;
 
-    public enum WorkflowType {
-        INT,
-        STRING,
+    public enum WorkflowVariableType {
+        FLAG,
         BOOLEAN,
-        FLAG
+        INTEGER,
+        DOUBLE,
+        STRING,
+        FILE
     }
 
     public WorkflowVariable() {
     }
 
-    public WorkflowVariable(String id, String name, String description, WorkflowType type, boolean required, String defaultValue,
+    public WorkflowVariable(String id, String name, String description, WorkflowVariableType type, boolean required, String defaultValue,
                             boolean output) {
         this.id = id;
         this.name = name;
@@ -72,11 +74,11 @@ public class WorkflowVariable {
         return this;
     }
 
-    public WorkflowType getType() {
+    public WorkflowVariableType getType() {
         return type;
     }
 
-    public WorkflowVariable setType(WorkflowType type) {
+    public WorkflowVariable setType(WorkflowVariableType type) {
         this.type = type;
         return this;
     }

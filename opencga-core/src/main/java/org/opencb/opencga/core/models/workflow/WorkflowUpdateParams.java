@@ -2,6 +2,7 @@ package org.opencb.opencga.core.models.workflow;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.job.MinimumRequirements;
 
 import java.util.List;
 import java.util.Map;
@@ -35,8 +36,8 @@ public class WorkflowUpdateParams {
     @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
     private List<WorkflowVariable> variables;
 
-    @DataField(id = "minimumRequirements", description = FieldConstants.WORKFLOW_MINIMUM_REQUIREMENTS_DESCRIPTION)
-    private WorkflowMinimumRequirements minimumRequirements;
+    @DataField(id = "minimumRequirements", description = FieldConstants.MINIMUM_REQUIREMENTS_DESCRIPTION)
+    private MinimumRequirements minimumRequirements;
 
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
@@ -52,7 +53,7 @@ public class WorkflowUpdateParams {
 
     public WorkflowUpdateParams(String name, String description, WorkflowSystem manager, Workflow.Type type, List<String> tags,
                                 boolean draft, WorkflowRepository repository, List<WorkflowScript> scripts,
-                                List<WorkflowVariable> variables, WorkflowMinimumRequirements minimumRequirements, String creationDate,
+                                List<WorkflowVariable> variables, MinimumRequirements minimumRequirements, String creationDate,
                                 String modificationDate, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;

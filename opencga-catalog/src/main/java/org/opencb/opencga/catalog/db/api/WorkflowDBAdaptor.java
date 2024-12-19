@@ -3,9 +3,7 @@ package org.opencb.opencga.catalog.db.api;
 import org.apache.commons.collections4.map.LinkedMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.workflow.Workflow;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -16,7 +14,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface WorkflowDBAdaptor extends CoreDBAdaptor<Workflow> {
 
     OpenCGAResult<Workflow> insert(long studyUid, Workflow workflow, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+            throws CatalogException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),

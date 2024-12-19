@@ -229,6 +229,7 @@ class Study(_ParentRestClient):
         :param str modification_date: Modification date. Format:
             yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         :param str id: Note unique identifier.
+        :param str type: Note type.
         :param str uuid: Unique 32-character identifier assigned automatically
             by OpenCGA.
         :param str user_id: User that wrote that Note.
@@ -270,6 +271,8 @@ class Study(_ParentRestClient):
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
             must be provided.
+        :param str tags_action: Action to be performed if the array of tags is
+            being updated. Allowed values: ['ADD SET REMOVE']
         :param bool include_result: Flag indicating to include the created or
             updated document result in the response.
         """

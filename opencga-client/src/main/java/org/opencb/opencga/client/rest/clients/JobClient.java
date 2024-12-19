@@ -92,6 +92,7 @@ public class JobClient extends AbstractParentClient {
      *       id: Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       uuid: Comma separated list of job UUIDs up to a maximum of 100.
+     *       type: Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
      *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
@@ -156,6 +157,7 @@ public class JobClient extends AbstractParentClient {
      *       id: Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       uuid: Comma separated list of job UUIDs up to a maximum of 100.
+     *       type: Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
      *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].

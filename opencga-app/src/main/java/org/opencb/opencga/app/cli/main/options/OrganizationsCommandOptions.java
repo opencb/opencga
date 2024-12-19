@@ -127,6 +127,9 @@ public class OrganizationsCommandOptions {
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String id;
     
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: VARIANT, GENE, TRANSCRIPT, PROTEIN, JOB, FILE, SAMPLE, INDIVIDUAL, FAMILY, COHORT, DISEASE_PANEL, CLINICAL_ANALYSIS, WORKFLOW, ORGANIZATION, OTHER, UNKNOWN", required = false, arity = 1)
+        public String type;
+    
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
@@ -158,6 +161,9 @@ public class OrganizationsCommandOptions {
     
         @Parameter(names = {"--id"}, description = "Note unique identifier.", required = false, arity = 1)
         public String id; 
+    
+        @Parameter(names = {"--type"}, description = "Note type.", required = false, arity = 1)
+        public String type; 
     
         @Parameter(names = {"--scope"}, description = "Scope of the Note.", required = false, arity = 1)
         public String scope; 
@@ -214,8 +220,14 @@ public class OrganizationsCommandOptions {
         @Parameter(names = {"--id"}, description = "Note unique identifier.", required = true, arity = 1)
         public String id; 
     
+        @Parameter(names = {"--tags-action"}, description = "Action to be performed if the array of tags is being updated.", required = false, arity = 1)
+        public String tagsAction = "ADD"; 
+    
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
+    
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: VARIANT, GENE, TRANSCRIPT, PROTEIN, JOB, FILE, SAMPLE, INDIVIDUAL, FAMILY, COHORT, DISEASE_PANEL, CLINICAL_ANALYSIS, WORKFLOW, ORGANIZATION, OTHER, UNKNOWN", required = false, arity = 1)
+        public String type;
     
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
@@ -301,9 +313,6 @@ public class OrganizationsCommandOptions {
     
         @Parameter(names = {"--quota-max-cpu"}, description = "The body web service maxCpu parameter", required = false, arity = 1)
         public Integer quotaMaxCpu;
-    
-        @Parameter(names = {"--account-expiration-date"}, description = "The body web service expirationDate parameter", required = false, arity = 1)
-        public String accountExpirationDate;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;

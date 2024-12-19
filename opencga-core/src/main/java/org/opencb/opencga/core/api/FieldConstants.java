@@ -54,6 +54,7 @@ public class FieldConstants {
     public static final String NOTES_ID_DESCRIPTION = "Note unique identifier.";
     public static final String NOTES_SCOPE_DESCRIPTION = "Scope of the Note.";
     public static final String NOTES_STUDY_DESCRIPTION = "Study FQN if the Note scope is STUDY.";
+    public static final String NOTES_TYPE_DESCRIPTION = "Note type.";
     public static final String NOTES_TAGS_DESCRIPTION = "Note tags.";
     public static final String NOTES_USER_ID_DESCRIPTION = "User that wrote that Note.";
     public static final String NOTES_VISIBILITY_DESCRIPTION = "Visibility of the Note.";
@@ -62,6 +63,7 @@ public class FieldConstants {
 
     public static final String NOTES_ID_PARAM = "id";
     public static final String NOTES_SCOPE_PARAM = "scope";
+    public static final String NOTES_TYPE_PARAM = "type";
     public static final String NOTES_STUDY_PARAM = "study";
     public static final String NOTES_TAGS_PARAM = "tags";
     public static final String NOTES_USER_ID_PARAM = "userId";
@@ -300,6 +302,7 @@ public class FieldConstants {
 
 
     //ToolInfo
+    public static final String TOOL_INFO_VERSION_DESCRIPTION = "Version of the tool to be executed.";
     public static final String TOOL_INFO_SCOPE_DESCRIPTION = "Tool info scope can have the values GLOBAL, PROJECT and STUDY.";
     public static final String TOOL_INFO_TYPE_DESCRIPTION = "Tool info type can have the values OPERATION and ANALYSIS.";
     public static final String TOOL_INFO_RESOURCE_DESCRIPTION = "Tool info resource can have the values AUDIT, USER, PROJECT, "
@@ -319,12 +322,12 @@ public class FieldConstants {
     public static final String WORKFLOW_SCRIPTS_DESCRIPTION = "List of scripts used by the Workflow.";
     public static final String WORKFLOW_TAGS_DESCRIPTION = "List of tags.";
     public static final String WORKFLOW_VARIABLES_DESCRIPTION = "List of variables accepted by the Workflow.";
-    public static final String WORKFLOW_MINIMUM_REQUIREMENTS_DESCRIPTION = "Minimum requirements to execute the workflow.";
+    public static final String MINIMUM_REQUIREMENTS_DESCRIPTION = "Minimum requirements to execute the process.";
     public static final String WORKFLOW_INTERNAL_DESCRIPTION = "Workflow internal information.";
 
-    public static final String WORKFLOW_MIN_REQUIREMENTS_CPU_DESCRIPTION = "Minimum number of cpu cores required to execute the workflow.";
-    public static final String WORKFLOW_MIN_REQUIREMENTS_MEMORY_DESCRIPTION = "Minimum memory required to execute the workflow"
-            + " (expressed in GB).";
+    public static final String MIN_REQUIREMENTS_CPU_DESCRIPTION = "Minimum number of cpu cores required to execute the process.";
+    public static final String MIN_REQUIREMENTS_MEMORY_DESCRIPTION = "Minimum memory required to execute the process.";
+    public static final String MIN_REQUIREMENTS_DISK_DESCRIPTION = "Minimum disk required to execute the process.";
 
     public static final String WORKFLOW_SYSTEM_ID_DESCRIPTION = "Workflow system id. Valid values: NEXTFLOW.";
     public static final String WORKFLOW_SYSTEM_VERSION_DESCRIPTION = "Workflow system version to use.";
@@ -395,11 +398,13 @@ public class FieldConstants {
     public static final String EXECUTION_RESULT_START = "Date the execution started.";
     public static final String EXECUTION_RESULT_END = "Date the execution was completed.";
     public static final String EXECUTION_RESULT_STATUS = "Executor status can have the values PENDING, RUNNING, DONE and ERROR.";
+    public static final String EXECUTION_RESULT_DEPENDENCIES = "List of tool dependencies used during the execution.";
     public static final String EXECUTION_RESULT_EXTERNAL_FILES = "List of uris to the external files.";
     public static final String EXECUTION_RESULT_STEPS = "List of ToolStep.";
     public static final String EXECUTION_RESULT_EVENTS = "List of Event.";
 
     //Job
+    public static final String JOB_TYPE = "Job type indicating the origin of the tool that will be run.";
     public static final String JOB_TOOL = "Job tool info.";
     public static final String JOB_USER_ID = "Job user id.";
     public static final String JOB_COMMAND_LINE = "Job command line.";
@@ -464,9 +469,16 @@ public class FieldConstants {
     public static final String USER_ACCOUNT = "User account.";
 
     //Account
-    public static final String ACCOUNT_TYPE = "User account type can have the values GUEST, FULL and ADMINISTRATOR.";
-    public static final String ACCOUNT_EXPIRATION_DATE_DESCRIPTION = "Date the account expires.";
-    public static final String ACCOUNT_AUTHENTICATION = "How the account is authenticated";
+    public static final String INTERNAL_ACCOUNT_EXPIRATION_DATE_DESCRIPTION = "Date the account expires.";
+    public static final String INTERNAL_ACCOUNT_FAILED_ATTEMPTS_DESCRIPTION = "Number of consecutive failed attempts. When the user logs"
+            + " in successfully, this field is automatically reset to 0.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_DESCRIPTION = "Object containing the last time the password was changed and the"
+            + " expiration date.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED_DESCRIPTION = "Date the user's password was last changed. This "
+            + "field will be null if the user account origin is different from OpenCGA.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE_DESCRIPTION = "Date the user's password expires. This field will"
+            + " be null if the user account origin is different from OpenCGA and the passwordExpiration feature is disabled.";
+    public static final String INTERNAL_ACCOUNT_AUTHENTICATION = "How the account is authenticated";
     public static final String USER_QUOTA = "User quota";
     public static final String USER_PROJECTS = "A List with related projects.";
     public static final String USER_SHARED_PROJECTS = "A List with shared projects.";
@@ -550,13 +562,12 @@ public class FieldConstants {
     public static final String ALIGNMENT_INDEX_FILE_ID_DESCRIPTION = "File ID, (i.e., BAM/CRAM file ID).";
     public static final String ALIGNMENT_INDEX_OVERWRITE_DESCRIPTION = "Flag to force indexing.";
 
-    // Coverage index parameter descriptions
-    public static final String COVERAGE_INDEX_BAM_FILE_ID_DESCRIPTION = "BAM file ID.";
-    public static final String COVERAGE_INDEX_BAI_FILE_ID_DESCRIPTION = "BAI file ID.";
-    public static final String COVERAGE_INDEX_OVERWRITE_DESCRIPTION = "Window size (i.e., the size of the bins, in bases, for the output"
-            + " of the BIGWIG file).";
+    // Alignment index and coverage
+    public static final String ALIGNMENT_BAM_FILE_ID_DESCRIPTION = "Alignment file ID (in BAM or CRAM format)";
+    public static final String ALIGNMENT_WINDOW_SIZE_DESCRIPTION = "Bin size for the output of the BIGWIG file, in bases.";
+    public static final String ALIGNMENT_OVERWRITE_DESCRIPTION = "Flag to force indexing.";
 
-    // Alignment QC analysis (asample-qc-run)
+    // Alignment QC analysis (alignment-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
     public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"
             + " commas): " + AlignmentQcParams.STATS_SKIP_VALUE + ", " + AlignmentQcParams.FLAGSTATS_SKIP_VALUE + ", "
@@ -564,7 +575,12 @@ public class FieldConstants {
     public static final String ALIGNMENT_QC_OVERWRITE_DESCRIPTION = "To overwrite the QC metrics already computed.";
 
     // Exomiser
+    public static final String EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION = "Clinical analysis ID.";
+    public static final String EXOMISER_SAMPLE_DESCRIPTION = "Sample ID.";
     public static final String EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION = "Clinical analysis type: SINGLE or FAMILY.";
+    public static final String EXOMISER_VERSION_DESCRIPTION = "Exomiser version in the format X.Y where X is the major version and Y the"
+            + " minor version, e.g.: 14.0. If the version is not specified, the default version will be used. Refer to the configuration"
+            + " file to view all installed Exomiser versions and identify the default version.";
 
     // Liftover
     public static final String LIFTOVER_GRCH38 = "GRCh38";

@@ -18,6 +18,11 @@ package org.opencb.opencga.core.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.job.MinimumRequirements;
+import org.opencb.opencga.core.models.workflow.WorkflowSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +49,7 @@ public class Configuration {
     private String workspace;
     private String jobDir;
 
-    private int maxLoginAttempts;
+    private AccountConfiguration account;
 
     private Monitor monitor;
     private HealthCheck healthCheck;
@@ -79,6 +84,7 @@ public class Configuration {
         analysis = new Analysis();
         panel = new Panel();
         server = new ServerConfiguration();
+        account = new AccountConfiguration();
     }
 
     public void serialize(OutputStream configurationOututStream) throws IOException {
@@ -113,7 +119,6 @@ public class Configuration {
         } catch (IOException e) {
             throw new IOException("Configuration file could not be parsed: " + e.getMessage(), e);
         }
-
         addDefaultValueIfMissing(configuration);
 
         // We must always overwrite configuration with environment parameters
@@ -122,8 +127,39 @@ public class Configuration {
     }
 
     private static void addDefaultValueIfMissing(Configuration configuration) {
-        if (configuration.getMaxLoginAttempts() <= 0) {
-            configuration.setMaxLoginAttempts(5);
+        if (configuration.getAccount() == null) {
+            configuration.setAccount(new AccountConfiguration());
+        }
+        if (configuration.getAccount().getMaxLoginAttempts() <= 0) {
+            configuration.getAccount().setMaxLoginAttempts(5);
+        }
+        if (configuration.getAccount().getPasswordExpirationDays() < 0) {
+            // Disable password expiration by default
+            configuration.getAccount().setPasswordExpirationDays(0);
+        }
+        if (configuration.getAnalysis().getWorkflow() == null) {
+            configuration.getAnalysis().setWorkflow(new WorkflowConfiguration());
+        }
+        addDefaultAnalysisWorkflowValues(configuration.getAnalysis().getWorkflow());
+    }
+
+    private static void addDefaultAnalysisWorkflowValues(WorkflowConfiguration workflowConfiguration) {
+        if (CollectionUtils.isEmpty(workflowConfiguration.getManagers())) {
+            workflowConfiguration.setManagers(Collections.singletonList(
+                    new WorkflowSystemConfiguration(WorkflowSystem.SystemId.NEXTFLOW.name(), ParamConstants.DEFAULT_MIN_NEXTFLOW_VERSION)));
+        }
+        if (workflowConfiguration.getMinRequirements() == null) {
+            workflowConfiguration.setMinRequirements(new MinimumRequirements());
+        }
+        MinimumRequirements minRequirements = workflowConfiguration.getMinRequirements();
+        if (StringUtils.isEmpty(minRequirements.getCpu())) {
+            minRequirements.setCpu("2");
+        }
+        if (StringUtils.isEmpty(minRequirements.getMemory())) {
+            minRequirements.setMemory("8"); // GB
+        }
+        if (StringUtils.isEmpty(minRequirements.getDisk())) {
+            minRequirements.setDisk("100"); // GB
         }
     }
 
@@ -147,7 +183,8 @@ public class Configuration {
                         configuration.getMonitor().setPort(Integer.parseInt(value));
                         break;
                     case "OPENCGA.MAX_LOGIN_ATTEMPTS":
-                        configuration.setMaxLoginAttempts(Integer.parseInt(value));
+                    case "OPENCGA.ACCOUNT.MAX_LOGIN_ATTEMPTS":
+                        configuration.getAccount().setMaxLoginAttempts(Integer.parseInt(value));
                         break;
                     case "OPENCGA_EXECUTION_MODE":
                     case "OPENCGA_EXECUTION_ID":
@@ -203,6 +240,16 @@ public class Configuration {
         }
     }
 
+    public static void reportMovedField(String previousField, String newField, Object value) {
+        // Report only if the value is not null and not an empty string
+        if (value != null && !(value instanceof String && ((String) value).isEmpty())) {
+            if (reportedFields.add(previousField)) {
+                // Only log the first time a field is found
+                logger.warn("Option '{}' with value '{}' was moved to '{}'.", previousField, value, newField);
+            }
+        }
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Configuration{");
@@ -211,7 +258,7 @@ public class Configuration {
         sb.append(", databasePrefix='").append(databasePrefix).append('\'');
         sb.append(", workspace='").append(workspace).append('\'');
         sb.append(", jobDir='").append(jobDir).append('\'');
-        sb.append(", maxLoginAttempts=").append(maxLoginAttempts);
+        sb.append(", account=").append(account);
         sb.append(", monitor=").append(monitor);
         sb.append(", healthCheck=").append(healthCheck);
         sb.append(", audit=").append(audit);
@@ -292,12 +339,24 @@ public class Configuration {
         return this;
     }
 
-    public int getMaxLoginAttempts() {
-        return maxLoginAttempts;
+    public AccountConfiguration getAccount() {
+        return account;
     }
 
+    public Configuration setAccount(AccountConfiguration account) {
+        this.account = account;
+        return this;
+    }
+
+    @Deprecated
+    public int getMaxLoginAttempts() {
+        return account.getMaxLoginAttempts();
+    }
+
+    @Deprecated
     public Configuration setMaxLoginAttempts(int maxLoginAttempts) {
-        this.maxLoginAttempts = maxLoginAttempts;
+        reportMovedField("configuration.yml#maxLoginAttempts", "configuration.yml#account.maxLoginAttempts", maxLoginAttempts);
+        account.setMaxLoginAttempts(maxLoginAttempts);
         return this;
     }
 

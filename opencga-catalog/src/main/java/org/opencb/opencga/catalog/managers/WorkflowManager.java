@@ -31,6 +31,10 @@ import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
+import org.opencb.opencga.core.models.job.MinimumRequirements;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.workflow.*;
@@ -39,6 +43,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -50,7 +57,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 public class WorkflowManager extends ResourceManager<Workflow> {
 
     public static final QueryOptions INCLUDE_WORKFLOW_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ID.key(), UID.key(),
-            UUID.key(), VERSION.key(), STUDY_UID.key()));
+            UUID.key(), VERSION.key(), DESCRIPTION.key(), STUDY_UID.key(), MANAGER.key()));
 
     private final CatalogIOManager catalogIOManager;
     private final IOManagerFactory ioManagerFactory;
@@ -167,6 +174,247 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         }
     }
 
+    public OpenCGAResult<Job> submit(String studyStr, NextFlowRunParams runParams, String jobId, String jobDescription,
+                                     String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority,
+                                     Boolean dryRun, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
+        Query query = new Query();
+        if (runParams.getVersion() != null) {
+            query.append(VERSION.key(), runParams.getVersion());
+        }
+        Workflow workflow = internalGet(organizationId, study.getUid(), runParams.getId(), query, INCLUDE_WORKFLOW_IDS, userId).first();
+
+        ToolInfo toolInfo = new ToolInfo()
+                .setId(workflow.getId())
+                // Set workflow minimum requirements
+                .setMinimumRequirements(workflow.getMinimumRequirements() != null
+                        ? workflow.getMinimumRequirements()
+                        : configuration.getAnalysis().getWorkflow().getMinRequirements())
+                .setDescription(workflow.getDescription());
+
+        Map<String, Object> paramsMap = runParams.toParams();
+        paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study.getFqn());
+
+        Enums.Priority priority = Enums.Priority.MEDIUM;
+        if (!StringUtils.isEmpty(jobPriority)) {
+            priority = Enums.Priority.getPriority(jobPriority.toUpperCase());
+        }
+
+        List<String> jobDependsOn;
+        if (StringUtils.isNotEmpty(jobDependsOnStr)) {
+            jobDependsOn = Arrays.asList(jobDependsOnStr.split(","));
+        } else {
+            jobDependsOn = Collections.emptyList();
+        }
+
+        List<String> jobTags;
+        if (StringUtils.isNotEmpty(jobTagsStr)) {
+            jobTags = Arrays.asList(jobTagsStr.split(","));
+        } else {
+            jobTags = Collections.emptyList();
+        }
+
+        return catalogManager.getJobManager().submit(study.getFqn(), JobType.WORKFLOW, toolInfo, priority, paramsMap, jobId, jobDescription,
+                jobDependsOn, jobTags, null, jobScheduledStartTime, dryRun, Collections.emptyMap(), token);
+    }
+
+    public OpenCGAResult<Workflow> importWorkflow(String studyStr, WorkflowRepositoryParams repository, QueryOptions options, String token)
+            throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("repository", repository)
+                .append("options", options)
+                .append("token", token);
+
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        String studyId = studyFqn.getStudyId();
+        String studyUuid = studyFqn.getStudyUuid();
+        String workflowId = "";
+        try {
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
+            studyId = study.getId();
+            studyUuid = study.getUuid();
+
+            // 1. Check permissions
+            authorizationManager.checkStudyPermission(organizationId, study.getUid(), tokenPayload,
+                    StudyPermissions.Permissions.WRITE_WORKFLOWS);
+
+            // 2. Download workflow
+            Workflow workflow = downloadWorkflow(repository);
+            validateNewWorkflow(workflow, userId);
+            workflowId = workflow.getId();
+
+            OpenCGAResult<Workflow> result;
+
+            Query query = new Query()
+                    .append(STUDY_UID.key(), study.getUid())
+                    .append(ID.key(), workflow.getId());
+            OpenCGAResult<Workflow> tmpResult = getWorkflowDBAdaptor(organizationId).get(query, INCLUDE_WORKFLOW_IDS);
+            if (tmpResult.getNumResults() > 0) {
+                logger.warn("Workflow '" + workflowId + "' already exists. Updating with the latest workflow information.");
+                try {
+                    // Set workflow uid just in case users want to get the final result
+                    workflow.setUid(tmpResult.first().getUid());
+
+                    // Create update map removing the id to avoid the dbAdaptor exception
+                    ObjectMap updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(workflow));
+                    updateMap.remove("id");
+                    result = getWorkflowDBAdaptor(organizationId).update(tmpResult.first().getUid(), updateMap, QueryOptions.empty());
+                } catch (JsonProcessingException e) {
+                    throw new CatalogException("Internal error. Workflow '" + workflowId + "' already existed but it could not be updated",
+                            e);
+                }
+            } else {
+                // 3. We insert the workflow
+                result = getWorkflowDBAdaptor(organizationId).insert(study.getUid(), workflow, options);
+            }
+
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created workflow
+                query = new Query()
+                        .append(STUDY_UID.key(), study.getUid())
+                        .append(UID.key(), workflow.getUid());
+                OpenCGAResult<Workflow> tmpTmpResult = getWorkflowDBAdaptor(organizationId).get(query, options);
+                result.setResults(tmpTmpResult.getResults());
+            }
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, workflow.getId(), workflow.getUuid(), studyId,
+                    studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, workflowId, "", studyId, studyUuid, auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    private Workflow downloadWorkflow(WorkflowRepositoryParams repository) throws CatalogException {
+        ParamUtils.checkObj(repository, "Workflow repository parameters");
+        if (StringUtils.isEmpty(repository.getId())) {
+            throw new CatalogParameterException("Missing 'id' field in workflow import parameters");
+        }
+        String workflowId = repository.getId().replace("/", ".");
+        String urlStr;
+
+        if (StringUtils.isEmpty(repository.getVersion())) {
+            urlStr = "https://raw.githubusercontent.com/" + repository.getId() + "/refs/heads/master/nextflow.config";
+        } else {
+            urlStr = "https://raw.githubusercontent.com/" + repository.getId() + "/refs/tags/" + repository.getVersion()
+                    + "/nextflow.config";
+        }
+
+        Workflow workflow = new Workflow("", "", "", null, new WorkflowSystem(WorkflowSystem.SystemId.NEXTFLOW, ""), new LinkedList<>(),
+                new LinkedList<>(), new MinimumRequirements(), false, repository.toWorkflowRepository(), new LinkedList<>(),
+                new WorkflowInternal(), TimeUtils.getTime(), TimeUtils.getTime(), new HashMap<>());
+        try {
+            URL url = new URL(urlStr);
+            BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+
+            // We add the bracket close strings because they are expected to be properly indented. That way, we will be able to know when
+            // that section has been properly closed. Otherwise, we may get confused by some other subsections that could be closed before
+            // the actual section closure.
+            String manifestBracketClose = null;
+            String profilesBracketClose = null;
+            String gitpodBracketClose = null;
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                if (manifestBracketClose != null) {
+                    if (manifestBracketClose.equals(inputLine)) {
+                        manifestBracketClose = null;
+                    } else {
+                        // Process manifest line
+                        fillWithWorkflowManifest(workflow, inputLine);
+                    }
+                } else if (profilesBracketClose != null) {
+                    if (gitpodBracketClose != null) {
+                        if (gitpodBracketClose.equals(inputLine)) {
+                            gitpodBracketClose = null;
+                        } else {
+                            // Process gitpod line
+                            fillWithGitpodManifest(workflow, inputLine);
+                        }
+                    } else if (inputLine.trim().startsWith("gitpod {")) {
+                        int position = inputLine.indexOf("gitpod {");
+                        gitpodBracketClose = StringUtils.repeat(" ", position) + "}";
+                    } else if (profilesBracketClose.equals(inputLine)) {
+                        profilesBracketClose = null;
+                    }
+                } else if (inputLine.trim().startsWith("manifest {")) {
+                    int position = inputLine.indexOf("profiles {");
+                    manifestBracketClose = StringUtils.repeat(" ", position) + "}";
+                } else if (inputLine.trim().startsWith("profiles {")) {
+                    int position = inputLine.indexOf("profiles {");
+                    profilesBracketClose = StringUtils.repeat(" ", position) + "}";
+
+                }
+            }
+            in.close();
+        } catch (Exception e) {
+            throw new CatalogException("Could not import workflow '" + workflowId + "'.", e);
+        }
+
+        return workflow;
+    }
+
+    private void fillWithWorkflowManifest(Workflow workflow, String rawline) {
+        String[] split = rawline.split("= ");
+        String key = split[0].trim();
+//        String key = split[0].replaceAll(" ", "");
+        String value = split[1].replace("\"", "").replace("'", "").trim();
+        switch (key) {
+            case "name":
+                workflow.setId(value.replace("/", "."));
+                workflow.setName(value.replace("/", " "));
+                workflow.getRepository().setId(value);
+                break;
+            case "author":
+                workflow.getRepository().setAuthor(value);
+                break;
+            case "description":
+                workflow.setDescription(value);
+                workflow.getRepository().setDescription(value);
+                break;
+            case "version":
+                String version = value.replaceAll("^[^0-9]+|[^0-9.]+$", "");
+                workflow.getRepository().setVersion(version);
+                break;
+            case "nextflowVersion":
+                // Nextflow version must start with a number
+                version = value.replaceAll("^[^0-9]+|[^0-9.]+$", "");
+                workflow.getManager().setVersion(version);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void fillWithGitpodManifest(Workflow workflow, String rawline) {
+        String[] split = rawline.split("=");
+        String key = split[0].replaceAll(" ", "");
+        String value = split[1].replace("\"", "").replace("'", "").trim();
+        switch (key) {
+            case "executor.cpus":
+                workflow.getMinimumRequirements().setCpu(value);
+                break;
+            case "executor.memory":
+                workflow.getMinimumRequirements().setMemory(value);
+                break;
+            default:
+                break;
+        }
+    }
+
+
     public OpenCGAResult<Workflow> update(String studyStr, String workflowId, WorkflowUpdateParams updateParams, QueryOptions options,
                                           String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -192,13 +440,14 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             studyId = study.getId();
             studyUuid = study.getUuid();
 
-            // 1. Check permissions
-            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
-
             Workflow workflow = internalGet(organizationId, study.getUid(), Collections.singletonList(workflowId), null,
                     INCLUDE_WORKFLOW_IDS, userId, false).first();
             id = workflow.getId();
             uuid = workflow.getUuid();
+
+            // Check permission
+            authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), workflow.getUid(), userId,
+                    WorkflowPermissions.WRITE);
 
             if (updateParams == null) {
                 throw new CatalogException("Missing parameters to update the workflow.");
@@ -567,9 +816,6 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         if (workflow.getManager().getId() == null) {
             workflow.getManager().setId(WorkflowSystem.SystemId.NEXTFLOW);
         }
-        if (StringUtils.isEmpty(workflow.getManager().getVersion())) {
-            workflow.getManager().setVersion("24.04.4");
-        }
         workflow.setType(ParamUtils.defaultObject(workflow.getType(), Workflow.Type.OTHER));
         workflow.setTags(workflow.getTags() != null ? workflow.getTags() : Collections.emptyList());
         workflow.setScripts(workflow.getScripts() != null ? workflow.getScripts() : Collections.emptyList());
@@ -588,10 +834,10 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             throw new CatalogParameterException("No main script found.");
         }
         workflow.setRepository(workflow.getRepository() != null ? workflow.getRepository() : new WorkflowRepository(""));
-        if (StringUtils.isEmpty(workflow.getRepository().getImage()) && CollectionUtils.isEmpty(workflow.getScripts())) {
+        if (StringUtils.isEmpty(workflow.getRepository().getId()) && CollectionUtils.isEmpty(workflow.getScripts())) {
             throw new CatalogParameterException("No repository image or scripts found.");
         }
-        if (StringUtils.isNotEmpty(workflow.getRepository().getImage()) && CollectionUtils.isNotEmpty(workflow.getScripts())) {
+        if (StringUtils.isNotEmpty(workflow.getRepository().getId()) && CollectionUtils.isNotEmpty(workflow.getScripts())) {
             throw new CatalogParameterException("Both repository image and scripts found. Please, either add scripts or a repository"
                     + " image.");
         }

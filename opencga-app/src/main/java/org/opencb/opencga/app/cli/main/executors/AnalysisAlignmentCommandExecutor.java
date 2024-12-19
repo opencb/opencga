@@ -140,12 +140,12 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), BwaWrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
-            putNestedIfNotEmpty(beanParams, "fastaFile",commandOptions.fastaFile, true);
-            putNestedIfNotEmpty(beanParams, "fastq1File",commandOptions.fastq1File, true);
-            putNestedIfNotEmpty(beanParams, "fastq2File",commandOptions.fastq2File, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-            putNestedIfNotNull(beanParams, "bwaParams",commandOptions.bwaParams, true);
+            putNestedIfNotEmpty(beanParams, "command", commandOptions.command, true);
+            putNestedIfNotEmpty(beanParams, "fastaFile", commandOptions.fastaFile, true);
+            putNestedIfNotEmpty(beanParams, "fastq1File", commandOptions.fastq1File, true);
+            putNestedIfNotEmpty(beanParams, "fastq2File", commandOptions.fastq2File, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+            putNestedMapIfNotEmpty(beanParams, "bwaParams", commandOptions.bwaParams, true);
 
             bwaWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -184,9 +184,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), CoverageIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "bamFileId",commandOptions.bamFileId, true);
-            putNestedIfNotEmpty(beanParams, "baiFileId",commandOptions.baiFileId, true);
-            putNestedIfNotNull(beanParams, "windowSize",commandOptions.windowSize, true);
+            putNestedIfNotEmpty(beanParams, "fileId", commandOptions.fileId, true);
+            putNestedIfNotNull(beanParams, "windowSize", commandOptions.windowSize, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             coverageIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -225,9 +225,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), AlignmentGeneCoverageStatsParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "bamFile",commandOptions.bamFile, true);
-            putNestedIfNotNull(beanParams, "genes",commandOptions.genes, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotEmpty(beanParams, "bamFile", commandOptions.bamFile, true);
+            putNestedIfNotNull(beanParams, "genes", commandOptions.genes, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
             alignmentGeneCoverageStatsParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -323,9 +323,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), DeeptoolsWrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-            putNestedIfNotNull(beanParams, "deeptoolsParams",commandOptions.deeptoolsParams, true);
+            putNestedIfNotEmpty(beanParams, "command", commandOptions.command, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+            putNestedMapIfNotEmpty(beanParams, "deeptoolsParams", commandOptions.deeptoolsParams, true);
 
             deeptoolsWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -364,9 +364,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), FastqcWrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "inputFile",commandOptions.inputFile, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-            putNestedIfNotNull(beanParams, "fastqcParams",commandOptions.fastqcParams, true);
+            putNestedIfNotEmpty(beanParams, "inputFile", commandOptions.inputFile, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+            putNestedMapIfNotEmpty(beanParams, "fastqcParams", commandOptions.fastqcParams, true);
 
             fastqcWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -405,8 +405,8 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), AlignmentIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "fileId",commandOptions.fileId, true);
-            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+            putNestedIfNotEmpty(beanParams, "fileId", commandOptions.fileId, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             alignmentIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -445,9 +445,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), PicardWrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-            putNestedIfNotNull(beanParams, "picardParams",commandOptions.picardParams, true);
+            putNestedIfNotEmpty(beanParams, "command", commandOptions.command, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+            putNestedMapIfNotEmpty(beanParams, "picardParams", commandOptions.picardParams, true);
 
             picardWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -486,10 +486,10 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), AlignmentQcParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "bamFile",commandOptions.bamFile, true);
-            putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
-            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotEmpty(beanParams, "bamFile", commandOptions.bamFile, true);
+            putNestedIfNotEmpty(beanParams, "skip", commandOptions.skip, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
             alignmentQcParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -560,10 +560,10 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), SamtoolsWrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
-            putNestedIfNotEmpty(beanParams, "inputFile",commandOptions.inputFile, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-            putNestedIfNotNull(beanParams, "samtoolsParams",commandOptions.samtoolsParams, true);
+            putNestedIfNotEmpty(beanParams, "command", commandOptions.command, true);
+            putNestedIfNotEmpty(beanParams, "inputFile", commandOptions.inputFile, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+            putNestedMapIfNotEmpty(beanParams, "samtoolsParams", commandOptions.samtoolsParams, true);
 
             samtoolsWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

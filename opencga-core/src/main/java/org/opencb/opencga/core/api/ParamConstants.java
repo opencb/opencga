@@ -79,10 +79,12 @@ public class ParamConstants {
     public static final String OVERWRITE = "overwrite";
     private static final String UP_TO_100 = " up to a maximum of 100";
 
+    public static final String DEFAULT_MIN_NEXTFLOW_VERSION = "24.04.4";
+
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
     public static final String CELLBASE_VERSION = "v5.8";
     public static final String CELLBASE_DATA_RELEASE_GRCH38 = "7";
-    public static final String CELLBASE_APIKEY = "";
+    public static final String CELLBASE_APIKEY = null;
 
     public static final String POP_FREQ_1000G_CB_V4 = "1kG_phase3";
     public static final String POP_FREQ_1000G_CB_V5 = "1000G";
@@ -437,6 +439,9 @@ public class ParamConstants {
     public static final String CLINICAL_RELEASE_PARAM = RELEASE_PARAM;
     public static final String CLINICAL_STATUS_PARAM = STATUS_PARAM;
     public static final String CLINICAL_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
+    public static final String CLINICAL_VERSION_PARAM = "version";
+    public static final String CLINICAL_VERSION_DESCRIPTION = "Comma separated list of clinical versions. 'all' to get all the clinical"
+            + " versions. Not supported if multiple clinical ids are provided";
     public static final String CLINICAL_TYPE_DESCRIPTION = "Clinical Analysis type";
     public static final String CLINICAL_DISORDER_DESCRIPTION = "Clinical Analysis disorder" + REGEX_SUPPORT;
     public static final String CLINICAL_FILES_DESCRIPTION = "Clinical Analysis files";
@@ -467,6 +472,7 @@ public class ParamConstants {
             + "Interpretation object is passed.";
     public static final String INTERPRETATION_ID_PARAM = "id";
     public static final String INTERPRETATION_UUID_PARAM = "uuid";
+    public static final String INTERPRETATION_NAME_PARAM = "name";
     public static final String INTERPRETATION_CLINICAL_ANALYSIS_ID_PARAM = "clinicalAnalysisId";
     public static final String INTERPRETATION_ANALYST_ID_PARAM = "analystId";
     public static final String INTERPRETATION_METHOD_NAME_PARAM = "methodName";
@@ -558,11 +564,13 @@ public class ParamConstants {
     public static final String JOB_TOOL_EXTERNAL_EXECUTOR_ID_DESCRIPTION = "Id of the external executor. This field is only applicable for "
             + "jobs executed by an external executor.";
     public static final String JOB_DRY_RUN_PARAM = "dryRun";
+    public static final String JOB_TYPE_PARAM = "type";
     public static final String JOB_PARENT_ID_PARAM = "parentId";
     public static final String JOB_PARENT_ID_DESCRIPTION = "Job id that generated this job (if any).";
     public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_PARAM = "internal.killJobRequested";
     public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION = "Flag indicating that the user requested to kill the job.";
     public static final String JOB_TOOL_TYPE_PARAM = "toolType";
+    public static final String JOB_TYPE_DESCRIPTION = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)";
     public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job" + REGEX_SUPPORT;
     public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
     public static final String JOB_USER_PARAM = "userId";
@@ -634,9 +642,7 @@ public class ParamConstants {
     public static final String INDEX_AUXILIAR_COLLECTION_DESCRIPTION = "Index auxiliar collection to improve performance assuming RGA is " +
             "completely indexed.";
     public static final String INDEX_AUXILIAR_COLLECTION = "auxiliarIndex";
-    public static final String ALIGNMENT_INDEX_DESCRIPTION = "Index alignment file";
     public static final String ALIGNMENT_QUERY_DESCRIPTION = "Search over indexed alignments";
-    public static final String ALIGNMENT_COVERAGE_DESCRIPTION = "Compute coverage for a given alignemnt file";
     public static final String ALIGNMENT_COVERAGE_QUERY_DESCRIPTION = "Query the coverage of an alignment file for regions or genes";
     public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs " +
             "germline)";
@@ -1552,6 +1558,7 @@ public class ParamConstants {
     public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
     public static final String INTERPRETATION_ID_DESCRIPTION = "Comma separated list of Interpretation IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String INTERPRETATION_UUID_DESCRIPTION = "Comma separated list of Interpretation UUIDs" + UP_TO_100;
+    public static final String INTERPRETATION_NAME_DESCRIPTION = "Comma separated list of Interpretation names" + UP_TO_100;
     public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of clinical interpretation IDs " + UP_TO_100;
     public static final String PANEL_ID_DESCRIPTION = "Comma separated list of panel IDs " + UP_TO_100 + REGEX_SUPPORT;
     public static final String PANEL_UUID_DESCRIPTION = "Comma separated list of panel UUIDs " + UP_TO_100;

@@ -41,24 +41,20 @@ public class ToolInfo {
     @DataField(id = "resource", description = FieldConstants.TOOL_INFO_RESOURCE_DESCRIPTION)
     private Enums.Resource resource;
 
-    @DataField(id = "externalExecutor", since = "3.3.0", description = FieldConstants.TOOL_INFO_EXTERNAL_EXECUTOR_DESCRIPTION)
-    private ToolInfoExecutor externalExecutor;
-
+    @DataField(id = "minimumRequirements", description = FieldConstants.MINIMUM_REQUIREMENTS_DESCRIPTION)
+    private MinimumRequirements minimumRequirements;
 
     public ToolInfo() {
     }
 
-    public ToolInfo(String id, String description, Scope scope, Type type, Enums.Resource resource) {
-        this(id, description, scope, type, resource, null);
-    }
-
-    public ToolInfo(String id, String description, Scope scope, Type type, Enums.Resource resource, ToolInfoExecutor externalExecutor) {
+    public ToolInfo(String id, String description, Scope scope, Type type, Enums.Resource resource,
+                    MinimumRequirements minimumRequirements) {
         this.id = id;
         this.description = description;
         this.scope = scope;
         this.type = type;
         this.resource = resource;
-        this.externalExecutor = externalExecutor;
+        this.minimumRequirements = minimumRequirements;
     }
 
     @Override
@@ -69,7 +65,7 @@ public class ToolInfo {
         sb.append(", scope=").append(scope);
         sb.append(", type=").append(type);
         sb.append(", resource=").append(resource);
-        sb.append(", externalExecutor=").append(externalExecutor);
+        sb.append(", minimumRequirements=").append(minimumRequirements);
         sb.append('}');
         return sb.toString();
     }
@@ -119,12 +115,12 @@ public class ToolInfo {
         return this;
     }
 
-    public ToolInfoExecutor getExternalExecutor() {
-        return externalExecutor;
+    public MinimumRequirements getMinimumRequirements() {
+        return minimumRequirements;
     }
 
-    public ToolInfo setExternalExecutor(ToolInfoExecutor externalExecutor) {
-        this.externalExecutor = externalExecutor;
+    public ToolInfo setMinimumRequirements(MinimumRequirements minimumRequirements) {
+        this.minimumRequirements = minimumRequirements;
         return this;
     }
 }

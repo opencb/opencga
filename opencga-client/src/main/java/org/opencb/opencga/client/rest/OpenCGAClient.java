@@ -33,9 +33,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-/**
- * Created by imedina on 04/05/16.
- */
+
 public class OpenCGAClient {
 
     protected String userId;
@@ -73,7 +71,7 @@ public class OpenCGAClient {
     }
 
     private void init(AuthenticationResponse tokens, ClientConfiguration clientConfiguration) {
-        this.clients = new HashMap<>(25);
+        this.clients = new HashMap<>(30);
 
         if (tokens != null) {
             setToken(tokens.getToken());
@@ -81,9 +79,7 @@ public class OpenCGAClient {
             this.userId = getUserFromToken(tokens.getToken());
         }
 
-
         this.clientConfiguration = clientConfiguration;
-
     }
 
     public OrganizationClient getOrganizationClient() {
@@ -110,32 +106,28 @@ public class OpenCGAClient {
         return getClient(JobClient.class, () -> new JobClient(token, clientConfiguration));
     }
 
-    public IndividualClient getIndividualClient() {
-        return getClient(IndividualClient.class, () -> new IndividualClient(token, clientConfiguration));
-    }
-
     public SampleClient getSampleClient() {
         return getClient(SampleClient.class, () -> new SampleClient(token, clientConfiguration));
     }
 
-    public AdminClient getAdminClient() {
-        return getClient(AdminClient.class, () -> new AdminClient(token, clientConfiguration));
+    public IndividualClient getIndividualClient() {
+        return getClient(IndividualClient.class, () -> new IndividualClient(token, clientConfiguration));
+    }
+
+    public FamilyClient getFamilyClient() {
+        return getClient(FamilyClient.class, () -> new FamilyClient(token, clientConfiguration));
     }
 
     public CohortClient getCohortClient() {
         return getClient(CohortClient.class, () -> new CohortClient(token, clientConfiguration));
     }
 
-    public ClinicalAnalysisClient getClinicalAnalysisClient() {
-        return getClient(ClinicalAnalysisClient.class, () -> new ClinicalAnalysisClient(token, clientConfiguration));
-    }
-
     public DiseasePanelClient getDiseasePanelClient() {
         return getClient(DiseasePanelClient.class, () -> new DiseasePanelClient(token, clientConfiguration));
     }
 
-    public FamilyClient getFamilyClient() {
-        return getClient(FamilyClient.class, () -> new FamilyClient(token, clientConfiguration));
+    public WorkflowClient getWorkflowClient() {
+        return getClient(WorkflowClient.class, () -> new WorkflowClient(token, clientConfiguration));
     }
 
     public AlignmentClient getAlignmentClient() {
@@ -146,12 +138,20 @@ public class OpenCGAClient {
         return getClient(VariantClient.class, () -> new VariantClient(token, clientConfiguration));
     }
 
+    public ClinicalAnalysisClient getClinicalAnalysisClient() {
+        return getClient(ClinicalAnalysisClient.class, () -> new ClinicalAnalysisClient(token, clientConfiguration));
+    }
+
     public VariantOperationClient getVariantOperationClient() {
         return getClient(VariantOperationClient.class, () -> new VariantOperationClient(token, clientConfiguration));
     }
 
     public MetaClient getMetaClient() {
         return getClient(MetaClient.class, () -> new MetaClient(token, clientConfiguration));
+    }
+
+    public AdminClient getAdminClient() {
+        return getClient(AdminClient.class, () -> new AdminClient(token, clientConfiguration));
     }
 
     @SuppressWarnings("unchecked")
@@ -193,7 +193,6 @@ public class OpenCGAClient {
         this.userId = user;
         return login.firstResult();
     }
-
 
     /**
      * Logs in the user.

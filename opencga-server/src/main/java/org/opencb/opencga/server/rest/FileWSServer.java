@@ -35,6 +35,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 
@@ -103,7 +104,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(name = "body", value = "Fetch parameters", required = true) FileFetch fetchParams) {
-        return submitJob(FetchAndRegisterTask.ID, studyStr, fetchParams, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(studyStr, JobType.NATIVE, FetchAndRegisterTask.ID, fetchParams, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET
@@ -716,7 +717,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "File parameters", required = true) PostLinkToolParams params) {
-        return submitJob(PostLinkSampleAssociation.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(studyStr, JobType.NATIVE, PostLinkSampleAssociation.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -732,7 +733,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "File parameters", required = true) FileLinkToolParams params) {
-        return submitJob(FileLinkTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(studyStr, JobType.NATIVE, FileLinkTask.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @DELETE
@@ -747,7 +748,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap params = new ObjectMap()
                     .append("files", files)
                     .append("study", studyStr);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, "files-unlink", Enums.Priority.MEDIUM, params,
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, JobType.NATIVE, "files-unlink", Enums.Priority.MEDIUM, params,
                     token);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -958,7 +959,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .append("files", files)
                     .append("study", studyStr)
                     .append(Constants.SKIP_TRASH, skipTrash);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, FileDeleteTask.ID, Enums.Priority.MEDIUM, params,
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, JobType.NATIVE, FileDeleteTask.ID, Enums.Priority.MEDIUM, params,
                     token);
             return createOkResponse(result);
         } catch (Exception e) {
