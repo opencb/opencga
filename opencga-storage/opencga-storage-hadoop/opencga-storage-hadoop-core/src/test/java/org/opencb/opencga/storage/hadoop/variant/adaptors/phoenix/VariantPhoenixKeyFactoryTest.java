@@ -129,7 +129,7 @@ public class VariantPhoenixKeyFactoryTest {
 
         ImmutableBytesWritable key = new ImmutableBytesWritable();
         String reference = variant.getReference();
-        String alternate = VariantPhoenixKeyFactory.buildSymbolicAlternate(reference, variant.getAlternate(), variant.getEnd(), variant.getSv());
+        String alternate = VariantPhoenixKeyFactory.buildSymbolicAlternate(variant);
         table.newKey(key, new byte[][]{
                 Bytes.toBytes(variant.getChromosome()),
                 Bytes.toBytes(variant.getStart()),

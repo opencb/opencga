@@ -67,6 +67,7 @@ export default class Organization extends OpenCGAParentClass {
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.id] - Note unique identifier.
+    * @param {String} [params.type] - Note type.
     * @param {String} [params.scope] - Scope of the Note.
     * @param {String} [params.visibility] - Visibility of the Note.
     * @param {String} [params.uuid] - Unique 32-character identifier assigned automatically by OpenCGA.
@@ -97,12 +98,44 @@ export default class Organization extends OpenCGAParentClass {
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
+    * @param {"ADD SET REMOVE"} [params.tagsAction = "ADD"] - Action to be performed if the array of tags is being updated. The default
+    *     value is ADD.
     * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.
     *     The default value is false.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     updateNotes(id, data, params) {
         return this._post("organizations", null, "notes", id, "update", data, params);
+    }
+
+    /** Update the user status
+    * @param {String} user - User ID.
+    * @param {Object} data - JSON containing the User fields to be updated.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
+    * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
+    * @param {String} [params.organization] - Organization id.
+    * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.
+    *     The default value is false.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    userUpdateStatus(user, data, params) {
+        return this._post("organizations/user", user, "status", null, "update", data, params);
+    }
+
+    /** Update the user information
+    * @param {String} user - User ID.
+    * @param {Object} data - JSON containing the User fields to be updated.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
+    * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
+    * @param {String} [params.organization] - Organization id.
+    * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.
+    *     The default value is false.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    updateUser(user, data, params) {
+        return this._post("organizations", null, "user", user, "update", data, params);
     }
 
     /** Update the Organization configuration attributes

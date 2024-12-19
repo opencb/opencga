@@ -45,7 +45,7 @@ public class FieldConstants {
     public static final String ORGANIZATION_ADMINS_DESCRIPTION = "Administrative users of the organization.";
     public static final String ORGANIZATION_PROJECTS_DESCRIPTION = "Projects the organization holds.";
     public static final String ORGANIZATION_NOTES_DESCRIPTION = "Notes of organization scope.";
-//    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
+    //    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
 //            + "contains all the configuration necessary to be able to communicate with the external authentication origins.";
     public static final String ORGANIZATION_CONFIGURATION_DESCRIPTION = "Organization configuration information.";
     public static final String ORGANIZATION_INTERNAL_DESCRIPTION = "Organization internal information.";
@@ -54,6 +54,7 @@ public class FieldConstants {
     public static final String NOTES_ID_DESCRIPTION = "Note unique identifier.";
     public static final String NOTES_SCOPE_DESCRIPTION = "Scope of the Note.";
     public static final String NOTES_STUDY_DESCRIPTION = "Study FQN if the Note scope is STUDY.";
+    public static final String NOTES_TYPE_DESCRIPTION = "Note type.";
     public static final String NOTES_TAGS_DESCRIPTION = "Note tags.";
     public static final String NOTES_USER_ID_DESCRIPTION = "User that wrote that Note.";
     public static final String NOTES_VISIBILITY_DESCRIPTION = "Visibility of the Note.";
@@ -62,6 +63,7 @@ public class FieldConstants {
 
     public static final String NOTES_ID_PARAM = "id";
     public static final String NOTES_SCOPE_PARAM = "scope";
+    public static final String NOTES_TYPE_PARAM = "type";
     public static final String NOTES_STUDY_PARAM = "study";
     public static final String NOTES_TAGS_PARAM = "tags";
     public static final String NOTES_USER_ID_PARAM = "userId";
@@ -339,16 +341,25 @@ public class FieldConstants {
             + "ERROR, UNKNOWN, REGISTERING, UNREGISTERED, ABORTED, DELETED.";
     public static final String JOB_INTERNAL_EVENTS_DESCRIPTION = "Events of the internal job.";
     public static final String JOB_INTERNAL_WEBHOOK_DESCRIPTION = "Job internal Webhook.";
+    public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION = "Flag used to track whether a user has requested to"
+            + " terminate the execution of a job before its natural completion. When set to true, it indicates that a request has been"
+            + " made to prematurely terminate the ongoing job execution. Its value is typically checked periodically during the"
+            + " execution of the job to determine if termination is necessary.";
 
     //JobInternalWebhook
     public static final String JOB_INTERNAL_WEBHOOK_URL_DESCRIPTION = "Webhook URL.";
     public static final String JOB_INTERNAL_WEBHOOK_STATUS_DESCRIPTION = "Webhook status map can have the values SUCCESS or ERROR.";
+
+    public static final String JOB_PARENT_ID = "jobParentId";
+    public static final String JOB_SCHEDULED_START_TIME = "jobScheduledStartTime";
 
     public static final String JOB_OUT_DIR_DESCRIPTION = "Output dir for the job.";
     public static final String JOB_INPUT_DESCRIPTION = "List of input files.";
     public static final String JOB_OUTPUT_DESCRIPTION = "List of output files.";
     public static final String JOB_TAGS_DESCRIPTION = "List of tags for the job.";
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "List of jobs the current job depends on.";
+    public static final String JOB_PARENT_ID_DESCRIPTION = "Id of the job that generated this job (if any)";
+    public static final String JOB_SCHEDULED_START_TIME_DESCRIPTION = "Time when the job is scheduled to start.";
     public static final String JOB_EXECUTION_DESCRIPTION = "Result of the execution.";
 
     //ExecutorInfo
@@ -473,9 +484,16 @@ public class FieldConstants {
     public static final String USER_ACCOUNT = "User account.";
 
     //Account
-    public static final String ACCOUNT_TYPE = "User account type can have the values GUEST, FULL and ADMINISTRATOR.";
-    public static final String ACCOUNT_EXPIRATION_DATE_DESCRIPTION = "Date the account expires.";
-    public static final String ACCOUNT_AUTHENTICATION = "How the account is authenticated";
+    public static final String INTERNAL_ACCOUNT_EXPIRATION_DATE_DESCRIPTION = "Date the account expires.";
+    public static final String INTERNAL_ACCOUNT_FAILED_ATTEMPTS_DESCRIPTION = "Number of consecutive failed attempts. When the user logs"
+            + " in successfully, this field is automatically reset to 0.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_DESCRIPTION = "Object containing the last time the password was changed and the"
+            + " expiration date.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED_DESCRIPTION = "Date the user's password was last changed. This "
+            + "field will be null if the user account origin is different from OpenCGA.";
+    public static final String INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE_DESCRIPTION = "Date the user's password expires. This field will"
+            + " be null if the user account origin is different from OpenCGA and the passwordExpiration feature is disabled.";
+    public static final String INTERNAL_ACCOUNT_AUTHENTICATION = "How the account is authenticated";
     public static final String USER_QUOTA = "User quota";
     public static final String USER_PROJECTS = "A List with related projects.";
     public static final String USER_SHARED_PROJECTS = "A List with shared projects.";
@@ -536,7 +554,7 @@ public class FieldConstants {
     public static final String HRDETECT_CNV_QUERY_DESCRIPTION = "CNV query";
     public static final String HRDETECT_INDEL_QUERY_DESCRIPTION = "INDEL query";
     public static final String HRDETECT_SNV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV3 input for"
-        + " HRDetect.";
+            + " HRDetect.";
     public static final String HRDETECT_SNV8_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV8 input for"
             + " HRDetect.";
     public static final String HRDETECT_SV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SV3 input for"
@@ -559,13 +577,12 @@ public class FieldConstants {
     public static final String ALIGNMENT_INDEX_FILE_ID_DESCRIPTION = "File ID, (i.e., BAM/CRAM file ID).";
     public static final String ALIGNMENT_INDEX_OVERWRITE_DESCRIPTION = "Flag to force indexing.";
 
-    // Coverage index parameter descriptions
-    public static final String COVERAGE_INDEX_BAM_FILE_ID_DESCRIPTION = "BAM file ID.";
-    public static final String COVERAGE_INDEX_BAI_FILE_ID_DESCRIPTION = "BAI file ID.";
-    public static final String COVERAGE_INDEX_OVERWRITE_DESCRIPTION = "Window size (i.e., the size of the bins, in bases, for the output"
-        + " of the BIGWIG file).";
+    // Alignment index and coverage
+    public static final String ALIGNMENT_BAM_FILE_ID_DESCRIPTION = "Alignment file ID (in BAM or CRAM format)";
+    public static final String ALIGNMENT_WINDOW_SIZE_DESCRIPTION = "Bin size for the output of the BIGWIG file, in bases.";
+    public static final String ALIGNMENT_OVERWRITE_DESCRIPTION = "Flag to force indexing.";
 
-    // Alignment QC analysis (asample-qc-run)
+    // Alignment QC analysis (alignment-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
     public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"
             + " commas): " + AlignmentQcParams.STATS_SKIP_VALUE + ", " + AlignmentQcParams.FLAGSTATS_SKIP_VALUE + ", "
@@ -573,5 +590,10 @@ public class FieldConstants {
     public static final String ALIGNMENT_QC_OVERWRITE_DESCRIPTION = "To overwrite the QC metrics already computed.";
 
     // Exomiser
+    public static final String EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION = "Clinical analysis ID.";
+    public static final String EXOMISER_SAMPLE_DESCRIPTION = "Sample ID.";
     public static final String EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION = "Clinical analysis type: SINGLE or FAMILY.";
+    public static final String EXOMISER_VERSION_DESCRIPTION = "Exomiser version in the format X.Y where X is the major version and Y the"
+            + " minor version, e.g.: 14.0. If the version is not specified, the default version will be used. Refer to the configuration"
+            + " file to view all installed Exomiser versions and identify the default version.";
 }

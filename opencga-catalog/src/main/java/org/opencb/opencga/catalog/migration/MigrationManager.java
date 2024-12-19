@@ -210,6 +210,9 @@ public class MigrationManager {
         for (Class<? extends MigrationTool> migration : runnableMigrations) {
             run(organizationId, migration, appHomePath, params, token);
         }
+
+        // 5. Execute install indexes just in case there are new indexes
+        catalogManager.installIndexes(organizationId, token);
     }
 
     public List<Class<? extends MigrationTool>> getPendingMigrations(String organizationId, String version, String token)
@@ -668,7 +671,8 @@ public class MigrationManager {
                 + "-" + RandomStringUtils.randomAlphanumeric(5);
         String logFile = startMigrationLogger(jobId, Paths.get(configuration.getJobDir()).resolve(path));
         logger.info("------------------------------------------------------");
-        logger.info("Executing migration '{}' for version '{}'", annotation.id(), annotation.version());
+        logger.info("Executing migration '{}' for version '{}' in organization '{}'", annotation.id(), annotation.version(),
+                organizationId);
         logger.info("    {}", annotation.description());
         logger.info("------------------------------------------------------");
 
@@ -707,6 +711,7 @@ public class MigrationManager {
                 logger.info("Migration '{}' finished with status {} : {}", annotation.id(), status, TimeUtils.durationToString(stopWatch));
             }
             logger.info("------------------------------------------------------");
+            logger.info("");
         } catch (Exception e) {
             migrationRun.setStatus(MigrationRun.MigrationStatus.ERROR);
             String message;

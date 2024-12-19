@@ -22,10 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -75,7 +72,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     void authenticate(String userId, String password) throws CatalogDBException, CatalogAuthenticationException;
 
     OpenCGAResult insert(User user, String password, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+            throws CatalogException;
 
     OpenCGAResult<User> get(String userId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
@@ -97,9 +94,10 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult changePassword(String userId, String oldPassword, String newPassword)
-            throws CatalogDBException, CatalogAuthenticationException;
+            throws CatalogException;
 
-    OpenCGAResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
+    OpenCGAResult resetPassword(String userId, String email, String newCryptPass)
+            throws CatalogException;
 
     // Config operations
     OpenCGAResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException;
@@ -118,13 +116,21 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         NAME("name", TEXT_ARRAY, ""),
         EMAIL("email", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
+        CREATION_DATE("creationDate", TEXT_ARRAY, ""),
+        MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
+        DEPRECATED_ACCOUNT("account", OBJECT, ""), // Deprecated since 3.2.1 #TASK-6494 TODO: Remove in future releases
+        DEPRECATED_ACCOUNT_AUTHENTICATION_ID("account.authentication.id", TEXT, ""), // Deprecated since 3.2.1 #TASK-6494
+        INTERNAL("internal", OBJECT, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
-        ACCOUNT("account", TEXT_ARRAY, ""),
-        ACCOUNT_AUTHENTICATION_ID("account.authentication.id", TEXT, ""),
-        ACCOUNT_CREATION_DATE("account.creationDate", TEXT, ""),
-        SIZE("size", INTEGER_ARRAY, ""),
-        QUOTA("quota", INTEGER_ARRAY, ""),
+        INTERNAL_ACCOUNT("internal.account", TEXT_ARRAY, ""),
+        INTERNAL_ACCOUNT_AUTHENTICATION_ID("internal.account.authentication.id", TEXT, ""),
+        INTERNAL_ACCOUNT_FAILED_ATTEMPTS("internal.account.failedAttempts", INTEGER, ""),
+        INTERNAL_ACCOUNT_CREATION_DATE("internal.account.creationDate", TEXT, ""),
+        INTERNAL_ACCOUNT_EXPIRATION_DATE("internal.account.expirationDate", TEXT, ""),
+        INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE("internal.account.password.expirationDate", TEXT, ""),
+        INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED("internal.account.password.lastModified", TEXT, ""),
+        QUOTA("quota", OBJECT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
 
         PROJECTS("projects", TEXT_ARRAY, ""),

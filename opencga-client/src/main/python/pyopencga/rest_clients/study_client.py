@@ -229,6 +229,7 @@ class Study(_ParentRestClient):
         :param str modification_date: Modification date. Format:
             yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         :param str id: Note unique identifier.
+        :param str type: Note type.
         :param str uuid: Unique 32-character identifier assigned automatically
             by OpenCGA.
         :param str user_id: User that wrote that Note.
@@ -270,6 +271,8 @@ class Study(_ParentRestClient):
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
             must be provided.
+        :param str tags_action: Action to be performed if the array of tags is
+            being updated. Allowed values: ['ADD SET REMOVE']
         :param bool include_result: Flag indicating to include the created or
             updated document result in the response.
         """
@@ -330,6 +333,13 @@ class Study(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='studies', resource='run', query_id=study, subcategory='templates', data=data, **options)

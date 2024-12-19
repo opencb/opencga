@@ -33,13 +33,21 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='alignment/bwa', data=data, **options)
 
     def run_coverage_index(self, data=None, **options):
         """
-        Compute coverage for a list of alignment files.
+        Compute the coverage from a given BAM alignment file, e.g., create a
+            .bw file from a .bam file.
         PATH: /{apiVersion}/analysis/alignment/coverage/index/run
 
         :param dict data: Coverage computation parameters. (REQUIRED)
@@ -50,6 +58,13 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='alignment/coverage/index', data=data, **options)
@@ -69,6 +84,13 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='alignment/coverage/qc/geneCoverageStats', data=data, **options)
@@ -164,6 +186,13 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='alignment/deeptools', data=data, **options)
@@ -181,13 +210,21 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='alignment/fastqc', data=data, **options)
 
     def run_index(self, data=None, **options):
         """
-        Index alignment file.
+        Index a given alignment file BAM/CRAM, e.g., create a .bai file from a
+            .bam file.
         PATH: /{apiVersion}/analysis/alignment/index/run
 
         :param dict data: Alignment index params. (REQUIRED)
@@ -198,6 +235,13 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='alignment/index', data=data, **options)
@@ -219,6 +263,13 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='alignment/picard', data=data, **options)
@@ -241,6 +292,13 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='alignment/qc', data=data, **options)
@@ -302,6 +360,13 @@ class Alignment(_ParentRestClient):
             the job will depend on.
         :param str job_description: Job description.
         :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
         """
 
         return self._post(category='analysis', resource='run', subcategory='alignment/samtools', data=data, **options)

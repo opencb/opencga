@@ -65,6 +65,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -75,7 +79,7 @@ public class AlignmentClient extends AbstractParentClient {
     }
 
     /**
-     * Compute coverage for a list of alignment files.
+     * Compute the coverage from a given BAM alignment file, e.g., create a .bw file from a .bam file.
      * @param data Coverage computation parameters.
      * @param params Map containing any of the following optional parameters.
      *       study: study.
@@ -83,6 +87,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -101,6 +109,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -184,6 +196,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -202,6 +218,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -212,7 +232,7 @@ public class AlignmentClient extends AbstractParentClient {
     }
 
     /**
-     * Index alignment file.
+     * Index a given alignment file BAM/CRAM, e.g., create a .bai file from a .bam file.
      * @param data Alignment index params.
      * @param params Map containing any of the following optional parameters.
      *       study: study.
@@ -220,6 +240,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -239,6 +263,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -258,6 +286,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -309,6 +341,10 @@ public class AlignmentClient extends AbstractParentClient {
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobDescription: Job description.
      *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

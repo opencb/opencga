@@ -21,6 +21,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 /**
@@ -34,6 +35,10 @@ public class SGEExecutor implements BatchExecutor {
     public SGEExecutor(Execution execution) {
         logger = LoggerFactory.getLogger(SGEExecutor.class);
         sgeManager = new SGEManager(execution);
+    }
+
+    @Override
+    public void close() throws IOException {
     }
 
     @Override

@@ -170,6 +170,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         try {
             if (YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()).orYes().booleanValue()) {
                 ArchiveTableHelper.createArchiveTableIfNeeded(getOptions(), getArchiveTable(), dbAdaptor.getConnection());
+                ArchiveTableHelper.expandTableIfNeeded(getOptions(), getArchiveTable(), getFileId(), dbAdaptor.getHBaseManager());
             } else {
                 logger.info("Skip archive table");
             }

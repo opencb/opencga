@@ -46,7 +46,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Tool(id = FetchAndRegisterTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION,
-        description = "Download an external file and register it in OpenCGA.")
+        description = "Download an external file and register it in OpenCGA.", priority = Enums.Priority.HIGH)
 public class FetchAndRegisterTask extends OpenCgaToolScopeStudy {
 
     public final static String ID = "files-fetch";

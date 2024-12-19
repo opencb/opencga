@@ -27,6 +27,9 @@ import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.user.OrganizationUserUpdateParams;
+import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserStatusUpdateParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -90,6 +93,7 @@ public class OrganizationClient extends AbstractParentClient {
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       id: Note unique identifier.
+     *       type: Note type.
      *       scope: Scope of the Note.
      *       visibility: Visibility of the Note.
      *       uuid: Unique 32-character identifier assigned automatically by OpenCGA.
@@ -125,6 +129,7 @@ public class OrganizationClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
+     *       tagsAction: Action to be performed if the array of tags is being updated.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -133,6 +138,42 @@ public class OrganizationClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("organizations", null, "notes", id, "update", params, POST, Note.class);
+    }
+
+    /**
+     * Update the user status.
+     * @param user User ID.
+     * @param data JSON containing the User fields to be updated.
+     * @param params Map containing any of the following optional parameters.
+     *       include: Fields included in the response, whole JSON path must be provided.
+     *       exclude: Fields excluded in the response, whole JSON path must be provided.
+     *       organization: Organization id.
+     *       includeResult: Flag indicating to include the created or updated document result in the response.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<User> userUpdateStatus(String user, UserStatusUpdateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("organizations/user", user, "status", null, "update", params, POST, User.class);
+    }
+
+    /**
+     * Update the user information.
+     * @param user User ID.
+     * @param data JSON containing the User fields to be updated.
+     * @param params Map containing any of the following optional parameters.
+     *       include: Fields included in the response, whole JSON path must be provided.
+     *       exclude: Fields excluded in the response, whole JSON path must be provided.
+     *       organization: Organization id.
+     *       includeResult: Flag indicating to include the created or updated document result in the response.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<User> updateUser(String user, OrganizationUserUpdateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("organizations", null, "user", user, "update", params, POST, User.class);
     }
 
     /**

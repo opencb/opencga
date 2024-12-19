@@ -1,7 +1,8 @@
-{"collections": ["note", "note_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["note", "note_archive"], "fields": {"id": 1, "studyUid": 1, "type": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["note", "note_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["note", "note_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["note", "note_archive"], "fields": {"scope": 1, "studyUid": 1}, "options": {}}
+{"collections": ["note", "note_archive"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
 {"collections": ["note", "note_archive"], "fields": {"studyUid": 1}, "options": {}}
 {"collections": ["note", "note_archive"], "fields": {"visibility": 1, "studyUid": 1}, "options": {}}
 {"collections": ["note", "note_archive"], "fields": {"userId": 1, "studyUid": 1}, "options": {}}
@@ -68,6 +69,8 @@
 {"collections": ["file"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"internal.variant.index.status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"internal.alignment.coverage.fileId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"internal.alignment.index.fileId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
 {"collections": ["file"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {}}
 {"collections": ["file"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {}}
@@ -207,35 +210,36 @@
 {"collections": ["panel", "panel_archive"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {}}
 {"collections": ["panel", "panel_archive"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
 
-{"collections": ["clinical"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true}}
-{"collections": ["clinical"], "fields": {"uuid": 1}, "options": {"unique": true}}
-{"collections": ["clinical"], "fields": {"uid": 1}, "options": {"unique": true}}
-{"collections": ["clinical"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"files.uid": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"proband.uid": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"proband.samples.uid": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"family.uid": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"family.members.uid": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"family.members.samples.uid": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"panels.uid": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"panelLock": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"locked": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"_dueDate": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"disorder.id": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"disorder.name": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"analyst.id": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"priority.id": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"flags.id": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"qualityControl.summary": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
-{"collections": ["clinical"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"uuid": 1}, "options": {"unique": true}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"uid": 1}, "options": {"unique": true}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"files.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"proband.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"proband.samples.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"family.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"family.members.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"family.members.samples.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"panels.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"panelLocked": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"locked": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"_dueDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"disorder.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"disorder.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"analyst.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"priority.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"flags.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"qualityControl.summary": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
 
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"id": 1, "version": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"name": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"clinicalAnalysisId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"analyst.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"method.name": 1, "studyUid": 1}, "options": {}}

@@ -23,31 +23,31 @@
 #' | loadAnnotationSets | /{apiVersion}/analysis/clinical/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | updateClinicalConfiguration | /{apiVersion}/analysis/clinical/clinical/configuration/update | study, body |
 #' | create | /{apiVersion}/analysis/clinical/create | include, exclude, study, skipCreateDefaultInterpretation, includeResult, body[*] |
-#' | distinct | /{apiVersion}/analysis/clinical/distinct | study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, status, internalStatus, annotation, deleted, field[*] |
-#' | distinctInterpretation | /{apiVersion}/analysis/clinical/interpretation/distinct | study, id, uuid, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field[*] |
-#' | searchInterpretation | /{apiVersion}/analysis/clinical/interpretation/search | include, exclude, limit, skip, sort, study, id, uuid, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release |
+#' | distinct | /{apiVersion}/analysis/clinical/distinct | study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted, field[*] |
+#' | distinctInterpretation | /{apiVersion}/analysis/clinical/interpretation/distinct | study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field[*] |
+#' | searchInterpretation | /{apiVersion}/analysis/clinical/interpretation/search | include, exclude, limit, skip, sort, study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release |
 #' | infoInterpretation | /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info | include, exclude, interpretations[*], study, version, deleted |
-#' | runInterpreterCancerTiering | /{apiVersion}/analysis/clinical/interpreter/cancerTiering/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runInterpreterExomiser | /{apiVersion}/analysis/clinical/interpreter/exomiser/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runInterpreterTeam | /{apiVersion}/analysis/clinical/interpreter/team/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runInterpreterTiering | /{apiVersion}/analysis/clinical/interpreter/tiering/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | runInterpreterZetta | /{apiVersion}/analysis/clinical/interpreter/zetta/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | load | /{apiVersion}/analysis/clinical/load | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runInterpreterCancerTiering | /{apiVersion}/analysis/clinical/interpreter/cancerTiering/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runInterpreterExomiser | /{apiVersion}/analysis/clinical/interpreter/exomiser/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runInterpreterTeam | /{apiVersion}/analysis/clinical/interpreter/team/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runInterpreterTiering | /{apiVersion}/analysis/clinical/interpreter/tiering/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runInterpreterZetta | /{apiVersion}/analysis/clinical/interpreter/zetta/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | load | /{apiVersion}/analysis/clinical/load | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | aggregationStatsRga | /{apiVersion}/analysis/clinical/rga/aggregationStats | limit, skip, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study, field[*] |
 #' | queryRgaGene | /{apiVersion}/analysis/clinical/rga/gene/query | include, exclude, limit, skip, count, includeIndividual, skipIndividual, limitIndividual, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | summaryRgaGene | /{apiVersion}/analysis/clinical/rga/gene/summary | limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
-#' | runRgaIndex | /{apiVersion}/analysis/clinical/rga/index/run | study, jobId, jobDescription, jobDependsOn, jobTags, auxiliarIndex, body[*] |
+#' | runRgaIndex | /{apiVersion}/analysis/clinical/rga/index/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, auxiliarIndex, body[*] |
 #' | queryRgaIndividual | /{apiVersion}/analysis/clinical/rga/individual/query | include, exclude, limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | summaryRgaIndividual | /{apiVersion}/analysis/clinical/rga/individual/summary | limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | queryRgaVariant | /{apiVersion}/analysis/clinical/rga/variant/query | include, exclude, limit, skip, count, includeIndividual, skipIndividual, limitIndividual, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | summaryRgaVariant | /{apiVersion}/analysis/clinical/rga/variant/summary | limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
-#' | search | /{apiVersion}/analysis/clinical/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, status, internalStatus, annotation, deleted |
+#' | search | /{apiVersion}/analysis/clinical/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted |
 #' | queryVariant | /{apiVersion}/analysis/clinical/variant/query | include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, includeInterpretation, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait |
 #' | acl | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/acl | clinicalAnalyses[*], study, member, silent |
 #' | delete | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/delete | study, force, clinicalAnalyses[*] |
 #' | update | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update | include, exclude, clinicalAnalyses[*], study, commentsAction, flagsAction, analystsAction, filesAction, panelsAction, annotationSetsAction, includeResult, body[*] |
 #' | updateAnnotationSetsAnnotations | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/annotationSets/{annotationSet}/annotations/update | clinicalAnalysis[*], study, annotationSet[*], action, body |
-#' | info | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/info | include, exclude, flattenAnnotations, clinicalAnalysis[*], study, deleted |
+#' | info | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/info | include, exclude, flattenAnnotations, clinicalAnalysis[*], study, version, deleted |
 #' | createInterpretation | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/create | include, exclude, clinicalAnalysis[*], study, setAs, includeResult, body[*] |
 #' | clearInterpretation | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/clear | study, interpretations[*], clinicalAnalysis[*] |
 #' | deleteInterpretation | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete | study, clinicalAnalysis[*], interpretations[*], setAsPrimary |
@@ -131,6 +131,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param dueDate Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param qualityControlSummary Clinical Analysis quality control summary.
         #' @param release Release when it was created.
+        #' @param snapshot Snapshot value (Latest version of the entry in the specified release).
         #' @param status Filter by status.
         #' @param internalStatus Filter by internal status.
         #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
@@ -144,6 +145,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param id Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param uuid Comma separated list of Interpretation UUIDs up to a maximum of 100.
+        #' @param name Comma separated list of Interpretation names up to a maximum of 100.
         #' @param clinicalAnalysisId Clinical Analysis id.
         #' @param analystId Analyst ID.
         #' @param methodName Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
@@ -170,6 +172,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param id Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param uuid Comma separated list of Interpretation UUIDs up to a maximum of 100.
+        #' @param name Comma separated list of Interpretation names up to a maximum of 100.
         #' @param clinicalAnalysisId Clinical Analysis id.
         #' @param analystId Analyst ID.
         #' @param methodName Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
@@ -204,6 +207,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Cancer tiering interpretation analysis params.
         runInterpreterCancerTiering=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/cancerTiering", subcategoryId=NULL, action="run", params=params,
@@ -216,7 +222,10 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
-        #' @param data Exomizer interpretation analysis params.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param data Exomiser interpretation analysis params.
         runInterpreterExomiser=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/exomiser", subcategoryId=NULL, action="run", params=params,
                 httpMethod="POST", as.queryParam=NULL, ...),
@@ -228,6 +237,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data TEAM interpretation analysis params.
         runInterpreterTeam=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/team", subcategoryId=NULL, action="run", params=params,
@@ -240,6 +252,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Tiering interpretation analysis params.
         runInterpreterTiering=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/tiering", subcategoryId=NULL, action="run", params=params,
@@ -252,6 +267,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Zetta interpretation analysis params.
         runInterpreterZetta=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/zetta", subcategoryId=NULL, action="run", params=params,
@@ -264,6 +282,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Parameters to load clinical analysis in OpenCGA catalog from a file.
         load=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
                 subcategoryId=NULL, action="load", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -370,6 +391,9 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param auxiliarIndex Index auxiliar collection to improve performance assuming RGA is completely indexed.
         #' @param data Recessive Gene Analysis index params.
         runRgaIndex=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
@@ -534,6 +558,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param dueDate Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param qualityControlSummary Clinical Analysis quality control summary.
         #' @param release Release when it was created.
+        #' @param snapshot Snapshot value (Latest version of the entry in the specified release).
         #' @param status Filter by status.
         #' @param internalStatus Filter by internal status.
         #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
@@ -662,6 +687,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param flattenAnnotations Flatten the annotations?.
         #' @param clinicalAnalysis Comma separated list of clinical analysis IDs or names up to a maximum of 100.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param version Comma separated list of clinical versions. 'all' to get all the clinical versions. Not supported if multiple clinical ids are provided.
         #' @param deleted Boolean to retrieve deleted entries.
         info=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
                 subcategoryId=clinicalAnalysis, action="info", params=params, httpMethod="GET", as.queryParam=NULL,

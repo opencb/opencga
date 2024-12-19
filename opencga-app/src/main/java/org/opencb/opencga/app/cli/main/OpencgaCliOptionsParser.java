@@ -160,6 +160,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jobsSubCommands.addCommand("delete", jobsCommandOptions.deleteCommandOptions);
         jobsSubCommands.addCommand("info", jobsCommandOptions.infoCommandOptions);
         jobsSubCommands.addCommand("update", jobsCommandOptions.updateCommandOptions);
+        jobsSubCommands.addCommand("kill", jobsCommandOptions.killCommandOptions);
         jobsSubCommands.addCommand("log-head", jobsCommandOptions.headLogCommandOptions);
         jobsSubCommands.addCommand("log-tail", jobsCommandOptions.tailLogCommandOptions);
         jobsSubCommands.addCommand("log", jobsCommandOptions.logCommandOptions);
@@ -272,6 +273,8 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         organizationsSubCommands.addCommand("notes-search", organizationsCommandOptions.searchNotesCommandOptions);
         organizationsSubCommands.addCommand("notes-delete", organizationsCommandOptions.deleteNotesCommandOptions);
         organizationsSubCommands.addCommand("notes-update", organizationsCommandOptions.updateNotesCommandOptions);
+        organizationsSubCommands.addCommand("update-status-user", organizationsCommandOptions.userUpdateStatusCommandOptions);
+        organizationsSubCommands.addCommand("user-update", organizationsCommandOptions.updateUserCommandOptions);
         organizationsSubCommands.addCommand("configuration-update", organizationsCommandOptions.updateConfigurationCommandOptions);
         organizationsSubCommands.addCommand("info", organizationsCommandOptions.infoCommandOptions);
         organizationsSubCommands.addCommand("update", organizationsCommandOptions.updateCommandOptions);
@@ -361,6 +364,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         operationsVariantStorageSubCommands.addCommand("configure-variant-secondary-sample-index", operationsVariantStorageCommandOptions.configureVariantSecondarySampleIndexCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-secondary-index", operationsVariantStorageCommandOptions.secondaryIndexVariantCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-secondary-index-delete", operationsVariantStorageCommandOptions.deleteVariantSecondaryIndexCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("variant-setup", operationsVariantStorageCommandOptions.setupVariantCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-stats-delete", operationsVariantStorageCommandOptions.deleteVariantStatsCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-stats-index", operationsVariantStorageCommandOptions.indexVariantStatsCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-study-delete", operationsVariantStorageCommandOptions.deleteVariantStudyCommandOptions);

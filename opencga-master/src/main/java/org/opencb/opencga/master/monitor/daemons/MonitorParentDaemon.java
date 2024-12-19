@@ -20,19 +20,21 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 /**
  * Created by imedina on 16/06/16.
  */
-public abstract class MonitorParentDaemon implements Runnable {
+public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
     protected int interval;
     protected CatalogManager catalogManager;
 
     protected volatile boolean exit = false;
 
-    protected String token;
-
-    protected Logger logger;
+    protected final String token;
+    protected final Logger logger;
 
     public MonitorParentDaemon(int interval, String token, CatalogManager catalogManager) {
         this.interval = interval;
@@ -49,13 +51,19 @@ public abstract class MonitorParentDaemon implements Runnable {
         this.exit = exit;
     }
 
-    @Override
+    protected abstract void apply() throws Exception;
+
     public void run() {
+        try {
+            init();
+        } catch (Exception e) {
+            logger.error("Error initializing daemon", e);
+            throw new RuntimeException(e);
+        }
+
         while (!exit) {
             try {
                 apply();
-            } catch (InterruptedException e) {
-                break;
             } catch (Exception e) {
                 logger.error("Catch exception " + e.getMessage(), e);
             }
@@ -63,10 +71,23 @@ public abstract class MonitorParentDaemon implements Runnable {
             try {
                 Thread.sleep(interval);
             } catch (InterruptedException e) {
+                if (!exit) {
+                    logger.warn("Interrupted while sleeping", e);
+                }
+                // If interrupted, stop the daemon
                 break;
             }
         }
+
+        try {
+            close();
+        } catch (IOException e) {
+            logger.error("Error closing daemon", e);
+        }
     }
 
-    protected abstract void apply() throws Exception;
+    public void init() throws Exception {
+
+    }
+
 }

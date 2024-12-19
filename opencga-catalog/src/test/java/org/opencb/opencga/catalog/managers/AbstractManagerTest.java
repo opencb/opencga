@@ -23,13 +23,17 @@ import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
+import org.mockito.Mockito;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -50,8 +54,6 @@ import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -182,7 +184,7 @@ public class  AbstractManagerTest extends GenericTest {
         setUpCatalogManager(catalogManager);
     }
 
-    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException, URISyntaxException {
+    public void setUpCatalogManager(CatalogManager catalogManager) throws Exception {
         if (!firstExecutionFinished) {
             createDummyData(catalogManager);
             MongoBackupUtils.dump(catalogManager, catalogManagerResource.getOpencgaHome());
@@ -472,6 +474,25 @@ public class  AbstractManagerTest extends GenericTest {
 
         // ================ END PERMISSIONS =================
 
+    }
+
+    protected CatalogManager mockCatalogManager() throws CatalogDBException {
+        CatalogManager spy = Mockito.spy(catalogManager);
+        UserManager userManager = spy.getUserManager();
+        UserManager userManagerSpy = Mockito.spy(userManager);
+        Mockito.doReturn(userManagerSpy).when(spy).getUserManager();
+        MongoDBAdaptorFactory mongoDBAdaptorFactory = mockMongoDBAdaptorFactory();
+        Mockito.doReturn(mongoDBAdaptorFactory).when(userManagerSpy).getCatalogDBAdaptorFactory();
+        return spy;
+    }
+
+    protected MongoDBAdaptorFactory mockMongoDBAdaptorFactory() throws CatalogDBException {
+        MongoDBAdaptorFactory catalogDBAdaptorFactory = (MongoDBAdaptorFactory) catalogManager.getUserManager().getCatalogDBAdaptorFactory();
+        MongoDBAdaptorFactory dbAdaptorFactorySpy = Mockito.spy(catalogDBAdaptorFactory);
+        UserDBAdaptor userDBAdaptor = dbAdaptorFactorySpy.getCatalogUserDBAdaptor(organizationId);
+        UserDBAdaptor userDBAdaptorSpy = Mockito.spy(userDBAdaptor);
+        Mockito.doReturn(userDBAdaptorSpy).when(dbAdaptorFactorySpy).getCatalogUserDBAdaptor(organizationId);
+        return dbAdaptorFactorySpy;
     }
 
 }

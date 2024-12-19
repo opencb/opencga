@@ -26,6 +26,9 @@ public class Note extends PrivateStudyUid {
     @DataField(id = "study", indexed = true, immutable = true, description = FieldConstants.NOTES_STUDY_DESCRIPTION)
     private String study;
 
+    @DataField(id = "type", indexed = true, description = FieldConstants.NOTES_TYPE_DESCRIPTION)
+    private NoteType type;
+
     @DataField(id = "tags", indexed = true, description = FieldConstants.NOTES_TAGS_DESCRIPTION)
     private List<String> tags;
 
@@ -73,12 +76,13 @@ public class Note extends PrivateStudyUid {
     public Note() {
     }
 
-    public Note(String id, String uuid, Scope scope, String study, List<String> tags, String userId, Visibility visibility, int version,
-                String creationDate, String modificationDate, Type valueType, Object value) {
+    public Note(String id, String uuid, Scope scope, String study, NoteType type, List<String> tags, String userId, Visibility visibility,
+                int version, String creationDate, String modificationDate, Type valueType, Object value) {
         this.id = id;
         this.uuid = uuid;
         this.scope = scope;
         this.study = study;
+        this.type = type;
         this.tags = tags;
         this.userId = userId;
         this.visibility = visibility;
@@ -91,11 +95,12 @@ public class Note extends PrivateStudyUid {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Notes{");
+        final StringBuilder sb = new StringBuilder("Note{");
         sb.append("id='").append(id).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", scope=").append(scope);
         sb.append(", study='").append(study).append('\'');
+        sb.append(", type=").append(type);
         sb.append(", tags=").append(tags);
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", visibility=").append(visibility);
@@ -141,6 +146,15 @@ public class Note extends PrivateStudyUid {
 
     public Note setStudy(String study) {
         this.study = study;
+        return this;
+    }
+
+    public NoteType getType() {
+        return type;
+    }
+
+    public Note setType(NoteType type) {
+        this.type = type;
         return this;
     }
 

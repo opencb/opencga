@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.StudyCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FqnUtils;
@@ -491,8 +492,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
     }
 
     @Override
-    public OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogException {
         if (users == null || users.size() == 0) {
             throw new CatalogDBException("Unable to remove users from groups. List of users is empty");
         }
@@ -547,8 +547,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
     }
 
     @Override
-    public OpenCGAResult<Group> resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Group> resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogException {
         if (StringUtils.isEmpty(user)) {
             throw new CatalogDBException("Missing user field");
         }
@@ -601,8 +600,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
     @Override
     public OpenCGAResult<Group> updateUserFromGroups(String user, List<Long> studyUids, List<String> groupList,
-                                                     ParamUtils.AddRemoveAction action)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+                                                     ParamUtils.AddRemoveAction action) throws CatalogException {
 
         if (StringUtils.isEmpty(user)) {
             throw new CatalogParameterException("Missing user parameter");
@@ -821,7 +819,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
     @Override
     public OpenCGAResult<VariableSet> addFieldToVariableSet(long studyUid, long variableSetId, Variable variable, String user)
-            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
+            throws CatalogException {
         OpenCGAResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableNotInVariableSet(variableSet.first(), variable.getId());
 
@@ -898,9 +896,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
     @Override
     public OpenCGAResult<VariableSet> removeFieldFromVariableSet(long studyUid, long variableSetId, String name, String user)
-            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        long startTime = startQuery();
-
+            throws CatalogException {
         OpenCGAResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableInVariableSet(variableSet.first(), name);
 
@@ -1168,8 +1164,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
     }
 
     @Override
-    public OpenCGAResult<VariableSet> deleteVariableSet(long studyUid, VariableSet variableSet, boolean force)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<VariableSet> deleteVariableSet(long studyUid, VariableSet variableSet, boolean force) throws CatalogException {
         try {
             return runTransaction(clientSession -> {
                 if (force) {
@@ -1342,7 +1337,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, studyResult.first(), parameters));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update study {}: {}", studyId, e.getMessage(), e);
             throw new CatalogDBException("Could not update study '" + studyId + "': " + e.getMessage(), e.getCause());
         }
@@ -1365,7 +1360,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
             Study study = iterator.next();
             try {
                 result.append(runTransaction(clientSession -> privateUpdate(clientSession, study, parameters)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update study {}: {}", study.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, study.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -1479,7 +1474,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                 throw new CatalogDBException("Could not find study " + study.getId() + " with uid " + study.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete study {}: {}", study.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete study " + study.getId() + ": " + e.getMessage(), e.getCause());
         }
@@ -1495,7 +1490,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
             String studyId = study.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, study)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete study {}: {}", studyId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, studyId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);

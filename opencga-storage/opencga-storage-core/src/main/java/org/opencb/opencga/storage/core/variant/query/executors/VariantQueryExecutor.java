@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -65,12 +64,12 @@ public abstract class VariantQueryExecutor {
 
     /**
      * Determine if this VariantQueryExecutor can run the given query.
-     * @param query    Query to execute
+     * @param variantQuery    Query to execute
      * @param options  Options for the query
      * @return         True if this variant query executor is valid for the query
      * @throws StorageEngineException if there is an error
      */
-    public abstract boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException;
+    public abstract boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException;
 
     protected abstract Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) throws StorageEngineException;
 

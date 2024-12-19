@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 
 if [ -z "${HADOOP_SSH_USER}" ] ; then
@@ -25,6 +25,8 @@ if [ -n "${HADOOP_SSH_KEY}" ] && [ -f "${HADOOP_SSH_KEY}" ] ; then
   SSH_OPTS="${SSH_OPTS} -i ${HADOOP_SSH_KEY}"
 fi
 
+trap 'echo "SSH Process interrupted! Run time : ${SECONDS}s" && exit 1 1>&2 ' INT TERM
+
 echo "Connect to Hadoop edge node ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" 1>&2
 
 echo "${SSHPASS_CMD}ssh ${SSH_OPTS} ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" 1>&2
@@ -37,9 +39,11 @@ for arg in "$@" ; do
     arg=$(echo "$arg" | sed "s/'/'\\\\\\''/g") # aaa'aaa --> 'aaa'\''aaa'
     CMD="${CMD}'${arg}' "
 done
-echo ${CMD}
+echo ${CMD} 1>&2
 
 ${SSHPASS_CMD} ssh ${SSH_OPTS} "${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" /bin/bash << EOF
+
+echo "PID=\$\$" >&2
 
 export HADOOP_CLASSPATH=${HADOOP_CLASSPATH}
 export HADOOP_USER_CLASSPATH_FIRST=${HADOOP_USER_CLASSPATH_FIRST}
@@ -59,3 +63,10 @@ exec ${CMD}
 
 EOF
 
+EXIT_CODE=$?
+
+echo "SSH Process completed!" 1>&2
+echo " - Run time : ${SECONDS}s" 1>&2
+echo " - Exit code: ${EXIT_CODE}" 1>&2
+
+exit ${EXIT_CODE}

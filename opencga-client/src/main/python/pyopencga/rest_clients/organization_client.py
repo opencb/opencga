@@ -66,6 +66,7 @@ class Organization(_ParentRestClient):
         :param str modification_date: Modification date. Format:
             yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         :param str id: Note unique identifier.
+        :param str type: Note type.
         :param str scope: Scope of the Note.
         :param str visibility: Visibility of the Note.
         :param str uuid: Unique 32-character identifier assigned automatically
@@ -104,11 +105,51 @@ class Organization(_ParentRestClient):
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
             must be provided.
+        :param str tags_action: Action to be performed if the array of tags is
+            being updated. Allowed values: ['ADD SET REMOVE']
         :param bool include_result: Flag indicating to include the created or
             updated document result in the response.
         """
 
         return self._post(category='organizations', resource='update', subcategory='notes', second_query_id=id, data=data, **options)
+
+    def user_update_status(self, user, data=None, **options):
+        """
+        Update the user status.
+        PATH: /{apiVersion}/organizations/user/{user}/status/update
+
+        :param dict data: JSON containing the User fields to be updated.
+            (REQUIRED)
+        :param str user: User ID. (REQUIRED)
+        :param str include: Fields included in the response, whole JSON path
+            must be provided.
+        :param str exclude: Fields excluded in the response, whole JSON path
+            must be provided.
+        :param str organization: Organization id.
+        :param bool include_result: Flag indicating to include the created or
+            updated document result in the response.
+        """
+
+        return self._post(category='organizations/user', resource='update', query_id=user, subcategory='status', data=data, **options)
+
+    def update_user(self, user, data=None, **options):
+        """
+        Update the user information.
+        PATH: /{apiVersion}/organizations/user/{user}/update
+
+        :param dict data: JSON containing the User fields to be updated.
+            (REQUIRED)
+        :param str user: User ID. (REQUIRED)
+        :param str include: Fields included in the response, whole JSON path
+            must be provided.
+        :param str exclude: Fields excluded in the response, whole JSON path
+            must be provided.
+        :param str organization: Organization id.
+        :param bool include_result: Flag indicating to include the created or
+            updated document result in the response.
+        """
+
+        return self._post(category='organizations', resource='update', subcategory='user', second_query_id=user, data=data, **options)
 
     def update_configuration(self, organization, data=None, **options):
         """

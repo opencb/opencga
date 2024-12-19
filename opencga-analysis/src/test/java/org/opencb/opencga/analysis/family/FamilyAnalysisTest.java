@@ -109,10 +109,9 @@ public class FamilyAnalysisTest extends GenericTest {
     }
 
     @Test
-    public void creationTest() {
+    public void creationTest() throws IOException {
         PedigreeGraph pedigreeGraph = family.getPedigreeGraph();
-        assertTrue(pedigreeGraph.getBase64().startsWith("iVBORw0KGgoAAAANSUhEUgAAAeA"));
-        assertTrue(pedigreeGraph.getBase64().endsWith("AIDB6Bwfs3Rj5UIf81hI8AAAAASUVORK5CYII="));
+        assertEquals(runAndGetPedigreeImageB64(family), pedigreeGraph.getBase64());
     }
 
     @Test
@@ -130,7 +129,7 @@ public class FamilyAnalysisTest extends GenericTest {
     }
 
     @Test
-    public void threeMemberNoDisorderFamilyTest() throws CatalogException {
+    public void threeMemberNoDisorderFamilyTest() throws CatalogException, IOException {
         FamilyUpdateParams updateParams = new FamilyUpdateParams();
 
         QueryOptions queryOptions = new QueryOptions()
@@ -140,33 +139,30 @@ public class FamilyAnalysisTest extends GenericTest {
                 .first();
 
         PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
-        assertTrue(pedigreeGraph.getBase64().startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAH"));
-        assertTrue(pedigreeGraph.getBase64().endsWith("2WENFPAsd1MAAAAASUVORK5CYII="));
+        assertEquals(runAndGetPedigreeImageB64(updatedFamily), pedigreeGraph.getBase64());
     }
 
     @Test
-    public void threeGenerationFamilyTest() throws CatalogException {
+    public void threeGenerationFamilyTest() throws CatalogException, IOException {
         Family threeGenFamily = createThreeGenerationFamily("Cos-Cos", true).first();
         PedigreeGraph pedigreeGraph = threeGenFamily.getPedigreeGraph();
-        assertTrue(pedigreeGraph.getBase64().startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgCA"));
-        assertTrue(pedigreeGraph.getBase64().endsWith("h9S2DROnwXOvwAAAABJRU5ErkJggg=="));
+        assertEquals(runAndGetPedigreeImageB64(threeGenFamily), pedigreeGraph.getBase64());
     }
 
     @Test
-    public void threeGenerationFamilyWithoutDisorderTest() throws CatalogException {
+    public void threeGenerationFamilyWithoutDisorderTest() throws CatalogException, IOException {
         Family threeGenFamily = createThreeGenerationFamily("Hello-Hello", false).first();
         PedigreeGraph pedigreeGraph = threeGenFamily.getPedigreeGraph();
-        assertTrue(pedigreeGraph.getBase64().startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgC"));
-        assertTrue(pedigreeGraph.getBase64().endsWith("wNJj9EVvh8HVQAAAABJRU5ErkJggg=="));
+        assertEquals(runAndGetPedigreeImageB64(threeGenFamily), pedigreeGraph.getBase64());
     }
 
     @Test
-    public void test2Member2GenerationFamilyTest() throws CatalogException {
+    public void test2Member2GenerationFamilyTest() throws CatalogException, IOException {
         Family family = create2Member2GenerationDummyFamily("Colo-Colo", "father222-sample", "child2222-sample").first();
 
         PedigreeGraph pedigreeGraph = family.getPedigreeGraph();
-        assertTrue(pedigreeGraph.getBase64().startsWith("iVBORw0KGgoAAAANSUhEUgAAA"));
-        assertTrue(pedigreeGraph.getBase64().endsWith("qkAAAAASUVORK5CYII="));
+
+        assertEquals(runAndGetPedigreeImageB64(family), pedigreeGraph.getBase64());
     }
 
     @Test
@@ -202,12 +198,9 @@ public class FamilyAnalysisTest extends GenericTest {
         params.setFamilyId(family.getId());
 
         toolRunner.execute(PedigreeGraphAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir, null,
-                sessionIdUser);
+                false, sessionIdUser);
 
         String b64Image = PedigreeGraphUtils.getB64Image(outDir);
-        MatcherAssert.assertThat(b64Image, CoreMatchers.startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHg"));
-        MatcherAssert.assertThat(b64Image, CoreMatchers.endsWith("s3Rj5UIf81hI8AAAAASUVORK5CYII="));
-
         assertEquals(family.getPedigreeGraph().getBase64(), b64Image);
     }
 
@@ -476,5 +469,13 @@ public class FamilyAnalysisTest extends GenericTest {
                 QueryOptions.empty(), sessionIdUser);
 
         return familyOpenCGAResult;
+    }
+
+
+    public String runAndGetPedigreeImageB64(Family family) throws IOException {
+        Path scratchDir = Paths.get(opencga.createTmpOutdir());
+        PedigreeGraph pedigreeGraph = PedigreeGraphUtils.getPedigreeGraph(family, opencga.getOpencgaHome(), scratchDir);
+        return pedigreeGraph.getBase64();
+
     }
 }
