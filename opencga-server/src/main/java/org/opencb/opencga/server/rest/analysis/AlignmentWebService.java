@@ -77,7 +77,7 @@ public class AlignmentWebService extends AnalysisWebService {
 
     @POST
     @Path("/index/run")
-    @ApiOperation(value = ALIGNMENT_INDEX_DESCRIPTION, response = Job.class)
+    @ApiOperation(value = AlignmentIndexOperation.DESCRIPTION, response = Job.class)
     public Response indexRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -174,7 +174,7 @@ public class AlignmentWebService extends AnalysisWebService {
 
     @POST
     @Path("/coverage/index/run")
-    @ApiOperation(value = "Compute coverage for a list of alignment files", response = Job.class)
+    @ApiOperation(value = AlignmentCoverageAnalysis.DESCRIPTION, response = Job.class)
     public Response coverageRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,

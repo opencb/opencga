@@ -17,6 +17,8 @@
 package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
+import org.opencb.opencga.analysis.alignment.AlignmentCoverageAnalysis;
+import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
@@ -24,6 +26,7 @@ import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
+import org.opencb.opencga.core.api.FieldConstants;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,10 +43,6 @@ public class AlignmentCommandOptions {
     public QueryAlignmentCommandOptions queryAlignmentCommandOptions;
     public QcAlignmentCommandOptions qcAlignmentCommandOptions;
     public GeneCoverageStatsAlignmentCommandOptions geneCoverageStatsAlignmentCommandOptions;
-//    public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
-//    public FlagStatsAlignmentCommandOptions flagStatsAlignmentCommandOptions;
-//    public FastQcMetricsAlignmentCommandOptions fastQcMetricsAlignmentCommandOptions;
-//    public HsMetricsAlignmentCommandOptions hsMetricsAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
     public CoverageQueryAlignmentCommandOptions coverageQueryAlignmentCommandOptions;
     public CoverageRatioAlignmentCommandOptions coverageRatioAlignmentCommandOptions;
@@ -76,10 +75,6 @@ public class AlignmentCommandOptions {
         this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
         this.qcAlignmentCommandOptions = new QcAlignmentCommandOptions();
         this.geneCoverageStatsAlignmentCommandOptions = new GeneCoverageStatsAlignmentCommandOptions();
-//        this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
-//        this.flagStatsAlignmentCommandOptions = new FlagStatsAlignmentCommandOptions();
-//        this.fastQcMetricsAlignmentCommandOptions = new FastQcMetricsAlignmentCommandOptions();
-//        this.hsMetricsAlignmentCommandOptions = new HsMetricsAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
         this.coverageQueryAlignmentCommandOptions = new CoverageQueryAlignmentCommandOptions();
         this.coverageRatioAlignmentCommandOptions = new CoverageRatioAlignmentCommandOptions();
@@ -92,7 +87,7 @@ public class AlignmentCommandOptions {
         this.picardCommandOptions = new PicardCommandOptions();
     }
 
-    @Parameters(commandNames = {"index"}, commandDescription = ALIGNMENT_INDEX_DESCRIPTION)
+    @Parameters(commandNames = {"index"}, commandDescription = AlignmentIndexOperation.DESCRIPTION)
     public class IndexAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -104,10 +99,10 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"--file-id"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        @Parameter(names = {"--file-id"}, description = FieldConstants.ALIGNMENT_BAM_FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String fileId;
 
-        @Parameter(names = {"--overwrite"}, description = "Force to overwrite the alignment index file", arity = 0)
+        @Parameter(names = {"--overwrite"}, description = FieldConstants.ALIGNMENT_OVERWRITE_DESCRIPTION, arity = 0)
         public boolean overwrite;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
@@ -323,7 +318,7 @@ public class AlignmentCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"coverage-index-run"}, commandDescription = ALIGNMENT_COVERAGE_DESCRIPTION)
+    @Parameters(commandNames = {"coverage-index-run"}, commandDescription = AlignmentCoverageAnalysis.DESCRIPTION)
     public class CoverageAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -335,14 +330,14 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"--bam-file-id"}, description = "BAM file ID", required = true, arity = 1)
+        @Parameter(names = {"--file-id"}, description = FieldConstants.ALIGNMENT_BAM_FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String bamFileId;
-
-        @Parameter(names = {"--bai-file-id"}, description = "BAI file ID; if not provided, it will search the most recent one", arity = 1)
-        public String baiFileId;
 
         @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
         public int windowSize = 1;
+
+        @Parameter(names = {"--overwrite"}, description = FieldConstants.ALIGNMENT_OVERWRITE_DESCRIPTION, arity = 0)
+        public boolean overwrite;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;

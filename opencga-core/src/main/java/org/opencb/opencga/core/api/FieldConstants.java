@@ -562,13 +562,12 @@ public class FieldConstants {
     public static final String ALIGNMENT_INDEX_FILE_ID_DESCRIPTION = "File ID, (i.e., BAM/CRAM file ID).";
     public static final String ALIGNMENT_INDEX_OVERWRITE_DESCRIPTION = "Flag to force indexing.";
 
-    // Coverage index parameter descriptions
-    public static final String COVERAGE_INDEX_BAM_FILE_ID_DESCRIPTION = "BAM file ID.";
-    public static final String COVERAGE_INDEX_BAI_FILE_ID_DESCRIPTION = "BAI file ID.";
-    public static final String COVERAGE_INDEX_OVERWRITE_DESCRIPTION = "Window size (i.e., the size of the bins, in bases, for the output"
-        + " of the BIGWIG file).";
+    // Alignment index and coverage
+    public static final String ALIGNMENT_BAM_FILE_ID_DESCRIPTION = "Alignment file ID (in BAM or CRAM format)";
+    public static final String ALIGNMENT_WINDOW_SIZE_DESCRIPTION = "Bin size for the output of the BIGWIG file, in bases.";
+    public static final String ALIGNMENT_OVERWRITE_DESCRIPTION = "Flag to force indexing.";
 
-    // Alignment QC analysis (asample-qc-run)
+    // Alignment QC analysis (alignment-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
     public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"
             + " commas): " + AlignmentQcParams.STATS_SKIP_VALUE + ", " + AlignmentQcParams.FLAGSTATS_SKIP_VALUE + ", "
