@@ -136,14 +136,26 @@ public class SnapshotVersionedMongoDBAdaptor {
                 throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
     }
 
+    @FunctionalInterface
+    public interface FunctionWithException<T> {
+        OpenCGAResult<T> execute(List<Document> entryList)
+                throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    }
+
     protected void insert(ClientSession session, Document document) {
+        // Versioning private parameters
+        document.put(VERSION, 1);
+        document.put(RELEASE_FROM_VERSION, Arrays.asList(document.getInteger(RELEASE)));
+        document.put(LAST_OF_VERSION, true);
+        document.put(LAST_OF_RELEASE, true);
+
         String uuid = getClientSessionUuid(session);
         document.put(PRIVATE_TRANSACTION_ID, uuid);
         collection.insert(session, document, QueryOptions.empty());
         archiveCollection.insert(session, document, QueryOptions.empty());
     }
 
-    protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, VersionedModelExecution<OpenCGAResult<E>> update,
+    protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, FunctionWithException<E> update,
                               PostVersionIncrementIterator<E> postVersionIncrementIterator,
                               ReferenceModelExecution<E> postVersionIncrementExecution)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -152,8 +164,7 @@ public class SnapshotVersionedMongoDBAdaptor {
     }
 
     protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, List<String> fieldsToInclude,
-                                          VersionedModelExecution<OpenCGAResult<E>> update,
-                                          PostVersionIncrementIterator<E> postVersionIncrementIterator,
+                                          FunctionWithException<E> update, PostVersionIncrementIterator<E> postVersionIncrementIterator,
                                           ReferenceModelExecution<E> postVersionIncrementExecution)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return update(session, sourceQuery, fieldsToInclude, update, Collections.emptyList(), postVersionIncrementIterator,
@@ -161,8 +172,7 @@ public class SnapshotVersionedMongoDBAdaptor {
     }
 
     protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, List<String> fieldsToInclude,
-                                          VersionedModelExecution<OpenCGAResult<E>> update,
-                                          List<String> postVersionIncrementAdditionalIncludeFields,
+                                          FunctionWithException<E> update, List<String> postVersionIncrementAdditionalIncludeFields,
                                           PostVersionIncrementIterator<E> dbIterator,
                                           ReferenceModelExecution<E> postVersionIncrementExecution)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -295,6 +305,53 @@ public class SnapshotVersionedMongoDBAdaptor {
         return executionResult;
     }
 
+    protected <E> OpenCGAResult<E> updateWithoutVersionIncrement(ClientSession clientSession, Bson sourceQuery,
+                                                                 List<String> fieldsToInclude, FunctionWithException<E> update)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        // Obtain all entries that will be updated
+        Set<String> includeFields = new HashSet<>(Arrays.asList(PRIVATE_UID, VERSION, RELEASE_FROM_VERSION, PRIVATE_TRANSACTION_ID));
+        if (fieldsToInclude != null) {
+            includeFields.addAll(fieldsToInclude);
+        }
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, includeFields);
+        List<Document> entryList = new LinkedList<>();
+        List<Long> allUids = new LinkedList<>();
+        try (MongoDBIterator<Document> iterator = collection.iterator(clientSession, sourceQuery, null, null, options)) {
+            while (iterator.hasNext()) {
+                Document result = iterator.next();
+                entryList.add(result);
+
+                long uid = result.get(PRIVATE_UID, Number.class).longValue();
+                allUids.add(uid);
+            }
+        }
+
+        // Execute main update
+        OpenCGAResult<E> executionResult = update.execute(entryList);
+
+        // Fetch document containing update and copy into the archive collection
+        Bson bsonQuery = Filters.in(PRIVATE_UID, allUids);
+        options = new QueryOptions(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
+        QueryOptions upsertOptions = new QueryOptions()
+                .append(MongoDBCollection.REPLACE, true)
+                .append(MongoDBCollection.UPSERT, true);
+        try (MongoDBIterator<Document> iterator = collection.iterator(clientSession, bsonQuery, null, null, options)) {
+            while (iterator.hasNext()) {
+                Document result = iterator.next();
+                result.remove(PRIVATE_MONGO_ID);
+
+                // Insert/replace in archive collection
+                Bson tmpBsonQuery = Filters.and(
+                        Filters.eq(PRIVATE_UID, result.get(PRIVATE_UID)),
+                        Filters.eq(VERSION, result.get(VERSION))
+                );
+                archiveCollection.update(clientSession, tmpBsonQuery, result, upsertOptions);
+            }
+        }
+
+        return executionResult;
+    }
+
     /**
      * Revert to a previous version.
      *
@@ -348,12 +405,17 @@ public class SnapshotVersionedMongoDBAdaptor {
         return document;
     }
 
-    protected void delete(ClientSession session, Bson query) {
+    protected void delete(ClientSession session, Bson query) throws CatalogDBException {
         // Remove any old documents from the "delete" collection matching the criteria
         deletedCollection.remove(session, query, QueryOptions.empty());
 
         // Remove document from main collection
-        collection.remove(session, query, QueryOptions.empty());
+        DataResult<?> remove = collection.remove(session, query, QueryOptions.empty());
+        if (remove.getNumDeleted() == 0) {
+            logger.error("Delete operation for '{}' could not be performed. Num matches: {}", query.toBsonDocument(),
+                    remove.getNumMatches());
+            throw new CatalogDBException("Delete operation could not be performed");
+        }
 
         // Add versioned documents to "delete" collection
         InternalStatus internalStatus = new InternalStatus(InternalStatus.DELETED);

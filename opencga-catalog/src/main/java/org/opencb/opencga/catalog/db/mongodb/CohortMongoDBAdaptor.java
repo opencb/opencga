@@ -96,7 +96,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public OpenCGAResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+            throws CatalogException {
         try {
             return runTransaction(clientSession -> {
                 long startTime = startQuery();
@@ -275,7 +275,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             try {
                 result.append(runTransaction(clientSession -> transactionalUpdate(clientSession, cohort, parameters, variableSetList,
                         queryOptions)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update cohort {}: {}", cohort.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, cohort.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -286,7 +286,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     OpenCGAResult<Cohort> transactionalUpdate(ClientSession clientSession, Cohort cohort, ObjectMap parameters,
-                                              List<VariableSet> variableSetList, QueryOptions queryOptions)
+                                              List<VariableSet> variableSetList, QueryOptions queryOptions, boolean incrementVersion)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         Query tmpQuery = new Query()
@@ -341,7 +341,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     }
 
     @Override
-    OpenCGAResult<Cohort> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
+    OpenCGAResult<Cohort> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument,
+                                              boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
@@ -545,7 +546,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 throw new CatalogDBException("Could not find cohort " + cohort.getId() + " with uid " + cohort.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete cohort {}: {}", cohort.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete cohort '" + cohort.getId() + "': " + e.getMessage(), e.getCause());
         }
@@ -561,7 +562,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             String cohortId = cohort.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, cohort)));
-            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete cohort {}: {}", cohortId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, cohortId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);

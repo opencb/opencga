@@ -11,7 +11,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.templates.TemplateManager;
 import org.opencb.opencga.catalog.templates.config.TemplateManifest;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -25,11 +24,14 @@ public class TemplateManagerTest extends AbstractManagerTest {
     public void test() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
 
-        catalogManager.getUserManager().create(new User().setId("user1").setName("User 1").setOrganization(organizationId).setAccount(new Account()),
+        catalogManager.getUserManager().create(new User().setId("user1").setName("User 1").setOrganization(organizationId),
                 TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(new User().setId("user2").setName("User 2").setOrganization(organizationId).setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(new User().setId("user3").setName("User 3").setOrganization(organizationId).setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(new User().setId("user4").setName("User 4").setOrganization(organizationId).setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("user2").setName("User 2").setOrganization(organizationId),
+                TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("user3").setName("User 3").setOrganization(organizationId),
+                TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("user4").setName("User 4").setOrganization(organizationId),
+                TestParamConstants.PASSWORD, opencgaToken);
 
         catalogManager.getProjectManager().create("project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), ownerToken);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), ownerToken);
@@ -54,13 +56,13 @@ public class TemplateManagerTest extends AbstractManagerTest {
     public void test_yaml() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
 
-        catalogManager.getUserManager().create(new User().setId("user1").setName("User 1").setOrganization(organizationId).setAccount(new Account()),
+        catalogManager.getUserManager().create(new User().setId("user1").setName("User 1").setOrganization(organizationId),
                 TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(new User().setId("user2").setName("User 2").setOrganization(organizationId).setAccount(new Account()),
+        catalogManager.getUserManager().create(new User().setId("user2").setName("User 2").setOrganization(organizationId),
                 TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(new User().setId("user3").setName("User 3").setOrganization(organizationId).setAccount(new Account()),
+        catalogManager.getUserManager().create(new User().setId("user3").setName("User 3").setOrganization(organizationId),
                 TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(new User().setId("user4").setName("User 4").setOrganization(organizationId).setAccount(new Account()),
+        catalogManager.getUserManager().create(new User().setId("user4").setName("User 4").setOrganization(organizationId),
                 TestParamConstants.PASSWORD, opencgaToken);
 
         catalogManager.getProjectManager().create("project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), ownerToken);

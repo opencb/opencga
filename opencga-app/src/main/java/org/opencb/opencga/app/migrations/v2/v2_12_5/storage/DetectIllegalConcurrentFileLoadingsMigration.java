@@ -1,5 +1,6 @@
-package org.opencb.opencga.app.migrations.v2_12_5.storage;
+package org.opencb.opencga.app.migrations.v2.v2_12_5.storage;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -42,7 +43,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
 
     @Override
     protected void run() throws Exception {
-        for (String project : getVariantStorageProjects(organizationId)) {
+        for (String project : getVariantStorageProjects()) {
             VariantStorageEngine engine = getVariantStorageEngineByProject(project);
             if (!engine.getStorageEngineId().equals("hadoop")) {
                 continue;
@@ -67,6 +68,8 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
         if (fileSets.isEmpty()) {
             logger.info("No concurrent file loadings found in study '{}'", study);
             return;
+        } else {
+            logger.info("Found {} sets of files with shared samples in study '{}'", fileSets.size(), study);
         }
 
         Map<Integer, TaskMetadata> fileTasks = new HashMap<>();
@@ -85,10 +88,12 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
             }
         }
 
-        Set<Set<Integer>> fileSetsToInvalidate = new HashSet<>();
-        Set<Integer> affectedFiles = new HashSet<>();
-        Set<Integer> affectedSamples = new HashSet<>();
         for (Set<Integer> fileSet : fileSets) {
+            Set<Integer> affectedFiles = new HashSet<>();
+            Set<Integer> affectedSamples = new HashSet<>();
+            Set<Integer> invalidFiles = new HashSet<>();
+            Set<Integer> invalidSampleIndexes = new HashSet<>();
+
             // Check if any task from this file set overlaps in time
             List<TaskMetadata> tasks = new ArrayList<>();
             for (Integer fileId : fileSet) {
@@ -97,8 +102,11 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                     tasks.add(task);
                 }
             }
-            if (tasks.size() > 1) {
-                logger.info("Found {} tasks loading files {}", tasks.size(), fileSet);
+            if (tasks.size() <= 1) {
+                continue;
+            } else {
+                logger.info("--------------------");
+                logger.info("Found {} tasks loading files {} in study {}", tasks.size(), fileSet, study);
                 for (int i = 0; i < tasks.size(); i++) {
                     TaskMetadata task1 = tasks.get(i);
                     Date task1start = task1.getStatus().firstKey();
@@ -108,8 +116,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                         Date task2start = task2.getStatus().firstKey();
                         Date task2end = task2.getStatus().lastKey();
                         if (task1start.before(task2end) && task1end.after(task2start)) {
-                            fileSetsToInvalidate.add(fileSet);
-                            affectedFiles.addAll(task1.getFileIds());
+                            affectedFiles.addAll(fileSet);
 
                             List<String> task1Files = task1.getFileIds().stream().map(fileId -> "'" + metadataManager.getFileName(studyId, fileId) + "'(" + fileId + ")").collect(Collectors.toList());
                             List<String> task2Files = task2.getFileIds().stream().map(fileId -> "'" + metadataManager.getFileName(studyId, fileId) + "'(" + fileId + ")").collect(Collectors.toList());
@@ -131,8 +138,6 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                 }
             }
 
-            Set<Integer> invalidFiles = new HashSet<>();
-            List<Integer> invalidSampleIndexes = new ArrayList<>();
             for (Integer sampleId : affectedSamples) {
                 String sampleName = metadataManager.getSampleName(studyId, sampleId);
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
@@ -145,7 +150,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                                     metadataManager.getFileName(studyId, file), file);
                         }
                     }
-                } else if (sampleMetadata.getSampleIndexStatus(Optional.of(sampleMetadata.getSampleIndexVersion()).orElse(-1)) == TaskMetadata.Status.READY) {
+                } else if (sampleMetadata.getSampleIndexStatus(Optional.ofNullable(sampleMetadata.getSampleIndexVersion()).orElse(-1)) == TaskMetadata.Status.READY) {
                     for (Integer fileId : sampleMetadata.getFiles()) {
                         if (affectedFiles.contains(fileId)) {
                             FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
@@ -195,6 +200,8 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                         }
                     }
                 } else {
+                    logger.info("Sample '{}'({}) sample index is not in READY status. Invalidate to ensure rebuild", sampleName, sampleId);
+                    logger.info(" - Invalidating sample index for sample '{}'({})", sampleName, sampleId);
                     invalidSampleIndexes.add(sampleId);
                 }
             }
@@ -210,9 +217,19 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                         invalidSamples.addAll(metadataManager.getSampleIdsFromFileId(studyId, fileId));
                     }
 
-                    logger.info("Affected files: {}", invalidFiles);
-                    logger.info("Affected samples: {}", invalidSamples);
-                    logger.info("Affected sample indexes: {}", invalidSampleIndexes);
+                    logger.info("Study '{}'", study);
+                    List<Pair<String, Integer>> invalidFilesPairs = invalidFiles.stream()
+                            .map(fileId -> Pair.of(metadataManager.getFileName(studyId, fileId), fileId))
+                            .collect(Collectors.toList());
+                    logger.info("Affected files: {}", invalidFilesPairs);
+                    List<Pair<String, Integer>> invalidSamplesPairs = invalidSamples.stream()
+                            .map(sampleId -> Pair.of(metadataManager.getSampleName(studyId, sampleId), sampleId))
+                            .collect(Collectors.toList());
+                    logger.info("Affected samples: {}", invalidSamplesPairs);
+                    List<Pair<String, Integer>> invalidSampleIndexesPairs = invalidSampleIndexes.stream()
+                            .map(sampleId -> Pair.of(metadataManager.getSampleName(studyId, sampleId), sampleId))
+                            .collect(Collectors.toList());
+                    logger.info("Affected sample indexes: {}", invalidSampleIndexesPairs);
                 }
             } else {
                 ObjectMap event = new ObjectMap()

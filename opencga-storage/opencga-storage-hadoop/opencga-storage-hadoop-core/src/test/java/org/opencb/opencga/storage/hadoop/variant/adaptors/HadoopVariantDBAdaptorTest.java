@@ -119,6 +119,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
                 e.printStackTrace();
             }
         }
+        variantStorageEngine.getOptions().append(VariantStorageOptions.ASSEMBLY.key(), "GRCH38");
         cellBaseUtils = variantStorageEngine.getCellBaseUtils();
         expectedConnections = GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getValue();
     }

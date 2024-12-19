@@ -76,6 +76,11 @@ public class CatalogAuthenticationException extends CatalogException {
                 + " talk to your organization owner/administrator.");
     }
 
+    public static CatalogAuthenticationException passwordExpired(String userId, String expirationDate) {
+        return new CatalogAuthenticationException("The password for the user account '" + userId + "' expired on " + expirationDate
+                + ". Please, reset your password or talk to your organization owner/administrator.");
+    }
+
     public static CatalogAuthenticationException userNotAllowed(String domain) {
         return new CatalogAuthenticationException(domain + ": User not allowed to access the system.");
     }

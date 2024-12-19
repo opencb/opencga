@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotationConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -69,11 +70,23 @@ public abstract class AnnotationMongoDBAdaptor<T> extends CatalogMongoDBAdaptor 
 
     protected abstract MongoDBCollection getCollection();
 
-    abstract OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, T entry, ObjectMap parameters,
+    OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, T entry, ObjectMap parameters,
                                                   List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        return transactionalUpdate(clientSession, entry, parameters, variableSetList, queryOptions, true);
+    }
+
+    abstract OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, T entry, ObjectMap parameters,
+                                                  List<VariableSet> variableSetList, QueryOptions queryOptions, boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException;
 
-    abstract OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
+    OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        return transactionalUpdate(clientSession, studyUid, query, updateDocument, true);
+    }
+
+    abstract OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument,
+                                         boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException;
 
     public enum AnnotationSetParams implements QueryParam {
@@ -687,8 +700,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends CatalogMongoDBAdaptor 
         return annotationList;
     }
 
-    public OpenCGAResult addVariableToAnnotations(long studyUid, long variableSetId, Variable variable)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult addVariableToAnnotations(long studyUid, long variableSetId, Variable variable) throws CatalogException {
         long startTime = startQuery();
 
         // We generate the generic document that should be inserted
@@ -764,12 +776,9 @@ public abstract class AnnotationMongoDBAdaptor<T> extends CatalogMongoDBAdaptor 
      * @param variableSetId Variable set id.
      * @param fieldId       Field id corresponds with the variable name whose annotations have to be removed.
      * @return A OpenCGAResult object.
-     * @throws CatalogDBException if there is any unexpected error.
-     * @throws CatalogParameterException if there is any unexpected parameter.
-     * @throws CatalogAuthorizationException if the operation is not authorized.
+     * @throws CatalogException if there is any unexpected error or parameter, or if the operation is not authorized.
      */
-    public OpenCGAResult removeAnnotationField(long studyUid, long variableSetId, String fieldId)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult removeAnnotationField(long studyUid, long variableSetId, String fieldId) throws CatalogException {
         long startTime = startQuery();
 
         UpdateDocument updateDocument = new UpdateDocument();

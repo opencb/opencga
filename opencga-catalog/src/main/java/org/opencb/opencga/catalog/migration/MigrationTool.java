@@ -3,6 +3,8 @@ package org.opencb.opencga.catalog.migration;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.InsertOneModel;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.WriteModel;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -151,7 +153,17 @@ public abstract class MigrationTool {
                 .cursor()) {
             while (it.hasNext()) {
                 Document document = it.next();
-                migrateFunc.accept(document, list);
+                try {
+                    migrateFunc.accept(document, list);
+                } catch (Exception e) {
+                    try {
+                        logger.error("Error migrating document: {}", document.toJson());
+                    } catch (Exception e1) {
+                        e.addSuppressed(e1);
+                        logger.error("Error migrating document: {}", e.getMessage());
+                    }
+                    throw e;
+                }
 
                 if (list.size() >= batchSize) {
                     count += list.size();
@@ -172,6 +184,25 @@ public abstract class MigrationTool {
         } else {
             privateLogger.info("Updated {} documents from collection {}", count, outputCollection.getNamespace().getFullName());
         }
+    }
+
+    protected void copyData(Bson query, String sourceCol, String targetCol) throws CatalogDBException {
+        MongoCollection<Document> sourceMongoCollection = getMongoCollection(sourceCol);
+        MongoCollection<Document> targetMongoCollection = getMongoCollection(targetCol);
+        copyData(query, sourceMongoCollection, targetMongoCollection);
+    }
+
+    protected void copyData(Bson query, MongoCollection<Document> sourceCol, MongoCollection<Document> targetCol) {
+        // Move data to the new collection
+        logger.info("Copying data from {} to {}", sourceCol.getNamespace(), targetCol.getNamespace());
+        migrateCollection(sourceCol, targetCol, query, Projections.exclude("_id"),
+                (document, bulk) -> bulk.add(new InsertOneModel<>(document)));
+    }
+
+    protected void moveData(Bson query, MongoCollection<Document> sourceCol, MongoCollection<Document> targetCol) {
+        copyData(query, sourceCol, targetCol);
+        // Remove data from the source collection
+        sourceCol.deleteMany(query);
     }
 
     protected final void createIndex(String collection, Document index) throws CatalogDBException {
