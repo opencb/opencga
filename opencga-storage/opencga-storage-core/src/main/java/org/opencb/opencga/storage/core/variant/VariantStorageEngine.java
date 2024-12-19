@@ -326,9 +326,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
 
-    public abstract List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
+    public List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
                                        String commandLine)
-            throws StorageEngineException;
+            throws StorageEngineException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Creates a new {@link VariantExporter} for the current backend.
