@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.core.common;
 
-import org.opencb.commons.run.ParallelTaskRunner;
-
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -28,7 +26,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -475,50 +472,6 @@ public class IOUtils {
 
         if (exception.get() != null) {
             throw new IOException(exception.get());
-        }
-    }
-
-    public static void copyBytesParallel2(InputStream is, OutputStream os, int bufferSize) throws IOException {
-
-        List<ByteBuffer> buffersPool = Collections.synchronizedList(new LinkedList<>());
-        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
-                .setNumTasks(1)
-                .setCapacity(5)
-                .setSorted(true)
-                .build();
-        ParallelTaskRunner<ByteBuffer, ByteBuffer> runner = new ParallelTaskRunner<>(batchSize -> {
-            try {
-                ByteBuffer buf = buffersPool.isEmpty() ? ByteBuffer.allocate(bufferSize) : buffersPool.remove(0);
-                int bytesRead = is.read(buf.array());
-                if (bytesRead > 0) {
-                    if (bytesRead != buf.array().length) {
-                        buf.limit(bytesRead);
-                        buf.rewind();
-                    }
-                    return Collections.singletonList(buf);
-                } else {
-                    return Collections.emptyList();
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }, t -> t, batch -> {
-            try {
-                for (ByteBuffer buf : batch) {
-                    os.write(buf.array(), 0, buf.limit());
-                    // Return the buffer to the pool
-                    buf.clear();
-                    buffersPool.add(buf);
-                }
-            } catch (IOException e1) {
-                throw new UncheckedIOException(e1);
-            }
-            return true;
-        }, config);
-        try {
-            runner.run();
-        } catch (ExecutionException e) {
-            throw new IOException(e);
         }
     }
 }
