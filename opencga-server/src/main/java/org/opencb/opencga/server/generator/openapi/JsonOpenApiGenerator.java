@@ -13,29 +13,35 @@ import java.util.*;
 
 public class JsonOpenApiGenerator {
 
-    public Swagger generateJsonOpenApi(ApiCommons apiCommons) {
+    public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token) {
         List<Class<?>> classes = apiCommons.getApiClasses();
         List<Class<?>> beansDefinitions= new ArrayList<>();
-                Swagger swagger = new Swagger();
-                Info info = new Info();
-                info.setTitle("OpenCGA RESTful Web Services");
-                info.setDescription("OpenCGA RESTful Web Services API");
-                info.setVersion(GitRepositoryState.getInstance().getBuildVersion());
-                swagger.setInfo(info);
-                swagger.setHost("https://test.app.zettagenomics.com/");
-                swagger.setBasePath("/opencga/webservices/rest/v2/");
+        Swagger swagger = new Swagger();
+        Info info = new Info();
+        info.setTitle("OpenCGA RESTful Web Services");
+        info.setDescription("OpenCGA RESTful Web Services API");
+        info.setVersion(GitRepositoryState.getInstance().getBuildVersion());
+        swagger.setInfo(info);
+        swagger.setHost("https://test.app.zettagenomics.com/");
+        swagger.setBasePath("/opencga/webservices/rest/v2/");
+
         List<String> schemes = new ArrayList<>();
         schemes.add("https");
         swagger.setSchemes(schemes);
+
         Map<String, Map<String, Method>> paths = new HashMap<>();
         List<Tag> tags = new ArrayList<>();
+
+        // Configuración del esquema Bearer
         Map<String, Map<String, Object>> securityDefinitions = new HashMap<>();
-        Map<String, Object> api_key = new HashMap<>();
-        api_key.put("type", "apiKey");
-        api_key.put("name", "api_key");
-        api_key.put("in", "header");
-        securityDefinitions.put("api_key", api_key);
+        Map<String, Object> bearerAuth = new HashMap<>();
+        bearerAuth.put("type", "apiKey");
+        bearerAuth.put("name", "Authorization");
+        bearerAuth.put("in", "header");
+        bearerAuth.put("description", "Use 'Bearer <your-token>' to authenticate");
+        securityDefinitions.put("BearerAuth", bearerAuth);
         swagger.setSecurityDefinitions(securityDefinitions);
+
         for (Class<?> clazz : classes) {
             Api api = clazz.getAnnotation(Api.class);
             if (api == null) {
@@ -83,6 +89,18 @@ public class JsonOpenApiGenerator {
                     String fullPath = basePath + (methodPathAnnotation != null ? methodPathAnnotation.value() : "");
                     method.setOperationId(methodPathAnnotation != null ? methodPathAnnotation.value() : "");
 
+                    // Añadir encabezado de token preconfigurado
+                    List<Parameter> headers = new ArrayList<>();
+                    Parameter authorizationHeader = new Parameter();
+                    authorizationHeader.setName("Authorization");
+                    authorizationHeader.setIn("header");
+                    authorizationHeader.setDescription("Bearer token for authorization");
+                    authorizationHeader.setRequired(true);
+                    authorizationHeader.setType("string");
+                    authorizationHeader.setDefaultValue("Bearer " + token);
+                    headers.add(authorizationHeader);
+
+                    method.getParameters().addAll(headers);
                     // Crear o actualizar el Path
                     paths.put(fullPath, new HashMap<>());
                     paths.get(fullPath).put(httpMethod.toLowerCase(Locale.ROOT), method);
@@ -120,6 +138,8 @@ public class JsonOpenApiGenerator {
                 parameter.setDescription(implicitParam.value());
                 parameter.setRequired(implicitParam.required());
                 parameter.setType(implicitParam.dataType());
+                parameter.setFormat(implicitParam.format());
+                parameter.setDefaultValue(implicitParam.defaultValue());
                 parameters.add(parameter);
             }
         }

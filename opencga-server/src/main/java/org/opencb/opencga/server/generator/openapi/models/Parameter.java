@@ -5,8 +5,9 @@ public class Parameter {
     private String in; // Ejemplo: "query", "path", "header"
     private String description;
     private boolean required;
-    private String type;
-    private String format;
+    private String type="";
+    private String format="";
+    private String defaultValue="";
 
     public Parameter() {
     }
@@ -73,6 +74,15 @@ public class Parameter {
 
     public Parameter setFormat(String format) {
         this.format = format;
+        return this;
+    }
+
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    public Parameter setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
         return this;
     }
 }
