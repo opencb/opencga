@@ -1107,17 +1107,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), LiftoverWrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-<<<<<<< HEAD
-            putNestedIfNotNull(beanParams, "files",commandOptions.files, true);
-            putNestedIfNotEmpty(beanParams, "targetAssembly",commandOptions.targetAssembly, true);
-            putNestedIfNotEmpty(beanParams, "vcfDestination",commandOptions.vcfDestination, true);
-            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-=======
             putNestedIfNotNull(beanParams, "files", commandOptions.files, true);
             putNestedIfNotEmpty(beanParams, "targetAssembly", commandOptions.targetAssembly, true);
-            putNestedIfNotEmpty(beanParams, "vcfOutdir", commandOptions.vcfOutdir, true);
+            putNestedIfNotEmpty(beanParams, "vcfDestination", commandOptions.vcfDestination, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
->>>>>>> TASK-6445
 
             liftoverWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
