@@ -21,8 +21,11 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -62,6 +65,9 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
     private String vcfDest;
     private Path resourcePath;
 
+    private org.opencb.opencga.catalog.utils.ResourceManager resourceManager = null;
+    private List<String> liftoverResourceIds = null;
+
     @ToolParams
     protected final LiftoverWrapperParams analysisParams = new LiftoverWrapperParams();
 
@@ -87,9 +93,11 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
         }
         if (LIFTOVER_GRCH38.equalsIgnoreCase(analysisParams.getTargetAssembly())) {
             targetAssembly = LIFTOVER_GRCH38;
+            liftoverResourceIds = Arrays.asList("REFERENCE_GENOME_GRCH38_FA", "REFERENCE_GENOME_GRCH37_FA");
         }
         if (LIFTOVER_HG38.equalsIgnoreCase(analysisParams.getTargetAssembly())) {
             targetAssembly = LIFTOVER_HG38;
+            liftoverResourceIds = Arrays.asList("REFERENCE_GENOME_HG38_FA", "REFERENCE_GENOME_HG19_FA");
         }
         if (!LIFTOVER_GRCH38.equals(targetAssembly) && !LIFTOVER_HG38.equals(targetAssembly)) {
             throw new ToolException("Unknown Liftover 'targetAssembly' parameter ('" + analysisParams.getTargetAssembly() + "'), "
@@ -114,6 +122,12 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
             }
             vcfDest = path.toString();
         }
+
+        // Check resources
+        resourceManager = new org.opencb.opencga.catalog.utils.ResourceManager(getOpencgaHome());
+        for (String liftoverResourceId : liftoverResourceIds) {
+            resourceManager.checkResourcePath(liftoverResourceId);
+        }
     }
 
     @Override
@@ -132,36 +146,14 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
         step(CLEAN_RESOURCES_STEP, this::cleanResources);
     }
 
-    protected void prepareResources() throws IOException, ToolException {
+    protected void prepareResources() throws IOException, ToolException, ResourceException {
         // Create folder where the liftover resources will be saved (within the job dir, aka outdir)
         resourcePath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
 
-        // Identify Liftover resources to download only the required ones
-        Map<String, List<String>> mapResources = new HashMap<>();
-        switch (targetAssembly) {
-            case LIFTOVER_GRCH38: {
-                mapResources.put("reference-genome", Arrays.asList("Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz",
-                        "Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"));
-                break;
-            }
-            case LIFTOVER_HG38: {
-                mapResources.put("reference-genome", Arrays.asList("hg19.fa.gz", "hg38.fa.gz"));
-                break;
-            }
-            default: {
-                throw new ToolException("Unknown Liftover 'targetAssembly' parameter ('" + analysisParams.getTargetAssembly() + "'), "
-                        + VALID_TARGET_ASSEMBLIES);
-            }
-        }
-
-        // Download resources and copy them to the job dir
-        // (this URL is temporary, it should be replaced by the resourceUrl from configuration file)
-        ResourceManager resourceManager = new ResourceManager(getOpencgaHome(), "http://resources.opencb.org/task-6766/");
-        for (Map.Entry<String, List<String>> entry : mapResources.entrySet()) {
-            for (String resourceName : entry.getValue()) {
-                java.io.File resourceFile = resourceManager.getResourceFile(entry.getKey(), resourceName);
-                Files.copy(resourceFile.toPath(), resourcePath.resolve(resourceFile.getName()));
-            }
+        // Create resources from the installation folder
+        for (String liftoverResourceId : liftoverResourceIds) {
+            Path installPath = resourceManager.checkResourcePath(liftoverResourceId);
+            FileUtils.copyFile(installPath.toFile(), resourcePath.resolve(installPath.getFileName()).toFile());
         }
     }
 

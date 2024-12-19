@@ -177,10 +177,10 @@ analysis:
         - "REFERENCE_GENOME_GRCH37_FA"
         - "REFERENCE_GENOME_GRCH37_FAI"
         - "REFERENCE_GENOME_GRCH37_GZI"
-        -
+
     - id: "relatedness"
       resources: ["RELATEDNESS_VARIANTS_PRUNE_IN", "RELATEDNESS_VARIANTS_FRQ"]
-      
+
     - id: "liftover"
       resources:
         - "REFERENCE_GENOME_GRCH38_FA"

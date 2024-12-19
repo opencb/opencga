@@ -40,6 +40,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
+import org.opencb.opencga.analysis.resource.ResourceFetcherTool;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
@@ -55,7 +56,7 @@ import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.liftover.LiftoverWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.IOManager;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -64,6 +65,7 @@ import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -83,6 +85,7 @@ import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
+import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
@@ -108,7 +111,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -1147,7 +1149,7 @@ public class VariantAnalysisTest {
         Path liftOutdir = Paths.get(opencga.createTmpOutdir("_liftOutdir"));
         System.out.println("Liftover outdir = " + liftOutdir);
 
-        prepareLiftoverResourcesIfLocal();
+        Assume.assumeTrue(areLiftoverResourcesReady());
 
         String basename = "NA12877_S1.1k";
         File file = prepareLiftoverInputFile(basename + ".vcf.gz", "biofiles");
@@ -1168,7 +1170,7 @@ public class VariantAnalysisTest {
         Path liftOutdir = Paths.get(opencga.createTmpOutdir("_liftOutdir"));
         System.out.println("Liftover outdir = " + liftOutdir);
 
-        prepareLiftoverResourcesIfLocal();
+        Assume.assumeTrue(areLiftoverResourcesReady());
 
         String basename = "NA12877_S1.1k";
         File file = prepareLiftoverInputFile(basename + ".vcf.gz", "biofiles");
@@ -1190,7 +1192,7 @@ public class VariantAnalysisTest {
         Path liftOutdir = Paths.get(opencga.createTmpOutdir("_liftOutdir"));
         System.out.println("Liftover outdir = " + liftOutdir);
 
-        prepareLiftoverResourcesIfLocal();
+        Assume.assumeTrue(areLiftoverResourcesReady());
 
         Path folderPath = Paths.get("custom", "folder");
         File destCustomFolder = catalogManager.getFileManager().createFolder(STUDY, folderPath.toString(), true, null, QueryOptions.empty(),
@@ -1231,33 +1233,39 @@ public class VariantAnalysisTest {
         return file;
     }
 
-    private void prepareLiftoverResourcesIfLocal() throws IOException {
-        Path resourcePath = opencga.getOpencgaHome().resolve("analysis").resolve("resources");
-        Path resourcesLocalPath = Paths.get("../../../data/opencga/resources/liftover").toAbsolutePath();
-        if (Files.exists(resourcesLocalPath)) {
-            if (!Files.exists(resourcePath.resolve("liftover"))) {
-                Files.createDirectories(resourcePath.resolve("liftover"));
-            }
-            if (resourcePath.resolve("liftover").toFile().listFiles().length != 2) {
-                for (java.io.File file : resourcesLocalPath.toFile().listFiles()) {
-                    java.io.File destFile = resourcePath.resolve("liftover").resolve(file.getName()).toFile();
-                    System.out.println("Copy from " + file + " to " + destFile.toPath());
-                    Files.copy(file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
+    private boolean areLiftoverResourcesReady() throws IOException {
+        Configuration configuration = opencga.getConfiguration();
+        configuration.getAnalysis().getResource().setBasePath(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ResourceManager.RESOURCES_DIRNAME));
+        configuration.getAnalysis().getResource().setBaseUrl("http://resources.opencb.org/opencb/opencga/analysis/resources/");
+        JacksonUtils.getDefaultObjectMapper().writerFor(Configuration.class).writeValue(opencga.getOpencgaHome().resolve("conf/configuration.yml").toFile(), configuration);
+
+        ResourceManager resourceManager = new ResourceManager(opencga.getOpencgaHome());
+
+        try {
+            resourceManager.checkResourcePath("REFERENCE_GENOME_HG38_FA");
+            resourceManager.checkResourcePath("REFERENCE_GENOME_HG19_FA");
+            return true;
+        } catch (ResourceException e) {
+            System.out.println("First checking if Liftover resources are ready, failed. So they will be downloaded");
         }
-        resourcesLocalPath = Paths.get("../../../data/opencga/resources/reference-genome").toAbsolutePath();
-        if (Files.exists(resourcesLocalPath)) {
-            if (!Files.exists(resourcePath.resolve("reference-genome"))) {
-                Files.createDirectories(resourcePath.resolve("reference-genome"));
-            }
-            if (resourcePath.resolve("reference-genome").toFile().listFiles().length != 4) {
-                for (java.io.File file : resourcesLocalPath.toFile().listFiles()) {
-                    java.io.File destFile = resourcePath.resolve("reference-genome").resolve(file.getName()).toFile();
-                    System.out.println("Copy from " + file + " to " + destFile.toPath());
-                    Files.copy(file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
+
+        try {
+            ResourceFetcherToolParams params = new ResourceFetcherToolParams()
+                    .setResources(Arrays.asList("REFERENCE_GENOME_HG*"));
+
+            Path fetcherOutdir = Paths.get(opencga.createTmpOutdir());
+            toolRunner.execute(ResourceFetcherTool.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, ParamConstants.ADMIN_STUDY),
+                    fetcherOutdir, null, false, opencga.getAdminToken());
+
+            System.out.println("fetcherOutdir = " + fetcherOutdir);
+
+            resourceManager.checkResourcePath("REFERENCE_GENOME_HG38_FA");
+            resourceManager.checkResourcePath("REFERENCE_GENOME_HG19_FA");
+            return true;
+        } catch (ResourceException | ToolException e) {
+            e.printStackTrace();
+            System.out.println("Error downloading Liftover resources via ResourceFetcherTool, so JUnit tests won't be executed");
+            return false;
         }
     }
 
