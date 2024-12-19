@@ -13,6 +13,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
@@ -152,7 +153,8 @@ public class OrganizationMongoDBAdaptorFactory {
 
     public OrganizationMongoDBAdaptorFactory(String organizationId, MongoDataStoreManager mongoDataStoreManager,
                                              MongoDBConfiguration mongoDBConfiguration, Configuration configuration,
-                                             IOManagerFactory ioManagerFactory) throws CatalogDBException {
+                                             CatalogIOManager catalogIOManager, IOManagerFactory ioManagerFactory)
+            throws CatalogDBException {
         logger = LoggerFactory.getLogger(OrganizationMongoDBAdaptorFactory.class);
         this.mongoManager = mongoDataStoreManager;
         this.organizationId = organizationId;
@@ -220,7 +222,7 @@ public class OrganizationMongoDBAdaptorFactory {
 
         sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, sampleArchivedCollection, deletedSampleCollection, configuration,
                 this);
-        studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, configuration, this);
+        studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, catalogIOManager, configuration, this);
         userDBAdaptor = new UserMongoDBAdaptor(userCollection, deletedUserCollection, configuration, this);
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, configuration, this);
         panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, panelArchivedCollection, deletedPanelCollection, configuration, this);

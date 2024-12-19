@@ -97,6 +97,7 @@ export default class File extends OpenCGAParentClass {
     * @param {String} [params.bioformat] - Comma separated Bioformat values. For existing Bioformats see files/bioformats.
     * @param {String} [params.format] - Comma separated Format values. For existing Formats see files/formats.
     * @param {Boolean} [params.external] - Boolean field indicating whether to filter by external or non external files.
+    * @param {Boolean} [params.resource] - Boolean field indicating whether the file is a resource or not.
     * @param {String} [params.status] - Filter by status.
     * @param {String} [params.internalStatus] - Filter by internal status.
     * @param {String} [params.internalVariantIndexStatus] - Filter by internal variant index status.
@@ -222,6 +223,7 @@ export default class File extends OpenCGAParentClass {
     * @param {String} [params.bioformat] - Comma separated Bioformat values. For existing Bioformats see files/bioformats.
     * @param {String} [params.format] - Comma separated Format values. For existing Formats see files/formats.
     * @param {Boolean} [params.external] - Boolean field indicating whether to filter by external or non external files.
+    * @param {Boolean} [params.resource] - Boolean field indicating whether the file is a resource or not.
     * @param {String} [params.status] - Filter by status.
     * @param {String} [params.internalStatus] - Filter by internal status.
     * @param {String} [params.internalVariantIndexStatus] - Filter by internal variant index status.
@@ -259,6 +261,7 @@ export default class File extends OpenCGAParentClass {
     *     ANNOTATION_GENEVSANNOTATION OTHER_NEWICK OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF OTHER_PED VCF4 VARIANT
     *     ALIGNMENT COVERAGE SEQUENCE PEDIGREE REFERENCE_GENOME NONE UNKNOWN"} [params.bioformat] - File bioformat.
     * @param {String} [params.checksum] - Expected MD5 file checksum.
+    * @param {Boolean} [params.resource] - Boolean field indicating whether the file is a resource or not.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @param {String} [params.relativeFilePath] - Path within catalog where the file will be located (default: root folder).
     * @param {String} [params.description] - description.

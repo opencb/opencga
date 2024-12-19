@@ -33,10 +33,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserAnalysisUtils;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -57,9 +59,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
-
-import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @Tool(id = ExomiserInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
@@ -75,6 +76,13 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
     private ClinicalAnalysis clinicalAnalysis;
 
+    private String dockerImage;
+    private String dockerImageVersion;
+
+    private static final String PREPARE_RESOURCES_STEP = "prepare-resources";
+    private static final String EXPORT_VARIANTS_STEP = "export-variants";
+    private static final String SAVE_INTERPRETATION_STEP = "save-interpretation";
+
     @Override
     protected InterpretationMethod getInterpretationMethod() {
         return getInterpretationMethod(ID);
@@ -83,6 +91,9 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     @Override
     protected void check() throws Exception {
         super.check();
+
+        // Update executor params with OpenCGA home and session ID
+        setUpStorageEngineExecutor(studyId);
 
         // Check study
         if (StringUtils.isEmpty(studyId)) {
@@ -135,30 +146,55 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
             logger.warn("Missing exomiser version, using the default {}", exomiserVersion);
         }
 
-        // Update executor params with OpenCGA home and session ID
-        setUpStorageEngineExecutor(studyId);
+        ExomiserAnalysisUtils.checkResources(exomiserVersion, studyId, catalogManager, token, getOpencgaHome());
     }
 
     @Override
-    protected void run() throws ToolException {
-        step(() -> {
-
-            executorParams.put(EXECUTOR_ID, ExomiserWrapperAnalysisExecutor.ID);
-            ExomiserWrapperAnalysisExecutor exomiserExecutor = getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
-                    .setStudyId(studyId)
-                    .setSampleId(sampleId)
-                    .setClinicalAnalysisType(clinicalAnalysisType)
-                    .setExomiserVersion(exomiserVersion);
-
-            exomiserExecutor.execute();
-
-            saveInterpretation(studyId, clinicalAnalysis, exomiserExecutor.getDockerImageName(), exomiserExecutor.getDockerImageVersion());
-        });
+    protected List<String> getSteps() {
+        return Arrays.asList(PREPARE_RESOURCES_STEP, EXPORT_VARIANTS_STEP, ExomiserWrapperAnalysis.ID, SAVE_INTERPRETATION_STEP);
     }
 
-    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, String dockerImage, String dockerImageVersion)
-            throws ToolException, StorageEngineException,
-            CatalogException, IOException {
+    @Override
+    protected void run() throws Exception {
+        // Main steps
+        step(PREPARE_RESOURCES_STEP, this::prepareResources);
+        step(EXPORT_VARIANTS_STEP, this::exportVariants);
+        step(ExomiserWrapperAnalysis.ID, this::runExomiser);
+        step(SAVE_INTERPRETATION_STEP, this::saveInterpretation);
+    }
+
+    private void prepareResources() throws ToolException {
+        ExomiserAnalysisUtils.prepareResources(sampleId, studyId, clinicalAnalysisType.name(), exomiserVersion, catalogManager, token,
+                getOutDir(), getOpencgaHome());
+    }
+
+    private void exportVariants() throws ToolException {
+        ExomiserAnalysisUtils.exportVariants(sampleId, studyId, clinicalAnalysisType.name(), getOutDir(), variantStorageManager, token);
+    }
+
+    private void runExomiser() throws ToolException, CatalogException {
+        ExomiserWrapperAnalysisExecutor executor = getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
+                .setExomiserVersion(exomiserVersion)
+                .setAssembly(ExomiserAnalysisUtils.checkAssembly(studyId, catalogManager, token))
+                .setExomiserDataPath(Paths.get(getOpencgaHome().toAbsolutePath().toAbsolutePath().toString(),
+                        ResourceManager.ANALYSIS_DIRNAME, ResourceManager.RESOURCES_DIRNAME, ExomiserWrapperAnalysis.ID))
+                .setSampleFile(ExomiserAnalysisUtils.getSamplePath(sampleId, getOutDir()))
+                .setVcfFile(ExomiserAnalysisUtils.getVcfPath(sampleId, getOutDir()));
+
+        for (File file : getOutDir().toFile().listFiles()) {
+            if (file.getName().endsWith(".ped")) {
+                executor.setPedigreeFile(file.toPath());
+                break;
+            }
+        }
+
+        dockerImage = executor.getDockerImageName();
+        dockerImageVersion = executor.getDockerImageVersion();
+
+        executor.execute();
+    }
+
+    private void saveInterpretation() throws ToolException, StorageEngineException, CatalogException, IOException {
         // Interpretation method
         InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.getInstance().getBuildVersion(),
                 GitRepositoryState.getInstance().getCommitId(), Collections.singletonList(
@@ -292,11 +328,12 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                         if (variantTranscriptMap.containsKey(normalizedToTsv.get(variant.toStringSimple()))) {
                             exomiserTranscripts.addAll(variantTranscriptMap.get(normalizedToTsv.get(variant.toStringSimple())));
                         } else {
-                            logger.warn("Variant {} (normalizedToTsv {}), not found in map variantTranscriptMap", variant.toStringSimple(),
-                                    normalizedToTsv.get(variant.toStringSimple()));
+                            logger.warn("Variant {} (normalizedToTsv {}), not found in map variantTranscriptMap",
+                                    variant != null ? variant.toStringSimple() : null,
+                                    variant != null ? normalizedToTsv.get(variant.toStringSimple()) : null);
                         }
                     } else {
-                        logger.warn("Variant {} not found in map normalizedToTsv", variant.toStringSimple());
+                        logger.warn("Variant {} not found in map normalizedToTsv", variant != null ? variant.toStringSimple() : null);
                     }
                     for (String[] fields : variantTsvMap.get(variant.toStringSimple())) {
                         ClinicalProperty.ModeOfInheritance moi = getModeOfInheritance(fields[4]);

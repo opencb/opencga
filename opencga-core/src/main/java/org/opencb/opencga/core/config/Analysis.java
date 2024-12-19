@@ -25,7 +25,7 @@ public class Analysis {
     private WorkflowConfiguration workflow;
 
     private String scratchDir;
-    private String resourceUrl;
+    private Resource resource;
 
     private String opencgaExtTools;
     private List<AnalysisTool> tools;
@@ -40,6 +40,20 @@ public class Analysis {
         tools = new ArrayList<>();
         execution = new Execution();
         frameworks = new ArrayList<>();
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Analysis{");
+        sb.append("packages=").append(packages);
+        sb.append(", scratchDir='").append(scratchDir).append('\'');
+        sb.append(", resource=").append(resource);
+        sb.append(", opencgaExtTools='").append(opencgaExtTools).append('\'');
+        sb.append(", tools=").append(tools);
+        sb.append(", execution=").append(execution);
+        sb.append(", frameworks=").append(frameworks);
+        sb.append('}');
+        return sb.toString();
     }
 
     public List<String> getPackages() {
@@ -69,12 +83,12 @@ public class Analysis {
         return this;
     }
 
-    public String getResourceUrl() {
-        return resourceUrl;
+    public Resource getResource() {
+        return resource;
     }
 
-    public Analysis setResourceUrl(String resourceUrl) {
-        this.resourceUrl = resourceUrl;
+    public Analysis setResource(Resource resource) {
+        this.resource = resource;
         return this;
     }
 

@@ -227,6 +227,9 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
+        @Parameter(names = {"--resource"}, description = "Indicates the file is treated as a resource.", required = false, arity = 1)
+        public Boolean resource;
+    
         @Parameter(names = {"--job-id"}, description = "The body web service jobId parameter", required = false, arity = 1)
         public String jobId;
     
@@ -285,6 +288,9 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--external"}, description = "Boolean field indicating whether to filter by external or non external files", required = false, arity = 1)
         public Boolean external; 
+    
+        @Parameter(names = {"--resource"}, description = "Boolean field indicating whether the file is a resource or not", required = false, arity = 1)
+        public Boolean resource; 
     
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
@@ -377,6 +383,9 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--url"}, description = "The body web service url parameter", required = true, arity = 1)
         public String url;
+    
+        @Parameter(names = {"--resource"}, description = "Indicates the file is treated as a resource.", required = false, arity = 1)
+        public Boolean resource;
     
         @Parameter(names = {"--path"}, description = "The body web service path parameter", required = false, arity = 1)
         public String path;
@@ -594,6 +603,9 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--external"}, description = "Boolean field indicating whether to filter by external or non external files", required = false, arity = 1)
         public Boolean external; 
+    
+        @Parameter(names = {"--resource"}, description = "Boolean field indicating whether the file is a resource or not", required = false, arity = 1)
+        public Boolean resource; 
     
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 

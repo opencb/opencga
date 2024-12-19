@@ -118,7 +118,7 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, group, id, members, stud
         #' @param operationId Audit operation UUID.
         #' @param userId User ID.
         #' @param action Action performed by the user.
-        #' @param resource Resource involved. Allowed values: ['AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA WORKFLOW FUNCTIONAL']
+        #' @param resource Resource involved. Allowed values: ['AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL WORKFLOW RESOURCE']
         #' @param resourceId Resource ID.
         #' @param resourceUuid resource UUID.
         #' @param status Filter by status. Allowed values: ['SUCCESS ERROR']

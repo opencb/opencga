@@ -106,7 +106,7 @@ public class CatalogManager implements AutoCloseable {
         logger.debug("CatalogManager configureIOManager");
         configureIOManager(configuration);
         logger.debug("CatalogManager configureDBAdaptorFactory");
-        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory);
+        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory, catalogIOManager);
         authorizationDBAdaptorFactory = new AuthorizationMongoDBAdaptorFactory((MongoDBAdaptorFactory) catalogDBAdaptorFactory,
                 configuration);
         authenticationFactory = new AuthenticationFactory(catalogDBAdaptorFactory, configuration);
@@ -366,6 +366,10 @@ public class CatalogManager implements AutoCloseable {
 
     public IOManagerFactory getIoManagerFactory() {
         return ioManagerFactory;
+    }
+
+    public CatalogIOManager getCatalogIOManager() {
+        return catalogIOManager;
     }
 
     private void configureIOManager(Configuration configuration) throws CatalogIOException {

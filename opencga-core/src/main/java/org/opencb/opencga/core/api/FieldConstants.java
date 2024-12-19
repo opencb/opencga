@@ -291,7 +291,8 @@ public class FieldConstants {
     public static final String FILE_CHECKSUM = "The checksum of the file.";
     public static final String FILE_PATH = "The path of the file.";
     public static final String FILE_URI = "The uri of the file.";
-    public static final String FILE_EXTERNAL = "Indicates the file is external or not.";
+    public static final String FILE_EXTERNAL = "Indicates whether the file comes from an external path or not.";
+    public static final String FILE_RESOURCE = "Indicates the file is treated as a resource.";
     public static final String FILE_SIZE = "The size of the file.";
     public static final String FILE_SOFTWARE = "Software related with file.";
     public static final String FILE_EXPERIMENT = "File experiment.";
@@ -575,12 +576,12 @@ public class FieldConstants {
     public static final String ALIGNMENT_QC_OVERWRITE_DESCRIPTION = "To overwrite the QC metrics already computed.";
 
     // Exomiser
-    public static final String EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION = "Clinical analysis ID.";
-    public static final String EXOMISER_SAMPLE_DESCRIPTION = "Sample ID.";
+    public static final String EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION = "Clinical analysis ID to be analysed.";
+    public static final String EXOMISER_SAMPLE_DESCRIPTION = "Sample ID to be analysed.";
     public static final String EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION = "Clinical analysis type: SINGLE or FAMILY.";
-    public static final String EXOMISER_VERSION_DESCRIPTION = "Exomiser version in the format X.Y where X is the major version and Y the"
-            + " minor version, e.g.: 14.0. If the version is not specified, the default version will be used. Refer to the configuration"
-            + " file to view all installed Exomiser versions and identify the default version.";
+    public static final String EXOMISER_VERSION_DESCRIPTION = "Exomiser version, e.g.: 14.0.0. If the version is not specified,"
+            + " the default version will be used. Refer to the configuration file to view all installed Exomiser versions and identify the"
+            + " default version.";
 
     // Liftover
     public static final String LIFTOVER_GRCH38 = "GRCh38";
@@ -593,4 +594,9 @@ public class FieldConstants {
             + " If left empty, the VCF files will be stored in the job folder. If the keyword " + LIFTOVER_VCF_INPUT_FOLDER
             + " is used, then VCF files be stored in the same folder as the input VCF files. Otherwise, they will be stored in the specified"
             + " destination path";
+
+    // Fetch resources
+    public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"
+            + " specified in the configuration file). The wildcard '*' can be used: for example, use '*' to fetch all resources, or"
+            + " 'EXOMISER_*' to fetch only Exomiser resources.";
 }

@@ -79,8 +79,9 @@ public final class Enums {
         CLINICAL,
         EXPRESSION,
         RGA,
+        FUNCTIONAL,
         WORKFLOW,
-        FUNCTIONAL;
+        RESOURCE;
 
         public List<String> getFullPermissionList() {
             switch (this) {

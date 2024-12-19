@@ -272,7 +272,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
 
         // Exomiser analysis files
-        List<String> exomiserVersions = Arrays.asList("13.1", "14.0");
+        List<String> exomiserVersions = Arrays.asList("13.1.0", "14.0.0");
         List<String> exomiserFiles = Arrays.asList("application.properties", "exomiser-analysis.yml", "output.yml");
         for (String exomiserVersion : exomiserVersions) {
             analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser").resolve(exomiserVersion).toAbsolutePath());
