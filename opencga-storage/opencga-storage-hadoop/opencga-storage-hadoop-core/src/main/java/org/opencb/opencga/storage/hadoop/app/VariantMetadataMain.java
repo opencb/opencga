@@ -8,6 +8,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -207,6 +208,10 @@ public class VariantMetadataMain extends AbstractMain {
             int studyId = mm.getStudyId(currentStudyName);
             mm.updateStudyMetadata(studyId, studyMetadata -> {
                 studyMetadata.setName(newStudyName);
+                studyMetadata.getAttributes().put("rename_" + TimeUtils.getTime(), new ObjectMap()
+                        .append("newName", newStudyName)
+                        .append("oldName", currentStudyName)
+                );
             });
         }
     }

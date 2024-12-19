@@ -13,13 +13,17 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
@@ -660,5 +664,22 @@ public class UserManagerTest extends AbstractManagerTest {
         catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, "ldap", remoteGroup, internalGroup, studyFqn, true, getAdminToken());
     }
 
+    @Test
+    public void syncUsersTest() throws CatalogException {
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, ParamUtils.UpdateAction.ADD);
+        QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        List<AuthenticationOrigin> authenticationOrigins = Collections.singletonList(new AuthenticationOrigin("CAS",
+                AuthenticationOrigin.AuthenticationType.SSO, null, null));
+        OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration()
+                .setAuthenticationOrigins(authenticationOrigins);
+        catalogManager.getOrganizationManager().updateConfiguration(organizationId, organizationConfiguration, queryOptions, orgAdminToken1);
+
+        catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, "CAS", "opencb", "opencb", studyFqn, true, opencgaToken);
+        OpenCGAResult<Group> opencb = catalogManager.getStudyManager().getGroup(studyFqn, "opencb", studyAdminToken1);
+        assertEquals(1, opencb.getNumResults());
+        assertEquals("@opencb", opencb.first().getId());
+    }
 
 }
