@@ -40,15 +40,6 @@ fi
 if [ $TARGET_ASSEMBLY == "GRCh38" ]; then
     echo "Liftover from GRCh37 to $TARGET_ASSEMBLY"
 
-    ## Prepare GRCh37 and GRCh38 reference genomes
-#    if [ ! -f "${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz" ]; then
-#      wget --no-check-certificate https://resources.opencb.org/opencb/opencga/analysis/commons/reference-genomes/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz
-#    fi
-#
-#    if [ ! -f Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz ]; then
-#      wget --no-check-certificate https://resources.opencb.org/opencb/opencga/analysis/commons/reference-genomes/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
-#    fi
-
     echo "gunzip ${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
     gunzip ${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz
     SOURCE_REFERENCE_FILE="${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh37.dna.primary_assembly.fa"
@@ -61,16 +52,7 @@ if [ $TARGET_ASSEMBLY == "GRCh38" ]; then
     wget http://ftp.ensembl.org/pub/assembly_mapping/homo_sapiens/GRCh37_to_GRCh38.chain.gz -O $CHAIN_FILE
 elif [ $TARGET_ASSEMBLY == "hg38" ]; then
     echo "Liftover from hg19 to $TARGET_ASSEMBLY"
-#
-#    ## Prepare hg19 and hg38 reference genomes
-#    if [ ! -f hg19.fa.gz ]; then
-#      wget https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz
-#    fi
-#
-#    if [ ! -f hg38.fa.gz ]; then
-#      wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
-#    fi
-#
+
     echo "gunzip ${LOCAL_RESOURCES_DIR}/hg19.fa.gz"
     gunzip ${LOCAL_RESOURCES_DIR}/hg19.fa.gz
     SOURCE_REFERENCE_FILE="${LOCAL_RESOURCES_DIR}/hg19.fa"
