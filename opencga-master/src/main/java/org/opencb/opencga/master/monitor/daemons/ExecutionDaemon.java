@@ -500,7 +500,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
         for (String organizationId : organizationIds) {
             try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, pendingJobsQuery, queryOptions, token)) {
-                pendingJobs.add(iterator.next());
+                while (iterator.hasNext()) {
+                    pendingJobs.add(iterator.next());
+                }
             } catch (Exception e) {
                 logger.error("Error listing pending jobs from organization {}", organizationId, e);
                 return;
@@ -674,7 +676,11 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
     private void checkIndexedSamplesQuota(Job job) throws CatalogException {
         if (!job.getTool().getId().equals(VariantIndexOperationTool.ID)) {
-            logger.debug("Check indexed samples quota. Skipping '{}' because it is not a variant index job.", job.getId());
+            logger.debug("Check variant index samples quota. Skipping '{}' because it is not a variant index job.", job.getId());
+            return;
+        }
+        if (catalogManager.getConfiguration().getQuota().getMaxNumVariantIndexSamples() <= 0) {
+            logger.debug("Check variant index samples quota. Skipping '{}' because the quota is set to 0.", job.getId());
             return;
         }
 
@@ -710,9 +716,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
         long nonIncludedSamples = sampleIds.stream().filter(sampleId -> !indexedSamples.contains(sampleId)).count();
 
-        if (catalogManager.getConfiguration().getQuota().getMaxNumIndexedSamples() < nonIncludedSamples + indexedSamples.size()) {
+        if (catalogManager.getConfiguration().getQuota().getMaxNumVariantIndexSamples() < nonIncludedSamples + indexedSamples.size()) {
             throw new CatalogException("Can't index more samples. The project '" + projectFqn + "' has reached the maximum quota of"
-                    + " indexed samples (" + catalogManager.getConfiguration().getQuota().getMaxNumJobHours() + ").");
+                    + " indexed samples (" + catalogManager.getConfiguration().getQuota().getMaxNumVariantIndexSamples() + ").");
         }
     }
 

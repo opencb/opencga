@@ -928,7 +928,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
 //                    case END_TIME:
 //                    case OUTPUT_ERROR:
 //                    case EXECUTION_START:
-//                    case EXECUTION_END:
+                    case EXECUTION_END:
 //                    case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:

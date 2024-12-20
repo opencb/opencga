@@ -60,11 +60,11 @@ monitor:
   fileDaemonInterval: 8000      # number of milliseconds between checks
   port: 9092
 
-quota:                        # Quotas per organisation
-  maxNumUsers: 100            # Maximum number of users that an organisation can have
-  maxNumProjects: 100         # Maximum number of projects that an organisation can have
-  maxNumIndexedSamples: 15000 # Maximum number of indexed samples that an organisation can have
-  maxNumJobHours: 100         # Maximum number of hours that the organisation can use in jobs on a monthly basis
+quota:                             # Quotas per organisation
+  maxNumUsers: 0                  # Maximum number of users that an organisation can have
+  maxNumProjects: 0                # Maximum number of projects that an organisation can have
+  maxNumVariantIndexSamples: 15000 # Maximum number of variant index samples that an organisation can have
+  maxNumJobHours: 100              # Maximum number of hours that the organisation can use in jobs on a monthly basis
 
 email:
   host: "localhost"

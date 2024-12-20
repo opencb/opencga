@@ -614,11 +614,30 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
+    /**
+     * Method to reschedule a list of jobs. Only intended for "Opencga" administrators.
+     * @param studyStr study where the list of jobs belong.
+     * @param jobUids  List of job uids to be rescheduled.
+     * @param scheduledStartTime New scheduled start time.
+     * @param token OpenCGA token.
+     * @return OpenCGAResult with the list of jobs that have been rescheduled.
+     * @throws CatalogException if there is any error.
+     */
     public OpenCGAResult<Job> rescheduleJobs(String studyStr, List<Long> jobUids, String scheduledStartTime, String token)
             throws CatalogException {
         return rescheduleJobs(studyStr, jobUids, scheduledStartTime, null, token);
     }
 
+    /**
+     * Method to reschedule a list of jobs. Only intended for "Opencga" administrators.
+     * @param studyStr study where the list of jobs belong.
+     * @param jobUids  List of job uids to be rescheduled.
+     * @param scheduledStartTime New scheduled start time.
+     * @param eventMessage Event message to be added to the rescheduled jobs.
+     * @param token OpenCGA token.
+     * @return OpenCGAResult with the list of jobs that have been rescheduled.
+     * @throws CatalogException if there is any error.
+     */
     public OpenCGAResult<Job> rescheduleJobs(String studyStr, List<Long> jobUids, String scheduledStartTime, String eventMessage,
                                              String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
@@ -634,7 +653,7 @@ public class JobManager extends ResourceManager<Job> {
                 .append("token", token);
         try {
             Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
-            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsOpencgaAdministrator(tokenPayload);
 
             if (CollectionUtils.isEmpty(jobUids)) {
                 throw new CatalogException("Missing job uids");
@@ -688,9 +707,12 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public boolean exceedsExecutionLimitQuota(String organizationId) throws CatalogException {
+        if (configuration.getQuota().getMaxNumJobHours() <= 0) {
+            return false;
+        }
         // Get current year/month
         String time = TimeUtils.getTime(TimeUtils.getDate(), TimeUtils.yyyyMM);
-        Query query = new Query(JobDBAdaptor.QueryParams.MODIFICATION_DATE.key(), time);
+        Query query = new Query(JobDBAdaptor.QueryParams.EXECUTION_END.key(), time);
         OpenCGAResult<ExecutionTime> result = getJobDBAdaptor(organizationId).executionTimeByMonth(query);
         if (result.getNumResults() > 0) {
             ExecutionTime executionTime = result.first();

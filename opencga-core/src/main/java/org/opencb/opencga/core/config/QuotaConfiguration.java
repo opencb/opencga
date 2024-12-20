@@ -4,21 +4,32 @@ public class QuotaConfiguration {
 
     private int maxNumUsers;
     private int maxNumProjects;
-    private int maxNumIndexedSamples;
+    private int maxNumVariantIndexSamples;
     private int maxNumJobHours;
 
     public QuotaConfiguration() {
     }
 
-    public QuotaConfiguration(int maxNumUsers, int maxNumProjects, int maxNumIndexedSamples, int maxNumJobHours) {
+    public QuotaConfiguration(int maxNumUsers, int maxNumProjects, int maxNumVariantIndexSamples, int maxNumJobHours) {
         this.maxNumUsers = maxNumUsers;
         this.maxNumProjects = maxNumProjects;
-        this.maxNumIndexedSamples = maxNumIndexedSamples;
+        this.maxNumVariantIndexSamples = maxNumVariantIndexSamples;
         this.maxNumJobHours = maxNumJobHours;
     }
 
     public static QuotaConfiguration init() {
-        return new QuotaConfiguration(15, 5, 15000, 100);
+        return new QuotaConfiguration(0, 0, 0, 0);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("QuotaConfiguration{");
+        sb.append("maxNumUsers=").append(maxNumUsers);
+        sb.append(", maxNumProjects=").append(maxNumProjects);
+        sb.append(", maxNumVariantIndexSamples=").append(maxNumVariantIndexSamples);
+        sb.append(", maxNumJobHours=").append(maxNumJobHours);
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getMaxNumUsers() {
@@ -39,12 +50,12 @@ public class QuotaConfiguration {
         return this;
     }
 
-    public int getMaxNumIndexedSamples() {
-        return maxNumIndexedSamples;
+    public int getMaxNumVariantIndexSamples() {
+        return maxNumVariantIndexSamples;
     }
 
-    public QuotaConfiguration setMaxNumIndexedSamples(int maxNumIndexedSamples) {
-        this.maxNumIndexedSamples = maxNumIndexedSamples;
+    public QuotaConfiguration setMaxNumVariantIndexSamples(int maxNumVariantIndexSamples) {
+        this.maxNumVariantIndexSamples = maxNumVariantIndexSamples;
         return this;
     }
 

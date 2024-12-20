@@ -223,6 +223,10 @@ public class UserManager extends AbstractManager {
     }
 
     private void checkUserLimitQuota(String organizationId) throws CatalogException {
+        if (configuration.getQuota().getMaxNumUsers() <= 0) {
+            logger.debug("Skipping user quota check. No limit set.");
+            return;
+        }
         // Check if we have already reached the limit of users in the Organisation
         long numUsers = getUserDBAdaptor(organizationId).count(new Query()).getNumMatches();
         if (numUsers >= configuration.getQuota().getMaxNumUsers()) {

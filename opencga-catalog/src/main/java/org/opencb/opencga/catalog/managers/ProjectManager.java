@@ -206,6 +206,10 @@ public class ProjectManager extends AbstractManager {
     }
 
     private void checkProjectLimitQuota(String organizationId) throws CatalogException {
+        if (configuration.getQuota().getMaxNumProjects() <= 0) {
+            logger.debug("No project limit quota set. Skipping quota check.");
+            return;
+        }
         long numProjects = getProjectDBAdaptor(organizationId).count(new Query()).getNumMatches();
         if (numProjects >= configuration.getQuota().getMaxNumProjects()) {
             throw new CatalogException("The organization '" + organizationId + "' has reached the maximum quota of projects ("

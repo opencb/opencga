@@ -1004,7 +1004,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Date firstDayOfNextMonth = TimeUtils.getFirstDayOfNextMonth(new Date());
         String scheduleStartTime = TimeUtils.getTime(firstDayOfNextMonth);
         catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime, "My message",
-                ownerToken);
+                opencgaToken);
 
         OpenCGAResult<Job> result = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), ownerToken);
         assertEquals(1, result.getNumResults());
@@ -1012,10 +1012,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(1, result.first().getInternal().getEvents().size());
         assertEquals("My message", result.first().getInternal().getEvents().get(0).getMessage());
 
+        // Ensure only "opencga" are authorised
+        assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime,
+                        "My message", ownerToken));
         CatalogAuthorizationException authException = assertThrows(CatalogAuthorizationException.class,
                 () -> catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime,
                         "My message", normalToken1));
-        assertTrue(authException.getMessage().contains("study administrators"));
+        assertTrue(authException.getMessage().contains("OPENCGA ADMINISTRATOR"));
     }
 
     /**
