@@ -11,16 +11,17 @@ class _ParentRestClient(object):
         self.auto_refresh = auto_refresh
         self._cfg = configuration
         self.token = token
+        self.refresh_token = None
         self.login_handler = login_handler
         self.on_retry = None
 
     def _client_login_handler(self):
         if self.login_handler:
-            self.token = self.login_handler()
+            self.token, self.refresh_token = self.login_handler()
 
     def _refresh_token_client(self):
         if self.login_handler:
-            self.token = self.login_handler(refresh=True)
+            self.token, self.refresh_token = self.login_handler(refresh=True)
 
     @staticmethod
     def _get_query_id_str(query_ids):
