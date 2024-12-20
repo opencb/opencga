@@ -19,6 +19,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Optimizations;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteType;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
@@ -164,6 +165,7 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
             putNestedIfNotNull(beanParams, "valueType", commandOptions.valueType, true);
@@ -186,6 +188,7 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("scope", commandOptions.scope);
         queryParams.putIfNotEmpty("visibility", commandOptions.visibility);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
@@ -230,6 +233,7 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), NoteUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
 
