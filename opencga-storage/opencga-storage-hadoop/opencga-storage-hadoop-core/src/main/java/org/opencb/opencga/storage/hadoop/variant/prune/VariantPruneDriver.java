@@ -21,6 +21,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
+import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
@@ -60,7 +61,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
 
     @Override
     protected String getJobOperationName() {
-        return "vairants-prune";
+        return "variants-prune";
     }
 
     @Override
@@ -82,9 +83,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
                 params.updateParams(new HashMap<>(Collections.singletonMap(key, value)));
             }
         }
-        output = new MapReduceOutputFile(
-                () -> "variant_prune_report." + TimeUtils.getTime() + ".txt",
-                "variant_prune_report");
+        output = initMapReduceOutputFile(() -> "variant_prune_report." + TimeUtils.getTime() + ".txt");
     }
 
     @Override
