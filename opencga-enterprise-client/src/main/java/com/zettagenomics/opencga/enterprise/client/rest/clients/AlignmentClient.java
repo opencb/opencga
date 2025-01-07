@@ -20,9 +20,10 @@ import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
 import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
@@ -50,7 +51,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Alignment webservices.
  *    PATH: analysis/alignment
  */
-public class AlignmentClient extends AbstractParentClient {
+public class AlignmentClient extends ParentClient {
 
     public AlignmentClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
@@ -79,7 +80,7 @@ public class AlignmentClient extends AbstractParentClient {
     }
 
     /**
-     * Compute coverage for a list of alignment files.
+     * Compute the coverage from a given BAM alignment file, e.g., create a .bw file from a .bam file.
      * @param data Coverage computation parameters.
      * @param params Map containing any of the following optional parameters.
      *       study: study.
@@ -232,7 +233,7 @@ public class AlignmentClient extends AbstractParentClient {
     }
 
     /**
-     * Index alignment file.
+     * Index a given alignment file BAM/CRAM, e.g., create a .bai file from a .bam file.
      * @param data Alignment index params.
      * @param params Map containing any of the following optional parameters.
      *       study: study.
