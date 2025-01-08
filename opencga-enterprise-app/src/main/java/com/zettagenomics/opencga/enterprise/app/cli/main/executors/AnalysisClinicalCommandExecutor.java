@@ -430,7 +430,6 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.AggregationStatsCvdbCaseCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbCaseCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
@@ -541,7 +540,6 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.QueryCvdbCaseCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbCaseCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -696,7 +694,6 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.AggregationStatsCvdbInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbInterpretationCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
@@ -807,7 +804,6 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.QueryCvdbInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbInterpretationCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -921,7 +917,6 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.AggregationStatsCvdbVariantCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbVariantCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
@@ -1032,7 +1027,6 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.QueryCvdbVariantCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbVariantCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -1146,7 +1140,6 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.CvdbVariantStatsCommandOptions commandOptions = analysisClinicalCommandOptions.cvdbVariantStatsCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
 
@@ -1159,7 +1152,6 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.AggregationStatsCvdbVariantEvidenceCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbVariantEvidenceCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
@@ -1270,7 +1262,6 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         AnalysisClinicalCommandOptions.QueryCvdbVariantEvidenceCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbVariantEvidenceCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("include", commandOptions.include);

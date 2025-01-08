@@ -31,9 +31,6 @@ public class ParamConstants {
 
     public static final int DEFAULT_LIMIT = 100;
 
-    public static final String ORGANIZATION_PARAM_DESCRIPTION = "Organization ID";
-    public static final String ORGANIZATION_PARAM_NAME = "organizationId";
-
     public static final String PROJECT_PARAM_DESCRIPTION = "Project ID";
     public static final String PROJECT_PARAM_NAME = "project";
 

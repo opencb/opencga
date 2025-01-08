@@ -43,7 +43,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.STUDY_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_ANALYSES_COLLECTION_SUFFIX;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
@@ -227,7 +228,6 @@ public class CvdbSolrEngineIndexTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(CA_ID_NAME, caId);
 
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
@@ -269,7 +269,6 @@ public class CvdbSolrEngineIndexTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(CA_ID_NAME, caId);
 
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
@@ -372,7 +371,6 @@ public class CvdbSolrEngineIndexTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         query.put(CA_ID_NAME, caId);
 
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);

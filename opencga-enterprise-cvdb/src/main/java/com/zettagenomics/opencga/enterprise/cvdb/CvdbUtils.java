@@ -73,15 +73,24 @@ public class CvdbUtils {
 
         for (ClinicalVariant cv : result.getResults()) {
             DataResult<ClinicalVariantSummaryStats> summaryStatsResult = cvdbEngine.getClinicalVariantSummaryStats(cv.getId(),
-                    interpretationStatusId, null, null, token);
+                    interpretationStatusId, null, token);
             cv.setStats(summaryStatsResult.first());
         }
 
         return result;
     }
 
-    public static String getCollectionName(String prefix, String organizationId, String projectId, String suffix) {
-        return prefix + "_cvdb_" + organizationId + "_" + projectId + suffix;
+    public static String getCollectionPrefix(String databasePrefix, String organizationId) {
+        return databasePrefix + "_cvdb_" + organizationId;
+    }
+
+    public static String getCollectionName(String prefix, String projectId, String suffix) {
+        return prefix + "_" + projectId + suffix;
+    }
+
+    public static String getCollectionName(String databasePrefix, String organizationId, String projectId, String suffix) {
+        String prefix = CvdbUtils.getCollectionPrefix(databasePrefix, organizationId);
+        return CvdbUtils.getCollectionName(prefix, projectId, suffix);
     }
 }
 

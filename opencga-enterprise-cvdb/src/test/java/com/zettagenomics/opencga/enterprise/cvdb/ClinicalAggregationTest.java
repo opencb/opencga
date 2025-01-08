@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.ORGANIZATION_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
@@ -120,7 +119,6 @@ public class ClinicalAggregationTest {
 //        queryOptions.put(QueryOptions.FACET, CA_DISORDER_ID_NAME);
         queryOptions.put(QueryOptions.FACET, facetName);
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, userToken);
         assertEquals(1, facetResult.getNumResults());
         assertEquals(2, facetResult.first().getCount());
@@ -141,7 +139,6 @@ public class ClinicalAggregationTest {
 //        queryOptions.put(QueryOptions.FACET, CA_TYPE_NAME + FACET_SEPARATOR + CA_DISORDER_ID_NAME);
         queryOptions.put(QueryOptions.FACET, "type" + FACET_SEPARATOR + "disorderId");
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, userToken);
         assertEquals(2, facetResult.getNumResults());
         Set<String> fieldNames = facetResult.getResults().stream().map(f -> f.getName()).collect(Collectors.toSet());
@@ -164,7 +161,6 @@ public class ClinicalAggregationTest {
         queryOptions.put(QueryOptions.FACET, "type" + FacetQueryParser.NESTED_FACET_SEPARATOR + "disorderId");
 //        queryOptions.put(QueryOptions.FACET, CA_TYPE_NAME + FacetQueryParser.NESTED_FACET_SEPARATOR + CA_DISORDER_ID_NAME);
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(ORGANIZATION_PARAM_NAME, organizationId);
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, userToken);
         assertEquals(1, facetResult.getNumResults());
         assertEquals("type", facetResult.first().getName());

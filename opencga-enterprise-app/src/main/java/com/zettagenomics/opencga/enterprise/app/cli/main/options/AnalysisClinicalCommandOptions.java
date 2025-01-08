@@ -377,9 +377,6 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
-        public String organizationId; 
-    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
@@ -678,9 +675,6 @@ public class AnalysisClinicalCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
-        public String organizationId; 
     
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
@@ -1037,9 +1031,6 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
-        public String organizationId; 
-    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
@@ -1338,9 +1329,6 @@ public class AnalysisClinicalCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
-        public String organizationId; 
     
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
@@ -1650,9 +1638,6 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
-        public String organizationId; 
-    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
@@ -1951,9 +1936,6 @@ public class AnalysisClinicalCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
-        public String organizationId; 
     
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
@@ -2266,9 +2248,6 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--variant-ids"}, description = "Comma separated list of variant IDs", required = true, arity = 1)
         public String variantIds; 
     
-        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
-        public String organizationId; 
-    
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
@@ -2282,9 +2261,6 @@ public class AnalysisClinicalCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
-        public String organizationId; 
     
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
@@ -2584,9 +2560,6 @@ public class AnalysisClinicalCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--organization-id"}, description = "Organization ID", required = false, arity = 1)
-        public String organizationId; 
     
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
