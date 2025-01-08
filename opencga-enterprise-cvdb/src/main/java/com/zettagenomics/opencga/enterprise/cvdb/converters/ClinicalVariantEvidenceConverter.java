@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -135,7 +136,17 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
         List<ClinicalVariantEvidence> cveList = new ArrayList<>();
         for (ClinicalVariantEvidenceSearch cves : cvesList) {
             try {
-                cveList.add(clinicalVariantEvidenceReader.readValue(cves.getJson()));
+                ClinicalVariantEvidence cve = clinicalVariantEvidenceReader.readValue(cves.getJson());
+                // Add clinical analysis, interpretation and study in attributes
+                if (cve.getAttributes() == null) {
+                    cve.setAttributes(new HashMap<>());
+                }
+                addStudyIdAsAttribute(cves.getStudyId(), cve.getAttributes());
+                addClinicalAnalysisIdAsAttribute(cves.getCaId(), cve.getAttributes());
+                addClinicalInterpretationIdAsAttribute(cves.getCiId(), cve.getAttributes());
+                addClinicalVariantIdAsAttribute(cves.getVariantId(), cve.getAttributes());
+
+                cveList.add(cve);
             } catch (JsonProcessingException e) {
                 throw new CvdbException("Error when converting to clinical variant evidence", e);
             }

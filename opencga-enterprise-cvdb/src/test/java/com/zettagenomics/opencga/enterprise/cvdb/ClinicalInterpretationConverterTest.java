@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -67,6 +68,10 @@ public class ClinicalInterpretationConverterTest {
         List<ClinicalVariant> cvList = cvConverter.toClinicalVariant(cvsList);
         assertEquals(ci.getPrimaryFindings().get(0).toStringSimple(), cvList.get(0).toStringSimple());
         assertEquals(ci.getPrimaryFindings().get(1).toStringSimple(), cvList.get(1).toStringSimple());
+        System.out.println("cvList.get(0).getAttributes() = " + cvList.get(0).getAttributes());
+        assertEquals(studyId, cvList.get(0).getAttributes().get(OPENCGA_STUDY_ID));
+        assertEquals(ca.getId(), cvList.get(0).getAttributes().get(OPENCGA_CLINICAL_ANALYSIS_ID));
+        assertEquals(ci.getId(), cvList.get(0).getAttributes().get(OPENCGA_CLINICAL_INTERPRETATION_ID));
 
         // Clinical variant evidence
         ClinicalVariantEvidenceConverter cveConverter = new ClinicalVariantEvidenceConverter();
@@ -83,5 +88,9 @@ public class ClinicalInterpretationConverterTest {
 
         List<ClinicalVariantEvidence> cveList = cveConverter.toClinicalVariantEvidence(cvesList);
         assertEquals(ci.getPrimaryFindings().get(0).getEvidences().size(), cveList.size());
+        System.out.println("cveList.get(0).getAttributes() = " + cveList.get(0).getAttributes());
+        assertEquals(studyId, cveList.get(0).getAttributes().get(OPENCGA_STUDY_ID));
+        assertEquals(ca.getId(), cveList.get(0).getAttributes().get(OPENCGA_CLINICAL_ANALYSIS_ID));
+        assertEquals(ci.getId(), cveList.get(0).getAttributes().get(OPENCGA_CLINICAL_INTERPRETATION_ID));
     }
 }

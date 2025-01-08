@@ -5,19 +5,19 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 
 public class SearchConverter<M, N> {
 
@@ -92,5 +92,21 @@ public class SearchConverter<M, N> {
                 cv.setAnnotation(null);
             }
         }
+    }
+
+    protected void addStudyIdAsAttribute(String studyId, Map<String, Object> attributes) {
+        attributes.put(OPENCGA_STUDY_ID, studyId);
+    }
+
+    protected void addClinicalAnalysisIdAsAttribute(String caId, Map<String, Object> attributes) {
+        attributes.put(OPENCGA_CLINICAL_ANALYSIS_ID, caId);
+    }
+
+    protected void addClinicalInterpretationIdAsAttribute(String ciId, Map<String, Object> attributes) {
+        attributes.put(OPENCGA_CLINICAL_INTERPRETATION_ID, ciId);
+    }
+
+    protected void addClinicalVariantIdAsAttribute(String variantId, Map<String, Object> attributes) {
+        attributes.put(OPENCGA_CLINICAL_VARIANT_ID, variantId);
     }
 }

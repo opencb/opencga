@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -153,6 +154,14 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
                     }
                     cv.setConfidence(confidence);
                 }
+
+                // Add clinical analysis, interpretation and study in attributes
+                if (cv.getAttributes() == null) {
+                    cv.setAttributes(new HashMap<>());
+                }
+                addStudyIdAsAttribute(cvs.getStudyId(), cv.getAttributes());
+                addClinicalAnalysisIdAsAttribute(cvs.getCaId(), cv.getAttributes());
+                addClinicalInterpretationIdAsAttribute(cvs.getCiId(), cv.getAttributes());
 
                 // Add to the list
                 cvList.add(cv);
