@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
@@ -298,6 +299,26 @@ public class CvdbSolrEngine {
                     QueryOptions.empty(), token);
             if (caResult.getNumResults() == 1) {
                 ClinicalAnalysis clinicalAnalysis = caResult.first();
+
+                // If overwrite, we need to remove interpretations, clinical variants and evidences for that clinical analysis
+                if (overwrite) {
+                    try {
+                        remove(caId, organizationId, projectId);
+                    } catch (CvdbException e) {
+                        String key = caId + " (" + study.getFqn() + ")";
+                        failures.put(key, e.getMessage());
+                        try {
+                            updateClinicalAnalysisCvdbIndexStatus(study.getFqn(), clinicalAnalysis,
+                                    new CvdbIndexStatus(ERROR, e.getMessage()), token);
+                        } catch (CvdbException ex) {
+                            logger.warn("Error when indexing clinical analysis " + clinicalAnalysis.getId(), ex);
+                        }
+
+                        // next
+                        continue;
+                    }
+                }
+
                 try {
                     if (index(clinicalAnalysis, organizationId, projectId, study.getFqn(), caIdUserIdsMap.get(caId), overwrite)) {
                         numIndexed++;
@@ -325,6 +346,47 @@ public class CvdbSolrEngine {
         }
 
         return new CvdbIndexResult(numIndexed, failures, (int) stopWatch.getTime(TimeUnit.SECONDS));
+    }
+
+    private void remove(String caId, String organizationId, String projectId) throws CvdbException {
+        logger.info("Removing interpretations, clinical variants and evidences for the clinical analysis {}", caId);
+
+        SolrClient solrClient = getSolrClient();
+
+        try {
+            UpdateResponse updateResponse;
+
+            String query = CA_ID_NAME + ":" + ClientUtils.escapeQueryChars(caId);
+
+            // Delete interpretations for that clinical analysis
+            String ciCollectionName = getCollectionName(organizationId, projectId, INTERPRETATIONS_COLLECTION_SUFFIX);
+            updateResponse = solrClient.deleteByQuery(ciCollectionName, query);
+            if (updateResponse.getStatus() != 0) {
+                rollback(solrClient, updateResponse.getStatus());
+            }
+            // Delete clinical variants for that clinical analysis
+            String cvCollectionName = getCollectionName(organizationId, projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX);
+            updateResponse = solrClient.deleteByQuery(cvCollectionName, query);
+            if (updateResponse.getStatus() != 0) {
+                rollback(solrClient, updateResponse.getStatus());
+            }
+
+            // Delete clinical evidences for that clinical analysis
+            String cveCollectionName = getCollectionName(organizationId, projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
+            updateResponse = solrClient.deleteByQuery(cveCollectionName, query);
+            if (updateResponse.getStatus() != 0) {
+                rollback(solrClient, updateResponse.getStatus());
+            }
+
+            // Commit
+            solrClient.commit(ciCollectionName);
+            solrClient.commit(cvCollectionName);
+            solrClient.commit(cveCollectionName);
+        } catch (SolrServerException | IOException e) {
+            logger.warn("Error removing interpretations, clinical variants and evidences for clinical analysis {}: {}", caId,
+                    e.getMessage());
+            rollback(solrClient, e);
+        }
     }
 
     //----------------------------------------------------------------------
