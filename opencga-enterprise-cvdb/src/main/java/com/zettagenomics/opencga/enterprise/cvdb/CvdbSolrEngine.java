@@ -303,7 +303,7 @@ public class CvdbSolrEngine {
                 // If overwrite, we need to remove interpretations, clinical variants and evidences for that clinical analysis
                 if (overwrite) {
                     try {
-                        remove(caId, organizationId, projectId);
+                        removeClinicalAnalysis(caId, organizationId, projectId, study.getId());
                     } catch (CvdbException e) {
                         String key = caId + " (" + study.getFqn() + ")";
                         failures.put(key, e.getMessage());
@@ -320,7 +320,7 @@ public class CvdbSolrEngine {
                 }
 
                 try {
-                    if (index(clinicalAnalysis, organizationId, projectId, study.getFqn(), caIdUserIdsMap.get(caId), overwrite)) {
+                    if (index(clinicalAnalysis, organizationId, projectId, study.getFqn(), caIdUserIdsMap.get(caId))) {
                         numIndexed++;
                         updateClinicalAnalysisCvdbIndexStatus(study.getFqn(), clinicalAnalysis, new CvdbIndexStatus(READY), token);
                     } else {
@@ -348,15 +348,24 @@ public class CvdbSolrEngine {
         return new CvdbIndexResult(numIndexed, failures, (int) stopWatch.getTime(TimeUnit.SECONDS));
     }
 
-    private void remove(String caId, String organizationId, String projectId) throws CvdbException {
-        logger.info("Removing interpretations, clinical variants and evidences for the clinical analysis {}", caId);
+    private void removeClinicalAnalysis(String caId, String organizationId, String projectId, String studyId) throws CvdbException {
+        logger.info("Removing clinical analysis {} and its interpretations, clinical variants and evidences", caId);
 
         SolrClient solrClient = getSolrClient();
 
         try {
             UpdateResponse updateResponse;
 
-            String query = CA_ID_NAME + ":" + ClientUtils.escapeQueryChars(caId);
+            // Delete clinical analysis
+            String query = "id:" + ClientUtils.escapeQueryChars(caId) + " AND " + "studyId:" + ClientUtils.escapeQueryChars(studyId);
+            String caCollectionName = getCollectionName(organizationId, projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX);
+            updateResponse = solrClient.deleteByQuery(caCollectionName, query);
+            if (updateResponse.getStatus() != 0) {
+                rollback(solrClient, updateResponse.getStatus());
+            }
+
+            // Change query for the other collections
+            query = CA_ID_NAME + ":" + ClientUtils.escapeQueryChars(caId) + " AND " + "studyId:" + ClientUtils.escapeQueryChars(studyId);
 
             // Delete interpretations for that clinical analysis
             String ciCollectionName = getCollectionName(organizationId, projectId, INTERPRETATIONS_COLLECTION_SUFFIX);
@@ -379,6 +388,7 @@ public class CvdbSolrEngine {
             }
 
             // Commit
+            solrClient.commit(caCollectionName);
             solrClient.commit(ciCollectionName);
             solrClient.commit(cvCollectionName);
             solrClient.commit(cveCollectionName);
@@ -1043,13 +1053,13 @@ public class CvdbSolrEngine {
         }
     }
 
-    private boolean index(ClinicalAnalysis clinicalAnalysis, String organizationId, String projectId, String studyId, List<String> viewers,
-                          boolean overwrite) throws CvdbException {
+    private boolean index(ClinicalAnalysis clinicalAnalysis, String organizationId, String projectId, String studyId, List<String> viewers)
+            throws CvdbException {
         SolrClient solrClient = solrManager.getSolrClient();
 
         try {
             // Index
-            if (index(clinicalAnalysis, organizationId, projectId, studyId, viewers, overwrite, solrClient)) {
+            if (index(clinicalAnalysis, organizationId, projectId, studyId, viewers, solrClient)) {
                 // Commit
                 solrClient.commit(getCollectionName(organizationId, projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
                 solrClient.commit(getCollectionName(organizationId, projectId, INTERPRETATIONS_COLLECTION_SUFFIX));
@@ -1066,23 +1076,20 @@ public class CvdbSolrEngine {
     }
 
     private boolean index(ClinicalAnalysis clinicalAnalysis, String organizationId, String projectId, String studyId, List<String> viewers,
-                          boolean overwrite, SolrClient solrClient) throws CvdbException {
+                          SolrClient solrClient) throws CvdbException {
         try {
             logger.info("Indexing clinical analysis {} ...", clinicalAnalysis.getId());
             UpdateResponse updateResponse;
 
             boolean exists;
-            if (overwrite) {
-                exists = false;
-            } else {
-                try {
-                    exists = clinicalAnalysisExists(clinicalAnalysis.getId(), getCollectionName(organizationId, projectId,
-                                    CLINICAL_ANALYSES_COLLECTION_SUFFIX),
-                            solrClient);
-                } catch (SolrServerException | IOException e) {
-                    logger.warn("Something wrong happened, clinical analysis {} could not be indexed: {}", clinicalAnalysis.getId(), e.getMessage());
-                    return false;
-                }
+            try {
+                exists = clinicalAnalysisExists(clinicalAnalysis.getId(), getCollectionName(organizationId, projectId,
+                                CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+                        solrClient);
+            } catch (SolrServerException | IOException e) {
+                logger.warn("Something wrong happened, clinical analysis {} could not be indexed: {}", clinicalAnalysis.getId(),
+                        e.getMessage());
+                return false;
             }
 
             if (!exists) {
