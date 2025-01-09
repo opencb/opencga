@@ -584,7 +584,7 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // <field name="rolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
     public static final String CVE_ROLE_IN_CANCER_NAME = "cveRoleInCancer";
-    public static final String CVE_ROLE_IN_CANCER_DESCR = "Clinical variant evidence roles in cancer (or roles in cancer" + OPT_LIST;
+    public static final String CVE_ROLE_IN_CANCER_DESCR = "Clinical variant evidence role in cancer (or roles in cancer" + OPT_LIST;
     public static final ClinicalQueryParam CVE_ROLE_IN_CANCER = new ClinicalQueryParam(CVE_ROLE_IN_CANCER_NAME, TEXT_ARRAY,
             CVE_ROLE_IN_CANCER_DESCR);
 

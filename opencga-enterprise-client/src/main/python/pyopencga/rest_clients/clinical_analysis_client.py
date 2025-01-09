@@ -341,7 +341,7 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_role_in_cancer: Clinical variant evidence roles in
+        :param str cve_role_in_cancer: Clinical variant evidence role in
             cancer (or roles in cancer separated by commas).
         :param str cve_review_acmg: Clinical variant evidence review ACMG (or
             ACGMs separated by commas).
@@ -613,7 +613,7 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_role_in_cancer: Clinical variant evidence roles in
+        :param str cve_role_in_cancer: Clinical variant evidence role in
             cancer (or roles in cancer separated by commas).
         :param str cve_review_acmg: Clinical variant evidence review ACMG (or
             ACGMs separated by commas).
@@ -902,7 +902,7 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_role_in_cancer: Clinical variant evidence roles in
+        :param str cve_role_in_cancer: Clinical variant evidence role in
             cancer (or roles in cancer separated by commas).
         :param str cve_review_acmg: Clinical variant evidence review ACMG (or
             ACGMs separated by commas).
@@ -1176,7 +1176,7 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_role_in_cancer: Clinical variant evidence roles in
+        :param str cve_role_in_cancer: Clinical variant evidence role in
             cancer (or roles in cancer separated by commas).
         :param str cve_review_acmg: Clinical variant evidence review ACMG (or
             ACGMs separated by commas).
@@ -1437,7 +1437,7 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_role_in_cancer: Clinical variant evidence roles in
+        :param str cve_role_in_cancer: Clinical variant evidence role in
             cancer (or roles in cancer separated by commas).
         :param str cve_review_acmg: Clinical variant evidence review ACMG (or
             ACGMs separated by commas).
@@ -1712,7 +1712,7 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_role_in_cancer: Clinical variant evidence roles in
+        :param str cve_role_in_cancer: Clinical variant evidence role in
             cancer (or roles in cancer separated by commas).
         :param str cve_review_acmg: Clinical variant evidence review ACMG (or
             ACGMs separated by commas).
@@ -1987,7 +1987,7 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_role_in_cancer: Clinical variant evidence roles in
+        :param str cve_role_in_cancer: Clinical variant evidence role in
             cancer (or roles in cancer separated by commas).
         :param str cve_review_acmg: Clinical variant evidence review ACMG (or
             ACGMs separated by commas).
@@ -2262,7 +2262,7 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str cve_other_classification: Clinical variant evidence
             other-classification (or list of other  classification values
             separated by commas).
-        :param str cve_role_in_cancer: Clinical variant evidence roles in
+        :param str cve_role_in_cancer: Clinical variant evidence role in
             cancer (or roles in cancer separated by commas).
         :param str cve_review_acmg: Clinical variant evidence review ACMG (or
             ACGMs separated by commas).

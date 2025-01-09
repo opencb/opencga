@@ -280,7 +280,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveTumorigenesis: Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
-     *       cveRoleInCancer: Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+     *       cveRoleInCancer: Clinical variant evidence role in cancer (or roles in cancer separated by commas).
      *       cveReviewAcmg: Clinical variant evidence review ACMG (or ACGMs separated by commas).
      *       cveReviewTier: Clinical variant evidence review tier (or list of tier values separated by commas).
      *       cveReviewClinicalSignificance: Clinical variant evidence review clinical significance (or list of clinical significances
@@ -433,7 +433,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveTumorigenesis: Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
-     *       cveRoleInCancer: Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+     *       cveRoleInCancer: Clinical variant evidence role in cancer (or roles in cancer separated by commas).
      *       cveReviewAcmg: Clinical variant evidence review ACMG (or ACGMs separated by commas).
      *       cveReviewTier: Clinical variant evidence review tier (or list of tier values separated by commas).
      *       cveReviewClinicalSignificance: Clinical variant evidence review clinical significance (or list of clinical significances
@@ -601,7 +601,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveTumorigenesis: Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
-     *       cveRoleInCancer: Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+     *       cveRoleInCancer: Clinical variant evidence role in cancer (or roles in cancer separated by commas).
      *       cveReviewAcmg: Clinical variant evidence review ACMG (or ACGMs separated by commas).
      *       cveReviewTier: Clinical variant evidence review tier (or list of tier values separated by commas).
      *       cveReviewClinicalSignificance: Clinical variant evidence review clinical significance (or list of clinical significances
@@ -755,7 +755,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveTumorigenesis: Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
-     *       cveRoleInCancer: Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+     *       cveRoleInCancer: Clinical variant evidence role in cancer (or roles in cancer separated by commas).
      *       cveReviewAcmg: Clinical variant evidence review ACMG (or ACGMs separated by commas).
      *       cveReviewTier: Clinical variant evidence review tier (or list of tier values separated by commas).
      *       cveReviewClinicalSignificance: Clinical variant evidence review clinical significance (or list of clinical significances
@@ -901,7 +901,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveTumorigenesis: Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
-     *       cveRoleInCancer: Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+     *       cveRoleInCancer: Clinical variant evidence role in cancer (or roles in cancer separated by commas).
      *       cveReviewAcmg: Clinical variant evidence review ACMG (or ACGMs separated by commas).
      *       cveReviewTier: Clinical variant evidence review tier (or list of tier values separated by commas).
      *       cveReviewClinicalSignificance: Clinical variant evidence review clinical significance (or list of clinical significances
@@ -1056,7 +1056,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveTumorigenesis: Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
-     *       cveRoleInCancer: Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+     *       cveRoleInCancer: Clinical variant evidence role in cancer (or roles in cancer separated by commas).
      *       cveReviewAcmg: Clinical variant evidence review ACMG (or ACGMs separated by commas).
      *       cveReviewTier: Clinical variant evidence review tier (or list of tier values separated by commas).
      *       cveReviewClinicalSignificance: Clinical variant evidence review clinical significance (or list of clinical significances
@@ -1216,7 +1216,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveTumorigenesis: Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
-     *       cveRoleInCancer: Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+     *       cveRoleInCancer: Clinical variant evidence role in cancer (or roles in cancer separated by commas).
      *       cveReviewAcmg: Clinical variant evidence review ACMG (or ACGMs separated by commas).
      *       cveReviewTier: Clinical variant evidence review tier (or list of tier values separated by commas).
      *       cveReviewClinicalSignificance: Clinical variant evidence review clinical significance (or list of clinical significances
@@ -1370,7 +1370,7 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       cveTumorigenesis: Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
      *       cveOtherClassification: Clinical variant evidence other-classification (or list of other  classification values separated by
      *            commas).
-     *       cveRoleInCancer: Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+     *       cveRoleInCancer: Clinical variant evidence role in cancer (or roles in cancer separated by commas).
      *       cveReviewAcmg: Clinical variant evidence review ACMG (or ACGMs separated by commas).
      *       cveReviewTier: Clinical variant evidence review tier (or list of tier values separated by commas).
      *       cveReviewClinicalSignificance: Clinical variant evidence review clinical significance (or list of clinical significances

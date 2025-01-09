@@ -224,7 +224,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     commas).
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
-    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence role in cancer (or roles in cancer separated by commas).
     * @param {String} [params.cveReviewAcmg] - Clinical variant evidence review ACMG (or ACGMs separated by commas).
     * @param {String} [params.cveReviewTier] - Clinical variant evidence review tier (or list of tier values separated by commas).
     * @param {String} [params.cveReviewClinicalSignificance] - Clinical variant evidence review clinical significance (or list of clinical
@@ -379,7 +379,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     commas).
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
-    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence role in cancer (or roles in cancer separated by commas).
     * @param {String} [params.cveReviewAcmg] - Clinical variant evidence review ACMG (or ACGMs separated by commas).
     * @param {String} [params.cveReviewTier] - Clinical variant evidence review tier (or list of tier values separated by commas).
     * @param {String} [params.cveReviewClinicalSignificance] - Clinical variant evidence review clinical significance (or list of clinical
@@ -546,7 +546,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     commas).
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
-    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence role in cancer (or roles in cancer separated by commas).
     * @param {String} [params.cveReviewAcmg] - Clinical variant evidence review ACMG (or ACGMs separated by commas).
     * @param {String} [params.cveReviewTier] - Clinical variant evidence review tier (or list of tier values separated by commas).
     * @param {String} [params.cveReviewClinicalSignificance] - Clinical variant evidence review clinical significance (or list of clinical
@@ -702,7 +702,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     commas).
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
-    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence role in cancer (or roles in cancer separated by commas).
     * @param {String} [params.cveReviewAcmg] - Clinical variant evidence review ACMG (or ACGMs separated by commas).
     * @param {String} [params.cveReviewTier] - Clinical variant evidence review tier (or list of tier values separated by commas).
     * @param {String} [params.cveReviewClinicalSignificance] - Clinical variant evidence review clinical significance (or list of clinical
@@ -850,7 +850,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     commas).
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
-    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence role in cancer (or roles in cancer separated by commas).
     * @param {String} [params.cveReviewAcmg] - Clinical variant evidence review ACMG (or ACGMs separated by commas).
     * @param {String} [params.cveReviewTier] - Clinical variant evidence review tier (or list of tier values separated by commas).
     * @param {String} [params.cveReviewClinicalSignificance] - Clinical variant evidence review clinical significance (or list of clinical
@@ -1006,7 +1006,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     commas).
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
-    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence role in cancer (or roles in cancer separated by commas).
     * @param {String} [params.cveReviewAcmg] - Clinical variant evidence review ACMG (or ACGMs separated by commas).
     * @param {String} [params.cveReviewTier] - Clinical variant evidence review tier (or list of tier values separated by commas).
     * @param {String} [params.cveReviewClinicalSignificance] - Clinical variant evidence review clinical significance (or list of clinical
@@ -1165,7 +1165,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     commas).
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
-    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence role in cancer (or roles in cancer separated by commas).
     * @param {String} [params.cveReviewAcmg] - Clinical variant evidence review ACMG (or ACGMs separated by commas).
     * @param {String} [params.cveReviewTier] - Clinical variant evidence review tier (or list of tier values separated by commas).
     * @param {String} [params.cveReviewClinicalSignificance] - Clinical variant evidence review clinical significance (or list of clinical
@@ -1321,7 +1321,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     commas).
     * @param {String} [params.cveOtherClassification] - Clinical variant evidence other-classification (or list of other  classification
     *     values separated by commas).
-    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+    * @param {String} [params.cveRoleInCancer] - Clinical variant evidence role in cancer (or roles in cancer separated by commas).
     * @param {String} [params.cveReviewAcmg] - Clinical variant evidence review ACMG (or ACGMs separated by commas).
     * @param {String} [params.cveReviewTier] - Clinical variant evidence review tier (or list of tier values separated by commas).
     * @param {String} [params.cveReviewClinicalSignificance] - Clinical variant evidence review clinical significance (or list of clinical

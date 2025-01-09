@@ -209,7 +209,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
         #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
         #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRoleInCancer Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+        #' @param cveRoleInCancer Clinical variant evidence role in cancer (or roles in cancer separated by commas).
         #' @param cveReviewAcmg Clinical variant evidence review ACMG (or ACGMs separated by commas).
         #' @param cveReviewTier Clinical variant evidence review tier (or list of tier values separated by commas).
         #' @param cveReviewClinicalSignificance Clinical variant evidence review clinical significance (or list of clinical significances separated by commas).
@@ -316,7 +316,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
         #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
         #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRoleInCancer Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+        #' @param cveRoleInCancer Clinical variant evidence role in cancer (or roles in cancer separated by commas).
         #' @param cveReviewAcmg Clinical variant evidence review ACMG (or ACGMs separated by commas).
         #' @param cveReviewTier Clinical variant evidence review tier (or list of tier values separated by commas).
         #' @param cveReviewClinicalSignificance Clinical variant evidence review clinical significance (or list of clinical significances separated by commas).
@@ -433,7 +433,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
         #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
         #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRoleInCancer Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+        #' @param cveRoleInCancer Clinical variant evidence role in cancer (or roles in cancer separated by commas).
         #' @param cveReviewAcmg Clinical variant evidence review ACMG (or ACGMs separated by commas).
         #' @param cveReviewTier Clinical variant evidence review tier (or list of tier values separated by commas).
         #' @param cveReviewClinicalSignificance Clinical variant evidence review clinical significance (or list of clinical significances separated by commas).
@@ -540,7 +540,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
         #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
         #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRoleInCancer Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+        #' @param cveRoleInCancer Clinical variant evidence role in cancer (or roles in cancer separated by commas).
         #' @param cveReviewAcmg Clinical variant evidence review ACMG (or ACGMs separated by commas).
         #' @param cveReviewTier Clinical variant evidence review tier (or list of tier values separated by commas).
         #' @param cveReviewClinicalSignificance Clinical variant evidence review clinical significance (or list of clinical significances separated by commas).
@@ -642,7 +642,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
         #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
         #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRoleInCancer Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+        #' @param cveRoleInCancer Clinical variant evidence role in cancer (or roles in cancer separated by commas).
         #' @param cveReviewAcmg Clinical variant evidence review ACMG (or ACGMs separated by commas).
         #' @param cveReviewTier Clinical variant evidence review tier (or list of tier values separated by commas).
         #' @param cveReviewClinicalSignificance Clinical variant evidence review clinical significance (or list of clinical significances separated by commas).
@@ -749,7 +749,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
         #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
         #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRoleInCancer Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+        #' @param cveRoleInCancer Clinical variant evidence role in cancer (or roles in cancer separated by commas).
         #' @param cveReviewAcmg Clinical variant evidence review ACMG (or ACGMs separated by commas).
         #' @param cveReviewTier Clinical variant evidence review tier (or list of tier values separated by commas).
         #' @param cveReviewClinicalSignificance Clinical variant evidence review clinical significance (or list of clinical significances separated by commas).
@@ -860,7 +860,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
         #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
         #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRoleInCancer Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+        #' @param cveRoleInCancer Clinical variant evidence role in cancer (or roles in cancer separated by commas).
         #' @param cveReviewAcmg Clinical variant evidence review ACMG (or ACGMs separated by commas).
         #' @param cveReviewTier Clinical variant evidence review tier (or list of tier values separated by commas).
         #' @param cveReviewClinicalSignificance Clinical variant evidence review clinical significance (or list of clinical significances separated by commas).
@@ -967,7 +967,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
         #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
         #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRoleInCancer Clinical variant evidence roles in cancer (or roles in cancer separated by commas).
+        #' @param cveRoleInCancer Clinical variant evidence role in cancer (or roles in cancer separated by commas).
         #' @param cveReviewAcmg Clinical variant evidence review ACMG (or ACGMs separated by commas).
         #' @param cveReviewTier Clinical variant evidence review tier (or list of tier values separated by commas).
         #' @param cveReviewClinicalSignificance Clinical variant evidence review clinical significance (or list of clinical significances separated by commas).

@@ -650,7 +650,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence role in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRoleInCancer; 
     
         @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
@@ -961,7 +961,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence role in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRoleInCancer; 
     
         @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
@@ -1304,7 +1304,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence role in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRoleInCancer; 
     
         @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
@@ -1615,7 +1615,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence role in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRoleInCancer; 
     
         @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
@@ -1911,7 +1911,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence role in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRoleInCancer; 
     
         @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
@@ -2222,7 +2222,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence role in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRoleInCancer; 
     
         @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
@@ -2535,7 +2535,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence role in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRoleInCancer; 
     
         @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
@@ -2846,7 +2846,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
         public String cveOtherClassification; 
     
-        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence roles in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--cve-role-in-cancer"}, description = "Clinical variant evidence role in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
         public String cveRoleInCancer; 
     
         @Parameter(names = {"--cve-review-acmg"}, description = "Clinical variant evidence review ACMG (or ACGMs separated by commas)", required = false, arity = 1)
