@@ -497,8 +497,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvVariantId; 
     
-        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
-        public boolean cvPrimary = false; 
+        @Parameter(names = {"--cv-primary-finding"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryFinding = false; 
+    
+        @Parameter(names = {"--cv-primary-interpretation"}, description = "Clinical variant belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryInterpretation = false; 
     
         @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cvComments; 
@@ -601,6 +604,12 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cveVariantId; 
+    
+        @Parameter(names = {"--cve-primary-finding"}, description = "Clinical variant evidence belongs to a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryFinding = false; 
+    
+        @Parameter(names = {"--cve-primary-interpretation"}, description = "Clinical variant evidence belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryInterpretation = false; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -808,8 +817,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvVariantId; 
     
-        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
-        public boolean cvPrimary = false; 
+        @Parameter(names = {"--cv-primary-finding"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryFinding = false; 
+    
+        @Parameter(names = {"--cv-primary-interpretation"}, description = "Clinical variant belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryInterpretation = false; 
     
         @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cvComments; 
@@ -912,6 +924,12 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cveVariantId; 
+    
+        @Parameter(names = {"--cve-primary-finding"}, description = "Clinical variant evidence belongs to a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryFinding = false; 
+    
+        @Parameter(names = {"--cve-primary-interpretation"}, description = "Clinical variant evidence belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryInterpretation = false; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -1151,8 +1169,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvVariantId; 
     
-        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
-        public boolean cvPrimary = false; 
+        @Parameter(names = {"--cv-primary-finding"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryFinding = false; 
+    
+        @Parameter(names = {"--cv-primary-interpretation"}, description = "Clinical variant belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryInterpretation = false; 
     
         @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cvComments; 
@@ -1255,6 +1276,12 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cveVariantId; 
+    
+        @Parameter(names = {"--cve-primary-finding"}, description = "Clinical variant evidence belongs to a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryFinding = false; 
+    
+        @Parameter(names = {"--cve-primary-interpretation"}, description = "Clinical variant evidence belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryInterpretation = false; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -1462,8 +1489,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvVariantId; 
     
-        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
-        public boolean cvPrimary = false; 
+        @Parameter(names = {"--cv-primary-finding"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryFinding = false; 
+    
+        @Parameter(names = {"--cv-primary-interpretation"}, description = "Clinical variant belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryInterpretation = false; 
     
         @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cvComments; 
@@ -1566,6 +1596,12 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cveVariantId; 
+    
+        @Parameter(names = {"--cve-primary-finding"}, description = "Clinical variant evidence belongs to a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryFinding = false; 
+    
+        @Parameter(names = {"--cve-primary-interpretation"}, description = "Clinical variant evidence belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryInterpretation = false; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -1758,8 +1794,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvVariantId; 
     
-        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
-        public boolean cvPrimary = false; 
+        @Parameter(names = {"--cv-primary-finding"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryFinding = false; 
+    
+        @Parameter(names = {"--cv-primary-interpretation"}, description = "Clinical variant belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryInterpretation = false; 
     
         @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cvComments; 
@@ -1862,6 +1901,12 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cveVariantId; 
+    
+        @Parameter(names = {"--cve-primary-finding"}, description = "Clinical variant evidence belongs to a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryFinding = false; 
+    
+        @Parameter(names = {"--cve-primary-interpretation"}, description = "Clinical variant evidence belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryInterpretation = false; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -2069,8 +2114,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvVariantId; 
     
-        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
-        public boolean cvPrimary = false; 
+        @Parameter(names = {"--cv-primary-finding"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryFinding = false; 
+    
+        @Parameter(names = {"--cv-primary-interpretation"}, description = "Clinical variant belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryInterpretation = false; 
     
         @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cvComments; 
@@ -2173,6 +2221,12 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cveVariantId; 
+    
+        @Parameter(names = {"--cve-primary-finding"}, description = "Clinical variant evidence belongs to a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryFinding = false; 
+    
+        @Parameter(names = {"--cve-primary-interpretation"}, description = "Clinical variant evidence belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryInterpretation = false; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -2382,8 +2436,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvVariantId; 
     
-        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
-        public boolean cvPrimary = false; 
+        @Parameter(names = {"--cv-primary-finding"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryFinding = false; 
+    
+        @Parameter(names = {"--cv-primary-interpretation"}, description = "Clinical variant belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryInterpretation = false; 
     
         @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cvComments; 
@@ -2486,6 +2543,12 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cveVariantId; 
+    
+        @Parameter(names = {"--cve-primary-finding"}, description = "Clinical variant evidence belongs to a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryFinding = false; 
+    
+        @Parameter(names = {"--cve-primary-interpretation"}, description = "Clinical variant evidence belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryInterpretation = false; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 
@@ -2693,8 +2756,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--cv-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvVariantId; 
     
-        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
-        public boolean cvPrimary = false; 
+        @Parameter(names = {"--cv-primary-finding"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryFinding = false; 
+    
+        @Parameter(names = {"--cv-primary-interpretation"}, description = "Clinical variant belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimaryInterpretation = false; 
     
         @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cvComments; 
@@ -2797,6 +2863,12 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--cve-variant-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cveVariantId; 
+    
+        @Parameter(names = {"--cve-primary-finding"}, description = "Clinical variant evidence belongs to a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryFinding = false; 
+    
+        @Parameter(names = {"--cve-primary-interpretation"}, description = "Clinical variant evidence belongs to the primary interpretation (true or false)", required = false, help = true, arity = 0)
+        public boolean cvePrimaryInterpretation = false; 
     
         @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
         public String cvePhenotypeName; 

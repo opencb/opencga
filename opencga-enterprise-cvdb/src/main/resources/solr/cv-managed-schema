@@ -581,7 +581,8 @@
 	<!-- ClinicalVariant -->
 
     <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
-    <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <field name="primaryFinding" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <field name="primaryInterpretation" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
 	<!-- Comments are stores: author == message == tag1:tag2:.. == date -->
     <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>

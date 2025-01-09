@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,13 +28,17 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
     }
 
     public ClinicalVariantEvidenceSearch toClinicalVariantEvidenceSearch(ClinicalVariantEvidence cve, int evidenceIndex, String variantId,
-                                                                         String interpretationId, String clinicalAnalysisId, String studyId,
-                                                                         List<String> viewers) throws CvdbException {
+                                                                         boolean isPrimaryFinding, String interpretationId,
+                                                                         boolean isPrimaryInterpretation, String clinicalAnalysisId,
+                                                                         String studyId, List<String> viewers)
+            throws CvdbException {
         ClinicalVariantEvidenceSearch cves = new ClinicalVariantEvidenceSearch()
                 .setId((evidenceIndex) + "-" + variantId + "-" + interpretationId)
                 .setVariantId(variantId)
+                .setPrimaryFinding(isPrimaryFinding)
                 .setCvId(interpretationId + "-" + variantId)
                 .setCiId(interpretationId)
+                .setPrimaryInterpretation(isPrimaryInterpretation)
                 .setCaId(clinicalAnalysisId)
                 .setStudyId(studyId)
                 .setViewers(viewers);
@@ -71,7 +74,9 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
         }
 
         // Penetrance
-        cves.setPenetrance(cve.getPenetrance().name());
+        if (cve.getPenetrance() != null) {
+            cves.setPenetrance(cve.getPenetrance().name());
+        }
 
         if (cve.getClassification() != null) {
             VariantClassification classification = cve.getClassification();
@@ -122,7 +127,7 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
         try {
             cves.setJson(mapper.writeValueAsString(cve));
         } catch (JsonProcessingException e) {
-            throw new CvdbException("Error when storing clinical varaint evidence JSON field", e);
+            throw new CvdbException("Error when storing clinical variant evidence JSON field", e);
         }
 
         return cves;
@@ -137,15 +142,6 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
         for (ClinicalVariantEvidenceSearch cves : cvesList) {
             try {
                 ClinicalVariantEvidence cve = clinicalVariantEvidenceReader.readValue(cves.getJson());
-                // Add clinical analysis, interpretation and study in attributes
-                if (cve.getAttributes() == null) {
-                    cve.setAttributes(new HashMap<>());
-                }
-                addStudyIdAsAttribute(cves.getStudyId(), cve.getAttributes());
-                addClinicalAnalysisIdAsAttribute(cves.getCaId(), cve.getAttributes());
-                addClinicalInterpretationIdAsAttribute(cves.getCiId(), cve.getAttributes());
-                addClinicalVariantIdAsAttribute(cves.getVariantId(), cve.getAttributes());
-
                 cveList.add(cve);
             } catch (JsonProcessingException e) {
                 throw new CvdbException("Error when converting to clinical variant evidence", e);

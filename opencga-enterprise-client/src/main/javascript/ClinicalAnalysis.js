@@ -142,7 +142,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
-    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryFinding] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryInterpretation] - Clinical variant belongs to the primary interpretation (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
@@ -201,6 +202,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvePrimaryFinding] - Clinical variant evidence belongs to a primary finding (true or false).
+    * @param {Boolean} [params.cvePrimaryInterpretation] - Clinical variant evidence belongs to the primary interpretation (true or false).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -297,7 +300,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
-    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryFinding] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryInterpretation] - Clinical variant belongs to the primary interpretation (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
@@ -356,6 +360,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvePrimaryFinding] - Clinical variant evidence belongs to a primary finding (true or false).
+    * @param {Boolean} [params.cvePrimaryInterpretation] - Clinical variant evidence belongs to the primary interpretation (true or false).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -464,7 +470,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
-    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryFinding] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryInterpretation] - Clinical variant belongs to the primary interpretation (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
@@ -523,6 +530,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvePrimaryFinding] - Clinical variant evidence belongs to a primary finding (true or false).
+    * @param {Boolean} [params.cvePrimaryInterpretation] - Clinical variant evidence belongs to the primary interpretation (true or false).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -620,7 +629,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
-    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryFinding] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryInterpretation] - Clinical variant belongs to the primary interpretation (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
@@ -679,6 +689,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvePrimaryFinding] - Clinical variant evidence belongs to a primary finding (true or false).
+    * @param {Boolean} [params.cvePrimaryInterpretation] - Clinical variant evidence belongs to the primary interpretation (true or false).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -768,7 +780,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
-    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryFinding] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryInterpretation] - Clinical variant belongs to the primary interpretation (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
@@ -827,6 +840,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvePrimaryFinding] - Clinical variant evidence belongs to a primary finding (true or false).
+    * @param {Boolean} [params.cvePrimaryInterpretation] - Clinical variant evidence belongs to the primary interpretation (true or false).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -924,7 +939,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
-    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryFinding] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryInterpretation] - Clinical variant belongs to the primary interpretation (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
@@ -983,6 +999,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvePrimaryFinding] - Clinical variant evidence belongs to a primary finding (true or false).
+    * @param {Boolean} [params.cvePrimaryInterpretation] - Clinical variant evidence belongs to the primary interpretation (true or false).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -1083,7 +1101,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
-    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryFinding] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryInterpretation] - Clinical variant belongs to the primary interpretation (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
@@ -1142,6 +1161,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvePrimaryFinding] - Clinical variant evidence belongs to a primary finding (true or false).
+    * @param {Boolean} [params.cvePrimaryInterpretation] - Clinical variant evidence belongs to the primary interpretation (true or false).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -1239,7 +1260,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Clinical variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvVariantId] - Variant ID (or list of IDs separated by commas).
-    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryFinding] - Clinical variant is a primary finding (true or false).
+    * @param {Boolean} [params.cvPrimaryInterpretation] - Clinical variant belongs to the primary interpretation (true or false).
     * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
     *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
@@ -1298,6 +1320,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     histologies, descriptions,...
     * @param {String} [params.cvProteinKeyword] - Uniprot protein variant annotation keyword (or list of keywords separated by commas).
     * @param {String} [params.cveVariantId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvePrimaryFinding] - Clinical variant evidence belongs to a primary finding (true or false).
+    * @param {Boolean} [params.cvePrimaryInterpretation] - Clinical variant evidence belongs to the primary interpretation (true or false).
     * @param {String} [params.cvePhenotypeName] - Clinical variant evidence phenotype name (or names separated by commas).
     * @param {String} [params.cveGeneName] - Clinical variant evidence gene name (or names separated by commas).
     * @param {String} [params.cveTranscriptId] - Clinical variant evidence transcript ID (or IDs separated by commas).

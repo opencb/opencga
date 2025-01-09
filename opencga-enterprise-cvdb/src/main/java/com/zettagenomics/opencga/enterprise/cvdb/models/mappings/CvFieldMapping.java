@@ -10,7 +10,7 @@ public class CvFieldMapping extends FieldMapping {
     public CvFieldMapping() {
         modelToSchema = new HashMap();
         modelToSchema.put(CV_ID_NAME, "variantId");
-        modelToSchema.put(CV_PRIMARY_NAME, "primary");
+        modelToSchema.put(CV_PRIMARY_FINDING_NAME, "primary");
         modelToSchema.put(CV_DISCUSSION_AUTHOR_NAME, "discussionAuthor");
         modelToSchema.put(CV_DISCUSSION_DATE_NAME, "discussionDate");
         modelToSchema.put(CV_CONFIDENCE_VALUE_NAME, "confidenceValue");

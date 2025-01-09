@@ -202,7 +202,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvVariantId: Variant ID (or list of IDs separated by commas).
-     *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryFinding: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryInterpretation: Clinical variant belongs to the primary interpretation (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
@@ -259,6 +260,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cveVariantId: Variant ID (or list of IDs separated by commas).
+     *       cvePrimaryFinding: Clinical variant evidence belongs to a primary finding (true or false).
+     *       cvePrimaryInterpretation: Clinical variant evidence belongs to the primary interpretation (true or false).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -355,7 +358,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvVariantId: Variant ID (or list of IDs separated by commas).
-     *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryFinding: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryInterpretation: Clinical variant belongs to the primary interpretation (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
@@ -412,6 +416,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cveVariantId: Variant ID (or list of IDs separated by commas).
+     *       cvePrimaryFinding: Clinical variant evidence belongs to a primary finding (true or false).
+     *       cvePrimaryInterpretation: Clinical variant evidence belongs to the primary interpretation (true or false).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -523,7 +529,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvVariantId: Variant ID (or list of IDs separated by commas).
-     *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryFinding: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryInterpretation: Clinical variant belongs to the primary interpretation (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
@@ -580,6 +587,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cveVariantId: Variant ID (or list of IDs separated by commas).
+     *       cvePrimaryFinding: Clinical variant evidence belongs to a primary finding (true or false).
+     *       cvePrimaryInterpretation: Clinical variant evidence belongs to the primary interpretation (true or false).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -677,7 +686,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvVariantId: Variant ID (or list of IDs separated by commas).
-     *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryFinding: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryInterpretation: Clinical variant belongs to the primary interpretation (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
@@ -734,6 +744,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cveVariantId: Variant ID (or list of IDs separated by commas).
+     *       cvePrimaryFinding: Clinical variant evidence belongs to a primary finding (true or false).
+     *       cvePrimaryInterpretation: Clinical variant evidence belongs to the primary interpretation (true or false).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -823,7 +835,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvVariantId: Variant ID (or list of IDs separated by commas).
-     *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryFinding: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryInterpretation: Clinical variant belongs to the primary interpretation (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
@@ -880,6 +893,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cveVariantId: Variant ID (or list of IDs separated by commas).
+     *       cvePrimaryFinding: Clinical variant evidence belongs to a primary finding (true or false).
+     *       cvePrimaryInterpretation: Clinical variant evidence belongs to the primary interpretation (true or false).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -978,7 +993,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvVariantId: Variant ID (or list of IDs separated by commas).
-     *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryFinding: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryInterpretation: Clinical variant belongs to the primary interpretation (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
@@ -1035,6 +1051,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cveVariantId: Variant ID (or list of IDs separated by commas).
+     *       cvePrimaryFinding: Clinical variant evidence belongs to a primary finding (true or false).
+     *       cvePrimaryInterpretation: Clinical variant evidence belongs to the primary interpretation (true or false).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -1138,7 +1156,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvVariantId: Variant ID (or list of IDs separated by commas).
-     *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryFinding: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryInterpretation: Clinical variant belongs to the primary interpretation (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
@@ -1195,6 +1214,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cveVariantId: Variant ID (or list of IDs separated by commas).
+     *       cvePrimaryFinding: Clinical variant evidence belongs to a primary finding (true or false).
+     *       cvePrimaryInterpretation: Clinical variant evidence belongs to the primary interpretation (true or false).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).
@@ -1292,7 +1313,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Clinical variant ID (or list of IDs separated by commas).
      *       cvVariantId: Variant ID (or list of IDs separated by commas).
-     *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryFinding: Clinical variant is a primary finding (true or false).
+     *       cvPrimaryInterpretation: Clinical variant belongs to the primary interpretation (true or false).
      *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
      *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
@@ -1349,6 +1371,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            descriptions,...
      *       cvProteinKeyword: Uniprot protein variant annotation keyword (or list of keywords separated by commas).
      *       cveVariantId: Variant ID (or list of IDs separated by commas).
+     *       cvePrimaryFinding: Clinical variant evidence belongs to a primary finding (true or false).
+     *       cvePrimaryInterpretation: Clinical variant evidence belongs to the primary interpretation (true or false).
      *       cvePhenotypeName: Clinical variant evidence phenotype name (or names separated by commas).
      *       cveGeneName: Clinical variant evidence gene name (or names separated by commas).
      *       cveTranscriptId: Clinical variant evidence transcript ID (or IDs separated by commas).

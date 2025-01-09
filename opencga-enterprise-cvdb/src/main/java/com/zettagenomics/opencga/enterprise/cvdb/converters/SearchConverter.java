@@ -14,10 +14,7 @@ import org.opencb.opencga.core.models.sample.Sample;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 
 public class SearchConverter<M, N> {
 
@@ -92,21 +89,5 @@ public class SearchConverter<M, N> {
                 cv.setAnnotation(null);
             }
         }
-    }
-
-    protected void addStudyIdAsAttribute(String studyId, Map<String, Object> attributes) {
-        attributes.put(OPENCGA_STUDY_ID, studyId);
-    }
-
-    protected void addClinicalAnalysisIdAsAttribute(String caId, Map<String, Object> attributes) {
-        attributes.put(OPENCGA_CLINICAL_ANALYSIS_ID, caId);
-    }
-
-    protected void addClinicalInterpretationIdAsAttribute(String ciId, Map<String, Object> attributes) {
-        attributes.put(OPENCGA_CLINICAL_INTERPRETATION_ID, ciId);
-    }
-
-    protected void addClinicalVariantIdAsAttribute(String variantId, Map<String, Object> attributes) {
-        attributes.put(OPENCGA_CLINICAL_VARIANT_ID, variantId);
     }
 }

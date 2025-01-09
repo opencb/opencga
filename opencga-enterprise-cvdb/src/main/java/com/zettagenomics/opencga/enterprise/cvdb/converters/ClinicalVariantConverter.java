@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,14 +32,16 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
         this.clinicalVariantReader = mapper.readerFor(ClinicalVariant.class);
     }
 
-    public ClinicalVariantSearch toClinicalVariantSearch(ClinicalVariant cv, boolean primary, String interpretationId,
-                                                         String clinicalAnalysisId, String studyId, List<String> viewers)
-            throws CvdbException {
-        return toClinicalVariantSearch(Collections.singletonList(cv), primary, interpretationId, clinicalAnalysisId, studyId, viewers)
+    public ClinicalVariantSearch toClinicalVariantSearch(ClinicalVariant cv, boolean isPrimaryFinding, String interpretationId,
+                                                         boolean isPrimaryInterpretation, String clinicalAnalysisId, String studyId,
+                                                         List<String> viewers) throws CvdbException {
+        return toClinicalVariantSearch(Collections.singletonList(cv), isPrimaryFinding, interpretationId, isPrimaryInterpretation,
+                clinicalAnalysisId, studyId, viewers)
                 .get(0);
     }
 
-    public List<ClinicalVariantSearch> toClinicalVariantSearch(List<ClinicalVariant> cvList, boolean primary, String interpretationId,
+    public List<ClinicalVariantSearch> toClinicalVariantSearch(List<ClinicalVariant> cvList, boolean isPrimaryFinding,
+                                                               String interpretationId, boolean isPrimaryInterpretation,
                                                                String clinicalAnalysisId, String studyId, List<String> viewers)
             throws CvdbException {
         List<ClinicalVariantSearch> cvsList = new ArrayList<>();
@@ -51,9 +52,10 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
 
             cvs.setId(interpretationId + "-" + variantSearchModel.getVariantId());
 
-            cvs.setCiId(interpretationId)
+            cvs.setPrimaryFinding(isPrimaryFinding)
+                    .setCiId(interpretationId)
+                    .setPrimaryInterpretation(isPrimaryInterpretation)
                     .setCaId(clinicalAnalysisId)
-                    .setPrimary(primary)
                     .setStudyId(studyId)
                     .setViewers(viewers);
 
@@ -154,14 +156,6 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
                     }
                     cv.setConfidence(confidence);
                 }
-
-                // Add clinical analysis, interpretation and study in attributes
-                if (cv.getAttributes() == null) {
-                    cv.setAttributes(new HashMap<>());
-                }
-                addStudyIdAsAttribute(cvs.getStudyId(), cv.getAttributes());
-                addClinicalAnalysisIdAsAttribute(cvs.getCaId(), cv.getAttributes());
-                addClinicalInterpretationIdAsAttribute(cvs.getCiId(), cv.getAttributes());
 
                 // Add to the list
                 cvList.add(cv);

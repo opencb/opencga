@@ -52,6 +52,12 @@ public class ClinicalVariantEvidenceSearch {
 
     // Clinical variant evidence fields
 
+    @Field("primaryFinding")
+    private boolean primaryFinding;
+
+    @Field("primaryInterpretation")
+    private boolean primaryInterpretation;
+
     @Field("phenotypeNames")
     private List<String> phenotypeNames;
 
@@ -145,6 +151,8 @@ public class ClinicalVariantEvidenceSearch {
         sb.append(", ciId='").append(ciId).append('\'');
         sb.append(", cvId='").append(cvId).append('\'');
         sb.append(", variantId='").append(variantId).append('\'');
+        sb.append(", primaryFinding=").append(primaryFinding);
+        sb.append(", primaryInterpretation=").append(primaryInterpretation);
         sb.append(", phenotypeNames=").append(phenotypeNames);
         sb.append(", geneName='").append(geneName).append('\'');
         sb.append(", transcriptId='").append(transcriptId).append('\'');
@@ -232,6 +240,24 @@ public class ClinicalVariantEvidenceSearch {
 
     public ClinicalVariantEvidenceSearch setVariantId(String variantId) {
         this.variantId = variantId;
+        return this;
+    }
+
+    public boolean isPrimaryFinding() {
+        return primaryFinding;
+    }
+
+    public ClinicalVariantEvidenceSearch setPrimaryFinding(boolean primaryFinding) {
+        this.primaryFinding = primaryFinding;
+        return this;
+    }
+
+    public boolean isPrimaryInterpretation() {
+        return primaryInterpretation;
+    }
+
+    public ClinicalVariantEvidenceSearch setPrimaryInterpretation(boolean primaryInterpretation) {
+        this.primaryInterpretation = primaryInterpretation;
         return this;
     }
 

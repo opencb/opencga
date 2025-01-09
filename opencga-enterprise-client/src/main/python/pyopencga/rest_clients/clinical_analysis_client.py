@@ -198,8 +198,10 @@ class ClinicalAnalysis(_ParentRestClient):
             commas).
         :param str cv_variant_id: Variant ID (or list of IDs separated by
             commas).
-        :param bool cv_primary: Clinical variant is a primary finding (true or
-            false).
+        :param bool cv_primary_finding: Clinical variant is a primary finding
+            (true or false).
+        :param bool cv_primary_interpretation: Clinical variant belongs to the
+            primary interpretation (true or false).
         :param str cv_comments: Clinical variant comment text (word or list of
             words contained in the text, if the words are separated by a comma
             an OR will be applied; if the words are separated by a semicolon,
@@ -303,6 +305,10 @@ class ClinicalAnalysis(_ParentRestClient):
             keyword (or list of keywords separated by commas).
         :param str cve_variant_id: Variant ID (or list of IDs separated by
             commas).
+        :param bool cve_primary_finding: Clinical variant evidence belongs to
+            a primary finding (true or false).
+        :param bool cve_primary_interpretation: Clinical variant evidence
+            belongs to the primary interpretation (true or false).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -470,8 +476,10 @@ class ClinicalAnalysis(_ParentRestClient):
             commas).
         :param str cv_variant_id: Variant ID (or list of IDs separated by
             commas).
-        :param bool cv_primary: Clinical variant is a primary finding (true or
-            false).
+        :param bool cv_primary_finding: Clinical variant is a primary finding
+            (true or false).
+        :param bool cv_primary_interpretation: Clinical variant belongs to the
+            primary interpretation (true or false).
         :param str cv_comments: Clinical variant comment text (word or list of
             words contained in the text, if the words are separated by a comma
             an OR will be applied; if the words are separated by a semicolon,
@@ -575,6 +583,10 @@ class ClinicalAnalysis(_ParentRestClient):
             keyword (or list of keywords separated by commas).
         :param str cve_variant_id: Variant ID (or list of IDs separated by
             commas).
+        :param bool cve_primary_finding: Clinical variant evidence belongs to
+            a primary finding (true or false).
+        :param bool cve_primary_interpretation: Clinical variant evidence
+            belongs to the primary interpretation (true or false).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -759,8 +771,10 @@ class ClinicalAnalysis(_ParentRestClient):
             commas).
         :param str cv_variant_id: Variant ID (or list of IDs separated by
             commas).
-        :param bool cv_primary: Clinical variant is a primary finding (true or
-            false).
+        :param bool cv_primary_finding: Clinical variant is a primary finding
+            (true or false).
+        :param bool cv_primary_interpretation: Clinical variant belongs to the
+            primary interpretation (true or false).
         :param str cv_comments: Clinical variant comment text (word or list of
             words contained in the text, if the words are separated by a comma
             an OR will be applied; if the words are separated by a semicolon,
@@ -864,6 +878,10 @@ class ClinicalAnalysis(_ParentRestClient):
             keyword (or list of keywords separated by commas).
         :param str cve_variant_id: Variant ID (or list of IDs separated by
             commas).
+        :param bool cve_primary_finding: Clinical variant evidence belongs to
+            a primary finding (true or false).
+        :param bool cve_primary_interpretation: Clinical variant evidence
+            belongs to the primary interpretation (true or false).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -1033,8 +1051,10 @@ class ClinicalAnalysis(_ParentRestClient):
             commas).
         :param str cv_variant_id: Variant ID (or list of IDs separated by
             commas).
-        :param bool cv_primary: Clinical variant is a primary finding (true or
-            false).
+        :param bool cv_primary_finding: Clinical variant is a primary finding
+            (true or false).
+        :param bool cv_primary_interpretation: Clinical variant belongs to the
+            primary interpretation (true or false).
         :param str cv_comments: Clinical variant comment text (word or list of
             words contained in the text, if the words are separated by a comma
             an OR will be applied; if the words are separated by a semicolon,
@@ -1138,6 +1158,10 @@ class ClinicalAnalysis(_ParentRestClient):
             keyword (or list of keywords separated by commas).
         :param str cve_variant_id: Variant ID (or list of IDs separated by
             commas).
+        :param bool cve_primary_finding: Clinical variant evidence belongs to
+            a primary finding (true or false).
+        :param bool cve_primary_interpretation: Clinical variant evidence
+            belongs to the primary interpretation (true or false).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -1294,8 +1318,10 @@ class ClinicalAnalysis(_ParentRestClient):
             commas).
         :param str cv_variant_id: Variant ID (or list of IDs separated by
             commas).
-        :param bool cv_primary: Clinical variant is a primary finding (true or
-            false).
+        :param bool cv_primary_finding: Clinical variant is a primary finding
+            (true or false).
+        :param bool cv_primary_interpretation: Clinical variant belongs to the
+            primary interpretation (true or false).
         :param str cv_comments: Clinical variant comment text (word or list of
             words contained in the text, if the words are separated by a comma
             an OR will be applied; if the words are separated by a semicolon,
@@ -1399,6 +1425,10 @@ class ClinicalAnalysis(_ParentRestClient):
             keyword (or list of keywords separated by commas).
         :param str cve_variant_id: Variant ID (or list of IDs separated by
             commas).
+        :param bool cve_primary_finding: Clinical variant evidence belongs to
+            a primary finding (true or false).
+        :param bool cve_primary_interpretation: Clinical variant evidence
+            belongs to the primary interpretation (true or false).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -1569,8 +1599,10 @@ class ClinicalAnalysis(_ParentRestClient):
             commas).
         :param str cv_variant_id: Variant ID (or list of IDs separated by
             commas).
-        :param bool cv_primary: Clinical variant is a primary finding (true or
-            false).
+        :param bool cv_primary_finding: Clinical variant is a primary finding
+            (true or false).
+        :param bool cv_primary_interpretation: Clinical variant belongs to the
+            primary interpretation (true or false).
         :param str cv_comments: Clinical variant comment text (word or list of
             words contained in the text, if the words are separated by a comma
             an OR will be applied; if the words are separated by a semicolon,
@@ -1674,6 +1706,10 @@ class ClinicalAnalysis(_ParentRestClient):
             keyword (or list of keywords separated by commas).
         :param str cve_variant_id: Variant ID (or list of IDs separated by
             commas).
+        :param bool cve_primary_finding: Clinical variant evidence belongs to
+            a primary finding (true or false).
+        :param bool cve_primary_interpretation: Clinical variant evidence
+            belongs to the primary interpretation (true or false).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -1844,8 +1880,10 @@ class ClinicalAnalysis(_ParentRestClient):
             commas).
         :param str cv_variant_id: Variant ID (or list of IDs separated by
             commas).
-        :param bool cv_primary: Clinical variant is a primary finding (true or
-            false).
+        :param bool cv_primary_finding: Clinical variant is a primary finding
+            (true or false).
+        :param bool cv_primary_interpretation: Clinical variant belongs to the
+            primary interpretation (true or false).
         :param str cv_comments: Clinical variant comment text (word or list of
             words contained in the text, if the words are separated by a comma
             an OR will be applied; if the words are separated by a semicolon,
@@ -1949,6 +1987,10 @@ class ClinicalAnalysis(_ParentRestClient):
             keyword (or list of keywords separated by commas).
         :param str cve_variant_id: Variant ID (or list of IDs separated by
             commas).
+        :param bool cve_primary_finding: Clinical variant evidence belongs to
+            a primary finding (true or false).
+        :param bool cve_primary_interpretation: Clinical variant evidence
+            belongs to the primary interpretation (true or false).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or
@@ -2119,8 +2161,10 @@ class ClinicalAnalysis(_ParentRestClient):
             commas).
         :param str cv_variant_id: Variant ID (or list of IDs separated by
             commas).
-        :param bool cv_primary: Clinical variant is a primary finding (true or
-            false).
+        :param bool cv_primary_finding: Clinical variant is a primary finding
+            (true or false).
+        :param bool cv_primary_interpretation: Clinical variant belongs to the
+            primary interpretation (true or false).
         :param str cv_comments: Clinical variant comment text (word or list of
             words contained in the text, if the words are separated by a comma
             an OR will be applied; if the words are separated by a semicolon,
@@ -2224,6 +2268,10 @@ class ClinicalAnalysis(_ParentRestClient):
             keyword (or list of keywords separated by commas).
         :param str cve_variant_id: Variant ID (or list of IDs separated by
             commas).
+        :param bool cve_primary_finding: Clinical variant evidence belongs to
+            a primary finding (true or false).
+        :param bool cve_primary_interpretation: Clinical variant evidence
+            belongs to the primary interpretation (true or false).
         :param str cve_phenotype_name: Clinical variant evidence phenotype
             name (or names separated by commas).
         :param str cve_gene_name: Clinical variant evidence gene name (or

@@ -202,7 +202,7 @@ public class ClinicalQueryParser {
         SolrQuery solrQuery = solrParser.parse(variantQuery, QueryOptions.empty());
         if (ArrayUtils.isNotEmpty(solrQuery.getFilterQueries())) {
             filters.addAll(Arrays.asList(solrQuery.getFilterQueries()));
-            System.out.println(">>>>>>>>>>>>>>>>>>>>>> solrQuery.getFilterQueries() = " + solrQuery.getFilterQueries());
+            logger.warn("solrQuery.getFilterQueries() = {}", solrQuery.getFilterQueries());
         }
 
         addStringFilters("id", query.getString(ClinicalQueryParam.CV_ID_NAME), filters);
@@ -211,8 +211,11 @@ public class ClinicalQueryParser {
         // <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
         addStringFilters("variantId", query.getString(CV_VARIANT_ID_NAME), filters);
 
-        // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
-        addBooleanFilters("primary", query.getString(CV_PRIMARY_NAME), filters);
+        // <field name="primaryFinding" type="boolean" indexed="true" stored="true" multiValued="false"/>
+        addBooleanFilters("primaryFinding", query.getString(CV_PRIMARY_FINDING_NAME), filters);
+
+        // <field name="primaryInterpretation" type="boolean" indexed="true" stored="true" multiValued="false"/>
+        addBooleanFilters("primaryInterpretation", query.getString(CV_PRIMARY_INTERPRETATION_NAME), filters);
 
         // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
         // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
@@ -260,6 +263,12 @@ public class ClinicalQueryParser {
 
         // <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
         addStringFilters(CVE_VARIANT_ID_NAME, query.getString(CVE_VARIANT_ID_NAME), filters);
+
+        // <field name="primaryFinding" type="boolean" indexed="true" stored="true" multiValued="false"/>
+        addBooleanFilters("primaryFinding", query.getString(CVE_PRIMARY_FINDING_NAME), filters);
+
+        // <field name="primaryInterpretation" type="boolean" indexed="true" stored="true" multiValued="false"/>
+        addBooleanFilters("primaryInterpretation", query.getString(CVE_PRIMARY_INTERPRETATION_NAME), filters);
 
         // <field name="phenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
         addStringFilters("phenotypeNames", query.getString(ClinicalQueryParam.CVE_PHENOTYPE_NAME_NAME), filters);
@@ -676,7 +685,7 @@ public class ClinicalQueryParser {
                 return "cvId";
             case CV_VARIANT_ID_NAME:
                 return "variantId";
-            case CV_PRIMARY_NAME:
+            case CV_PRIMARY_FINDING_NAME:
                 return "primary";
             case CV_DISCUSSION_AUTHOR_NAME:
                 return "discussionAuthor";
