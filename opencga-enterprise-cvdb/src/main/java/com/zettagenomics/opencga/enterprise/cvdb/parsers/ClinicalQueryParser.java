@@ -457,9 +457,9 @@ public class ClinicalQueryParser {
 
     private Query buildVariantQuery(Query query) {
         Query variantQuery = new VariantQuery();
-        if (query.containsKey(CV_ID_NAME)) {
-            variantQuery.put(VariantQueryParam.ID.key(), query.get(CV_ID_NAME));
-        }
+//        if (query.containsKey(CV_VARIANT_ID_NAME)) {
+//            variantQuery.put(VariantQueryParam.ID.key(), query.get(CV_VARIANT_ID_NAME));
+//        }
         if (query.containsKey(CV_REGION_NAME)) {
             variantQuery.put(VariantQueryParam.REGION.key(), query.get(CV_REGION_NAME));
         }
