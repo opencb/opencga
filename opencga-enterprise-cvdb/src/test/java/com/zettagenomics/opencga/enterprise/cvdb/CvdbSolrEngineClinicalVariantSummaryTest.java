@@ -35,6 +35,7 @@ import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalog
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CV_VARIANT_ID_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.opencb.commons.datastore.core.QueryOptions.EXCLUDE;
 
 public class CvdbSolrEngineClinicalVariantSummaryTest {
 
@@ -231,6 +232,29 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         cvdbEngine.updateSummaryStats(result.getResults().get(0), result.getResults().get(1));
         System.out.println("result.getResults().get(1) = " + result.getResults().get(1));
         System.out.println("============================================");
+    }
+
+    @Test
+    public void testQueryOptionsExcludeStats() {
+        QueryOptions queryOptions = new QueryOptions();
+        System.out.println("queryOptions = " + queryOptions.toJson());
+        System.out.println("CvdbUtils.getSkipStats(queryOptions) = " + CvdbUtils.getSkipStats(queryOptions));
+        assertEquals(false, CvdbUtils.getSkipStats(queryOptions));
+
+        queryOptions.put(EXCLUDE, "annotation,toto");
+        System.out.println("queryOptions = " + queryOptions.toJson());
+        System.out.println("CvdbUtils.getSkipStats(queryOptions) = " + CvdbUtils.getSkipStats(queryOptions));
+        assertEquals(false, CvdbUtils.getSkipStats(queryOptions));
+
+        queryOptions.put(EXCLUDE, "stats");
+        System.out.println("queryOptions = " + queryOptions.toJson());
+        System.out.println("CvdbUtils.getSkipStats(queryOptions) = " + CvdbUtils.getSkipStats(queryOptions));
+        assertEquals(true, CvdbUtils.getSkipStats(queryOptions));
+
+        queryOptions.put(EXCLUDE, "annotation,stats,toto");
+        System.out.println("queryOptions = " + queryOptions.toJson());
+        System.out.println("CvdbUtils.getSkipStats(queryOptions) = " + CvdbUtils.getSkipStats(queryOptions));
+        assertEquals(true, CvdbUtils.getSkipStats(queryOptions));
     }
 }
 

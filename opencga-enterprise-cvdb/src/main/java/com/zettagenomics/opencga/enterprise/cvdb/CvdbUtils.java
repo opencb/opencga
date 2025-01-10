@@ -25,9 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.slf4j.Logger;
@@ -36,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_NAME;
+import static org.opencb.commons.datastore.core.QueryOptions.EXCLUDE;
 
 /**
  * Created by jtarraga on 11/11/17.
@@ -57,27 +56,35 @@ public class CvdbUtils {
             throw new CvdbException("Missing study");
         }
 
-        // Get project from study
-        JwtPayload jwtPayload = cvdbEngine.getCatalogManager().getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
-        String organizationId = studyFqn.getOrganizationId();
-
         // Check the filter interpretation status ID
         String interpretationStatusId = null;
         if (query.containsKey(CI_STATUS_ID_NAME)) {
             interpretationStatusId = query.getString(CI_STATUS_ID_NAME);
             query.remove(CI_STATUS_ID_NAME);
         }
+
+
         // First, get clinical variants
         OpenCGAResult<ClinicalVariant> result = clinicalInterpretationManager.get(query, queryOptions, token);
 
-        for (ClinicalVariant cv : result.getResults()) {
-            DataResult<ClinicalVariantSummaryStats> summaryStatsResult = cvdbEngine.getClinicalVariantSummaryStats(cv.getId(),
-                    interpretationStatusId, null, token);
-            cv.setStats(summaryStatsResult.first());
+        // Compute summary stats if exclude stats is not set
+        if (!getSkipStats(queryOptions)) {
+            for (ClinicalVariant cv : result.getResults()) {
+                DataResult<ClinicalVariantSummaryStats> summaryStatsResult = cvdbEngine.getClinicalVariantSummaryStats(cv.getId(),
+                        interpretationStatusId, null, token);
+                cv.setStats(summaryStatsResult.first());
+            }
         }
 
         return result;
+    }
+
+    public static boolean getSkipStats(QueryOptions queryOptions) {
+        boolean skipStats = false;
+        if (queryOptions != null && queryOptions.containsKey(EXCLUDE) && queryOptions.getAsStringList(EXCLUDE).contains("stats")) {
+            skipStats = true;
+        }
+        return skipStats;
     }
 
     public static String getCollectionPrefix(String databasePrefix, String organizationId) {
