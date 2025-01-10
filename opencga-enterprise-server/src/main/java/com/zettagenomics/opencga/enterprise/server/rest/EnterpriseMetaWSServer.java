@@ -1,6 +1,6 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
-import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseUserManager;
+import com.zettagenomics.opencga.enterprise.catalog.managers.UserManager;
 import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
@@ -45,7 +45,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
 
     private static final AtomicReference<String> opencgaTokenAtomicRef = new AtomicReference<>();
     private static final AtomicReference<EnterpriseConfiguration> enterpriseConfigurationAtomicRef = new AtomicReference<>();
-    public static final AtomicReference<EnterpriseUserManager> enterpriseUserManagerAtomicRef = new AtomicReference<>();
+    public static final AtomicReference<UserManager> enterpriseUserManagerAtomicRef = new AtomicReference<>();
 
     public EnterpriseMetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                   @Context HttpHeaders httpHeaders) throws IOException, VersionException {
@@ -112,13 +112,13 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         return enterpriseConfiguration;
     }
 
-    private EnterpriseUserManager getEnterpriseUserManager() {
-        EnterpriseUserManager enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
+    private UserManager getEnterpriseUserManager() {
+        UserManager enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
         if (enterpriseUserManager == null) {
             synchronized (enterpriseUserManagerAtomicRef) {
                 enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
                 if (enterpriseUserManager == null) {
-                    enterpriseUserManager = new EnterpriseUserManager(catalogManager, getEnterpriseConfiguration(),
+                    enterpriseUserManager = new UserManager(catalogManager, getEnterpriseConfiguration(),
                             getOpencgaToken());
                     enterpriseUserManagerAtomicRef.set(enterpriseUserManager);
                 }

@@ -3,7 +3,6 @@ package com.zettagenomics.opencga.enterprise.catalog.managers;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -25,16 +24,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class EnterpriseUserManager extends EnterpriseAbstractManager {
+public class UserManager extends AbstractManager {
 
     private final QueryOptions userAccountInfoQueryOptions;
+    private final String opencgaToken;
 
-    protected static Logger logger = LoggerFactory.getLogger(EnterpriseUserManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
 
-    public EnterpriseUserManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration,
-                                 String opencgaToken) {
-        super(catalogManager, enterpriseConfiguration, opencgaToken);
+    public UserManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration,
+                       String opencgaToken) {
+        super(catalogManager, enterpriseConfiguration);
 
+        this.opencgaToken = opencgaToken;
         this.userAccountInfoQueryOptions = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.INTERNAL.key(),
                         UserDBAdaptor.QueryParams.ATTRIBUTES.key()));
@@ -58,7 +59,7 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
         if (StringUtils.isEmpty(organizationId)) {
             // Try to automatically set the organization id
             logger.debug("Organization id field is null. Fetching current organizations in installation.");
-            List<String> organizationIds = catalogManager.getAdminManager().getOrganizationIds(opencgaToken);
+            List<String> organizationIds = dbAdaptorFactory.getOrganizationIds();
             logger.debug("List of available organization ids '{}'.", StringUtils.join(organizationIds, "', '"));
             if (organizationIds.size() == 2) {
                 organizationId = organizationIds.stream().filter(s -> !ParamConstants.ADMIN_ORGANIZATION.equals(s))
@@ -69,8 +70,8 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
         }
 
         // Get authOrigin id
-        Organization organization = catalogManager.getOrganizationManager().get(organizationId,
-                OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION, opencgaToken).first();
+        Organization organization = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId)
+                .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
         String authOriginId = null;
         for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
             if (authenticationOrigin.getType() == AuthenticationOrigin.AuthenticationType.SSO) {
@@ -83,9 +84,7 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
         }
 
         // Check user exists
-        Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);
-        OpenCGAResult<User> result = catalogManager.getAdminManager().userSearch(organizationId, query,
-                userAccountInfoQueryOptions, opencgaToken);
+        OpenCGAResult<User> result = dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).get(userId, userAccountInfoQueryOptions);
 
         if (result.getNumResults() == 1) {
             // Check account
