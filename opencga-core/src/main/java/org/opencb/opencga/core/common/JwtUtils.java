@@ -1,16 +1,18 @@
-package org.opencb.opencga.catalog.utils;
+package org.opencb.opencga.core.common;
 
 
 import io.jsonwebtoken.SignatureAlgorithm;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.core.models.JwtPayload;
 
 import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.*;
+
+import static org.opencb.opencga.core.models.JwtPayload.FEDERATIONS;
 
 public class JwtUtils {
 
@@ -49,5 +51,23 @@ public class JwtUtils {
         System.out.println(sdf.format(res));*/
         }
         return res;
+    }
+
+    public static List<JwtPayload.Federation> getFederations(Map<String, Object> claims) {
+        List o = (List) claims.get(FEDERATIONS);
+        if (CollectionUtils.isNotEmpty(o)) {
+            List<JwtPayload.Federation> federationList = new ArrayList<>(o.size());
+            for (Object federationObject : o) {
+                if (federationObject instanceof Map) {
+                    String id = ((Map<String, String>) federationObject).get("id");
+                    List<String> projectIds = ((Map<String, List<String>>) federationObject).get("projectIds");
+                    List<String> studyIds = ((Map<String, List<String>>) federationObject).get("studyIds");
+                    federationList.add(new JwtPayload.Federation(id, projectIds, studyIds));
+                }
+            }
+            return federationList;
+        } else {
+            return Collections.emptyList();
+        }
     }
 }

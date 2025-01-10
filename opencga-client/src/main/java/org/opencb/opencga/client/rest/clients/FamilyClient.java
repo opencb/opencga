@@ -18,9 +18,10 @@ package org.opencb.opencga.client.rest.clients;
 
 import java.lang.Object;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyAclEntryList;
@@ -45,7 +46,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Family webservices.
  *    PATH: families
  */
-public class FamilyClient extends AbstractParentClient {
+public class FamilyClient extends ParentClient {
 
     public FamilyClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

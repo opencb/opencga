@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.slf4j.Logger;
@@ -124,13 +125,13 @@ public class JwtManager {
     public JwtPayload getPayload(String token) throws CatalogAuthenticationException {
         Claims body = parseClaims(token, publicKey).getBody();
         return new JwtPayload(body.getSubject(), body.getAudience(), getAuthOrigin(body), body.getIssuer(), body.getIssuedAt(),
-                body.getExpiration(), token);
+                body.getExpiration(), JwtUtils.getFederations(body), token);
     }
 
     public JwtPayload getPayload(String token, Key publicKey) throws CatalogAuthenticationException {
         Claims body = parseClaims(token, publicKey).getBody();
         return new JwtPayload(body.getSubject(), body.getAudience(), getAuthOrigin(body), body.getIssuer(), body.getIssuedAt(),
-                body.getExpiration(), token);
+                body.getExpiration(), JwtUtils.getFederations(body), token);
     }
 
     private AuthenticationOrigin.AuthenticationType getAuthOrigin(Claims claims) {

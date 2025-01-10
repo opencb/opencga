@@ -14,7 +14,7 @@
   * limitations under the License.
   */
 
- package org.opencb.opencga.client.rest;
+ package org.opencb.opencga.core.client;
 
  import com.fasterxml.jackson.core.JsonParseException;
  import com.fasterxml.jackson.core.JsonProcessingException;
@@ -32,9 +32,9 @@
  import org.opencb.commons.datastore.core.Event;
  import org.opencb.commons.datastore.core.ObjectMap;
  import org.opencb.commons.datastore.core.QueryOptions;
- import org.opencb.opencga.client.config.ClientConfiguration;
- import org.opencb.opencga.client.exceptions.ClientException;
  import org.opencb.opencga.core.common.JacksonUtils;
+ import org.opencb.opencga.core.config.client.ClientConfiguration;
+ import org.opencb.opencga.core.exceptions.ClientException;
  import org.opencb.opencga.core.response.OpenCGAResult;
  import org.opencb.opencga.core.response.QueryType;
  import org.opencb.opencga.core.response.RestResponse;
@@ -63,18 +63,18 @@
  /**
   * Created by imedina on 04/05/16.
   */
- public abstract class AbstractParentClient {
+ public abstract class ParentClient {
 
-     protected static final String GET = "GET";
-     protected static final String POST = "POST";
-     protected static final String DELETE = "DELETE";
-     protected static final int DEFAULT_BATCH_SIZE = 200;
-     protected static final int DEFAULT_LIMIT = 2000;
-     protected static final int DEFAULT_SKIP = 0;
-     protected static final int DEFAULT_CONNECT_TIMEOUT = 1000;
-     protected static final int DEFAULT_READ_TIMEOUT = 30000;
-     protected static final int DEFAULT_UPLOAD_TIMEOUT = 5400000;
-     protected static final String COOKIES = "cookies";
+     public static final String GET = "GET";
+     public static final String POST = "POST";
+     public static final String DELETE = "DELETE";
+     public static final int DEFAULT_BATCH_SIZE = 200;
+     public static final int DEFAULT_LIMIT = 2000;
+     public static final int DEFAULT_SKIP = 0;
+     public static final int DEFAULT_CONNECT_TIMEOUT = 1000;
+     public static final int DEFAULT_READ_TIMEOUT = 30000;
+     public static final int DEFAULT_UPLOAD_TIMEOUT = 5400000;
+     public static final String COOKIES = "cookies";
 
      protected final Client client;
      protected final ObjectMapper jsonObjectMapper;
@@ -86,12 +86,12 @@
      protected String token;
      private boolean throwExceptionOnError = false;
 
-     protected AbstractParentClient(String token, ClientConfiguration clientConfiguration) {
+     protected ParentClient(String token, ClientConfiguration clientConfiguration) {
          this.token = token;
          this.clientConfiguration = clientConfiguration;
 
          this.logger = LoggerFactory.getLogger(this.getClass());
-         this.privateLogger = LoggerFactory.getLogger(AbstractParentClient.class);
+         this.privateLogger = LoggerFactory.getLogger(ParentClient.class);
 
          this.client = createRestClient();
 
@@ -161,7 +161,7 @@
          return clientBuilder.build();
      }
 
-     public AbstractParentClient setThrowExceptionOnError(boolean throwExceptionOnError) {
+     public ParentClient setThrowExceptionOnError(boolean throwExceptionOnError) {
          this.throwExceptionOnError = throwExceptionOnError;
          return this;
      }
@@ -666,7 +666,7 @@
          }
      }
 
-     public AbstractParentClient setToken(String token) {
+     public ParentClient setToken(String token) {
          this.token = token;
          return this;
      }

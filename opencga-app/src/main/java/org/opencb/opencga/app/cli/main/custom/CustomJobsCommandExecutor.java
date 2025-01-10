@@ -22,7 +22,7 @@ import org.opencb.opencga.app.cli.main.utils.JobsLog;
 import org.opencb.opencga.app.cli.main.utils.JobsTopManager;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.JobTop;

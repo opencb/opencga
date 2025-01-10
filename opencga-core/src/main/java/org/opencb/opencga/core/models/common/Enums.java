@@ -259,6 +259,9 @@ public final class Enums {
         IMPORT_EXTERNAL_GROUP_OF_USERS,
         SYNC_EXTERNAL_GROUP_OF_USERS,
 
+        CREATE_FEDERATION_CLIENT,
+        EXPOSE_FEDERATION_SERVER,
+
         // RGA
         RESET_RGA_INDEXES,
         UPDATE_RGA_INDEX,

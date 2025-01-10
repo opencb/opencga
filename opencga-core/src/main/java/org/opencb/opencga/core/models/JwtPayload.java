@@ -4,25 +4,29 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 
 public class JwtPayload {
 
     private final String userId;
     private final String organization;
     private final AuthenticationOrigin.AuthenticationType authOrigin;
-    private final String issuer;        // Issuer of the JWT token.
-    private final Date issuedAt;        // Time when the JWT was issued.
-    private final Date expirationTime;  // Expiration time of the JWT.
+    private final String issuer;         // Issuer of the JWT token.
+    private final Date issuedAt;         // Time when the JWT was issued.
+    private final Date expirationTime;   // Expiration time of the JWT.
+    private final List<Federation> federations; // Federation information containing the projects and studies the user has access to.
     private final String token;
 
     public static final String AUTH_ORIGIN = "authOrigin";
+    public static final String FEDERATIONS = "federations";
 
     public JwtPayload(String userId, String organization, AuthenticationOrigin.AuthenticationType authOrigin, String issuer, Date issuedAt,
-                      Date expirationTime, String token) {
+                      Date expirationTime, List<Federation> federationList, String token) {
         this.token = token;
         this.userId = userId;
         this.organization = organization;
@@ -30,6 +34,7 @@ public class JwtPayload {
         this.issuer = issuer;
         this.issuedAt = issuedAt;
         this.expirationTime = expirationTime;
+        this.federations = federationList;
     }
 
     /**
@@ -81,6 +86,8 @@ public class JwtPayload {
             } else {
                 this.expirationTime = null;
             }
+
+            this.federations = JwtUtils.getFederations(claimsMap);
         }
     }
 
@@ -93,6 +100,7 @@ public class JwtPayload {
         sb.append(", issuer='").append(issuer).append('\'');
         sb.append(", issuedAt=").append(issuedAt);
         sb.append(", expirationTime=").append(expirationTime);
+        sb.append(", federations=").append(federations);
         sb.append(", token='").append(token).append('\'');
         sb.append('}');
         return sb.toString();
@@ -133,4 +141,61 @@ public class JwtPayload {
     public String getToken() {
         return token;
     }
+
+    public List<Federation> getFederations() {
+        return federations;
+    }
+
+    public static class Federation {
+        private String id;
+        private List<String> projectIds;
+        private List<String> studyIds;
+
+        public Federation() {
+        }
+
+        public Federation(String id, List<String> projectIds, List<String> studyIds) {
+            this.id = id;
+            this.projectIds = projectIds;
+            this.studyIds = studyIds;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Federation{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", projectIds=").append(projectIds);
+            sb.append(", studyIds=").append(studyIds);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public Federation setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public List<String> getProjectIds() {
+            return projectIds;
+        }
+
+        public Federation setProjectIds(List<String> projectIds) {
+            this.projectIds = projectIds;
+            return this;
+        }
+
+        public List<String> getStudyIds() {
+            return studyIds;
+        }
+
+        public Federation setStudyIds(List<String> studyIds) {
+            this.studyIds = studyIds;
+            return this;
+        }
+    }
+
 }

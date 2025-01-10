@@ -18,9 +18,10 @@ package org.opencb.opencga.client.rest.clients;
 
 import java.lang.Object;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortAclEntryList;
 import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
@@ -46,7 +47,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Cohort webservices.
  *    PATH: cohorts
  */
-public class CohortClient extends AbstractParentClient {
+public class CohortClient extends ParentClient {
 
     public CohortClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

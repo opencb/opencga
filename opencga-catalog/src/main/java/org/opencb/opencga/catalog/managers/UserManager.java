@@ -167,7 +167,12 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Unknown authentication origin id '" + account.getAuthentication() + "'");
             }
         } else {
-            account.setAuthentication(new Account.AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, false));
+            if (account.getAuthentication() != null) {
+                account.getAuthentication().setId(AuthenticationOrigin.AuthenticationType.OPENCGA.name());
+            } else {
+                account.setAuthentication(new Account.AuthenticationOrigin(AuthenticationOrigin.AuthenticationType.OPENCGA.name(), false,
+                        false));
+            }
         }
 
         // Set password expiration

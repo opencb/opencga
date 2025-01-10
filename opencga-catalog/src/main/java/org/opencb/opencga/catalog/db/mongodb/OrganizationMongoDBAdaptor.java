@@ -27,6 +27,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.federation.FederationServer;
+import org.opencb.opencga.core.models.federation.FederationClient;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -257,7 +259,9 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
             throws CatalogParameterException, CatalogDBException {
         checkUpdatedParams(parameters, Arrays.asList(QueryParams.NAME.key(), QueryParams.OWNER.key(),
                 QueryParams.CREATION_DATE.key(), QueryParams.MODIFICATION_DATE.key(), QueryParams.ADMINS.key(),
-                QueryParams.CONFIGURATION.key(), QueryParams.ATTRIBUTES.key()));
+                QueryParams.CONFIGURATION_OPTIMIZATIONS.key(), QueryParams.CONFIGURATION_TOKEN.key(),
+                QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key(), QueryParams.FEDERATION_CLIENTS.key(),
+                QueryParams.FEDERATION_SERVERS.key(), QueryParams.CONFIGURATION.key(), QueryParams.ATTRIBUTES.key()));
 
         UpdateDocument document = new UpdateDocument();
 
@@ -286,6 +290,42 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
                 case REPLACE:
                     filterReplaceParams(parameters.getAsList(QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key(), Map.class), document,
                             m -> String.valueOf(m.get("id")), QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS_ID.key());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
+        }
+
+        // FederationClient action
+        if (parameters.containsKey(QueryParams.FEDERATION_CLIENTS.key())) {
+            Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+            ParamUtils.AddRemoveAction operation = ParamUtils.AddRemoveAction.from(actionMap, QueryParams.FEDERATION_CLIENTS.key());
+            String[] fedClients = {QueryParams.FEDERATION_CLIENTS.key()};
+            switch (operation) {
+                case REMOVE:
+                    fixFederationClientForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), fedClients);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), fedClients);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
+        }
+
+        // FederationServer action
+        if (parameters.containsKey(QueryParams.FEDERATION_SERVERS.key())) {
+            Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+            ParamUtils.AddRemoveAction operation = ParamUtils.AddRemoveAction.from(actionMap, QueryParams.FEDERATION_SERVERS.key());
+            String[] fedClients = {QueryParams.FEDERATION_SERVERS.key()};
+            switch (operation) {
+                case REMOVE:
+                    fixFederationServerForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), fedClients);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), fedClients);
                     break;
                 default:
                     throw new IllegalStateException("Unknown operation " + operation);
@@ -364,6 +404,36 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         }
 
         return document;
+    }
+
+    private void fixFederationClientForRemoval(ObjectMap parameters) {
+        if (parameters.get(QueryParams.FEDERATION_CLIENTS.key()) == null) {
+            return;
+        }
+        List<Document> federationParamList = new LinkedList<>();
+        for (Object federationClient : parameters.getAsList(QueryParams.FEDERATION_CLIENTS.key())) {
+            if (federationClient instanceof FederationServer) {
+                federationParamList.add(new Document("id", ((FederationServer) federationClient).getId()));
+            } else {
+                federationParamList.add(new Document("id", ((Map) federationClient).get("id")));
+            }
+        }
+        parameters.putNested(QueryParams.FEDERATION_CLIENTS.key(), federationParamList, false);
+    }
+
+    private void fixFederationServerForRemoval(ObjectMap parameters) {
+        if (parameters.get(QueryParams.FEDERATION_SERVERS.key()) == null) {
+            return;
+        }
+        List<Document> federationParamList = new LinkedList<>();
+        for (Object federationServer : parameters.getAsList(QueryParams.FEDERATION_SERVERS.key())) {
+            if (federationServer instanceof FederationClient) {
+                federationParamList.add(new Document("id", ((FederationClient) federationServer).getId()));
+            } else {
+                federationParamList.add(new Document("id", ((Map) federationServer).get("id")));
+            }
+        }
+        parameters.putNested(QueryParams.FEDERATION_SERVERS.key(), federationParamList, false);
     }
 
     private void fixAuthOriginsForRemoval(ObjectMap parameters) {
