@@ -67,6 +67,7 @@ export default class Organization extends OpenCGAParentClass {
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.id] - Note unique identifier.
+    * @param {String} [params.type] - Note type.
     * @param {String} [params.scope] - Scope of the Note.
     * @param {String} [params.visibility] - Visibility of the Note.
     * @param {String} [params.uuid] - Unique 32-character identifier assigned automatically by OpenCGA.
