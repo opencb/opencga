@@ -46,7 +46,8 @@ class Alignment(_ParentRestClient):
 
     def run_coverage_index(self, data=None, **options):
         """
-        Compute coverage for a list of alignment files.
+        Compute the coverage from a given BAM alignment file, e.g., create a
+            .bw file from a .bam file.
         PATH: /{apiVersion}/analysis/alignment/coverage/index/run
 
         :param dict data: Coverage computation parameters. (REQUIRED)
@@ -222,7 +223,8 @@ class Alignment(_ParentRestClient):
 
     def run_index(self, data=None, **options):
         """
-        Index alignment file.
+        Index a given alignment file BAM/CRAM, e.g., create a .bai file from a
+            .bam file.
         PATH: /{apiVersion}/analysis/alignment/index/run
 
         :param dict data: Alignment index params. (REQUIRED)
