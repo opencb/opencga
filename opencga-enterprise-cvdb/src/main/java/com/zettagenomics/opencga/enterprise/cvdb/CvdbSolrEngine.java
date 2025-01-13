@@ -953,6 +953,7 @@ public class CvdbSolrEngine {
         DataResult<FacetField> facetResult;
         List<String> facetNames = new ArrayList<>(facetMap.keySet());
         QueryOptions queryOptions = new QueryOptions(FACET, StringUtils.join(facetNames, FacetQueryParser.FACET_SEPARATOR));
+        queryOptions.put(LIMIT, 10);
         switch (type) {
             case "case": {
                 facetResult = facetClinicalAnalyses(query, queryOptions, token);

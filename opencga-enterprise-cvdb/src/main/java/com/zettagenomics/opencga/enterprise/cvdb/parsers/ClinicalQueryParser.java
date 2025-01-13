@@ -574,7 +574,7 @@ public class ClinicalQueryParser {
                 FacetQueryParser facetQueryParser = new FacetQueryParser();
 
                 String facetQuery = queryOptions.getString(QueryOptions.FACET); //parseFacet(queryOptions.getString(QueryOptions.FACET));
-                String jsonFacet = facetQueryParser.parse(facetQuery);
+                String jsonFacet = facetQueryParser.parse(facetQuery, queryOptions);
 
                 solrQuery.set("json.facet", jsonFacet);
                 solrQuery.setRows(0);
