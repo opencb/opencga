@@ -1401,6 +1401,8 @@ public class CvdbSolrEngine {
 
     public ClinicalVariantSummaryStats sortSummaryStats(ClinicalVariantSummaryStats srcStats) {
         ClinicalVariantSummaryStats sortedStats = new ClinicalVariantSummaryStats();
+        sortedStats.setId(srcStats.getId());
+        sortedStats.setVariantId(srcStats.getVariantId());
 
         // Clinical analysis stats: num. cases, disorder IDs, proband disorder IDs and phenotype names
         sortedStats.setNumClinicalAnalyses(srcStats.getNumClinicalAnalyses());
