@@ -1440,7 +1440,7 @@ public class CvdbSolrEngine {
 
         return srcMap.entrySet()
                 .stream()
-                .sorted(Map.Entry.comparingByValue()) // Compare by value
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed()) // Sort by value in descending order
                 .limit(FACET_DEFAULT_LIMIT)
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
