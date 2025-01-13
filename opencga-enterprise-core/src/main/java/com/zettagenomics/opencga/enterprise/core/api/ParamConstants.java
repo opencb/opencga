@@ -30,6 +30,7 @@ public class ParamConstants {
     public static final String INDEX_OVERWRITE_PARAM_DESCRIPTION = "Overwrite clinical analysis when CVDB indexing";
 
     public static final int DEFAULT_LIMIT = 100;
+    public static final int FACET_DEFAULT_LIMIT = 10;
 
     public static final String PROJECT_PARAM_DESCRIPTION = "Project ID";
     public static final String PROJECT_PARAM_NAME = "project";

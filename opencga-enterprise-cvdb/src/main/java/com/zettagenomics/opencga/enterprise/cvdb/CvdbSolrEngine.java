@@ -31,6 +31,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalInterpretationQ
 import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalVariantEvidenceQueryParser;
 import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalVariantQueryParser;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
@@ -939,7 +940,7 @@ public class CvdbSolrEngine {
             }
 
             if (targetProjectIds.size() > 1 && aggVariantStats.getNumClinicalAnalyses() > 1) {
-                variantStatsList.add(aggVariantStats);
+                variantStatsList.add(sortSummaryStats(aggVariantStats));
             }
         }
 
@@ -953,7 +954,7 @@ public class CvdbSolrEngine {
         DataResult<FacetField> facetResult;
         List<String> facetNames = new ArrayList<>(facetMap.keySet());
         QueryOptions queryOptions = new QueryOptions(FACET, StringUtils.join(facetNames, FacetQueryParser.FACET_SEPARATOR));
-        queryOptions.put(LIMIT, 10);
+        queryOptions.put(LIMIT, FACET_DEFAULT_LIMIT);
         switch (type) {
             case "case": {
                 facetResult = facetClinicalAnalyses(query, queryOptions, token);
@@ -1396,6 +1397,57 @@ public class CvdbSolrEngine {
         updateStatsMap(srcStats.getEvidence().getReviewTiers(), destStats.getEvidence().getReviewTiers());
         updateStatsMap(srcStats.getEvidence().getReviewAcmgs(), destStats.getEvidence().getReviewAcmgs());
         updateStatsMap(srcStats.getEvidence().getReviewClinicalSignificances(), destStats.getEvidence().getReviewClinicalSignificances());
+    }
+
+    public ClinicalVariantSummaryStats sortSummaryStats(ClinicalVariantSummaryStats srcStats) {
+        ClinicalVariantSummaryStats sortedStats = new ClinicalVariantSummaryStats();
+
+        // Clinical analysis stats: num. cases, disorder IDs, proband disorder IDs and phenotype names
+        sortedStats.setNumClinicalAnalyses(srcStats.getNumClinicalAnalyses());
+        sortedStats.getClinicalAnalysis().setDisorders(sortMap(srcStats.getClinicalAnalysis().getDisorders()));
+        sortedStats.getClinicalAnalysis().setProbandDisorders(sortMap(srcStats.getClinicalAnalysis().getProbandDisorders()));
+        sortedStats.getClinicalAnalysis().setProbandPhenotypes(sortMap(srcStats.getClinicalAnalysis().getProbandPhenotypes()));
+
+        // Clinical interpretation stats: num. primary and secondary interpretations; panel IDs and method names
+        sortedStats.setNumPrimaryInterpretations(srcStats.getNumPrimaryInterpretations());
+        sortedStats.setNumSecondaryInterpretations(srcStats.getNumSecondaryInterpretations());
+        sortedStats.getInterpretation().setPanels(sortMap(srcStats.getInterpretation().getPanels()));
+        sortedStats.getInterpretation().setMethods(sortMap(srcStats.getInterpretation().getMethods()));
+
+        // Clinical variant stats: status and confidence values
+        sortedStats.getVariant().setStatus(sortMap(srcStats.getVariant().getStatus()));
+        sortedStats.getVariant().setConfidences(sortedStats.getVariant().getConfidences());
+
+        // Clinical variant evidence stats: gene names, transcript IDs, SO term accessions, panel IDs, MoIs, ACMGs, and for review
+        // tiers, ACMGs and clinical significances
+        sortedStats.getEvidence().setGenes(sortMap(srcStats.getEvidence().getGenes()));
+        sortedStats.getEvidence().setTranscripts(sortMap(srcStats.getEvidence().getTranscripts()));
+        sortedStats.getEvidence().setSoTerms(sortMap(srcStats.getEvidence().getSoTerms()));
+        sortedStats.getEvidence().setPanels(sortMap(srcStats.getEvidence().getPanels()));
+        sortedStats.getEvidence().setMois(sortMap(srcStats.getEvidence().getMois()));
+        sortedStats.getEvidence().setAcmgs(sortMap(srcStats.getEvidence().getAcmgs()));
+        sortedStats.getEvidence().setReviewTiers(sortMap(srcStats.getEvidence().getReviewTiers()));
+        sortedStats.getEvidence().setReviewAcmgs(sortMap(srcStats.getEvidence().getReviewAcmgs()));
+        sortedStats.getEvidence().setReviewClinicalSignificances(sortMap(srcStats.getEvidence().getReviewClinicalSignificances()));
+
+        return sortedStats;
+    }
+
+    private Map<String, Long> sortMap(Map<String, Long> srcMap) {
+        if (MapUtils.isEmpty(srcMap)) {
+            return srcMap;
+        }
+
+        return srcMap.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue()) // Compare by value
+                .limit(FACET_DEFAULT_LIMIT)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1, // Handle duplicate keys
+                        LinkedHashMap::new // Maintain insertion order
+                ));
     }
 
     private void updateStatsMap(Map<String, Long> srcMap, Map<String, Long> destMap) {
