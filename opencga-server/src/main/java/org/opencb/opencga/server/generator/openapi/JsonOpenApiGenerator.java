@@ -1,4 +1,5 @@
 package org.opencb.opencga.server.generator.openapi;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
@@ -85,7 +86,11 @@ public class JsonOpenApiGenerator {
                     javax.ws.rs.Path methodPathAnnotation = wsmethod.getAnnotation(javax.ws.rs.Path.class);
                     String fullPath = basePath + (methodPathAnnotation != null ? methodPathAnnotation.value() : "");
                     method.setOperationId(methodPathAnnotation != null ? methodPathAnnotation.value() : "");
-
+                    if(StringUtils.isEmpty(token)){
+                        List tokens = new ArrayList<>();
+                        tokens.add(token);
+                        method.setSecurity(Collections.singletonList(Collections.singletonMap("BearerAuth", tokens)));
+                    }
                     // Crear o actualizar el Path
                     paths.put(fullPath, new HashMap<>());
                     paths.get(fullPath).put(httpMethod, method);
