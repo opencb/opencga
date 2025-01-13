@@ -35,7 +35,7 @@ public class JsonOpenApiGenerator {
         bearerAuth.put("type", "apiKey");
         bearerAuth.put("name", "Authorization");
         bearerAuth.put("in", "header");
-        bearerAuth.put("description", "Use 'Bearer <your-token>' to authenticate");
+        bearerAuth.put("description", "Use 'Bearer <token>' to authenticate");
         securityDefinitions.put("BearerAuth", bearerAuth);
         swagger.setSecurityDefinitions(securityDefinitions);
 

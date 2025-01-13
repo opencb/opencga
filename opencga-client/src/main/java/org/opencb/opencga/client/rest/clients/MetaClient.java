@@ -91,7 +91,7 @@ public class MetaClient extends AbstractParentClient {
     /**
      * Opencga openapi json.
      * @param params Map containing any of the following optional parameters.
-     *       category: List of categories to get API from.
+     *       token: List of categories to get API from.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
