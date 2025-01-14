@@ -87,11 +87,10 @@ public class JsonOpenApiGenerator {
                     String fullPath = basePath + (methodPathAnnotation != null ? methodPathAnnotation.value() : "");
                     method.setOperationId(methodPathAnnotation != null ? methodPathAnnotation.value() : "");
                     List tokens = new ArrayList<>();
-                    if(StringUtils.isEmpty(token)){
+                    if(!StringUtils.isEmpty(token)){
                         tokens.add("Bearer "+token);
                     }
                     method.setSecurity(Collections.singletonList(Collections.singletonMap("BearerAuth", tokens)));
-
                     // Crear o actualizar el Path
                     paths.put(fullPath, new HashMap<>());
                     paths.get(fullPath).put(httpMethod, method);
