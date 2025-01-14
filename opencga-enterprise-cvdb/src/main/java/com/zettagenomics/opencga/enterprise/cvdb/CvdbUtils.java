@@ -74,7 +74,7 @@ public class CvdbUtils {
             for (ClinicalVariant cv : result.getResults()) {
                 DataResult<ClinicalVariantSummaryStats> summaryStatsResult = cvdbEngine.getClinicalVariantSummaryStats(cv.getId(),
                         interpretationStatusId, null, STATS_DEFAULT_ORDER, STATS_DEFAULT_LIMIT, token);
-                cv.setStats(summaryStatsResult.first());
+                cv.setStats(summaryStatsResult.getResults());
             }
         }
 
