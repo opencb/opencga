@@ -16,6 +16,8 @@
 
 package com.zettagenomics.opencga.enterprise.core.api;
 
+import static org.opencb.commons.datastore.core.QueryOptions.*;
+
 public class ParamConstants {
 
     public static final String CLINICAL_ANALYSES_INDEX_DESCRIPTION = "Index clinical analyses into CVDB";
@@ -30,7 +32,15 @@ public class ParamConstants {
     public static final String INDEX_OVERWRITE_PARAM_DESCRIPTION = "Overwrite clinical analysis when CVDB indexing";
 
     public static final int DEFAULT_LIMIT = 100;
-    public static final int FACET_DEFAULT_LIMIT = 10;
+
+    public static final String STATS_LIMIT_DESCR = "Maximum number of results (i.e., buckets) to return for each aggregation";
+    public static final String STATS_LIMIT_NAME = "statsLimit";
+    public static final int STATS_DEFAULT_LIMIT = 10;
+
+    public static final String STATS_ORDER_DESCR = "The sorting order of the results (i.e., buckets) based on their counts. For ascending"
+            + " order use, '" + ASC + "' or '" + ASCENDING + "'; for descending order, '" + DESC + "' or '" + DESCENDING + "'";
+    public static final String STATS_ORDER_NAME = "statsOrder";
+    public static final String STATS_DEFAULT_ORDER = DESC;
 
     public static final String PROJECT_PARAM_DESCRIPTION = "Project ID";
     public static final String PROJECT_PARAM_NAME = "project";

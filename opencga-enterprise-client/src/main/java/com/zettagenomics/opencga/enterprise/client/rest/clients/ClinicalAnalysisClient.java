@@ -189,7 +189,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
-     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+     *            CLOSED.
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
      *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -345,7 +346,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
-     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+     *            CLOSED.
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
      *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -516,7 +518,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
-     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+     *            CLOSED.
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
      *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -673,7 +676,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
-     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+     *            CLOSED.
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
      *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -822,7 +826,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
-     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+     *            CLOSED.
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
      *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -980,7 +985,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
-     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+     *            CLOSED.
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
      *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1094,7 +1100,11 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @param variantIds Comma separated list of variant IDs.
      * @param params Map containing any of the following optional parameters.
      *       project: Project ID.
-     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+     *            CLOSED.
+     *       statsOrder: The sorting order of the results (i.e., buckets) based on their counts. For ascending order use, 'asc' or
+     *            'ascending'; for descending order, 'desc' or 'descending'.
+     *       statsLimit: Maximum number of results (i.e., buckets) to return for each aggregation.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -1143,7 +1153,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
-     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+     *            CLOSED.
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
      *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -1300,7 +1311,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
      *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
-     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+     *            CLOSED.
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
      *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
@@ -2090,7 +2102,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       panelIntersection: Intersect panel genes and regions with given genes and regions from que input query. This will prevent
      *            returning variants from regions out of the panel.
      *       trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
-     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+     *            CLOSED.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

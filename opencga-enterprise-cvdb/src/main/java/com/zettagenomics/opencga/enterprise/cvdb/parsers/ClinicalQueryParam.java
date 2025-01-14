@@ -219,7 +219,8 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // <field name="statusId" type="string" indexed="true" stored="true" multiValued="false"/>
     public static final String CI_STATUS_ID_NAME = "ciStatusId";
-    public static final String CI_STATUS_ID_DESCR = "Clinical interpretation status ID (or list of IDs" + OPT_LIST;
+    public static final String CI_STATUS_ID_DESCR = "Clinical interpretation status ID (or list of IDs" + OPT_LIST + ". Valid values: "
+            + "NOT_STARTED, ACTIVE, DONE, CLOSED.";
     public static final ClinicalQueryParam CI_STATUS_ID = new ClinicalQueryParam(CI_STATUS_ID_NAME, TEXT_ARRAY,
             CI_STATUS_ID_DESCR);
 

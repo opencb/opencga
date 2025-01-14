@@ -25,7 +25,6 @@ import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalSolrIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.*;
-import com.zettagenomics.opencga.enterprise.cvdb.models.mappings.FieldMapping;
 import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParser;
 import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalInterpretationQueryParser;
 import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalVariantEvidenceQueryParser;
@@ -730,7 +729,6 @@ public class CvdbSolrEngine {
                     CLINICAL_VARIANTS_COLLECTION_SUFFIX);
             SolrCollection solrCollection = solrManager.getCollection(collection);
             facetResult = solrCollection.facet(solrQuery);
-//            postProcessing(facetResult, new CvFieldMapping());
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
@@ -840,7 +838,7 @@ public class CvdbSolrEngine {
     //----------------------------------------------------------------------
 
     public DataResult<ClinicalVariantSummaryStats> getClinicalVariantSummaryStats(List<String> variantIds, String interpretationStatusId,
-                                                                                  String projectId, String token)
+                                                                                  String projectId, String order, int limit, String token)
             throws CatalogException, IOException, CvdbException {
         // Sanity check
         if (CollectionUtils.isEmpty(variantIds)) {
@@ -849,6 +847,28 @@ public class CvdbSolrEngine {
 
         if (variantIds.size() > DEFAULT_LIMIT) {
             throw new CvdbException("The maximum number of variants (" + DEFAULT_LIMIT + ")has been exceeded (" + variantIds.size() + ")");
+        }
+
+        if (StringUtils.isEmpty(order)) {
+            order = STATS_DEFAULT_ORDER;
+        } else {
+            switch (order.toLowerCase(Locale.ROOT)) {
+                case DESC:
+                case DESCENDING:
+                case ASC:
+                case ASCENDING: {
+                    break;
+                }
+
+                default: {
+                    throw new CvdbException("Invalid stats order '" + order + "'. Valid values: " + DESC + ", " + DESCENDING + ", " + ASC + ", "
+                            + ASCENDING);
+                }
+            }
+        }
+
+        if (limit < 1) {
+            limit = STATS_DEFAULT_LIMIT;
         }
 
         // Get organization
@@ -891,6 +911,9 @@ public class CvdbSolrEngine {
                 query = new Query()
                         .append(PROJECT_PARAM_NAME, targetProjectId)
                         .append(CV_VARIANT_ID_NAME, variantId);
+                if (StringUtils.isNotEmpty(interpretationStatusId)) {
+                    query.put(CI_STATUS_ID_NAME, interpretationStatusId);
+                }
 
                 ClinicalVariantSummaryStats variantStats = new ClinicalVariantSummaryStats();
                 variantStats.setId(organizationId + "@" + targetProjectId);
@@ -901,20 +924,20 @@ public class CvdbSolrEngine {
                 facetMap.put("disorderId", variantStats.getClinicalAnalysis().getDisorders());
                 facetMap.put("probandDisorderIds", variantStats.getClinicalAnalysis().getProbandDisorders());
                 facetMap.put("probandPhenotypeNames", variantStats.getClinicalAnalysis().getProbandPhenotypes());
-                performFacet(query, facetMap, "case", variantStats, token);
+                performFacet(query, facetMap, "case", variantStats, order, limit, token);
 
                 // Clinical interpretation stats: num. primary and secondary interpretations; panel IDs and method names
                 facetMap.clear();
                 facetMap.put("primary", null);
                 facetMap.put("panelIds", variantStats.getInterpretation().getPanels());
                 facetMap.put("methodName", variantStats.getInterpretation().getMethods());
-                performFacet(query, facetMap, "interpretation", variantStats, token);
+                performFacet(query, facetMap, "interpretation", variantStats, order, limit, token);
 
                 // Clinical variant stats: status and confidence values
                 facetMap.clear();
                 facetMap.put("status", variantStats.getVariant().getStatus());
                 facetMap.put("confidenceValue", variantStats.getVariant().getConfidences());
-                performFacet(query, facetMap, "variant", variantStats, token);
+                performFacet(query, facetMap, "variant", variantStats, order, limit, token);
 
                 // Clinical variant evidence stats: gene names, transcript IDs, SO term accessions, panel IDs, MoIs, ACMGs, and for review
                 // tiers, ACMGs and clinical significances
@@ -928,7 +951,7 @@ public class CvdbSolrEngine {
                 facetMap.put("reviewAcmgs", variantStats.getEvidence().getReviewAcmgs());
                 facetMap.put("reviewTier", variantStats.getEvidence().getReviewTiers());
                 facetMap.put("reviewClinicalSignificance", variantStats.getEvidence().getReviewClinicalSignificances());
-                performFacet(query, facetMap, "evidence", variantStats, token);
+                performFacet(query, facetMap, "evidence", variantStats, order, limit, token);
 
                 if (variantStats.getNumClinicalAnalyses() > 0) {
                     variantStatsList.add(variantStats);
@@ -940,7 +963,7 @@ public class CvdbSolrEngine {
             }
 
             if (targetProjectIds.size() > 1 && aggVariantStats.getNumClinicalAnalyses() > 1) {
-                variantStatsList.add(sortSummaryStats(aggVariantStats));
+                variantStatsList.add(sortSummaryStats(aggVariantStats, order, limit));
             }
         }
 
@@ -949,12 +972,12 @@ public class CvdbSolrEngine {
     }
 
     private void performFacet(Query query, Map<String, Map<String, Long>> facetMap, String type, ClinicalVariantSummaryStats stats,
-                              String token) throws IOException, CvdbException, CatalogException {
-        StopWatch watch = StopWatch.createStarted();
+                              String order, int limit, String token) throws IOException, CvdbException, CatalogException {
         DataResult<FacetField> facetResult;
         List<String> facetNames = new ArrayList<>(facetMap.keySet());
         QueryOptions queryOptions = new QueryOptions(FACET, StringUtils.join(facetNames, FacetQueryParser.FACET_SEPARATOR));
-        queryOptions.put(LIMIT, FACET_DEFAULT_LIMIT);
+        queryOptions.put(LIMIT, limit);
+        queryOptions.put(ORDER, order);
         switch (type) {
             case "case": {
                 facetResult = facetClinicalAnalyses(query, queryOptions, token);
@@ -999,7 +1022,7 @@ public class CvdbSolrEngine {
     }
 
     public DataResult<ClinicalVariantSummaryStats> getClinicalVariantSummaryStats(String variantId, String interpretationStatusId,
-                                                                                  String projectId, String token)
+                                                                                  String projectId, String order, int limit, String token)
             throws CatalogException, IOException, CvdbException {
         // Checking parameter
         if (StringUtils.isEmpty(variantId)) {
@@ -1007,7 +1030,7 @@ public class CvdbSolrEngine {
         }
         List<String> ids = new ArrayList<>();
         ids.addAll(Arrays.asList(variantId.split(",")));
-        return getClinicalVariantSummaryStats(ids, interpretationStatusId, projectId, token);
+        return getClinicalVariantSummaryStats(ids, interpretationStatusId, projectId, order, limit, token);
     }
 
     //----------------------------------------------------------------------
@@ -1330,28 +1353,6 @@ public class CvdbSolrEngine {
 
     //----------------------------------------------------------------------
 
-    private void postProcessing(DataResult<FacetField> dataResult, FieldMapping fieldMapping) {
-        for (FacetField facetField : dataResult.getResults()) {
-            postProcessingRecursive(facetField, fieldMapping);
-        }
-    }
-
-    private void postProcessingRecursive(FacetField facetField, FieldMapping fieldMapping) {
-        try {
-            String newName = fieldMapping.toModelField(facetField.getName());
-            facetField.setName(newName);
-            for (FacetField.Bucket bucket : facetField.getBuckets()) {
-                if (CollectionUtils.isNotEmpty(bucket.getFacetFields())) {
-                    for (FacetField field : bucket.getFacetFields()) {
-                        postProcessingRecursive(field, fieldMapping);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // Nothing to do
-        }
-    }
-
     private void setViewerInQuery(Query query, String token) throws CvdbException {
         try {
             JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
@@ -1399,51 +1400,60 @@ public class CvdbSolrEngine {
         updateStatsMap(srcStats.getEvidence().getReviewClinicalSignificances(), destStats.getEvidence().getReviewClinicalSignificances());
     }
 
-    public ClinicalVariantSummaryStats sortSummaryStats(ClinicalVariantSummaryStats srcStats) {
+    public ClinicalVariantSummaryStats sortSummaryStats(ClinicalVariantSummaryStats srcStats, String order, int limit) {
         ClinicalVariantSummaryStats sortedStats = new ClinicalVariantSummaryStats();
         sortedStats.setId(srcStats.getId());
         sortedStats.setVariantId(srcStats.getVariantId());
 
         // Clinical analysis stats: num. cases, disorder IDs, proband disorder IDs and phenotype names
         sortedStats.setNumClinicalAnalyses(srcStats.getNumClinicalAnalyses());
-        sortedStats.getClinicalAnalysis().setDisorders(sortMap(srcStats.getClinicalAnalysis().getDisorders()));
-        sortedStats.getClinicalAnalysis().setProbandDisorders(sortMap(srcStats.getClinicalAnalysis().getProbandDisorders()));
-        sortedStats.getClinicalAnalysis().setProbandPhenotypes(sortMap(srcStats.getClinicalAnalysis().getProbandPhenotypes()));
+        sortedStats.getClinicalAnalysis().setDisorders(sortMap(srcStats.getClinicalAnalysis().getDisorders(), order, limit));
+        sortedStats.getClinicalAnalysis().setProbandDisorders(sortMap(srcStats.getClinicalAnalysis().getProbandDisorders(), order, limit));
+        sortedStats.getClinicalAnalysis().setProbandPhenotypes(sortMap(srcStats.getClinicalAnalysis().getProbandPhenotypes(), order,
+                limit));
 
         // Clinical interpretation stats: num. primary and secondary interpretations; panel IDs and method names
         sortedStats.setNumPrimaryInterpretations(srcStats.getNumPrimaryInterpretations());
         sortedStats.setNumSecondaryInterpretations(srcStats.getNumSecondaryInterpretations());
-        sortedStats.getInterpretation().setPanels(sortMap(srcStats.getInterpretation().getPanels()));
-        sortedStats.getInterpretation().setMethods(sortMap(srcStats.getInterpretation().getMethods()));
+        sortedStats.getInterpretation().setPanels(sortMap(srcStats.getInterpretation().getPanels(), order, limit));
+        sortedStats.getInterpretation().setMethods(sortMap(srcStats.getInterpretation().getMethods(), order, limit));
 
         // Clinical variant stats: status and confidence values
-        sortedStats.getVariant().setStatus(sortMap(srcStats.getVariant().getStatus()));
-        sortedStats.getVariant().setConfidences(sortedStats.getVariant().getConfidences());
+        sortedStats.getVariant().setStatus(sortMap(srcStats.getVariant().getStatus(), order, limit));
+        sortedStats.getVariant().setConfidences(sortMap(srcStats.getVariant().getConfidences(), order, limit));
 
         // Clinical variant evidence stats: gene names, transcript IDs, SO term accessions, panel IDs, MoIs, ACMGs, and for review
         // tiers, ACMGs and clinical significances
-        sortedStats.getEvidence().setGenes(sortMap(srcStats.getEvidence().getGenes()));
-        sortedStats.getEvidence().setTranscripts(sortMap(srcStats.getEvidence().getTranscripts()));
-        sortedStats.getEvidence().setSoTerms(sortMap(srcStats.getEvidence().getSoTerms()));
-        sortedStats.getEvidence().setPanels(sortMap(srcStats.getEvidence().getPanels()));
-        sortedStats.getEvidence().setMois(sortMap(srcStats.getEvidence().getMois()));
-        sortedStats.getEvidence().setAcmgs(sortMap(srcStats.getEvidence().getAcmgs()));
-        sortedStats.getEvidence().setReviewTiers(sortMap(srcStats.getEvidence().getReviewTiers()));
-        sortedStats.getEvidence().setReviewAcmgs(sortMap(srcStats.getEvidence().getReviewAcmgs()));
-        sortedStats.getEvidence().setReviewClinicalSignificances(sortMap(srcStats.getEvidence().getReviewClinicalSignificances()));
+        sortedStats.getEvidence().setGenes(sortMap(srcStats.getEvidence().getGenes(), order, limit));
+        sortedStats.getEvidence().setTranscripts(sortMap(srcStats.getEvidence().getTranscripts(), order, limit));
+        sortedStats.getEvidence().setSoTerms(sortMap(srcStats.getEvidence().getSoTerms(), order, limit));
+        sortedStats.getEvidence().setPanels(sortMap(srcStats.getEvidence().getPanels(), order, limit));
+        sortedStats.getEvidence().setMois(sortMap(srcStats.getEvidence().getMois(), order, limit));
+        sortedStats.getEvidence().setAcmgs(sortMap(srcStats.getEvidence().getAcmgs(), order, limit));
+        sortedStats.getEvidence().setReviewTiers(sortMap(srcStats.getEvidence().getReviewTiers(), order, limit));
+        sortedStats.getEvidence().setReviewAcmgs(sortMap(srcStats.getEvidence().getReviewAcmgs(), order, limit));
+        sortedStats.getEvidence().setReviewClinicalSignificances(sortMap(srcStats.getEvidence().getReviewClinicalSignificances(), order,
+                limit));
 
         return sortedStats;
     }
 
-    private Map<String, Long> sortMap(Map<String, Long> srcMap) {
+    private Map<String, Long> sortMap(Map<String, Long> srcMap, String order, int limit) {
         if (MapUtils.isEmpty(srcMap)) {
             return srcMap;
         }
 
+        Comparator<Entry<String, Long>> comparator;
+        if (order.equals(DESC) || order.equals(DESCENDING)) {
+            comparator = Entry.<String, Long>comparingByValue().reversed();
+        } else {
+            comparator = Entry.<String, Long>comparingByValue();
+        }
+
         return srcMap.entrySet()
                 .stream()
-                .sorted(Map.Entry.<String, Long>comparingByValue().reversed()) // Sort by value in descending order
-                .limit(FACET_DEFAULT_LIMIT)
+                .sorted(comparator) // Sort by value in descending order
+                .limit(limit)
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,

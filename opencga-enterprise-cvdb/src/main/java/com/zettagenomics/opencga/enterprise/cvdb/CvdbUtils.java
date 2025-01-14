@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.STATS_DEFAULT_LIMIT;
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.STATS_DEFAULT_ORDER;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_NAME;
 import static org.opencb.commons.datastore.core.QueryOptions.EXCLUDE;
 
@@ -71,7 +73,7 @@ public class CvdbUtils {
         if (!getSkipStats(queryOptions)) {
             for (ClinicalVariant cv : result.getResults()) {
                 DataResult<ClinicalVariantSummaryStats> summaryStatsResult = cvdbEngine.getClinicalVariantSummaryStats(cv.getId(),
-                        interpretationStatusId, null, token);
+                        interpretationStatusId, null, STATS_DEFAULT_ORDER, STATS_DEFAULT_LIMIT, token);
                 cv.setStats(summaryStatsResult.first());
             }
         }

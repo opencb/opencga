@@ -470,7 +470,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
         public String ciStatusId; 
     
         @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
@@ -790,7 +790,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
         public String ciStatusId; 
     
         @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
@@ -1142,7 +1142,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
         public String ciStatusId; 
     
         @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
@@ -1462,7 +1462,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
         public String ciStatusId; 
     
         @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
@@ -1767,7 +1767,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
         public String ciStatusId; 
     
         @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
@@ -2087,7 +2087,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
         public String ciStatusId; 
     
         @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
@@ -2305,8 +2305,14 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
         public String ciStatusId; 
+    
+        @Parameter(names = {"--stats-order"}, description = "The sorting order of the results (i.e., buckets) based on their counts. For ascending order use, 'asc' or 'ascending'; for descending order, 'desc' or 'descending'", required = false, arity = 1)
+        public String statsOrder = "desc"; 
+    
+        @Parameter(names = {"--stats-limit"}, description = "Maximum number of results (i.e., buckets) to return for each aggregation", required = false, arity = 1)
+        public Integer statsLimit = 10; 
     
     }
 
@@ -2409,7 +2415,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
         public String ciStatusId; 
     
         @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
@@ -2729,7 +2735,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
         public String ciStatusId; 
     
         @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
@@ -4542,7 +4548,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
         public String trait; 
     
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
         public String ciStatusId; 
     
     }

@@ -173,7 +173,8 @@ class ClinicalAnalysis(_ParentRestClient):
             semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
-            IDs separated by commas).
+            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+            CLOSED.
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param str ci_status_description: Clinical interpretation status
@@ -451,7 +452,8 @@ class ClinicalAnalysis(_ParentRestClient):
             semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
-            IDs separated by commas).
+            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+            CLOSED.
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param str ci_status_description: Clinical interpretation status
@@ -746,7 +748,8 @@ class ClinicalAnalysis(_ParentRestClient):
             semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
-            IDs separated by commas).
+            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+            CLOSED.
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param str ci_status_description: Clinical interpretation status
@@ -1026,7 +1029,8 @@ class ClinicalAnalysis(_ParentRestClient):
             semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
-            IDs separated by commas).
+            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+            CLOSED.
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param str ci_status_description: Clinical interpretation status
@@ -1293,7 +1297,8 @@ class ClinicalAnalysis(_ParentRestClient):
             semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
-            IDs separated by commas).
+            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+            CLOSED.
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param str ci_status_description: Clinical interpretation status
@@ -1574,7 +1579,8 @@ class ClinicalAnalysis(_ParentRestClient):
             semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
-            IDs separated by commas).
+            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+            CLOSED.
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param str ci_status_description: Clinical interpretation status
@@ -1774,7 +1780,13 @@ class ClinicalAnalysis(_ParentRestClient):
             (REQUIRED)
         :param str project: Project ID.
         :param str ci_status_id: Clinical interpretation status ID (or list of
-            IDs separated by commas).
+            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+            CLOSED.
+        :param str stats_order: The sorting order of the results (i.e.,
+            buckets) based on their counts. For ascending order use, 'asc' or
+            'ascending'; for descending order, 'desc' or 'descending'.
+        :param int stats_limit: Maximum number of results (i.e., buckets) to
+            return for each aggregation.
         """
 
         return self._get(category='analysis', resource='stats', subcategory='clinical/cvdb/variant', second_query_id=variant_ids, **options)
@@ -1855,7 +1867,8 @@ class ClinicalAnalysis(_ParentRestClient):
             semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
-            IDs separated by commas).
+            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+            CLOSED.
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param str ci_status_description: Clinical interpretation status
@@ -2136,7 +2149,8 @@ class ClinicalAnalysis(_ParentRestClient):
             semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
-            IDs separated by commas).
+            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+            CLOSED.
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param str ci_status_description: Clinical interpretation status
@@ -3159,7 +3173,8 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.:
             IDs, histologies, descriptions,...
         :param str ci_status_id: Clinical interpretation status ID (or list of
-            IDs separated by commas).
+            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+            CLOSED.
         """
 
         return self._get(category='analysis', resource='query', subcategory='clinical/variant', **options)

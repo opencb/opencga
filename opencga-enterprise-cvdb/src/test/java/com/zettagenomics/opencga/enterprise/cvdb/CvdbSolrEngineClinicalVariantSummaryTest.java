@@ -35,6 +35,7 @@ import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalog
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CV_VARIANT_ID_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.opencb.commons.datastore.core.QueryOptions.ASC;
 import static org.opencb.commons.datastore.core.QueryOptions.EXCLUDE;
 
 public class CvdbSolrEngineClinicalVariantSummaryTest {
@@ -158,7 +159,13 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
                     break;
                 }
             }
+            if (ca.getInterpretation().getStatus() != null) {
+                System.out.println("ca.getInterpretation().getStatus().getId() = " + ca.getInterpretation().getStatus().getId());
+            }
             for (Interpretation ci : ca.getSecondaryInterpretations()) {
+                if (ci.getStatus() != null) {
+                    System.out.println("ci.getStatus().getId() = " + ci.getStatus().getId());
+                }
                 for (ClinicalVariant cv : ci.getPrimaryFindings()) {
                     if (cv.getId().equals(variantId)) {
                         ciSec++;
@@ -168,7 +175,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
             }
         }
 
-        DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantId, null, null, userToken);
+        DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantId, "NOT_STARTED,DONE", null, ASC, 0, userToken);
         System.out.println("getClinicalVariantSummaryStats, result.first() = " + result.first());
 
         Assert.assertEquals(caResult.getNumResults(), result.first().getNumClinicalAnalyses());
@@ -190,7 +197,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
-        DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantIds, null, projectId, userToken);
+        DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantIds, null, projectId, null, 0, userToken);
 
         System.out.println("ClinicalVariantSummaryStats, result.getResults().get(0) = " + result.getResults().get(0));
         System.out.println("ClinicalVariantSummaryStats, result.getResults().get(1) = " + result.getResults().get(1));
@@ -222,7 +229,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
-        DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantIds, null, projectId, userToken);
+        DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantIds, null, projectId, null, 0, userToken);
         Assert.assertEquals(2, result.getNumResults());
 
         System.out.println("============================================");
