@@ -1050,9 +1050,9 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas). Valid values:
     *     NOT_STARTED, ACTIVE, DONE, CLOSED.
     * @param {String} [params.statsOrder = "desc"] - The sorting order of the results (i.e., buckets) based on their counts. For ascending
-    *     order use, 'asc' or 'ascending'; for descending order, 'desc' or 'descending'. The default value is desc.
-    * @param {Number} [params.statsLimit = "10"] - Maximum number of results (i.e., buckets) to return for each aggregation. The default
-    *     value is 10.
+    *     order use, 'asc' or 'ascending'; for descending order, 'desc' or 'descending'. Default value: desc. The default value is desc.
+    * @param {Number} [params.statsLimit = "10"] - Maximum number of results (i.e., buckets) to return for each aggregation. Default value:
+    *     10. The default value is 10.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     cvdbVariantStats(variantIds, params) {

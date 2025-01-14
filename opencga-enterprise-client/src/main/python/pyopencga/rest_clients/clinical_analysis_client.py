@@ -1784,9 +1784,10 @@ class ClinicalAnalysis(_ParentRestClient):
             CLOSED.
         :param str stats_order: The sorting order of the results (i.e.,
             buckets) based on their counts. For ascending order use, 'asc' or
-            'ascending'; for descending order, 'desc' or 'descending'.
+            'ascending'; for descending order, 'desc' or 'descending'. Default
+            value: desc.
         :param int stats_limit: Maximum number of results (i.e., buckets) to
-            return for each aggregation.
+            return for each aggregation. Default value: 10.
         """
 
         return self._get(category='analysis', resource='stats', subcategory='clinical/cvdb/variant', second_query_id=variant_ids, **options)

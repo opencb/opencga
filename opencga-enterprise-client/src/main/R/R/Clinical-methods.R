@@ -781,8 +781,8 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param variantIds Comma separated list of variant IDs.
         #' @param project Project ID.
         #' @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.
-        #' @param statsOrder The sorting order of the results (i.e., buckets) based on their counts. For ascending order use, 'asc' or 'ascending'; for descending order, 'desc' or 'descending'.
-        #' @param statsLimit Maximum number of results (i.e., buckets) to return for each aggregation.
+        #' @param statsOrder The sorting order of the results (i.e., buckets) based on their counts. For ascending order use, 'asc' or 'ascending'; for descending order, 'desc' or 'descending'. Default value: desc.
+        #' @param statsLimit Maximum number of results (i.e., buckets) to return for each aggregation. Default value: 10.
         cvdbVariantStats=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/cvdb/variant", subcategoryId=variantIds, action="stats", params=params,
                 httpMethod="GET", as.queryParam=NULL, ...),

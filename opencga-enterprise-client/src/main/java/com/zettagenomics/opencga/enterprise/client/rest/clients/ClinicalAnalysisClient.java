@@ -1103,8 +1103,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
      *            CLOSED.
      *       statsOrder: The sorting order of the results (i.e., buckets) based on their counts. For ascending order use, 'asc' or
-     *            'ascending'; for descending order, 'desc' or 'descending'.
-     *       statsLimit: Maximum number of results (i.e., buckets) to return for each aggregation.
+     *            'ascending'; for descending order, 'desc' or 'descending'. Default value: desc.
+     *       statsLimit: Maximum number of results (i.e., buckets) to return for each aggregation. Default value: 10.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

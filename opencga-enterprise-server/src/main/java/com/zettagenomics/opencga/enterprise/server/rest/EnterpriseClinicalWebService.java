@@ -1430,7 +1430,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiParam(value = PROJECT_PARAM_DESCRIPTION) @QueryParam(PROJECT_PARAM_NAME) String projectId,
             @ApiParam(value = CI_STATUS_ID_DESCR) @QueryParam(CI_STATUS_ID_NAME) String interpretationStatusId,
             @ApiParam(value = STATS_ORDER_DESCR, defaultValue = STATS_DEFAULT_ORDER) @QueryParam(STATS_ORDER_NAME) String statsOrder,
-            @ApiParam(value = STATS_LIMIT_DESCR, defaultValue = "" + STATS_DEFAULT_LIMIT) @QueryParam(STATS_LIMIT_NAME) int statsLimit) {
+            @ApiParam(value = STATS_LIMIT_DESCR, defaultValue = ("" + STATS_DEFAULT_LIMIT)) @QueryParam(STATS_LIMIT_NAME) int statsLimit) {
         return run(() -> {
             return getCvdbEngine().getClinicalVariantSummaryStats(variantIds, interpretationStatusId, projectId, statsOrder, statsLimit,
                     token);

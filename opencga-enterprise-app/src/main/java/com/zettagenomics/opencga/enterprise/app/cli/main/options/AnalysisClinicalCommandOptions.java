@@ -2308,10 +2308,10 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
         public String ciStatusId; 
     
-        @Parameter(names = {"--stats-order"}, description = "The sorting order of the results (i.e., buckets) based on their counts. For ascending order use, 'asc' or 'ascending'; for descending order, 'desc' or 'descending'", required = false, arity = 1)
+        @Parameter(names = {"--stats-order"}, description = "The sorting order of the results (i.e., buckets) based on their counts. For ascending order use, 'asc' or 'ascending'; for descending order, 'desc' or 'descending'. Default value: desc", required = false, arity = 1)
         public String statsOrder = "desc"; 
     
-        @Parameter(names = {"--stats-limit"}, description = "Maximum number of results (i.e., buckets) to return for each aggregation", required = false, arity = 1)
+        @Parameter(names = {"--stats-limit"}, description = "Maximum number of results (i.e., buckets) to return for each aggregation. Default value: 10", required = false, arity = 1)
         public Integer statsLimit = 10; 
     
     }
