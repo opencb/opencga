@@ -22,33 +22,42 @@ import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.federation.FederationClient;
+import org.opencb.opencga.core.models.federation.FederationClientRef;
 import org.opencb.opencga.core.models.federation.FederationServer;
 import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.*;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.LoginParams;
+import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserInternal;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.Response;
 import java.util.*;
-import java.util.stream.Collectors;
-
-import static com.zettagenomics.opencga.enterprise.catalog.EnterpriseConstants.FEDERATION_AUTH_ORIGIN_ID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FederationManager extends AbstractManager {
+
+    protected static Logger logger = LoggerFactory.getLogger(FederationManager.class);
+
+    private final static Pattern URL_REDIRECT = Pattern.compile(".*/webservices/rest/v\\d+/([^/]+)/(.*)");
 
     public FederationManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration) {
         super(catalogManager, enterpriseConfiguration);
     }
 
-    public OpenCGAResult<FederationClient> exposeFederation(FederationServerCreateParams federationServerCreateParams,
+    public OpenCGAResult<FederationClient> createFederation(FederationServerCreateParams federationServerCreateParams,
                                                             String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String organizationId = tokenPayload.getOrganization();
@@ -146,7 +155,7 @@ public class FederationManager extends AbstractManager {
             }
 
             // Store the projects and studies in the database
-            importFederatedProjects(organizationId, projectList);
+            importFederatedProjects(federationClient.getId(), organizationId, projectList);
 
             // Store the federation client object in the database
             ObjectMap parameters = new ObjectMap()
@@ -253,11 +262,11 @@ public class FederationManager extends AbstractManager {
             removeFederatedStudies(organizationId, studiesToRemove);
 
             // Import new federated projects/studies
-            importFederatedProjects(organizationId, newProjects);
+            importFederatedProjects(federationId, organizationId, newProjects);
             for (Map.Entry<Project, List<Study>> entry : newStudies.entrySet()) {
                 Project project = entry.getKey();
                 List<Study> studyList = entry.getValue();
-                importFederatedStudies(organization, project, studyList);
+                importFederatedStudies(federationId, organization, project, studyList);
             }
 
             auditManager.audit(organizationId, userId, Enums.Action.EXPOSE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
@@ -269,9 +278,78 @@ public class FederationManager extends AbstractManager {
         }
     }
 
+    public RestResponse<Object> redirect(String url, Map<String, Object> queryParams, Object body, String method, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = tokenPayload.getOrganization();
+        String userId = tokenPayload.getUserId();
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("url", url)
+                .append("queryParams", queryParams)
+                .append("body", body)
+                .append("method", method)
+                .append("token", token);
+        try {
+            String project = FederationUtils.extractProject(url, queryParams);
+            String study = FederationUtils.extractStudy(url, queryParams);
+            String federationId = FederationUtils.getFederationServerId(project, study, tokenPayload);
+
+            // Obtain the federation server credentials
+            QueryOptions orgOptions = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.FEDERATION.key());
+            Organization organization = EnterpriseFactory.getCatalogDBAdaptorFactory().getCatalogOrganizationDBAdaptor(organizationId)
+                    .get(orgOptions).first();
+            if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getClients())) {
+                throw new CatalogException("Organization does not have any federation server configured.");
+            }
+            FederationClient federationClient = null;
+            for (FederationClient client : organization.getFederation().getClients()) {
+                if (client.getId().equals(federationId)) {
+                    federationClient = client;
+                    break;
+                }
+            }
+            if (federationClient == null) {
+                throw new CatalogException("Federation server id '" + federationId + "' not found in the organization.");
+            }
+
+            String federationToken = federationClient.getToken();
+            // The call to getClientInstance will update the token if it has expired
+            GenericClient client = FederationUtils.getClientInstance(federationClient);
+            if (federationClient.getToken().equals(federationToken)) {
+                logger.debug("Token has been updated.");
+                // TODO If the token has been updated, update the token stored in the database
+            }
+
+            ObjectMap aboutMap = client.about().firstResult();
+            String version = aboutMap.getString("Version");
+            if (StringUtils.isNotEmpty(version) && !version.equals(federationClient.getVersion())) {
+                logger.warn("Calling to federation server '{}'. The version of the federation server has changed from '{}' to '{}'.",
+                        federationClient.getUrl(), federationClient.getVersion(), version);
+                // TODO: Update version in the database
+            }
+
+            Matcher matcher = URL_REDIRECT.matcher(url);
+            if (!matcher.find()) {
+                throw new CatalogException("The url '" + url + "' does not seem to follow the OpenCGA URL pattern.");
+            }
+            String group1 = matcher.group(1);
+            String group2 = matcher.group(2);
+            return client.execute(group1, group2, queryParams, body, method, Object.class);
+
+
+//            auditManager.audit(organizationId, userId, Enums.Action.EXPOSE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
+//                    "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        } catch (Exception e) {
+//            auditManager.audit(organizationId, userId, Enums.Action.EXPOSE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
+//                    "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
+            throw new CatalogException(e);
+        }
+    }
+
     private List<Project> obtainRemoteProjectsAndStudies(FederationClient federationClient) throws CatalogException {
         try {
-            GenericClient client = getClientInstance(federationClient);
+            GenericClient client = FederationUtils.getClientInstance(federationClient);
             return client.execute("projects", null, null, null, "search", Collections.emptyMap(), ParentClient.GET, Project.class)
                     .allResults();
         } catch (ClientException e) {
@@ -279,7 +357,7 @@ public class FederationManager extends AbstractManager {
         }
     }
 
-    private void importFederatedProjects(String organizationId, List<Project> projectList) throws CatalogException {
+    private void importFederatedProjects(String federationId, String organizationId, List<Project> projectList) throws CatalogException {
         // Validate there are projects and studies
         if (CollectionUtils.isEmpty(projectList)) {
             return;
@@ -306,12 +384,15 @@ public class FederationManager extends AbstractManager {
         for (Project project : projectList) {
             List<Study> studyList = project.getStudies();
             project.setStudies(null);
+            project.setFederation(new FederationClientRef(federationId));
+            project.getInternal().setFederated(true);
             dbAdaptorFactory.getCatalogProjectDbAdaptor(organizationId).insert(project, null);
-            importFederatedStudies(organization, project, studyList);
+            importFederatedStudies(federationId, organization, project, studyList);
         }
     }
 
-    private void importFederatedStudies(Organization organization, Project project, List<Study> studyList) throws CatalogException {
+    private void importFederatedStudies(String federationId, Organization organization, Project project, List<Study> studyList)
+            throws CatalogException {
         if (CollectionUtils.isEmpty(studyList)) {
             throw new CatalogParameterException("Missing list of studies for project '" + project.getFqn() + "'.");
         }
@@ -329,6 +410,8 @@ public class FederationManager extends AbstractManager {
         // Insert studies in the database
         for (Study study : studyList) {
             FederationUtils.removeStudyFieldsForStorage(organization, study);
+            study.setFederation(new FederationClientRef(federationId));
+            study.getInternal().setFederated(true);
             dbAdaptorFactory.getCatalogStudyDBAdaptor(organization.getId()).insert(project, study, Collections.emptyList(),
                     QueryOptions.empty());
         }
@@ -350,31 +433,7 @@ public class FederationManager extends AbstractManager {
         dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).delete(query);
     }
 
-    private GenericClient getClientInstance(FederationClient federationClient) throws ClientException {
-        ClientConfiguration clientConfiguration = new ClientConfiguration(federationClient.getUrl());
 
-        String token = null;
-        if (StringUtils.isNotEmpty(federationClient.getToken())) {
-            // Check the expiration date is still valid
-            JwtPayload jwtPayload = new JwtPayload(federationClient.getToken());
-            Date expirationTime = jwtPayload.getExpirationTime();
-            if (expirationTime.after(TimeUtils.getDate())) {
-                token = federationClient.getToken();
-            }
-        }
-        GenericClient client = new GenericClient(token, clientConfiguration);
-        if (token == null) {
-            LoginParams loginParams = new LoginParams(federationClient.getOrganizationId(), federationClient.getUserId(),
-                    federationClient.getPassword());
-            RestResponse<AuthenticationResponse> login = client.login(loginParams);
-
-            // Set token in the client object to be used in next call
-            client.setToken(login.firstResult().getToken());
-            // Set token in the federationClient object
-            federationClient.setToken(login.firstResult().getToken());
-        }
-        return client;
-    }
 
     private void validateFederationServerParams(FederationClient federationClient) throws CatalogParameterException {
         // Validate mandatory fields

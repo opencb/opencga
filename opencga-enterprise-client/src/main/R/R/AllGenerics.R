@@ -1,4 +1,9 @@
 # ##############################################################################
+## FederationClient
+setGeneric("federationClient", function(OpencgaR, endpointName, params=NULL, ...)
+    standardGeneric("federationClient"))
+
+# ##############################################################################
 ## OrganizationClient
 setGeneric("organizationClient", function(OpencgaR, id, organization, user, endpointName, params=NULL, ...)
     standardGeneric("organizationClient"))

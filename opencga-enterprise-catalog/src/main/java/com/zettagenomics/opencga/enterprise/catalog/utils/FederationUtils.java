@@ -4,43 +4,104 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.core.client.GenericClient;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.federation.FederationClient;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyInternal;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
+import org.opencb.opencga.core.models.user.LoginParams;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FederationUtils {
+
+    private static final Pattern STUDY_PATTERN = Pattern.compile(".*/studies/([^/]+)/info$");
+    private static final Pattern PROJECT_PATTERN = Pattern.compile(".*/projects/([^/]+)/info$");
 
     public FederationUtils() {
     }
 
-    public static String getFederationServerId(Map<String, String> queryParams, JwtPayload tokenPayload) throws CatalogException {
-        if (CollectionUtils.isEmpty(tokenPayload.getFederations())) {
-            throw new CatalogException("User does not belong to any federation.");
+    public static String extractProject(String url, Map<String, Object> queryParams) {
+        String project = (String) queryParams.get("project");
+        if (StringUtils.isNotEmpty(project)) {
+            return project;
         }
-        String study = queryParams.get("study");
-        String project = queryParams.get("project");
+        Matcher matcher = PROJECT_PATTERN.matcher(url);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    public static String extractStudy(String url, Map<String, Object> queryParams) {
+        String study = (String) queryParams.get("study");
+        if (StringUtils.isNotEmpty(study)) {
+            return study;
+        }
+        Matcher matcher = STUDY_PATTERN.matcher(url);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    public static String getFederationServerId(String project, String study, JwtPayload tokenPayload) throws CatalogException {
         if (StringUtils.isEmpty(study) && StringUtils.isEmpty(project)) {
             throw new CatalogParameterException("Missing project or study from the query parameters");
         } else if (StringUtils.isNotEmpty(study)) {
-            for (JwtPayload.Federation federation : tokenPayload.getFederations()) {
+            for (JwtPayload.FederationJwtPayload federation : tokenPayload.getFederations()) {
                 if (federation.getStudyIds().contains(study)) {
                     return federation.getId();
                 }
             }
         } else if (StringUtils.isNotEmpty(project)) {
-            for (JwtPayload.Federation federation : tokenPayload.getFederations()) {
+            for (JwtPayload.FederationJwtPayload federation : tokenPayload.getFederations()) {
                 if (federation.getProjectIds().contains(project)) {
                     return federation.getId();
                 }
             }
         }
         throw new CatalogException("User does not belong to any federation that contains the project or study provided.");
+    }
+
+    public static GenericClient getClientInstance(FederationClient federationClient) throws ClientException {
+        ClientConfiguration clientConfiguration = new ClientConfiguration(federationClient.getUrl());
+
+        if (StringUtils.isNotEmpty(federationClient.getToken())) {
+            // Check the expiration date is still valid
+            JwtPayload jwtPayload = new JwtPayload(federationClient.getToken());
+            Date expirationTime = jwtPayload.getExpirationTime();
+            if (expirationTime.before(TimeUtils.getDate())) {
+                // Clear token
+                federationClient.setToken(null);
+            }
+        }
+        GenericClient client = new GenericClient(federationClient.getToken(), clientConfiguration);
+        if (federationClient.getToken() == null) {
+            LoginParams loginParams = new LoginParams(federationClient.getOrganizationId(), federationClient.getUserId(),
+                    federationClient.getPassword());
+            RestResponse<AuthenticationResponse> login = client.login(loginParams);
+
+            if (CollectionUtils.isNotEmpty(login.getEvents())) {
+                throw new ClientException("Error logging in: " + login.getEvents().get(0).getMessage());
+            }
+
+            // Set token in the client object to be used in next call
+            client.setToken(login.firstResult().getToken());
+            // Set token in the federationClient object
+            federationClient.setToken(login.firstResult().getToken());
+        }
+        return client;
     }
 
     public static void removeStudyFieldsForStorage(Organization organization, Study study) {

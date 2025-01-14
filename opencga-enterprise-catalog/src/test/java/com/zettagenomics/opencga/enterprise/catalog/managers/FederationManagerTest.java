@@ -1,12 +1,15 @@
 package com.zettagenomics.opencga.enterprise.catalog.managers;
 
 import org.junit.Test;
-import org.opencb.biodata.formats.pubmed.v233jaxb.U;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.client.GenericClient;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.federation.FederationClient;
 import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
@@ -22,14 +25,12 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.Collections;
 
-import static com.zettagenomics.opencga.enterprise.catalog.EnterpriseConstants.FEDERATION_AUTH_ORIGIN_ID;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class FederationManagerTest extends EnterpriseAbstractManagerTest {
 
     @Test
-    public void federateServerTest() throws CatalogException {
+    public void federateServerTest() throws CatalogException, ClientException {
         // Create new organization with owner user
         OrganizationCreateParams organizationCreateParams = new OrganizationCreateParams()
                 .setId("org2");
@@ -51,7 +52,7 @@ public class FederationManagerTest extends EnterpriseAbstractManagerTest {
         // Federate server
         FederationServerCreateParams serverCreateParams = new FederationServerCreateParams(organizationId, "", "mail@mail.com",
                 organizationId);
-        FederationClient client = federationManager.exposeFederation(serverCreateParams, org2OwnerToken).first();
+        FederationClient client = federationManager.createFederation(serverCreateParams, org2OwnerToken).first();
 
         // Check we can log in with that user
         AuthenticationResponse login = catalogManager.getUserManager().login(client.getOrganizationId(), client.getUserId(), client.getPassword());
@@ -69,6 +70,17 @@ public class FederationManagerTest extends EnterpriseAbstractManagerTest {
         client.setUrl("http://localhost:9090/opencga");
         client.setEmail("mail@mail.com");
         federationManager.connect(client, ownerToken);
+
+        // Check we can access remote data
+        ownerToken = catalogManager.getUserManager().refreshToken(ownerToken).getToken();
+        ClientConfiguration clientConfiguration = new ClientConfiguration("http://localhost:9090/opencga");
+        GenericClient genericClient = new GenericClient(ownerToken, clientConfiguration);
+        OpenCGAResult<Study> studyOpenCGAResult = genericClient.execute("studies", "org2@project:study", null, null, "info",
+                new ObjectMap(), "GET", Study.class).first();
+        assertEquals(1, studyOpenCGAResult.getNumResults());
+        assertEquals("org2@project:study", studyOpenCGAResult.first().getFqn());
+        assertFalse(studyOpenCGAResult.first().getVariableSets().isEmpty());
+
     }
 
 }

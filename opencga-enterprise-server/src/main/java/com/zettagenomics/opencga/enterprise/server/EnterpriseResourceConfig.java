@@ -2,6 +2,7 @@ package com.zettagenomics.opencga.enterprise.server;
 
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseClinicalWebService;
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseMetaWSServer;
+import com.zettagenomics.opencga.enterprise.server.rest.FederationWebService;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
@@ -30,7 +31,8 @@ public class EnterpriseResourceConfig extends ResourceConfig {
     static {
         logger = LoggerFactory.getLogger(EnterpriseResourceConfig.class);
 
-        enterpriseApiClasses = new LinkedHashMap<>(25);
+        enterpriseApiClasses = new LinkedHashMap<>(26);
+        enterpriseApiClasses.put("federations", FederationWebService.class);
         enterpriseApiClasses.put("organizations", OrganizationWSServer.class);
         enterpriseApiClasses.put("users", UserWSServer.class);
         enterpriseApiClasses.put("projects", ProjectWSServer.class);
