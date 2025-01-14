@@ -11,7 +11,7 @@ import java.util.*;
 
 public class JsonOpenApiGenerator {
 
-    public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token) {
+    public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token, String environment) {
         List<Class<?>> classes = apiCommons.getApiClasses();
         List<Class<?>> beansDefinitions= new ArrayList<>();
         Swagger swagger = new Swagger();
@@ -21,7 +21,7 @@ public class JsonOpenApiGenerator {
         info.setVersion(GitRepositoryState.getInstance().getBuildVersion());
         swagger.setInfo(info);
         swagger.setHost("test.app.zettagenomics.com");
-        swagger.setBasePath("/opencga/webservices/rest");
+        swagger.setBasePath(environment + "/opencga/webservices/rest");
 
         List<String> schemes = new ArrayList<>();
         schemes.add("https");
