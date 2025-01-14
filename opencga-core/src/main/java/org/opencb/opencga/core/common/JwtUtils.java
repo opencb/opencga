@@ -53,16 +53,16 @@ public class JwtUtils {
         return res;
     }
 
-    public static List<JwtPayload.Federation> getFederations(Map<String, Object> claims) {
+    public static List<JwtPayload.FederationJwtPayload> getFederations(Map<String, Object> claims) {
         List o = (List) claims.get(FEDERATIONS);
         if (CollectionUtils.isNotEmpty(o)) {
-            List<JwtPayload.Federation> federationList = new ArrayList<>(o.size());
+            List<JwtPayload.FederationJwtPayload> federationList = new ArrayList<>(o.size());
             for (Object federationObject : o) {
                 if (federationObject instanceof Map) {
                     String id = ((Map<String, String>) federationObject).get("id");
                     List<String> projectIds = ((Map<String, List<String>>) federationObject).get("projectIds");
                     List<String> studyIds = ((Map<String, List<String>>) federationObject).get("studyIds");
-                    federationList.add(new JwtPayload.Federation(id, projectIds, studyIds));
+                    federationList.add(new JwtPayload.FederationJwtPayload(id, projectIds, studyIds));
                 }
             }
             return federationList;

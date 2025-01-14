@@ -19,14 +19,14 @@ public class JwtPayload {
     private final String issuer;         // Issuer of the JWT token.
     private final Date issuedAt;         // Time when the JWT was issued.
     private final Date expirationTime;   // Expiration time of the JWT.
-    private final List<Federation> federations; // Federation information containing the projects and studies the user has access to.
+    private final List<FederationJwtPayload> federations; // Federation information containing the projects and studies the user has access to.
     private final String token;
 
     public static final String AUTH_ORIGIN = "authOrigin";
     public static final String FEDERATIONS = "federations";
 
     public JwtPayload(String userId, String organization, AuthenticationOrigin.AuthenticationType authOrigin, String issuer, Date issuedAt,
-                      Date expirationTime, List<Federation> federationList, String token) {
+                      Date expirationTime, List<FederationJwtPayload> federationList, String token) {
         this.token = token;
         this.userId = userId;
         this.organization = organization;
@@ -142,19 +142,19 @@ public class JwtPayload {
         return token;
     }
 
-    public List<Federation> getFederations() {
+    public List<FederationJwtPayload> getFederations() {
         return federations;
     }
 
-    public static class Federation {
+    public static class FederationJwtPayload {
         private String id;
         private List<String> projectIds;
         private List<String> studyIds;
 
-        public Federation() {
+        public FederationJwtPayload() {
         }
 
-        public Federation(String id, List<String> projectIds, List<String> studyIds) {
+        public FederationJwtPayload(String id, List<String> projectIds, List<String> studyIds) {
             this.id = id;
             this.projectIds = projectIds;
             this.studyIds = studyIds;
@@ -174,7 +174,7 @@ public class JwtPayload {
             return id;
         }
 
-        public Federation setId(String id) {
+        public FederationJwtPayload setId(String id) {
             this.id = id;
             return this;
         }
@@ -183,7 +183,7 @@ public class JwtPayload {
             return projectIds;
         }
 
-        public Federation setProjectIds(List<String> projectIds) {
+        public FederationJwtPayload setProjectIds(List<String> projectIds) {
             this.projectIds = projectIds;
             return this;
         }
@@ -192,7 +192,7 @@ public class JwtPayload {
             return studyIds;
         }
 
-        public Federation setStudyIds(List<String> studyIds) {
+        public FederationJwtPayload setStudyIds(List<String> studyIds) {
             this.studyIds = studyIds;
             return this;
         }

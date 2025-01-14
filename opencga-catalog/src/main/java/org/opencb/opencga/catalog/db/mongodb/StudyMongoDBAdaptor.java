@@ -1829,6 +1829,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                     case UUID:
                     case NAME:
                     case DESCRIPTION:
+                    case INTERNAL_FEDERATED:
                     case INTERNAL_STATUS_DATE:
                     case DATASTORES:
                     case SIZE:

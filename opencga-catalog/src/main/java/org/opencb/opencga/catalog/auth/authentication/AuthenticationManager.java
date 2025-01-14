@@ -17,10 +17,16 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -30,10 +36,7 @@ import org.slf4j.LoggerFactory;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.Closeable;
 import java.security.Key;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -42,6 +45,7 @@ public abstract class AuthenticationManager implements Closeable {
 
     protected JwtManager jwtManager;
 
+    protected final DBAdaptorFactory dbAdaptorFactory;
     private final long expiration;
 
     protected Logger logger;
@@ -49,7 +53,8 @@ public abstract class AuthenticationManager implements Closeable {
     protected int DEFAULT_CONNECTION_TIMEOUT = 500; // In milliseconds
     protected int DEFAULT_READ_TIMEOUT = 1000; // In milliseconds
 
-    AuthenticationManager(long expiration) {
+    AuthenticationManager(DBAdaptorFactory dbAdaptorFactory, long expiration) {
+        this.dbAdaptorFactory = dbAdaptorFactory;
         this.expiration = expiration;
 
         // Any class extending this one must properly initialise JwtManager
@@ -165,9 +170,10 @@ public abstract class AuthenticationManager implements Closeable {
      *
      * @param organizationId Organization id.
      * @param userId         user.
+     * @throws CatalogAuthenticationException CatalogAuthenticationException
      * @return A token.
      */
-    public String createToken(String organizationId, String userId) {
+    public String createToken(String organizationId, String userId) throws CatalogAuthenticationException {
         return createToken(organizationId, userId, Collections.emptyMap(), expiration);
     }
 
@@ -177,9 +183,10 @@ public abstract class AuthenticationManager implements Closeable {
      * @param organizationId Organization id.
      * @param userId         user.
      * @param expiration     expiration time.
+     * @throws CatalogAuthenticationException CatalogAuthenticationException
      * @return A token.
      */
-    public String createToken(String organizationId, String userId, long expiration) {
+    public String createToken(String organizationId, String userId, long expiration) throws CatalogAuthenticationException {
         return createToken(organizationId, userId, Collections.emptyMap(), expiration);
     }
 
@@ -189,9 +196,10 @@ public abstract class AuthenticationManager implements Closeable {
      * @param organizationId Organization id.
      * @param userId         user.
      * @param claims         claims.
+     * @throws CatalogAuthenticationException CatalogAuthenticationException
      * @return A token.
      */
-    public String createToken(String organizationId, String userId, Map<String, Object> claims) {
+    public String createToken(String organizationId, String userId, Map<String, Object> claims) throws CatalogAuthenticationException {
         return createToken(organizationId, userId, claims, expiration);
     }
 
@@ -202,9 +210,11 @@ public abstract class AuthenticationManager implements Closeable {
      * @param userId         user.
      * @param claims         claims.
      * @param expiration     Expiration time in seconds.
+     * @throws CatalogAuthenticationException CatalogAuthenticationException
      * @return A token.
      */
-    public abstract String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration);
+    public abstract String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration)
+            throws CatalogAuthenticationException;
 
     /**
      * Create a token for the user with no expiration time.
@@ -212,12 +222,43 @@ public abstract class AuthenticationManager implements Closeable {
      * @param organizationId Organization id.
      * @param userId         user.
      * @param claims         claims.
+     * @throws CatalogAuthenticationException CatalogAuthenticationException
      * @return A token.
      */
-    public abstract String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims);
+    public abstract String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims)
+            throws CatalogAuthenticationException;
 
     public Date getExpirationDate(String token) throws CatalogAuthenticationException {
         return jwtManager.getExpiration(token);
+    }
+
+    protected List<JwtPayload.FederationJwtPayload> getFederations(String organizationId, String userId)
+            throws CatalogAuthenticationException {
+        Query query = new Query(ProjectDBAdaptor.QueryParams.INTERNAL_FEDERATED.key(), true);
+        OpenCGAResult<Project> result;
+        try {
+             result = dbAdaptorFactory.getCatalogProjectDbAdaptor(organizationId).get(query, QueryOptions.empty(), userId);
+        } catch (Exception e) {
+            throw new CatalogAuthenticationException("Could not obtain federated projects for user " + userId, e);
+        }
+        if (result.getNumResults() == 0) {
+            return Collections.emptyList();
+        }
+
+        // Build the federations list
+        Map<String, JwtPayload.FederationJwtPayload> federationMap = new HashMap<>();
+        for (Project project : result.getResults()) {
+            federationMap.putIfAbsent(project.getFederation().getId(), new JwtPayload.FederationJwtPayload(project.getFederation().getId(),
+                    new LinkedList<>(), new LinkedList<>()));
+            JwtPayload.FederationJwtPayload federation = federationMap.get(project.getFederation().getId());
+            federation.getProjectIds().add(project.getFqn());
+            federation.getProjectIds().add(project.getUuid());
+            for (Study study : project.getStudies()) {
+                federation.getStudyIds().add(study.getFqn());
+                federation.getStudyIds().add(study.getUuid());
+            }
+        }
+        return new ArrayList<>(federationMap.values());
     }
 
 }

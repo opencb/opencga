@@ -27,6 +27,7 @@ import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.common.AdditionalInfo;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.ExternalSource;
+import org.opencb.opencga.core.models.federation.FederationClientRef;
 import org.opencb.opencga.core.models.notes.Note;
 
 import java.net.URI;
@@ -101,6 +102,8 @@ public class Study extends PrivateFields {
             description = FieldConstants.PROJECT_FQN)
     private String fqn;
 
+    @DataField(id = "federation", description = FieldConstants.STUDY_FEDERATION)
+    private FederationClientRef federation;
 
     @DataField(id = "notification",
             description = FieldConstants.STUDY_NOTIFICATION)
@@ -225,6 +228,7 @@ public class Study extends PrivateFields {
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", federation='").append(federation).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", size=").append(size);
         sb.append(", fqn='").append(fqn).append('\'');
@@ -303,6 +307,14 @@ public class Study extends PrivateFields {
     public Study setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
         return this;
+    }
+
+    public FederationClientRef getFederation() {
+        return federation;
+    }
+
+    public void setFederation(FederationClientRef federation) {
+        this.federation = federation;
     }
 
     public String getDescription() {

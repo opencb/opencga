@@ -74,6 +74,7 @@ public class FieldConstants {
     //Federation
     public static final String FEDERATION_CLIENT_ID_DESCRIPTION = "Unique ID to identify the federation server.";
     public static final String FEDERATION_CLIENT_DESCRIPTION_DESCRIPTION = "Description of the federation server.";
+    public static final String FEDERATION_CLIENT_VERSION_DESCRIPTION = "OpenCGA version of the federation server.";
     public static final String FEDERATION_CLIENT_EMAIL_DESCRIPTION = "Email of the federation server.";
     public static final String FEDERATION_CLIENT_URL_DESCRIPTION = "URL of the federation server.";
     public static final String FEDERATION_CLIENT_ORGANIZATION_ID_DESCRIPTION = "Organization ID from the federation server.";
@@ -415,10 +416,12 @@ public class FieldConstants {
     //Project
     public static final String PROJECT_FQN = "Full Qualified Name (organization@projectId).";
     public static final String PROJECT_ORGANISM = "Organism to which the project belongs.";
+    public static final String PROJECT_FEDERATION = "Object containing federation details if the project is not local.";
     public static final String PROJECT_STUDIES = "Project study list.";
 
     //ProjectInternal
     public static final String PROJECT_INTERNAL_DATA_STORES = "Default value is VARIANT.";
+    public static final String PROJECT_INTERNAL_FEDERATED = "Flag indicating if the project is imported from a federated installation.";
     public static final String PROJECT_CELLBASE = "Cellbase configuration.";
 
     //StudyNotification
@@ -427,6 +430,7 @@ public class FieldConstants {
     //Study
     public static final String STUDY_ALIAS = "Study alias.";
     public static final String STUDY_SIZE = "Study size.";
+    public static final String STUDY_FEDERATION = "Object containing federation details if the study is not local.";
     public static final String STUDY_NOTIFICATION = "Object represents study notification.";
     public static final String STUDY_GROUPS = "A List with related groups.";
     public static final String STUDY_FILES = "A List with related files.";
@@ -453,6 +457,7 @@ public class FieldConstants {
 
     //StudyInternal
     public static final String STUDY_INTERNAL_INDEX = "Study index.";
+    public static final String STUDY_INTERNAL_FEDERATED = "Flag indicating if the study is imported from a federated installation.";
     public static final String STUDY_INTERNAL_CONFIGURATION = "Study configuration.";
 
     //AdditionalInfo

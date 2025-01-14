@@ -51,10 +51,11 @@ public final class AuthenticationFactory {
                     switch (authOrigin.getType()) {
                         case LDAP:
                             tmpAuthenticationManagerMap.put(authOrigin.getId(),
-                                    new LDAPAuthenticationManager(authOrigin, algorithm, secretKey, expiration));
+                                    new LDAPAuthenticationManager(authOrigin, algorithm, secretKey, catalogDBAdaptorFactory, expiration));
                             break;
                         case AzureAD:
-                            tmpAuthenticationManagerMap.put(authOrigin.getId(), new AzureADAuthenticationManager(authOrigin));
+                            tmpAuthenticationManagerMap.put(authOrigin.getId(), new AzureADAuthenticationManager(authOrigin,
+                                    catalogDBAdaptorFactory));
                             break;
                         case OPENCGA:
                             CatalogAuthenticationManager catalogAuthenticationManager =
@@ -65,7 +66,7 @@ public final class AuthenticationFactory {
                             break;
                         case SSO:
                             tmpAuthenticationManagerMap.put(authOrigin.getId(), new SSOAuthenticationManager(algorithm, secretKey,
-                                    expiration));
+                                    catalogDBAdaptorFactory, expiration));
                             break;
                         default:
                             logger.warn("Unexpected authentication origin type '{}' for id '{}' found in organization '{}'. "

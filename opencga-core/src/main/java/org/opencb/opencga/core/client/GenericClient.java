@@ -16,6 +16,16 @@ public class GenericClient extends ParentClient {
     }
 
     /**
+     * Returns info about current OpenCGA code.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> about() throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("meta", null, null, null, "about", params, GET, ObjectMap.class);
+    }
+
+    /**
      * Get an anonymous token to gain access to the system.
      * @param organization Organization id.
      * @return a RestResponse object.

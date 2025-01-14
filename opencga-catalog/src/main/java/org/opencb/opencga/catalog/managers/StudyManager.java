@@ -37,10 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
-import org.opencb.opencga.catalog.utils.AnnotationUtils;
-import org.opencb.opencga.catalog.utils.CatalogFqn;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -53,6 +50,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.cohort.CohortPermissions;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.FamilyPermissions;
+import org.opencb.opencga.core.models.federation.FederationClientRef;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.file.FilePermissions;
@@ -428,6 +426,11 @@ public class StudyManager extends AbstractManager {
             study.setSources(ParamUtils.defaultObject(study.getSources(), Collections::emptyList));
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
             study.setInternal(StudyInternal.init());
+            study.setFederation(ParamUtils.defaultObject(study.getFederation(), new FederationClientRef("", "", "")));
+            if (StringUtils.isNotEmpty(study.getFederation().getId())) {
+                FederationUtils.validateFederationId(organizationId, study.getFederation().getId(), catalogDBAdaptorFactory);
+                study.getInternal().setFederated(true);
+            }
             study.setStatus(ParamUtils.defaultObject(study.getStatus(), Status::new));
             study.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(study.getCreationDate(),
                     StudyDBAdaptor.QueryParams.CREATION_DATE.key()));

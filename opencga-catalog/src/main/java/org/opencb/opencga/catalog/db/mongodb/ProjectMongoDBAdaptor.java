@@ -869,6 +869,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
                     case ORGANISM_SCIENTIFIC_NAME:
                     case ORGANISM_COMMON_NAME:
                     case ORGANISM_ASSEMBLY:
+                    case INTERNAL_FEDERATED:
                     case INTERNAL_STATUS_MSG:
                     case INTERNAL_STATUS_DATE:
                     case INTERNAL_DATASTORES:

@@ -12,6 +12,9 @@ public class FederationClient {
     @DataField(id = "description", description = FieldConstants.FEDERATION_CLIENT_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(id = "version", description = FieldConstants.FEDERATION_CLIENT_VERSION_DESCRIPTION)
+    private String version;
+
     @DataField(id = "email", description = FieldConstants.FEDERATION_CLIENT_EMAIL_DESCRIPTION)
     private String email;
 
@@ -36,15 +39,17 @@ public class FederationClient {
     public FederationClient() {
     }
 
-    public FederationClient(String id, String description, String email, String url, String organizationId, String userId, String password,
-                            String secretKey) {
+    public FederationClient(String id, String description, String version, String email, String url, String organizationId, String userId,
+                            String password, String token, String secretKey) {
         this.id = id;
         this.description = description;
+        this.version = version;
         this.email = email;
         this.url = url;
         this.organizationId = organizationId;
         this.userId = userId;
         this.password = password;
+        this.token = token;
         this.secretKey = secretKey;
     }
 
@@ -53,6 +58,7 @@ public class FederationClient {
         final StringBuilder sb = new StringBuilder("FederationClient{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", version='").append(version).append('\'');
         sb.append(", email='").append(email).append('\'');
         sb.append(", url='").append(url).append('\'');
         sb.append(", organizationId='").append(organizationId).append('\'');
@@ -79,6 +85,14 @@ public class FederationClient {
     public FederationClient setDescription(String description) {
         this.description = description;
         return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
     }
 
     public String getEmail() {

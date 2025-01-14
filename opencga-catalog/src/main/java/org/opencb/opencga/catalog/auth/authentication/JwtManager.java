@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
@@ -89,7 +90,7 @@ public class JwtManager {
     }
 
     public String createJWTToken(String organizationId, AuthenticationOrigin.AuthenticationType type, String userId,
-                                 Map<String, Object> claims, long expiration) {
+                                 Map<String, Object> claims, List<JwtPayload.FederationJwtPayload> federations, long expiration) {
         long currentTime = System.currentTimeMillis();
 
         JwtBuilder jwtBuilder = Jwts.builder();
@@ -98,6 +99,9 @@ public class JwtManager {
         }
         if (type != null) {
             jwtBuilder.addClaims(Collections.singletonMap(AUTH_ORIGIN, type));
+        }
+        if (CollectionUtils.isNotEmpty(federations)) {
+            jwtBuilder.addClaims(Collections.singletonMap(JwtPayload.FEDERATIONS, federations));
         }
 
         jwtBuilder.setSubject(userId)
