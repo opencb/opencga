@@ -171,7 +171,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         String swaggerJson ="ERROR: Swagger could not be generated";
         ObjectMapper mapper = new ObjectMapper();
         try {
-            swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger).replaceAll("{apiVersion}", "v2");
+            swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger).replace("{apiVersion}", "v2");
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
