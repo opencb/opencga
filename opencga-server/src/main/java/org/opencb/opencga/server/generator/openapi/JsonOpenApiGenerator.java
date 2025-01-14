@@ -176,14 +176,14 @@ public class JsonOpenApiGenerator {
         }
 
         // Añadir encabezado Authorization con el token preconfigurado
-        Parameter authorizationHeader = new Parameter();
+    /*    Parameter authorizationHeader = new Parameter();
         authorizationHeader.setName("Authorization");
         authorizationHeader.setIn("header");
         authorizationHeader.setDescription("Bearer token for authorization");
         authorizationHeader.setRequired(true);
         authorizationHeader.setType("string");
         authorizationHeader.setDefaultValue("Bearer " + token);
-        parameters.add(authorizationHeader);
+        parameters.add(authorizationHeader);*/
 
         return parameters;
     }
