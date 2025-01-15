@@ -904,7 +904,7 @@ public class CvdbSolrEngine {
 
         for (String variantId : variantIds) {
             ClinicalVariantSummaryStats aggVariantStats = new ClinicalVariantSummaryStats();
-            aggVariantStats.setId(organizationId);
+            aggVariantStats.setId("ALL");
             aggVariantStats.setVariantId(variantId);
 
             for (String targetProjectId : targetProjectIds) {
