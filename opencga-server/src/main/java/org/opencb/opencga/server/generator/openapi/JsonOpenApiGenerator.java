@@ -22,11 +22,9 @@ public class JsonOpenApiGenerator {
         swagger.setInfo(info);
         swagger.setHost("test.app.zettagenomics.com");
         swagger.setBasePath(environment + "/opencga/webservices/rest");
-
         List<String> schemes = new ArrayList<>();
         schemes.add("https");
         swagger.setSchemes(schemes);
-
         Map<String, Map<String, Method>> paths = new HashMap<>();
         List<Tag> tags = new ArrayList<>();
 
@@ -66,14 +64,10 @@ public class JsonOpenApiGenerator {
                     if(apiOperation.response() instanceof Class){
                         beansDefinitions.add((Class) apiOperation.response());
                     }
-
                     method.getResponses().put("200", responses);
-
                     // Obtener el método HTTP
                     String httpMethod = extractHttpMethod(wsmethod);
                     if (httpMethod == null) continue;
-
-
                     Consumes consumes = wsmethod.getAnnotation(Consumes.class);
                     // Extraer parámetros
                     List<Parameter> parameters = extractParameters(wsmethod, token);
@@ -81,7 +75,7 @@ public class JsonOpenApiGenerator {
                     if (consumes != null){
                         method.getConsumes().addAll(Arrays.asList(consumes.value()));
                     }
-                    method.getProduces().add(String.valueOf(apiOperation.response()));
+                    method.getProduces().add("application/json");
                     // Ruta completa del endpoint
                     javax.ws.rs.Path methodPathAnnotation = wsmethod.getAnnotation(javax.ws.rs.Path.class);
                     String fullPath = basePath + (methodPathAnnotation != null ? methodPathAnnotation.value() : "");
