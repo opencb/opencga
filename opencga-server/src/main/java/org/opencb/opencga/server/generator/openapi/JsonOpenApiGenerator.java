@@ -1,5 +1,6 @@
 package org.opencb.opencga.server.generator.openapi;
 import org.apache.commons.lang3.StringUtils;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
@@ -139,14 +140,8 @@ public class JsonOpenApiGenerator {
         for (java.lang.reflect.Parameter methodParam : method.getParameters()) {
             // Procesar ApiParam
             ApiParam apiParam = methodParam.getAnnotation(ApiParam.class);
-            if (apiParam != null) {
-                Parameter parameter = new Parameter();
-                parameter.setName(apiParam.name());
-                parameter.setDescription(apiParam.value());
-                parameter.setRequired(apiParam.required());
-                parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
-                parameter.setIn(determineParameterLocation(methodParam));
-                parameters.add(parameter);
+            if (apiParam == null || apiParam.hidden()) {
+                continue;
             }
 
             // Procesar PathParam
@@ -168,6 +163,17 @@ public class JsonOpenApiGenerator {
                 parameter.setName(queryParam.value());
                 parameter.setIn("query");
                 parameter.setDescription("Query parameter: " + queryParam.value());
+                parameter.setRequired(false); // Por defecto, no requerido
+                parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
+                parameters.add(parameter);
+            }
+
+            FormDataParam formDataParam = methodParam.getAnnotation(FormDataParam.class);
+            if (formDataParam != null) {
+                Parameter parameter = new Parameter();
+                parameter.setName(formDataParam.value());
+                parameter.setIn("query");
+                parameter.setDescription("Query parameter: " + formDataParam.value());
                 parameter.setRequired(false); // Por defecto, no requerido
                 parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
                 parameters.add(parameter);
