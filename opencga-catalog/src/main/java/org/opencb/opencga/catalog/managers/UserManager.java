@@ -63,8 +63,9 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.checkEmail;
  */
 public class UserManager extends AbstractManager {
 
-    static final QueryOptions INCLUDE_INTERNAL = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
-            UserDBAdaptor.QueryParams.INTERNAL.key(), UserDBAdaptor.QueryParams.DEPRECATED_ACCOUNT.key()));
+    public static final QueryOptions INCLUDE_INTERNAL = new QueryOptions(QueryOptions.INCLUDE,
+            Arrays.asList(UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.INTERNAL.key(),
+                    UserDBAdaptor.QueryParams.DEPRECATED_ACCOUNT.key()));
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     private final CatalogIOManager catalogIOManager;
     private final AuthenticationFactory authenticationFactory;
@@ -290,9 +291,9 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(jwtPayload.getUserId(), "jwt user");
         ParamUtils.checkParameter(jwtPayload.getOrganization(), "jwt organization");
 
-        String authOrigin;
+        Account.AuthenticationOrigin authOrigin;
         if (ParamConstants.ANONYMOUS_USER_ID.equals(jwtPayload.getUserId())) {
-            authOrigin = CatalogAuthenticationManager.OPENCGA;
+            authOrigin = new Account.AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, false, false);
         } else {
             OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(),
                     INCLUDE_INTERNAL);
@@ -300,10 +301,10 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("User '" + jwtPayload.getUserId() + "' could not be found.");
             }
             User user = userResult.first();
-            authOrigin = user.getInternal().getAccount().getAuthentication().getId();
+            authOrigin = user.getInternal().getAccount().getAuthentication();
         }
 
-        authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, token);
+        authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, jwtPayload);
         return jwtPayload;
     }
 
@@ -807,6 +808,7 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(password, "password");
 
         String authId = null;
+        String userId = null;
         AuthenticationResponse response = null;
 
         if (StringUtils.isEmpty(organizationId)) {
@@ -826,6 +828,7 @@ public class UserManager extends AbstractManager {
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_INTERNAL);
         if (userOpenCGAResult.getNumResults() == 1) {
             User user = userOpenCGAResult.first();
+            userId = user.getId();
             // Only local OPENCGA users that are not superadmins can be automatically banned or their accounts be expired
             boolean userCanBeBanned = !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)
                     && CatalogAuthenticationManager.OPENCGA.equals(user.getInternal().getAccount().getAuthentication().getId());
@@ -861,10 +864,10 @@ public class UserManager extends AbstractManager {
                     }
                 }
             }
-            User user1 = userOpenCGAResult.first();
-            authId = user1.getInternal().getAccount().getAuthentication().getId();
+            Account.AuthenticationOrigin authentication = user.getInternal().getAccount().getAuthentication();
+            authId = user.getInternal().getAccount().getAuthentication().getId();
             try {
-                response = authenticationFactory.authenticate(organizationId, authId, username, password);
+                response = authenticationFactory.authenticate(organizationId, authentication, username, password);
             } catch (CatalogAuthenticationException e) {
                 if (userCanBeBanned) {
                     // We can only lock the account if it is not the root user
@@ -901,11 +904,13 @@ public class UserManager extends AbstractManager {
                 try {
                     response = authenticationManager.authenticate(organizationId, username, password);
                     authId = entry.getKey();
+                    userId = authenticationManager.getUserId(response.getToken());
                     break;
                 } catch (CatalogAuthenticationException e) {
                     logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
                 }
             }
+
         }
 
         if (response == null) {
@@ -916,7 +921,6 @@ public class UserManager extends AbstractManager {
 
         auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
         if (!CatalogAuthenticationManager.OPENCGA.equals(authId) && !CatalogAuthenticationManager.INTERNAL.equals(authId)) {
             // External authorization
             try {

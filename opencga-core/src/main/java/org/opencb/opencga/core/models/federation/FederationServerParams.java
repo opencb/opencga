@@ -3,7 +3,7 @@ package org.opencb.opencga.core.models.federation;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
-public class FederationServer {
+public class FederationServerParams {
 
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
             description = FieldConstants.FEDERATION_SERVER_ID_DESCRIPTION)
@@ -27,11 +27,11 @@ public class FederationServer {
     @DataField(id = "secretKey", description = FieldConstants.FEDERATION_SERVER_SECRET_KEY_DESCRIPTION)
     private String secretKey;
 
-    public FederationServer() {
+    public FederationServerParams() {
     }
 
-    public FederationServer(String id, String description, String email, String userId, boolean active, String expirationTime,
-                            String secretKey) {
+    public FederationServerParams(String id, String description, String email, String userId, boolean active, String expirationTime,
+                                  String secretKey) {
         this.id = id;
         this.description = description;
         this.email = email;
@@ -59,7 +59,7 @@ public class FederationServer {
         return id;
     }
 
-    public FederationServer setId(String id) {
+    public FederationServerParams setId(String id) {
         this.id = id;
         return this;
     }
@@ -68,7 +68,7 @@ public class FederationServer {
         return description;
     }
 
-    public FederationServer setDescription(String description) {
+    public FederationServerParams setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -77,7 +77,7 @@ public class FederationServer {
         return email;
     }
 
-    public FederationServer setEmail(String email) {
+    public FederationServerParams setEmail(String email) {
         this.email = email;
         return this;
     }
@@ -86,7 +86,7 @@ public class FederationServer {
         return userId;
     }
 
-    public FederationServer setUserId(String userId) {
+    public FederationServerParams setUserId(String userId) {
         this.userId = userId;
         return this;
     }
@@ -95,7 +95,7 @@ public class FederationServer {
         return active;
     }
 
-    public FederationServer setActive(boolean active) {
+    public FederationServerParams setActive(boolean active) {
         this.active = active;
         return this;
     }
@@ -104,7 +104,7 @@ public class FederationServer {
         return expirationTime;
     }
 
-    public FederationServer setExpirationTime(String expirationTime) {
+    public FederationServerParams setExpirationTime(String expirationTime) {
         this.expirationTime = expirationTime;
         return this;
     }
@@ -113,7 +113,7 @@ public class FederationServer {
         return secretKey;
     }
 
-    public FederationServer setSecretKey(String secretKey) {
+    public FederationServerParams setSecretKey(String secretKey) {
         this.secretKey = secretKey;
         return this;
     }

@@ -27,8 +27,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.federation.FederationServer;
-import org.opencb.opencga.core.models.federation.FederationClient;
+import org.opencb.opencga.core.models.federation.FederationClientParams;
+import org.opencb.opencga.core.models.federation.FederationServerParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -412,8 +412,8 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         }
         List<Document> federationParamList = new LinkedList<>();
         for (Object federationClient : parameters.getAsList(QueryParams.FEDERATION_CLIENTS.key())) {
-            if (federationClient instanceof FederationServer) {
-                federationParamList.add(new Document("id", ((FederationServer) federationClient).getId()));
+            if (federationClient instanceof FederationServerParams) {
+                federationParamList.add(new Document("id", ((FederationServerParams) federationClient).getId()));
             } else {
                 federationParamList.add(new Document("id", ((Map) federationClient).get("id")));
             }
@@ -427,8 +427,8 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         }
         List<Document> federationParamList = new LinkedList<>();
         for (Object federationServer : parameters.getAsList(QueryParams.FEDERATION_SERVERS.key())) {
-            if (federationServer instanceof FederationClient) {
-                federationParamList.add(new Document("id", ((FederationClient) federationServer).getId()));
+            if (federationServer instanceof FederationClientParams) {
+                federationParamList.add(new Document("id", ((FederationClientParams) federationServer).getId()));
             } else {
                 federationParamList.add(new Document("id", ((Map) federationServer).get("id")));
             }
@@ -449,6 +449,35 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
             }
         }
         parameters.putNested(QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key(), authOriginParamList, false);
+    }
+
+    @Override
+    public OpenCGAResult<Organization> updateFederationServerParams(String federationId, ObjectMap params) throws CatalogDBException {
+        return updateFederationParams(QueryParams.FEDERATION_SERVERS.key(), federationId, params);
+    }
+
+    @Override
+    public OpenCGAResult<Organization> updateFederationClientParams(String federationId, ObjectMap params) throws CatalogDBException {
+        return updateFederationParams(QueryParams.FEDERATION_CLIENTS.key(), federationId, params);
+    }
+
+    private OpenCGAResult<Organization> updateFederationParams(String prefix, String federationId, ObjectMap params)
+            throws CatalogDBException {
+        long tmpStartTime = startQuery();
+
+        Document query = new Document(prefix + ".id", federationId);
+        Document paramsUpdate = new Document();
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            paramsUpdate.put(prefix + ".$." + entry.getKey(), entry.getValue());
+        }
+        Document update = new Document("$set", paramsUpdate);
+
+        DataResult<?> updateResult = organizationCollection.update(null, query, update, null);
+        if (updateResult.getNumMatches() == 0) {
+            throw new CatalogDBException("Federation '" + federationId + "' not found.");
+        }
+
+        return endWrite(tmpStartTime, updateResult);
     }
 
     @Override

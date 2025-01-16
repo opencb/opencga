@@ -3,7 +3,7 @@ package org.opencb.opencga.core.models.federation;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
-public class FederationClient {
+public class FederationClientParams {
 
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
             description = FieldConstants.FEDERATION_CLIENT_ID_DESCRIPTION)
@@ -36,11 +36,11 @@ public class FederationClient {
     @DataField(id = "secretKey", description = FieldConstants.FEDERATION_CLIENT_SECRET_KEY_DESCRIPTION)
     private String secretKey;
 
-    public FederationClient() {
+    public FederationClientParams() {
     }
 
-    public FederationClient(String id, String description, String version, String email, String url, String organizationId, String userId,
-                            String password, String token, String secretKey) {
+    public FederationClientParams(String id, String description, String version, String email, String url, String organizationId,
+                                  String userId, String password, String token, String secretKey) {
         this.id = id;
         this.description = description;
         this.version = version;
@@ -73,7 +73,7 @@ public class FederationClient {
         return id;
     }
 
-    public FederationClient setId(String id) {
+    public FederationClientParams setId(String id) {
         this.id = id;
         return this;
     }
@@ -82,7 +82,7 @@ public class FederationClient {
         return description;
     }
 
-    public FederationClient setDescription(String description) {
+    public FederationClientParams setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -91,15 +91,16 @@ public class FederationClient {
         return version;
     }
 
-    public void setVersion(String version) {
+    public FederationClientParams setVersion(String version) {
         this.version = version;
+        return this;
     }
 
     public String getEmail() {
         return email;
     }
 
-    public FederationClient setEmail(String email) {
+    public FederationClientParams setEmail(String email) {
         this.email = email;
         return this;
     }
@@ -108,7 +109,7 @@ public class FederationClient {
         return url;
     }
 
-    public FederationClient setUrl(String url) {
+    public FederationClientParams setUrl(String url) {
         this.url = url;
         return this;
     }
@@ -117,7 +118,7 @@ public class FederationClient {
         return organizationId;
     }
 
-    public FederationClient setOrganizationId(String organizationId) {
+    public FederationClientParams setOrganizationId(String organizationId) {
         this.organizationId = organizationId;
         return this;
     }
@@ -126,7 +127,7 @@ public class FederationClient {
         return userId;
     }
 
-    public FederationClient setUserId(String userId) {
+    public FederationClientParams setUserId(String userId) {
         this.userId = userId;
         return this;
     }
@@ -135,7 +136,7 @@ public class FederationClient {
         return password;
     }
 
-    public FederationClient setPassword(String password) {
+    public FederationClientParams setPassword(String password) {
         this.password = password;
         return this;
     }
@@ -144,7 +145,7 @@ public class FederationClient {
         return secretKey;
     }
 
-    public FederationClient setSecretKey(String secretKey) {
+    public FederationClientParams setSecretKey(String secretKey) {
         this.secretKey = secretKey;
         return this;
     }
@@ -153,7 +154,8 @@ public class FederationClient {
         return token;
     }
 
-    public void setToken(String token) {
+    public FederationClientParams setToken(String token) {
         this.token = token;
+        return this;
     }
 }

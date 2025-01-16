@@ -56,6 +56,10 @@ public class Account {
         this.authentication = null;
     }
 
+    public Account(String expirationDate, AuthenticationOrigin authentication) {
+        this(expirationDate, new Password(), 0, authentication);
+    }
+
     public Account(String expirationDate, Password password, int failedAttempts, AuthenticationOrigin authentication) {
         this.expirationDate = expirationDate;
         this.password = password;

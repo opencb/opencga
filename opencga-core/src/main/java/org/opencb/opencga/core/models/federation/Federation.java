@@ -4,13 +4,13 @@ import java.util.List;
 
 public class Federation {
 
-    private List<FederationClient> clients;
-    private List<FederationServer> servers;
+    private List<FederationClientParams> clients;
+    private List<FederationServerParams> servers;
 
     public Federation() {
     }
 
-    public Federation(List<FederationClient> clients, List<FederationServer> servers) {
+    public Federation(List<FederationClientParams> clients, List<FederationServerParams> servers) {
         this.clients = clients;
         this.servers = servers;
     }
@@ -24,20 +24,20 @@ public class Federation {
         return sb.toString();
     }
 
-    public List<FederationClient> getClients() {
+    public List<FederationClientParams> getClients() {
         return clients;
     }
 
-    public Federation setClients(List<FederationClient> clients) {
+    public Federation setClients(List<FederationClientParams> clients) {
         this.clients = clients;
         return this;
     }
 
-    public List<FederationServer> getServers() {
+    public List<FederationServerParams> getServers() {
         return servers;
     }
 
-    public Federation setServers(List<FederationServer> servers) {
+    public Federation setServers(List<FederationServerParams> servers) {
         this.servers = servers;
         return this;
     }

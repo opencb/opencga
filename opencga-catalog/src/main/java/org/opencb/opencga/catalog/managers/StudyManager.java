@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.cohort.CohortPermissions;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.FamilyPermissions;
-import org.opencb.opencga.core.models.federation.FederationClientRef;
+import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.file.FilePermissions;
@@ -426,7 +426,7 @@ public class StudyManager extends AbstractManager {
             study.setSources(ParamUtils.defaultObject(study.getSources(), Collections::emptyList));
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
             study.setInternal(StudyInternal.init());
-            study.setFederation(ParamUtils.defaultObject(study.getFederation(), new FederationClientRef("", "", "")));
+            study.setFederation(ParamUtils.defaultObject(study.getFederation(), new FederationClientParamsRef("", "", "")));
             if (StringUtils.isNotEmpty(study.getFederation().getId())) {
                 FederationUtils.validateFederationId(organizationId, study.getFederation().getId(), catalogDBAdaptorFactory);
                 study.getInternal().setFederated(true);

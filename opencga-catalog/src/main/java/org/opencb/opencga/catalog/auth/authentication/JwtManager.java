@@ -90,7 +90,8 @@ public class JwtManager {
     }
 
     public String createJWTToken(String organizationId, AuthenticationOrigin.AuthenticationType type, String userId,
-                                 Map<String, Object> claims, List<JwtPayload.FederationJwtPayload> federations, long expiration) {
+                                 Map<String, Object> claims, List<JwtPayload.FederationJwtPayload> federations, Key secretKey,
+                                 long expiration) {
         long currentTime = System.currentTimeMillis();
 
         JwtBuilder jwtBuilder = Jwts.builder();
@@ -108,7 +109,7 @@ public class JwtManager {
                 .setAudience(organizationId)
                 .setIssuer("OpenCGA")
                 .setIssuedAt(new Date(currentTime))
-                .signWith(privateKey, algorithm);
+                .signWith(secretKey != null ? secretKey : privateKey, algorithm);
 
         // Set the expiration in number of seconds only if 'expiration' is greater than 0
         if (expiration > 0) {
@@ -119,7 +120,7 @@ public class JwtManager {
     }
 
     public void validateToken(String token) throws CatalogAuthenticationException {
-        validateToken(token, this.publicKey);
+        parseClaims(token);
     }
 
     public void validateToken(String token, Key publicKey) throws CatalogAuthenticationException {
@@ -127,7 +128,7 @@ public class JwtManager {
     }
 
     public JwtPayload getPayload(String token) throws CatalogAuthenticationException {
-        Claims body = parseClaims(token, publicKey).getBody();
+        Claims body = parseClaims(token).getBody();
         return new JwtPayload(body.getSubject(), body.getAudience(), getAuthOrigin(body), body.getIssuer(), body.getIssuedAt(),
                 body.getExpiration(), JwtUtils.getFederations(body), token);
     }
@@ -164,7 +165,7 @@ public class JwtManager {
     }
 
     public String getUser(String token, String fieldKey) throws CatalogAuthenticationException {
-        return String.valueOf(parseClaims(token, publicKey).getBody().get(fieldKey));
+        return String.valueOf(parseClaims(token).getBody().get(fieldKey));
     }
 
     public List<String> getGroups(String token, String fieldKey) throws CatalogAuthenticationException {
@@ -197,9 +198,14 @@ public class JwtManager {
         return parseClaims(token, publicKey).getBody().get(claimId);
     }
 
+    private Jws<Claims> parseClaims(String token) throws CatalogAuthenticationException {
+        return parseClaims(token, null);
+    }
+
     private Jws<Claims> parseClaims(String token, Key publicKey) throws CatalogAuthenticationException {
+        Key key = publicKey != null ? publicKey : this.publicKey;
         try {
-            return Jwts.parser().setSigningKey(publicKey).parseClaimsJws(token);
+            return Jwts.parser().setSigningKey(key).parseClaimsJws(token);
         } catch (ExpiredJwtException e) {
             logger.error("JWT Error: '{}'", e.getMessage(), e);
             throw CatalogAuthenticationException.tokenExpired(token);

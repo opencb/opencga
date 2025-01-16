@@ -10,7 +10,11 @@ import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.federation.FederationClientParams;
+import org.opencb.opencga.core.models.federation.FederationServerParams;
 import org.opencb.opencga.core.models.organizations.Organization;
+import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -99,15 +103,50 @@ public final class AuthenticationFactory {
         return getOrganizationAuthenticationManager(organizationId, authOriginId).createToken(organizationId, userId);
     }
 
-    public void validateToken(String organizationId, String authOriginId, String token) throws CatalogException {
-        getOrganizationAuthenticationManager(organizationId, authOriginId).getUserId(token);
+    public void validateToken(String organizationId, Account.AuthenticationOrigin authenticationOrigin, JwtPayload jwtPayload)
+            throws CatalogException {
+        String secretKey = null;
+        if (authenticationOrigin.isFederation()) {
+            // The user is a federated user, so we need to use a different secret key
+            secretKey = getFederationSecretKey(organizationId, jwtPayload.getUserId());
+        }
+        getOrganizationAuthenticationManager(organizationId, authenticationOrigin.getId()).validateToken(jwtPayload.getToken(), secretKey);
     }
 
-    public AuthenticationResponse authenticate(String organizationId, String authenticationOriginId, String userId, String password)
-            throws CatalogException {
+    public AuthenticationResponse authenticate(String organizationId, Account.AuthenticationOrigin authenticationOrigin, String userId,
+                                               String password) throws CatalogException {
         AuthenticationManager organizationAuthenticationManager = getOrganizationAuthenticationManager(organizationId,
-                authenticationOriginId);
-        return organizationAuthenticationManager.authenticate(organizationId, userId, password);
+                authenticationOrigin.getId());
+        if (authenticationOrigin.isFederation()) {
+            // The user is a federated user, so we need to use a different secret key
+            String secretKey = getFederationSecretKey(organizationId, userId);
+            return organizationAuthenticationManager.authenticate(organizationId, userId, password, secretKey);
+        } else {
+            return organizationAuthenticationManager.authenticate(organizationId, userId, password);
+        }
+    }
+
+    private String getFederationSecretKey(String organizationId, String userId) throws CatalogException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.FEDERATION.key());
+        Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(options).first();
+        if (organization.getFederation() == null) {
+            throw new CatalogException("Could not find federation information for federated user '" + userId + "'");
+        }
+        if (CollectionUtils.isNotEmpty(organization.getFederation().getServers())) {
+            for (FederationServerParams server : organization.getFederation().getServers()) {
+                if (server.getUserId().equals(userId)) {
+                    return server.getSecretKey();
+                }
+            }
+        }
+        if (CollectionUtils.isNotEmpty(organization.getFederation().getClients())) {
+            for (FederationClientParams client : organization.getFederation().getClients()) {
+                if (client.getUserId().equals(userId)) {
+                    return client.getSecretKey();
+                }
+            }
+        }
+        throw new CatalogException("Could not find federation information for federated user '" + userId + "'");
     }
 
     public void changePassword(String organizationId, String authOriginId, String userId, String oldPassword, String newPassword)

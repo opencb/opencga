@@ -167,6 +167,11 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
 //
     OpenCGAResult<Organization> update(String organizationId, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<Organization> updateFederationServerParams(String federationId, ObjectMap params) throws CatalogDBException;
+
+    OpenCGAResult<Organization> updateFederationClientParams(String federationId, ObjectMap params) throws CatalogDBException;
+
 //
 //    OpenCGAResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 //

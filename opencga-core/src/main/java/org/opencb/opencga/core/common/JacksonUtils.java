@@ -35,10 +35,10 @@ import org.opencb.opencga.core.models.common.mixins.GenotypeJsonMixin;
 import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyMixin;
-import org.opencb.opencga.core.models.federation.FederationServer;
-import org.opencb.opencga.core.models.federation.FederationServerMixin;
-import org.opencb.opencga.core.models.federation.FederationClient;
-import org.opencb.opencga.core.models.federation.FederationClientMixin;
+import org.opencb.opencga.core.models.federation.FederationServerParams;
+import org.opencb.opencga.core.models.federation.FederationServerParamsMixin;
+import org.opencb.opencga.core.models.federation.FederationClientParams;
+import org.opencb.opencga.core.models.federation.FederationClientParamsMixin;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileMixin;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -113,8 +113,6 @@ public class JacksonUtils {
         objectMapper.addMixIn(VariableSet.class, PrivateUidMixin.class);
         objectMapper.addMixIn(ClinicalAnalysis.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Interpretation.class, PrivateUidMixin.class);
-        objectMapper.addMixIn(FederationServer.class, FederationServerMixin.class);
-        objectMapper.addMixIn(FederationClient.class, FederationClientMixin.class);
 
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
@@ -149,8 +147,8 @@ public class JacksonUtils {
         objectMapper.addMixIn(VariableSet.class, PrivateUidMixin.class);
         objectMapper.addMixIn(ClinicalAnalysis.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Interpretation.class, PrivateUidMixin.class);
-        objectMapper.addMixIn(FederationServer.class, FederationServerMixin.class);
-        objectMapper.addMixIn(FederationClient.class, FederationClientMixin.class);
+        objectMapper.addMixIn(FederationServerParams.class, FederationServerParamsMixin.class);
+        objectMapper.addMixIn(FederationClientParams.class, FederationClientParamsMixin.class);
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         return objectMapper;

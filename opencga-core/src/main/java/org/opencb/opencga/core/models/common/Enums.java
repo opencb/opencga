@@ -215,6 +215,8 @@ public final class Enums {
         CHANGE_USER_CONFIG,
         FETCH_USER_CONFIG,
 
+        UPDATE_FEDERATION_SECRET_KEY,
+
         INCREMENT_PROJECT_RELEASE,
 
         FETCH_STUDY_GROUPS,

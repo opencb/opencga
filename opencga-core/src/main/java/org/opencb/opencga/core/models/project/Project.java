@@ -22,7 +22,7 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.PrivateFields;
-import org.opencb.opencga.core.models.federation.FederationClientRef;
+import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.util.HashMap;
@@ -108,7 +108,7 @@ public class Project extends PrivateFields {
     private int currentRelease;
 
     @DataField(id = "federation", description = FieldConstants.PROJECT_FEDERATION)
-    private FederationClientRef federation;
+    private FederationClientParamsRef federation;
 
     @DataField(id = "studies",
             description = FieldConstants.PROJECT_STUDIES)
@@ -171,7 +171,7 @@ public class Project extends PrivateFields {
                 project.getCellbase(), project.getCurrentRelease(), project.getStudies(), project.getInternal(), project.getAttributes());
     }
 
-    public Project(long uid, String id, String uuid, String name, String fqn, FederationClientRef federation, String creationDate,
+    public Project(long uid, String id, String uuid, String name, String fqn, FederationClientParamsRef federation, String creationDate,
                    String modificationDate, String description, ProjectOrganism organism, CellBaseConfiguration cellbase,
                    int currentRelease, List<Study> studies, ProjectInternal internal, Map<String, Object> attributes) {
         super(uid);
@@ -299,11 +299,11 @@ public class Project extends PrivateFields {
         return this;
     }
 
-    public FederationClientRef getFederation() {
+    public FederationClientParamsRef getFederation() {
         return federation;
     }
 
-    public void setFederation(FederationClientRef federation) {
+    public void setFederation(FederationClientParamsRef federation) {
         this.federation = federation;
     }
 

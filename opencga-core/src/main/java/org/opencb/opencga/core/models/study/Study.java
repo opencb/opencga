@@ -27,7 +27,7 @@ import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.common.AdditionalInfo;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.ExternalSource;
-import org.opencb.opencga.core.models.federation.FederationClientRef;
+import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.notes.Note;
 
 import java.net.URI;
@@ -103,7 +103,7 @@ public class Study extends PrivateFields {
     private String fqn;
 
     @DataField(id = "federation", description = FieldConstants.STUDY_FEDERATION)
-    private FederationClientRef federation;
+    private FederationClientParamsRef federation;
 
     @DataField(id = "notification",
             description = FieldConstants.STUDY_NOTIFICATION)
@@ -309,11 +309,11 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public FederationClientRef getFederation() {
+    public FederationClientParamsRef getFederation() {
         return federation;
     }
 
-    public void setFederation(FederationClientRef federation) {
+    public void setFederation(FederationClientParamsRef federation) {
         this.federation = federation;
     }
 

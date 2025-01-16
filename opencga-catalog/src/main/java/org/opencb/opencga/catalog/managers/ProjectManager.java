@@ -37,7 +37,7 @@ import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.federation.FederationClientRef;
+import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.*;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -213,7 +213,7 @@ public class ProjectManager extends AbstractManager {
                 ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         project.setCurrentRelease(1);
         project.setInternal(ProjectInternal.init());
-        project.setFederation(ParamUtils.defaultObject(project.getFederation(), new FederationClientRef()));
+        project.setFederation(ParamUtils.defaultObject(project.getFederation(), new FederationClientParamsRef()));
         if (StringUtils.isNotEmpty(project.getFederation().getId())) {
             FederationUtils.validateFederationId(organizationId, project.getFederation().getId(), catalogDBAdaptorFactory);
             project.getInternal().setFederated(true);
