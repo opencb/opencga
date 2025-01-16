@@ -10,7 +10,7 @@ import org.opencb.opencga.core.client.GenericClient;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
-import org.opencb.opencga.core.models.federation.FederationClient;
+import org.opencb.opencga.core.models.federation.FederationClientParams;
 import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
@@ -52,7 +52,7 @@ public class FederationManagerTest extends EnterpriseAbstractManagerTest {
         // Federate server
         FederationServerCreateParams serverCreateParams = new FederationServerCreateParams(organizationId, "", "mail@mail.com",
                 organizationId);
-        FederationClient client = federationManager.createFederation(serverCreateParams, org2OwnerToken).first();
+        FederationClientParams client = federationManager.createFederation(serverCreateParams, org2OwnerToken).first();
 
         // Check we can log in with that user
         AuthenticationResponse login = catalogManager.getUserManager().login(client.getOrganizationId(), client.getUserId(), client.getPassword());

@@ -2,6 +2,9 @@ package com.zettagenomics.opencga.enterprise.catalog.utils;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.StudyManager;
@@ -10,13 +13,15 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.JwtPayload;
-import org.opencb.opencga.core.models.federation.FederationClient;
+import org.opencb.opencga.core.models.federation.FederationClientParams;
+import org.opencb.opencga.core.models.federation.FederationServerParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyInternal;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.LoginParams;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.util.*;
@@ -74,7 +79,26 @@ public class FederationUtils {
         throw new CatalogException("User does not belong to any federation that contains the project or study provided.");
     }
 
-    public static GenericClient getClientInstance(FederationClient federationClient) throws ClientException {
+    public static FederationServerParams findFederationServer(String organizationId, String userId, DBAdaptorFactory dbAdaptorFactory)
+            throws CatalogException {
+        QueryOptions orgOptions = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.FEDERATION.key());
+        OpenCGAResult<Organization> result = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(orgOptions);
+        if (result.getNumResults() == 0) {
+            throw new CatalogException("Could not find Organization '" + organizationId + "'");
+        }
+        Organization organization = result.first();
+        if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getServers())) {
+            throw new CatalogException("Organization '" + organizationId + "' is not federated.");
+        }
+        for (FederationServerParams server : organization.getFederation().getServers()) {
+            if (server.getUserId().equals(userId)) {
+                return server;
+            }
+        }
+        throw new CatalogException("User '" + userId + "' is not federated in organization '" + organizationId + "'");
+    }
+
+    public static GenericClient getClientInstance(FederationClientParams federationClient) throws ClientException {
         ClientConfiguration clientConfiguration = new ClientConfiguration(federationClient.getUrl());
 
         if (StringUtils.isNotEmpty(federationClient.getToken())) {

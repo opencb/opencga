@@ -19,6 +19,11 @@
 #'
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
+#' | connect | /{apiVersion}/federations/connect | body |
+#' | create | /{apiVersion}/federations/create | body |
+#' | login | /{apiVersion}/federations/login | id |
+#' | reset | /{apiVersion}/federations/reset | id |
+#' | synchronize | /{apiVersion}/federations/synchronize | id |
 #'
 #' @md
 #' @seealso \url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation
@@ -28,5 +33,35 @@
 
 setMethod("federationClient", "OpencgaR", function(OpencgaR, endpointName, params=NULL, ...) {
     switch(endpointName,
+
+        #' @section Endpoint /{apiVersion}/federations/connect:
+        #' Connect to a Federation server.
+        #' @param data JSON containing the Federation server configuration.
+        connect=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="connect", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/federations/create:
+        #' Create a new Federation.
+        #' @param data JSON containing the new Federation object.
+        create=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="create", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/federations/login:
+        #' Login a federated user.
+        #' @param id Federation server id to reset.
+        login=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="login", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/federations/reset:
+        #' Reset the credentials of a federation.
+        #' @param id Federation server id to reset.
+        reset=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="reset", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/federations/synchronize:
+        #' Synchronize data from a known Federation server.
+        #' @param id Federation client id to be synchronized.
+        synchronize=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="synchronize", params=params, httpMethod="POST", as.queryParam=NULL, ...),
     )
 })

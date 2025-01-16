@@ -19,3 +19,53 @@ class Federation(_ParentRestClient):
     def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         super(Federation, self).__init__(configuration, token, login_handler, *args, **kwargs)
 
+    def connect(self, data=None, **options):
+        """
+        Connect to a Federation server.
+        PATH: /{apiVersion}/federations/connect
+
+        :param dict data: JSON containing the Federation server configuration.
+        """
+
+        return self._post(category='federations', resource='connect', data=data, **options)
+
+    def create(self, data=None, **options):
+        """
+        Create a new Federation.
+        PATH: /{apiVersion}/federations/create
+
+        :param dict data: JSON containing the new Federation object.
+        """
+
+        return self._post(category='federations', resource='create', data=data, **options)
+
+    def login(self, **options):
+        """
+        Login a federated user.
+        PATH: /{apiVersion}/federations/login
+
+        :param str id: Federation server id to reset.
+        """
+
+        return self._post(category='federations', resource='login', **options)
+
+    def reset(self, **options):
+        """
+        Reset the credentials of a federation.
+        PATH: /{apiVersion}/federations/reset
+
+        :param str id: Federation server id to reset.
+        """
+
+        return self._post(category='federations', resource='reset', **options)
+
+    def synchronize(self, **options):
+        """
+        Synchronize data from a known Federation server.
+        PATH: /{apiVersion}/federations/synchronize
+
+        :param str id: Federation client id to be synchronized.
+        """
+
+        return self._post(category='federations', resource='synchronize', **options)
+

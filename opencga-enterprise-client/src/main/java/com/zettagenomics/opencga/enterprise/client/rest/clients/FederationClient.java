@@ -16,10 +16,13 @@
 
 package com.zettagenomics.opencga.enterprise.client.rest.clients;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.rest.*;
 import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
+import org.opencb.opencga.core.models.federation.FederationClientParams;
+import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -41,5 +44,67 @@ public class FederationClient extends ParentClient {
 
     public FederationClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
+    }
+
+    /**
+     * Connect to a Federation server.
+     * @param data JSON containing the Federation server configuration.
+     * @param params Map containing any of the following optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> connect(FederationClientParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("federations", null, null, null, "connect", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Create a new Federation.
+     * @param data JSON containing the new Federation object.
+     * @param params Map containing any of the following optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> create(FederationServerCreateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("federations", null, null, null, "create", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Login a federated user.
+     * @param params Map containing any of the following optional parameters.
+     *       id: Federation server id to reset.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> login(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("federations", null, null, null, "login", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Reset the credentials of a federation.
+     * @param params Map containing any of the following optional parameters.
+     *       id: Federation server id to reset.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> reset(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("federations", null, null, null, "reset", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Synchronize data from a known Federation server.
+     * @param params Map containing any of the following optional parameters.
+     *       id: Federation client id to be synchronized.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> synchronize(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("federations", null, null, null, "synchronize", params, POST, ObjectMap.class);
     }
 }

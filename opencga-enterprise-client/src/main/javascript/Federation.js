@@ -34,4 +34,47 @@ export default class Federation extends OpenCGAParentClass {
         super(config);
     }
 
+    /** Connect to a Federation server
+    * @param {Object} [data] - JSON containing the Federation server configuration.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    connect(data) {
+        return this._post("federations", null, null, null, "connect", data);
+    }
+
+    /** Create a new Federation
+    * @param {Object} [data] - JSON containing the new Federation object.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    create(data) {
+        return this._post("federations", null, null, null, "create", data);
+    }
+
+    /** Login a federated user
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.id] - Federation server id to reset.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    login(params) {
+        return this._post("federations", null, null, null, "login", null, params);
+    }
+
+    /** Reset the credentials of a federation
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.id] - Federation server id to reset.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    reset(params) {
+        return this._post("federations", null, null, null, "reset", null, params);
+    }
+
+    /** Synchronize data from a known Federation server
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.id] - Federation client id to be synchronized.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    synchronize(params) {
+        return this._post("federations", null, null, null, "synchronize", null, params);
+    }
+
 }

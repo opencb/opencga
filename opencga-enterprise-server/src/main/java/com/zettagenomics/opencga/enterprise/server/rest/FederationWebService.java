@@ -2,6 +2,8 @@ package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.federation.FederationClientParams;
+import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
@@ -23,7 +25,55 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    
+    @POST
+    @Path("/create")
+    @ApiOperation(value = "Create a new Federation")
+    public Response create(
+            @ApiParam(value = "JSON containing the new Federation object") FederationServerCreateParams createParams) {
+        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().createFederation(createParams, token));
+    }
+
+    @POST
+    @Path("/connect")
+    @ApiOperation(value = "Connect to a Federation server")
+    public Response connect(
+            @ApiParam(value = "JSON containing the Federation server configuration") FederationClientParams createParams) {
+        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().connect(createParams, token));
+    }
+
+    @POST
+    @Path("/synchronize")
+    @ApiOperation(value = "Synchronize data from a known Federation server")
+    public Response synchronize(
+            @ApiParam(value = "Federation client id to be synchronized") @QueryParam("id") String federationClientId) {
+        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
+    }
+
+    @POST
+    @Path("/reset")
+    @ApiOperation(value = "Reset the credentials of a federation")
+    public Response reset(
+            @ApiParam(value = "Federation server id to reset") @QueryParam("id") String federationServerId) {
+        return null;
+//        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
+    }
+
+    @POST
+    @Path("/login")
+    @ApiOperation(value = "Login a federated user")
+    public Response login(
+            @ApiParam(value = "Federation server id to reset") @QueryParam("id") String federationServerId) {
+        return null;
+//        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
+    }
+
+    @POST
+    @Path("/firstConnection")
+    @ApiOperation(value = "First connection established with the Federation Server to update the secret key and extend the user " +
+            "expiration date.", hidden = true)
+    public Response firstConnection() {
+        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().resetSecretKey(token));
+    }
 
     /******************************************************************
      * REDIRECT METHODS
