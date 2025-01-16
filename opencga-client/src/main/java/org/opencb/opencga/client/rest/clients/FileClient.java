@@ -115,7 +115,7 @@ public class FileClient extends AbstractParentClient {
      *            permissions. Only study owners or administrators can query by this field. .
      *       deleted: Boolean to retrieve deleted entries.
      *       release: Release when it was created.
-     *       aggregationFields: List of fields separated by semicolons to apply aggregation statistics, e.g.:
+     *       field: List of fields separated by semicolons to apply aggregation statistics, e.g.:
      *            studies;type;numSamples[0..10]:1;format:sum(size).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

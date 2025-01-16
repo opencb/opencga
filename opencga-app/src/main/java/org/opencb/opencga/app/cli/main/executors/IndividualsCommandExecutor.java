@@ -182,7 +182,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
-        queryParams.putIfNotEmpty("aggregationFields", commandOptions.aggregationFields);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

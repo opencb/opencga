@@ -20,7 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/cohorts/acl/{members}/update | study, members[*], action[*], body[*] |
-#' | aggregationStats | /{apiVersion}/cohorts/aggregationStats | study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, aggregationFields |
+#' | aggregationStats | /{apiVersion}/cohorts/aggregationStats | study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field |
 #' | loadAnnotationSets | /{apiVersion}/cohorts/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | create | /{apiVersion}/cohorts/create | include, exclude, study, variableSet, variable, includeResult, body[*] |
 #' | distinct | /{apiVersion}/cohorts/distinct | study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field[*] |
@@ -68,7 +68,7 @@ setMethod("cohortClient", "OpencgaR", function(OpencgaR, annotationSet, cohort, 
         #' @param samples Cohort sample IDs.
         #' @param numSamples Number of samples.
         #' @param release release.
-        #' @param aggregationFields List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        #' @param field List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
         aggregationStats=fetchOpenCGA(object=OpencgaR, category="cohorts", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),

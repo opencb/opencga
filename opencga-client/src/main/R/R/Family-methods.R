@@ -20,7 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/families/acl/{members}/update | study, members[*], action[*], propagate, body[*] |
-#' | aggregationStats | /{apiVersion}/families/aggregationStats | study, id, name, uuid, members, expectedSize, samples, phenotypes, disorders, creationDate, modificationDate, deleted, internalStatus, status, annotation, acl, release, snapshot, aggregationFields |
+#' | aggregationStats | /{apiVersion}/families/aggregationStats | study, id, name, uuid, members, expectedSize, samples, phenotypes, disorders, creationDate, modificationDate, deleted, internalStatus, status, annotation, acl, release, snapshot, field |
 #' | loadAnnotationSets | /{apiVersion}/families/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | create | /{apiVersion}/families/create | include, exclude, study, members, includeResult, body[*] |
 #' | distinct | /{apiVersion}/families/distinct | study, id, name, uuid, members, expectedSize, samples, phenotypes, disorders, creationDate, modificationDate, deleted, internalStatus, status, annotation, acl, release, snapshot, field[*] |
@@ -71,7 +71,7 @@ setMethod("familyClient", "OpencgaR", function(OpencgaR, annotationSet, families
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
         #' @param release Release when it was created.
         #' @param snapshot Snapshot value (Latest version of the entry in the specified release).
-        #' @param aggregationFields List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        #' @param field List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
         aggregationStats=fetchOpenCGA(object=OpencgaR, category="families", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),

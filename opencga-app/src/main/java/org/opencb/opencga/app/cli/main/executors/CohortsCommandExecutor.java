@@ -163,7 +163,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("samples", commandOptions.samples);
         queryParams.putIfNotEmpty("numSamples", commandOptions.numSamples);
         queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotEmpty("aggregationFields", commandOptions.aggregationFields);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

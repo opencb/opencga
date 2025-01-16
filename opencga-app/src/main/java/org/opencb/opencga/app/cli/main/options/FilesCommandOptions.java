@@ -213,8 +213,8 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
-        @Parameter(names = {"--aggregation-fields"}, description = "List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
-        public String aggregationFields; 
+        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
+        public String field; 
     
     }
 

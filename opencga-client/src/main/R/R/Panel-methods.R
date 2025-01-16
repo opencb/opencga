@@ -20,7 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/panels/acl/{members}/update | study, members[*], action[*], body[*] |
-#' | aggregationStats | /{apiVersion}/panels/aggregationStats | study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, aggregationFields |
+#' | aggregationStats | /{apiVersion}/panels/aggregationStats | study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field |
 #' | create | /{apiVersion}/panels/create | include, exclude, study, includeResult, body |
 #' | distinct | /{apiVersion}/panels/distinct | study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field[*] |
 #' | importPanels | /{apiVersion}/panels/import | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body |
@@ -70,7 +70,7 @@ setMethod("panelClient", "OpencgaR", function(OpencgaR, members, panels, endpoin
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
         #' @param release Release when it was created.
         #' @param snapshot Snapshot value (Latest version of the entry in the specified release).
-        #' @param aggregationFields List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        #' @param field List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
         aggregationStats=fetchOpenCGA(object=OpencgaR, category="panels", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),

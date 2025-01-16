@@ -20,7 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/samples/acl/{members}/update | study, members[*], action[*], body[*] |
-#' | aggregationStats | /{apiVersion}/samples/aggregationStats | study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount, aggregationFields |
+#' | aggregationStats | /{apiVersion}/samples/aggregationStats | study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount, field |
 #' | loadAnnotationSets | /{apiVersion}/samples/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | create | /{apiVersion}/samples/create | include, exclude, study, includeResult, body[*] |
 #' | distinct | /{apiVersion}/samples/distinct | study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount, field[*] |
@@ -91,7 +91,7 @@ setMethod("sampleClient", "OpencgaR", function(OpencgaR, annotationSet, members,
         #' @param statsBiotypeCount Sample variant stats BiotypeCount.
         #' @param statsClinicalSignificanceCount Sample variant stats ClinicalSignificanceCount.
         #' @param statsConsequenceTypeCount Sample variant stats ConsequenceTypeCount.
-        #' @param aggregationFields List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        #' @param field List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
         aggregationStats=fetchOpenCGA(object=OpencgaR, category="samples", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),

@@ -62,8 +62,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
-import static org.opencb.opencga.core.api.ParamConstants.INCLUDE_INTERPRETATION;
-import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
+import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.server.rest.analysis.VariantWebService.getVariantQuery;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -540,7 +539,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.CLINICAL_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION) @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
+            @ApiParam(value = FACET_DESCRIPTION) @QueryParam(FACET_PARAM) String facet) {
         return run(() -> {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("field");
@@ -898,7 +897,7 @@ public class ClinicalWebService extends AnalysisWebService {
             // The following variables were hid on version 2.1.0
             @ApiParam(value = "Clinical analyst ID", hidden = true) @QueryParam("analyst") String clinicalAnalyst,
             @ApiParam(value = "Interpretation method name", hidden = true) @QueryParam("methods") String methods,
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
+            @ApiParam(value = FACET_DESCRIPTION) @QueryParam(FACET_PARAM) String facet) {
         return run(() -> {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("field");

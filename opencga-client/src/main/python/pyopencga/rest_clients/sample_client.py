@@ -108,8 +108,8 @@ class Sample(_ParentRestClient):
             ClinicalSignificanceCount.
         :param str stats_consequence_type_count: Sample variant stats
             ConsequenceTypeCount.
-        :param str aggregation_fields: List of fields separated by semicolons
-            to apply aggregation statistics, e.g.:
+        :param str field: List of fields separated by semicolons to apply
+            aggregation statistics, e.g.:
             studies;type;numSamples[0..10]:1;format:sum(size).
         """
 

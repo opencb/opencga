@@ -195,7 +195,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("statsBiotypeCount", commandOptions.statsBiotypeCount);
         queryParams.putIfNotEmpty("statsClinicalSignificanceCount", commandOptions.statsClinicalSignificanceCount);
         queryParams.putIfNotEmpty("statsConsequenceTypeCount", commandOptions.statsConsequenceTypeCount);
-        queryParams.putIfNotEmpty("aggregationFields", commandOptions.aggregationFields);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

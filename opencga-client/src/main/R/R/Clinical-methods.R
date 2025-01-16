@@ -107,7 +107,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param internalStatus Filter by internal status.
         #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
         #' @param deleted Boolean to retrieve deleted entries.
-        #' @param field List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+        #' @param field List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
         aggregationStats=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
                 subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
@@ -194,7 +194,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param status Filter by status.
         #' @param internalStatus Filter by internal status.
         #' @param release Release when it was created.
-        #' @param field List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+        #' @param field List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
         aggregationStatsInterpretation=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpretation", subcategoryId=NULL, action="aggregationStats", params=params,
                 httpMethod="GET", as.queryParam=NULL, ...),

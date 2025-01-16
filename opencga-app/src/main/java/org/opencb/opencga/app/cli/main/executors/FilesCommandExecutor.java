@@ -244,7 +244,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
         queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotEmpty("aggregationFields", commandOptions.aggregationFields);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

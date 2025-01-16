@@ -162,8 +162,8 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
         public Integer snapshot; 
     
-        @Parameter(names = {"--aggregation-fields"}, description = "List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
-        public String aggregationFields; 
+        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
+        public String field; 
     
     }
 

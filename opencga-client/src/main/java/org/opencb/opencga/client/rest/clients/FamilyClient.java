@@ -99,7 +99,7 @@ public class FamilyClient extends AbstractParentClient {
      *            permissions. Only study owners or administrators can query by this field. .
      *       release: Release when it was created.
      *       snapshot: Snapshot value (Latest version of the entry in the specified release).
-     *       aggregationFields: List of fields separated by semicolons to apply aggregation statistics, e.g.:
+     *       field: List of fields separated by semicolons to apply aggregation statistics, e.g.:
      *            studies;type;numSamples[0..10]:1;format:sum(size).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

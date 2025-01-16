@@ -89,8 +89,9 @@ class ClinicalAnalysis(_ParentRestClient):
             age>30;gender=FEMALE. For more information, please visit
             http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
         :param bool deleted: Boolean to retrieve deleted entries.
-        :param str field: List of fields separated by semicolons, e.g.:
-            studies;type;numSamples[0..10]:1.
+        :param str field: List of fields separated by semicolons to apply
+            aggregation statistics, e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
         """
 
         return self._get(category='analysis', resource='aggregationStats', subcategory='clinical', **options)
@@ -241,8 +242,9 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str status: Filter by status.
         :param str internal_status: Filter by internal status.
         :param str release: Release when it was created.
-        :param str field: List of fields separated by semicolons, e.g.:
-            studies;type;numSamples[0..10]:1.
+        :param str field: List of fields separated by semicolons to apply
+            aggregation statistics, e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
         """
 
         return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/interpretation', **options)
