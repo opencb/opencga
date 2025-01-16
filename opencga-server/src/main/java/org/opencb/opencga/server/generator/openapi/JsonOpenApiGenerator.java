@@ -139,6 +139,8 @@ public class JsonOpenApiGenerator {
         // Procesar parámetros individuales del método
         for (java.lang.reflect.Parameter methodParam : method.getParameters()) {
             // Procesar ApiParam
+            // 4.1 Ignore all method parameters without @ApiParam annotations
+            Parameter parameter = new Parameter();
             ApiParam apiParam = methodParam.getAnnotation(ApiParam.class);
             if (apiParam == null || apiParam.hidden()) {
                 continue;
@@ -147,37 +149,36 @@ public class JsonOpenApiGenerator {
             // Procesar PathParam
             PathParam pathParam = methodParam.getAnnotation(PathParam.class);
             if (pathParam != null) {
-                Parameter parameter = new Parameter();
                 parameter.setName(pathParam.value());
                 parameter.setIn("path");
-                parameter.setDescription("Path parameter: " + pathParam.value());
+                parameter.setDescription(pathParam.value());
                 parameter.setRequired(true);
                 parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
-                parameters.add(parameter);
             }
 
             // Procesar QueryParam
             QueryParam queryParam = methodParam.getAnnotation(QueryParam.class);
             if (queryParam != null) {
-                Parameter parameter = new Parameter();
                 parameter.setName(queryParam.value());
                 parameter.setIn("query");
-                parameter.setDescription("Query parameter: " + queryParam.value());
-                parameter.setRequired(false); // Por defecto, no requerido
+                parameter.setDescription(queryParam.value());
+                parameter.setRequired(apiParam.required());
                 parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
-                parameters.add(parameter);
             }
 
             FormDataParam formDataParam = methodParam.getAnnotation(FormDataParam.class);
             if (formDataParam != null) {
-                Parameter parameter = new Parameter();
                 parameter.setName(formDataParam.value());
                 parameter.setIn("query");
-                parameter.setDescription("Query parameter: " + formDataParam.value());
-                parameter.setRequired(false); // Por defecto, no requerido
+                parameter.setDescription(formDataParam.value());
+                parameter.setRequired(apiParam.required());
                 parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
-                parameters.add(parameter);
+
             }
+
+            parameter.setDefaultValue(apiParam.defaultValue());
+            parameter.setDescription(StringUtils.isEmpty(parameter.getDescription())?apiParam.value():parameter.getDescription());
+            parameters.add(parameter);
         }
 
         return parameters;
