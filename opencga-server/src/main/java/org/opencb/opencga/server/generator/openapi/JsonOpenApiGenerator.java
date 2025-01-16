@@ -37,19 +37,20 @@ public class JsonOpenApiGenerator {
         bearerAuth.put("description", "Use 'Bearer <token>' to authenticate");
         securityDefinitions.put("BearerAuth", bearerAuth);
         swagger.setSecurityDefinitions(securityDefinitions);
-
         for (Class<?> clazz : classes) {
             Api api = clazz.getAnnotation(Api.class);
             if (api == null) {
                 continue;
             }
             tags.add(new Tag(api.value(), api.description()));
+
             // Obtener ruta base de la clase
             javax.ws.rs.Path classPathAnnotation = clazz.getAnnotation(javax.ws.rs.Path.class);
             String basePath = classPathAnnotation.value();
             if (classPathAnnotation == null) {
                 continue;
             }
+
             // Procesar métodos
             for (java.lang.reflect.Method wsmethod : clazz.getDeclaredMethods()) {
                 ApiOperation apiOperation = wsmethod.getAnnotation(ApiOperation.class);
@@ -65,10 +66,12 @@ public class JsonOpenApiGenerator {
                         beansDefinitions.add((Class) apiOperation.response());
                     }
                     method.getResponses().put("200", responses);
+
                     // Obtener el método HTTP
                     String httpMethod = extractHttpMethod(wsmethod);
                     if (httpMethod == null) continue;
                     Consumes consumes = wsmethod.getAnnotation(Consumes.class);
+
                     // Extraer parámetros
                     List<Parameter> parameters = extractParameters(wsmethod, token);
                     method.setParameters(parameters);
@@ -76,6 +79,7 @@ public class JsonOpenApiGenerator {
                         method.getConsumes().addAll(Arrays.asList(consumes.value()));
                     }
                     method.getProduces().add("application/json");
+
                     // Ruta completa del endpoint
                     javax.ws.rs.Path methodPathAnnotation = wsmethod.getAnnotation(javax.ws.rs.Path.class);
                     String fullPath = basePath + (methodPathAnnotation != null ? methodPathAnnotation.value() : "");
@@ -85,6 +89,7 @@ public class JsonOpenApiGenerator {
                         tokens.add("Bearer "+token);
                     }
                     method.setSecurity(Collections.singletonList(Collections.singletonMap("BearerAuth", tokens)));
+
                     // Crear o actualizar el Path
                     paths.put(fullPath, new HashMap<>());
                     paths.get(fullPath).put(httpMethod, method);
@@ -136,7 +141,7 @@ public class JsonOpenApiGenerator {
             ApiParam apiParam = methodParam.getAnnotation(ApiParam.class);
             if (apiParam != null) {
                 Parameter parameter = new Parameter();
-                parameter.setName(apiParam.value());
+                parameter.setName(apiParam.name());
                 parameter.setDescription(apiParam.value());
                 parameter.setRequired(apiParam.required());
                 parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
@@ -168,16 +173,6 @@ public class JsonOpenApiGenerator {
                 parameters.add(parameter);
             }
         }
-
-        // Añadir encabezado Authorization con el token preconfigurado
-    /*    Parameter authorizationHeader = new Parameter();
-        authorizationHeader.setName("Authorization");
-        authorizationHeader.setIn("header");
-        authorizationHeader.setDescription("Bearer token for authorization");
-        authorizationHeader.setRequired(true);
-        authorizationHeader.setType("string");
-        authorizationHeader.setDefaultValue("Bearer " + token);
-        parameters.add(authorizationHeader);*/
 
         return parameters;
     }
