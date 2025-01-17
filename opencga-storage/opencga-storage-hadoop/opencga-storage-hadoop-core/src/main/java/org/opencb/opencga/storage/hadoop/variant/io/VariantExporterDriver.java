@@ -9,7 +9,6 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
-import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -24,6 +23,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.GeneCancerAssociation;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantFileOutputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantLocusKey;
@@ -144,7 +144,7 @@ public class VariantExporterDriver extends VariantDriver {
                     LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
                     outputFormatClass = LazyOutputFormat.class;
                 }
-                if (SnappyCodec.isNativeCodeLoaded()) {
+                if (HBaseCompat.getInstance().isSnappyAvailable()) {
                     FileOutputFormat.setCompressOutput(job, true);
                     // FIXME: SnappyCodec might not be available in client side
 //                      FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
