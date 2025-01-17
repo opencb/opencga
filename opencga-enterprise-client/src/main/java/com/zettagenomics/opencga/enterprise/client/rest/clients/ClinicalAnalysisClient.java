@@ -126,7 +126,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
      *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
      *       deleted: Boolean to retrieve deleted entries.
-     *       field: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -1395,7 +1396,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       status: Filter by status.
      *       internalStatus: Filter by internal status.
      *       release: Release when it was created.
-     *       field: List of fields separated by semicolons, e.g.: studies;type;numSamples[0..10]:1.
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

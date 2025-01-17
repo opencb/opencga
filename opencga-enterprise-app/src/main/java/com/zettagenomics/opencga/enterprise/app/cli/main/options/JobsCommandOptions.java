@@ -158,8 +158,8 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
         public boolean deleted = false; 
     
-        @Parameter(names = {"--aggregation-fields"}, description = "List of fields, separated by semicolons, for applying aggregation stats, e.g.: studies;type;numSamples[0..10]:1", required = false, arity = 1)
-        public String aggregationFields; 
+        @Parameter(names = {"--field"}, description = "Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
+        public String field; 
     
     }
 

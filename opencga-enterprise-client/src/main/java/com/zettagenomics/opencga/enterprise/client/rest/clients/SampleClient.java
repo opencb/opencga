@@ -118,8 +118,8 @@ public class SampleClient extends AbstractParentClient {
      *       statsBiotypeCount: Sample variant stats BiotypeCount.
      *       statsClinicalSignificanceCount: Sample variant stats ClinicalSignificanceCount.
      *       statsConsequenceTypeCount: Sample variant stats ConsequenceTypeCount.
-     *       aggregationFields: List of fields, separated by semicolons, for applying aggregation stats, e.g.:
-     *            studies;type;numSamples[0..10]:1.
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
