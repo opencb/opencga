@@ -68,7 +68,7 @@ setMethod("cohortClient", "OpencgaR", function(OpencgaR, annotationSet, cohort, 
         #' @param samples Cohort sample IDs.
         #' @param numSamples Number of samples.
         #' @param release release.
-        #' @param field List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
         aggregationStats=fetchOpenCGA(object=OpencgaR, category="cohorts", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),

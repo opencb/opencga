@@ -82,7 +82,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.annotation] - Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
     *     http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
     * @param {Boolean} [params.deleted] - Boolean to retrieve deleted entries.
-    * @param {String} [params.field] - List of fields separated by semicolons to apply aggregation statistics, e.g.:
+    * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
     *     studies;type;numSamples[0..10]:1;format:sum(size).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
@@ -192,7 +192,7 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.status] - Filter by status.
     * @param {String} [params.internalStatus] - Filter by internal status.
     * @param {String} [params.release] - Release when it was created.
-    * @param {String} [params.field] - List of fields separated by semicolons to apply aggregation statistics, e.g.:
+    * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
     *     studies;type;numSamples[0..10]:1;format:sum(size).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */

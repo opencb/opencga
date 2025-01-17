@@ -91,7 +91,7 @@ public class CohortClient extends AbstractParentClient {
      *       samples: Cohort sample IDs.
      *       numSamples: Number of samples.
      *       release: release.
-     *       field: List of fields separated by semicolons to apply aggregation statistics, e.g.:
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
      *            studies;type;numSamples[0..10]:1;format:sum(size).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

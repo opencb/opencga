@@ -70,7 +70,7 @@ setMethod("panelClient", "OpencgaR", function(OpencgaR, members, panels, endpoin
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
         #' @param release Release when it was created.
         #' @param snapshot Snapshot value (Latest version of the entry in the specified release).
-        #' @param field List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
         aggregationStats=fetchOpenCGA(object=OpencgaR, category="panels", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),

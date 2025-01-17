@@ -65,7 +65,7 @@ export default class Cohort extends OpenCGAParentClass {
     * @param {String} [params.samples] - Cohort sample IDs.
     * @param {String} [params.numSamples] - Number of samples.
     * @param {String} [params.release] - release.
-    * @param {String} [params.field] - List of fields separated by semicolons to apply aggregation statistics, e.g.:
+    * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
     *     studies;type;numSamples[0..10]:1;format:sum(size).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */

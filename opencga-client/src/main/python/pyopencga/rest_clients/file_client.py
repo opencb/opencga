@@ -98,8 +98,8 @@ class File(_ParentRestClient):
             study owners or administrators can query by this field. .
         :param bool deleted: Boolean to retrieve deleted entries.
         :param str release: Release when it was created.
-        :param str field: List of fields separated by semicolons to apply
-            aggregation statistics, e.g.:
+        :param str field: Field to apply aggregation statistics to (or a list
+            of fields separated by semicolons), e.g.:
             studies;type;numSamples[0..10]:1;format:sum(size).
         """
 

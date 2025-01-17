@@ -111,7 +111,7 @@ public class IndividualClient extends AbstractParentClient {
      *            permissions. Only study owners or administrators can query by this field. .
      *       release: Release when it was created.
      *       snapshot: Snapshot value (Latest version of the entry in the specified release).
-     *       field: List of fields separated by semicolons to apply aggregation statistics, e.g.:
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
      *            studies;type;numSamples[0..10]:1;format:sum(size).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

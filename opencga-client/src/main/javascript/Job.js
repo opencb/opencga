@@ -70,7 +70,7 @@ export default class Job extends OpenCGAParentClass {
     *     permissions. Only study owners or administrators can query by this field. .
     * @param {String} [params.release] - Release when it was created.
     * @param {Boolean} [params.deleted = "false"] - Boolean to retrieve deleted entries. The default value is false.
-    * @param {String} [params.field] - List of fields separated by semicolons to apply aggregation statistics, e.g.:
+    * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
     *     studies;type;numSamples[0..10]:1;format:sum(size).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */

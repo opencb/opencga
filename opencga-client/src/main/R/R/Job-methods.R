@@ -73,7 +73,7 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
         #' @param release Release when it was created.
         #' @param deleted Boolean to retrieve deleted entries.
-        #' @param field List of fields separated by semicolons to apply aggregation statistics, e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
         aggregationStats=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
