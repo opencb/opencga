@@ -33,14 +33,14 @@ public class FederationClientParams {
     @DataField(id = "token", description = FieldConstants.FEDERATION_CLIENT_TOKEN_DESCRIPTION)
     private String token;
 
-    @DataField(id = "secretKey", description = FieldConstants.FEDERATION_CLIENT_SECRET_KEY_DESCRIPTION)
-    private String secretKey;
+    @DataField(id = "securityKey", description = FieldConstants.FEDERATION_CLIENT_SECURITY_KEY_DESCRIPTION)
+    private String securityKey;
 
     public FederationClientParams() {
     }
 
     public FederationClientParams(String id, String description, String version, String email, String url, String organizationId,
-                                  String userId, String password, String token, String secretKey) {
+                                  String userId, String password, String token, String securityKey) {
         this.id = id;
         this.description = description;
         this.version = version;
@@ -50,7 +50,7 @@ public class FederationClientParams {
         this.userId = userId;
         this.password = password;
         this.token = token;
-        this.secretKey = secretKey;
+        this.securityKey = securityKey;
     }
 
     @Override
@@ -64,7 +64,7 @@ public class FederationClientParams {
         sb.append(", organizationId='").append(organizationId).append('\'');
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", password='").append("xxxxxxxx").append('\'');
-        sb.append(", secretKey='").append("xxxxxxxx").append('\'');
+        sb.append(", securityKey='").append("xxxxxxxx").append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -141,12 +141,12 @@ public class FederationClientParams {
         return this;
     }
 
-    public String getSecretKey() {
-        return secretKey;
+    public String getSecurityKey() {
+        return securityKey;
     }
 
-    public FederationClientParams setSecretKey(String secretKey) {
-        this.secretKey = secretKey;
+    public FederationClientParams setSecurityKey(String securityKey) {
+        this.securityKey = securityKey;
         return this;
     }
 

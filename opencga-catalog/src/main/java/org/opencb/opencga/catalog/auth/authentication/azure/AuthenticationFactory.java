@@ -135,14 +135,14 @@ public final class AuthenticationFactory {
         if (CollectionUtils.isNotEmpty(organization.getFederation().getServers())) {
             for (FederationServerParams server : organization.getFederation().getServers()) {
                 if (server.getUserId().equals(userId)) {
-                    return server.getSecretKey();
+                    return server.getSecurityKey();
                 }
             }
         }
         if (CollectionUtils.isNotEmpty(organization.getFederation().getClients())) {
             for (FederationClientParams client : organization.getFederation().getClients()) {
                 if (client.getUserId().equals(userId)) {
-                    return client.getSecretKey();
+                    return client.getSecurityKey();
                 }
             }
         }

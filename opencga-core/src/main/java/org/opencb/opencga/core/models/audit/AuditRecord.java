@@ -47,7 +47,7 @@ public class AuditRecord {
     /**
      * Action performed (CREATE, SEARCH, DOWNLOAD...).
      */
-    private Enums.Action action;
+    private String action;
 
     /**
      * Involved resource (User, Study, Sample, File...).
@@ -93,7 +93,7 @@ public class AuditRecord {
     public AuditRecord() {
     }
 
-    public AuditRecord(String id, String operationId, String userId, String apiVersion, Enums.Action action, Enums.Resource resource,
+    public AuditRecord(String id, String operationId, String userId, String apiVersion, String action, Enums.Resource resource,
                        String resourceId, String resourceUuid, String studyId, String studyUuid, ObjectMap params, Status status, Date date,
                        ObjectMap attributes) {
         this.id = id;
@@ -169,11 +169,11 @@ public class AuditRecord {
         return this;
     }
 
-    public Enums.Action getAction() {
+    public String getAction() {
         return action;
     }
 
-    public AuditRecord setAction(Enums.Action action) {
+    public AuditRecord setAction(String action) {
         this.action = action;
         return this;
     }

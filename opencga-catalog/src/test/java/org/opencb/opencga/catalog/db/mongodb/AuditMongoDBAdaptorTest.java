@@ -37,17 +37,17 @@ public class AuditMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     public void testInsertAuditRecord() throws Exception {
         dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId)
                 .insertAuditRecord(new AuditRecord(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT),
-                        UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT), "user", "api", Enums.Action.CREATE,
+                        UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT), "user", "api", Enums.Action.CREATE.name(),
                         Enums.Resource.SAMPLE, "sampleId", "sampleUuid", "studyId", "studyUuid", new ObjectMap(),
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
         dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId)
                 .insertAuditRecord(new AuditRecord(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT),
-                        UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT), "user", "api", Enums.Action.CREATE,
+                        UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT), "user", "api", Enums.Action.CREATE.name(),
                         Enums.Resource.SAMPLE, "sampleId2", "sampleUuid2", "studyId", "studyUuid", new ObjectMap(),
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
         dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId)
                 .insertAuditRecord(new AuditRecord(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT),
-                        UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT), "user", "api", Enums.Action.CREATE,
+                        UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT), "user", "api", Enums.Action.CREATE.name(),
                         Enums.Resource.SAMPLE, "sampleId3", "sampleUuid3", "studyId", "studyUuid", new ObjectMap(),
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
     }

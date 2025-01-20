@@ -21,24 +21,19 @@ public class FederationServerParams {
     @DataField(id = "active", description = FieldConstants.FEDERATION_SERVER_ACTIVE_DESCRIPTION)
     private boolean active;
 
-    @DataField(id = "expirationTime", description = FieldConstants.FEDERATION_SERVER_EXPIRATION_TIME_DESCRIPTION)
-    private String expirationTime;
-
-    @DataField(id = "secretKey", description = FieldConstants.FEDERATION_SERVER_SECRET_KEY_DESCRIPTION)
-    private String secretKey;
+    @DataField(id = "securityKey", description = FieldConstants.FEDERATION_SERVER_SECURITY_KEY_DESCRIPTION)
+    private String securityKey;
 
     public FederationServerParams() {
     }
 
-    public FederationServerParams(String id, String description, String email, String userId, boolean active, String expirationTime,
-                                  String secretKey) {
+    public FederationServerParams(String id, String description, String email, String userId, boolean active, String securityKey) {
         this.id = id;
         this.description = description;
         this.email = email;
         this.userId = userId;
         this.active = active;
-        this.expirationTime = expirationTime;
-        this.secretKey = secretKey;
+        this.securityKey = securityKey;
     }
 
     @Override
@@ -49,8 +44,7 @@ public class FederationServerParams {
         sb.append(", email='").append(email).append('\'');
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", active=").append(active);
-        sb.append(", expirationTime='").append(expirationTime).append('\'');
-        sb.append(", secretKey='").append("xxxxxxxx").append('\'');
+        sb.append(", securityKey='").append("xxxxxxxx").append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -100,21 +94,12 @@ public class FederationServerParams {
         return this;
     }
 
-    public String getExpirationTime() {
-        return expirationTime;
+    public String getSecurityKey() {
+        return securityKey;
     }
 
-    public FederationServerParams setExpirationTime(String expirationTime) {
-        this.expirationTime = expirationTime;
-        return this;
-    }
-
-    public String getSecretKey() {
-        return secretKey;
-    }
-
-    public FederationServerParams setSecretKey(String secretKey) {
-        this.secretKey = secretKey;
+    public FederationServerParams setSecurityKey(String securityKey) {
+        this.securityKey = securityKey;
         return this;
     }
 }
