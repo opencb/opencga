@@ -20,14 +20,12 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.*;
@@ -968,6 +966,49 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         query = new Query(JobDBAdaptor.QueryParams.VISITED.key(), false);
         assertEquals(1, catalogManager.getJobManager().count(studyFqn, query, ownerToken).getNumMatches());
+    }
+
+    @Test
+    public void testJobsFacet() throws CatalogException {
+        Query query = new Query();
+        String studyId = catalogManager.getStudyManager().searchInOrganization(organizationId, query, null, ownerToken).first().getId();
+
+//        catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob"), null, ownerToken);
+//
+//        QueryOptions options = new QueryOptions(QueryOptions.COUNT, true);
+//        DataResult<Job> allJobs = catalogManager.getJobManager().search(studyId, null, options, ownerToken);
+
+        int numJobs = 88;
+        for (int i = numJobs; i > 0; i--) {
+            ToolInfo toolInfo = new ToolInfo();
+            toolInfo.setId("tool-" + (i % 5) + Integer.valueOf(RandomStringUtils.randomNumeric(1)));
+            Job job = new Job().setId("myJob-" + i).setTool(toolInfo);
+            catalogManager.getJobManager().create(studyId, job, null, ownerToken);
+        }
+
+        Map<String, Integer> toolIdCounter = new HashMap<>();
+        QueryOptions options = new QueryOptions(QueryOptions.COUNT, true);
+        DataResult<Job> allJobs = catalogManager.getJobManager().search(studyId, null, options, ownerToken);
+        for (Job job : allJobs.getResults()) {
+            String toolId = job.getTool().getId();
+            if (!toolIdCounter.containsKey(toolId)) {
+                toolIdCounter.put(toolId, 0);
+            }
+            toolIdCounter.put(toolId, 1 + toolIdCounter.get(toolId));
+        }
+
+        for (Map.Entry<String, Integer> entry : toolIdCounter.entrySet()) {
+            System.out.println(entry.getKey() + " --> " + entry.getValue());
+        }
+
+        String field = "tool.id";
+        FacetField facetField = catalogManager.getJobManager().facet(studyId, new Query(), field, ownerToken).first();
+        Assert.assertEquals(field, facetField.getName());
+        Assert.assertEquals(numJobs, facetField.getCount(), 0.001);
+        for (FacetField.Bucket bucket : facetField.getBuckets()) {
+            Assert.assertTrue(toolIdCounter.containsKey(bucket.getValue()));
+            Assert.assertEquals(toolIdCounter.get(bucket.getValue()), bucket.getCount(), 0.001);
+        }
     }
 
     /**

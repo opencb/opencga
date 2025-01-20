@@ -729,7 +729,8 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
     @Override
     public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+        Bson bson = parseQuery(query, QueryOptions.empty(), userId);
+        return facet(jobCollection, bson, facet);
     }
 
     @Override

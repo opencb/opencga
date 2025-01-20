@@ -333,9 +333,9 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
         }
         MongoDBDocumentToFacetFieldsConverter converter = new MongoDBDocumentToFacetFieldsConverter();
         List<Bson> facets = MongoDBQueryUtils.createFacet(query, facet);
-        logger.debug("facet; input = {}", facets);
+        logger.info("facet; input = {}", facets);
         DataResult<List<FacetField>> aggregate = collection.aggregate(facets, converter, null);
-        logger.debug("facet; output = {}", aggregate.getResults());
+        logger.info("facet; output = {}", aggregate.getResults());
 
         // Replace "&#46;" by .
         List<FacetField> facetFields = aggregate.getResults().get(0);
