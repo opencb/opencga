@@ -119,6 +119,12 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         }
     }
 
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, String user, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, user, options)) {
+            return endQuery(startTime, dbIterator);
+        }
+    }
 
     @Override
     public OpenCGAResult<Organization> update(String organizationId, ObjectMap parameters, QueryOptions queryOptions)
@@ -493,6 +499,11 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
     public DBIterator<Organization> iterator(ClientSession clientSession, String user, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, options);
         return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options, user);
+    }
+
+    public DBIterator<Document> nativeIterator(ClientSession clientSession, String user, QueryOptions options) throws CatalogDBException {
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, options);
+        return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, null, dbAdaptorFactory, options, user);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, QueryOptions options) {

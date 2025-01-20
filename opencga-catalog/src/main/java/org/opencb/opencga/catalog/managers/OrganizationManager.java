@@ -19,11 +19,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -255,6 +255,7 @@ public class OrganizationManager extends AbstractManager {
             ParamUtils.checkObj(updateParams, "OrganizationUpdateParams");
             if (StringUtils.isNotEmpty(updateParams.getOwner()) || CollectionUtils.isNotEmpty(updateParams.getAdmins())) {
                 authorizationManager.checkIsAtLeastOrganizationOwner(organizationId, userId);
+                checkIsNotAFederatedUser(organizationId, updateParams);
             } else {
                 authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
             }
@@ -291,6 +292,23 @@ public class OrganizationManager extends AbstractManager {
             throw e;
         }
         return result;
+    }
+
+    private void checkIsNotAFederatedUser(String organizationId, OrganizationUpdateParams updateParams) throws CatalogException {
+        Set<String> users = new HashSet<>();
+        if (StringUtils.isNotEmpty(updateParams.getOwner())) {
+            users.add(updateParams.getOwner());
+        }
+        if (CollectionUtils.isNotEmpty(updateParams.getAdmins())) {
+            users.addAll(updateParams.getAdmins());
+        }
+        if (CollectionUtils.isNotEmpty(users)) {
+            try {
+                checkIsNotAFederatedUser(organizationId, new ArrayList<>(users));
+            } catch (CatalogException e) {
+                throw new CatalogException("Cannot set a federated user as owner or admin of an organization.", e);
+            }
+        }
     }
 
     public OpenCGAResult<User> updateUser(@Nullable String organizationId, String userId, OrganizationUserUpdateParams updateParams,

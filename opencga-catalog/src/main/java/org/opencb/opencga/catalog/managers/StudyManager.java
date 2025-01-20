@@ -111,9 +111,9 @@ public class StudyManager extends AbstractManager {
     static final QueryOptions INCLUDE_VARIABLE_SET = keepFieldInQueryOptions(INCLUDE_STUDY_IDS,
             StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
     static final QueryOptions INCLUDE_CONFIGURATION = keepFieldInQueryOptions(INCLUDE_STUDY_IDS,
-            StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
+            StudyDBAdaptor.QueryParams.INTERNAL.key());
     static final QueryOptions INCLUDE_VARIABLE_SET_AND_CONFIGURATION = keepFieldsInQueryOptions(INCLUDE_STUDY_IDS,
-            Arrays.asList(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key(), StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+            Arrays.asList(StudyDBAdaptor.QueryParams.INTERNAL.key(), StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
     protected Logger logger;
 
@@ -1014,6 +1014,13 @@ public class StudyManager extends AbstractManager {
             }
 
             authorizationManager.checkCreateDeleteGroupPermissions(organizationId, study.getUid(), userId, group.getId());
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, group.getUserIds());
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
 
             // Check group exists
             if (existsGroup(organizationId, study.getUid(), group.getId())) {
@@ -1192,6 +1199,14 @@ public class StudyManager extends AbstractManager {
                 }
                 if (tmpUsers.size() > 0) {
                     getUserDBAdaptor(organizationId).checkIds(tmpUsers);
+                }
+
+                if (study.getInternal().isFederated()) {
+                    try {
+                        checkIsNotAFederatedUser(organizationId, updateParams.getUsers());
+                    } catch (CatalogException e) {
+                        throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                    }
                 }
             } else {
                 updateParams.setUsers(Collections.emptyList());
@@ -1765,6 +1780,13 @@ public class StudyManager extends AbstractManager {
             }
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(organizationId, study.getUid(), members);
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, members);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
 
             switch (action) {
                 case SET:
@@ -2029,7 +2051,7 @@ public class StudyManager extends AbstractManager {
             throw e;
         } catch (Exception e) {
             auditManager.auditCreate(organizationId, userId, Enums.Action.UPLOAD_TEMPLATE, Enums.Resource.STUDY, templateId, "",
-             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                             new Error(-1, "template upload", e.getMessage())));
             throw e;
         } finally {
@@ -2089,7 +2111,7 @@ public class StudyManager extends AbstractManager {
             throw e;
         } catch (Exception e) {
             auditManager.auditCreate(organizationId, userId, Enums.Action.DELETE_TEMPLATE, Enums.Resource.STUDY, templateId, "",
-             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                             new Error(-1, "template delete", e.getMessage())));
             throw e;
         }

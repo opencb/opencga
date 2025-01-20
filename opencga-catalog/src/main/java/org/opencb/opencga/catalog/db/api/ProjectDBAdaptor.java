@@ -48,6 +48,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT, ""),
+        FEDERATION("federation", OBJECT, ""),
         CELLBASE("cellbase", OBJECT, ""),
         ORGANISM("organism", TEXT_ARRAY, ""),
         ORGANISM_SCIENTIFIC_NAME("organism.scientificName", TEXT, ""),
