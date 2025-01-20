@@ -5,7 +5,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
-import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.OutputFormat;
@@ -17,6 +16,7 @@ import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.utils.ValueOnlyTextOutputFormat;
 import org.opencb.opencga.storage.hadoop.variant.io.VariantDriver;
 import org.slf4j.Logger;
@@ -164,7 +164,7 @@ public class StreamVariantDriver extends VariantDriver {
         outputFormatClass = LazyOutputFormat.class;
 
         job.setOutputFormatClass(ValueOnlyTextOutputFormat.class);
-        if (SnappyCodec.isNativeCodeLoaded()) {
+        if (HBaseCompat.getInstance().isSnappyAvailable()) {
             FileOutputFormat.setCompressOutput(job, true);
             // FIXME: SnappyCodec might not be available in client side
 //                    FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);

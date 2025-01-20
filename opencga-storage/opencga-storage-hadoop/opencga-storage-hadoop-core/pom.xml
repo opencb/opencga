@@ -449,6 +449,9 @@
                                     org.apache.tephra:tephra-core
                                 </ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>
+                                    org.apache.tephra:tephra-core-shaded
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
                                     com.lmax:disruptor
                                 </ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>

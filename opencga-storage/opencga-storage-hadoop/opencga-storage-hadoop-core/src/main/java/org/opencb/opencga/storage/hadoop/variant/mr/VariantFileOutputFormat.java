@@ -20,7 +20,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.azurebfs.services.AbfsOutputStream;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
@@ -54,6 +53,15 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduc
  */
 public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWritable> {
 
+    private static Class<?> abfsOutputStreamClass;
+
+    static {
+        try {
+            abfsOutputStreamClass = Class.forName("org.apache.hadoop.fs.azurebfs.services.AbfsOutputStream");
+        } catch (ClassNotFoundException e) {
+            abfsOutputStreamClass = null;
+        }
+    }
 
     public static final String VARIANT_OUTPUT_FORMAT = "variant.output_format";
 
@@ -74,7 +82,7 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
         FileSystem fs = file.getFileSystem(conf);
         FSDataOutputStream fsOs = fs.create(file, false);
         OutputStream out;
-        if (fsOs.getWrappedStream() instanceof AbfsOutputStream) {
+        if (isAbfsOutputStream(fsOs)) {
             // Disable flush on ABFS. See HADOOP-16548
             out = new FilterOutputStream(fsOs) {
                 @Override
@@ -90,6 +98,10 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
         }
         CountingOutputStream countingOut = new CountingOutputStream(out);
         return new VariantRecordWriter(configureWriter(job, countingOut), countingOut);
+    }
+
+    private static boolean isAbfsOutputStream(FSDataOutputStream fsOs) {
+        return abfsOutputStreamClass != null && abfsOutputStreamClass.isInstance(fsOs.getWrappedStream());
     }
 
     private DataWriter<Variant> configureWriter(final TaskAttemptContext job, OutputStream fileOut) throws IOException {
