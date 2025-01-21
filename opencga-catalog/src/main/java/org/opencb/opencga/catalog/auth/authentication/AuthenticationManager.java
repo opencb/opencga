@@ -19,11 +19,13 @@ package org.opencb.opencga.catalog.auth.authentication;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -34,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.Closeable;
 import java.security.Key;
@@ -108,7 +111,21 @@ public abstract class AuthenticationManager implements Closeable {
             throw new CatalogAuthenticationException("Token is null or empty.");
         }
 
-        jwtManager.validateToken(token);
+        String tokenToValidate;
+        if (StringUtils.isNotEmpty(securityKey)) {
+            SecretKey secretKey = CryptoUtils.stringToSecretKey(securityKey);
+            JwtUtils.Token tokenObj = JwtUtils.getToken(token);
+            String validation;
+            try {
+                validation = CryptoUtils.decrypt(tokenObj.getVerifySignature(), secretKey);
+            } catch (Exception e) {
+                throw new CatalogAuthenticationException("Could not decrypt cyphered token.", e);
+            }
+            tokenToValidate = JwtUtils.generateToken(tokenObj.getHeader(), tokenObj.getPayload(), validation);
+        } else {
+            tokenToValidate = token;
+        }
+        jwtManager.validateToken(tokenToValidate);
     }
 
     /**

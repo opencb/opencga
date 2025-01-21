@@ -70,4 +70,65 @@ public class JwtUtils {
             return Collections.emptyList();
         }
     }
+
+    public static String generateToken(String header, String payload, String verifySignature) {
+        return header + "." + payload + "." + verifySignature;
+    }
+
+    public static Token getToken(String token) {
+        String[] chunks = token.split("\\.");
+        return new Token(chunks[0], chunks[1], chunks[2]);
+    }
+
+    public static class Token {
+        private String header;
+        private String payload;
+        private String verifySignature;
+
+        public Token() {
+        }
+
+        public Token(String header, String payload, String verifySignature) {
+            this.header = header;
+            this.payload = payload;
+            this.verifySignature = verifySignature;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Token{");
+            sb.append("header='").append(header).append('\'');
+            sb.append(", payload='").append(payload).append('\'');
+            sb.append(", verifySignature='").append(verifySignature).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getHeader() {
+            return header;
+        }
+
+        public Token setHeader(String header) {
+            this.header = header;
+            return this;
+        }
+
+        public String getPayload() {
+            return payload;
+        }
+
+        public Token setPayload(String payload) {
+            this.payload = payload;
+            return this;
+        }
+
+        public String getVerifySignature() {
+            return verifySignature;
+        }
+
+        public Token setVerifySignature(String verifySignature) {
+            this.verifySignature = verifySignature;
+            return this;
+        }
+    }
 }
