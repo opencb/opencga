@@ -34,47 +34,70 @@ export default class Federation extends OpenCGAParentClass {
         super(config);
     }
 
-    /** Connect to a Federation server
+    /** Connect to a shared XetaBase instance.
     * @param {Object} [data] - JSON containing the Federation server configuration.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    connect(data) {
-        return this._post("federations", null, null, null, "connect", data);
+    connectClient(data) {
+        return this._post("federations", null, "client", null, "connect", data);
     }
 
-    /** Create a new Federation
-    * @param {Object} [data] - JSON containing the new Federation object.
+    /** Delete a federation client.
+    * @param {String} id - Federation client id.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    create(data) {
-        return this._post("federations", null, null, null, "create", data);
-    }
-
-    /** Login a federated user
-    * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.id] - Federation server id to reset.
-    * @returns {Promise} Promise object in the form of RestResponse instance.
-    */
-    login(params) {
-        return this._post("federations", null, null, null, "login", null, params);
-    }
-
-    /** Reset the credentials of a federation
-    * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.id] - Federation server id to reset.
-    * @returns {Promise} Promise object in the form of RestResponse instance.
-    */
-    reset(params) {
-        return this._post("federations", null, null, null, "reset", null, params);
+    deleteClient(id) {
+        return this._delete("federations", null, "client", id, "delete");
     }
 
     /** Synchronize data from a known Federation server
-    * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.id] - Federation client id to be synchronized.
+    * @param {String} id - Federation client id to be synchronized.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    synchronize(params) {
-        return this._post("federations", null, null, null, "synchronize", null, params);
+    synchronizeClient(id) {
+        return this._post("federations", null, "client", id, "synchronize", null);
+    }
+
+    /** Update some fields from a Federation client.
+    * @param {String} id - Federation client id.
+    * @param {Object} data - JSON containing the Federation client parameters to be updated.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    updateClient(id, data) {
+        return this._post("federations", null, "client", id, "update", data);
+    }
+
+    /** Share a resource with another XetaBase instance.
+    * @param {Object} [data] - JSON containing the new Federation object.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    createServer(data) {
+        return this._post("federations", null, "server", null, "create", data);
+    }
+
+    /** Delete a federation server.
+    * @param {String} id - Federation server id.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    deleteServer(id) {
+        return this._delete("federations", null, "server", id, "delete");
+    }
+
+    /** Reset the credentials of a federation server.
+    * @param {String} id - Federation server id to reset.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    resetServer(id) {
+        return this._post("federations", null, "server", id, "reset", null);
+    }
+
+    /** Update some fields from a Federation server.
+    * @param {String} id - Federation server id.
+    * @param {Object} data - JSON containing the Federation server parameters to be updated.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    updateServer(id, data) {
+        return this._post("federations", null, "server", id, "update", data);
     }
 
 }

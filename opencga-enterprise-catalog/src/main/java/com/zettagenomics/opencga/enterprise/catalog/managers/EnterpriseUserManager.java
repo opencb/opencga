@@ -24,15 +24,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class UserManager extends AbstractManager {
+public class EnterpriseUserManager extends EnterpriseAbstractManager {
 
     private final QueryOptions userAccountInfoQueryOptions;
     private final String opencgaToken;
 
-    protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(EnterpriseUserManager.class);
 
-    public UserManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration,
-                       String opencgaToken) {
+    public EnterpriseUserManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration,
+                                 String opencgaToken) {
         super(catalogManager, enterpriseConfiguration);
 
         this.opencgaToken = opencgaToken;

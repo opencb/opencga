@@ -19,9 +19,10 @@ public class EnterpriseFactory implements AutoCloseable {
     private static final AtomicReference<CatalogManager> catalogManagerRef = new AtomicReference<>();
     private static final AtomicReference<EnterpriseConfiguration> configurationRef = new AtomicReference<>();
 
-    private static final AtomicReference<FederationManager> federationManagerRef = new AtomicReference<>();
-    private static final AtomicReference<ProjectManager> projectManagerRef = new AtomicReference<>();
-    private static final AtomicReference<UserManager> userManagerRef = new AtomicReference<>();
+    private static final AtomicReference<EnterpriseFederationManager> federationManagerRef = new AtomicReference<>();
+    private static final AtomicReference<EnterpriseProjectManager> projectManagerRef = new AtomicReference<>();
+    private static final AtomicReference<EnterpriseUserManager> userManagerRef = new AtomicReference<>();
+    private static final AtomicReference<EnterpriseAuditManager> auditManagerRef = new AtomicReference<>();
 
     private EnterpriseFactory() {
     }
@@ -44,9 +45,13 @@ public class EnterpriseFactory implements AutoCloseable {
     private static synchronized void configureManagers() {
         //TODO: Obtain opencga token
         String token = null;
-        userManagerRef.set(new UserManager(catalogManagerRef.get(), configurationRef.get(), token));
-        federationManagerRef.set(new FederationManager(catalogManagerRef.get(), configurationRef.get()));
-        projectManagerRef.set(new ProjectManager(catalogManagerRef.get(), configurationRef.get()));
+        CatalogManager catalogManager = catalogManagerRef.get();
+
+        auditManagerRef.set(new EnterpriseAuditManager(catalogManager.getAuthorizationManager(), catalogManager,
+                catalogDBAdaptorFactoryRef.get(), catalogManager.getConfiguration()));
+        userManagerRef.set(new EnterpriseUserManager(catalogManagerRef.get(), configurationRef.get(), token));
+        federationManagerRef.set(new EnterpriseFederationManager(catalogManagerRef.get(), configurationRef.get()));
+        projectManagerRef.set(new EnterpriseProjectManager(catalogManagerRef.get(), configurationRef.get()));
     }
 
     public static DBAdaptorFactory getCatalogDBAdaptorFactory() throws CatalogRuntimeException {
@@ -57,7 +62,7 @@ public class EnterpriseFactory implements AutoCloseable {
         return catalogDBAdaptorFactoryRef.get();
     }
 
-    public static UserManager getEnterpriseUserManager() throws CatalogRuntimeException {
+    public static EnterpriseUserManager getEnterpriseUserManager() throws CatalogRuntimeException {
         if (userManagerRef.get() == null) {
             throw new CatalogRuntimeException("EnterpriseUserManager has not been properly initialized."
                     + " Please, call init() method first.");
@@ -65,7 +70,7 @@ public class EnterpriseFactory implements AutoCloseable {
         return userManagerRef.get();
     }
 
-    public static FederationManager getEnterpriseFederationManager() throws CatalogRuntimeException {
+    public static EnterpriseFederationManager getEnterpriseFederationManager() throws CatalogRuntimeException {
         if (federationManagerRef.get() == null) {
             throw new CatalogRuntimeException("EnterpriseFederationManager has not been properly initialized."
                     + " Please, call init() method first.");
@@ -73,12 +78,20 @@ public class EnterpriseFactory implements AutoCloseable {
         return federationManagerRef.get();
     }
 
-    public static ProjectManager getEnterpriseProjectManager() throws CatalogRuntimeException {
+    public static EnterpriseProjectManager getEnterpriseProjectManager() throws CatalogRuntimeException {
         if (projectManagerRef.get() == null) {
             throw new CatalogRuntimeException("EnterpriseProjectManager has not been properly initialized."
                     + " Please, call init() method first.");
         }
         return projectManagerRef.get();
+    }
+
+    public static EnterpriseAuditManager getEnterpriseAuditManager() throws CatalogRuntimeException {
+        if (auditManagerRef.get() == null) {
+            throw new CatalogRuntimeException("EnterpriseAuditManager has not been properly initialized."
+                    + " Please, call init() method first.");
+        }
+        return auditManagerRef.get();
     }
 
     @Override

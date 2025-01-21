@@ -1,6 +1,6 @@
 # ##############################################################################
 ## FederationClient
-setGeneric("federationClient", function(OpencgaR, endpointName, params=NULL, ...)
+setGeneric("federationClient", function(OpencgaR, id, endpointName, params=NULL, ...)
     standardGeneric("federationClient"))
 
 # ##############################################################################

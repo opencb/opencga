@@ -5,11 +5,11 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProjectManager extends AbstractManager {
+public class EnterpriseProjectManager extends EnterpriseAbstractManager {
 
-    protected static Logger logger = LoggerFactory.getLogger(ProjectManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(EnterpriseProjectManager.class);
 
-    public ProjectManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration) {
+    public EnterpriseProjectManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration) {
         super(catalogManager, enterpriseConfiguration);
     }
 

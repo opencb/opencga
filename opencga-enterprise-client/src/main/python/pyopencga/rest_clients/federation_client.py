@@ -19,53 +19,87 @@ class Federation(_ParentRestClient):
     def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         super(Federation, self).__init__(configuration, token, login_handler, *args, **kwargs)
 
-    def connect(self, data=None, **options):
+    def connect_client(self, data=None, **options):
         """
-        Connect to a Federation server.
-        PATH: /{apiVersion}/federations/connect
+        Connect to a shared XetaBase instance.
+        PATH: /{apiVersion}/federations/client/connect
 
         :param dict data: JSON containing the Federation server configuration.
         """
 
-        return self._post(category='federations', resource='connect', data=data, **options)
+        return self._post(category='federations', resource='connect', subcategory='client', data=data, **options)
 
-    def create(self, data=None, **options):
+    def delete_client(self, id, **options):
         """
-        Create a new Federation.
-        PATH: /{apiVersion}/federations/create
+        Delete a federation client.
+        PATH: /{apiVersion}/federations/client/{id}/delete
+
+        :param str id: Federation client id. (REQUIRED)
+        """
+
+        return self._delete(category='federations', resource='delete', subcategory='client', second_query_id=id, **options)
+
+    def synchronize_client(self, id, **options):
+        """
+        Synchronize data from a known Federation server.
+        PATH: /{apiVersion}/federations/client/{id}/synchronize
+
+        :param str id: Federation client id to be synchronized. (REQUIRED)
+        """
+
+        return self._post(category='federations', resource='synchronize', subcategory='client', second_query_id=id, **options)
+
+    def update_client(self, id, data=None, **options):
+        """
+        Update some fields from a Federation client.
+        PATH: /{apiVersion}/federations/client/{id}/update
+
+        :param dict data: JSON containing the Federation client parameters to
+            be updated. (REQUIRED)
+        :param str id: Federation client id. (REQUIRED)
+        """
+
+        return self._post(category='federations', resource='update', subcategory='client', second_query_id=id, data=data, **options)
+
+    def create_server(self, data=None, **options):
+        """
+        Share a resource with another XetaBase instance.
+        PATH: /{apiVersion}/federations/server/create
 
         :param dict data: JSON containing the new Federation object.
         """
 
-        return self._post(category='federations', resource='create', data=data, **options)
+        return self._post(category='federations', resource='create', subcategory='server', data=data, **options)
 
-    def login(self, **options):
+    def delete_server(self, id, **options):
         """
-        Login a federated user.
-        PATH: /{apiVersion}/federations/login
+        Delete a federation server.
+        PATH: /{apiVersion}/federations/server/{id}/delete
 
-        :param str id: Federation server id to reset.
-        """
-
-        return self._post(category='federations', resource='login', **options)
-
-    def reset(self, **options):
-        """
-        Reset the credentials of a federation.
-        PATH: /{apiVersion}/federations/reset
-
-        :param str id: Federation server id to reset.
+        :param str id: Federation server id. (REQUIRED)
         """
 
-        return self._post(category='federations', resource='reset', **options)
+        return self._delete(category='federations', resource='delete', subcategory='server', second_query_id=id, **options)
 
-    def synchronize(self, **options):
+    def reset_server(self, id, **options):
         """
-        Synchronize data from a known Federation server.
-        PATH: /{apiVersion}/federations/synchronize
+        Reset the credentials of a federation server.
+        PATH: /{apiVersion}/federations/server/{id}/reset
 
-        :param str id: Federation client id to be synchronized.
+        :param str id: Federation server id to reset. (REQUIRED)
         """
 
-        return self._post(category='federations', resource='synchronize', **options)
+        return self._post(category='federations', resource='reset', subcategory='server', second_query_id=id, **options)
+
+    def update_server(self, id, data=None, **options):
+        """
+        Update some fields from a Federation server.
+        PATH: /{apiVersion}/federations/server/{id}/update
+
+        :param dict data: JSON containing the Federation server parameters to
+            be updated. (REQUIRED)
+        :param str id: Federation server id. (REQUIRED)
+        """
+
+        return self._post(category='federations', resource='update', subcategory='server', second_query_id=id, data=data, **options)
 

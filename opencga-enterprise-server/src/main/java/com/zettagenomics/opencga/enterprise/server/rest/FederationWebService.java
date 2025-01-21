@@ -1,9 +1,11 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
+import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
+import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
+import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerUpdateParams;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
-import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
@@ -26,53 +28,101 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     }
 
     @POST
-    @Path("/create")
-    @ApiOperation(value = "Create a new Federation")
+    @Path("/server/create")
+    @ApiOperation(value = "Share a resource with another XetaBase instance.")
     public Response create(
             @ApiParam(value = "JSON containing the new Federation object") FederationServerCreateParams createParams) {
-        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().createFederation(createParams, token));
+        return run(() -> {
+            String url = httpServletRequest.getRequestURL().toString();
+            url = url.substring(0, url.indexOf("/webservices"));
+            return EnterpriseFactory.getEnterpriseFederationManager().createFederation(url, createParams, token);
+        });
     }
 
     @POST
-    @Path("/connect")
-    @ApiOperation(value = "Connect to a Federation server")
+    @Path("/server/{id}/reset")
+    @ApiOperation(value = "Reset the credentials of a federation server.")
+    public Response reset(
+            @ApiParam(value = "Federation server id to reset") @PathParam("id") String federationServerId) {
+        return run(() -> {
+            String url = httpServletRequest.getRequestURL().toString();
+            url = url.substring(0, url.indexOf("/webservices"));
+            return EnterpriseFactory.getEnterpriseFederationManager().reset(url, federationServerId, token);
+        });
+    }
+
+    @POST
+    @Path("/server/{id}/update")
+    @ApiOperation(value = "Update some fields from a Federation server.")
+    public Response updateServer(
+            @ApiParam(value = "Federation server id") @PathParam("id") String id,
+            @ApiParam(value = "JSON containing the Federation server parameters to be updated", required = true) FederationServerUpdateParams params
+    ) {
+        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().update(id, params, token));
+    }
+
+    @DELETE
+    @Path("/server/{id}/delete")
+    @ApiOperation(value = "Delete a federation server.")
+    public Response deleteServer(
+            @ApiParam(value = "Federation server id") @PathParam("id") String id
+    ) {
+        return null;
+//        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().resetSecretKey(token));
+    }
+
+    @POST
+    @Path("/client/connect")
+    @ApiOperation(value = "Connect to a shared XetaBase instance.")
     public Response connect(
             @ApiParam(value = "JSON containing the Federation server configuration") FederationClientParams createParams) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().connect(createParams, token));
     }
 
     @POST
-    @Path("/synchronize")
+    @Path("/client/{id}/synchronize")
     @ApiOperation(value = "Synchronize data from a known Federation server")
     public Response synchronize(
-            @ApiParam(value = "Federation client id to be synchronized") @QueryParam("id") String federationClientId) {
+            @ApiParam(value = "Federation client id to be synchronized") @PathParam("id") String federationClientId) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
     }
 
     @POST
-    @Path("/reset")
-    @ApiOperation(value = "Reset the credentials of a federation")
-    public Response reset(
-            @ApiParam(value = "Federation server id to reset") @QueryParam("id") String federationServerId) {
-        return null;
-//        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
+    @Path("/client/{id}/update")
+    @ApiOperation(value = "Update some fields from a Federation client.")
+    public Response updateClient(
+            @ApiParam(value = "Federation client id") @PathParam("id") String id,
+            @ApiParam(value = "JSON containing the Federation client parameters to be updated", required = true) FederationClientUpdateParams params
+    ) {
+        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().update(id, params, token));
     }
 
-    @POST
-    @Path("/login")
-    @ApiOperation(value = "Login a federated user")
-    public Response login(
-            @ApiParam(value = "Federation server id to reset") @QueryParam("id") String federationServerId) {
+    @DELETE
+    @Path("/client/{id}/delete")
+    @ApiOperation(value = "Delete a federation client.")
+    public Response deleteClient(
+            @ApiParam(value = "Federation client id") @PathParam("id") String id
+    ) {
         return null;
-//        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
+//        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().resetSecretKey(token));
     }
+
+
+//    @POST
+//    @Path("/login")
+//    @ApiOperation(value = "Login a federated user")
+//    public Response login(
+//            @ApiParam(value = "Federation server id to reset") @QueryParam("id") String federationServerId) {
+//        return null;
+////        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
+//    }
 
     @POST
     @Path("/firstConnection")
     @ApiOperation(value = "First connection established with the Federation Server to update the secret key and extend the user " +
             "expiration date.", hidden = true)
     public Response firstConnection() {
-        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().resetSecretKey(token));
+        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().resetSecurityKey(token));
     }
 
     /******************************************************************
@@ -130,7 +180,6 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     /******************************************************************
      * END REDIRECT METHODS
      ******************************************************************/
-
 
 
 }

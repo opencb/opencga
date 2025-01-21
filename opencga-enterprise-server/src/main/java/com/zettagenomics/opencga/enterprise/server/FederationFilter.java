@@ -86,7 +86,7 @@ public class FederationFilter implements Filter {
         String project = FederationUtils.extractProject(url, params);
         String study = FederationUtils.extractStudy(url, params);
         try {
-            FederationUtils.getFederationServerId(project, study, jwtPayload);
+            FederationUtils.findFederationServerIdInPayload(project, study, jwtPayload);
             return true;
         } catch (CatalogException e) {
             // The previous call fails if the project or study is not federated

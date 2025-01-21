@@ -19,11 +19,14 @@
 #'
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
-#' | connect | /{apiVersion}/federations/connect | body |
-#' | create | /{apiVersion}/federations/create | body |
-#' | login | /{apiVersion}/federations/login | id |
-#' | reset | /{apiVersion}/federations/reset | id |
-#' | synchronize | /{apiVersion}/federations/synchronize | id |
+#' | connectClient | /{apiVersion}/federations/client/connect | body |
+#' | deleteClient | /{apiVersion}/federations/client/{id}/delete | id[*] |
+#' | synchronizeClient | /{apiVersion}/federations/client/{id}/synchronize | id[*] |
+#' | updateClient | /{apiVersion}/federations/client/{id}/update | id[*], body[*] |
+#' | createServer | /{apiVersion}/federations/server/create | body |
+#' | deleteServer | /{apiVersion}/federations/server/{id}/delete | id[*] |
+#' | resetServer | /{apiVersion}/federations/server/{id}/reset | id[*] |
+#' | updateServer | /{apiVersion}/federations/server/{id}/update | id[*], body[*] |
 #'
 #' @md
 #' @seealso \url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation
@@ -31,37 +34,57 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("federationClient", "OpencgaR", function(OpencgaR, endpointName, params=NULL, ...) {
+setMethod("federationClient", "OpencgaR", function(OpencgaR, id, endpointName, params=NULL, ...) {
     switch(endpointName,
 
-        #' @section Endpoint /{apiVersion}/federations/connect:
-        #' Connect to a Federation server.
+        #' @section Endpoint /{apiVersion}/federations/client/connect:
+        #' Connect to a shared XetaBase instance.
         #' @param data JSON containing the Federation server configuration.
-        connect=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory=NULL,
+        connectClient=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory="client",
                 subcategoryId=NULL, action="connect", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
-        #' @section Endpoint /{apiVersion}/federations/create:
-        #' Create a new Federation.
-        #' @param data JSON containing the new Federation object.
-        create=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory=NULL,
-                subcategoryId=NULL, action="create", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+        #' @section Endpoint /{apiVersion}/federations/client/{id}/delete:
+        #' Delete a federation client.
+        #' @param id Federation client id.
+        deleteClient=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory="client",
+                subcategoryId=id, action="delete", params=params, httpMethod="DELETE", as.queryParam=NULL, ...),
 
-        #' @section Endpoint /{apiVersion}/federations/login:
-        #' Login a federated user.
-        #' @param id Federation server id to reset.
-        login=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory=NULL,
-                subcategoryId=NULL, action="login", params=params, httpMethod="POST", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/federations/reset:
-        #' Reset the credentials of a federation.
-        #' @param id Federation server id to reset.
-        reset=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory=NULL,
-                subcategoryId=NULL, action="reset", params=params, httpMethod="POST", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/federations/synchronize:
+        #' @section Endpoint /{apiVersion}/federations/client/{id}/synchronize:
         #' Synchronize data from a known Federation server.
         #' @param id Federation client id to be synchronized.
-        synchronize=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory=NULL,
-                subcategoryId=NULL, action="synchronize", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+        synchronizeClient=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory="client",
+                subcategoryId=id, action="synchronize", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/federations/client/{id}/update:
+        #' Update some fields from a Federation client.
+        #' @param id Federation client id.
+        #' @param data JSON containing the Federation client parameters to be updated.
+        updateClient=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory="client",
+                subcategoryId=id, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/federations/server/create:
+        #' Share a resource with another XetaBase instance.
+        #' @param data JSON containing the new Federation object.
+        createServer=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory="server",
+                subcategoryId=NULL, action="create", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/federations/server/{id}/delete:
+        #' Delete a federation server.
+        #' @param id Federation server id.
+        deleteServer=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory="server",
+                subcategoryId=id, action="delete", params=params, httpMethod="DELETE", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/federations/server/{id}/reset:
+        #' Reset the credentials of a federation server.
+        #' @param id Federation server id to reset.
+        resetServer=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory="server",
+                subcategoryId=id, action="reset", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/federations/server/{id}/update:
+        #' Update some fields from a Federation server.
+        #' @param id Federation server id.
+        #' @param data JSON containing the Federation server parameters to be updated.
+        updateServer=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory="server",
+                subcategoryId=id, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
     )
 })

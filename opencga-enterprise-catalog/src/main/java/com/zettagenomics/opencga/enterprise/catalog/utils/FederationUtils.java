@@ -60,7 +60,17 @@ public class FederationUtils {
         return null;
     }
 
-    public static String getFederationServerId(String project, String study, JwtPayload tokenPayload) throws CatalogException {
+    /**
+     * Given a project or study id, it will look for the corresponding federation server id in the token payload.
+     *
+     * @param project Project FQN or UUID.
+     * @param study   Study FQN or UUID.
+     * @param tokenPayload Token payload.
+     * @return Federation server id.
+     * @throws CatalogException If the user does not belong to any federation that contains the project or study provided.
+     */
+    public static String findFederationServerIdInPayload(String project, String study, JwtPayload tokenPayload)
+            throws CatalogException {
         if (StringUtils.isEmpty(study) && StringUtils.isEmpty(project)) {
             throw new CatalogParameterException("Missing project or study from the query parameters");
         } else if (StringUtils.isNotEmpty(study)) {
@@ -79,8 +89,17 @@ public class FederationUtils {
         throw new CatalogException("User does not belong to any federation that contains the project or study provided.");
     }
 
-    public static FederationServerParams findFederationServer(String organizationId, String userId, DBAdaptorFactory dbAdaptorFactory)
-            throws CatalogException {
+    /**
+     * Given an organization and a user, it will return the FederationServerParams object that contains the user.
+     * @param organizationId Organization id
+     * @param userId User id
+     * @param dbAdaptorFactory DBAdaptorFactory
+     * @return FederationServerParams object
+     * @throws CatalogException If the organization is not federated, the user is not federated in the organization or the organization
+     * does not exist.
+     */
+    public static FederationServerParams findFederationServerForUser(String organizationId, String userId,
+                                                                     DBAdaptorFactory dbAdaptorFactory) throws CatalogException {
         QueryOptions orgOptions = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.FEDERATION.key());
         OpenCGAResult<Organization> result = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(orgOptions);
         if (result.getNumResults() == 0) {
@@ -98,6 +117,12 @@ public class FederationUtils {
         throw new CatalogException("User '" + userId + "' is not federated in organization '" + organizationId + "'");
     }
 
+    /**
+     * Given a FederationClientParams object, it will return a GenericClient object with the token set.
+     * @param federationClient FederationClientParams object
+     * @return GenericClient object
+     * @throws ClientException If there is an error logging in.
+     */
     public static GenericClient getClientInstance(FederationClientParams federationClient) throws ClientException {
         ClientConfiguration clientConfiguration = new ClientConfiguration(federationClient.getUrl());
 

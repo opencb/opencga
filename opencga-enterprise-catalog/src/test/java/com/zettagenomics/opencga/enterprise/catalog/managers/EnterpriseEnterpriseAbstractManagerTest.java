@@ -4,13 +4,13 @@ import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfigu
 import org.junit.Before;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 
-public class EnterpriseAbstractManagerTest extends AbstractManagerTest {
+public class EnterpriseEnterpriseAbstractManagerTest extends AbstractManagerTest {
 
     private EnterpriseConfiguration enterpriseConfiguration;
 
-    protected FederationManager federationManager;
-    protected ProjectManager projectManager;
-    protected UserManager userManager;
+    protected EnterpriseFederationManager enterpriseFederationManager;
+    protected EnterpriseProjectManager enterpriseProjectManager;
+    protected EnterpriseUserManager enterpriseUserManager;
 
     @Before
     public void setUp() throws Exception {
@@ -18,9 +18,9 @@ public class EnterpriseAbstractManagerTest extends AbstractManagerTest {
         enterpriseConfiguration = EnterpriseConfiguration.load(getClass().getResource("/enterprise-configuration-test.yml").openStream());
         EnterpriseFactory.init(catalogManager, enterpriseConfiguration);
 
-        federationManager = EnterpriseFactory.getEnterpriseFederationManager();
-        projectManager = EnterpriseFactory.getEnterpriseProjectManager();
-        userManager = EnterpriseFactory.getEnterpriseUserManager();
+        enterpriseFederationManager = EnterpriseFactory.getEnterpriseFederationManager();
+        enterpriseProjectManager = EnterpriseFactory.getEnterpriseProjectManager();
+        enterpriseUserManager = EnterpriseFactory.getEnterpriseUserManager();
     }
 
 }
