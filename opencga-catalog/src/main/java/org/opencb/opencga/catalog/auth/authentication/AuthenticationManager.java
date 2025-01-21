@@ -82,20 +82,6 @@ public abstract class AuthenticationManager implements Closeable {
     /**
      * Authenticate the user against the Authentication server.
      *
-     * @param organizationId Organization id.
-     * @param userId         User to authenticate
-     * @param password       Password.
-     * @param secretKey      Secret key to apply to the token.
-     * @return AuthenticationResponse object.
-     * @throws CatalogAuthenticationException CatalogAuthenticationException if any of the credentials are wrong or the access is denied
-     *                                        for any other reason.
-     */
-    public abstract AuthenticationResponse authenticate(String organizationId, String userId, String password, String secretKey)
-            throws CatalogAuthenticationException;
-
-    /**
-     * Authenticate the user against the Authentication server.
-     *
      * @param refreshToken   Valid refresh token.
      * @return AuthenticationResponse object.
      * @throws CatalogAuthenticationException CatalogAuthenticationException if any of the credentials are wrong or the access is denied
@@ -114,19 +100,15 @@ public abstract class AuthenticationManager implements Closeable {
      * Validates that the token is valid.
      *
      * @param token     token that have been assigned to a user.
-     * @param secretKey secret key to be used for the token validation (may be null).
+     * @param securityKey key used to fully ensure it corresponds to that user.
      * @throws CatalogAuthenticationException when the token does not correspond to any user, is expired or has been altered.
      */
-    public void validateToken(String token, @Nullable String secretKey) throws CatalogAuthenticationException {
+    public void validateToken(String token, @Nullable String securityKey) throws CatalogAuthenticationException {
         if (StringUtils.isEmpty(token) || "null".equalsIgnoreCase(token)) {
             throw new CatalogAuthenticationException("Token is null or empty.");
         }
-        Key privateKey = null;
-        if (secretKey != null) {
-            privateKey = converStringToKeyObject(secretKey, jwtManager.getAlgorithm().getJcaName());
-        }
 
-        jwtManager.validateToken(token, privateKey);
+        jwtManager.validateToken(token);
     }
 
     /**
@@ -208,20 +190,7 @@ public abstract class AuthenticationManager implements Closeable {
      * @return A token.
      */
     public String createToken(String organizationId, String userId) throws CatalogAuthenticationException {
-        return createToken(organizationId, userId, Collections.emptyMap(), expiration, (Key) null);
-    }
-
-    /**
-     * Create a token for the user with default expiration time.
-     *
-     * @param organizationId Organization id.
-     * @param userId         user.
-     * @param secretKey      secret key to be used for the token generation.
-     * @throws CatalogAuthenticationException CatalogAuthenticationException
-     * @return A token.
-     */
-    public String createToken(String organizationId, String userId, String secretKey) throws CatalogAuthenticationException {
-        return createToken(organizationId, userId, Collections.emptyMap(), expiration, secretKey);
+        return createToken(organizationId, userId, Collections.emptyMap(), expiration);
     }
 
     /**
@@ -234,22 +203,7 @@ public abstract class AuthenticationManager implements Closeable {
      * @return A token.
      */
     public String createToken(String organizationId, String userId, Map<String, Object> claims) throws CatalogAuthenticationException {
-        return createToken(organizationId, userId, claims, expiration, (Key) null);
-    }
-
-    /**
-     * Create a token for the user with default expiration time.
-     *
-     * @param organizationId Organization id.
-     * @param userId         user.
-     * @param claims         claims.
-     * @param secretKey      secret key to be used for the token generation.
-     * @throws CatalogAuthenticationException CatalogAuthenticationException
-     * @return A token.
-     */
-    public String createToken(String organizationId, String userId, Map<String, Object> claims, String secretKey)
-            throws CatalogAuthenticationException {
-        return createToken(organizationId, userId, claims, expiration, secretKey);
+        return createToken(organizationId, userId, claims, expiration);
     }
 
     /**
@@ -262,43 +216,7 @@ public abstract class AuthenticationManager implements Closeable {
      * @throws CatalogAuthenticationException CatalogAuthenticationException
      * @return A token.
      */
-    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration)
-            throws CatalogAuthenticationException {
-        return createToken(organizationId, userId, claims, expiration, (Key) null);
-    }
-
-    /**
-     * Create a token for the user.
-     *
-     * @param organizationId Organization id.
-     * @param userId         user.
-     * @param claims         claims.
-     * @param expiration     Expiration time in seconds.
-     * @param secretKey      Secret key to be used for the token generation.
-     * @throws CatalogAuthenticationException CatalogAuthenticationException
-     * @return A token.
-     */
-    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration, String secretKey)
-            throws CatalogAuthenticationException {
-        Key privateKey = null;
-        if (secretKey != null) {
-            privateKey = converStringToKeyObject(secretKey, jwtManager.getAlgorithm().getJcaName());
-        }
-        return createToken(organizationId, userId, claims, expiration, privateKey);
-    }
-
-    /**
-     * Create a token for the user.
-     *
-     * @param organizationId Organization id.
-     * @param userId         user.
-     * @param claims         claims.
-     * @param expiration     Expiration time in seconds.
-     * @param secretKey      Secret key to be used for the token generation.
-     * @throws CatalogAuthenticationException CatalogAuthenticationException
-     * @return A token.
-     */
-    public abstract String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration, Key secretKey)
+    public abstract String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration)
             throws CatalogAuthenticationException;
 
     /**

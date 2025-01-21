@@ -172,30 +172,6 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public AuthenticationResponse authenticate(String organizationId, String userId, String password, String secretKey)
-            throws CatalogAuthenticationException {
-        Map<String, Object> claims = new HashMap<>();
-
-        List<Attributes> userInfoFromLDAP = getUserInfoFromLDAP(Arrays.asList(userId), usersSearch);
-        if (userInfoFromLDAP.isEmpty()) {
-            throw new CatalogAuthenticationException("LDAP: The user id " + userId + " could not be found.");
-        }
-
-        String rdn = getDN(userInfoFromLDAP.get(0));
-        claims.put(OPENCGA_DISTINGUISHED_NAME, rdn);
-
-        // Attempt to authenticate
-        Hashtable<String, Object> env = getEnv(rdn, password);
-        try {
-            getDirContext(env).close();
-        } catch (NamingException e) {
-            throw wrapException(e);
-        }
-
-        return new AuthenticationResponse(createToken(organizationId, userId, claims, secretKey));
-    }
-
-    @Override
     public List<User> getUsersFromRemoteGroup(String group) throws CatalogException {
         List<String> usersFromLDAP = getUsersFromLDAPGroup(group, groupsSearch);
         return getRemoteUserInformation(usersFromLDAP);
@@ -261,17 +237,17 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration, Key secretKey)
+    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration)
             throws CatalogAuthenticationException {
         List<JwtPayload.FederationJwtPayload> federations = getFederations(organizationId, userId);
-        return jwtManager.createJWTToken(organizationId, AuthenticationType.LDAP, userId, claims, federations, secretKey, expiration);
+        return jwtManager.createJWTToken(organizationId, AuthenticationType.LDAP, userId, claims, federations, expiration);
     }
 
     @Override
     public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims)
             throws CatalogAuthenticationException {
         List<JwtPayload.FederationJwtPayload> federations = getFederations(organizationId, userId);
-        return jwtManager.createJWTToken(organizationId, AuthenticationType.LDAP, userId, claims, federations, null, 0L);
+        return jwtManager.createJWTToken(organizationId, AuthenticationType.LDAP, userId, claims, federations, 0L);
     }
 
     /* Private methods */

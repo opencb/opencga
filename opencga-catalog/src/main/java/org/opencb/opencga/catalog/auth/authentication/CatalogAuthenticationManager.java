@@ -85,17 +85,6 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public AuthenticationResponse authenticate(String organizationId, String userId, String password, String secretKey)
-            throws CatalogAuthenticationException {
-        try {
-            dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).authenticate(userId, password);
-            return new AuthenticationResponse(createToken(organizationId, userId, secretKey));
-        } catch (CatalogDBException e) {
-            throw new CatalogAuthenticationException("Could not validate '" + userId + "' password\n" + e.getMessage(), e);
-        }
-    }
-
-    @Override
     public List<User> getUsersFromRemoteGroup(String group) throws CatalogException {
         throw new UnsupportedOperationException();
     }
@@ -121,19 +110,18 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration, Key secretKey)
+    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration)
             throws CatalogAuthenticationException {
         List<JwtPayload.FederationJwtPayload> federations = getFederations(organizationId, userId);
         return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.OPENCGA, userId, claims, federations,
-                secretKey, expiration);
+                expiration);
     }
 
     @Override
     public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims)
             throws CatalogAuthenticationException {
         List<JwtPayload.FederationJwtPayload> federations = getFederations(organizationId, userId);
-        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.OPENCGA, userId, claims, federations,
-                null, 0L);
+        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.OPENCGA, userId, claims, federations, 0L);
     }
 
     @Override

@@ -90,8 +90,7 @@ public class JwtManager {
     }
 
     public String createJWTToken(String organizationId, AuthenticationOrigin.AuthenticationType type, String userId,
-                                 Map<String, Object> claims, List<JwtPayload.FederationJwtPayload> federations, Key secretKey,
-                                 long expiration) {
+                                 Map<String, Object> claims, List<JwtPayload.FederationJwtPayload> federations, long expiration) {
         long currentTime = System.currentTimeMillis();
 
         JwtBuilder jwtBuilder = Jwts.builder();
@@ -109,7 +108,7 @@ public class JwtManager {
                 .setAudience(organizationId)
                 .setIssuer("OpenCGA")
                 .setIssuedAt(new Date(currentTime))
-                .signWith(secretKey != null ? secretKey : privateKey, algorithm);
+                .signWith(privateKey, algorithm);
 
         // Set the expiration in number of seconds only if 'expiration' is greater than 0
         if (expiration > 0) {
@@ -121,10 +120,6 @@ public class JwtManager {
 
     public void validateToken(String token) throws CatalogAuthenticationException {
         parseClaims(token);
-    }
-
-    public void validateToken(String token, Key publicKey) throws CatalogAuthenticationException {
-        parseClaims(token, publicKey);
     }
 
     public JwtPayload getPayload(String token) throws CatalogAuthenticationException {

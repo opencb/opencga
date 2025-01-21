@@ -105,28 +105,23 @@ public final class AuthenticationFactory {
 
     public void validateToken(String organizationId, Account.AuthenticationOrigin authenticationOrigin, JwtPayload jwtPayload)
             throws CatalogException {
-        String secretKey = null;
+        String securityKey = null;
         if (authenticationOrigin.isFederation()) {
-            // The user is a federated user, so we need to use a different secret key
-            secretKey = getFederationSecretKey(organizationId, jwtPayload.getUserId());
+            // The user is a federated user, so the token should have been encrypted using the security key
+            securityKey = getFederationSecurityKey(organizationId, jwtPayload.getUserId());
         }
-        getOrganizationAuthenticationManager(organizationId, authenticationOrigin.getId()).validateToken(jwtPayload.getToken(), secretKey);
+        getOrganizationAuthenticationManager(organizationId, authenticationOrigin.getId()).validateToken(jwtPayload.getToken(),
+                securityKey);
     }
 
     public AuthenticationResponse authenticate(String organizationId, Account.AuthenticationOrigin authenticationOrigin, String userId,
                                                String password) throws CatalogException {
         AuthenticationManager organizationAuthenticationManager = getOrganizationAuthenticationManager(organizationId,
                 authenticationOrigin.getId());
-        if (authenticationOrigin.isFederation()) {
-            // The user is a federated user, so we need to use a different secret key
-            String secretKey = getFederationSecretKey(organizationId, userId);
-            return organizationAuthenticationManager.authenticate(organizationId, userId, password, secretKey);
-        } else {
-            return organizationAuthenticationManager.authenticate(organizationId, userId, password);
-        }
+        return organizationAuthenticationManager.authenticate(organizationId, userId, password);
     }
 
-    private String getFederationSecretKey(String organizationId, String userId) throws CatalogException {
+    private String getFederationSecurityKey(String organizationId, String userId) throws CatalogException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.FEDERATION.key());
         Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(options).first();
         if (organization.getFederation() == null) {
