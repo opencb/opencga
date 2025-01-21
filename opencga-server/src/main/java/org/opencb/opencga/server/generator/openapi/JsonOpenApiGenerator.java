@@ -127,12 +127,10 @@ public class JsonOpenApiGenerator {
                 Parameter parameter = new Parameter();
                 parameter.setName(implicitParam.name());
                 parameter.setIn(implicitParam.paramType());
-                parameter.setDescription(implicitParam.value());
                 parameter.setRequired(implicitParam.required());
                 parameter.setType(implicitParam.dataType());
                 parameter.setFormat(implicitParam.format());
-                parameter.setDefaultValue(implicitParam.defaultValue());
-                parameters.add(parameter);
+
             }
         }
 
