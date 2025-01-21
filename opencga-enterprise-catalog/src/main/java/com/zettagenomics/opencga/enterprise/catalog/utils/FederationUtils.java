@@ -3,12 +3,14 @@ package com.zettagenomics.opencga.enterprise.catalog.utils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.client.GenericClient;
+import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
@@ -24,6 +26,7 @@ import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 
+import javax.crypto.SecretKey;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -136,7 +139,7 @@ public class FederationUtils {
             }
         }
         GenericClient client = new GenericClient(federationClient.getToken(), clientConfiguration);
-        if (federationClient.getToken() == null) {
+        if (StringUtils.isEmpty(federationClient.getToken())) {
             LoginParams loginParams = new LoginParams(federationClient.getOrganizationId(), federationClient.getUserId(),
                     federationClient.getPassword());
             RestResponse<AuthenticationResponse> login = client.login(loginParams);
@@ -145,10 +148,21 @@ public class FederationUtils {
                 throw new ClientException("Error logging in: " + login.getEvents().get(0).getMessage());
             }
 
+            // Cypher token using the security key provided by the server
+            JwtUtils.Token token = JwtUtils.getToken(login.firstResult().getToken());
+            SecretKey secretKey = CryptoUtils.stringToSecretKey(federationClient.getSecurityKey());
+            String encryptedSignature;
+            try {
+                encryptedSignature = CryptoUtils.encrypt(token.getVerifySignature(), secretKey);
+            } catch (Exception e) {
+                throw new ClientException("Failed to encrypt the token for subsequent queries", e);
+            }
+            String finalToken = JwtUtils.generateToken(token.getHeader(), token.getPayload(), encryptedSignature);
+
             // Set token in the client object to be used in next call
-            client.setToken(login.firstResult().getToken());
+            client.setToken(finalToken);
             // Set token in the federationClient object
-            federationClient.setToken(login.firstResult().getToken());
+            federationClient.setToken(finalToken);
         }
         return client;
     }

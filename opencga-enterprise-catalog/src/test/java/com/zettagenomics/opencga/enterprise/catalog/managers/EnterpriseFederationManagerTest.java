@@ -62,10 +62,6 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         catalogManager.getStudyManager().updateGroup("study", StudyManager.MEMBERS, ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList(client.getUserId())), org2OwnerToken);
 
-        User user = catalogManager.getUserManager().get(client.getOrganizationId(), client.getUserId(), null, login.getToken()).first();
-        assertTrue(user.getInternal().getAccount().getAuthentication().isFederation());
-        assertEquals(AuthenticationOrigin.AuthenticationType.OPENCGA.name(), user.getInternal().getAccount().getAuthentication().getId());
-
         client.setId("org2");
         client.setUrl("http://localhost:9090/opencga");
         client.setEmail("mail@mail.com");

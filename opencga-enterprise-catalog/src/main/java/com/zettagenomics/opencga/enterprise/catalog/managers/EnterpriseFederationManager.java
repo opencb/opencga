@@ -13,6 +13,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -44,7 +45,6 @@ import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserInternal;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -186,7 +186,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                     .setOrganizationId(organizationId)
                     .setUserId(serverParams.getUserId())
                     .setPassword(PasswordUtils.getStrongRandomPassword())
-                    .setSecurityKey(PasswordUtils.getStrongRandomPassword());
+                    .setSecurityKey(generateNewSecurityKey());
 
             // Update security key
             FederationServerUpdateParams updateParams = new FederationServerUpdateParams()
@@ -302,7 +302,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).update(userId, userUpdateParams);
 
             // Update security key
-            String newSecurityKey = PasswordUtils.getStrongRandomPassword();
+            String newSecurityKey = generateNewSecurityKey();
             FederationServerUpdateParams updateParams = new FederationServerUpdateParams()
                     .setSecurityKey(newSecurityKey);
             OpenCGAResult<Organization> result = updateFederationServer(organizationId, federationId, updateParams);
@@ -601,36 +601,27 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             String federationToken = federationClient.getToken();
             // The call to getClientInstance will update the token if it has expired
             GenericClient client = FederationUtils.getClientInstance(federationClient);
-            if (federationClient.getToken().equals(federationToken)) {
-                LoginParams loginParams = new LoginParams(federationClient.getOrganizationId(), federationClient.getUserId(),
-                        federationClient.getPassword());
-                federationToken = client.login(loginParams).firstResult().getToken();
-                client.setToken(federationToken);
-
-                // Store token in database
+            if (!federationClient.getToken().equals(federationToken)) {
+                // Token has been updated.
                 FederationClientUpdateParams updateParams = new FederationClientUpdateParams()
-                        .setToken(federationToken);
+                        .setToken(federationClient.getToken());
+
+                // Call to /about to check if the version has changed only once per token update
+                ObjectMap aboutMap = client.about().firstResult();
+                String version = aboutMap.getString("Version");
+                if (StringUtils.isNotEmpty(version) && !version.equals(federationClient.getVersion())) {
+                    logger.warn("Calling to federation server '{}'. The version of the federation server has changed from '{}' to '{}'.",
+                            federationClient.getUrl(), federationClient.getVersion(), version);
+                    // Update new version in database
+                    updateParams.setVersion(version);
+                }
+
+                // Store changes in database
                 OpenCGAResult<Organization> result = updateFederationClient(organizationId, federationClient.getId(), updateParams);
                 if (result.getNumUpdated() == 0) {
                     throw new CatalogException("Could not update token to communicate with the federation server.");
                 }
-
                 logger.debug("Token has been updated.");
-            }
-
-            ObjectMap aboutMap = client.about().firstResult();
-            String version = aboutMap.getString("Version");
-            if (StringUtils.isNotEmpty(version) && !version.equals(federationClient.getVersion())) {
-                logger.warn("Calling to federation server '{}'. The version of the federation server has changed from '{}' to '{}'.",
-                        federationClient.getUrl(), federationClient.getVersion(), version);
-
-                // Store new version in database
-                FederationClientUpdateParams clientParams = new FederationClientUpdateParams()
-                        .setVersion(version);
-                OpenCGAResult<Organization> result = updateFederationClient(organizationId, federationClient.getId(), clientParams);
-                if (result.getNumUpdated() == 0) {
-                    throw new CatalogException("Could not update new OpenCGA version from the federation server.");
-                }
             }
 
             Matcher matcher = URL_REDIRECT.matcher(url);
@@ -774,7 +765,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
     }
 
     private FederationServerParams generateFederationServer(FederationServerCreateParams federationServerCreateParams)
-            throws CatalogParameterException {
+            throws CatalogException {
         // Validate mandatory fields
         ParamUtils.checkIdentifier(federationServerCreateParams.getId(), "id");
         ParamUtils.checkEmail(federationServerCreateParams.getEmail());
@@ -783,11 +774,19 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                 ? federationServerCreateParams.getUserId()
                 : federationServerCreateParams.getId() + ".user1";
         // Create a random security key
-        String securityKey = PasswordUtils.getStrongRandomPassword();
+        String securityKey = generateNewSecurityKey();
 
         // Create the client
         return new FederationServerParams(federationServerCreateParams.getId(),
                 StringUtils.isNotEmpty(federationServerCreateParams.getDescription()) ? federationServerCreateParams.getDescription() : "",
                 federationServerCreateParams.getEmail(), userId, true, securityKey);
+    }
+
+    private String generateNewSecurityKey() throws CatalogException {
+        try {
+            return CryptoUtils.secretKeyToString(CryptoUtils.generateKey(256));
+        } catch (Exception e) {
+            throw new CatalogException("Could not generate a security key for the federation server.", e);
+        }
     }
 }
