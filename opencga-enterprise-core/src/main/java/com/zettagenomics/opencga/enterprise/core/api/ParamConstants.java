@@ -50,7 +50,7 @@ public class ParamConstants {
     public static final String STUDY_PARAM_DESCRIPTION = "Study ID (or list of study IDs separated by commas)";
     public static final String STUDY_PARAM_NAME = "study";
 
-    public static final String OPENCGA_STUDY_FQN = "OPENCGA_STUDY_FQN";
+    public static final String OPENCGA_STUDY_ID = "OPENCGA_STUDY_ID";
     public static final String OPENCGA_CLINICAL_ANALYSIS_ID = "OPENCGA_CLINICAL_ANALYSIS_ID";
     public static final String OPENCGA_INTERPRETATION_ID = "OPENCGA_INTERPRETATION_ID";
     public static final String OPENCGA_PRIMARY_INTERPRETATION = "OPENCGA_PRIMARY_INTERPRETATION";
