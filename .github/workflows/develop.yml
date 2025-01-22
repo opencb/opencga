@@ -7,14 +7,11 @@ on:
       - release-*
   workflow_dispatch:
 
-env:
-  HADOOP_FLAVOUR: emr6.1
-
 jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P storage-hadoop,${{ env.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-app' --also-make
+      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-app' --also-make
 
   test:
     uses: ./.github/workflows/test-analysis.yml
@@ -27,7 +24,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: test
     with:
-      maven_opts: -P storage-hadoop,${{ env.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
+      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
     secrets: inherit
 
   deploy-docker:

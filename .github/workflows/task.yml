@@ -6,17 +6,13 @@ on:
       - TASK-*
   workflow_dispatch:
 
-env:
-  # We must use hdp3.1 for the task branch for the docker build step
-  HADOOP_FLAVOUR: hdp3.1
-
 # WARNING Develop branch needed for prod
 
 jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P storage-hadoop,${{ env.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-app' --also-make
+      maven_opts: -P storage-hadoop,${{ vars.TASK_HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-app' --also-make
 
   test:
     uses: ./.github/workflows/test-analysis.yml
@@ -24,6 +20,7 @@ jobs:
     secrets: inherit
     with:
       test_profile: runShortTests
+      hadoop_flavour: ${{ vars.TASK_HADOOP_FLAVOUR }}
 
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
