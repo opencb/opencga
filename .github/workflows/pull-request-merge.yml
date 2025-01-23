@@ -13,7 +13,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-app' --also-make
+      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
 
   delete-docker:
     uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@develop
