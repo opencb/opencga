@@ -210,7 +210,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             try {
                 MailUtils mailUtils = MailUtils.configure(catalogManager.getConfiguration().getEmail());
                 mailUtils.sendMail(serverParams.getEmail(), "XetaBase: Federation client credentials",
-                        getCredentialsMailContent(clientParams));
+                        getCredentialsMailContent(serverParams.getEmail(), clientParams));
             } catch (MailException e) {
                 eventList.add(new Event(Event.Type.WARNING, "Could not send email with credentials to the federation client. Please, "
                         + "check with your administrator your email configuration in the 'configuration.yml' file and then call "
@@ -228,15 +228,15 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
         }
     }
 
-    private String getCredentialsMailContent(FederationClientParams clientParams) {
+    private String getCredentialsMailContent(String user, FederationClientParams clientParams) {
         return new StringBuilder()
-                .append("Hi ").append(clientParams.getEmail()).append(",\n\n")
+                .append("Hi ").append(user).append(",\n\n")
                 .append("We have invited you to access our OpenCGA installation under '").append(clientParams.getUrl()).append("'.\n\n")
                 .append("In order to get access, you will need to call to '/federations/client/connect' using the following credentials:\n\n")
                 .append("URL: ").append(clientParams.getUrl()).append("\n")
                 .append("Organization ID: ").append(clientParams.getOrganizationId()).append("\n")
                 .append("User ID: ").append(clientParams.getUserId()).append("\n")
-                .append("Temporary password: ").append(clientParams.getPassword()).append("\n\n")
+                .append("Temporary password: ").append(clientParams.getPassword()).append("\n")
                 .append("Security key: ").append(clientParams.getSecurityKey()).append("\n\n")
                 .append("The password and the secret key will be automatically renewed upon first login.\n\n")
                 .append("You now have 24 hours to connect to the federation server. After that, the temporary password will expire.\n\n")
