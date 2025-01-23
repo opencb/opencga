@@ -61,6 +61,8 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
     protected static Logger logger = LoggerFactory.getLogger(EnterpriseFederationManager.class);
 
     private final static Pattern URL_REDIRECT = Pattern.compile(".*/webservices/rest/v\\d+/([^/]+)/(.*)");
+    private final static String SEPARATOR = "______";
+    private final static int PASSWORD_LENGTH = 16;
 
     public EnterpriseFederationManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration) {
         super(catalogManager, enterpriseConfiguration);
@@ -118,7 +120,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             User user = new User()
                     .setId(federationServer.getUserId())
                     .setInternal(new UserInternal().setAccount(new Account(expTime, authenticationOrigin)));
-            String password = PasswordUtils.getStrongRandomPassword();
+            String password = PasswordUtils.getStrongRandomPassword(PASSWORD_LENGTH);
             catalogManager.getUserManager().create(user, password, token);
 
             FederationClientParams federationClient = new FederationClientParams()
@@ -185,7 +187,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             FederationClientParams clientParams = new FederationClientParams()
                     .setOrganizationId(organizationId)
                     .setUserId(serverParams.getUserId())
-                    .setPassword(PasswordUtils.getStrongRandomPassword())
+                    .setPassword(PasswordUtils.getStrongRandomPassword(PASSWORD_LENGTH))
                     .setSecurityKey(generateNewSecurityKey());
 
             // Update security key
@@ -248,10 +250,11 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
      * The federation server A will then:
      * 1. Extend the expiration time of the federated server B.
      * 2. Update the security key for the communication between the two servers.
-     * 3. Send the new security key in the response so that the server B can also update it.
+     * 3. Update the user password
+     * 4. Send the new security key and user password in the response so that the server B can also update it.
      *
      * @param token token corresponding to the user given to the server B.
-     * @return the new updated security key to be used in further communications.
+     * @return the new updated security key and user password to be used in further communications.
      * @throws CatalogException if there is any error.
      */
     public OpenCGAResult<String> resetSecurityKey(String token) throws CatalogException {
@@ -301,8 +304,9 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                     organization.getConfiguration().getDefaultUserExpirationDate());
             dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).update(userId, userUpdateParams);
 
-            // Update security key
+            // Generate new security key and user password
             String newSecurityKey = generateNewSecurityKey();
+            String newPassword = PasswordUtils.getStrongRandomPassword(PASSWORD_LENGTH);
             FederationServerUpdateParams updateParams = new FederationServerUpdateParams()
                     .setSecurityKey(newSecurityKey);
             OpenCGAResult<Organization> result = updateFederationServer(organizationId, federationId, updateParams);
@@ -314,11 +318,13 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
 
                 throw new CatalogException("Could not update security key.");
             }
+            // Change password
+            dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).changePassword(userId, null, newPassword);
 
             auditManager.audit(organizationId, userId, AuditAction.RESET_FEDERATION_SECURITY_KEY, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new OpenCGAResult<>(result.getTime(), Collections.singletonList(newSecurityKey));
+            return new OpenCGAResult<>(result.getTime(), Collections.singletonList(newSecurityKey + SEPARATOR + newPassword));
         } catch (Exception e) {
             auditManager.audit(organizationId, userId, AuditAction.RESET_FEDERATION_SECURITY_KEY, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
@@ -403,9 +409,16 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             }
 
             // Query and update new security key in the database
-            String updatedSecurityKey = getUpdatedSecurityKey(client);
+            String updatedCredentials = getUpdatedCredentials(client);
+            String[] split = StringUtils.split(updatedCredentials, SEPARATOR);
+            String updatedSecurityKey = split[0];
+            String updatedPassword = split[1];
+            System.out.println(updatedCredentials);
+            System.out.println(updatedSecurityKey);
+            System.out.println(updatedPassword);
             FederationClientUpdateParams updateParams = new FederationClientUpdateParams()
                     .setSecurityKey(updatedSecurityKey)
+                    .setPassword(updatedPassword)
                     .setToken("");
             result = updateFederationClient(organizationId, federationClient.getId(), updateParams);
             if (result.getNumUpdated() == 0) {
@@ -597,6 +610,9 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             if (federationClient == null) {
                 throw new CatalogException("Federation server id '" + federationId + "' not found in the organization.");
             }
+            // Decode security key and user password
+            federationClient.setSecurityKey(decodeSecureString(federationClient.getSecurityKey()));
+            federationClient.setPassword(decodeSecureString(federationClient.getPassword()));
 
             String federationToken = federationClient.getToken();
             // The call to getClientInstance will update the token if it has expired
@@ -646,6 +662,15 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
 
     private OpenCGAResult<Organization> updateFederationClient(String organizationId, String federationId,
                                                                FederationClientUpdateParams updateParams) throws CatalogException {
+        if (StringUtils.isNotEmpty(updateParams.getSecurityKey())) {
+            // Encode security key before storing in database
+            updateParams.setSecurityKey(encodeSecureString(updateParams.getSecurityKey()));
+        }
+        if (StringUtils.isNotEmpty(updateParams.getPassword())) {
+            // Encode password before storing in database
+            updateParams.setPassword(encodeSecureString(updateParams.getPassword()));
+        }
+
         ObjectMap parameters;
         try {
             parameters = updateParams.getUpdateMap();
@@ -670,7 +695,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
         return client.execute("projects", null, null, null, "search", Collections.emptyMap(), ParentClient.GET, Project.class).allResults();
     }
 
-    private String getUpdatedSecurityKey(GenericClient client) throws ClientException {
+    private String getUpdatedCredentials(GenericClient client) throws ClientException {
         return client.execute("federations", null, null, null, "firstConnection", Collections.emptyMap(), ParentClient.POST, String.class)
                 .firstResult();
     }
@@ -782,11 +807,62 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                 federationServerCreateParams.getEmail(), userId, true, securityKey);
     }
 
-    private String generateNewSecurityKey() throws CatalogException {
+    protected String generateNewSecurityKey() throws CatalogException {
         try {
             return CryptoUtils.secretKeyToString(CryptoUtils.generateKey(256));
         } catch (Exception e) {
             throw new CatalogException("Could not generate a security key for the federation server.", e);
         }
     }
+
+    protected String encodeSecureString(String secureString) {
+        int length = secureString.length();
+        if (length % 4 != 0) {
+            // Add padding
+            secureString = secureString + StringUtils.repeat("¬", 4 - (length % 4));
+        }
+        length = secureString.length()/4;
+
+        // Split security key in 4 parts
+        String[] parts = new String[4];
+        for (int i = 0; i < 4; i++) {
+            parts[i] = secureString.substring(i * length, (i + 1) * length);
+        }
+
+        // Reconstruct security key in order 2, 0, 3, 1
+        String newSecurityKey = parts[2] + parts[0] + parts[3] + parts[1];
+
+        // Change position of some odd positions
+        char[] chars = newSecurityKey.toCharArray();
+        for (int i = 1; i < chars.length; i += 4) {
+            char aux = chars[i];
+            chars[i] = chars[i - 1];
+            chars[i - 1] = aux;
+        }
+
+        return new String(chars);
+    }
+
+    protected String decodeSecureString(String encodedSecureString) {
+        // Change position of some odd positions
+        char[] chars = encodedSecureString.toCharArray();
+        for (int i = 1; i < chars.length; i += 4) {
+            char aux = chars[i];
+            chars[i] = chars[i - 1];
+            chars[i - 1] = aux;
+        }
+
+        // Reconstruct security key in correct order
+        String newSecurityKey = new String(chars);
+        int length = newSecurityKey.length()/4;
+        String[] parts = new String[4];
+        for (int i = 0; i < 4; i++) {
+            parts[i] = newSecurityKey.substring(i * length, (i + 1) * length);
+        }
+        String securityKey = parts[1] + parts[3] + parts[0] + parts[2];
+
+        // Remove trailing repeated '¬' character (if any)
+        return securityKey.replaceAll("¬+$", "");
+    }
+
 }

@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.client.GenericClient;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
@@ -76,7 +76,27 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         assertEquals(1, studyOpenCGAResult.getNumResults());
         assertEquals("org2@project:study", studyOpenCGAResult.first().getFqn());
         assertFalse(studyOpenCGAResult.first().getVariableSets().isEmpty());
+    }
 
+    @Test
+    public void securityKeyCodificationTest() throws CatalogException {
+        for (int i = 0; i < 10; i++) {
+            String securityKey = enterpriseFederationManager.generateNewSecurityKey();
+            String encodedKey = enterpriseFederationManager.encodeSecureString(securityKey);
+            String decodedKey = enterpriseFederationManager.decodeSecureString(encodedKey);
+            System.out.println("securityKey = " + securityKey);
+            System.out.println("encodedKey = " + encodedKey);
+            assertEquals(securityKey, decodedKey);
+        }
+
+        for (int i = 0; i < 10; i++) {
+            String securityKey = PasswordUtils.getStrongRandomPassword();
+            String encodedKey = enterpriseFederationManager.encodeSecureString(securityKey);
+            String decodedKey = enterpriseFederationManager.decodeSecureString(encodedKey);
+            System.out.println("password = " + securityKey);
+            System.out.println("encodedPassword = " + encodedKey);
+            assertEquals(securityKey, decodedKey);
+        }
     }
 
 }

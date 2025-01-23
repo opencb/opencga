@@ -25,6 +25,10 @@
             <artifactId>commons-datastore-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-core</artifactId>
         </dependency>
