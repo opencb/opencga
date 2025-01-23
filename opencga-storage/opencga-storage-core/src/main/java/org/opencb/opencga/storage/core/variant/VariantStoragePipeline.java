@@ -98,7 +98,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected final VariantDBAdaptor dbAdaptor;
     protected final VariantReaderUtils variantReaderUtils;
     protected final IOConnectorProvider ioConnectorProvider;
-    private final Logger logger = LoggerFactory.getLogger(VariantStoragePipeline.class);
+    private static Logger logger = LoggerFactory.getLogger(VariantStoragePipeline.class);
     protected final ObjectMap transformStats = new ObjectMap();
     protected final ObjectMap loadStats = new ObjectMap();
     protected Integer privateFileId;
@@ -317,7 +317,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             boolean generateReferenceBlocks = options.getBoolean(VariantStorageOptions.GVCF.key(), false);
             // Do not run parallelParse when generating reference blocks, as the task is stateful
             parallelParse = !generateReferenceBlocks;
-            normalizer = initNormalizer(metadata);
+            normalizer = initNormalizer(metadata, options);
         }
 
         Supplier<Task<Pair<Integer, List<String>>, Variant>> task = () ->
@@ -396,16 +396,17 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return outputVariantsFile;
     }
 
-    protected Task<Variant, Variant> initNormalizer(VariantFileMetadata metadata) throws StorageEngineException {
+    public static Task<Variant, Variant> initNormalizer(VariantFileMetadata metadata, ObjectMap options) throws StorageEngineException {
         boolean generateReferenceBlocks = options.getBoolean(GVCF.key(), false);
-        Collection<String> enabledExtensions = getOptions()
+        Collection<String> enabledExtensions = options
                 .getAsStringList(NORMALIZATION_EXTENSIONS.key());
+        logger.info("Normalizing variants. Generate reference blocks: {}", generateReferenceBlocks);
         VariantNormalizer.VariantNormalizerConfig normalizerConfig = new VariantNormalizer.VariantNormalizerConfig()
                 .setReuseVariants(true)
                 .setNormalizeAlleles(true)
                 .setDecomposeMNVs(false)
                 .setGenerateReferenceBlocks(generateReferenceBlocks);
-        String referenceGenome = getOptions().getString(NORMALIZATION_REFERENCE_GENOME.key());
+        String referenceGenome = options.getString(NORMALIZATION_REFERENCE_GENOME.key());
         if (StringUtils.isNotEmpty(referenceGenome)) {
             try {
                 logger.info("Enable left alignment with reference genome file '{}'", referenceGenome);

@@ -615,7 +615,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         variantStorageEngine.aggregateFamily(fillGapsCommandOptions.study, new VariantAggregateFamilyParams(
                 fillGapsCommandOptions.samples,
                 fillGapsCommandOptions.gapsGenotype,
-                fillGapsCommandOptions.resume), options);
+                fillGapsCommandOptions.resume), options, Paths.get(fillGapsCommandOptions.outdir).toUri());
     }
 
     private void fillMissing() throws StorageEngineException {

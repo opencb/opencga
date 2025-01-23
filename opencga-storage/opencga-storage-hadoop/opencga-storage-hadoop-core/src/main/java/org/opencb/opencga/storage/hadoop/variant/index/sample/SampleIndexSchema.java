@@ -60,6 +60,9 @@ public final class SampleIndexSchema {
                     .thenComparing(Variant::getReference)
                     .thenComparing(Variant::getAlternate)
                     .thenComparing(Variant::toString);
+    public static final Comparator<Variant> VARIANT_COMPARATOR = Comparator.comparing(Variant::getChromosome, (chr1, chr2) -> {
+        return chr1.equals(chr2) ? 0 : -1;
+    }).thenComparing(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
 
     public static final Set<String> CUSTOM_LOF = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             VariantAnnotationConstants.FRAMESHIFT_VARIANT,

@@ -215,15 +215,30 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
 
     private static void newRootDir() throws IOException {
-        rootDir = Paths.get("target/test-data", "junit-" + testClassNameWatcher.getTestClassSimpleName() + "-" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
-        Files.createDirectories(rootDir);
+        String classSimpleName = testClassNameWatcher.getTestClassSimpleName();
+        newRootDir(classSimpleName);
+    }
+
+    public static Path newRootDir(String classSimpleName) throws IOException {
+        Path path = Paths.get("target/test-data", "junit-" + classSimpleName + "-" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
+        Files.createDirectories(path);
+        rootDir = path;
+        return path;
     }
 
     public static void setRootDir(Path rootDir) {
         VariantStorageBaseTest.rootDir = rootDir;
     }
 
-    protected static URI newOutputUri() throws IOException {
+    public static URI newOutputUri() throws IOException {
+        return newOutputUri(rootDir.toUri());
+    }
+
+    public static URI newOutputUri(Path output) throws IOException {
+        return newOutputUri(output.toUri());
+    }
+
+    public static URI newOutputUri(URI outputUri) throws IOException {
         String dirName = null;
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         for (int i = 0; i < stackTrace.length; i++) {

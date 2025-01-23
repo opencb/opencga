@@ -85,6 +85,7 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutorFactory;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromFile;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.*;
@@ -108,6 +109,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
@@ -451,7 +453,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options) throws StorageEngineException {
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options, URI outdir)
+            throws StorageEngineException {
         List<String> samples = params.getSamples();
         if (samples == null || samples.size() < 2) {
             throw new IllegalArgumentException("Aggregate family operation requires at least two samples.");
@@ -480,7 +483,43 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             options.put(FILL_GAPS_GAP_GENOTYPE.key(), params.getGapsGenotype());
         }
         logger.info("FillGaps: Study " + study + ", samples " + samples);
-        fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, params.toObjectMap(options));
+
+        List<URI> uris = new ArrayList<>();
+        Set<Integer> filesWithArchive = new HashSet<>();
+        Set<Integer> fileExists = new HashSet<>();
+        for (Integer fileId : fileIds) {
+            FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), fileId);
+            Path filePath = Paths.get(fileMetadata.getPath());
+            uris.add(filePath.toUri());
+            if (filePath.toFile().exists()) {
+                fileExists.add(fileId);
+            }
+            if (fileMetadata.getAttributes().getBoolean(LOAD_ARCHIVE.key(), false)) {
+                filesWithArchive.add(fileId);
+            }
+        }
+        if (fileExists.size() == fileIds.size()) {
+            FillGapsFromFile fillGapsFromFile = new FillGapsFromFile(getDBAdaptor().getHBaseManager(),
+                    metadataManager, getVariantReaderUtils(), options);
+            try {
+                fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, outdir, getVariantTableName(), "0/0");
+            } catch (IOException e) {
+                throw new StorageEngineException("Error computing aggregation family operation", e);
+            }
+        } else if (filesWithArchive.size() == fileIds.size()) {
+            fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, params.toObjectMap(options));
+        } else {
+            Set<String> fileName = new HashSet<>();
+            for (Integer fileId : CollectionUtils.subtract(fileIds, fileExists)) {
+                fileName.add(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getName());
+            }
+            for (Integer fileId : CollectionUtils.subtract(fileIds, filesWithArchive)) {
+                fileName.add(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getName());
+            }
+            throw new StorageEngineException("Unable to execute family aggregate gaps operation. "
+                    + "Missing file or archive table. Files: " + fileName);
+        }
+
     }
 
     private void fillGapsOrMissing(String study, StudyMetadata studyMetadata, Set<Integer> fileIds, List<Integer> sampleIds,

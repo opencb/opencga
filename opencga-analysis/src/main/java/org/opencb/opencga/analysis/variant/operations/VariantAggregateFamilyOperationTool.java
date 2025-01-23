@@ -51,7 +51,7 @@ public class VariantAggregateFamilyOperationTool extends OperationTool {
     @Override
     protected void run() throws Exception {
         step(() -> {
-            variantStorageManager.aggregateFamily(study, variantAggregateFamilyParams, token);
+            variantStorageManager.aggregateFamily(study, variantAggregateFamilyParams, token, getOutDir().toUri());
         });
     }
 }

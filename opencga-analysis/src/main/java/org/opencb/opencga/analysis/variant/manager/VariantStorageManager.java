@@ -476,10 +476,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return catalogUtils.getTriosFromFamily(study, family, variantStorageEngine.getMetadataManager(), skipIncompleteFamilies, token);
     }
 
-    public void aggregateFamily(String studyStr, VariantAggregateFamilyParams params, String token)
+    public void aggregateFamily(String studyStr, VariantAggregateFamilyParams params, String token, URI outdir)
             throws CatalogException, StorageEngineException {
         secureOperation(VariantAggregateFamilyOperationTool.ID, studyStr, params.toObjectMap(), token, engine -> {
-            engine.aggregateFamily(getStudyFqn(studyStr, token), params, new ObjectMap());
+            engine.aggregateFamily(getStudyFqn(studyStr, token), params, new ObjectMap(), outdir);
             return null;
         });
     }

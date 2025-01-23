@@ -656,9 +656,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param study     Study
      * @param params    Aggregate Family params
      * @param options   Other options
+     * @param outdir    Output directory
      * @throws StorageEngineException if there is any error
      */
-    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options) throws StorageEngineException {
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options, URI outdir)
+            throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 

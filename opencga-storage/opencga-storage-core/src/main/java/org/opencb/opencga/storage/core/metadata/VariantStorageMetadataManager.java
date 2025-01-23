@@ -920,13 +920,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return getSampleIds(studyId, samples);
     }
 
-    public List<Integer> getSampleIds(int studyId, List<String> samples) {
+    public List<Integer> getSampleIds(int studyId, Collection<String> samples) {
         List<Integer> sampleIds = new ArrayList<>(samples.size());
         for (String sample : samples) {
             Integer sampleId = getSampleId(studyId, sample);
             if (sampleId == null) {
                 throw VariantQueryException.sampleNotFound(sample, getStudyName(studyId));
             }
+            sampleIds.add(sampleId);
         }
         return sampleIds;
     }

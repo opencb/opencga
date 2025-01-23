@@ -783,6 +783,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         public String dbName;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
+        public String outdir = ".";
     }
 
     @Parameters(commandNames = {AggregateCommandOptions.AGGREGATE_COMMAND}, commandDescription = AggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION)
