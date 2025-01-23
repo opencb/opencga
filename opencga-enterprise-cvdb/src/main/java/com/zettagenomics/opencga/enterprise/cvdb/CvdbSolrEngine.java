@@ -1196,7 +1196,7 @@ public class CvdbSolrEngine {
             if (clinicalVariant.getAttributes() == null) {
                 clinicalVariant.setAttributes(new HashMap<>());
             }
-            clinicalVariant.getAttributes().put(OPENCGA_STUDY_FQN, studyFqn);
+            clinicalVariant.getAttributes().put(OPENCGA_STUDY_ID, studyFqn);
             clinicalVariant.getAttributes().put(OPENCGA_CLINICAL_ANALYSIS_ID, clinicalAnalysisId);
             clinicalVariant.getAttributes().put(OPENCGA_INTERPRETATION_ID, interpretationId);
             clinicalVariant.getAttributes().put(OPENCGA_PRIMARY_INTERPRETATION, isPrimaryInterpretation);
@@ -1232,7 +1232,7 @@ public class CvdbSolrEngine {
             if (clinicalVariantEvidence.getAttributes() == null) {
                 clinicalVariantEvidence.setAttributes(new HashMap<>());
             }
-            clinicalVariantEvidence.getAttributes().put(OPENCGA_STUDY_FQN, studyFqn);
+            clinicalVariantEvidence.getAttributes().put(OPENCGA_STUDY_ID, studyFqn);
             clinicalVariantEvidence.getAttributes().put(OPENCGA_CLINICAL_ANALYSIS_ID, clinicalAnalysisId);
             clinicalVariantEvidence.getAttributes().put(OPENCGA_INTERPRETATION_ID, interpretationId);
             clinicalVariantEvidence.getAttributes().put(OPENCGA_PRIMARY_INTERPRETATION, isPrimaryInterpretation);

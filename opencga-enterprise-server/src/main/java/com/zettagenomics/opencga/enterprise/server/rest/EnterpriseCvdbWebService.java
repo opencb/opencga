@@ -17,7 +17,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.tools.annotations.*;
-import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
+import org.opencb.opencga.server.rest.analysis.AnalysisWebService;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -33,8 +33,8 @@ import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 @Path("/{apiVersion}/analysis/cvdb")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Analysis - CVDB", position = 4, description = "Methods for working with CVDB (clinical variant database)")
-public class EnterpriseCvdbWebService extends ClinicalWebService {
+@Api(value = "CVDB", position = 4, description = "Methods for working with CVDB (clinical variant database)")
+public class EnterpriseCvdbWebService extends AnalysisWebService {
 
     public static final AtomicReference<CvdbSolrEngine> cvdbEngineAtomicRef = new AtomicReference();
     public static final AtomicReference<ClinicalInterpretationManager> clinicalInterpretationManagerAtomicRef = new AtomicReference<>();
@@ -438,7 +438,7 @@ public class EnterpriseCvdbWebService extends ClinicalWebService {
     }
 
     @GET
-    @Path("/variant/query")
+    @Path("/clinicalVariant/query")
     @ApiOperation(value = CLINICAL_VARIANT_QUERY_DESCRIPTION, response = ClinicalVariant.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -775,7 +775,7 @@ public class EnterpriseCvdbWebService extends ClinicalWebService {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/case/aggregationStats")
+    @Path("/case/aggregate")
     @ApiOperation(value = "Calculate and fetch clinical analysis aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -934,7 +934,7 @@ public class EnterpriseCvdbWebService extends ClinicalWebService {
     }
 
     @GET
-    @Path("/interpretation/aggregationStats")
+    @Path("/interpretation/aggregate")
     @ApiOperation(value = "Calculate and fetch clinical interpretation aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -1093,7 +1093,7 @@ public class EnterpriseCvdbWebService extends ClinicalWebService {
     }
 
     @GET
-    @Path("/variant/aggregationStats")
+    @Path("/clinicalVariant/aggregate")
     @ApiOperation(value = "Calculate and fetch clinical variant aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -1252,7 +1252,7 @@ public class EnterpriseCvdbWebService extends ClinicalWebService {
     }
 
     @GET
-    @Path("/variantEvidence/aggregationStats")
+    @Path("/variantEvidence/aggregate")
     @ApiOperation(value = "Calculate and fetch clinical variant evidence aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -1415,7 +1415,7 @@ public class EnterpriseCvdbWebService extends ClinicalWebService {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/variant/{variantIds}/stats")
+    @Path("/clinicalVariant/{variantIds}/stats")
     @ApiOperation(value = CLINICAL_VARIANT_SUMMARY_DESCRIPTION, response = ClinicalVariantSummaryStats.class)
     public Response getClinicalVariantSummaryStats(
             @ApiParam(value = "Comma separated list of variant IDs") @PathParam(value = "variantIds") String variantIds,

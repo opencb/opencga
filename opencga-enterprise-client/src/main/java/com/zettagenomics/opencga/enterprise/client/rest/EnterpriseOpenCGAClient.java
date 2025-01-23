@@ -109,8 +109,8 @@ public class EnterpriseOpenCGAClient extends OpenCGAClient {
         return this.getClient(MetaClient.class, () -> new MetaClient(this.token, this.clientConfiguration));
     }
 
-    public CvaClient getEnterpriseCvaClient() {
-        return getClient(CvaClient.class, () -> new CvaClient(token, clientConfiguration));
+    public CVDBClient getEnterpriseCvdbAnalysisClient() {
+        return getClient(CVDBClient.class, () -> new CVDBClient(token, clientConfiguration));
     }
 
 }

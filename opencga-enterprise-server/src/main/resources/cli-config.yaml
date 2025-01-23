@@ -206,8 +206,8 @@ apiConfig:
     - name: cvdb
       commandName: cvdb
       ignore: False
-      key: Cvdb
-#      analysis: True
+      key: CVDB
+      analysis: True
     - name: ga4gh
       ignore: True
       key: GA4GH

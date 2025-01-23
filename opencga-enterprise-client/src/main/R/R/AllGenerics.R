@@ -75,8 +75,13 @@ setGeneric("metaClient", function(OpencgaR, endpointName, params=NULL, ...)
 
 # ##############################################################################
 ## ClinicalClient
-setGeneric("clinicalClient", function(OpencgaR, annotationSet, clinicalAnalyses, clinicalAnalysis, interpretation, interpretations, members, variantIds, endpointName, params=NULL, ...)
+setGeneric("clinicalClient", function(OpencgaR, annotationSet, clinicalAnalyses, clinicalAnalysis, interpretation, interpretations, members, endpointName, params=NULL, ...)
     standardGeneric("clinicalClient"))
+
+# ##############################################################################
+## CVDBClient
+setGeneric("cvdbClient", function(OpencgaR, variantIds, endpointName, params=NULL, ...)
+    standardGeneric("cvdbClient"))
 
 # ##############################################################################
 ## AdminClient
