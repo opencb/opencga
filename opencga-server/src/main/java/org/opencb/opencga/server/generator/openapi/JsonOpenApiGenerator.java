@@ -4,6 +4,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
+import org.opencb.opencga.server.generator.models.RestParameter;
 import org.opencb.opencga.server.generator.openapi.models.*;
 import org.opencb.opencga.server.generator.openapi.common.SwaggerDefinitionGenerator;
 
@@ -150,8 +151,7 @@ public class JsonOpenApiGenerator {
             PathParam pathParam = methodParam.getAnnotation(PathParam.class);
             if (pathParam != null) {
                 parameter.setName(pathParam.value());
-                parameter.setIn("path");
-                parameter.setDescription(pathParam.value());
+                 parameter.setDescription(pathParam.value());
                 parameter.setRequired(true);
                 parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
             }
@@ -160,8 +160,7 @@ public class JsonOpenApiGenerator {
             QueryParam queryParam = methodParam.getAnnotation(QueryParam.class);
             if (queryParam != null) {
                 parameter.setName(queryParam.value());
-                parameter.setIn("query");
-                parameter.setDescription(queryParam.value());
+                 parameter.setDescription(queryParam.value());
                 parameter.setRequired(apiParam.required());
                 parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
             }
@@ -169,19 +168,29 @@ public class JsonOpenApiGenerator {
             FormDataParam formDataParam = methodParam.getAnnotation(FormDataParam.class);
             if (formDataParam != null) {
                 parameter.setName(formDataParam.value());
-                parameter.setIn("query");
                 parameter.setDescription(formDataParam.value());
                 parameter.setRequired(apiParam.required());
                 parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
 
             }
-
+            parameter.setIn(getIn(methodParam));
             parameter.setDefaultValue(apiParam.defaultValue());
             parameter.setDescription(StringUtils.isEmpty(parameter.getDescription())?apiParam.value():parameter.getDescription());
             parameters.add(parameter);
         }
 
         return parameters;
+    }
+
+    private String getIn(java.lang.reflect.Parameter methodParameter) {
+        if (methodParameter.getAnnotation(PathParam.class) != null) {
+            return "path";
+        } else if (methodParameter.getAnnotation(QueryParam.class) != null
+                || methodParameter.getAnnotation(FormDataParam.class) != null) {
+            return "query";
+        } else {
+            return "body";
+        }
     }
 
     /**
