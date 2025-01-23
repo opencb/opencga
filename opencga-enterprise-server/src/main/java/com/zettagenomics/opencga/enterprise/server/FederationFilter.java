@@ -67,7 +67,13 @@ public class FederationFilter implements Filter {
         if (StringUtils.isEmpty(token)) {
             return false;
         }
-        JwtPayload jwtPayload = new JwtPayload(token);
+        JwtPayload jwtPayload;
+        try {
+            // This may fail if the "token" doesn't have a token format
+            jwtPayload = new JwtPayload(token);
+        } catch (Exception e) {
+            return false;
+        }
         if (isRequestingFederatedData(request, jwtPayload)) {
             return true;
         }
