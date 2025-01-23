@@ -19,11 +19,11 @@
 #'
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
-#' | connectClient | /{apiVersion}/federations/client/connect | body |
+#' | connectClient | /{apiVersion}/federations/client/connect | body[*] |
 #' | deleteClient | /{apiVersion}/federations/client/{id}/delete | id[*] |
 #' | synchronizeClient | /{apiVersion}/federations/client/{id}/synchronize | id[*] |
 #' | updateClient | /{apiVersion}/federations/client/{id}/update | id[*], body[*] |
-#' | createServer | /{apiVersion}/federations/server/create | body |
+#' | createServer | /{apiVersion}/federations/server/create | body[*] |
 #' | deleteServer | /{apiVersion}/federations/server/{id}/delete | id[*] |
 #' | resetServer | /{apiVersion}/federations/server/{id}/reset | id[*] |
 #' | updateServer | /{apiVersion}/federations/server/{id}/update | id[*], body[*] |

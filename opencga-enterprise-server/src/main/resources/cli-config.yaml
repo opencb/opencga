@@ -44,12 +44,8 @@ apiConfig:
     - name: name
       shortcut: n
   categoryConfigList:
-#    - name: federations
-#      key: Federation
-#      ignore: True
-#      commands:
-#        - name: redirect
-#          ignore: True
+    - name: federations
+      key: Federation
     - name: organizations
       ignore: False
       key: Organization

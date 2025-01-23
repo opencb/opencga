@@ -25,6 +25,7 @@ class Federation(_ParentRestClient):
         PATH: /{apiVersion}/federations/client/connect
 
         :param dict data: JSON containing the Federation server configuration.
+            (REQUIRED)
         """
 
         return self._post(category='federations', resource='connect', subcategory='client', data=data, **options)
@@ -67,6 +68,7 @@ class Federation(_ParentRestClient):
         PATH: /{apiVersion}/federations/server/create
 
         :param dict data: JSON containing the new Federation object.
+            (REQUIRED)
         """
 
         return self._post(category='federations', resource='create', subcategory='server', data=data, **options)

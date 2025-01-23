@@ -185,6 +185,9 @@ public class EnterpriseCommandProcessor extends CommandProcessor{
     private EnterpriseOpencgaCommandExecutor getOpencgaCommandExecutor(EnterpriseCliOptionsParser cliOptionsParser, String parsedCommand) throws CatalogAuthenticationException {
         EnterpriseOpencgaCommandExecutor commandExecutor = null;
         switch (parsedCommand) {
+            case "federations":
+                commandExecutor = new FederationsCommandExecutor(cliOptionsParser.getFederationsCommandOptions());
+                break;
             case "organizations":
                 commandExecutor = new OrganizationsCommandExecutor(cliOptionsParser.getOrganizationsCommandOptions());
                 break;

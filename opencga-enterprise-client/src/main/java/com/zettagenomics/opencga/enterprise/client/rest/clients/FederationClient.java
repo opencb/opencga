@@ -51,12 +51,11 @@ public class FederationClient extends ParentClient {
     /**
      * Connect to a shared XetaBase instance.
      * @param data JSON containing the Federation server configuration.
-     * @param params Map containing any of the following optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> connectClient(FederationClientParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
+    public RestResponse<ObjectMap> connectClient(FederationClientParams data) throws ClientException {
+        ObjectMap params = new ObjectMap();
         params.put("body", data);
         return execute("federations", null, "client", null, "connect", params, POST, ObjectMap.class);
     }
@@ -99,12 +98,11 @@ public class FederationClient extends ParentClient {
     /**
      * Share a resource with another XetaBase instance.
      * @param data JSON containing the new Federation object.
-     * @param params Map containing any of the following optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> createServer(FederationServerCreateParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
+    public RestResponse<ObjectMap> createServer(FederationServerCreateParams data) throws ClientException {
+        ObjectMap params = new ObjectMap();
         params.put("body", data);
         return execute("federations", null, "server", null, "create", params, POST, ObjectMap.class);
     }

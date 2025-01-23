@@ -31,7 +31,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     @Path("/server/create")
     @ApiOperation(value = "Share a resource with another XetaBase instance.")
     public Response create(
-            @ApiParam(value = "JSON containing the new Federation object") FederationServerCreateParams createParams) {
+            @ApiParam(value = "JSON containing the new Federation object", required = true) FederationServerCreateParams createParams) {
         return run(() -> {
             String url = httpServletRequest.getRequestURL().toString();
             url = url.substring(0, url.indexOf("/webservices"));
@@ -43,7 +43,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     @Path("/server/{id}/reset")
     @ApiOperation(value = "Reset the credentials of a federation server.")
     public Response reset(
-            @ApiParam(value = "Federation server id to reset") @PathParam("id") String federationServerId) {
+            @ApiParam(value = "Federation server id to reset", required = true) @PathParam("id") String federationServerId) {
         return run(() -> {
             String url = httpServletRequest.getRequestURL().toString();
             url = url.substring(0, url.indexOf("/webservices"));
@@ -65,7 +65,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     @Path("/server/{id}/delete")
     @ApiOperation(value = "Delete a federation server.")
     public Response deleteServer(
-            @ApiParam(value = "Federation server id") @PathParam("id") String id
+            @ApiParam(value = "Federation server id", required = true) @PathParam("id") String id
     ) {
         return null;
 //        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().resetSecretKey(token));
@@ -75,7 +75,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     @Path("/client/connect")
     @ApiOperation(value = "Connect to a shared XetaBase instance.")
     public Response connect(
-            @ApiParam(value = "JSON containing the Federation server configuration") FederationClientParams createParams) {
+            @ApiParam(value = "JSON containing the Federation server configuration", required = true) FederationClientParams createParams) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().connect(createParams, token));
     }
 
@@ -83,7 +83,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     @Path("/client/{id}/synchronize")
     @ApiOperation(value = "Synchronize data from a known Federation server")
     public Response synchronize(
-            @ApiParam(value = "Federation client id to be synchronized") @PathParam("id") String federationClientId) {
+            @ApiParam(value = "Federation client id to be synchronized", required = true) @PathParam("id") String federationClientId) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
     }
 
@@ -101,7 +101,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     @Path("/client/{id}/delete")
     @ApiOperation(value = "Delete a federation client.")
     public Response deleteClient(
-            @ApiParam(value = "Federation client id") @PathParam("id") String id
+            @ApiParam(value = "Federation client id", required = true) @PathParam("id") String id
     ) {
         return null;
 //        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().resetSecretKey(token));

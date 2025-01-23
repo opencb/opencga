@@ -35,7 +35,7 @@ export default class Federation extends OpenCGAParentClass {
     }
 
     /** Connect to a shared XetaBase instance.
-    * @param {Object} [data] - JSON containing the Federation server configuration.
+    * @param {Object} data - JSON containing the Federation server configuration.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     connectClient(data) {
@@ -68,7 +68,7 @@ export default class Federation extends OpenCGAParentClass {
     }
 
     /** Share a resource with another XetaBase instance.
-    * @param {Object} [data] - JSON containing the new Federation object.
+    * @param {Object} data - JSON containing the new Federation object.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     createServer(data) {

@@ -33,6 +33,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
     private final OrganizationsCommandOptions organizationsCommandOptions;
     private final StudiesCommandOptions studiesCommandOptions;
     private final FilesCommandOptions filesCommandOptions;
+    private final FederationsCommandOptions federationsCommandOptions;
     private final OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
     private final CohortsCommandOptions cohortsCommandOptions;
 
@@ -347,6 +348,18 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         filesSubCommands.addCommand("list", filesCommandOptions.listCommandOptions);
         filesSubCommands.addCommand("tree", filesCommandOptions.treeCommandOptions);
 
+        federationsCommandOptions = new FederationsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("federations", federationsCommandOptions);
+        JCommander federationsSubCommands = jCommander.getCommands().get("federations");
+        federationsSubCommands.addCommand("client-connect", federationsCommandOptions.connectClientCommandOptions);
+        federationsSubCommands.addCommand("client-delete", federationsCommandOptions.deleteClientCommandOptions);
+        federationsSubCommands.addCommand("client-synchronize", federationsCommandOptions.synchronizeClientCommandOptions);
+        federationsSubCommands.addCommand("client-update", federationsCommandOptions.updateClientCommandOptions);
+        federationsSubCommands.addCommand("server-create", federationsCommandOptions.createServerCommandOptions);
+        federationsSubCommands.addCommand("server-delete", federationsCommandOptions.deleteServerCommandOptions);
+        federationsSubCommands.addCommand("server-reset", federationsCommandOptions.resetServerCommandOptions);
+        federationsSubCommands.addCommand("server-update", federationsCommandOptions.updateServerCommandOptions);
+
         operationsVariantStorageCommandOptions = new OperationsVariantStorageCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("operations", operationsVariantStorageCommandOptions);
         JCommander operationsVariantStorageSubCommands = jCommander.getCommands().get("operations");
@@ -468,6 +481,11 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
     
     public FilesCommandOptions getFilesCommandOptions() {
         return filesCommandOptions;
+    }
+    
+    
+    public FederationsCommandOptions getFederationsCommandOptions() {
+        return federationsCommandOptions;
     }
     
     
