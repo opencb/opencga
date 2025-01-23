@@ -10,6 +10,11 @@ on:
         description: "The tag for the new docker."
         type: string
         required: true
+      hadoop_flavour:
+        description: "The hadoop flavour to use."
+        type: string
+        required: false
+        default: "emr6.1"
 
 jobs:
   build:
@@ -35,7 +40,7 @@ jobs:
             ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
           fi
       - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,${{ inputs.hadoop_flavour }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
       - uses: actions/upload-artifact@v4
         with:
           name: build-folder
