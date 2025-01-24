@@ -33,8 +33,8 @@ import java.util.regex.Pattern;
 
 public class FederationUtils {
 
-    private static final Pattern STUDY_PATTERN = Pattern.compile(".*/studies/([^/]+)/info$");
-    private static final Pattern PROJECT_PATTERN = Pattern.compile(".*/projects/([^/]+)/info$");
+    private static final Pattern STUDY_PATTERN = Pattern.compile(".*/studies/([^/]+)/.+$");
+    private static final Pattern PROJECT_PATTERN = Pattern.compile(".*/projects/([^/]+)/.+$");
 
     public FederationUtils() {
     }

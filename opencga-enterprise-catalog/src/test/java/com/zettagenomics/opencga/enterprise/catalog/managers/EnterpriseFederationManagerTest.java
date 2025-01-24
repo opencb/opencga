@@ -11,6 +11,7 @@ import org.opencb.opencga.core.client.GenericClient;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
@@ -22,8 +23,11 @@ import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
 
+import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
@@ -76,6 +80,10 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         assertEquals(1, studyOpenCGAResult.getNumResults());
         assertEquals("org2@project:study", studyOpenCGAResult.first().getFqn());
         assertFalse(studyOpenCGAResult.first().getVariableSets().isEmpty());
+
+        // Call to acls
+        RestResponse execute = genericClient.execute("studies", "org2@project:study", null, null, "acl", new HashMap(), "GET", AclEntryList.class);
+        System.out.println(execute);
     }
 
     @Test

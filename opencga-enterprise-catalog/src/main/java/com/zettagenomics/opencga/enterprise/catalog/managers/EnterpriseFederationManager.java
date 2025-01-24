@@ -134,7 +134,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             try {
                 MailUtils mailUtils = MailUtils.configure(catalogManager.getConfiguration().getEmail());
                 mailUtils.sendMail(federationServer.getEmail(), "XetaBase: Federation client credentials",
-                        getCredentialsMailContent(federationClient));
+                        getCredentialsMailContent(federationServer.getEmail(), federationClient));
             } catch (MailException e) {
                 eventList.add(new Event(Event.Type.WARNING, "Federation was successfully created. However, we could not send email with "
                         + "credentials to the federation client. Please, check with your administrator your email configuration in "
