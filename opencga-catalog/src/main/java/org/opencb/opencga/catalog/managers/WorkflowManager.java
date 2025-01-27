@@ -188,7 +188,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         if (runParams.getVersion() != null) {
             query.append(VERSION.key(), runParams.getVersion());
         }
-        Workflow workflow = internalGet(organizationId, study.getUid(), runParams.getId(), query, INCLUDE_WORKFLOW_IDS, userId).first();
+        Workflow workflow = internalGet(organizationId, study.getUid(), runParams.getId(), query, QueryOptions.empty(), userId).first();
 
         ToolInfo toolInfo = new ToolInfo()
                 .setId(workflow.getId())

@@ -74,8 +74,8 @@ analysis:
     # Minimum requirements to run a workflow
     minRequirements:
       cpu: 2
-      memory: 8 # In GB
-      disk: 100 # In GB
+      memory: 8GB
+      disk: 100GB
     # List of supported workflow managers and the version to be launched by default
     managers:
       - id: "NEXTFLOW"
