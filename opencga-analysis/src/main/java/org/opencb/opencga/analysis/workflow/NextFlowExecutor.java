@@ -191,10 +191,6 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
             dockerInputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
         }
 
-        // Mount ephimeral directory
-        dockerInputBindings.add(new AbstractMap.SimpleEntry<>(ephimeralDir.toAbsolutePath().toString(),
-                ephimeralDir.toAbsolutePath().toString()));
-
         // Write nextflow.config file
         URL nextflowConfig = getClass().getResource("/nextflow.config");
         Path nextflowConfigPath;
@@ -206,8 +202,11 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
             throw new ToolException("Can't fetch nextflow.config file");
         }
 
-        // Build output binding
-        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDirPath, outDirPath);
+        // Build output binding with output and ephimeral out directories
+        List<AbstractMap.SimpleEntry<String, String>> outputBindings = new ArrayList<>(2);
+        outputBindings.add(new AbstractMap.SimpleEntry<>(outDirPath, outDirPath));
+        outputBindings.add(new AbstractMap.SimpleEntry<>(ephimeralDir.toAbsolutePath().toString(),
+                ephimeralDir.toAbsolutePath().toString()));
 
         String dockerImage = "opencb/opencga-workflow:TASK-6445";
         StringBuilder stringBuilder = new StringBuilder()
@@ -247,7 +246,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
         // Execute docker image
         StopWatch stopWatch = StopWatch.createStarted();
-        runDocker(dockerImage, outputBinding, stringBuilder.toString(), dockerParams);
+        runDocker(dockerImage, outputBindings, stringBuilder.toString(), dockerParams);
         logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
     }
 

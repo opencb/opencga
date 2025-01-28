@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.tools;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
@@ -135,7 +136,7 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
     }
 
     protected String runDocker(String image, String cli) throws IOException {
-        return runDocker(image, null, cli, null);
+        return runDocker(image, Collections.emptyList(), cli, null);
     }
 
     protected String runDocker(String image, AbstractMap.SimpleEntry<String, String> userOutputBinding, String cmdParams,
@@ -155,6 +156,25 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
         }
 
         return DockerUtils.run(image, dockerInputBindings, outputBinding, cmdParams, dockerParams);
+    }
+
+    protected String runDocker(String image, List<AbstractMap.SimpleEntry<String, String>> userOutputBindings, String cmdParams,
+                               Map<String, String> userDockerParams) throws IOException {
+        List<AbstractMap.SimpleEntry<String, String>> outputBindings = CollectionUtils.isNotEmpty(userOutputBindings)
+                ? userOutputBindings
+                : Collections.singletonList(new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), getOutDir().toAbsolutePath().toString()));
+
+        Map<String, String> dockerParams = new HashMap<>();
+        // Establish working directory
+        dockerParams.put("-w", getOutDir().toAbsolutePath().toString());
+        dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
+        dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
+        dockerParams.put("--network", "host");
+        if (userDockerParams != null) {
+            dockerParams.putAll(userDockerParams);
+        }
+
+        return DockerUtils.run(image, dockerInputBindings, outputBindings, cmdParams, dockerParams);
     }
 
 }
