@@ -12,6 +12,7 @@ import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -21,6 +22,7 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
     protected List<AbstractMap.SimpleEntry<String, String>> dockerInputBindings;
     // Directory where temporal input files will be stored
     protected Path temporalInputDir;
+    protected Path ephimeralDir;
 
     protected InputFileUtils inputFileUtils;
 
@@ -30,6 +32,7 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
         this.dockerInputBindings = new LinkedList<>();
         this.temporalInputDir = Files.createDirectory(getOutDir().resolve(".opencga_input"));
         this.inputFileUtils = new InputFileUtils(catalogManager);
+        this.ephimeralDir = Paths.get("/usr/share/pod");
     }
 
     @Override

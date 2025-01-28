@@ -191,6 +191,10 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
             dockerInputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
         }
 
+        // Mount ephimeral directory
+        dockerInputBindings.add(new AbstractMap.SimpleEntry<>(ephimeralDir.toAbsolutePath().toString(),
+                ephimeralDir.toAbsolutePath().toString()));
+
         // Write nextflow.config file
         URL nextflowConfig = getClass().getResource("/nextflow.config");
         Path nextflowConfigPath;
@@ -234,7 +238,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         // Set HOME environment variable to the temporal input directory. This is because nextflow creates a hidden folder there and,
         // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
         // TODO: Temporal solution
-        dockerParams.put("-e", "HOME=" + temporalInputDir + " -e OPENCGA_TOKEN=" + getExpiringToken());
+        dockerParams.put("-e", "HOME=" + ephimeralDir + " -e OPENCGA_TOKEN=" + getExpiringToken());
 
 //        dockerParams.put("-e", "HOME=" + temporalInputDir);
 //        dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
