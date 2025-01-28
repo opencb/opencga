@@ -35,7 +35,6 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -197,7 +196,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         Path nextflowConfigPath;
         if (nextflowConfig != null) {
             nextflowConfigPath = temporalInputDir.resolve("nextflow.config");
-            writeNextflowConfigFile(Paths.get(nextflowConfig.toURI()), nextflowConfigPath, outDirPath);
+            writeNextflowConfigFile(nextflowConfig, nextflowConfigPath, outDirPath);
             dockerInputBindings.add(new AbstractMap.SimpleEntry<>(nextflowConfigPath.toString(), nextflowConfigPath.toString()));
         } else {
             throw new RuntimeException("Can't fetch nextflow.config file");
@@ -257,8 +256,8 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         deleteTemporalFiles();
     }
 
-    private void writeNextflowConfigFile(Path inputFile, Path outputFile, String outdirPath) {
-        try (BufferedReader reader = Files.newBufferedReader(inputFile);
+    private void writeNextflowConfigFile(URL inputUrl, Path outputFile, String outdirPath) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputUrl.openStream()));
              BufferedWriter writer = Files.newBufferedWriter(outputFile)) {
 
             String line;
