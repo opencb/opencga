@@ -199,7 +199,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
             writeNextflowConfigFile(nextflowConfig, nextflowConfigPath, outDirPath);
             dockerInputBindings.add(new AbstractMap.SimpleEntry<>(nextflowConfigPath.toString(), nextflowConfigPath.toString()));
         } else {
-            throw new RuntimeException("Can't fetch nextflow.config file");
+            throw new ToolException("Can't fetch nextflow.config file");
         }
 
         // Build output binding
@@ -233,8 +233,11 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         Map<String, String> dockerParams = new HashMap<>();
         // Set HOME environment variable to the temporal input directory. This is because nextflow creates a hidden folder there and,
         // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
-        dockerParams.put("-e", "HOME=" + temporalInputDir);
-        dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
+        // TODO: Temporal solution
+        dockerParams.put("-e", "HOME=" + temporalInputDir + " -e OPENCGA_TOKEN=" + getExpiringToken());
+
+//        dockerParams.put("-e", "HOME=" + temporalInputDir);
+//        dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
         // Set user uid and guid to 1001
         dockerParams.put("user", "1001:1001");
 
@@ -256,7 +259,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         deleteTemporalFiles();
     }
 
-    private void writeNextflowConfigFile(URL inputUrl, Path outputFile, String outdirPath) {
+    private void writeNextflowConfigFile(URL inputUrl, Path outputFile, String outdirPath) throws ToolException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputUrl.openStream()));
              BufferedWriter writer = Files.newBufferedWriter(outputFile)) {
 
@@ -268,7 +271,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
                 writer.newLine();
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new ToolException("Could not replace 'nextflow.config' file contents", e);
         }
     }
 
