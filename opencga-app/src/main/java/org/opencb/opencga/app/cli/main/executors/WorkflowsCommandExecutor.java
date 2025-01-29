@@ -357,6 +357,9 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "repository.version", commandOptions.repositoryVersion, true);
             putNestedIfNotEmpty(beanParams, "repository.author", commandOptions.repositoryAuthor, true);
             putNestedIfNotEmpty(beanParams, "repository.description", commandOptions.repositoryDescription, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
             putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
