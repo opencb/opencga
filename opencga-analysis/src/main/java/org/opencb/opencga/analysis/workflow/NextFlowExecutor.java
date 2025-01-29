@@ -238,6 +238,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
         // TODO: Temporal solution
         dockerParams.put("-e", "HOME=" + ephimeralDir + " -e OPENCGA_TOKEN=" + getExpiringToken());
+        dockerParams.put("-w", ephimeralDir.toAbsolutePath().toString());
 
 //        dockerParams.put("-e", "HOME=" + temporalInputDir);
 //        dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
