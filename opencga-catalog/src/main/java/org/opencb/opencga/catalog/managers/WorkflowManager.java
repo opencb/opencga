@@ -368,6 +368,9 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
     private void fillWithWorkflowManifest(Workflow workflow, String rawline) {
         String[] split = rawline.split("= ");
+        if (split.length != 2) {
+            return;
+        }
         String key = split[0].trim();
 //        String key = split[0].replaceAll(" ", "");
         String value = split[1].replace("\"", "").replace("'", "").trim();
