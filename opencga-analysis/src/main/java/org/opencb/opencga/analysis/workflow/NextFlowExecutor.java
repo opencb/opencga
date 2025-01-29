@@ -53,6 +53,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     private String cliParams;
 
     private String outDirPath;
+    private String ephimeralDirPath;
 
     private Thread thread;
     private final int monitorThreadPeriod = 5000;
@@ -87,6 +88,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         }
 
         outDirPath = getOutDir().toAbsolutePath().toString();
+        ephimeralDirPath = ephimeralDir.toAbsolutePath().toString();
 
         Set<String> mandatoryParams = new HashSet<>();
         Map<String, WorkflowVariable> variableMap = new HashMap<>();
@@ -205,8 +207,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         // Build output binding with output and ephimeral out directories
         List<AbstractMap.SimpleEntry<String, String>> outputBindings = new ArrayList<>(2);
         outputBindings.add(new AbstractMap.SimpleEntry<>(outDirPath, outDirPath));
-        outputBindings.add(new AbstractMap.SimpleEntry<>(ephimeralDir.toAbsolutePath().toString(),
-                ephimeralDir.toAbsolutePath().toString()));
+        outputBindings.add(new AbstractMap.SimpleEntry<>(ephimeralDirPath, ephimeralDirPath));
 
         String dockerImage = "opencb/opencga-workflow:TASK-6445";
         StringBuilder stringBuilder = new StringBuilder()
@@ -236,12 +237,10 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         Map<String, String> dockerParams = new HashMap<>();
         // Set HOME environment variable to the temporal input directory. This is because nextflow creates a hidden folder there and,
         // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
-        // TODO: Temporal solution
-        dockerParams.put("-e", "HOME=" + ephimeralDir + " -e OPENCGA_TOKEN=" + getExpiringToken());
-        dockerParams.put("-w", ephimeralDir.toAbsolutePath().toString());
+        // TODO: Temporal solution. We should be able to add multiple "-e" parameters
+        dockerParams.put("-e", "HOME=" + ephimeralDirPath + " -e OPENCGA_TOKEN=" + getExpiringToken());
+        dockerParams.put("-w", ephimeralDirPath);
 
-//        dockerParams.put("-e", "HOME=" + temporalInputDir);
-//        dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
         // Set user uid and guid to 1001
         dockerParams.put("user", "1001:1001");
 
@@ -260,7 +259,6 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     protected void close() {
         super.close();
         endTraceFileMonitor();
-        deleteTemporalFiles();
     }
 
     private void writeNextflowConfigFile(URL inputUrl, Path outputFile, String outdirPath) throws ToolException {
@@ -276,24 +274,6 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
             }
         } catch (IOException e) {
             throw new ToolException("Could not replace 'nextflow.config' file contents", e);
-        }
-    }
-
-    private void deleteTemporalFiles() {
-        // Delete temporal files and folders created by nextflow
-        try (Stream<Path> paths = Files.walk(getOutDir().resolve(".nextflow"))) {
-            paths.sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(java.io.File::delete);
-        } catch (IOException e) {
-            logger.warn("Could not delete temporal nextflow directory: " + getOutDir().resolve(".nextflow"), e);
-        }
-        try (Stream<Path> paths = Files.walk(getOutDir().resolve("work"))) {
-            paths.sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(java.io.File::delete);
-        } catch (IOException e) {
-            logger.warn("Could not delete temporal work directory: " + getOutDir().resolve("work"), e);
         }
     }
 
