@@ -2392,7 +2392,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testFacet() throws CatalogException {
         OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
         System.out.println("results.getResults() = " + results.getResults());
-        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "format;bioformat", normalToken1);
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "format", normalToken1);
 
         long totalCount = 0;
         Map<String, Integer> formatMap = new HashMap<>();
@@ -2419,6 +2419,7 @@ public class FileManagerTest extends AbstractManagerTest {
             }
         }
     }
+
 
     @Test
     public void testFacetDotNotation() throws CatalogException {
@@ -2450,6 +2451,79 @@ public class FileManagerTest extends AbstractManagerTest {
             Assert.assertEquals(facetName, result.getName());
             for (FacetField.Bucket bucket : result.getBuckets()) {
                 Assert.assertEquals(1L * internalStatusIdMap.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    @Test
+    public void testCreationDate() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+
+        Map<String, Integer> yearCounter = new HashMap<>();
+        Map<String, Integer> monthCounter = new HashMap<>();
+        Map<String, Integer> dayCounter = new HashMap<>();
+        for (File file : results.getResults()) {
+            int year = Integer.parseInt(file.getCreationDate().substring(0, 4));
+            if (!yearCounter.containsKey("" + year)) {
+                yearCounter.put("" + year, 0);
+            }
+            yearCounter.put("" + year, 1 + yearCounter.get("" + year));
+
+            int month = Integer.parseInt(file.getCreationDate().substring(4, 6));
+            if (!monthCounter.containsKey("" + month)) {
+                monthCounter.put("" + month, 0);
+            }
+            monthCounter.put("" + month, 1 + monthCounter.get("" + month));
+
+            int day = Integer.parseInt(file.getCreationDate().substring(6, 8));
+            if (!dayCounter.containsKey("" + day)) {
+                dayCounter.put("" + day, 0);
+            }
+            dayCounter.put("" + day, 1 + dayCounter.get("" + day));
+        }
+
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "year(creationDate)", normalToken1);
+        System.out.println("facets.first().toString() = " + facets.first().toString());
+        System.out.println("yearCounter.toString() = " + yearCounter.toString());
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(yearCounter.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum(), result.getCount().longValue());
+            Assert.assertEquals(yearCounter.size(), result.getBuckets().size());
+            Assert.assertEquals("year", result.getAggregationName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * yearCounter.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+        
+        facets = fileManager.facet(studyFqn, new Query(), "month(creationDate)", normalToken1);
+        System.out.println("facets.first().toString() = " + facets.first().toString());
+        System.out.println("monthCounter.toString() = " + monthCounter.toString());
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(monthCounter.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum(), result.getCount().longValue());
+            Assert.assertEquals(monthCounter.size(), result.getBuckets().size());
+            Assert.assertEquals("month", result.getAggregationName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * monthCounter.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+
+        facets = fileManager.facet(studyFqn, new Query(), "day(creationDate)", normalToken1);
+        System.out.println("facets.first().toString() = " + facets.first().toString());
+        System.out.println("dayCounter.toString() = " + dayCounter.toString());
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(dayCounter.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum(), result.getCount().longValue());
+            Assert.assertEquals(dayCounter.size(), result.getBuckets().size());
+            Assert.assertEquals("day", result.getAggregationName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * dayCounter.get(bucket.getValue()), bucket.getCount());
             }
         }
     }
