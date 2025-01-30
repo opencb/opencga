@@ -51,6 +51,7 @@ import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
@@ -70,10 +71,7 @@ import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -85,6 +83,7 @@ import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
@@ -94,6 +93,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclParams;
 import org.opencb.opencga.core.models.file.FilePermissions;
@@ -557,6 +557,13 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             return 0;
         }
 
+        try {
+            checkIndexedSamplesQuota(job);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return abortJob(job, e);
+        }
+
         Tool tool;
         try {
             tool = new ToolFactory().getTool(job.getTool().getId(), packages);
@@ -665,6 +672,54 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         notifyStatusChange(job);
 
         return 1;
+    }
+
+    private void checkIndexedSamplesQuota(Job job) throws CatalogException {
+        if (!job.getTool().getId().equals(VariantIndexOperationTool.ID)) {
+            logger.debug("Check variant index samples quota. Skipping '{}' because it is not a variant index job.", job.getId());
+            return;
+        }
+        if (catalogManager.getConfiguration().getQuota().getMaxNumVariantIndexSamples() <= 0) {
+            logger.debug("Check variant index samples quota. Skipping '{}' because the quota is set to 0.", job.getId());
+            return;
+        }
+
+        List<String> fileUriList = new ArrayList<>(job.getInput().size());
+        for (File file : job.getInput()) {
+            fileUriList.add(file.getUri().getPath());
+        }
+        List<File> inputFiles = VariantFileIndexerOperationManager.getInputFiles(catalogManager, job.getStudy().getId(), fileUriList,
+                token);
+        // Fetch the samples that are going to be indexed
+        Set<String> sampleIds = new HashSet<>();
+        inputFiles.forEach((f) -> sampleIds.addAll(f.getSampleIds()));
+
+        // Obtain the project in order to get all the studies belonging to the project
+        FqnUtils.FQN fqn = FqnUtils.parse(job.getStudy().getId());
+        String projectFqn = fqn.getProjectFqn();
+        List<Study> studies = catalogManager.getStudyManager().search(projectFqn, new Query(), StudyManager.INCLUDE_STUDY_IDS, token)
+                .getResults();
+        List<Long> studyList = studies.stream().map(Study::getUid).collect(Collectors.toList());
+
+        // Get all the sampleIds that are already indexed in the project
+        Query sampleQuery = new Query()
+                .append(SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key(), InternalStatus.READY)
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyList);
+        OpenCGAResult<?> distinct = catalogManager.getSampleManager().distinct(SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
+        Set<String> indexedSamples = new HashSet<>();
+        indexedSamples.addAll((Collection<? extends String>) distinct.getResults());
+
+        if (indexedSamples.containsAll(sampleIds)) {
+            logger.info("All samples are already indexed. Skipping quota check.");
+            return;
+        }
+
+        long nonIncludedSamples = sampleIds.stream().filter(sampleId -> !indexedSamples.contains(sampleId)).count();
+
+        if (catalogManager.getConfiguration().getQuota().getMaxNumVariantIndexSamples() < nonIncludedSamples + indexedSamples.size()) {
+            throw new CatalogException("Can't index more samples. The project '" + projectFqn + "' has reached the maximum quota of"
+                    + " indexed samples (" + catalogManager.getConfiguration().getQuota().getMaxNumVariantIndexSamples() + ").");
+        }
     }
 
     private boolean killSignalSent(Job job) {
@@ -932,14 +987,6 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
         if (!batchExecutor.canBeQueued()) {
             return false;
-        }
-
-        if (StringUtils.isNotEmpty(job.getScheduledStartTime())) {
-            Date date = TimeUtils.toDate(job.getScheduledStartTime());
-            if (date.after(new Date())) {
-                logger.debug("Job '{}' can't be queued yet. It is scheduled to start at '{}'.", job.getId(), job.getScheduledStartTime());
-                return false;
-            }
         }
 
         Integer maxJobs = catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().get(job.getTool().getId());
