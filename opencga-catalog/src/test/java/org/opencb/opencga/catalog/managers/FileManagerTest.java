@@ -2457,6 +2457,89 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testMultipleFacets() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        long totalCount = 0;
+
+        Map<String, Integer> formatMap = new HashMap<>();
+        Map<String, Integer> bioformatMap = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key;
+            if (result.getFormat() == null) {
+                key = "null";
+            } else {
+                key = result.getFormat().name();
+            }
+            if (!formatMap.containsKey(key)) {
+                formatMap.put(key, 0);
+            }
+            formatMap.put(key, 1 + formatMap.get(key));
+
+            if (result.getBioformat() == null) {
+                key = "null";
+            } else {
+                key = result.getBioformat().name();
+            }
+            if (!bioformatMap.containsKey(key)) {
+                bioformatMap.put(key, 0);
+            }
+            bioformatMap.put(key, 1 + bioformatMap.get(key));
+
+            totalCount++;
+        }
+
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "format;bioformat", normalToken1);
+        System.out.println("facets = " + facets);
+
+        Assert.assertEquals(2, facets.getNumResults());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount().longValue());
+            Map<String, Integer> map = null;
+            if (result.getName().equals("format")) {
+                map = formatMap;
+            } else if (result.getName().equals("bioformat")) {
+                map = bioformatMap;
+            } else {
+                fail();
+            }
+            Assert.assertEquals(map.size(), result.getBuckets().size());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * map.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    @Test
+    public void testCombineFacets() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        long totalCount = 0;
+
+        Map<String, Integer> map = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key = result.getFormat() + SEPARATOR + result.getBioformat();
+            if (!map.containsKey(key)) {
+                map.put(key, 0);
+            }
+            map.put(key, 1 + map.get(key));
+
+            totalCount++;
+        }
+
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "format,bioformat", normalToken1);
+        System.out.println("facets = " + facets);
+
+        Assert.assertEquals(1, facets.getNumResults());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount().longValue());
+            Assert.assertEquals(map.size(), result.getBuckets().size());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertTrue(map.containsKey(bucket.getValue()));
+                Assert.assertEquals(1L * map.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    @Test
     public void testCreationDate() throws CatalogException {
         OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
 
