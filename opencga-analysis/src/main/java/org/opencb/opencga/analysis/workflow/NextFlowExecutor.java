@@ -35,6 +35,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -88,7 +89,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         }
 
         outDirPath = getOutDir().toAbsolutePath().toString();
-        ephimeralDirPath = ephimeralDir.toAbsolutePath().toString();
+        ephimeralDirPath = getScratchDir().toAbsolutePath().toString();
 
         Set<String> mandatoryParams = new HashSet<>();
         Map<String, WorkflowVariable> variableMap = new HashMap<>();
@@ -243,6 +244,9 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
         // Set user uid and guid to 1001
         dockerParams.put("user", "1001:1001");
+
+        // Grant all permissions to the scratch dir to avoid permission issues from Nextflow binary
+        Files.setPosixFilePermissions(getScratchDir(), PosixFilePermissions.fromString("rwxrwxrwx"));
 
         // Execute docker image
         StopWatch stopWatch = StopWatch.createStarted();

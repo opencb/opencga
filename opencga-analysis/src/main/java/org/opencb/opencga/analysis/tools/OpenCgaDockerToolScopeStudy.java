@@ -13,9 +13,7 @@ import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Stream;
 
 public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy {
 
@@ -23,7 +21,6 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
     protected List<AbstractMap.SimpleEntry<String, String>> dockerInputBindings;
     // Directory where temporal input files will be stored
     protected Path temporalInputDir;
-    protected Path ephimeralDir;
 
     protected InputFileUtils inputFileUtils;
 
@@ -31,26 +28,13 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
     protected void check() throws Exception {
         super.check();
         this.dockerInputBindings = new LinkedList<>();
-        this.temporalInputDir = Files.createDirectory(getOutDir().resolve(".opencga_input"));
+        this.temporalInputDir = Files.createDirectory(getScratchDir().resolve(".opencga_input"));
         this.inputFileUtils = new InputFileUtils(catalogManager);
-        this.ephimeralDir = Paths.get("/usr/share/pod");
     }
 
     @Override
     protected void close() {
         super.close();
-        deleteTemporalFiles();
-    }
-
-    private void deleteTemporalFiles() {
-        // Delete input files and temporal directory
-        try (Stream<Path> paths = Files.walk(temporalInputDir)) {
-            paths.sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(java.io.File::delete);
-        } catch (IOException e) {
-            logger.warn("Could not delete temporal input directory: " + temporalInputDir, e);
-        }
     }
 
     /**
