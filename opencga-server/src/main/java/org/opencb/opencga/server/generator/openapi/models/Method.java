@@ -29,7 +29,7 @@ public class Method {
         responses = new HashMap<>();
     }
 
-    public Method(List<String> tags, String summary, String description, String operationId, List<String> consumes, List<String> produces, List<Parameter> parameters, Map<String, Map<String, Object>> responses, List<Map<String, List<String>>> security) {
+    public Method(List<String> tags, String summary, String description, String operationId, List<String> consumes, List<String> produces, List<Parameter> parameters, Map<String, Map<String, Object>> responses) {
         this.tags = tags;
         this.summary = summary;
         this.description = description;
@@ -38,7 +38,6 @@ public class Method {
         this.produces = produces;
         this.parameters = parameters;
         this.responses = responses;
-        this.security = security;
     }
 
     public List<String> getTags() {
