@@ -84,6 +84,17 @@ class User(_ParentRestClient):
 
         return self._get(category='users', resource='search', **options)
 
+    def sync(self, data=None, **options):
+        """
+        Synchronise a group of users from an authentication origin with a
+            group in a study from catalog.
+        PATH: /{apiVersion}/users/sync
+
+        :param dict data: JSON containing the parameters. (REQUIRED)
+        """
+
+        return self._post(category='users', resource='sync', data=data, **options)
+
     def info(self, users, **options):
         """
         Return the user information including its projects and studies.

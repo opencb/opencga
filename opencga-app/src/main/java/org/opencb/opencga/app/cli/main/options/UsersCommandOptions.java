@@ -38,6 +38,7 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
         public LoginCommandOptions loginCommandOptions;
         public PasswordCommandOptions passwordCommandOptions;
         public SearchCommandOptions searchCommandOptions;
+        public SyncCommandOptions syncCommandOptions;
         public InfoCommandOptions infoCommandOptions;
         public ConfigsCommandOptions configsCommandOptions;
         public UpdateConfigsCommandOptions updateConfigsCommandOptions;
@@ -54,6 +55,7 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
         this.loginCommandOptions = new LoginCommandOptions();
         this.passwordCommandOptions = new PasswordCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
+        this.syncCommandOptions = new SyncCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.configsCommandOptions = new ConfigsCommandOptions();
         this.updateConfigsCommandOptions = new UpdateConfigsCommandOptions();
@@ -167,6 +169,38 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
     
         @Parameter(names = {"--authentication-id"}, description = "Authentication origin ID", required = false, arity = 1)
         public String authenticationId; 
+    
+    }
+
+    @Parameters(commandNames = {"sync"}, commandDescription ="Synchronise a group of users from an authentication origin with a group in a study from catalog")
+    public class SyncCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--authentication-origin-id"}, description = "The body web service authenticationOriginId parameter", required = false, arity = 1)
+        public String authenticationOriginId;
+    
+        @Parameter(names = {"--from"}, description = "The body web service from parameter", required = false, arity = 1)
+        public String from;
+    
+        @Parameter(names = {"--to"}, description = "The body web service to parameter", required = false, arity = 1)
+        public String to;
+    
+        @Parameter(names = {"--study", "-s"}, description = "The body web service study parameter", required = false, arity = 1)
+        public String study;
+    
+        @Parameter(names = {"--sync-all"}, description = "The body web service syncAll parameter", required = false, help = true, arity = 0)
+        public boolean syncAll = false;
+    
+        @Parameter(names = {"--force"}, description = "The body web service force parameter", required = false, help = true, arity = 0)
+        public boolean force = false;
     
     }
 
