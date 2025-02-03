@@ -608,9 +608,7 @@ public class ParamConstants {
     public static final String INDEX_AUXILIAR_COLLECTION_DESCRIPTION = "Index auxiliar collection to improve performance assuming RGA is " +
             "completely indexed.";
     public static final String INDEX_AUXILIAR_COLLECTION = "auxiliarIndex";
-    public static final String ALIGNMENT_INDEX_DESCRIPTION = "Index alignment file";
     public static final String ALIGNMENT_QUERY_DESCRIPTION = "Search over indexed alignments";
-    public static final String ALIGNMENT_COVERAGE_DESCRIPTION = "Compute coverage for a given alignemnt file";
     public static final String ALIGNMENT_COVERAGE_QUERY_DESCRIPTION = "Query the coverage of an alignment file for regions or genes";
     public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs " +
             "germline)";

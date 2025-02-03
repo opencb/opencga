@@ -88,19 +88,6 @@ public class AlignmentStorageManager extends StorageManager {
         initStatsMap();
     }
 
-//    //-------------------------------------------------------------------------
-//    // INDEX
-//    //-------------------------------------------------------------------------
-//
-//    public void index(String study, String inputFile, String outdir, String token) throws ToolException {
-//        ToolRunner toolRunner = new ToolRunner("", catalogManager, storageEngineFactory);
-//
-//        AlignmentIndexParams params = new AlignmentIndexParams();
-//        params.setFileId(inputFile);
-//        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study), Paths.get(outdir),
-//                jobId, token);
-//    }
-
     //-------------------------------------------------------------------------
     // QUERY
     //-------------------------------------------------------------------------

@@ -92,6 +92,9 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
 
     OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex) throws CatalogException;
 
+    OpenCGAResult<?> distinct(List<String> field, Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
         UID("uid", LONG, ""),
@@ -125,6 +128,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         INTERNAL_RGA_STATUS("internal.rga.status", TEXT, ""),
         INTERNAL_VARIANT("internal.variant", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_INDEX("internal.variant.index", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_INDEX_STATUS_ID("internal.variant.index.status.id", STRING, ""),
         @Deprecated INTERNAL_VARIANT_GENOTYPE_INDEX("internal.variant.sampleGenotypeIndex", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX("internal.variant.secondarySampleIndex", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_ANNOTATION_INDEX("internal.variant.annotationIndex", TEXT_ARRAY, ""),

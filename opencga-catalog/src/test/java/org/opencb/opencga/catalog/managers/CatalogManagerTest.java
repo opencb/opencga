@@ -23,6 +23,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
@@ -1009,6 +1010,56 @@ public class CatalogManagerTest extends AbstractManagerTest {
             Assert.assertTrue(toolIdCounter.containsKey(bucket.getValue()));
             Assert.assertEquals(toolIdCounter.get(bucket.getValue()), bucket.getCount(), 0.001);
         }
+    }
+
+    public void testJobQuotaLimit() throws CatalogException {
+        // Submit a dummy job. This shouldn't raise any error
+        catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken);
+
+        OpenCGAResult<ExecutionTime> result = catalogManager.getJobManager().getExecutionTimeByMonth(organizationId, new Query(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals(0, result.first().getTime().getHours(), 0.0);
+        assertEquals(0, result.first().getTime().getMinutes(), 0.0);
+        assertEquals(0, result.first().getTime().getSeconds(), 0.0);
+
+        try (CatalogManager mockManager = mockCatalogManager()) {
+            // Mock check result
+            OpenCGAResult<ExecutionTime> results = new OpenCGAResult<>(0, Collections.singletonList(new ExecutionTime("1", "2024",
+                    new ExecutionTime.Time(1000.0, 1000 * 60.0, 1000.0 * 60 * 60))));
+            JobDBAdaptor jobDBAdaptor = mockManager.getJobManager().getJobDBAdaptor(organizationId);
+
+            Mockito.doReturn(results).when(jobDBAdaptor).executionTimeByMonth(Mockito.any(Query.class));
+
+            // Submit a job. This should raise an error
+            CatalogException exception = assertThrows(CatalogException.class, () -> mockManager.getJobManager()
+                    .submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken));
+            assertTrue(exception.getMessage().contains("quota"));
+        }
+    }
+
+    @Test
+    public void rescheduleJobTest() throws CatalogException {
+        Job job = catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
+
+        Date firstDayOfNextMonth = TimeUtils.getFirstDayOfNextMonth(new Date());
+        String scheduleStartTime = TimeUtils.getTime(firstDayOfNextMonth);
+        catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime, "My message",
+                opencgaToken);
+
+        OpenCGAResult<Job> result = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals(scheduleStartTime, result.first().getScheduledStartTime());
+        assertEquals(1, result.first().getInternal().getEvents().size());
+        assertEquals("My message", result.first().getInternal().getEvents().get(0).getMessage());
+
+        // Ensure only "opencga" are authorised
+        assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime,
+                        "My message", ownerToken));
+        CatalogAuthorizationException authException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime,
+                        "My message", normalToken1));
+        assertTrue(authException.getMessage().contains("OPENCGA ADMINISTRATOR"));
     }
 
     /**
