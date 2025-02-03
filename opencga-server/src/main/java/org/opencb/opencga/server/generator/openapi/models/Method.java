@@ -18,7 +18,7 @@ public class Method {
     private List<String> produces;
     private List<Parameter> parameters;
     private Map<String,Map<String,Object>> responses;
-  //  private List<Map<String, List<String>>> security;
+    private List<Map<String, List<String>>> security;
 
 
     public Method() {
@@ -112,5 +112,13 @@ public class Method {
         return this;
     }
 
+    public List<Map<String, List<String>>> getSecurity() {
+        return security;
+    }
+
+    public Method setSecurity(List<Map<String, List<String>>> security) {
+        this.security = security;
+        return this;
+    }
 }
 
