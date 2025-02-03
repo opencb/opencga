@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ProjectManager;
@@ -202,6 +203,7 @@ public abstract class OpenCgaTool {
                 String message = "Unexpected system shutdown. Job killed by the system.";
                 privateLogger.error(message);
                 try {
+                    // TODO: Check for v4.0.0 if we can stop attempting to delete the scratch directory
                     if (scratchDir != null) {
                         deleteScratchDirectory();
                     }
@@ -305,6 +307,10 @@ public abstract class OpenCgaTool {
     }
 
     private void deleteScratchDirectory() throws ToolException {
+        if (NextFlowExecutor.ID.equals(getId())) {
+            privateLogger.info("Skip deleting scratch directory for tool '{}'.", getId());
+            return;
+        }
         try {
             FileUtils.deleteDirectory(scratchDir.toFile());
         } catch (IOException e) {
