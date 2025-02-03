@@ -29,7 +29,7 @@
 #' | updateGroups | /{apiVersion}/studies/{study}/groups/update | study[*], action, body[*] |
 #' | updateGroupsUsers | /{apiVersion}/studies/{study}/groups/{group}/users/update | study[*], group[*], action, body[*] |
 #' | createNotes | /{apiVersion}/studies/{study}/notes/create | include, exclude, study[*], includeResult, body[*] |
-#' | searchNotes | /{apiVersion}/studies/{study}/notes/search | include, exclude, study[*], creationDate, modificationDate, id, uuid, userId, tags, visibility, version |
+#' | searchNotes | /{apiVersion}/studies/{study}/notes/search | include, exclude, study[*], creationDate, modificationDate, id, type, uuid, userId, tags, visibility, version |
 #' | deleteNotes | /{apiVersion}/studies/{study}/notes/{id}/delete | study[*], id[*], includeResult |
 #' | updateNotes | /{apiVersion}/studies/{study}/notes/{id}/update | include, exclude, study[*], id[*], tagsAction, includeResult, body[*] |
 #' | permissionRules | /{apiVersion}/studies/{study}/permissionRules | study[*], entity[*] |
@@ -169,6 +169,7 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, group, id, members, stud
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param id Note unique identifier.
+        #' @param type Note type.
         #' @param uuid Unique 32-character identifier assigned automatically by OpenCGA.
         #' @param userId User that wrote that Note.
         #' @param tags Note tags.
