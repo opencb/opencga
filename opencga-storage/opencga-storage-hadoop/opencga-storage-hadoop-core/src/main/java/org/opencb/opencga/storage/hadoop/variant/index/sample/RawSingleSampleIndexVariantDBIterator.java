@@ -16,9 +16,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 
-public class RawSingleSampleIndexVariantDBIterator extends CloseableIterator<SampleVariantIndexEntry> {
+public class RawSingleSampleIndexVariantDBIterator extends CloseableIterator<SampleIndexVariant> {
 
-    private final Iterator<SampleVariantIndexEntry> iterator;
+    private final Iterator<SampleIndexVariant> iterator;
     protected int count = 0;
 
     public RawSingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, SampleIndexSchema schema,
@@ -31,7 +31,7 @@ public class RawSingleSampleIndexVariantDBIterator extends CloseableIterator<Sam
             locusQueries = query.getLocusQueries();
         }
 
-        Iterator<Iterator<SampleVariantIndexEntry>> iterators = locusQueries.stream()
+        Iterator<Iterator<SampleIndexVariant>> iterators = locusQueries.stream()
                 .map(locusQuery -> {
                     // One scan per locus query
                     Scan scan = dbAdaptor.parseIncludeAll(query, locusQuery);
@@ -41,7 +41,7 @@ public class RawSingleSampleIndexVariantDBIterator extends CloseableIterator<Sam
                         ResultScanner scanner = table.getScanner(scan);
                         addCloseable(scanner);
                         Iterator<Result> resultIterator = scanner.iterator();
-                        Iterator<Iterator<SampleVariantIndexEntry>> transform = Iterators.transform(resultIterator,
+                        Iterator<Iterator<SampleIndexVariant>> transform = Iterators.transform(resultIterator,
                                 result -> {
                                     SampleIndexEntry sampleIndexEntry = converter.convert(result);
                                     return filter.filter(sampleIndexEntry).iterator();
@@ -54,7 +54,7 @@ public class RawSingleSampleIndexVariantDBIterator extends CloseableIterator<Sam
         iterator = Iterators.concat(iterators);
     }
 
-    private RawSingleSampleIndexVariantDBIterator(Iterator<SampleVariantIndexEntry> iterator) {
+    private RawSingleSampleIndexVariantDBIterator(Iterator<SampleIndexVariant> iterator) {
         this.iterator = iterator;
     }
 
@@ -68,7 +68,7 @@ public class RawSingleSampleIndexVariantDBIterator extends CloseableIterator<Sam
     }
 
     @Override
-    public SampleVariantIndexEntry next() {
+    public SampleIndexVariant next() {
         return iterator.next();
     }
 }
