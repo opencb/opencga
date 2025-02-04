@@ -171,6 +171,10 @@ public class StudyManager extends AbstractManager {
         return studyDataResult.first();
     }
 
+    Study resolveId(CatalogFqn catalogFqn, JwtPayload payload) throws CatalogException {
+        return resolveId(catalogFqn, QueryOptions.empty(), payload);
+    }
+
     Study resolveId(CatalogFqn catalogFqn, QueryOptions options, JwtPayload payload) throws CatalogException {
         OpenCGAResult<Study> studyDataResult = smartResolutor(catalogFqn, options, payload);
 
