@@ -10,15 +10,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
-    with:
-      maven_opts: -P hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
-
   delete-docker:
-    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@develop
-    needs: build
-    with:
-      cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
-    secrets: inherit
+    name: Execute delete docker image
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '10'
+      - name: delete docker images
+        run: |
+          echo "Deleting docker images"
+          python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
 
