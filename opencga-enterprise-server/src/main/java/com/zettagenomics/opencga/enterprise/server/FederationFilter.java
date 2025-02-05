@@ -13,8 +13,11 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class FederationFilter implements Filter {
+
+    public static final Pattern REST_PATTERN = Pattern.compile("^(https?://.*/opencga/webservices/rest/[^/]+/)(.+)$");
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -58,8 +61,12 @@ public class FederationFilter implements Filter {
                 : "url=" + request.getRequestURI() + "&method=" + request.getMethod();
 
         String url = request.getRequestURL().toString(); // http://localhost:8080/opencga/webservices/rest/v2/sample/search
-        String regex = "^(https?://[^/]+/opencga/webservices/rest/[^/]+/)(.+)$";
-        return url.replaceAll(regex, "$1federations/redirect") + "?" + queryString;
+        String urlPrefix = "https://test.app.zettagenomics.com/opencga/webservices/rest";
+        String urlPrefixReplacement = "https://test.app.zettagenomics.com/TASK-7192/opencga/webservices/rest";
+        if (url.startsWith(urlPrefix)) {
+            url = StringUtils.replaceOnce(url, urlPrefix, urlPrefixReplacement);
+        }
+        return REST_PATTERN.matcher(url).replaceAll("$1federations/redirect") + "?" + queryString;
     }
 
     private boolean requestFederatedData(HttpServletRequest request) {

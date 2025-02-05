@@ -25,11 +25,11 @@ import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstractManagerTest {
 
