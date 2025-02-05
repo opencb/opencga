@@ -5,7 +5,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationTripleIndexSchema.CombinationTriple;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
-public class AnnotationIndexEntry {
+public class SampleIndexVariantAnnotation {
 
     private boolean hasSummaryIndex;
     private byte summaryIndex;
@@ -24,10 +24,10 @@ public class AnnotationIndexEntry {
     private BitBuffer clinicalIndex;
 
 
-    public AnnotationIndexEntry() {
+    public SampleIndexVariantAnnotation() {
     }
 
-    public AnnotationIndexEntry(AnnotationIndexEntry other) {
+    public SampleIndexVariantAnnotation(SampleIndexVariantAnnotation other) {
         this();
         this.hasSummaryIndex = other.hasSummaryIndex;
         this.summaryIndex = other.summaryIndex;
@@ -44,7 +44,7 @@ public class AnnotationIndexEntry {
         this.clinicalIndex = other.clinicalIndex == null ? null : new BitBuffer(other.clinicalIndex);
     }
 
-    public AnnotationIndexEntry(
+    public SampleIndexVariantAnnotation(
             byte summaryIndex, boolean intergenic, int ctIndex, int btIndex, int tfIndex,
             CombinationTriple ctBtTfCombination, BitBuffer popFreqIndex,
             boolean hasClinical, BitBuffer clinicalIndex) {
@@ -62,8 +62,8 @@ public class AnnotationIndexEntry {
         this.popFreqIndex = popFreqIndex;
     }
 
-    public static AnnotationIndexEntry empty(SampleIndexSchema schema) {
-        return new AnnotationIndexEntry()
+    public static SampleIndexVariantAnnotation empty(SampleIndexSchema schema) {
+        return new SampleIndexVariantAnnotation()
                 .setPopFreqIndex(new BitBuffer(schema.getPopFreqIndex().getBitsLength()))
                 .setCtBtTfCombination(new CombinationTriple());
     }
@@ -72,7 +72,7 @@ public class AnnotationIndexEntry {
         return hasSummaryIndex;
     }
 
-    public AnnotationIndexEntry setHasSummaryIndex(boolean hasSummaryIndex) {
+    public SampleIndexVariantAnnotation setHasSummaryIndex(boolean hasSummaryIndex) {
         this.hasSummaryIndex = hasSummaryIndex;
         return this;
     }
@@ -81,7 +81,7 @@ public class AnnotationIndexEntry {
         return summaryIndex;
     }
 
-    public AnnotationIndexEntry setSummaryIndex(byte summaryIndex) {
+    public SampleIndexVariantAnnotation setSummaryIndex(byte summaryIndex) {
         this.hasSummaryIndex = true;
         this.summaryIndex = summaryIndex;
         return this;
@@ -91,7 +91,7 @@ public class AnnotationIndexEntry {
         return intergenic;
     }
 
-    public AnnotationIndexEntry setIntergenic(boolean intergenic) {
+    public SampleIndexVariantAnnotation setIntergenic(boolean intergenic) {
         this.intergenic = intergenic;
         return this;
     }
@@ -100,7 +100,7 @@ public class AnnotationIndexEntry {
         return hasCtIndex;
     }
 
-    public AnnotationIndexEntry setHasCtIndex(boolean hasCtIndex) {
+    public SampleIndexVariantAnnotation setHasCtIndex(boolean hasCtIndex) {
         this.hasCtIndex = hasCtIndex;
         return this;
     }
@@ -109,7 +109,7 @@ public class AnnotationIndexEntry {
         return ctIndex;
     }
 
-    public AnnotationIndexEntry setCtIndex(int ctIndex) {
+    public SampleIndexVariantAnnotation setCtIndex(int ctIndex) {
         hasCtIndex = true;
         this.ctIndex = ctIndex;
         return this;
@@ -119,7 +119,7 @@ public class AnnotationIndexEntry {
         return hasBtIndex;
     }
 
-    public AnnotationIndexEntry setHasBtIndex(boolean hasBtIndex) {
+    public SampleIndexVariantAnnotation setHasBtIndex(boolean hasBtIndex) {
         this.hasBtIndex = hasBtIndex;
         return this;
     }
@@ -128,7 +128,7 @@ public class AnnotationIndexEntry {
         return btIndex;
     }
 
-    public AnnotationIndexEntry setBtIndex(int btIndex) {
+    public SampleIndexVariantAnnotation setBtIndex(int btIndex) {
         setHasBtIndex(true);
         this.btIndex = btIndex;
         return this;
@@ -138,7 +138,7 @@ public class AnnotationIndexEntry {
         return hasTfIndex;
     }
 
-    public AnnotationIndexEntry setHasTfIndex(boolean hasTfIndex) {
+    public SampleIndexVariantAnnotation setHasTfIndex(boolean hasTfIndex) {
         this.hasTfIndex = hasTfIndex;
         return this;
     }
@@ -147,7 +147,7 @@ public class AnnotationIndexEntry {
         return tfIndex;
     }
 
-    public AnnotationIndexEntry setTfIndex(int tfIndex) {
+    public SampleIndexVariantAnnotation setTfIndex(int tfIndex) {
         hasTfIndex = true;
         this.tfIndex = tfIndex;
         return this;
@@ -157,7 +157,7 @@ public class AnnotationIndexEntry {
         return ctBtTfCombination;
     }
 
-    public AnnotationIndexEntry setCtBtTfCombination(CombinationTriple ctBtTfCombination) {
+    public SampleIndexVariantAnnotation setCtBtTfCombination(CombinationTriple ctBtTfCombination) {
         this.ctBtTfCombination = ctBtTfCombination;
         return this;
     }
@@ -166,7 +166,7 @@ public class AnnotationIndexEntry {
         return popFreqIndex;
     }
 
-    public AnnotationIndexEntry setPopFreqIndex(BitBuffer popFreqIndex) {
+    public SampleIndexVariantAnnotation setPopFreqIndex(BitBuffer popFreqIndex) {
         this.popFreqIndex = popFreqIndex;
         return this;
     }
@@ -175,7 +175,7 @@ public class AnnotationIndexEntry {
         return hasClinical;
     }
 
-    public AnnotationIndexEntry setHasClinical(boolean hasClinical) {
+    public SampleIndexVariantAnnotation setHasClinical(boolean hasClinical) {
         this.hasClinical = hasClinical;
         return this;
     }
@@ -184,7 +184,7 @@ public class AnnotationIndexEntry {
         return clinicalIndex;
     }
 
-    public AnnotationIndexEntry setClinicalIndex(BitBuffer clinicalIndex) {
+    public SampleIndexVariantAnnotation setClinicalIndex(BitBuffer clinicalIndex) {
         this.clinicalIndex = clinicalIndex;
         return this;
     }

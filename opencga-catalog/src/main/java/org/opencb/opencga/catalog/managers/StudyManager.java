@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -410,7 +411,6 @@ public class StudyManager extends AbstractManager {
         String organizationId = catalogFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
         Project project = catalogManager.getProjectManager().resolveId(catalogFqn, null, tokenPayload).first();
-
         ObjectMap auditParams = new ObjectMap()
                 .append("projectId", projectStr)
                 .append("study", study)
@@ -421,7 +421,16 @@ public class StudyManager extends AbstractManager {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
-
+            String cellbaseVersion;
+            if (project.getCellbase() == null || StringUtils.isEmpty(project.getCellbase().getUrl())) {
+                CellBaseValidator cellBaseValidator = new CellBaseValidator(
+                        project.getCellbase(),
+                        project.getOrganism().getScientificName(),
+                        project.getOrganism().getAssembly());
+                cellbaseVersion = cellBaseValidator.getVersionFromServer();
+            } else {
+                cellbaseVersion = null;
+            }
             long projectUid = project.getUid();
 
             // Initialise fields
@@ -431,7 +440,7 @@ public class StudyManager extends AbstractManager {
             study.setType(ParamUtils.defaultObject(study.getType(), StudyType::init));
             study.setSources(ParamUtils.defaultObject(study.getSources(), Collections::emptyList));
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
-            study.setInternal(StudyInternal.init());
+            study.setInternal(StudyInternal.init(cellbaseVersion));
             study.setStatus(ParamUtils.defaultObject(study.getStatus(), Status::new));
             study.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(study.getCreationDate(),
                     StudyDBAdaptor.QueryParams.CREATION_DATE.key()));
@@ -500,10 +509,14 @@ public class StudyManager extends AbstractManager {
                 result.setResults(Arrays.asList(study));
             }
             return result;
-        } catch (CatalogException e) {
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.STUDY, study.getId(), "", study.getId(), "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
+        } catch (Exception e) {
+            auditManager.auditError(organizationId, userId, Enums.Action.CREATE, Enums.Resource.STUDY, study.getId(),
+                    "", study.getId(), "", auditParams, e);
+            if (e instanceof CatalogException) {
+                throw (CatalogException) e;
+            } else {
+                throw new CatalogException("Error creating study '" + study.getId() + "'", e);
+            }
         }
     }
 

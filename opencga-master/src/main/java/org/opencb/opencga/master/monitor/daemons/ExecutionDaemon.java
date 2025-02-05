@@ -45,7 +45,6 @@ import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.analysis.tools.ToolFactory;
-import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
@@ -195,7 +194,6 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             put(PicardWrapperAnalysis.ID, "alignment " + PicardWrapperAnalysis.ID + "-run");
 
             put(VariantIndexOperationTool.ID, "variant index-run");
-            put(VariantExportTool.ID, "variant export-run");
             put(VariantStatsAnalysis.ID, "variant stats-run");
             put("variant-stats-export", "variant stats-export-run");
             put(SampleVariantStatsAnalysis.ID, "variant sample-stats-run");

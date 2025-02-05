@@ -909,9 +909,9 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str sample: Filter variants by sample genotype. This will
             automatically set 'includeSample' parameter when not provided. This
             filter accepts multiple 3 forms: 1) List of samples: Samples that
-            contain the main variant. Accepts AND (;) and OR (,) operators. 
+            contain the main variant. Accepts AND ';' and OR ',' operators. 
             e.g. HG0097,HG0098 . 2) List of samples with genotypes:
-            {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g.
+            {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g.
             HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will
             also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice
             versa. When filtering by multi-allelic genotypes, any secondary
@@ -1021,6 +1021,15 @@ class ClinicalAnalysis(_ParentRestClient):
         :param bool panel_intersection: Intersect panel genes and regions with
             given genes and regions from que input query. This will prevent
             returning variants from regions out of the panel.
+        :param str source: Select the variant data source from where to fetch
+            the data. Accepted values are 'variant_index' (default) and
+            'secondary_sample_index'. When selecting a secondary_index, the
+            data will be retrieved exclusively from that secondary index, and
+            the 'include/exclude' parameters will be ignored. If the given
+            query can not be fully resolved using the secondary index, an
+            exception will be raised. As the returned variants will only
+            contain data from the secondary_index, some data might be missing
+            or be partial.
         :param str trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.:
             IDs, histologies, descriptions,...
         """
