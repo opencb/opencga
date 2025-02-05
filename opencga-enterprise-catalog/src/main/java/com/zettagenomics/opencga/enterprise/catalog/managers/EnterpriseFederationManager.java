@@ -518,13 +518,15 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                             studyList.add(study);
                         }
                     }
-                    newStudies.put(localProject, studyList);
+                    if (CollectionUtils.isNotEmpty(studyList)) {
+                        newStudies.put(localProject, studyList);
+                    }
                 }
             }
 
             // Remove old federated projects/studies
-            removeFederatedProjects(organizationId, projectsToRemove);
             removeFederatedStudies(organizationId, studiesToRemove);
+            removeFederatedProjects(organizationId, projectsToRemove);
 
             // Import new federated projects/studies
             importFederatedProjects(federationId, organizationId, newProjects);
