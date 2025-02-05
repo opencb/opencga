@@ -128,66 +128,8 @@ public class UserManager extends AbstractManager {
 
         Organization organization = getOrganizationDBAdaptor(organizationId).get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION)
                 .first();
-
+        validateNewUser(user, password, organization.getConfiguration().getDefaultUserExpirationDate(), organizationId);
         ObjectMap auditParams = new ObjectMap("user", user);
-
-        // Initialise fields
-        ParamUtils.checkObj(user, "User");
-        ParamUtils.checkValidUserId(user.getId());
-        user.setName(ParamUtils.defaultString(user.getName(), user.getId()));
-        user.setEmail(ParamUtils.defaultString(user.getEmail(), ""));
-        if (StringUtils.isNotEmpty(user.getEmail())) {
-            checkEmail(user.getEmail());
-        }
-        user.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(user.getCreationDate(),
-                UserDBAdaptor.QueryParams.CREATION_DATE.key()));
-        user.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(user.getModificationDate(),
-                UserDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
-
-        user.setInternal(ParamUtils.defaultObject(user.getInternal(), UserInternal::new));
-        user.getInternal().setStatus(new UserStatus(InternalStatus.READY));
-        user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
-        user.setProjects(ParamUtils.defaultObject(user.getProjects(), Collections::emptyList));
-        user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
-        user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
-        user.setAttributes(ParamUtils.defaultObject(user.getAttributes(), Collections::emptyMap));
-
-        // Init account
-        user.getInternal().setAccount(ParamUtils.defaultObject(user.getInternal().getAccount(), Account::new));
-        Account account = user.getInternal().getAccount();
-        account.setPassword(ParamUtils.defaultObject(account.getPassword(), Password::new));
-        if (StringUtils.isEmpty(account.getExpirationDate())) {
-            account.setExpirationDate(organization.getConfiguration().getDefaultUserExpirationDate());
-        } else {
-            // Validate expiration date is not over
-            ParamUtils.checkDateIsNotExpired(account.getExpirationDate(), UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_EXPIRATION_DATE.key());
-        }
-        if (StringUtils.isEmpty(password)) {
-            Map<String, AuthenticationManager> authOriginMap = authenticationFactory.getOrganizationAuthenticationManagers(organizationId);
-            if (!authOriginMap.containsKey(account.getAuthentication().getId())) {
-                throw new CatalogException("Unknown authentication origin id '" + account.getAuthentication() + "'");
-            }
-        } else {
-            if (account.getAuthentication() != null) {
-                account.getAuthentication().setId(AuthenticationOrigin.AuthenticationType.OPENCGA.name());
-            } else {
-                account.setAuthentication(new Account.AuthenticationOrigin(AuthenticationOrigin.AuthenticationType.OPENCGA.name(), false,
-                        false));
-            }
-        }
-
-        // Set password expiration
-        if (AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())) {
-            account.getPassword().setLastModified(TimeUtils.getTime());
-        }
-        if (!AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())
-                || configuration.getAccount().getPasswordExpirationDays() <= 0) {
-            // User password doesn't expire or it's not managed by OpenCGA
-            account.getPassword().setExpirationDate(null);
-        } else {
-            Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
-            account.getPassword().setExpirationDate(TimeUtils.getTime(date));
-        }
 
         if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
             JwtPayload jwtPayload = validateToken(token);
@@ -221,6 +163,67 @@ public class UserManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
             throw e;
+        }
+    }
+
+    public void validateNewUser(User user, String password, String defaultUserExpirationDate, String organizationId)
+            throws CatalogException {
+        // Initialise fields
+        ParamUtils.checkObj(user, "User");
+        ParamUtils.checkValidUserId(user.getId());
+        user.setName(ParamUtils.defaultString(user.getName(), user.getId()));
+        user.setEmail(ParamUtils.defaultString(user.getEmail(), ""));
+        if (StringUtils.isNotEmpty(user.getEmail())) {
+            checkEmail(user.getEmail());
+        }
+        user.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(user.getCreationDate(),
+                UserDBAdaptor.QueryParams.CREATION_DATE.key()));
+        user.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(user.getModificationDate(),
+                UserDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
+
+        user.setInternal(ParamUtils.defaultObject(user.getInternal(), UserInternal::new));
+        user.getInternal().setStatus(new UserStatus(InternalStatus.READY));
+        user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
+        user.setProjects(ParamUtils.defaultObject(user.getProjects(), Collections::emptyList));
+        user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
+        user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
+        user.setAttributes(ParamUtils.defaultObject(user.getAttributes(), Collections::emptyMap));
+
+        // Init account
+        user.getInternal().setAccount(ParamUtils.defaultObject(user.getInternal().getAccount(), Account::new));
+        Account account = user.getInternal().getAccount();
+        account.setPassword(ParamUtils.defaultObject(account.getPassword(), Password::new));
+        if (StringUtils.isEmpty(account.getExpirationDate())) {
+            account.setExpirationDate(defaultUserExpirationDate);
+        } else {
+            // Validate expiration date is not over
+            ParamUtils.checkDateIsNotExpired(account.getExpirationDate(), UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_EXPIRATION_DATE.key());
+        }
+        if (StringUtils.isEmpty(password)) {
+            Map<String, AuthenticationManager> authOriginMap = authenticationFactory.getOrganizationAuthenticationManagers(organizationId);
+            if (!authOriginMap.containsKey(account.getAuthentication().getId())) {
+                throw new CatalogException("Unknown authentication origin id '" + account.getAuthentication() + "'");
+            }
+        } else {
+            if (account.getAuthentication() != null) {
+                account.getAuthentication().setId(AuthenticationOrigin.AuthenticationType.OPENCGA.name());
+            } else {
+                account.setAuthentication(new Account.AuthenticationOrigin(AuthenticationOrigin.AuthenticationType.OPENCGA.name(), false,
+                        false));
+            }
+        }
+
+        // Set password expiration
+        if (AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())) {
+            account.getPassword().setLastModified(TimeUtils.getTime());
+        }
+        if (!AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())
+                || configuration.getAccount().getPasswordExpirationDays() <= 0) {
+            // User password doesn't expire or it's not managed by OpenCGA
+            account.getPassword().setExpirationDate(null);
+        } else {
+            Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
+            account.getPassword().setExpirationDate(TimeUtils.getTime(date));
         }
     }
 
