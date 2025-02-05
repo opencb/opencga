@@ -81,6 +81,11 @@ public class FederationFilter implements Filter {
         if (StringUtils.isEmpty(token)) {
             return false;
         }
+        if (request.getRequestURL().toString().endsWith("federations/redirect")) {
+            // When the federation is made to the same server, we need to avoid an infinite loop
+            return false;
+        }
+
         JwtPayload jwtPayload;
         try {
             // This may fail if the "token" doesn't have a token format
