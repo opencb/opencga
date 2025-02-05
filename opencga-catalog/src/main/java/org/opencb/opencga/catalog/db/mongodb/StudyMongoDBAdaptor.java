@@ -1503,26 +1503,23 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
         String studyId = studyDocument.getString(QueryParams.ID.key());
         long studyUid = studyDocument.getLong(PRIVATE_UID);
-        long projectUid = studyDocument.getEmbedded(Arrays.asList(PRIVATE_PROJECT, PRIVATE_UID), -1L);
 
         logger.debug("Deleting study {} ({})", studyId, studyUid);
 
         // TODO: In the future, we will want to delete also all the files, samples, cohorts... associated
 
         // Add status DELETED
-        studyDocument.put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"));
+        Document internal = studyDocument.get("internal", Document.class);
+        if (internal != null) {
+            internal.put("status", getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"));
+        }
 
         // Upsert the document into the DELETED collection
-        Bson query = new Document()
-                .append(QueryParams.ID.key(), studyId)
-                .append(PRIVATE_PROJECT_UID, projectUid);
+        Bson query = new Document(PRIVATE_UID, studyUid);
         deletedStudyCollection.update(clientSession, query, new Document("$set", studyDocument),
                 new QueryOptions(MongoDBCollection.UPSERT, true));
 
         // Delete the document from the main STUDY collection
-        query = new Document()
-                .append(PRIVATE_UID, studyUid)
-                .append(PRIVATE_PROJECT_UID, projectUid);
         DataResult remove = studyCollection.remove(clientSession, query, null);
         if (remove.getNumMatches() == 0) {
             throw new CatalogDBException("Study " + studyId + " not found");
