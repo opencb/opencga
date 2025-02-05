@@ -5,6 +5,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.server.ParamException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -17,7 +19,8 @@ import java.util.regex.Pattern;
 
 public class FederationFilter implements Filter {
 
-    public static final Pattern REST_PATTERN = Pattern.compile("^(https?://.*/opencga/webservices/rest/[^/]+/)(.+)$");
+    private static Logger logger = LoggerFactory.getLogger(FederationFilter.class);
+    private static final Pattern REST_PATTERN = Pattern.compile("^(https?://.*/opencga/webservices/rest/[^/]+/)(.+)$");
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -34,6 +37,7 @@ public class FederationFilter implements Filter {
         if (requestFederatedData(request)) {
             // Construct the new URL
             String newUrl = constructRedirectUrl(request);
+            logger.info("Requesting federated data. Redirecting to {}", newUrl);
 
             // Perform the redirection based on the request method
             String method = request.getMethod();
@@ -61,10 +65,13 @@ public class FederationFilter implements Filter {
                 : "url=" + request.getRequestURI() + "&method=" + request.getMethod();
 
         String url = request.getRequestURL().toString(); // http://localhost:8080/opencga/webservices/rest/v2/sample/search
-        String urlPrefix = "https://test.app.zettagenomics.com/opencga/webservices/rest";
+        String urlPrefix = "http://test.app.zettagenomics.com/opencga/webservices/rest";
         String urlPrefixReplacement = "https://test.app.zettagenomics.com/TASK-7192/opencga/webservices/rest";
-        if (url.startsWith(urlPrefix)) {
+        logger.info("Requested URL: {}", url);
+        if (url.contains(urlPrefix)) {
+            logger.info("Replacing URL prefix: {} -> {}", urlPrefix, urlPrefixReplacement);
             url = StringUtils.replaceOnce(url, urlPrefix, urlPrefixReplacement);
+            logger.info("URL replaced: {}", url);
         }
         return REST_PATTERN.matcher(url).replaceAll("$1federations/redirect") + "?" + queryString;
     }
