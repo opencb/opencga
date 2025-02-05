@@ -371,8 +371,7 @@ public class AlignmentAnalysisTest {
 
         // Run coverage index
         CoverageIndexParams coverageOarams = new CoverageIndexParams();
-        coverageOarams.setBamFileId(bamFile.getId());
-        coverageOarams.setBaiFileId(baiFile.getId());
+        coverageOarams.setFileId(bamFile.getId());
         Path coverageIndexOutdir = Paths.get(opencga.createTmpOutdir("_coverage_index"));
         toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", false, token);
 
@@ -416,8 +415,7 @@ public class AlignmentAnalysisTest {
 
         // Run coverage index
         CoverageIndexParams coverageOarams = new CoverageIndexParams();
-        coverageOarams.setBamFileId(bamFile.getId());
-        coverageOarams.setBaiFileId(baiFile.getId());
+        coverageOarams.setFileId(bamFile.getId());
         Path coverageIndexOutdir = Paths.get(opencga.createTmpOutdir("_coverage_index"));
         toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", false, token);
 

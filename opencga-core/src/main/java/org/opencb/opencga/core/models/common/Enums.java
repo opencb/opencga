@@ -251,6 +251,7 @@ public final class Enums {
 
         VISIT,
         KILL_JOB,
+        RESCHEDULE_JOB,
 
         IMPORT,
 

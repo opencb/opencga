@@ -21,7 +21,7 @@ import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.
 /**
  * Created by jacobo on 04/01/19.
  */
-public class AnnotationIndexConverter {
+public class SampleIndexVariantAnnotationConverter {
 
     public static final double POP_FREQ_THRESHOLD_001 = 0.001;
     public static final Set<String> BIOTYPE_SET;
@@ -63,13 +63,13 @@ public class AnnotationIndexConverter {
 
     private final SampleIndexSchema schema;
 
-    public AnnotationIndexConverter(SampleIndexSchema schema) {
+    public SampleIndexVariantAnnotationConverter(SampleIndexSchema schema) {
         this.schema = schema;
     }
 
-    public AnnotationIndexEntry convert(VariantAnnotation variantAnnotation) {
+    public SampleIndexVariantAnnotation convert(VariantAnnotation variantAnnotation) {
         if (variantAnnotation == null) {
-            return AnnotationIndexEntry.empty(schema);
+            return SampleIndexVariantAnnotation.empty(schema);
         }
         byte b = 0;
         BitBuffer ctIndex = new BitBuffer(schema.getCtIndex().getBitsLength());
@@ -194,7 +194,7 @@ public class AnnotationIndexConverter {
             schema.getClinicalIndexSchema().getSourceField().write(new ArrayList<>(source), clinicalIndex);
             schema.getClinicalIndexSchema().getClinicalSignificanceField().write(combinations, clinicalIndex);
         }
-        return new AnnotationIndexEntry(b, intergenic, ctIndex.toInt(), btIndex.toInt(), tfIndex.toInt(),
+        return new SampleIndexVariantAnnotation(b, intergenic, ctIndex.toInt(), btIndex.toInt(), tfIndex.toInt(),
                 ctBtTfCombination, popFreq, clinical, clinicalIndex);
     }
     protected void addPopFreqIndex(BitBuffer bitBuffer, PopulationFrequency populationFrequency) {

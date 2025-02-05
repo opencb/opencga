@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +56,7 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
         addParam(query, VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER, queryVariantsOptions.panelRoleInCancer);
         addParam(query, VariantCatalogQueryUtils.PANEL_FEATURE_TYPE, queryVariantsOptions.panelFeatureType);
         addParam(query, VariantCatalogQueryUtils.SAVED_FILTER, queryVariantsOptions.savedFilter);
+        addParam(query, VariantQueryParam.SOURCE, queryVariantsOptions.source);
 
         return query;
     }
