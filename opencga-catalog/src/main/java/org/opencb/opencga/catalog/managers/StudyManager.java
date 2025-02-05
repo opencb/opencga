@@ -1187,6 +1187,12 @@ public class StudyManager extends AbstractManager {
 
             authorizationManager.checkUpdateGroupPermissions(organizationId, study.getUid(), userId, groupId, action);
 
+            if (study.getInternal().isFederated()) {
+                if (!groupId.equals(MEMBERS)) {
+                    throw new CatalogException("Cannot modify groups other than the '" + MEMBERS + "' group in federated studies.");
+                }
+            }
+
             if (CollectionUtils.isNotEmpty(updateParams.getUsers())) {
                 List<String> tmpUsers = updateParams.getUsers();
                 if (groupId.equals(MEMBERS) || groupId.equals(ADMINS)) {
@@ -1726,6 +1732,9 @@ public class StudyManager extends AbstractManager {
         try {
             if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+            }
+            if (study.getInternal().isFederated()) {
+                throw new CatalogException("Cannot modify ACLs of a federated study.");
             }
 
             List<String> permissions = Collections.emptyList();
