@@ -1116,26 +1116,18 @@ class CVDB(_ParentRestClient):
 
         return self._get(category='analysis', resource='query', subcategory='cvdb/clinicalVariant', **options)
 
-    def stats_clinical_variant(self, variant_ids, **options):
+    def stats_clinical_variant(self, variant_id, **options):
         """
         Get clinical variant summary from CVDB.
-        PATH: /{apiVersion}/analysis/cvdb/clinicalVariant/{variantIds}/stats
+        PATH: /{apiVersion}/analysis/cvdb/clinicalVariant/{variantId}/stats
 
-        :param str variant_ids: Comma separated list of variant IDs.
-            (REQUIRED)
-        :param str project: Project ID.
-        :param str ci_status_id: Clinical interpretation status ID (or list of
-            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
-            CLOSED.
-        :param str stats_order: The sorting order of the results (i.e.,
-            buckets) based on their counts. For ascending order use, 'asc' or
-            'ascending'; for descending order, 'desc' or 'descending'. Default
-            value: desc.
-        :param int stats_limit: Maximum number of results (i.e., buckets) to
-            return for each aggregation. Default value: 10.
+        :param str variant_id: Variant ID (or comma separated list of variant
+            IDs). (REQUIRED)
+        :param str project: Project ID(or command separated list of project
+            IDs).
         """
 
-        return self._get(category='analysis', resource='stats', subcategory='cvdb/clinicalVariant', second_query_id=variant_ids, **options)
+        return self._get(category='analysis', resource='stats', subcategory='cvdb/clinicalVariant', second_query_id=variant_id, **options)
 
     def run_index(self, data=None, **options):
         """

@@ -837,8 +837,8 @@ public class CvdbSolrEngine {
     // CLINICAL VARIANT SUMMARY
     //----------------------------------------------------------------------
 
-    public DataResult<ClinicalVariantSummaryStats> getClinicalVariantSummaryStats(List<String> variantIds, String interpretationStatusId,
-                                                                                  String projectId, String order, int limit, String token)
+    public DataResult<ClinicalVariantSummaryStats> getClinicalVariantSummaryStats(List<String> variantIds, List<String> projectIds,
+                                                                                  String token)
             throws CatalogException, IOException, CvdbException {
         // Sanity check
         if (CollectionUtils.isEmpty(variantIds)) {
@@ -849,34 +849,15 @@ public class CvdbSolrEngine {
             throw new CvdbException("The maximum number of variants (" + DEFAULT_LIMIT + ")has been exceeded (" + variantIds.size() + ")");
         }
 
-        if (StringUtils.isEmpty(order)) {
-            order = STATS_DEFAULT_ORDER;
-        } else {
-            switch (order.toLowerCase(Locale.ROOT)) {
-                case DESC:
-                case DESCENDING:
-                case ASC:
-                case ASCENDING: {
-                    break;
-                }
-
-                default: {
-                    throw new CvdbException("Invalid stats order '" + order + "'. Valid values: " + DESC + ", " + DESCENDING + ", " + ASC + ", "
-                            + ASCENDING);
-                }
-            }
-        }
-
-        if (limit < 1) {
-            limit = STATS_DEFAULT_LIMIT;
-        }
+        String order = STATS_DEFAULT_ORDER;
+        int limit = STATS_DEFAULT_LIMIT;
 
         // Get organization
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
         String organizationId = jwtPayload.getOrganization();
 
         List<String> targetProjectIds = new ArrayList<>();
-        if (StringUtils.isEmpty(projectId)) {
+        if (CollectionUtils.isEmpty(projectIds)) {
             OpenCGAResult<Project> allProjects = catalogManager.getProjectManager().search(organizationId, new Query(),
                     new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key()), token);
             for (Project project : allProjects.getResults()) {
@@ -885,9 +866,11 @@ public class CvdbSolrEngine {
                 }
             }
         } else {
-            CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectId, jwtPayload);
-            if (existCollections(catalogFqn.getOrganizationId(), catalogFqn.getProjectId())) {
-                targetProjectIds.add(catalogFqn.getProjectId());
+            for (String projectId : projectIds) {
+                CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectId, jwtPayload);
+                if (existCollections(catalogFqn.getOrganizationId(), catalogFqn.getProjectId())) {
+                    targetProjectIds.add(catalogFqn.getProjectId());
+                }
             }
         }
         if (CollectionUtils.isEmpty(targetProjectIds)) {
@@ -911,9 +894,6 @@ public class CvdbSolrEngine {
                 query = new Query()
                         .append(PROJECT_PARAM_NAME, targetProjectId)
                         .append(CV_VARIANT_ID_NAME, variantId);
-                if (StringUtils.isNotEmpty(interpretationStatusId)) {
-                    query.put(CI_STATUS_ID_NAME, interpretationStatusId);
-                }
 
                 ClinicalVariantSummaryStats variantStats = new ClinicalVariantSummaryStats();
                 variantStats.setId(organizationId + "@" + targetProjectId);
@@ -1021,16 +1001,21 @@ public class CvdbSolrEngine {
         }
     }
 
-    public DataResult<ClinicalVariantSummaryStats> getClinicalVariantSummaryStats(String variantId, String interpretationStatusId,
-                                                                                  String projectId, String order, int limit, String token)
+    public DataResult<ClinicalVariantSummaryStats> getClinicalVariantSummaryStats(String variantId, String projectId, String token)
             throws CatalogException, IOException, CvdbException {
         // Checking parameter
         if (StringUtils.isEmpty(variantId)) {
             throw new CvdbException("Missing variant ID(s) when running clinical variant summary");
         }
-        List<String> ids = new ArrayList<>();
-        ids.addAll(Arrays.asList(variantId.split(",")));
-        return getClinicalVariantSummaryStats(ids, interpretationStatusId, projectId, order, limit, token);
+        List<String> variantIds = new ArrayList<>();
+        if (StringUtils.isNotEmpty(variantId)) {
+            variantIds.addAll(Arrays.asList(variantId.split(",")));
+        }
+        List<String> projectIds = new ArrayList<>();
+        if (StringUtils.isNotEmpty(projectId)) {
+            projectIds.addAll(Arrays.asList(projectId.split(",")));
+        }
+        return getClinicalVariantSummaryStats(variantIds, projectIds, token);
     }
 
     //----------------------------------------------------------------------
@@ -1109,7 +1094,7 @@ public class CvdbSolrEngine {
             boolean exists;
             try {
                 exists = clinicalAnalysisExists(clinicalAnalysis.getId(), getCollectionName(organizationId, projectId,
-                                CLINICAL_ANALYSES_COLLECTION_SUFFIX), solrClient);
+                        CLINICAL_ANALYSES_COLLECTION_SUFFIX), solrClient);
             } catch (SolrServerException | IOException e) {
                 logger.warn("Something wrong happened, clinical analysis {} could not be indexed: {}", clinicalAnalysis.getId(),
                         e.getMessage());

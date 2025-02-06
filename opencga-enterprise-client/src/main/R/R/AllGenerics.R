@@ -80,7 +80,7 @@ setGeneric("clinicalClient", function(OpencgaR, annotationSet, clinicalAnalyses,
 
 # ##############################################################################
 ## CVDBClient
-setGeneric("cvdbClient", function(OpencgaR, variantIds, endpointName, params=NULL, ...)
+setGeneric("cvdbClient", function(OpencgaR, variantId, endpointName, params=NULL, ...)
     standardGeneric("cvdbClient"))
 
 # ##############################################################################

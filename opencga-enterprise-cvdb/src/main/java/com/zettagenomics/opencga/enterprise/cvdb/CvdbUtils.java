@@ -33,9 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.STATS_DEFAULT_LIMIT;
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.STATS_DEFAULT_ORDER;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_NAME;
 import static org.opencb.commons.datastore.core.QueryOptions.EXCLUDE;
 
 /**
@@ -58,14 +55,6 @@ public class CvdbUtils {
             throw new CvdbException("Missing study");
         }
 
-        // Check the filter interpretation status ID
-        String interpretationStatusId = null;
-        if (query.containsKey(CI_STATUS_ID_NAME)) {
-            interpretationStatusId = query.getString(CI_STATUS_ID_NAME);
-            query.remove(CI_STATUS_ID_NAME);
-        }
-
-
         // First, get clinical variants
         OpenCGAResult<ClinicalVariant> result = clinicalInterpretationManager.get(query, queryOptions, token);
 
@@ -73,7 +62,7 @@ public class CvdbUtils {
         if (!getSkipStats(queryOptions)) {
             for (ClinicalVariant cv : result.getResults()) {
                 DataResult<ClinicalVariantSummaryStats> summaryStatsResult = cvdbEngine.getClinicalVariantSummaryStats(cv.getId(),
-                        interpretationStatusId, null, STATS_DEFAULT_ORDER, STATS_DEFAULT_LIMIT, token);
+                        null, token);
                 cv.setStats(summaryStatsResult.getResults());
             }
         }

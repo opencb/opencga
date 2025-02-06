@@ -658,19 +658,13 @@ export default class CVDB extends OpenCGAParentClass {
     }
 
     /** Get clinical variant summary from CVDB
-    * @param {String} variantIds - Comma separated list of variant IDs.
+    * @param {String} variantId - Variant ID (or comma separated list of variant IDs).
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.project] - Project ID.
-    * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas). Valid values:
-    *     NOT_STARTED, ACTIVE, DONE, CLOSED.
-    * @param {String} [params.statsOrder = "desc"] - The sorting order of the results (i.e., buckets) based on their counts. For ascending
-    *     order use, 'asc' or 'ascending'; for descending order, 'desc' or 'descending'. Default value: desc. The default value is desc.
-    * @param {Number} [params.statsLimit = "10"] - Maximum number of results (i.e., buckets) to return for each aggregation. Default value:
-    *     10. The default value is 10.
+    * @param {String} [params.project] - Project ID(or command separated list of project IDs).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    statsClinicalVariant(variantIds, params) {
-        return this._get("analysis", null, "cvdb/clinicalVariant", variantIds, "stats", params);
+    statsClinicalVariant(variantId, params) {
+        return this._get("analysis", null, "cvdb/clinicalVariant", variantId, "stats", params);
     }
 
     /** Index clinical analyses of a OpenCGA project, a study or a list of clinical analyses into CVDB

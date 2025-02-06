@@ -669,20 +669,15 @@ public class CVDBClient extends AbstractParentClient {
 
     /**
      * Get clinical variant summary from CVDB.
-     * @param variantIds Comma separated list of variant IDs.
+     * @param variantId Variant ID (or comma separated list of variant IDs).
      * @param params Map containing any of the following optional parameters.
-     *       project: Project ID.
-     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
-     *            CLOSED.
-     *       statsOrder: The sorting order of the results (i.e., buckets) based on their counts. For ascending order use, 'asc' or
-     *            'ascending'; for descending order, 'desc' or 'descending'. Default value: desc.
-     *       statsLimit: Maximum number of results (i.e., buckets) to return for each aggregation. Default value: 10.
+     *       project: Project ID(or command separated list of project IDs).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ClinicalVariantSummaryStats> statsClinicalVariant(String variantIds, ObjectMap params) throws ClientException {
+    public RestResponse<ClinicalVariantSummaryStats> statsClinicalVariant(String variantId, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "cvdb/clinicalVariant", variantIds, "stats", params, GET, ClinicalVariantSummaryStats.class);
+        return execute("analysis", null, "cvdb/clinicalVariant", variantId, "stats", params, GET, ClinicalVariantSummaryStats.class);
     }
 
     /**

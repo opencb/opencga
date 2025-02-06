@@ -1415,17 +1415,14 @@ public class EnterpriseCvdbWebService extends AnalysisWebService {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/clinicalVariant/{variantIds}/stats")
+    @Path("/clinicalVariant/{variantId}/stats")
     @ApiOperation(value = CLINICAL_VARIANT_SUMMARY_DESCRIPTION, response = ClinicalVariantSummaryStats.class)
     public Response getClinicalVariantSummaryStats(
-            @ApiParam(value = "Comma separated list of variant IDs") @PathParam(value = "variantIds") String variantIds,
-            @ApiParam(value = PROJECT_PARAM_DESCRIPTION) @QueryParam(PROJECT_PARAM_NAME) String projectId,
-            @ApiParam(value = CI_STATUS_ID_DESCR) @QueryParam(CI_STATUS_ID_NAME) String interpretationStatusId,
-            @ApiParam(value = STATS_ORDER_DESCR, defaultValue = STATS_DEFAULT_ORDER) @QueryParam(STATS_ORDER_NAME) String statsOrder,
-            @ApiParam(value = STATS_LIMIT_DESCR, defaultValue = ("" + STATS_DEFAULT_LIMIT)) @QueryParam(STATS_LIMIT_NAME) int statsLimit) {
+            @ApiParam(value = "Variant ID (or comma separated list of variant IDs)") @PathParam(value = "variantId") String variantId,
+            @ApiParam(value = PROJECT_PARAM_DESCRIPTION + "(or command separated list of project IDs)") @QueryParam(PROJECT_PARAM_NAME)
+                    String projectId) {
         return run(() -> {
-            return getCvdbEngine().getClinicalVariantSummaryStats(variantIds, interpretationStatusId, projectId, statsOrder, statsLimit,
-                    token);
+            return getCvdbEngine().getClinicalVariantSummaryStats(variantId, projectId, token);
         });
     }
 }
