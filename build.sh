@@ -41,6 +41,7 @@ function error() {
   log "=========================="
 }
 
+
 # Function to calculate the branch for dependencies
 function calculate_branch() {
   local EXISTS=""
