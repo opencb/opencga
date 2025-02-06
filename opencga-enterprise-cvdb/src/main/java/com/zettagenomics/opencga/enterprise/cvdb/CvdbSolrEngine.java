@@ -846,7 +846,7 @@ public class CvdbSolrEngine {
         }
 
         if (variantIds.size() > DEFAULT_LIMIT) {
-            throw new CvdbException("The maximum number of variants (" + DEFAULT_LIMIT + ")has been exceeded (" + variantIds.size() + ")");
+            throw new CvdbException("The maximum number of variants (" + DEFAULT_LIMIT + ") has been exceeded (" + variantIds.size() + ")");
         }
 
         String order = STATS_DEFAULT_ORDER;
@@ -890,6 +890,7 @@ public class CvdbSolrEngine {
             aggVariantStats.setId("ALL");
             aggVariantStats.setVariantId(variantId);
 
+            int numProjects = 0;
             for (String targetProjectId : targetProjectIds) {
                 query = new Query()
                         .append(PROJECT_PARAM_NAME, targetProjectId)
@@ -904,7 +905,7 @@ public class CvdbSolrEngine {
                 facetMap.put("disorderId", variantStats.getClinicalAnalysis().getDisorders());
                 facetMap.put("probandDisorderIds", variantStats.getClinicalAnalysis().getProbandDisorders());
                 facetMap.put("probandPhenotypeNames", variantStats.getClinicalAnalysis().getProbandPhenotypes());
-                performFacet(query, facetMap, "case", variantStats, order, limit, token);
+                performFacet(query, facetMap, "analysis", variantStats, order, limit, token);
 
                 // Clinical interpretation stats: num. primary and secondary interpretations; panel IDs and method names
                 facetMap.clear();
@@ -935,14 +936,14 @@ public class CvdbSolrEngine {
 
                 if (variantStats.getNumClinicalAnalyses() > 0) {
                     variantStatsList.add(variantStats);
+                    numProjects++;
 
-                    if (targetProjectIds.size() > 1) {
-                        updateSummaryStats(variantStats, aggVariantStats);
-                    }
+                    // Update aggregated variant stats
+                    updateSummaryStats(variantStats, aggVariantStats);
                 }
             }
 
-            if (targetProjectIds.size() > 1 && aggVariantStats.getNumClinicalAnalyses() > 1) {
+            if (numProjects > 1) {
                 variantStatsList.add(sortSummaryStats(aggVariantStats, order, limit));
             }
         }
@@ -959,7 +960,7 @@ public class CvdbSolrEngine {
         queryOptions.put(LIMIT, limit);
         queryOptions.put(ORDER, order);
         switch (type) {
-            case "case": {
+            case "analysis": {
                 facetResult = facetClinicalAnalyses(query, queryOptions, token);
                 break;
             }
