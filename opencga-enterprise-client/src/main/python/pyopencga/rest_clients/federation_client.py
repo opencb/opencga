@@ -30,6 +30,32 @@ class Federation(_ParentRestClient):
 
         return self._post(category='federations', resource='connect', subcategory='client', data=data, **options)
 
+    def client_study_users_list(self, **options):
+        """
+        Show the list of users with access to the federated study.
+        PATH: /{apiVersion}/federations/client/study/users/list
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        return self._get(category='federations', resource='list', subcategory='client/study/users', **options)
+
+    def client_study_users_update(self, data=None, **options):
+        """
+        Grant/Deny access to federated studies to users.
+        PATH: /{apiVersion}/federations/client/study/users/update
+
+        :param dict data: JSON containing the list of users to which this
+            action will be applied. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param str action: Action to be performed: ADD access or REMOVE
+            access. Allowed values: ['ADD', 'REMOVE']
+        """
+
+        return self._post(category='federations', resource='update', subcategory='client/study/users', data=data, **options)
+
     def delete_client(self, id, **options):
         """
         Delete a federation client.

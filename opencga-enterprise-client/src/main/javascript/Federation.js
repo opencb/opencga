@@ -42,6 +42,26 @@ export default class Federation extends OpenCGAParentClass {
         return this._post("federations", null, "client", null, "connect", data);
     }
 
+    /** Show the list of users with access to the federated study.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    clientStudyUsersList(params) {
+        return this._get("federations", null, "client/study/users", null, "list", params);
+    }
+
+    /** Grant/Deny access to federated studies to users.
+    * @param {Object} data - JSON containing the list of users to which this action will be applied.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {"ADD"|"REMOVE"} [params.action = "ADD"] - Action to be performed: ADD access or REMOVE access. The default value is ADD.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    clientStudyUsersUpdate(data, params) {
+        return this._post("federations", null, "client/study/users", null, "update", data, params);
+    }
+
     /** Delete a federation client.
     * @param {String} id - Federation client id.
     * @returns {Promise} Promise object in the form of RestResponse instance.

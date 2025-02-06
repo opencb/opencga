@@ -22,6 +22,10 @@ public class FederationFilter implements Filter {
     private static Logger logger = LoggerFactory.getLogger(FederationFilter.class);
     private static final Pattern REST_PATTERN = Pattern.compile("^(https?://.*/opencga/webservices/rest/[^/]+/)(.+)$");
 
+    private static final Pattern[] LOCAL_REST_PATTERNS = new Pattern[]{
+            Pattern.compile("/opencga/webservices/rest/[^/]+/federations/.+")
+    };
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
 
@@ -81,10 +85,10 @@ public class FederationFilter implements Filter {
         if (StringUtils.isEmpty(token)) {
             return false;
         }
-        if (request.getRequestURL().toString().endsWith("federations/redirect")) {
-            // When the federation is made to the same server, we need to avoid an infinite loop
-            return false;
-        }
+//        if (request.getRequestURI().endsWith("federations/redirect")) {
+//            // When the federation is made to the same server, we need to avoid an infinite loop
+//            return false;
+//        }
 
         JwtPayload jwtPayload;
         try {
@@ -106,7 +110,13 @@ public class FederationFilter implements Filter {
             String key = parameterNames.nextElement();
             params.put(key, request.getParameter(key));
         }
+
         String url = request.getRequestURI();
+        for (Pattern localRestPattern : LOCAL_REST_PATTERNS) {
+            if (localRestPattern.matcher(url).matches()) {
+                return false;
+            }
+        }
 
         String project = FederationUtils.extractProject(url, params);
         String study = FederationUtils.extractStudy(url, params);

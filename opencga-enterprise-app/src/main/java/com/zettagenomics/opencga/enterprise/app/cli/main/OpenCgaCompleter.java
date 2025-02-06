@@ -104,7 +104,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> federationsList = asList( "client-connect","client-delete","client-synchronize","client-update","server-create","server-delete","server-reset","server-update")
+    private List<Candidate> federationsList = asList( "client-connect","client-study-users-list","client-study-users-update","client-delete","client-synchronize","client-update","server-create","server-delete","server-reset","server-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());

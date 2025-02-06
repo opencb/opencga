@@ -20,6 +20,8 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | connectClient | /{apiVersion}/federations/client/connect | body[*] |
+#' | clientStudyUsersList | /{apiVersion}/federations/client/study/users/list | study |
+#' | clientStudyUsersUpdate | /{apiVersion}/federations/client/study/users/update | study, action, body[*] |
 #' | deleteClient | /{apiVersion}/federations/client/{id}/delete | id[*] |
 #' | synchronizeClient | /{apiVersion}/federations/client/{id}/synchronize | id[*] |
 #' | updateClient | /{apiVersion}/federations/client/{id}/update | id[*], body[*] |
@@ -42,6 +44,22 @@ setMethod("federationClient", "OpencgaR", function(OpencgaR, id, endpointName, p
         #' @param data JSON containing the Federation server configuration.
         connectClient=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL, subcategory="client",
                 subcategoryId=NULL, action="connect", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/federations/client/study/users/list:
+        #' Show the list of users with access to the federated study.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        clientStudyUsersList=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL,
+                subcategory="client/study/users", subcategoryId=NULL, action="list", params=params, httpMethod="GET",
+                as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/federations/client/study/users/update:
+        #' Grant/Deny access to federated studies to users.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param action Action to be performed: ADD access or REMOVE access. Allowed values: ['ADD', 'REMOVE']
+        #' @param data JSON containing the list of users to which this action will be applied.
+        clientStudyUsersUpdate=fetchOpenCGA(object=OpencgaR, category="federations", categoryId=NULL,
+                subcategory="client/study/users", subcategoryId=NULL, action="update", params=params,
+                httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/federations/client/{id}/delete:
         #' Delete a federation client.

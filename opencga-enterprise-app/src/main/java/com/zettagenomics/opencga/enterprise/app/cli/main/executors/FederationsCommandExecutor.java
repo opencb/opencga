@@ -7,6 +7,7 @@ import com.zettagenomics.opencga.enterprise.app.cli.main.options.FederationsComm
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerUpdateParams;
+import com.zettagenomics.opencga.enterprise.core.models.federation.FederationUserParams;
 import java.util.HashMap;
 import java.util.List;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -55,6 +56,12 @@ public class FederationsCommandExecutor extends com.zettagenomics.opencga.enterp
         switch (subCommandString) {
             case "client-connect":
                 queryResponse = connectClient();
+                break;
+            case "client-study-users-list":
+                queryResponse = clientStudyUsersList();
+                break;
+            case "client-study-users-update":
+                queryResponse = clientStudyUsersUpdate();
                 break;
             case "client-delete":
                 queryResponse = deleteClient();
@@ -118,6 +125,53 @@ public class FederationsCommandExecutor extends com.zettagenomics.opencga.enterp
                     .readValue(beanParams.toJson(), FederationClientParams.class);
         }
         return enterpriseOpenCGAClient.getEnterpriseFederationClient().connectClient(federationClientParams);
+    }
+
+    private RestResponse<ObjectMap> clientStudyUsersList() throws Exception {
+        logger.debug("Executing clientStudyUsersList in Federations command line");
+
+        FederationsCommandOptions.ClientStudyUsersListCommandOptions commandOptions = federationsCommandOptions.clientStudyUsersListCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return enterpriseOpenCGAClient.getEnterpriseFederationClient().clientStudyUsersList(queryParams);
+    }
+
+    private RestResponse<ObjectMap> clientStudyUsersUpdate() throws Exception {
+        logger.debug("Executing clientStudyUsersUpdate in Federations command line");
+
+        FederationsCommandOptions.ClientStudyUsersUpdateCommandOptions commandOptions = federationsCommandOptions.clientStudyUsersUpdateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("action", commandOptions.action);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        FederationUserParams federationUserParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/federations/client/study/users/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            federationUserParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FederationUserParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "userIds", commandOptions.userIds, true);
+
+            federationUserParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), FederationUserParams.class);
+        }
+        return enterpriseOpenCGAClient.getEnterpriseFederationClient().clientStudyUsersUpdate(federationUserParams, queryParams);
     }
 
     private RestResponse<ObjectMap> deleteClient() throws Exception {

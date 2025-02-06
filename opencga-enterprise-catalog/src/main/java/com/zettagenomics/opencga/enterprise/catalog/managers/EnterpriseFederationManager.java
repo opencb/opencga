@@ -7,6 +7,7 @@ import com.zettagenomics.opencga.enterprise.core.models.audit.AuditAction;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerUpdateParams;
+import com.zettagenomics.opencga.enterprise.core.models.federation.FederationUserParams;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
@@ -24,7 +25,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.OrganizationManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.managers.UserManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.client.GenericClient;
@@ -43,6 +46,8 @@ import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.federation.FederationServerParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -63,6 +68,10 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
     private final static Pattern URL_REDIRECT = Pattern.compile(".*/webservices/rest/v\\d+/([^/]+)/(.*)");
     private final static String SEPARATOR = "______";
     private final static int PASSWORD_LENGTH = 16;
+
+    private final QueryOptions ORGANIZATION_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            OrganizationDBAdaptor.QueryParams.ID.key(), OrganizationDBAdaptor.QueryParams.OWNER.key(),
+            OrganizationDBAdaptor.QueryParams.ADMINS.key(), OrganizationDBAdaptor.QueryParams.FEDERATION.key()));
 
     public EnterpriseFederationManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration) {
         super(catalogManager, enterpriseConfiguration);
@@ -152,7 +161,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
         }
     }
 
-    public OpenCGAResult<FederationServerParams> reset(String url, String federationServerId, String token) throws CatalogException {
+    public OpenCGAResult<FederationClientParams> reset(String url, String federationServerId, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String organizationId = tokenPayload.getOrganization();
         String userId = tokenPayload.getUserId();
@@ -185,6 +194,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
 
             // Generate new client params
             FederationClientParams clientParams = new FederationClientParams()
+                    .setUrl(url)
                     .setOrganizationId(organizationId)
                     .setUserId(serverParams.getUserId())
                     .setPassword(PasswordUtils.getStrongRandomPassword(PASSWORD_LENGTH))
@@ -220,7 +230,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             auditManager.audit(organizationId, userId, AuditAction.RESET_FEDERATION_CLIENT_CREDENTIALS, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new OpenCGAResult<>(0, eventList, 0, Collections.emptyList(), 0);
+            return new OpenCGAResult<>(0, eventList, 0, Collections.singletonList(clientParams), 0);
         } catch (Exception e) {
             auditManager.audit(organizationId, userId, AuditAction.RESET_FEDERATION_CLIENT_CREDENTIALS, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
@@ -413,9 +423,6 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             String[] split = StringUtils.split(updatedCredentials, SEPARATOR);
             String updatedSecurityKey = split[0];
             String updatedPassword = split[1];
-            System.out.println(updatedCredentials);
-            System.out.println(updatedSecurityKey);
-            System.out.println(updatedPassword);
             FederationClientUpdateParams updateParams = new FederationClientUpdateParams()
                     .setSecurityKey(updatedSecurityKey)
                     .setPassword(updatedPassword)
@@ -451,25 +458,9 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
         try {
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
 
-            // Obtain the federation server credentials
-            QueryOptions orgOptions = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.FEDERATION.key());
             Organization organization = EnterpriseFactory.getCatalogDBAdaptorFactory().getCatalogOrganizationDBAdaptor(organizationId)
-                    .get(orgOptions).first();
-
-            if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getClients())) {
-                throw new CatalogException("The organization does not have any federation clients configured.");
-            }
-            FederationClientParams federationClient = null;
-            for (FederationClientParams client : organization.getFederation().getClients()) {
-                if (client.getId().equals(federationId)) {
-                    federationClient = client;
-                    break;
-                }
-            }
-            if (federationClient == null) {
-                throw new CatalogException("Federation client id '" + federationId + "' not found in the organization.");
-            }
-
+                    .get(ORGANIZATION_OPTIONS).first();
+            FederationClientParams federationClient = findFederationClient(organization, federationId);
             GenericClient client = FederationUtils.getClientInstance(federationClient);
             List<Project> federatedProjects = obtainRemoteProjectsAndStudies(client);
 
@@ -561,6 +552,36 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                 .append("token", token);
         try {
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+
+            if (StringUtils.isNotEmpty(updateParams.getSecurityKey()) || StringUtils.isNotEmpty(updateParams.getPassword())) {
+                Organization organization = EnterpriseFactory.getCatalogDBAdaptorFactory().getCatalogOrganizationDBAdaptor(organizationId)
+                        .get(ORGANIZATION_OPTIONS).first();
+                FederationClientParams federationClient = findFederationClient(organization, clientId);
+
+                // Decode security key and user password
+                federationClient.setSecurityKey(decodeSecureString(federationClient.getSecurityKey()));
+                federationClient.setPassword(decodeSecureString(federationClient.getPassword()));
+
+                // Override values with the new ones
+                federationClient.setSecurityKey(StringUtils.isNotEmpty(updateParams.getSecurityKey())
+                        ? updateParams.getSecurityKey() : federationClient.getSecurityKey());
+                federationClient.setPassword(StringUtils.isNotEmpty(updateParams.getPassword())
+                        ? updateParams.getPassword() : federationClient.getPassword());
+
+                // Remove token so it tries to generate a new one
+                federationClient.setToken(null);
+
+                // Query and update new security key in the database
+                GenericClient client = FederationUtils.getClientInstance(federationClient);
+                String updatedCredentials = getUpdatedCredentials(client);
+                String[] split = StringUtils.split(updatedCredentials, SEPARATOR);
+                String updatedSecurityKey = split[0];
+                String updatedPassword = split[1];
+                updateParams
+                        .setSecurityKey(updatedSecurityKey)
+                        .setPassword(updatedPassword)
+                        .setToken("");
+            }
 
             OpenCGAResult<Organization> result = updateFederationClient(organizationId, clientId, updateParams);
             auditManager.audit(organizationId, userId, AuditAction.UPDATE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
@@ -662,6 +683,81 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
         }
     }
 
+    public OpenCGAResult<?> shareStudy(String studyStr, String action, FederationUserParams params, String token)
+            throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("action", action)
+                .append("params", params)
+                .append("token", token);
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(tokenPayload.getOrganization(), userId);
+
+            QueryOptions queryOptions = new QueryOptions(StudyDBAdaptor.QueryParams.INTERNAL.key(), true);
+            Study study = catalogManager.getStudyManager().get(studyStr, queryOptions, token).first();
+            if (!study.getInternal().isFederated()) {
+                throw new CatalogException("Study '" + studyStr + "' is not federated.");
+            }
+
+            ParamUtils.checkObj(params, "body");
+            ParamUtils.checkNotEmptyArray(params.getUserIds(), "userIds");
+
+            if (StringUtils.isEmpty(action)) {
+                action = ParamUtils.AddRemoveAction.ADD.name();
+            }
+            ParamUtils.BasicUpdateAction updateAction = ParamUtils.BasicUpdateAction.valueOf(action);
+            GroupUpdateParams groupUpdateParams = new GroupUpdateParams(params.getUserIds());
+
+            catalogManager.getStudyManager().updateGroup(studyStr, StudyManager.MEMBERS, updateAction, groupUpdateParams, token);
+            auditManager.audit(organizationId, userId, AuditAction.FEDERATION_SHARE, Enums.Resource.ORGANIZATION, organizationId,
+                    "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), 0, 0, 1, 0);
+        } catch (Exception e) {
+            auditManager.audit(organizationId, userId, AuditAction.FEDERATION_SHARE, Enums.Resource.ORGANIZATION, organizationId,
+                    "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
+            throw new CatalogException(e);
+        }
+    }
+
+    public OpenCGAResult<FederationUserParams> showUsers(String studyStr, String token) throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("token", token);
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(tokenPayload.getOrganization(), userId);
+
+            QueryOptions queryOptions = new QueryOptions(StudyDBAdaptor.QueryParams.INTERNAL.key(), true);
+            Study study = catalogManager.getStudyManager().get(studyStr, queryOptions, token).first();
+            if (!study.getInternal().isFederated()) {
+                throw new CatalogException("Study '" + studyStr + "' is not federated.");
+            }
+
+            Group group = catalogManager.getStudyManager().getGroup(studyStr, StudyManager.MEMBERS, token).first();
+            auditManager.audit(organizationId, userId, AuditAction.FEDERATION_SHOW_USERS, Enums.Resource.ORGANIZATION, organizationId,
+                    "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            FederationUserParams userParams = new FederationUserParams(group.getUserIds());
+            return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.singletonList(userParams));
+        } catch (Exception e) {
+            auditManager.audit(organizationId, userId, AuditAction.FEDERATION_SHOW_USERS, Enums.Resource.ORGANIZATION, organizationId,
+                    "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
+            throw new CatalogException(e);
+        }
+    }
+
     private OpenCGAResult<Organization> updateFederationClient(String organizationId, String federationId,
                                                                FederationClientUpdateParams updateParams) throws CatalogException {
         if (StringUtils.isNotEmpty(updateParams.getSecurityKey())) {
@@ -698,8 +794,16 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
     }
 
     private String getUpdatedCredentials(GenericClient client) throws ClientException {
-        return client.execute("federations", null, null, null, "firstConnection", Collections.emptyMap(), ParentClient.POST, String.class)
-                .firstResult();
+        RestResponse<String> execute = client.execute("federations", null, null, null, "firstConnection", Collections.emptyMap(),
+                ParentClient.POST, String.class);
+        if (CollectionUtils.isNotEmpty(execute.getEvents())) {
+            for (Event event : execute.getEvents()) {
+                if (event.getType().equals(Event.Type.ERROR)) {
+                    throw new ClientException("Federation server error: " + event.getMessage());
+                }
+            }
+        }
+        return execute.firstResult();
     }
 
     private void importFederatedProjects(String federationId, String organizationId, List<Project> projectList) throws CatalogException {
@@ -807,6 +911,21 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
         return new FederationServerParams(federationServerCreateParams.getId(),
                 StringUtils.isNotEmpty(federationServerCreateParams.getDescription()) ? federationServerCreateParams.getDescription() : "",
                 federationServerCreateParams.getEmail(), userId, true, securityKey);
+    }
+
+    private FederationClientParams findFederationClient(Organization organization, String federationId) throws CatalogException {
+        // Obtain the federation client credentials
+        if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getClients())) {
+            throw new CatalogException("The organization does not have any federation clients configured.");
+        }
+
+        for (FederationClientParams client : organization.getFederation().getClients()) {
+            if (client.getId().equals(federationId)) {
+                return client;
+            }
+        }
+
+        throw new CatalogException("Federation client id '" + federationId + "' not found in the organization.");
     }
 
     protected String generateNewSecurityKey() throws CatalogException {

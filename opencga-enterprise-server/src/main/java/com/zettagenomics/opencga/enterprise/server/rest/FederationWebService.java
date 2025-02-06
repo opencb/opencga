@@ -4,6 +4,8 @@ import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerUpdateParams;
+import com.zettagenomics.opencga.enterprise.core.models.federation.FederationUserParams;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
 import org.opencb.opencga.core.tools.annotations.Api;
@@ -97,6 +99,27 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().update(id, params, token));
     }
 
+    @POST
+    @Path("/client/study/users/update")
+    @ApiOperation(value = "Grant/Deny access to federated studies to users.")
+    public Response shareFederatedStudy(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Action to be performed: ADD access or REMOVE access.", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
+                @QueryParam("action") String action,
+            @ApiParam(value = "JSON containing the list of users to which this action will be applied.", required = true) FederationUserParams params
+    ) {
+        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().shareStudy(studyStr, action, params, token));
+    }
+
+    @GET
+    @Path("/client/study/users/list")
+    @ApiOperation(value = "Show the list of users with access to the federated study.")
+    public Response federatedStudyAccess(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr
+    ) {
+        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().showUsers(studyStr, token));
+    }
+
     @DELETE
     @Path("/client/{id}/delete")
     @ApiOperation(value = "Delete a federation client.")
@@ -114,7 +137,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
 //    public Response login(
 //            @ApiParam(value = "Federation server id to reset") @QueryParam("id") String federationServerId) {
 //        return null;
-////        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
+//        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
 //    }
 
     @POST

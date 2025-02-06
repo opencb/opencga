@@ -19,6 +19,7 @@ package com.zettagenomics.opencga.enterprise.client.rest.clients;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerUpdateParams;
+import com.zettagenomics.opencga.enterprise.core.models.federation.FederationUserParams;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.rest.*;
 import org.opencb.opencga.core.client.ParentClient;
@@ -58,6 +59,33 @@ public class FederationClient extends ParentClient {
         ObjectMap params = new ObjectMap();
         params.put("body", data);
         return execute("federations", null, "client", null, "connect", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Show the list of users with access to the federated study.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> clientStudyUsersList(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("federations", null, "client/study/users", null, "list", params, GET, ObjectMap.class);
+    }
+
+    /**
+     * Grant/Deny access to federated studies to users.
+     * @param data JSON containing the list of users to which this action will be applied.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       action: Action to be performed: ADD access or REMOVE access.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> clientStudyUsersUpdate(FederationUserParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("federations", null, "client/study/users", null, "update", params, POST, ObjectMap.class);
     }
 
     /**

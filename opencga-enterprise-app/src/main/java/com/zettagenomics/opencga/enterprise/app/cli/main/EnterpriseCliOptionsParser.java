@@ -352,6 +352,8 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("federations", federationsCommandOptions);
         JCommander federationsSubCommands = jCommander.getCommands().get("federations");
         federationsSubCommands.addCommand("client-connect", federationsCommandOptions.connectClientCommandOptions);
+        federationsSubCommands.addCommand("client-study-users-list", federationsCommandOptions.clientStudyUsersListCommandOptions);
+        federationsSubCommands.addCommand("client-study-users-update", federationsCommandOptions.clientStudyUsersUpdateCommandOptions);
         federationsSubCommands.addCommand("client-delete", federationsCommandOptions.deleteClientCommandOptions);
         federationsSubCommands.addCommand("client-synchronize", federationsCommandOptions.synchronizeClientCommandOptions);
         federationsSubCommands.addCommand("client-update", federationsCommandOptions.updateClientCommandOptions);

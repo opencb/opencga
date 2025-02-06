@@ -1,5 +1,6 @@
 package com.zettagenomics.opencga.enterprise.catalog.managers;
 
+import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -13,6 +14,7 @@ import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
+import org.opencb.opencga.core.models.federation.FederationServerParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
@@ -28,8 +30,7 @@ import org.opencb.opencga.core.response.RestResponse;
 import java.util.Collections;
 import java.util.HashMap;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstractManagerTest {
 
@@ -79,11 +80,27 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
                 new ObjectMap(), "GET", Study.class).first();
         assertEquals(1, studyOpenCGAResult.getNumResults());
         assertEquals("org2@project:study", studyOpenCGAResult.first().getFqn());
+        assertFalse(studyOpenCGAResult.first().getInternal().isFederated());
         assertFalse(studyOpenCGAResult.first().getVariableSets().isEmpty());
 
-        // Call to acls
-        RestResponse execute = genericClient.execute("studies", "org2@project:study", null, null, "acl", new HashMap(), "GET", AclEntryList.class);
-        System.out.println(execute);
+        // Reset federation server access
+        client = enterpriseFederationManager.reset("", serverCreateParams.getId(), org2OwnerToken).first();
+
+        // Update federation client creds
+        FederationClientUpdateParams updateParams = new FederationClientUpdateParams()
+                .setPassword(client.getPassword())
+                .setSecurityKey(client.getSecurityKey());
+        enterpriseFederationManager.update("org2", updateParams, ownerToken);
+//        ObjectMap params = new ObjectMap();
+//        params.put("body", updateParams);
+//        genericClient.execute("federations", "client", null, null, "update", params, "POST", Object.class);
+
+        studyOpenCGAResult = genericClient.execute("studies", "org2@project:study", null, null, "info",
+                new ObjectMap(), "GET", Study.class).first();
+        assertEquals(1, studyOpenCGAResult.getNumResults());
+        assertEquals("org2@project:study", studyOpenCGAResult.first().getFqn());
+        assertFalse(studyOpenCGAResult.first().getInternal().isFederated());
+        assertFalse(studyOpenCGAResult.first().getVariableSets().isEmpty());
     }
 
     @Test
