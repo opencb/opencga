@@ -49,8 +49,9 @@ public class StudyInternal extends Internal {
         this.configuration = configuration;
     }
 
-    public static StudyInternal init() {
-        return new StudyInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), StudyIndex.init(), StudyConfiguration.init());
+    public static StudyInternal init(String cellbaseVersion) {
+        return new StudyInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), StudyIndex.init(),
+                StudyConfiguration.init(cellbaseVersion));
     }
 
     @Override
