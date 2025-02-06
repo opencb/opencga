@@ -19,10 +19,10 @@ class CVDB(_ParentRestClient):
     def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         super(CVDB, self).__init__(configuration, token, login_handler, *args, **kwargs)
 
-    def aggregate_case(self, **options):
+    def aggregate_analysis(self, **options):
         """
         Calculate and fetch clinical analysis aggregation stats.
-        PATH: /{apiVersion}/analysis/cvdb/case/aggregate
+        PATH: /{apiVersion}/analysis/cvdb/analysis/aggregate
 
         :param str project: Project ID.
         :param str study: Study ID (or list of study IDs separated by commas).
@@ -290,12 +290,12 @@ class CVDB(_ParentRestClient):
             familyId, familyPhenotypeNames, familyMemberIds, panelIds, status.
         """
 
-        return self._get(category='analysis', resource='aggregate', subcategory='cvdb/case', **options)
+        return self._get(category='analysis', resource='aggregate', subcategory='cvdb/analysis', **options)
 
-    def query_case(self, **options):
+    def query_analysis(self, **options):
         """
         Filter and fetch clinical analyses from CVDB.
-        PATH: /{apiVersion}/analysis/cvdb/case/query
+        PATH: /{apiVersion}/analysis/cvdb/analysis/query
 
         :param str project: Project ID.
         :param str study: Study ID (or list of study IDs separated by commas).
@@ -564,12 +564,12 @@ class CVDB(_ParentRestClient):
             separated by a semicolon, an AND will be applied).
         """
 
-        return self._get(category='analysis', resource='query', subcategory='cvdb/case', **options)
+        return self._get(category='analysis', resource='query', subcategory='cvdb/analysis', **options)
 
-    def aggregate_clinical_variant(self, **options):
+    def aggregate_evidence(self, **options):
         """
-        Calculate and fetch clinical variant aggregation stats.
-        PATH: /{apiVersion}/analysis/cvdb/clinicalVariant/aggregate
+        Calculate and fetch clinical variant evidence aggregation stats.
+        PATH: /{apiVersion}/analysis/cvdb/evidence/aggregate
 
         :param str project: Project ID.
         :param str study: Study ID (or list of study IDs separated by commas).
@@ -831,21 +831,21 @@ class CVDB(_ParentRestClient):
             separated by a comma an OR will be applied; if the words are
             separated by a semicolon, an AND will be applied).
         :param str field: List of facet fields separated by semicolons, e.g.:
-            type;biotypes. For nested faceted fields use >>, e.g.:
-            type>>biotypes. Accepted values: caId, ciId, variantId, studyId,
-            primary, discussionAuthor, discussionDate,discussionText,
-            confidenceValue, confidenceAuthor, confidenceDate, tags, status,
-            chromosome, start, end, xrefs, type, release, studies, phastCons,
-            phylop, gerp, caddRaw, caddScaled, sift, siftDesc, polyphen,
-            polyphenDesc, genes, biotypes, soAcc, clinicalSig.
+            geneName;tier. For nested faceted fields use >>, e.g.:
+            geneName>>tier. Accepted values: caId, ciId, cvId, variantId,
+            studyId, phenotypeNames, geneName, transcriptId, soTermNames,
+            xrefIds, panelId, mois, penetrance, acmgs, tier,
+            clinicalSignificance, drugResponse, traitAssociation,
+            functionalEffect, tumorigenesis, otherClassifications,
+            rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance.
         """
 
-        return self._get(category='analysis', resource='aggregate', subcategory='cvdb/clinicalVariant', **options)
+        return self._get(category='analysis', resource='aggregate', subcategory='cvdb/evidence', **options)
 
-    def query_clinical_variant(self, **options):
+    def query_evidence(self, **options):
         """
-        Filter and fetch clinical variants from CVDB.
-        PATH: /{apiVersion}/analysis/cvdb/clinicalVariant/query
+        Filter and fetch clinical variant evidences from CVDB.
+        PATH: /{apiVersion}/analysis/cvdb/evidence/query
 
         :param str project: Project ID.
         :param str study: Study ID (or list of study IDs separated by commas).
@@ -1114,20 +1114,7 @@ class CVDB(_ParentRestClient):
             separated by a semicolon, an AND will be applied).
         """
 
-        return self._get(category='analysis', resource='query', subcategory='cvdb/clinicalVariant', **options)
-
-    def stats_clinical_variant(self, variant_id, **options):
-        """
-        Get clinical variant summary from CVDB.
-        PATH: /{apiVersion}/analysis/cvdb/clinicalVariant/{variantId}/stats
-
-        :param str variant_id: Variant ID (or comma separated list of variant
-            IDs). (REQUIRED)
-        :param str project: Project ID(or command separated list of project
-            IDs).
-        """
-
-        return self._get(category='analysis', resource='stats', subcategory='cvdb/clinicalVariant', second_query_id=variant_id, **options)
+        return self._get(category='analysis', resource='query', subcategory='cvdb/evidence', **options)
 
     def run_index(self, data=None, **options):
         """
@@ -1706,10 +1693,10 @@ class CVDB(_ParentRestClient):
 
         return self._get(category='analysis', resource='query', subcategory='cvdb/interpretation', **options)
 
-    def aggregate_variant_evidence(self, **options):
+    def aggregate_variant(self, **options):
         """
-        Calculate and fetch clinical variant evidence aggregation stats.
-        PATH: /{apiVersion}/analysis/cvdb/variantEvidence/aggregate
+        Calculate and fetch clinical variant aggregation stats.
+        PATH: /{apiVersion}/analysis/cvdb/variant/aggregate
 
         :param str project: Project ID.
         :param str study: Study ID (or list of study IDs separated by commas).
@@ -1971,21 +1958,21 @@ class CVDB(_ParentRestClient):
             separated by a comma an OR will be applied; if the words are
             separated by a semicolon, an AND will be applied).
         :param str field: List of facet fields separated by semicolons, e.g.:
-            geneName;tier. For nested faceted fields use >>, e.g.:
-            geneName>>tier. Accepted values: caId, ciId, cvId, variantId,
-            studyId, phenotypeNames, geneName, transcriptId, soTermNames,
-            xrefIds, panelId, mois, penetrance, acmgs, tier,
-            clinicalSignificance, drugResponse, traitAssociation,
-            functionalEffect, tumorigenesis, otherClassifications,
-            rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance.
+            type;biotypes. For nested faceted fields use >>, e.g.:
+            type>>biotypes. Accepted values: caId, ciId, variantId, studyId,
+            primary, discussionAuthor, discussionDate,discussionText,
+            confidenceValue, confidenceAuthor, confidenceDate, tags, status,
+            chromosome, start, end, xrefs, type, release, studies, phastCons,
+            phylop, gerp, caddRaw, caddScaled, sift, siftDesc, polyphen,
+            polyphenDesc, genes, biotypes, soAcc, clinicalSig.
         """
 
-        return self._get(category='analysis', resource='aggregate', subcategory='cvdb/variantEvidence', **options)
+        return self._get(category='analysis', resource='aggregate', subcategory='cvdb/variant', **options)
 
-    def query_variant_evidence(self, **options):
+    def query_variant(self, **options):
         """
-        Filter and fetch clinical variant evidences from CVDB.
-        PATH: /{apiVersion}/analysis/cvdb/variantEvidence/query
+        Filter and fetch clinical variants from CVDB.
+        PATH: /{apiVersion}/analysis/cvdb/variant/query
 
         :param str project: Project ID.
         :param str study: Study ID (or list of study IDs separated by commas).
@@ -2254,5 +2241,18 @@ class CVDB(_ParentRestClient):
             separated by a semicolon, an AND will be applied).
         """
 
-        return self._get(category='analysis', resource='query', subcategory='cvdb/variantEvidence', **options)
+        return self._get(category='analysis', resource='query', subcategory='cvdb/variant', **options)
+
+    def stats_variant(self, variant_id, **options):
+        """
+        Get clinical variant summary from CVDB.
+        PATH: /{apiVersion}/analysis/cvdb/variant/{variantId}/stats
+
+        :param str variant_id: Variant ID (or comma separated list of variant
+            IDs). (REQUIRED)
+        :param str project: Project ID(or command separated list of project
+            IDs).
+        """
+
+        return self._get(category='analysis', resource='stats', subcategory='cvdb/variant', second_query_id=variant_id, **options)
 

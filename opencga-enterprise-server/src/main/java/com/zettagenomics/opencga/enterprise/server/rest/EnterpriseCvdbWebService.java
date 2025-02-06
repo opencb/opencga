@@ -106,7 +106,7 @@ public class EnterpriseCvdbWebService extends AnalysisWebService {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/case/query")
+    @Path("/analysis/query")
     @ApiOperation(value = CLINICAL_ANALYSES_QUERY_DESCRIPTION, response = ClinicalAnalysis.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -438,7 +438,7 @@ public class EnterpriseCvdbWebService extends AnalysisWebService {
     }
 
     @GET
-    @Path("/clinicalVariant/query")
+    @Path("/variant/query")
     @ApiOperation(value = CLINICAL_VARIANT_QUERY_DESCRIPTION, response = ClinicalVariant.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -604,7 +604,7 @@ public class EnterpriseCvdbWebService extends AnalysisWebService {
     }
 
     @GET
-    @Path("/variantEvidence/query")
+    @Path("/evidence/query")
     @ApiOperation(value = CLINICAL_VARIANT_EVIDENCE_QUERY_DESCRIPTION, response = ClinicalVariantEvidence.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -775,7 +775,7 @@ public class EnterpriseCvdbWebService extends AnalysisWebService {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/case/aggregate")
+    @Path("/analysis/aggregate")
     @ApiOperation(value = "Calculate and fetch clinical analysis aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -1093,7 +1093,7 @@ public class EnterpriseCvdbWebService extends AnalysisWebService {
     }
 
     @GET
-    @Path("/clinicalVariant/aggregate")
+    @Path("/variant/aggregate")
     @ApiOperation(value = "Calculate and fetch clinical variant aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -1252,7 +1252,7 @@ public class EnterpriseCvdbWebService extends AnalysisWebService {
     }
 
     @GET
-    @Path("/variantEvidence/aggregate")
+    @Path("/evidence/aggregate")
     @ApiOperation(value = "Calculate and fetch clinical variant evidence aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -1415,7 +1415,7 @@ public class EnterpriseCvdbWebService extends AnalysisWebService {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/clinicalVariant/{variantId}/stats")
+    @Path("/variant/{variantId}/stats")
     @ApiOperation(value = CLINICAL_VARIANT_SUMMARY_DESCRIPTION, response = ClinicalVariantSummaryStats.class)
     public Response getClinicalVariantSummaryStats(
             @ApiParam(value = "Variant ID (or comma separated list of variant IDs)") @PathParam(value = "variantId") String variantId,

@@ -185,8 +185,8 @@ export default class CVDB extends OpenCGAParentClass {
     *     probandPhenotypeNames, familyId, familyPhenotypeNames, familyMemberIds, panelIds, status.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    aggregateCase(params) {
-        return this._get("analysis", null, "cvdb/case", null, "aggregate", params);
+    aggregateAnalysis(params) {
+        return this._get("analysis", null, "cvdb/analysis", null, "aggregate", params);
     }
 
     /** Filter and fetch clinical analyses from CVDB
@@ -341,11 +341,11 @@ export default class CVDB extends OpenCGAParentClass {
     *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    queryCase(params) {
-        return this._get("analysis", null, "cvdb/case", null, "query", params);
+    queryAnalysis(params) {
+        return this._get("analysis", null, "cvdb/analysis", null, "query", params);
     }
 
-    /** Calculate and fetch clinical variant aggregation stats
+    /** Calculate and fetch clinical variant evidence aggregation stats
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.project] - Project ID.
     * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
@@ -491,17 +491,17 @@ export default class CVDB extends OpenCGAParentClass {
     *     significances separated by commas).
     * @param {String} [params.cveReviewText] - Clinical variant evidence review text (word or list of words contained in the text, if the
     *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-    * @param {String} [params.field] - List of facet fields separated by semicolons, e.g.: type;biotypes. For nested faceted fields use >>,
-    *     e.g.: type>>biotypes. Accepted values: caId, ciId, variantId, studyId, primary, discussionAuthor, discussionDate,discussionText,
-    *     confidenceValue, confidenceAuthor, confidenceDate, tags, status, chromosome, start, end, xrefs, type, release, studies, phastCons,
-    *     phylop, gerp, caddRaw, caddScaled, sift, siftDesc, polyphen, polyphenDesc, genes, biotypes, soAcc, clinicalSig.
+    * @param {String} [params.field] - List of facet fields separated by semicolons, e.g.: geneName;tier. For nested faceted fields use >>,
+    *     e.g.: geneName>>tier. Accepted values: caId, ciId, cvId, variantId, studyId, phenotypeNames, geneName, transcriptId, soTermNames,
+    *     xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation, functionalEffect,
+    *     tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    aggregateClinicalVariant(params) {
-        return this._get("analysis", null, "cvdb/clinicalVariant", null, "aggregate", params);
+    aggregateEvidence(params) {
+        return this._get("analysis", null, "cvdb/evidence", null, "aggregate", params);
     }
 
-    /** Filter and fetch clinical variants from CVDB
+    /** Filter and fetch clinical variant evidences from CVDB
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.project] - Project ID.
     * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
@@ -653,18 +653,8 @@ export default class CVDB extends OpenCGAParentClass {
     *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    queryClinicalVariant(params) {
-        return this._get("analysis", null, "cvdb/clinicalVariant", null, "query", params);
-    }
-
-    /** Get clinical variant summary from CVDB
-    * @param {String} variantId - Variant ID (or comma separated list of variant IDs).
-    * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.project] - Project ID(or command separated list of project IDs).
-    * @returns {Promise} Promise object in the form of RestResponse instance.
-    */
-    statsClinicalVariant(variantId, params) {
-        return this._get("analysis", null, "cvdb/clinicalVariant", variantId, "stats", params);
+    queryEvidence(params) {
+        return this._get("analysis", null, "cvdb/evidence", null, "query", params);
     }
 
     /** Index clinical analyses of a OpenCGA project, a study or a list of clinical analyses into CVDB
@@ -998,7 +988,7 @@ export default class CVDB extends OpenCGAParentClass {
         return this._get("analysis", null, "cvdb/interpretation", null, "query", params);
     }
 
-    /** Calculate and fetch clinical variant evidence aggregation stats
+    /** Calculate and fetch clinical variant aggregation stats
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.project] - Project ID.
     * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
@@ -1144,17 +1134,17 @@ export default class CVDB extends OpenCGAParentClass {
     *     significances separated by commas).
     * @param {String} [params.cveReviewText] - Clinical variant evidence review text (word or list of words contained in the text, if the
     *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-    * @param {String} [params.field] - List of facet fields separated by semicolons, e.g.: geneName;tier. For nested faceted fields use >>,
-    *     e.g.: geneName>>tier. Accepted values: caId, ciId, cvId, variantId, studyId, phenotypeNames, geneName, transcriptId, soTermNames,
-    *     xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation, functionalEffect,
-    *     tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance.
+    * @param {String} [params.field] - List of facet fields separated by semicolons, e.g.: type;biotypes. For nested faceted fields use >>,
+    *     e.g.: type>>biotypes. Accepted values: caId, ciId, variantId, studyId, primary, discussionAuthor, discussionDate,discussionText,
+    *     confidenceValue, confidenceAuthor, confidenceDate, tags, status, chromosome, start, end, xrefs, type, release, studies, phastCons,
+    *     phylop, gerp, caddRaw, caddScaled, sift, siftDesc, polyphen, polyphenDesc, genes, biotypes, soAcc, clinicalSig.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    aggregateVariantEvidence(params) {
-        return this._get("analysis", null, "cvdb/variantEvidence", null, "aggregate", params);
+    aggregateVariant(params) {
+        return this._get("analysis", null, "cvdb/variant", null, "aggregate", params);
     }
 
-    /** Filter and fetch clinical variant evidences from CVDB
+    /** Filter and fetch clinical variants from CVDB
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.project] - Project ID.
     * @param {String} [params.study] - Study ID (or list of study IDs separated by commas).
@@ -1306,8 +1296,18 @@ export default class CVDB extends OpenCGAParentClass {
     *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    queryVariantEvidence(params) {
-        return this._get("analysis", null, "cvdb/variantEvidence", null, "query", params);
+    queryVariant(params) {
+        return this._get("analysis", null, "cvdb/variant", null, "query", params);
+    }
+
+    /** Get clinical variant summary from CVDB
+    * @param {String} variantId - Variant ID (or comma separated list of variant IDs).
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.project] - Project ID(or command separated list of project IDs).
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    statsVariant(variantId, params) {
+        return this._get("analysis", null, "cvdb/variant", variantId, "stats", params);
     }
 
 }

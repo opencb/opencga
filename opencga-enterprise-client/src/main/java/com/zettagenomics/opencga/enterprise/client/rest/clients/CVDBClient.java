@@ -199,9 +199,9 @@ public class CVDBClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<FacetField> aggregateCase(ObjectMap params) throws ClientException {
+    public RestResponse<FacetField> aggregateAnalysis(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "cvdb/case", null, "aggregate", params, GET, FacetField.class);
+        return execute("analysis", null, "cvdb/analysis", null, "aggregate", params, GET, FacetField.class);
     }
 
     /**
@@ -353,13 +353,13 @@ public class CVDBClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ClinicalAnalysis> queryCase(ObjectMap params) throws ClientException {
+    public RestResponse<ClinicalAnalysis> queryAnalysis(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "cvdb/case", null, "query", params, GET, ClinicalAnalysis.class);
+        return execute("analysis", null, "cvdb/analysis", null, "query", params, GET, ClinicalAnalysis.class);
     }
 
     /**
-     * Calculate and fetch clinical variant aggregation stats.
+     * Calculate and fetch clinical variant evidence aggregation stats.
      * @param params Map containing any of the following optional parameters.
      *       project: Project ID.
      *       study: Study ID (or list of study IDs separated by commas).
@@ -500,21 +500,20 @@ public class CVDBClient extends AbstractParentClient {
      *            separated by commas).
      *       cveReviewText: Clinical variant evidence review text (word or list of words contained in the text, if the words are separated
      *            by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-     *       field: List of facet fields separated by semicolons, e.g.: type;biotypes. For nested faceted fields use >>, e.g.:
-     *            type>>biotypes. Accepted values: caId, ciId, variantId, studyId, primary, discussionAuthor,
-     *            discussionDate,discussionText, confidenceValue, confidenceAuthor, confidenceDate, tags, status, chromosome, start, end,
-     *            xrefs, type, release, studies, phastCons, phylop, gerp, caddRaw, caddScaled, sift, siftDesc, polyphen, polyphenDesc,
-     *            genes, biotypes, soAcc, clinicalSig.
+     *       field: List of facet fields separated by semicolons, e.g.: geneName;tier. For nested faceted fields use >>, e.g.:
+     *            geneName>>tier. Accepted values: caId, ciId, cvId, variantId, studyId, phenotypeNames, geneName, transcriptId,
+     *            soTermNames, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation,
+     *            functionalEffect, tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<FacetField> aggregateClinicalVariant(ObjectMap params) throws ClientException {
+    public RestResponse<FacetField> aggregateEvidence(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "cvdb/clinicalVariant", null, "aggregate", params, GET, FacetField.class);
+        return execute("analysis", null, "cvdb/evidence", null, "aggregate", params, GET, FacetField.class);
     }
 
     /**
-     * Filter and fetch clinical variants from CVDB.
+     * Filter and fetch clinical variant evidences from CVDB.
      * @param params Map containing any of the following optional parameters.
      *       project: Project ID.
      *       study: Study ID (or list of study IDs separated by commas).
@@ -662,22 +661,9 @@ public class CVDBClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ClinicalVariant> queryClinicalVariant(ObjectMap params) throws ClientException {
+    public RestResponse<ClinicalVariantEvidence> queryEvidence(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "cvdb/clinicalVariant", null, "query", params, GET, ClinicalVariant.class);
-    }
-
-    /**
-     * Get clinical variant summary from CVDB.
-     * @param variantId Variant ID (or comma separated list of variant IDs).
-     * @param params Map containing any of the following optional parameters.
-     *       project: Project ID(or command separated list of project IDs).
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ClinicalVariantSummaryStats> statsClinicalVariant(String variantId, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "cvdb/clinicalVariant", variantId, "stats", params, GET, ClinicalVariantSummaryStats.class);
+        return execute("analysis", null, "cvdb/evidence", null, "query", params, GET, ClinicalVariantEvidence.class);
     }
 
     /**
@@ -1011,7 +997,7 @@ public class CVDBClient extends AbstractParentClient {
     }
 
     /**
-     * Calculate and fetch clinical variant evidence aggregation stats.
+     * Calculate and fetch clinical variant aggregation stats.
      * @param params Map containing any of the following optional parameters.
      *       project: Project ID.
      *       study: Study ID (or list of study IDs separated by commas).
@@ -1152,20 +1138,21 @@ public class CVDBClient extends AbstractParentClient {
      *            separated by commas).
      *       cveReviewText: Clinical variant evidence review text (word or list of words contained in the text, if the words are separated
      *            by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-     *       field: List of facet fields separated by semicolons, e.g.: geneName;tier. For nested faceted fields use >>, e.g.:
-     *            geneName>>tier. Accepted values: caId, ciId, cvId, variantId, studyId, phenotypeNames, geneName, transcriptId,
-     *            soTermNames, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation,
-     *            functionalEffect, tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance.
+     *       field: List of facet fields separated by semicolons, e.g.: type;biotypes. For nested faceted fields use >>, e.g.:
+     *            type>>biotypes. Accepted values: caId, ciId, variantId, studyId, primary, discussionAuthor,
+     *            discussionDate,discussionText, confidenceValue, confidenceAuthor, confidenceDate, tags, status, chromosome, start, end,
+     *            xrefs, type, release, studies, phastCons, phylop, gerp, caddRaw, caddScaled, sift, siftDesc, polyphen, polyphenDesc,
+     *            genes, biotypes, soAcc, clinicalSig.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<FacetField> aggregateVariantEvidence(ObjectMap params) throws ClientException {
+    public RestResponse<FacetField> aggregateVariant(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "cvdb/variantEvidence", null, "aggregate", params, GET, FacetField.class);
+        return execute("analysis", null, "cvdb/variant", null, "aggregate", params, GET, FacetField.class);
     }
 
     /**
-     * Filter and fetch clinical variant evidences from CVDB.
+     * Filter and fetch clinical variants from CVDB.
      * @param params Map containing any of the following optional parameters.
      *       project: Project ID.
      *       study: Study ID (or list of study IDs separated by commas).
@@ -1313,8 +1300,21 @@ public class CVDBClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ClinicalVariantEvidence> queryVariantEvidence(ObjectMap params) throws ClientException {
+    public RestResponse<ClinicalVariant> queryVariant(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "cvdb/variantEvidence", null, "query", params, GET, ClinicalVariantEvidence.class);
+        return execute("analysis", null, "cvdb/variant", null, "query", params, GET, ClinicalVariant.class);
+    }
+
+    /**
+     * Get clinical variant summary from CVDB.
+     * @param variantId Variant ID (or comma separated list of variant IDs).
+     * @param params Map containing any of the following optional parameters.
+     *       project: Project ID(or command separated list of project IDs).
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ClinicalVariantSummaryStats> statsVariant(String variantId, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("analysis", null, "cvdb/variant", variantId, "stats", params, GET, ClinicalVariantSummaryStats.class);
     }
 }
