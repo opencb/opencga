@@ -279,6 +279,11 @@ public class CellBaseValidator {
         return VersionUtils.isMinVersion("5.4.0", serverVersion);
     }
 
+    /**
+     * Get the major version of a version string. Does not include the starting "v".
+     * @return Major version
+     * @throws IOException if unable to get version from server
+     */
     public String getVersionFromServerMajor() throws IOException {
         return major(getVersionFromServer());
     }
@@ -289,6 +294,11 @@ public class CellBaseValidator {
         return serverVersion;
     }
 
+    /**
+     * Get the major version of a version string.
+     * @param version Version string in the form "major.minor.patch"
+     * @return Major version
+     */
     private static String major(String version) {
 //        return String.valueOf(new VersionUtils.Version(version).getMajor());
         return version.split("\\.")[0];

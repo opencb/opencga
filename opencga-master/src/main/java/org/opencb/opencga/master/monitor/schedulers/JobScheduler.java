@@ -1,5 +1,6 @@
 package org.opencb.opencga.master.monitor.schedulers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -152,6 +153,7 @@ public class JobScheduler {
     }
 
     public Iterator<Job> schedule(List<Job> pendingJobs, List<Job> queuedJobs, List<Job> runningJobs) {
+        Date currentDate = new Date();
         TreeMap<Float, List<Job>> jobTreeMap = new TreeMap<>();
 
         try {
@@ -160,8 +162,40 @@ public class JobScheduler {
             throw new RuntimeException("Scheduler exception: " + e.getMessage(), e);
         }
 
+        Map<String, Boolean> organizationJobStatus = new HashMap<>();
+        try {
+            List<String> organizationIds = catalogManager.getOrganizationManager().getOrganizationIds(token);
+            for (String organizationId : organizationIds) {
+                boolean exceeds = catalogManager.getJobManager().exceedsExecutionLimitQuota(organizationId);
+                organizationJobStatus.put(organizationId, exceeds);
+            }
+        } catch (CatalogException e) {
+            throw new RuntimeException("Couldn't get the execution quota status: " + e.getMessage(), e);
+        }
+
+        Map<String, List<Long>> rescheduleJobs = new HashMap<>();
+
         StopWatch stopWatch = StopWatch.createStarted();
         for (Job job : pendingJobs) {
+            if (StringUtils.isNotEmpty(job.getScheduledStartTime())) {
+                Date date = TimeUtils.toDate(job.getScheduledStartTime());
+                if (date.after(currentDate)) {
+                    logger.debug("Job '{}' can't be queued yet. It is scheduled to start at '{}'.", job.getId(),
+                            job.getScheduledStartTime());
+                    continue;
+                }
+            }
+
+            // Check if execution limit quota has been exceeded
+            String organizationId = CatalogFqn.extractFqnFromStudyFqn(job.getStudy().getId()).getOrganizationId();
+            if (organizationJobStatus.get(organizationId)) {
+                logger.debug("Job '{}' can't be queued yet. The organization '{}' has exceeded the execution limit quota."
+                        + " It will be scheduled for next month.", job.getId(), organizationId);
+                rescheduleJobs.putIfAbsent(job.getStudy().getId(), new ArrayList<>());
+                rescheduleJobs.get(job.getStudy().getId()).add(job.getUid());
+                continue;
+            }
+
             float priority = getPriorityWeight(job);
             if (!jobTreeMap.containsKey(priority)) {
                 jobTreeMap.put(priority, new ArrayList<>());
@@ -178,6 +212,29 @@ public class JobScheduler {
             allJobs.addAll(jobTreeMap.get(priority));
         }
         logger.debug("Time spent creating iterator: {}", TimeUtils.durationToString(stopWatch));
+
+        // Reschedule jobs that have exceeded the execution limit quota for next month
+        if (!rescheduleJobs.isEmpty()) {
+            stopWatch.reset();
+            stopWatch.start();
+
+            for (Map.Entry<String, List<Long>> entry : rescheduleJobs.entrySet()) {
+                String studyFqn = entry.getKey();
+                List<Long> jobUids = entry.getValue();
+
+                Date firstDayOfNextMonth = TimeUtils.getFirstDayOfNextMonth(currentDate);
+                String scheduledStartTime = TimeUtils.getTime(firstDayOfNextMonth);
+                logger.debug("Rescheduling all pending jobs from study '{}' for next month ({}): {}", studyFqn, scheduledStartTime,
+                        jobUids);
+                try {
+                    catalogManager.getJobManager().rescheduleJobs(studyFqn, jobUids, scheduledStartTime, "Execution limit quota exceeded"
+                            + " for this month. Automatically rescheduling job for date '" + scheduledStartTime + "'.", token);
+                } catch (CatalogException e) {
+                    throw new RuntimeException("Couldn't reschedule jobs for next month: " + e.getMessage(), e);
+                }
+            }
+            logger.debug("Time spent rescheduling jobs for next month: {}", TimeUtils.durationToString(stopWatch));
+        }
 
         return allJobs.iterator();
     }

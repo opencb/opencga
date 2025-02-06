@@ -4,7 +4,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
@@ -59,7 +59,7 @@ public class MendelianErrorSampleIndexConverterTest {
             byte[] annot = new byte[numVariants];
             for (int i = 0; i < numVariants; i++) {
                 if (i % 3 != 0) {
-                    annot[i] = AnnotationIndexConverter.INTERGENIC_MASK;
+                    annot[i] = SampleIndexVariantAnnotationConverter.INTERGENIC_MASK;
                 }
             }
             entry.getGtEntry("0/1").setAnnotationIndex(annot);

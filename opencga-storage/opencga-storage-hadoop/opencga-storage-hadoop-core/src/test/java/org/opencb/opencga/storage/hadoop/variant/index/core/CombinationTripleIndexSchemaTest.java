@@ -4,7 +4,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
@@ -170,8 +170,8 @@ public class CombinationTripleIndexSchemaTest {
 
     private CategoricalMultiValuedIndexField<String> buildIndex(String name, boolean nullable, String... values) {
 
-        return new CategoricalMultiValuedIndexField<>(new IndexFieldConfiguration(IndexFieldConfiguration.Source.ANNOTATION,
+        return new CategoricalMultiValuedIndexField<>(new FieldConfiguration(FieldConfiguration.Source.ANNOTATION,
                 name,
-                IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE, values).setNullable(nullable), 0, values);
+                FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE, values).setNullable(nullable), 0, values);
     }
 }

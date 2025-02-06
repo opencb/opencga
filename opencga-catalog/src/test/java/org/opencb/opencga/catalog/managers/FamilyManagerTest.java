@@ -997,7 +997,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
         catalogManager.getIndividualManager().update(studyFqn, "child1", params1, new QueryOptions(), ownerToken);
         catalogManager.getIndividualManager().update(studyFqn, "child2", params2, new QueryOptions(), ownerToken);
 
-        OpenCGAResult<?> distinct = catalogManager.getFamilyManager().distinct(organizationId, studyFqn, "disorders.name", new Query(), ownerToken);
+        OpenCGAResult<?> distinct = catalogManager.getFamilyManager().distinct(studyFqn, "disorders.name", new Query(), ownerToken);
 
         System.out.println(distinct);
         assertEquals(2, distinct.getNumResults());

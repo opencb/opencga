@@ -12,7 +12,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -141,8 +140,10 @@ public class StudyMetadata {
 
     public SampleIndexConfigurationVersioned getSampleIndexConfigurationLatest(boolean includeStagingSchemas) {
         if (sampleIndexConfigurations == null || sampleIndexConfigurations.isEmpty()) {
-            return new SampleIndexConfigurationVersioned(SampleIndexConfiguration.defaultConfiguration(),
-                    DEFAULT_SAMPLE_INDEX_VERSION, Date.from(Instant.now()), SampleIndexConfigurationVersioned.Status.ACTIVE);
+            // This should never happen.
+            // Might need to run EnsureSampleIndexConfigurationIsAlwaysDefined migration
+            logger.warn("No SampleIndexConfiguration found on study '" + getName() + "'. This should not happen.");
+            return null;
         } else {
             SampleIndexConfigurationVersioned conf = null;
             for (SampleIndexConfigurationVersioned thisConf : sampleIndexConfigurations) {
@@ -166,8 +167,9 @@ public class StudyMetadata {
     public SampleIndexConfigurationVersioned getSampleIndexConfiguration(int version) {
         if (sampleIndexConfigurations == null || sampleIndexConfigurations.isEmpty()) {
             if (version == DEFAULT_SAMPLE_INDEX_VERSION) {
-                return new SampleIndexConfigurationVersioned(SampleIndexConfiguration.defaultConfiguration(),
-                        DEFAULT_SAMPLE_INDEX_VERSION, Date.from(Instant.now()), SampleIndexConfigurationVersioned.Status.ACTIVE);
+                logger.warn("No SampleIndexConfiguration found in study '" + getName() + "' for default version " + version + ". "
+                        + "This should not happen.");
+                return null;
             } else {
                 return null;
             }

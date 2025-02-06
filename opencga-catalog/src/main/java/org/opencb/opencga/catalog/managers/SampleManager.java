@@ -325,6 +325,48 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
     }
 
+    public OpenCGAResult<?> distinct(String field, Query query, String token) throws CatalogException {
+        return distinct(Collections.singletonList(field), query, token);
+    }
+
+    /**
+     * Fetch a list containing all the distinct values of the key {@code field}.
+     * Query object may or may not contain a study parameter, so only organization administrators will be able to call to this method.
+     *
+     * @param fields  Fields for which to return distinct values.
+     * @param query   Query object.
+     * @param token   Token of the user logged in.
+     * @return The list of distinct values.
+     * @throws CatalogException CatalogException.
+     */
+    public OpenCGAResult<?> distinct(List<String> fields, Query query, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = tokenPayload.getOrganization();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("fields", fields)
+                .append("query", new Query(query))
+                .append("token", token);
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+            fixQueryObject(organizationId, null, query, userId);
+
+            OpenCGAResult<?> result = getSampleDBAdaptor(organizationId).distinct(fields, query);
+
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.SAMPLE, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.SAMPLE, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     @Override
     public OpenCGAResult<?> distinct(String studyStr, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
@@ -358,6 +400,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
     }
+
+
 
     void fixQueryObject(String organizationId, Study study, Query query, String userId) throws CatalogException {
         changeQueryId(query, ParamConstants.SAMPLE_RGA_STATUS_PARAM, SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key());

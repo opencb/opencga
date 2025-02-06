@@ -704,7 +704,7 @@ public class RgaManager implements AutoCloseable {
                         .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), includeIndividuals);
-                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
+                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
                 includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
             } else {
@@ -720,7 +720,7 @@ public class RgaManager implements AutoCloseable {
                 // 3. Get list of sample ids for which the user has permissions
                 Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
-                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
+                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
                 // TODO: The number of samples to include could be really high
                 includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
@@ -737,7 +737,7 @@ public class RgaManager implements AutoCloseable {
                 logger.warn("Include only the samples that are actually necessary");
             }
 
-            OpenCGAResult<?> sampleResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
+            OpenCGAResult<?> sampleResult = catalogManager.getSampleManager().distinct(study.getFqn(),
                     SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
             includeSampleIds = new HashSet<>((List<String>) sampleResult.getResults());
         }
@@ -831,7 +831,7 @@ public class RgaManager implements AutoCloseable {
                         .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED)
                         .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), includeIndividuals);
-                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
+                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
                 includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
             } else {
@@ -850,7 +850,7 @@ public class RgaManager implements AutoCloseable {
                 Query sampleQuery = new Query()
                         .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
-                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
+                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
                 includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
             }
@@ -865,7 +865,7 @@ public class RgaManager implements AutoCloseable {
                 logger.warn("Include only the samples that are actually necessary");
             }
 
-            OpenCGAResult<?> sampleResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
+            OpenCGAResult<?> sampleResult = catalogManager.getSampleManager().distinct(study.getFqn(),
                     SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
             includeSampleIds = new HashSet<>((List<String>) sampleResult.getResults());
         }
@@ -1773,7 +1773,7 @@ public class RgaManager implements AutoCloseable {
             query.put(ACL_PARAM, userId + ":" + StringUtils.join(otherPermissions, ","));
         }
 
-        OpenCGAResult<?> distinct = catalogManager.getSampleManager().distinct(organizationId, study, SampleDBAdaptor.QueryParams.ID.key(),
+        OpenCGAResult<?> distinct = catalogManager.getSampleManager().distinct(study, SampleDBAdaptor.QueryParams.ID.key(),
                 query, token);
         return distinct.getResults().stream().map(String::valueOf).collect(Collectors.toSet());
     }
@@ -1874,7 +1874,7 @@ public class RgaManager implements AutoCloseable {
                     List<String> tmpValues = values.subList(currentBatch, Math.min(values.size(), batchSize + currentBatch));
 
                     sampleQuery.put(sampleQueryField, tmpValues);
-                    OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
+                    OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
                             SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
                     authorisedSamples.addAll((Collection<? extends String>) authorisedSampleIdResult.getResults());
 

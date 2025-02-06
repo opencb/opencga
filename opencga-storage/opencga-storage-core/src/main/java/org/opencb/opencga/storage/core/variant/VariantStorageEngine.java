@@ -360,6 +360,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public List<StoragePipelineResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageEngineException {
+        createStudyIfNeeded();
         List<StoragePipelineResult> results = super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
         if (doLoad) {
             annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
@@ -1412,7 +1413,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantQueryExecutor getVariantQueryExecutor(ParsedVariantQuery variantQuery) {
         try {
             for (VariantQueryExecutor executor : getVariantQueryExecutors()) {
-                if (executor.canUseThisExecutor(variantQuery, variantQuery.getInputOptions())) {
+                if (executor.acceptsQuery(variantQuery)) {
                     logger.info("Using VariantQueryExecutor : " + executor.getClass().getName());
                     logger.info("  Query : " + VariantQueryUtils.printQuery(variantQuery.getInputQuery()));
                     logger.info("  Options : " + variantQuery.getInputOptions().toJson());
@@ -1537,6 +1538,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw VariantQueryException.internalException(e);
         }
         return executors;
+    }
+
+    protected void createStudyIfNeeded() throws StorageEngineException {
+        String studyName = getOptions().getString(VariantStorageOptions.STUDY.key(), VariantStorageOptions.STUDY.defaultValue());
+        StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(studyName);
+        if (studyMetadata == null) {
+            logger.info("Creating a new StudyMetadata '{}'", studyName);
+            String cellbaseVersion;
+            try {
+                cellbaseVersion = getCellBaseUtils().getVersionFromServer();
+            } catch (IOException e) {
+                throw new StorageEngineException("Unable to get CellBase version", e);
+            }
+            getMetadataManager().createStudy(studyName, cellbaseVersion);
+        }
     }
 
     /**

@@ -556,6 +556,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "proteinKeyword", commandOptions.proteinKeyword, true);
             putNestedIfNotEmpty(beanParams, "drug", commandOptions.drug, true);
             putNestedIfNotEmpty(beanParams, "customAnnotation", commandOptions.customAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "source", commandOptions.source, true);
             putNestedIfNotEmpty(beanParams, "unknownGenotype", commandOptions.unknownGenotype, true);
             putNestedIfNotNull(beanParams, "sampleMetadata", commandOptions.sampleMetadata, true);
             putNestedIfNotNull(beanParams, "sort", commandOptions.sort, true);
@@ -1347,6 +1348,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("panelRoleInCancer", commandOptions.panelRoleInCancer);
         queryParams.putIfNotEmpty("panelFeatureType", commandOptions.panelFeatureType);
         queryParams.putIfNotNull("panelIntersection", commandOptions.panelIntersection);
+        queryParams.putIfNotEmpty("source", commandOptions.source);
         queryParams.putIfNotEmpty("trait", commandOptions.trait);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
