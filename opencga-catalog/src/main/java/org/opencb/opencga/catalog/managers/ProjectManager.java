@@ -121,13 +121,20 @@ public class ProjectManager extends AbstractManager {
             throw new CatalogException("Internal error. Missing project id or uuid.");
         }
 
-        OpenCGAResult<Project> projectDataResult = getProjectDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions, userId);
+        String organizationId = payload.getOrganization();
+        String organizationFqn = catalogFqn.getOrganizationId();
+        if (!organizationId.equals(organizationFqn) && !authorizationManager.isOpencgaAdministrator(payload)) {
+            // User may be trying to fetch a federated project
+            organizationFqn = organizationId;
+        }
+
+        OpenCGAResult<Project> projectDataResult = getProjectDBAdaptor(organizationFqn).get(query, queryOptions, userId);
         if (projectDataResult.getNumResults() > 1) {
             throw new CatalogException("Please be more concrete with the project. More than one project found for " + userId + " user");
         } else if (projectDataResult.getNumResults() == 1) {
             return projectDataResult;
         } else {
-            projectDataResult = getProjectDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
+            projectDataResult = getProjectDBAdaptor(organizationFqn).get(query, queryOptions);
             if (projectDataResult.getNumResults() == 0) {
                 throw new CatalogException("No project found given '" + catalogFqn.getProvidedId() + "'.");
             } else {

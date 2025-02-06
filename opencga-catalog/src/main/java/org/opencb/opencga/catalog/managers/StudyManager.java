@@ -223,15 +223,22 @@ public class StudyManager extends AbstractManager {
             fixQueryOptions(queryOptions, INCLUDE_STUDY_IDS.getAsStringList(QueryOptions.INCLUDE));
         }
 
+        String payloadOrgId = payload.getOrganization();
+        String fqnOrgId = catalogFqn.getOrganizationId();
+        boolean isOpenCGAAdmin = authorizationManager.isOpencgaAdministrator(payload);
+        if (!payloadOrgId.equals(fqnOrgId) && !isOpenCGAAdmin) {
+            // User may be trying to fetch a federated project
+            fqnOrgId = payloadOrgId;
+        }
+
         OpenCGAResult<Study> studyDataResult;
-        if (!payload.getOrganization().equals(catalogFqn.getOrganizationId())) {
+        if (isOpenCGAAdmin) {
             // If it is the administrator, we allow it without checking the user anymore
-            authorizationManager.checkIsOpencgaAdministrator(payload);
-            studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
+            studyDataResult = getStudyDBAdaptor(fqnOrgId).get(query, queryOptions);
         } else {
-            studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions, userId);
+            studyDataResult = getStudyDBAdaptor(fqnOrgId).get(query, queryOptions, userId);
             if (studyDataResult.getNumResults() == 0) {
-                studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
+                studyDataResult = getStudyDBAdaptor(fqnOrgId).get(query, queryOptions);
                 if (studyDataResult.getNumResults() != 0) {
                     throw CatalogAuthorizationException.denyAny(userId, "view", "study");
                 }
@@ -312,13 +319,8 @@ public class StudyManager extends AbstractManager {
             }
         }
 
-        if (organizationFqn != null && !organizationId.equals(organizationFqn)
-                && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
-            logger.error("User '{}' belonging to organization '{}' requested access to organization '{}'", userId, organizationId,
-                    organizationFqn);
-            throw new CatalogAuthorizationException("Cannot access data from a different organization.");
-        } else {
-            // If organization is not part of the FQN, assign it with the organization the user belongs to.
+        if (!organizationId.equals(organizationFqn) && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+            // User may be trying to fetch a federated study
             organizationFqn = organizationId;
         }
 
