@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.migrations.v3.v3_1_0;
 
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.UpdateOneModel;
@@ -12,7 +13,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 
 @Migration(id = "addFailedLoginAttemptsMigration", description = "Add failedAttempts to User #TASK-6013", version = "3.2.0",
-        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20240419)
+        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20240419, patch = 2)
 public class UserBanMigration extends MigrationTool {
 
     @Override
@@ -36,6 +37,10 @@ public class UserBanMigration extends MigrationTool {
                             )
                     );
                 });
+
+        MongoCollection<Document> orgCollection = getMongoCollection(OrganizationMongoDBAdaptorFactory.ORGANIZATION_COLLECTION);
+        orgCollection.updateMany(Filters.exists("configuration.defaultUserExpirationDate", false),
+                Updates.set("configuration.defaultUserExpirationDate", Constants.DEFAULT_USER_EXPIRATION_DATE));
     }
 
 }
