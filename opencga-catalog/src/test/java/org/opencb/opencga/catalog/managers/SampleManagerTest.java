@@ -681,7 +681,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void distinctTest() throws CatalogException {
-        OpenCGAResult<?> distinct = catalogManager.getSampleManager().distinct(organizationId, studyFqn, SampleDBAdaptor.QueryParams.ID.key(), null, ownerToken);
+        OpenCGAResult<?> distinct = catalogManager.getSampleManager().distinct(studyFqn, SampleDBAdaptor.QueryParams.ID.key(), null, ownerToken);
         assertEquals(String.class.getName(), distinct.getResultType());
         assertEquals(9, distinct.getNumResults());
         assertEquals(9, distinct.getResults().size());
@@ -692,12 +692,12 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(18, distinct.getNumResults());
         assertEquals(18, distinct.getResults().size());
 
-        distinct = catalogManager.getSampleManager().distinct(organizationId, studyFqn, SampleDBAdaptor.QueryParams.UID.key(), null, ownerToken);
+        distinct = catalogManager.getSampleManager().distinct(studyFqn, SampleDBAdaptor.QueryParams.UID.key(), null, ownerToken);
         assertEquals(Long.class.getName(), distinct.getResultType());
         assertEquals(9, distinct.getNumResults());
         assertEquals(9, distinct.getResults().size());
 
-        distinct = catalogManager.getSampleManager().distinct(organizationId, studyFqn, SampleDBAdaptor.QueryParams.SOMATIC.key(), null, ownerToken);
+        distinct = catalogManager.getSampleManager().distinct(studyFqn, SampleDBAdaptor.QueryParams.SOMATIC.key(), null, ownerToken);
         assertEquals(Boolean.class.getName(), distinct.getResultType());
         assertEquals(1, distinct.getNumResults());
         assertEquals(1, distinct.getResults().size());

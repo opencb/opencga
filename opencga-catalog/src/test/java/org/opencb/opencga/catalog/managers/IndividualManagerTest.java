@@ -110,11 +110,11 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 .setDisorders(Collections.singletonList(new Disorder().setId("adisorder2")));
         catalogManager.getIndividualManager().create(studyFqn, individual, null, ownerToken);
 
-        OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(organizationId, studyFqn,
+        OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(studyFqn,
                 IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(), new Query(), ownerToken);
         assertEquals(3, result.getNumResults());
 
-        result = catalogManager.getIndividualManager().distinct(organizationId, studyFqn, IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(),
+        result = catalogManager.getIndividualManager().distinct(studyFqn, IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(),
                 new Query(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "~^disor"), ownerToken);
         assertEquals(2, result.getNumResults());
 
@@ -142,7 +142,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
         catalogManager.getIndividualManager().create(studyFqn, individual, null, ownerToken);
 
-        OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(organizationId, studyFqn,
+        OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(studyFqn,
                 IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(), new Query(), ownerToken);
         assertEquals(3, result.getNumResults());
 

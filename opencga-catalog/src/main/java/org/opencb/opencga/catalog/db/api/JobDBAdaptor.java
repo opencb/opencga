@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.job.ExecutionTime;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -99,6 +100,9 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
      */
     OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
+    OpenCGAResult<ExecutionTime> executionTimeByMonth(Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
         UID("uid", LONG, ""),
@@ -137,6 +141,7 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         DEPENDS_ON("dependsOn", TEXT_ARRAY, ""),
         DRY_RUN("dryRun", BOOLEAN, ""),
         TAGS("tags", TEXT_ARRAY, ""),
+        SCHEDULED_START_TIME("scheduledStartTime", TEXT, ""),
 
         EXECUTION("execution", OBJECT, ""),
         EXECUTION_START("execution.start", DATE, ""),

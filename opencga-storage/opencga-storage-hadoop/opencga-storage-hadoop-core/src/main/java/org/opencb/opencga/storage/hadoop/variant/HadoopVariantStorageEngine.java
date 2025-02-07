@@ -170,6 +170,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         if (inputFiles.size() == 1 || !doLoad) {
             return super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
         }
+        createStudyIfNeeded();
 
         final int nThreadArchive = getOptions().getInt(HADOOP_LOAD_FILES_IN_PARALLEL.key(), HADOOP_LOAD_FILES_IN_PARALLEL.defaultValue());
         ObjectMap extraOptions = new ObjectMap();

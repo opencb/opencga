@@ -99,6 +99,7 @@
 {"collections": ["sample", "sample_archive"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {}}
 {"collections": ["sample", "sample_archive"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {}}
 {"collections": ["sample", "sample_archive"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"internal.variant.index.status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["sample", "sample_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["sample", "sample_archive"], "fields": {"internal.rga.status": 1, "studyUid": 1}, "options": {}}
 

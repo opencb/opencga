@@ -145,7 +145,13 @@ public class MetaWSServer extends OpenCGAWSServer {
         // Check if some categories have been selected
         if (StringUtils.isNotEmpty(categoryStr)) {
             for (String category : categoryStr.split(",")) {
-                classes.add(classMap.get(category));
+                Class<?> clazz = classMap.get(category);
+                if (clazz != null) {
+                    classes.add(clazz);
+                } else {
+                    return createErrorResponse("meta/api",
+                            "Category '" + category + "' not found. Available categories: " + String.join(",", classMap.keySet()));
+                }
             }
         } else {
             // Get API for all categories
