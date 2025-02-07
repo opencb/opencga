@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.managers.UserManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.client.GenericClient;
 import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.common.MailUtils;
@@ -57,6 +58,7 @@ import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -72,6 +74,11 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
     private final QueryOptions ORGANIZATION_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             OrganizationDBAdaptor.QueryParams.ID.key(), OrganizationDBAdaptor.QueryParams.OWNER.key(),
             OrganizationDBAdaptor.QueryParams.ADMINS.key(), OrganizationDBAdaptor.QueryParams.FEDERATION.key()));
+    private final QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key(), ProjectDBAdaptor.QueryParams.UID.key(),
+            ProjectDBAdaptor.QueryParams.STUDIES.key() + "." + StudyDBAdaptor.QueryParams.ID.key(),
+            ProjectDBAdaptor.QueryParams.STUDIES.key() + "." + StudyDBAdaptor.QueryParams.FQN.key(),
+            ProjectDBAdaptor.QueryParams.STUDIES.key() + "." + StudyDBAdaptor.QueryParams.UID.key()));
 
     public EnterpriseFederationManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration) {
         super(catalogManager, enterpriseConfiguration);

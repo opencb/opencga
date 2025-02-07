@@ -171,7 +171,6 @@ public class FederationUtils {
         study.setPermissionRules(Collections.emptyMap());
         study.setNotes(Collections.emptyList());
         study.setVariableSets(Collections.emptyList());
-        study.setInternal(StudyInternal.init());
         study.setAttributes(Collections.emptyMap());
         study.setUri(null);
 
