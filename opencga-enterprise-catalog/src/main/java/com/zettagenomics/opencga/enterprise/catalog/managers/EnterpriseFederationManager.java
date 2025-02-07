@@ -558,10 +558,6 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                         .get(ORGANIZATION_OPTIONS).first();
                 FederationClientParams federationClient = findFederationClient(organization, clientId);
 
-                // Decode security key and user password
-                federationClient.setSecurityKey(decodeSecureString(federationClient.getSecurityKey()));
-                federationClient.setPassword(decodeSecureString(federationClient.getPassword()));
-
                 // Override values with the new ones
                 federationClient.setSecurityKey(StringUtils.isNotEmpty(updateParams.getSecurityKey())
                         ? updateParams.getSecurityKey() : federationClient.getSecurityKey());
@@ -617,25 +613,9 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             String federationId = FederationUtils.findFederationServerIdInPayload(project, study, tokenPayload);
 
             // Obtain the federation server credentials
-            QueryOptions orgOptions = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.FEDERATION.key());
             Organization organization = EnterpriseFactory.getCatalogDBAdaptorFactory().getCatalogOrganizationDBAdaptor(organizationId)
-                    .get(orgOptions).first();
-            if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getClients())) {
-                throw new CatalogException("Organization does not have any federation server configured.");
-            }
-            FederationClientParams federationClient = null;
-            for (FederationClientParams client : organization.getFederation().getClients()) {
-                if (client.getId().equals(federationId)) {
-                    federationClient = client;
-                    break;
-                }
-            }
-            if (federationClient == null) {
-                throw new CatalogException("Federation server id '" + federationId + "' not found in the organization.");
-            }
-            // Decode security key and user password
-            federationClient.setSecurityKey(decodeSecureString(federationClient.getSecurityKey()));
-            federationClient.setPassword(decodeSecureString(federationClient.getPassword()));
+                    .get(ORGANIZATION_OPTIONS).first();
+            FederationClientParams federationClient = findFederationClient(organization, federationId);
 
             String federationToken = federationClient.getToken();
             // The call to getClientInstance will update the token if it has expired
@@ -921,6 +901,10 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
 
         for (FederationClientParams client : organization.getFederation().getClients()) {
             if (client.getId().equals(federationId)) {
+                // Decode security key and user password
+                client.setSecurityKey(decodeSecureString(client.getSecurityKey()));
+                client.setPassword(decodeSecureString(client.getPassword()));
+
                 return client;
             }
         }
