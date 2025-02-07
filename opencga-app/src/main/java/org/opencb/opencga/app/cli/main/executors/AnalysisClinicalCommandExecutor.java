@@ -1227,6 +1227,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("panelRoleInCancer", commandOptions.panelRoleInCancer);
         queryParams.putIfNotEmpty("panelFeatureType", commandOptions.panelFeatureType);
         queryParams.putIfNotNull("panelIntersection", commandOptions.panelIntersection);
+        queryParams.putIfNotEmpty("source", commandOptions.source);
         queryParams.putIfNotEmpty("trait", commandOptions.trait);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());

@@ -53,9 +53,9 @@ public class StudyInternal extends Internal {
         this.federated = false;
     }
 
-    public static StudyInternal init() {
+    public static StudyInternal init(String cellbaseVersion) {
         return new StudyInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), StudyIndex.init(),
-                StudyConfiguration.init(), false);
+                StudyConfiguration.init(cellbaseVersion), false);
     }
 
     @Override

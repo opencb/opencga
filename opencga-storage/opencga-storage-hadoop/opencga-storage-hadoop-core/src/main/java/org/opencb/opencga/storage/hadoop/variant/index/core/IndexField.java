@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.query.OpValue;
 import org.opencb.opencga.storage.core.variant.query.Values;
@@ -17,34 +17,13 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public abstract class IndexField<T> {
+public abstract class IndexField<T> extends AbstractField {
 
-    private final IndexFieldConfiguration configuration;
     private final int bitOffset;
 
-    public IndexField(IndexFieldConfiguration configuration, int bitOffset) {
-        this.configuration = configuration;
+    public IndexField(FieldConfiguration configuration, int bitOffset) {
+        super(configuration);
         this.bitOffset = bitOffset;
-    }
-
-    public String getId() {
-        return configuration.getId();
-    }
-
-    public IndexFieldConfiguration.Source getSource() {
-        return configuration.getSource();
-    }
-
-    public String getKey() {
-        return configuration.getKey();
-    }
-
-    public IndexFieldConfiguration getConfiguration() {
-        return configuration;
-    }
-
-    public IndexFieldConfiguration.Type getType() {
-        return configuration.getType();
     }
 
     public abstract int getBitLength();

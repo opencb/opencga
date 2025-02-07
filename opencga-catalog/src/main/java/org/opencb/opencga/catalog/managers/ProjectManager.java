@@ -176,6 +176,9 @@ public class ProjectManager extends AbstractManager {
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
             ParamUtils.checkObj(projectCreateParams, "ProjectCreateParams");
             project = projectCreateParams.toProject();
+
+            // Check if we have already reached the limit of projects in the Organisation
+            checkProjectLimitQuota(organizationId);
             validateProjectForCreation(organizationId, project);
 
             queryResult = getProjectDBAdaptor(organizationId).insert(project, options);
@@ -208,6 +211,18 @@ public class ProjectManager extends AbstractManager {
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
         return queryResult;
+    }
+
+    private void checkProjectLimitQuota(String organizationId) throws CatalogException {
+        if (configuration.getQuota().getMaxNumProjects() <= 0) {
+            logger.debug("No project limit quota set. Skipping quota check.");
+            return;
+        }
+        long numProjects = getProjectDBAdaptor(organizationId).count(new Query()).getNumMatches();
+        if (numProjects >= configuration.getQuota().getMaxNumProjects()) {
+            throw new CatalogException("The organization '" + organizationId + "' has reached the maximum quota of projects ("
+                    + configuration.getQuota().getMaxNumProjects() + ").");
+        }
     }
 
     private void validateProjectForCreation(String organizationId, Project project) throws CatalogParameterException {

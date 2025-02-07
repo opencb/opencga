@@ -166,7 +166,8 @@ public final class VariantQueryUtils {
             UNKNOWN_GENOTYPE,
             SAMPLE_METADATA,
             SAMPLE_LIMIT,
-            SAMPLE_SKIP
+            SAMPLE_SKIP,
+            SOURCE
     )));
 
     public static final String SKIP_MISSING_GENES = "skipMissingGenes";
