@@ -69,8 +69,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     public Response deleteServer(
             @ApiParam(value = "Federation server id", required = true) @PathParam("id") String id
     ) {
-        return null;
-//        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().resetSecretKey(token));
+        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().deleteFederationServer(id, token));
     }
 
     @POST
@@ -126,19 +125,8 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     public Response deleteClient(
             @ApiParam(value = "Federation client id", required = true) @PathParam("id") String id
     ) {
-        return null;
-//        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().resetSecretKey(token));
+        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().deleteFederationClient(id, token));
     }
-
-
-//    @POST
-//    @Path("/login")
-//    @ApiOperation(value = "Login a federated user")
-//    public Response login(
-//            @ApiParam(value = "Federation server id to reset") @QueryParam("id") String federationServerId) {
-//        return null;
-//        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
-//    }
 
     @POST
     @Path("/firstConnection")

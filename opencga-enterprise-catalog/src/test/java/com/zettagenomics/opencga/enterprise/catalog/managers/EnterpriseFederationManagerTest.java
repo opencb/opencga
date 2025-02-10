@@ -12,9 +12,7 @@ import org.opencb.opencga.core.client.GenericClient;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
-import org.opencb.opencga.core.models.federation.FederationServerParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
@@ -25,12 +23,11 @@ import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.response.RestResponse;
 
 import java.util.Collections;
-import java.util.HashMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstractManagerTest {
 
@@ -101,6 +98,12 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         assertEquals("org2@project:study", studyOpenCGAResult.first().getFqn());
         assertFalse(studyOpenCGAResult.first().getInternal().isFederated());
         assertFalse(studyOpenCGAResult.first().getVariableSets().isEmpty());
+
+        // Delete federation server
+        enterpriseFederationManager.deleteFederationServer(serverCreateParams.getId(), org2OwnerToken);
+
+        // Delete federation client
+        enterpriseFederationManager.deleteFederationClient("org2", ownerToken);
     }
 
     @Test
