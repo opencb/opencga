@@ -23,10 +23,7 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.OrganizationManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
-import org.opencb.opencga.catalog.managers.UserManager;
+import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -714,6 +711,13 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             Organization organization = EnterpriseFactory.getCatalogDBAdaptorFactory().getCatalogOrganizationDBAdaptor(organizationId)
                     .get(ORGANIZATION_OPTIONS).first();
             FederationClientParams federationClient = findFederationClient(organization, federationId);
+
+            // Call to project/study info to check if the user still has access to the project/study before redirecting
+            if (StringUtils.isNotEmpty(study)) {
+                catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token);
+            } else {
+                catalogManager.getProjectManager().get(study, ProjectManager.INCLUDE_PROJECT_IDS, token);
+            }
 
             String federationToken = federationClient.getToken();
             // The call to getClientInstance will update the token if it has expired
