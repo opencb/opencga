@@ -38,6 +38,7 @@ public class UserBanMigration extends MigrationTool {
                     );
                 });
 
+        // Patch 2. Organization 'configuration.defaultUserExpirationDate' field was not set for existing organizations
         MongoCollection<Document> orgCollection = getMongoCollection(OrganizationMongoDBAdaptorFactory.ORGANIZATION_COLLECTION);
         orgCollection.updateMany(Filters.exists("configuration.defaultUserExpirationDate", false),
                 Updates.set("configuration.defaultUserExpirationDate", Constants.DEFAULT_USER_EXPIRATION_DATE));

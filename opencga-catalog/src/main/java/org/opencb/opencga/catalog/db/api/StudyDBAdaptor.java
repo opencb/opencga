@@ -252,6 +252,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogException;
 
+    OpenCGAResult<Group> removeUsersFromAllGroups(List<String> users) throws CatalogException;
+
     /**
      * Delete a group.
      *

@@ -418,13 +418,13 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         }
         List<Document> federationParamList = new LinkedList<>();
         for (Object federationClient : parameters.getAsList(QueryParams.FEDERATION_CLIENTS.key())) {
-            if (federationClient instanceof FederationServerParams) {
-                federationParamList.add(new Document("id", ((FederationServerParams) federationClient).getId()));
+            if (federationClient instanceof FederationClientParams) {
+                federationParamList.add(new Document("id", ((FederationClientParams) federationClient).getId()));
             } else {
                 federationParamList.add(new Document("id", ((Map) federationClient).get("id")));
             }
         }
-        parameters.putNested(QueryParams.FEDERATION_CLIENTS.key(), federationParamList, false);
+        parameters.put(QueryParams.FEDERATION_CLIENTS.key(), federationParamList, false);
     }
 
     private void fixFederationServerForRemoval(ObjectMap parameters) {
@@ -433,13 +433,13 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         }
         List<Document> federationParamList = new LinkedList<>();
         for (Object federationServer : parameters.getAsList(QueryParams.FEDERATION_SERVERS.key())) {
-            if (federationServer instanceof FederationClientParams) {
-                federationParamList.add(new Document("id", ((FederationClientParams) federationServer).getId()));
+            if (federationServer instanceof FederationServerParams) {
+                federationParamList.add(new Document("id", ((FederationServerParams) federationServer).getId()));
             } else {
                 federationParamList.add(new Document("id", ((Map) federationServer).get("id")));
             }
         }
-        parameters.putNested(QueryParams.FEDERATION_SERVERS.key(), federationParamList, false);
+        parameters.put(QueryParams.FEDERATION_SERVERS.key(), federationParamList, false);
     }
 
     private void fixAuthOriginsForRemoval(ObjectMap parameters) {
