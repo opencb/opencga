@@ -321,6 +321,7 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("User '" + jwtPayload.getUserId() + "' could not be found.");
             }
             User user = userResult.first();
+            checkValidUserAccountStatus(user.getId(), user);
             authOrigin = user.getInternal().getAccount().getAuthentication();
         }
 
@@ -854,35 +855,7 @@ public class UserManager extends AbstractManager {
                     && CatalogAuthenticationManager.OPENCGA.equals(user.getInternal().getAccount().getAuthentication().getId());
             // We check
             if (userCanBeBanned) {
-                // Check user is not banned, suspended or has an expired account
-                if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
-                    throw CatalogAuthenticationException.userIsBanned(username);
-                }
-                if (UserStatus.SUSPENDED.equals(user.getInternal().getStatus().getId())) {
-                    throw CatalogAuthenticationException.userIsSuspended(username);
-                }
-                Account account2 = user.getInternal().getAccount();
-                if (account2.getPassword().getExpirationDate() != null) {
-                    Account account1 = user.getInternal().getAccount();
-                    Date passwordExpirationDate = TimeUtils.toDate(account1.getPassword().getExpirationDate());
-                    if (passwordExpirationDate == null) {
-                        throw new CatalogException("Unexpected null 'passwordExpirationDate' for user '" + username + "'.");
-                    }
-                    if (passwordExpirationDate.before(new Date())) {
-                        Account account = user.getInternal().getAccount();
-                        throw CatalogAuthenticationException.passwordExpired(username, account.getPassword().getExpirationDate());
-                    }
-                }
-                if (user.getInternal().getAccount().getExpirationDate() != null) {
-                    Date date = TimeUtils.toDate(user.getInternal().getAccount().getExpirationDate());
-                    if (date == null) {
-                        throw new CatalogException("Unexpected null 'expirationDate' for user '" + username + "'.");
-                    }
-                    if (date.before(new Date())) {
-                        throw CatalogAuthenticationException.accountIsExpired(username,
-                                user.getInternal().getAccount().getExpirationDate());
-                    }
-                }
+                checkValidUserAccountStatus(username, user);
             }
             Account.AuthenticationOrigin authentication = user.getInternal().getAccount().getAuthentication();
             authId = user.getInternal().getAccount().getAuthentication().getId();
@@ -967,6 +940,38 @@ public class UserManager extends AbstractManager {
         }
 
         return response;
+    }
+
+    private static void checkValidUserAccountStatus(String username, User user) throws CatalogException {
+        // Check user is not banned, suspended or has an expired account
+        if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
+            throw CatalogAuthorizationException.userIsBanned(username);
+        }
+        if (UserStatus.SUSPENDED.equals(user.getInternal().getStatus().getId())) {
+            throw CatalogAuthorizationException.userIsSuspended(username);
+        }
+        Account account2 = user.getInternal().getAccount();
+        if (account2.getPassword().getExpirationDate() != null) {
+            Account account1 = user.getInternal().getAccount();
+            Date passwordExpirationDate = TimeUtils.toDate(account1.getPassword().getExpirationDate());
+            if (passwordExpirationDate == null) {
+                throw new CatalogException("Unexpected null 'passwordExpirationDate' for user '" + username + "'.");
+            }
+            if (passwordExpirationDate.before(new Date())) {
+                Account account = user.getInternal().getAccount();
+                throw CatalogAuthorizationException.passwordExpired(username, account.getPassword().getExpirationDate());
+            }
+        }
+        if (user.getInternal().getAccount().getExpirationDate() != null) {
+            Date date = TimeUtils.toDate(user.getInternal().getAccount().getExpirationDate());
+            if (date == null) {
+                throw new CatalogException("Unexpected null 'expirationDate' for user '" + username + "'.");
+            }
+            if (date.before(new Date())) {
+                throw CatalogAuthorizationException.accountIsExpired(username,
+                        user.getInternal().getAccount().getExpirationDate());
+            }
+        }
     }
 
     public AuthenticationResponse loginAnonymous(String organizationId) throws CatalogException {
