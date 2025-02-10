@@ -61,9 +61,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.core.models.variant.VariantQueryParams.SAVED_FILTER_DESCR;
-import static org.opencb.opencga.core.api.ParamConstants.INCLUDE_INTERPRETATION;
-import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.server.rest.analysis.VariantWebService.getVariantQuery;
 
 @Path("/{apiVersion}/analysis/clinical")
@@ -508,6 +507,46 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     @GET
+    @Path("/aggregationStats")
+    @ApiOperation(value = "Fetch catalog clinical analysis aggregation stats", response = FacetField.class)
+    public Response aggregationStats(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.CLINICAL_ID_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.CLINICAL_UUID_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.CLINICAL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_TYPE_PARAM) String type,
+            @ApiParam(value = ParamConstants.CLINICAL_DISORDER_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_DISORDER_PARAM) String disorder,
+            @ApiParam(value = ParamConstants.CLINICAL_FILES_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_FILES_PARAM) String files,
+            @ApiParam(value = ParamConstants.CLINICAL_SAMPLE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_SAMPLE_PARAM) String sample,
+            @ApiParam(value = ParamConstants.CLINICAL_INDIVIDUAL_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_INDIVIDUAL_PARAM) String individual,
+            @ApiParam(value = ParamConstants.CLINICAL_PROBAND_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_PROBAND_PARAM) String proband,
+            @ApiParam(value = ParamConstants.CLINICAL_PROBAND_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_PROBAND_SAMPLES_PARAM) String probandSamples,
+            @ApiParam(value = ParamConstants.CLINICAL_FAMILY_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_FAMILY_PARAM) String family,
+            @ApiParam(value = ParamConstants.CLINICAL_FAMILY_MEMBERS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_FAMILY_MEMBERS_PARAM) String familyMembers,
+            @ApiParam(value = ParamConstants.CLINICAL_FAMILY_MEMBERS_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_FAMILY_MEMBERS_SAMPLES_PARAM) String familyMembersSamples,
+            @ApiParam(value = ParamConstants.CLINICAL_PANELS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_PANELS_PARAM) String panels,
+            @ApiParam(value = ParamConstants.CLINICAL_LOCKED_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_LOCKED_PARAM) Boolean locked,
+            @ApiParam(value = ParamConstants.CLINICAL_ANALYST_ID_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_ANALYST_ID_PARAM) String clinicalAnalystId,
+            @ApiParam(value = ParamConstants.CLINICAL_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_PRIORITY_PARAM) String priority,
+            @ApiParam(value = ParamConstants.CLINICAL_FLAGS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_FLAGS_PARAM) String flags,
+            @ApiParam(value = ParamConstants.CLINICAL_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.CLINICAL_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.CLINICAL_DUE_DATE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_DUE_DATE_PARAM) String dueDate,
+            @ApiParam(value = ParamConstants.CLINICAL_QUALITY_CONTROL_SUMMARY_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_QUALITY_CONTROL_SUMMARY_PARAM) String qualityControl,
+            @ApiParam(value = ParamConstants.CLINICAL_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
+            @ApiParam(value = ParamConstants.CLINICAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.CLINICAL_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION) @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
+            @ApiParam(value = FACET_DESCRIPTION) @QueryParam(FACET_PARAM) String facet) {
+        return run(() -> {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove("field");
+            return catalogManager.getClinicalAnalysisManager().facet(studyStr, query, facet, token);
+        });
+    }
+
+    @GET
     @Path("/{clinicalAnalyses}/acl")
     @ApiOperation(value = "Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.",
             response = ClinicalAnalysisAclEntryList.class)
@@ -833,6 +872,36 @@ public class ClinicalWebService extends AnalysisWebService {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    @GET
+    @Path("/interpretation/aggregationStats")
+    @ApiOperation(value = "Fetch catalog interpretation aggregation stats", response = FacetField.class)
+    public Response interpretationAggregationStats(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INTERPRETATION_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.INTERPRETATION_UUID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.INTERPRETATION_NAME_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.INTERPRETATION_CLINICAL_ANALYSIS_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_CLINICAL_ANALYSIS_ID_PARAM) String clinicalAnalysisId,
+            @ApiParam(value = ParamConstants.INTERPRETATION_ANALYST_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_ANALYST_ID_PARAM) String analystId,
+            @ApiParam(value = ParamConstants.INTERPRETATION_METHOD_NAME_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_METHOD_NAME_PARAM) String methodsName,
+            @ApiParam(value = ParamConstants.INTERPRETATION_PANELS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_PANELS_PARAM) String panels,
+            @ApiParam(value = ParamConstants.INTERPRETATION_PRIMARY_FINDINGS_IDS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_PRIMARY_FINDINGS_IDS_PARAM) String primaryFindings,
+            @ApiParam(value = ParamConstants.INTERPRETATION_SECONDARY_FINDINGS_IDS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_SECONDARY_FINDINGS_IDS_PARAM) String secondaryFindings,
+            @ApiParam(value = ParamConstants.INTERPRETATION_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.INTERPRETATION_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.INTERPRETATION_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.INTERPRETATION_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.INTERPRETATION_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_RELEASE_PARAM) String release,
+            // The following variables were hid on version 2.1.0
+            @ApiParam(value = "Clinical analyst ID", hidden = true) @QueryParam("analyst") String clinicalAnalyst,
+            @ApiParam(value = "Interpretation method name", hidden = true) @QueryParam("methods") String methods,
+            @ApiParam(value = FACET_DESCRIPTION) @QueryParam(FACET_PARAM) String facet) {
+        return run(() -> {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove("field");
+            return catalogManager.getInterpretationManager().facet(studyStr, query, facet, token);
+        });
     }
 
     //-------------------------------------------------------------------------

@@ -25,10 +25,7 @@ import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
@@ -232,6 +229,23 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return getClinicalAnalysisDBAdaptor(organizationId).iterator(study.getUid(), query, options, userId);
+    }
+
+    @Override
+    public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
+
+        fixQueryObject(organizationId, study, query, userId, token);
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return getClinicalAnalysisDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);
     }
 
     @Override

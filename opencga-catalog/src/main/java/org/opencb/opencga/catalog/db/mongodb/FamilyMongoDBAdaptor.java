@@ -1073,6 +1073,13 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Bson bson = parseQuery(query, userId);
+        return facet(familyCollection, bson, facet);
+    }
+
+    @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Objects.requireNonNull(action);

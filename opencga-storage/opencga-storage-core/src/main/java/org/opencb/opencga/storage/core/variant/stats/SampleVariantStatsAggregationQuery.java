@@ -135,7 +135,7 @@ public class SampleVariantStatsAggregationQuery {
         for (FacetField facetField : result.getResults()) {
             switch (facetField.getName()) {
                 case "chromosome":
-                    stats.setVariantCount(((int) facetField.getCount()));
+                    stats.setVariantCount((int) facetField.getCount());
                     for (FacetField.Bucket bucket : facetField.getBuckets()) {
                         stats.getChromosomeCount().put(bucket.getValue(), ((int) bucket.getCount()));
                     }
