@@ -20,7 +20,6 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
@@ -1164,7 +1163,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         Assert.assertEquals(1, facets.getResults().size());
         for (FacetField result : facets.getResults()) {
-            Assert.assertEquals(totalCount, result.getCount().longValue());
+            Assert.assertEquals(totalCount, result.getCount());
             Assert.assertEquals(map.size(), result.getBuckets().size());
             for (FacetField.Bucket bucket : result.getBuckets()) {
                 Assert.assertEquals(1L * map.get(bucket.getValue()), bucket.getCount());

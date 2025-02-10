@@ -83,6 +83,22 @@ public class FileManagerTest extends AbstractManagerTest {
 
     private FileManager fileManager;
 
+    private static final Map<String, String> MONTH_MAP = new HashMap<>();
+
+    static {
+        MONTH_MAP.put("01", "Jan");
+        MONTH_MAP.put("02", "Feb");
+        MONTH_MAP.put("03", "Mar");
+        MONTH_MAP.put("04", "Apr");
+        MONTH_MAP.put("05", "May");
+        MONTH_MAP.put("06", "Jun");
+        MONTH_MAP.put("07", "Jul");
+        MONTH_MAP.put("08", "Aug");
+        MONTH_MAP.put("09", "Sep");
+        MONTH_MAP.put("10", "Oct");
+        MONTH_MAP.put("11", "Nov");
+        MONTH_MAP.put("12", "Dec");
+    }
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -467,7 +483,7 @@ public class FileManagerTest extends AbstractManagerTest {
         fileManager.unlink(studyFqn, baiFile.getPath(), ownerToken);
         bamFile = fileManager.get(studyFqn, bamFile.getPath(), QueryOptions.empty(), ownerToken).first();
         assertNotNull(bamFile.getInternal().getAlignment().getIndex());
-        assertNull(bamFile.getInternal().getAlignment().getIndex().getFileId());
+        assertTrue(StringUtils.isEmpty(bamFile.getInternal().getAlignment().getIndex().getFileId()));
         assertEquals(FileStatus.DELETED, bamFile.getInternal().getAlignment().getIndex().getStatus().getId());
     }
 
@@ -2465,7 +2481,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Assert.assertEquals(1, facets.getResults().size());
         for (FacetField result : facets.getResults()) {
-            Assert.assertEquals(totalCount, result.getCount().longValue());
+            Assert.assertEquals(totalCount, result.getCount());
             Assert.assertEquals(formatMap.size(), result.getBuckets().size());
             for (FacetField.Bucket bucket : result.getBuckets()) {
                 Assert.assertEquals(1L * formatMap.get(bucket.getValue()), bucket.getCount());
@@ -2499,7 +2515,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Assert.assertEquals(1, facets.getResults().size());
         for (FacetField result : facets.getResults()) {
-            Assert.assertEquals(totalCount, result.getCount().longValue());
+            Assert.assertEquals(totalCount, result.getCount());
             Assert.assertEquals(internalStatusIdMap.size(), result.getBuckets().size());
             Assert.assertEquals(facetName, result.getName());
             for (FacetField.Bucket bucket : result.getBuckets()) {
@@ -2545,7 +2561,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Assert.assertEquals(2, facets.getNumResults());
         for (FacetField result : facets.getResults()) {
-            Assert.assertEquals(totalCount, result.getCount().longValue());
+            Assert.assertEquals(totalCount, result.getCount());
             Map<String, Integer> map = null;
             if (result.getName().equals("format")) {
                 map = formatMap;
@@ -2582,7 +2598,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Assert.assertEquals(1, facets.getNumResults());
         for (FacetField result : facets.getResults()) {
-            Assert.assertEquals(totalCount, result.getCount().longValue());
+            Assert.assertEquals(totalCount, result.getCount());
             Assert.assertEquals(map.size(), result.getBuckets().size());
             for (FacetField.Bucket bucket : result.getBuckets()) {
                 Assert.assertTrue(map.containsKey(bucket.getValue()));
@@ -2614,13 +2630,13 @@ public class FileManagerTest extends AbstractManagerTest {
             }
             yearCounter.put(yearKey, 1 + yearCounter.get(yearKey));
 
-            monthKey = yearKey + SEPARATOR + month;
+            monthKey = MONTH_MAP.get(month) + " " + yearKey;
             if (!monthCounter.containsKey(monthKey)) {
                 monthCounter.put(monthKey, 0);
             }
             monthCounter.put(monthKey, 1 + monthCounter.get(monthKey));
 
-            dayKey = monthKey + SEPARATOR + day;
+            dayKey = day + " " + monthKey;
             if (!dayCounter.containsKey(dayKey)) {
                 dayCounter.put(dayKey, 0);
             }
@@ -2635,7 +2651,7 @@ public class FileManagerTest extends AbstractManagerTest {
             Assert.assertEquals("creationDate", result.getName());
             Assert.assertEquals(yearCounter.values().stream()
                     .mapToInt(Integer::intValue)
-                    .sum(), result.getCount().longValue());
+                    .sum(), result.getCount());
             Assert.assertEquals(yearCounter.size(), result.getBuckets().size());
             Assert.assertEquals("year", result.getAggregationName());
             for (FacetField.Bucket bucket : result.getBuckets()) {
@@ -2652,7 +2668,7 @@ public class FileManagerTest extends AbstractManagerTest {
             Assert.assertEquals("creationDate", result.getName());
             Assert.assertEquals(monthCounter.values().stream()
                     .mapToInt(Integer::intValue)
-                    .sum(), result.getCount().longValue());
+                    .sum(), result.getCount());
             Assert.assertEquals(monthCounter.size(), result.getBuckets().size());
             Assert.assertEquals("year" + SEPARATOR + "month", result.getAggregationName());
             for (FacetField.Bucket bucket : result.getBuckets()) {
@@ -2669,7 +2685,7 @@ public class FileManagerTest extends AbstractManagerTest {
             Assert.assertEquals("creationDate", result.getName());
             Assert.assertEquals(dayCounter.values().stream()
                     .mapToInt(Integer::intValue)
-                    .sum(), result.getCount().longValue());
+                    .sum(), result.getCount());
             Assert.assertEquals(dayCounter.size(), result.getBuckets().size());
             Assert.assertEquals("year" + SEPARATOR + "month" + SEPARATOR + "day", result.getAggregationName());
             for (FacetField.Bucket bucket : result.getBuckets()) {
