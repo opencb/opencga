@@ -124,7 +124,7 @@ public class AnalysisAlignmentCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"coverage-index-run"}, commandDescription ="Compute coverage for a list of alignment files")
+    @Parameters(commandNames = {"coverage-index-run"}, commandDescription ="Compute the coverage from a given BAM alignment file, e.g., create a .bw file from a .bam file")
     public class RunCoverageIndexCommandOptions {
     
         @ParametersDelegate
@@ -160,14 +160,14 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--bam-file-id"}, description = "BAM file ID.", required = false, arity = 1)
-        public String bamFileId;
+        @Parameter(names = {"--file-id"}, description = "Alignment file ID (in BAM or CRAM format)", required = false, arity = 1)
+        public String fileId;
     
-        @Parameter(names = {"--bai-file-id"}, description = "BAI file ID.", required = false, arity = 1)
-        public String baiFileId;
-    
-        @Parameter(names = {"--window-size"}, description = "Window size (i.e., the size of the bins, in bases, for the output of the BIGWIG file).", required = false, arity = 1)
+        @Parameter(names = {"--window-size"}, description = "Bin size for the output of the BIGWIG file, in bases.", required = false, arity = 1)
         public Integer windowSize = 50;
+    
+        @Parameter(names = {"--overwrite"}, description = "Flag to force indexing.", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
     }
 
@@ -405,7 +405,7 @@ public class AnalysisAlignmentCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"index-run"}, commandDescription ="Index alignment file")
+    @Parameters(commandNames = {"index-run"}, commandDescription ="Index a given alignment file BAM/CRAM, e.g., create a .bai file from a .bam file")
     public class RunIndexCommandOptions {
     
         @ParametersDelegate

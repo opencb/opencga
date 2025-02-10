@@ -188,6 +188,7 @@ export default class Study extends OpenCGAParentClass {
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.id] - Note unique identifier.
+    * @param {String} [params.type] - Note type.
     * @param {String} [params.uuid] - Unique 32-character identifier assigned automatically by OpenCGA.
     * @param {String} [params.userId] - User that wrote that Note.
     * @param {String} [params.tags] - Note tags.
