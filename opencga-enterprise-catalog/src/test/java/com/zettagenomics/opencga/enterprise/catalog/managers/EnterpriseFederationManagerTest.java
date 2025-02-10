@@ -54,7 +54,9 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         // Federate server
         FederationServerCreateParams serverCreateParams = new FederationServerCreateParams(organizationId, "", "mail@mail.com",
                 organizationId);
-        FederationClientParams client = enterpriseFederationManager.createFederation("", serverCreateParams, org2OwnerToken).first();
+//        FederationClientParams client = enterpriseFederationManager.createFederation("", serverCreateParams, org2OwnerToken).first();
+        enterpriseFederationManager.createFederation("", serverCreateParams, org2OwnerToken).first();
+        FederationClientParams client = new FederationClientParams();
 
         // Check we can log in with that user
         AuthenticationResponse login = catalogManager.getUserManager().login(client.getOrganizationId(), client.getUserId(), client.getPassword());
@@ -81,7 +83,8 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         assertFalse(studyOpenCGAResult.first().getVariableSets().isEmpty());
 
         // Reset federation server access
-        client = enterpriseFederationManager.reset("", serverCreateParams.getId(), org2OwnerToken).first();
+//        client = enterpriseFederationManager.reset("", serverCreateParams.getId(), org2OwnerToken).first();
+        enterpriseFederationManager.reset("", serverCreateParams.getId(), org2OwnerToken).first();
 
         // Update federation client creds
         FederationClientUpdateParams updateParams = new FederationClientUpdateParams()

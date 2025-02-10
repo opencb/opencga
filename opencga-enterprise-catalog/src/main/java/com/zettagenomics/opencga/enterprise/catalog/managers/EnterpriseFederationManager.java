@@ -88,7 +88,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
     }
 
     // ************* FOR SERVERS **************** //
-    public OpenCGAResult<FederationClientParams> createFederation(String url, FederationServerCreateParams federationServerCreateParams,
+    public OpenCGAResult<FederationServerParams> createFederation(String url, FederationServerCreateParams federationServerCreateParams,
                                                                   String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String organizationId = tokenPayload.getOrganization();
@@ -163,7 +163,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             auditManager.audit(organizationId, userId, AuditAction.CREATE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new OpenCGAResult<>(0, eventList, 1, Collections.singletonList(federationClient), 1);
+            return new OpenCGAResult<>(0, eventList, 1, Collections.singletonList(federationServer), 1);
         } catch (Exception e) {
             auditManager.audit(organizationId, userId, AuditAction.CREATE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
@@ -171,7 +171,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
         }
     }
 
-    public OpenCGAResult<FederationClientParams> reset(String url, String federationServerId, String token) throws CatalogException {
+    public OpenCGAResult<FederationServerParams> reset(String url, String federationServerId, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String organizationId = tokenPayload.getOrganization();
         String userId = tokenPayload.getUserId();
@@ -227,7 +227,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             auditManager.audit(organizationId, userId, AuditAction.RESET_FEDERATION_CLIENT_CREDENTIALS, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new OpenCGAResult<>(0, eventList, 0, Collections.singletonList(clientParams), 0);
+            return new OpenCGAResult<>(0, eventList, 0, Collections.singletonList(serverParams), 0);
         } catch (Exception e) {
             auditManager.audit(organizationId, userId, AuditAction.RESET_FEDERATION_CLIENT_CREDENTIALS, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
