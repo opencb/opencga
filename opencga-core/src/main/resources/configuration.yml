@@ -79,7 +79,7 @@ analysis:
     basePath: "${OPENCGA.INSTALLATION.DIR}/analysis/resources"
     # List of resources to fetch during initialization; the willcard '*' can be used, e.g.: to fetch all resources, use '*';
     # to fetch only Exomiser resources, use 'EXOMISER_*'
-    fetchOnInit: ["*"]
+    fetchOnInit: []
     # List of resources
     files:
       # Exomiser resources
