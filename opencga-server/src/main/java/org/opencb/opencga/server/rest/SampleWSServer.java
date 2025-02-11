@@ -19,6 +19,7 @@ package org.opencb.opencga.server.rest;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
@@ -444,39 +445,57 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/aggregationStats")
-//    @ApiOperation(value = "Fetch catalog sample stats", response = FacetField.class)
-//    public Response getAggregationStats(
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-//            @ApiParam(value = "Source") @QueryParam("source") String source,
-//            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-//            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-//            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-//            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-//            @ApiParam(value = "Status") @QueryParam("status") String status,
-//            @ApiParam(value = "Type") @QueryParam("type") String type,
-//            @ApiParam(value = "Phenotypes") @QueryParam("phenotypes") String phenotypes,
-//            @ApiParam(value = "Release") @QueryParam("release") String release,
-//            @ApiParam(value = "Version") @QueryParam("version") String version,
-//            @ApiParam(value = "Somatic") @QueryParam("somatic") Boolean somatic,
-//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-//
-//            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-//
-//            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: " +
-//                    "studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
-//        try {
-//            query.remove(ParamConstants.STUDY_PARAM);
-//            query.remove("field");
-//
-//            queryOptions.put(QueryOptions.FACET, facet);
-//
-//            DataResult<FacetField> queryResult = catalogManager.getSampleManager().facet(studyStr, query, queryOptions, defaultStats,
-//                    token);
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @GET
+    @Path("/aggregationStats")
+    @ApiOperation(value = "Fetch catalog sample stats", response = FacetField.class)
+    public Response getAggregationStats(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.SAMPLES_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.SAMPLES_UUID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_SOMATIC_PARAM) Boolean somatic,
+            @ApiParam(value = ParamConstants.SAMPLE_INDIVIDUAL_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_INDIVIDUAL_ID_PARAM) String individual,
+            @ApiParam(value = ParamConstants.SAMPLE_FILE_IDS_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_FILE_IDS_PARAM) String fileIds,
+            @ApiParam(value = ParamConstants.SAMPLE_COHORT_IDS_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COHORT_IDS_PARAM) String cohortIds,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_PRODUCT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_PRODUCT_PARAM) String product,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_PARAM) String preparationMethod,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_PARAM) String extractionMethod,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_PARAM) String labSampleId,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_FROM_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_FROM_PARAM) String from,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_TYPE_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_TYPE_PARAM) String type,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_METHOD_PARAM) String method,
+            @ApiParam(value = ParamConstants.PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.PHENOTYPES_PARAM) String phenotypes,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.SAMPLE_RGA_STATUS_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_RGA_STATUS_PARAM) RgaIndex.Status rgaStatus,
+            @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
+
+            // Variants stats query params
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM) String statsId,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM) String variantCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_CHROMOSOME_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_CHROMOSOME_COUNT_PARAM) String chromosomeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_TYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_TYPE_COUNT_PARAM) String typeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_GENOTYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_GENOTYPE_COUNT_PARAM) String genotypeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM) String tiTvRatio,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_AVG_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_AVG_PARAM) String qualityAvg,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_STD_DEV_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_STD_DEV_PARAM) String qualityStdDev,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_HETEROZYGOSITY_RATE_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_HETEROZYGOSITY_RATE_PARAM) String heterozygosityRate,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_DEPTH_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_DEPTH_COUNT_PARAM) String depthCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_BIOTYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_BIOTYPE_COUNT_PARAM) String biotypeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_PARAM) String clinicalSignificanceCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_PARAM) String consequenceTypeCount,
+
+            // Facet field
+            @ApiParam(value = ParamConstants.FACET_DESCRIPTION) @QueryParam(ParamConstants.FACET_PARAM) String facet) {
+        return run(() -> {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.FACET_PARAM);
+            return catalogManager.getSampleManager().facet(studyStr, query, facet, token);
+        });
+    }
 }
