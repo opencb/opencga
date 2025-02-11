@@ -235,8 +235,9 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
     private String getCredentialsMailContent(String user, FederationClientParams clientParams) {
         return new StringBuilder()
                 .append("Hi ").append(user).append(",\n\n")
-                .append("We have invited you to access our OpenCGA installation under '").append(clientParams.getUrl()).append("'.\n\n")
-                .append("In order to get access, you will need to call to '/federations/client/connect' using the following credentials:\n\n")
+                .append("We have invited you to access our XetaBase installation under '").append(clientParams.getUrl()).append("'.\n\n")
+                .append("In order to get access, you will need to call to REST endpoint '/federations/client/connect' using the following"
+                        + " credentials:\n\n")
                 .append("URL: ").append(clientParams.getUrl()).append("\n")
                 .append("Organization ID: ").append(clientParams.getOrganizationId()).append("\n")
                 .append("User ID: ").append(clientParams.getUserId()).append("\n")
