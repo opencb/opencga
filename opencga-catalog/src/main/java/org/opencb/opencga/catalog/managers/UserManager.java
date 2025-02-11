@@ -63,8 +63,9 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.checkEmail;
  */
 public class UserManager extends AbstractManager {
 
-    static final QueryOptions INCLUDE_INTERNAL = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
-            UserDBAdaptor.QueryParams.INTERNAL.key(), UserDBAdaptor.QueryParams.DEPRECATED_ACCOUNT.key()));
+    public static final QueryOptions INCLUDE_INTERNAL = new QueryOptions(QueryOptions.INCLUDE,
+            Arrays.asList(UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.INTERNAL.key(),
+                    UserDBAdaptor.QueryParams.DEPRECATED_ACCOUNT.key()));
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     private final CatalogIOManager catalogIOManager;
     private final AuthenticationFactory authenticationFactory;
@@ -127,61 +128,8 @@ public class UserManager extends AbstractManager {
 
         Organization organization = getOrganizationDBAdaptor(organizationId).get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION)
                 .first();
-
+        validateNewUser(user, password, organization.getConfiguration().getDefaultUserExpirationDate(), organizationId);
         ObjectMap auditParams = new ObjectMap("user", user);
-
-        // Initialise fields
-        ParamUtils.checkObj(user, "User");
-        ParamUtils.checkValidUserId(user.getId());
-        user.setName(ParamUtils.defaultString(user.getName(), user.getId()));
-        user.setEmail(ParamUtils.defaultString(user.getEmail(), ""));
-        if (StringUtils.isNotEmpty(user.getEmail())) {
-            checkEmail(user.getEmail());
-        }
-        user.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(user.getCreationDate(),
-                UserDBAdaptor.QueryParams.CREATION_DATE.key()));
-        user.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(user.getModificationDate(),
-                UserDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
-
-        user.setInternal(ParamUtils.defaultObject(user.getInternal(), UserInternal::new));
-        user.getInternal().setStatus(new UserStatus(InternalStatus.READY));
-        user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
-        user.setProjects(ParamUtils.defaultObject(user.getProjects(), Collections::emptyList));
-        user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
-        user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
-        user.setAttributes(ParamUtils.defaultObject(user.getAttributes(), Collections::emptyMap));
-
-        // Init account
-        user.getInternal().setAccount(ParamUtils.defaultObject(user.getInternal().getAccount(), Account::new));
-        Account account = user.getInternal().getAccount();
-        account.setPassword(ParamUtils.defaultObject(account.getPassword(), Password::new));
-        if (StringUtils.isEmpty(account.getExpirationDate())) {
-            account.setExpirationDate(organization.getConfiguration().getDefaultUserExpirationDate());
-        } else {
-            // Validate expiration date is not over
-            ParamUtils.checkDateIsNotExpired(account.getExpirationDate(), UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_EXPIRATION_DATE.key());
-        }
-        if (StringUtils.isEmpty(password)) {
-            Map<String, AuthenticationManager> authOriginMap = authenticationFactory.getOrganizationAuthenticationManagers(organizationId);
-            if (!authOriginMap.containsKey(account.getAuthentication().getId())) {
-                throw new CatalogException("Unknown authentication origin id '" + account.getAuthentication() + "'");
-            }
-        } else {
-            account.setAuthentication(new Account.AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, false));
-        }
-
-        // Set password expiration
-        if (AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())) {
-            account.getPassword().setLastModified(TimeUtils.getTime());
-        }
-        if (!AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())
-                || configuration.getAccount().getPasswordExpirationDays() <= 0) {
-            // User password doesn't expire or it's not managed by OpenCGA
-            account.getPassword().setExpirationDate(null);
-        } else {
-            Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
-            account.getPassword().setExpirationDate(TimeUtils.getTime(date));
-        }
 
         if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
             JwtPayload jwtPayload = validateToken(token);
@@ -219,6 +167,67 @@ public class UserManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
             throw e;
+        }
+    }
+
+    public void validateNewUser(User user, String password, String defaultUserExpirationDate, String organizationId)
+            throws CatalogException {
+        // Initialise fields
+        ParamUtils.checkObj(user, "User");
+        ParamUtils.checkValidUserId(user.getId());
+        user.setName(ParamUtils.defaultString(user.getName(), user.getId()));
+        user.setEmail(ParamUtils.defaultString(user.getEmail(), ""));
+        if (StringUtils.isNotEmpty(user.getEmail())) {
+            checkEmail(user.getEmail());
+        }
+        user.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(user.getCreationDate(),
+                UserDBAdaptor.QueryParams.CREATION_DATE.key()));
+        user.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(user.getModificationDate(),
+                UserDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
+
+        user.setInternal(ParamUtils.defaultObject(user.getInternal(), UserInternal::new));
+        user.getInternal().setStatus(new UserStatus(InternalStatus.READY));
+        user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
+        user.setProjects(ParamUtils.defaultObject(user.getProjects(), Collections::emptyList));
+        user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
+        user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
+        user.setAttributes(ParamUtils.defaultObject(user.getAttributes(), Collections::emptyMap));
+
+        // Init account
+        user.getInternal().setAccount(ParamUtils.defaultObject(user.getInternal().getAccount(), Account::new));
+        Account account = user.getInternal().getAccount();
+        account.setPassword(ParamUtils.defaultObject(account.getPassword(), Password::new));
+        if (StringUtils.isEmpty(account.getExpirationDate())) {
+            account.setExpirationDate(defaultUserExpirationDate);
+        } else {
+            // Validate expiration date is not over
+            ParamUtils.checkDateIsNotExpired(account.getExpirationDate(), UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_EXPIRATION_DATE.key());
+        }
+        if (StringUtils.isEmpty(password)) {
+            Map<String, AuthenticationManager> authOriginMap = authenticationFactory.getOrganizationAuthenticationManagers(organizationId);
+            if (!authOriginMap.containsKey(account.getAuthentication().getId())) {
+                throw new CatalogException("Unknown authentication origin id '" + account.getAuthentication() + "'");
+            }
+        } else {
+            if (account.getAuthentication() != null) {
+                account.getAuthentication().setId(AuthenticationOrigin.AuthenticationType.OPENCGA.name());
+            } else {
+                account.setAuthentication(new Account.AuthenticationOrigin(AuthenticationOrigin.AuthenticationType.OPENCGA.name(), false,
+                        false));
+            }
+        }
+
+        // Set password expiration
+        if (AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())) {
+            account.getPassword().setLastModified(TimeUtils.getTime());
+        }
+        if (!AuthenticationOrigin.AuthenticationType.OPENCGA.name().equals(account.getAuthentication().getId())
+                || configuration.getAccount().getPasswordExpirationDays() <= 0) {
+            // User password doesn't expire or it's not managed by OpenCGA
+            account.getPassword().setExpirationDate(null);
+        } else {
+            Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
+            account.getPassword().setExpirationDate(TimeUtils.getTime(date));
         }
     }
 
@@ -302,9 +311,9 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(jwtPayload.getUserId(), "jwt user");
         ParamUtils.checkParameter(jwtPayload.getOrganization(), "jwt organization");
 
-        String authOrigin;
+        Account.AuthenticationOrigin authOrigin;
         if (ParamConstants.ANONYMOUS_USER_ID.equals(jwtPayload.getUserId())) {
-            authOrigin = CatalogAuthenticationManager.OPENCGA;
+            authOrigin = new Account.AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, false, false);
         } else {
             OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(),
                     INCLUDE_INTERNAL);
@@ -312,10 +321,11 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("User '" + jwtPayload.getUserId() + "' could not be found.");
             }
             User user = userResult.first();
-            authOrigin = user.getInternal().getAccount().getAuthentication().getId();
+            checkValidUserAccountStatus(user.getId(), user);
+            authOrigin = user.getInternal().getAccount().getAuthentication();
         }
 
-        authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, token);
+        authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, jwtPayload);
         return jwtPayload;
     }
 
@@ -819,6 +829,7 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(password, "password");
 
         String authId = null;
+        String userId = null;
         AuthenticationResponse response = null;
 
         if (StringUtils.isEmpty(organizationId)) {
@@ -838,45 +849,18 @@ public class UserManager extends AbstractManager {
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_INTERNAL);
         if (userOpenCGAResult.getNumResults() == 1) {
             User user = userOpenCGAResult.first();
+            userId = user.getId();
             // Only local OPENCGA users that are not superadmins can be automatically banned or their accounts be expired
             boolean userCanBeBanned = !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)
                     && CatalogAuthenticationManager.OPENCGA.equals(user.getInternal().getAccount().getAuthentication().getId());
             // We check
             if (userCanBeBanned) {
-                // Check user is not banned, suspended or has an expired account
-                if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
-                    throw CatalogAuthenticationException.userIsBanned(username);
-                }
-                if (UserStatus.SUSPENDED.equals(user.getInternal().getStatus().getId())) {
-                    throw CatalogAuthenticationException.userIsSuspended(username);
-                }
-                Account account2 = user.getInternal().getAccount();
-                if (account2.getPassword().getExpirationDate() != null) {
-                    Account account1 = user.getInternal().getAccount();
-                    Date passwordExpirationDate = TimeUtils.toDate(account1.getPassword().getExpirationDate());
-                    if (passwordExpirationDate == null) {
-                        throw new CatalogException("Unexpected null 'passwordExpirationDate' for user '" + username + "'.");
-                    }
-                    if (passwordExpirationDate.before(new Date())) {
-                        Account account = user.getInternal().getAccount();
-                        throw CatalogAuthenticationException.passwordExpired(username, account.getPassword().getExpirationDate());
-                    }
-                }
-                if (user.getInternal().getAccount().getExpirationDate() != null) {
-                    Date date = TimeUtils.toDate(user.getInternal().getAccount().getExpirationDate());
-                    if (date == null) {
-                        throw new CatalogException("Unexpected null 'expirationDate' for user '" + username + "'.");
-                    }
-                    if (date.before(new Date())) {
-                        throw CatalogAuthenticationException.accountIsExpired(username,
-                                user.getInternal().getAccount().getExpirationDate());
-                    }
-                }
+                checkValidUserAccountStatus(username, user);
             }
-            User user1 = userOpenCGAResult.first();
-            authId = user1.getInternal().getAccount().getAuthentication().getId();
+            Account.AuthenticationOrigin authentication = user.getInternal().getAccount().getAuthentication();
+            authId = user.getInternal().getAccount().getAuthentication().getId();
             try {
-                response = authenticationFactory.authenticate(organizationId, authId, username, password);
+                response = authenticationFactory.authenticate(organizationId, authentication, username, password);
             } catch (CatalogAuthenticationException e) {
                 if (userCanBeBanned) {
                     // We can only lock the account if it is not the root user
@@ -913,11 +897,13 @@ public class UserManager extends AbstractManager {
                 try {
                     response = authenticationManager.authenticate(organizationId, username, password);
                     authId = entry.getKey();
+                    userId = authenticationManager.getUserId(response.getToken());
                     break;
                 } catch (CatalogAuthenticationException e) {
                     logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
                 }
             }
+
         }
 
         if (response == null) {
@@ -928,7 +914,6 @@ public class UserManager extends AbstractManager {
 
         auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
         if (!CatalogAuthenticationManager.OPENCGA.equals(authId) && !CatalogAuthenticationManager.INTERNAL.equals(authId)) {
             // External authorization
             try {
@@ -955,6 +940,38 @@ public class UserManager extends AbstractManager {
         }
 
         return response;
+    }
+
+    private static void checkValidUserAccountStatus(String username, User user) throws CatalogException {
+        // Check user is not banned, suspended or has an expired account
+        if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
+            throw CatalogAuthorizationException.userIsBanned(username);
+        }
+        if (UserStatus.SUSPENDED.equals(user.getInternal().getStatus().getId())) {
+            throw CatalogAuthorizationException.userIsSuspended(username);
+        }
+        Account account2 = user.getInternal().getAccount();
+        if (account2.getPassword().getExpirationDate() != null) {
+            Account account1 = user.getInternal().getAccount();
+            Date passwordExpirationDate = TimeUtils.toDate(account1.getPassword().getExpirationDate());
+            if (passwordExpirationDate == null) {
+                throw new CatalogException("Unexpected null 'passwordExpirationDate' for user '" + username + "'.");
+            }
+            if (passwordExpirationDate.before(new Date())) {
+                Account account = user.getInternal().getAccount();
+                throw CatalogAuthorizationException.passwordExpired(username, account.getPassword().getExpirationDate());
+            }
+        }
+        if (user.getInternal().getAccount().getExpirationDate() != null) {
+            Date date = TimeUtils.toDate(user.getInternal().getAccount().getExpirationDate());
+            if (date == null) {
+                throw new CatalogException("Unexpected null 'expirationDate' for user '" + username + "'.");
+            }
+            if (date.before(new Date())) {
+                throw CatalogAuthorizationException.accountIsExpired(username,
+                        user.getInternal().getAccount().getExpirationDate());
+            }
+        }
     }
 
     public AuthenticationResponse loginAnonymous(String organizationId) throws CatalogException {

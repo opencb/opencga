@@ -756,7 +756,7 @@ public class OpenCGAWSServer {
         return response;
     }
 
-    private Response.Status getResponseStatus(List<OpenCGAResult<?>> list) {
+    protected Response.Status getResponseStatus(List<OpenCGAResult<?>> list) {
         if (list != null) {
             for (OpenCGAResult<?> openCGAResult : list) {
                 if (CollectionUtils.isNotEmpty(openCGAResult.getEvents())) {
@@ -794,11 +794,11 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
-    void logResponse(Response.StatusType statusInfo) {
+    protected void logResponse(Response.StatusType statusInfo) {
         logResponse(statusInfo, null, startTime, requestDescription);
     }
 
-    void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
+    protected void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
         logResponse(statusInfo, queryResponse, startTime, requestDescription);
     }
 
