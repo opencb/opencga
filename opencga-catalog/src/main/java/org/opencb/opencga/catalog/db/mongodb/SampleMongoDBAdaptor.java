@@ -1229,6 +1229,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 new ArrayList<>(results), -1);
     }
 
+    @Override
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Bson bson = parseQuery(query, userId);
+        return facet(sampleCollection, bson, facet);
+    }
+
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = new Query(query);

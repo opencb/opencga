@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -86,6 +87,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
+                break;
+            case "aggregationstats":
+                queryResponse = aggregationStats();
                 break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
@@ -206,6 +210,46 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), FileAclUpdateParams.class);
         }
         return openCGAClient.getFileClient().updateAcl(commandOptions.members, commandOptions.action, fileAclUpdateParams, queryParams);
+    }
+
+    private RestResponse<FacetField> aggregationStats() throws Exception {
+        logger.debug("Executing aggregationStats in Files command line");
+
+        FilesCommandOptions.AggregationStatsCommandOptions commandOptions = filesCommandOptions.aggregationStatsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("name", commandOptions.name);
+        queryParams.putIfNotEmpty("path", commandOptions.path);
+        queryParams.putIfNotEmpty("uri", commandOptions.uri);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
+        queryParams.putIfNotEmpty("bioformat", commandOptions.bioformat);
+        queryParams.putIfNotEmpty("format", commandOptions.format);
+        queryParams.putIfNotNull("external", commandOptions.external);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("internalVariantIndexStatus", commandOptions.internalVariantIndexStatus);
+        queryParams.putIfNotEmpty("softwareName", commandOptions.softwareName);
+        queryParams.putIfNotEmpty("directory", commandOptions.directory);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("description", commandOptions.description);
+        queryParams.putIfNotEmpty("tags", commandOptions.tags);
+        queryParams.putIfNotEmpty("size", commandOptions.size);
+        queryParams.putIfNotEmpty("sampleIds", commandOptions.sampleIds);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
+        queryParams.putIfNotEmpty("acl", commandOptions.acl);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getFileClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
