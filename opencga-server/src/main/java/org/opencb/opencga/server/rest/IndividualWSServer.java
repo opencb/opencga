@@ -19,6 +19,7 @@ package org.opencb.opencga.server.rest;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
@@ -438,45 +439,43 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/aggregationStats")
-//    @ApiOperation(value = "Fetch catalog individual stats", response = FacetField.class)
-//    public Response getAggregationStats(
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-//            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-//            @ApiParam(value = "Has father") @QueryParam("hasFather") Boolean hasFather,
-//            @ApiParam(value = "Has mother") @QueryParam("hasMother") Boolean hasMother,
-//            @ApiParam(value = "Sex") @QueryParam("sex") String sex,
-//            @ApiParam(value = "Karyotypic sex") @QueryParam("karyotypicSex") String karyotypicSex,
-//            @ApiParam(value = "Ethnicity") @QueryParam("ethnicity") String ethnicity,
-//            @ApiParam(value = "Population") @QueryParam("population") String population,
-//            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-//            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-//            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-//            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-//            @ApiParam(value = "Status") @QueryParam("status") String status,
-//            @ApiParam(value = "Life status") @QueryParam("lifeStatus") String lifeStatus,
-//            @ApiParam(value = "Phenotypes") @QueryParam("phenotypes") String phenotypes,
-//            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
-//            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-//            @ApiParam(value = "Release") @QueryParam("release") String release,
-//            @ApiParam(value = "Version") @QueryParam("version") String version,
-//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-//
-//            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-//
-//            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
-//        try {
-//            query.remove(ParamConstants.STUDY_PARAM);
-//            query.remove("field");
-//
-//            queryOptions.put(QueryOptions.FACET, facet);
-//
-//            DataResult<FacetField> queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats,
-//                    token);
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @GET
+    @Path("/aggregationStats")
+    @ApiOperation(value = "Fetch catalog individual stats", response = FacetField.class)
+    public Response getAggregationStats(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INDIVIDUALS_ID_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_UUID_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_NAME_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_FATHER_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_FATHER_PARAM) String father,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_MOTHER_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_MOTHER_PARAM) String mother,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SAMPLES_PARAM) String samples,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_FAMILY_IDS_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_FAMILY_IDS_PARAM) String familyIds,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_SEX_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SEX_PARAM) String sex,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_DATE_OF_BIRTH_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_DATE_OF_BIRTH_PARAM) String dateOfBirth,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_ETHNICITY_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_ETHNICITY_PARAM) String ethnicity,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_DISORDERS_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_DISORDERS_PARAM) String disorders,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_PHENOTYPES_PARAM) String phenotypes,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_POPULATION_NAME_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_POPULATION_NAME_PARAM) String populationName,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_POPULATION_SUBPOPULATION_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_POPULATION_SUBPOPULATION_PARAM) String populationSubpopulation,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_KARYOTYPIC_SEX_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_KARYOTYPIC_SEX_PARAM) String karyotypicSex,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_LIFE_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_LIFE_STATUS_PARAM) String lifeStatus,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INDIVIDUAL_DELETED_PARAM) boolean deleted,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SNAPSHOT_PARAM) int snapshot,
+
+            // Facet field
+            @ApiParam(value = ParamConstants.FACET_DESCRIPTION) @QueryParam(ParamConstants.FACET_PARAM) String facet) {
+        return run(() -> {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.FACET_PARAM);
+            return catalogManager.getIndividualManager().facet(studyStr, query, facet, token);
+        });
+    }
 }

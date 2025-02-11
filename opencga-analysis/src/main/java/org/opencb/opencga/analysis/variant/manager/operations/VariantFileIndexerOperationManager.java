@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.common.UriUtils;
@@ -85,7 +86,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     public static final String TRANSFORMED_FILES = "transformedFiles";
     public static final String SKIP_INDEXED_FILES = "skipIndexedFiles";
 
-    private final Logger logger;
+    private static final Logger LOGGER = LoggerFactory.getLogger(VariantFileIndexerOperationManager.class);
 
     private String studyFqn;
     private String organizationId;
@@ -107,7 +108,6 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     public VariantFileIndexerOperationManager(VariantStorageManager variantStorageManager, VariantStorageEngine engine) {
         super(variantStorageManager, engine);
-        logger = LoggerFactory.getLogger(VariantFileIndexerOperationManager.class);
     }
 
     public List<StoragePipelineResult> index(String study, List<String> files, URI outDirUri, ObjectMap params, String token)
@@ -120,7 +120,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
         List<URI> fileUris = findFilesToIndex(params, token);
         if (fileUris.size() == 0) {
-            logger.warn("Nothing to do.");
+            LOGGER.warn("Nothing to do.");
             return Collections.emptyList();
         }
 
@@ -194,38 +194,12 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     private List<URI> findFilesToIndex(ObjectMap params, String token) throws CatalogException, URISyntaxException, StorageEngineException {
         synchronizer = new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
 
-        List<File> inputFiles = new ArrayList<>();
-        for (String file : files) {
-            File inputFile = catalogManager.getFileManager().get(studyFqn, file, FILE_GET_QUERY_OPTIONS, token).first();
-
-            if (inputFile.getType() == File.Type.FILE) {
-                // If is a transformed file, get the related VCF file
-                if (VariantReaderUtils.isTransformedVariants(inputFile.getName())) {
-                    inputFiles.add(getOriginalFromTransformed(studyFqn, inputFile, token));
-                } else {
-                    inputFiles.add(inputFile);
-                }
-            } else {
-                if (inputFile.getType() == File.Type.DIRECTORY) {
-                    Query query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), inputFile.getPath());
-                    query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
-//                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
-                            Arrays.asList(File.Format.VCF, File.Format.GVCF));
-                    DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, FILE_GET_QUERY_OPTIONS,
-                            token);
-//                    fileDataResult.getResults().sort(Comparator.comparing(File::getName));
-                    inputFiles.addAll(fileDataResult.getResults());
-                } else {
-                    throw new CatalogException(String.format("Expected file type %s or %s instead of %s",
-                            File.Type.FILE, File.Type.DIRECTORY, inputFile.getType()));
-                }
-            }
-        }
+        List<File> inputFiles = getInputFiles(catalogManager, studyFqn, files, token);
 
         // Update Catalog from the storage metadata. This may change the index status of the inputFiles .
         synchronizer.synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, token, FILE_GET_QUERY_OPTIONS);
 
-        logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
+        LOGGER.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
 
         String fileStatus;
@@ -291,6 +265,38 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         return fileUris;
     }
 
+    public static List<File> getInputFiles(CatalogManager catalogManager, String studyFqn, List<String> files, String token)
+            throws CatalogException {
+        List<File> inputFiles = new ArrayList<>();
+        for (String file : files) {
+            File inputFile = catalogManager.getFileManager().get(studyFqn, file, FILE_GET_QUERY_OPTIONS, token).first();
+
+            if (inputFile.getType() == File.Type.FILE) {
+                // If is a transformed file, get the related VCF file
+                if (VariantReaderUtils.isTransformedVariants(inputFile.getName())) {
+                    inputFiles.add(getOriginalFromTransformed(catalogManager, studyFqn, inputFile, token));
+                } else {
+                    inputFiles.add(inputFile);
+                }
+            } else {
+                if (inputFile.getType() == File.Type.DIRECTORY) {
+                    Query query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), inputFile.getPath());
+                    query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
+//                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
+                            Arrays.asList(File.Format.VCF, File.Format.GVCF));
+                    DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, FILE_GET_QUERY_OPTIONS,
+                            token);
+//                    fileDataResult.getResults().sort(Comparator.comparing(File::getName));
+                    inputFiles.addAll(fileDataResult.getResults());
+                } else {
+                    throw new CatalogException(String.format("Expected file type %s or %s instead of %s",
+                            File.Type.FILE, File.Type.DIRECTORY, inputFile.getType()));
+                }
+            }
+        }
+        return inputFiles;
+    }
+
     private List<StoragePipelineResult> indexFiles(List<URI> fileUris, String token, ObjectMap params) throws Exception {
 
         String prevDefaultCohortStatus = CohortStatus.NONE;
@@ -300,7 +306,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             }
         }
 
-        logger.info("Starting to {}", step);
+        LOGGER.info("Starting to {}", step);
 
         // Save exception to throw at the end
         StorageEngineException exception = null;
@@ -308,17 +314,17 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         try {
             storagePipelineResults = variantStorageEngine.index(fileUris, outDirUri, false, transform, load);
         } catch (StoragePipelineException e) {
-            logger.error("Error executing " + step, e);
+            LOGGER.error("Error executing " + step, e);
             storagePipelineResults = e.getResults();
             exception = e;
             throw e;
         } catch (StorageEngineException e) {
-            logger.error("Error executing " + step, e);
+            LOGGER.error("Error executing " + step, e);
             storagePipelineResults = Collections.emptyList();
             exception = e;
             throw e;
         } catch (RuntimeException e) {
-            logger.error("Error executing " + step, e);
+            LOGGER.error("Error executing " + step, e);
             storagePipelineResults = Collections.emptyList();
             exception = new StorageEngineException("Error executing " + step, e);
             throw e;
@@ -396,7 +402,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
             FileInternalVariantIndex index = indexedFile.getInternal().getVariant().getIndex();
             if (index == null) {
-                logger.error("The execution should never get into this condition. Critical error.");
+                LOGGER.error("The execution should never get into this condition. Critical error.");
                 throw new CatalogException("Critical error. Empty index parameter in file " + indexedFile.getUid());
             } else {
                 switch (index.getStatus().getId()) {
@@ -405,7 +411,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                         indexStatusMessage = "Unexpected index status. Expected " + VariantIndexStatus.TRANSFORMING + ", "
                                 + VariantIndexStatus.LOADING + " or " + VariantIndexStatus.INDEXING + " and got "
                                 + index.getStatus();
-                        logger.warn(indexStatusMessage);
+                        LOGGER.warn(indexStatusMessage);
                     case VariantIndexStatus.READY: //Do not show warn message when index status is READY.
                         indexStatusId = index.getStatus().getId();
                         break;
@@ -413,7 +419,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                         if (jobFailed) {
                             indexStatusMessage = "Job failed. Restoring status from " + VariantIndexStatus.TRANSFORMING + " to "
                                     + VariantIndexStatus.NONE;
-                            logger.warn(indexStatusMessage);
+                            LOGGER.warn(indexStatusMessage);
                             indexStatusId = VariantIndexStatus.NONE;
                         } else {
                             indexStatusMessage = "Job finished. File transformed";
@@ -429,7 +435,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                             }
                             indexStatusMessage = "Job failed. Restoring status from " + VariantIndexStatus.LOADING + " to "
                                     + indexStatusId;
-                            logger.warn(indexStatusMessage);
+                            LOGGER.warn(indexStatusMessage);
                         } else {
                             indexStatusMessage = "Job finished. File index ready";
                             indexStatusId = VariantIndexStatus.READY;
@@ -448,7 +454,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                             }
                             indexStatusMessage = "Job failed. Restoring status from " + VariantIndexStatus.INDEXING
                                     + " to " + indexStatusId;
-                            logger.warn(indexStatusMessage);
+                            LOGGER.warn(indexStatusMessage);
                         } else {
                             indexStatusId = VariantIndexStatus.READY;
                             indexStatusMessage = "Job finished. File index ready";
@@ -480,7 +486,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 DataResult<Cohort> queryResult = catalogManager.getCohortManager()
                         .search(study, query, new QueryOptions(), sessionId);
                 if (queryResult.getNumResults() != 0) {
-                    logger.debug("Default cohort status set to READY");
+                    LOGGER.debug("Default cohort status set to READY");
                     Cohort defaultCohort = queryResult.first();
                     catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), CohortStatus.READY, null,
                             sessionId);
@@ -605,7 +611,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                                     + "We can only transform VCF files not transformed, the status is " + indexStatus + ". "
                                     + "Do '" + VariantStorageOptions.RESUME.key() + "' to continue.";
                             if (skipIndexedFiles) {
-                                logger.warn(message);
+                                LOGGER.warn(message);
                             } else {
                                 throw new StorageEngineException(message);
                             }
@@ -619,7 +625,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                             filteredFiles.add(file);
                         } else {
                             if (skipIndexedFiles) {
-                                logger.warn(msg);
+                                LOGGER.warn(msg);
                             } else {
                                 throw new StorageEngineException(msg);
                             }
@@ -627,7 +633,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                         break;
                 }
             } else {
-                logger.warn("Skip file " + file.getName() + " with format " + file.getFormat() + " and status "
+                LOGGER.warn("Skip file " + file.getName() + " with format " + file.getFormat() + " and status "
                         + file.getInternal().getStatus().getId());
             }
         }
@@ -679,7 +685,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                     }
                 }
                 transformed = file;
-                file = getOriginalFromTransformed(studyFQN, file, sessionId);
+                file = getOriginalFromTransformed(catalogManager, studyFQN, file, sessionId);
             }
 
             if (OperationManager.isVcfFormat(file)) {
@@ -693,13 +699,13 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                             filteredFiles.add(file);
                             fileUris.add(UriUtils.createUri(transformedFiles.get(i)));
                         } else {
-                            logger.warn("Cannot load vcf file " + file.getName() + " if no avro file is provided.");
+                            LOGGER.warn("Cannot load vcf file " + file.getName() + " if no avro file is provided.");
                         }
                         break;
                     case VariantIndexStatus.INDEXING:
                     case VariantIndexStatus.LOADING:
                         if (!resume) {
-                            logger.warn("Unable to load this file. Already being loaded. Skipping file {}", file.getName());
+                            LOGGER.warn("Unable to load this file. Already being loaded. Skipping file {}", file.getName());
                             break;
                         }
                     case VariantIndexStatus.TRANSFORMED:
@@ -713,17 +719,17 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                         filteredFiles.add(file);
                         break;
                     case VariantIndexStatus.TRANSFORMING:
-                        logger.warn("We can only load files previously transformed. Skipping file {}", file.getName());
+                        LOGGER.warn("We can only load files previously transformed. Skipping file {}", file.getName());
                         break;
                     case VariantIndexStatus.READY:
-                        logger.warn("Already loaded file. Skipping file {}", file.getName());
+                        LOGGER.warn("Already loaded file. Skipping file {}", file.getName());
                         break;
                     default:
-                        logger.warn("We can only load files previously transformed, File {} with status is {}", file.getName(), status);
+                        LOGGER.warn("We can only load files previously transformed, File {} with status is {}", file.getName(), status);
                         break;
                 }
             } else {
-                logger.warn("The input file is not a variant file. Format {}", file.getFormat());
+                LOGGER.warn("The input file is not a variant file. Format {}", file.getFormat());
             }
         }
         if (!transformedToOrigFileIdsMap.isEmpty()) {
@@ -755,30 +761,30 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         return filteredFiles;
     }
 
-    private File getOriginalFromTransformed(String study, File file, String sessionId)
+    private static File getOriginalFromTransformed(CatalogManager catalogManager, String study, File file, String token)
             throws CatalogException {
         // Look for the vcf file
         String vcfId = null;
         // Matchup variant files, if missing
         if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
-            catalogManager.getFileManager().matchUpVariantFiles(study, Collections.singletonList(file), sessionId);
+            catalogManager.getFileManager().matchUpVariantFiles(study, Collections.singletonList(file), token);
         }
         for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
             if (FileRelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
                 long fileUid = relatedFile.getFile().getUid();
                 // FIXME!!!
                 vcfId = catalogManager.getFileManager().search(study, new Query(UID.key(), fileUid),
-                        new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), sessionId).first().getId();
+                        new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), token).first().getId();
                 break;
             }
         }
         if (vcfId == null) {
-            logger.error("This code should never be executed. Every transformed avro file should come from a registered vcf file");
+            LOGGER.error("This code should never be executed. Every transformed avro file should come from a registered vcf file");
             throw new CatalogException("Internal error. No vcf file could be found for file " + file.getPath());
         }
-        DataResult<File> vcfDataResult = catalogManager.getFileManager().get(study, vcfId, FILE_GET_QUERY_OPTIONS, sessionId);
+        DataResult<File> vcfDataResult = catalogManager.getFileManager().get(study, vcfId, FILE_GET_QUERY_OPTIONS, token);
         if (vcfDataResult.getNumResults() != 1) {
-            logger.error("This code should never be executed. No vcf file could be found for vcf id " + vcfId);
+            LOGGER.error("This code should never be executed. No vcf file could be found for vcf id " + vcfId);
             throw new CatalogException("Internal error. No vcf file could be found under id " + vcfId);
         }
         file = vcfDataResult.first();
@@ -790,7 +796,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         String transformedFileId = getTransformedFileIdFromOriginal(file);
         DataResult<File> queryResult = catalogManager.getFileManager().get(studyFqn, transformedFileId, FILE_GET_QUERY_OPTIONS, sessionId);
         if (queryResult.getNumResults() != 1) {
-            logger.error("This code should never be executed. No transformed file could be found under ");
+            LOGGER.error("This code should never be executed. No transformed file could be found under ");
             throw new CatalogException("Internal error. No transformed file could be found under id " + transformedFileId);
         }
 
@@ -803,7 +809,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 ? index.getTransform().getFileId()
                 : null;
         if (StringUtils.isEmpty(transformedFileId)) {
-            logger.error("This code should never be executed. Every vcf file containing the transformed status should have"
+            LOGGER.error("This code should never be executed. Every vcf file containing the transformed status should have"
                     + " a registered transformed file");
             throw new CatalogException("Internal error. No transformed file could be found for file " + file.getUid());
         }

@@ -17,6 +17,7 @@
 package org.opencb.opencga.client.rest.clients;
 
 import java.lang.Object;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -69,6 +70,55 @@ public class IndividualClient extends AbstractParentClient {
         params.putIfNotNull("action", action);
         params.put("body", data);
         return execute("individuals", null, "acl", members, "update", params, POST, IndividualAclEntryList.class);
+    }
+
+    /**
+     * Fetch catalog individual stats.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       id: Comma separated list individual IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~',
+     *            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list individual UUIDs up to a maximum of 100.
+     *       name: Comma separated list individual names up to a maximum of 100. Also admits basic regular expressions using the operator
+     *            '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       father: Father ID, name or UUID.
+     *       mother: Mother ID, name or UUID.
+     *       samples: Sample ID, name or UUID.
+     *       familyIds: Comma separated list of family ids the individuals may belong to.
+     *       sex: Individual sex.
+     *       dateOfBirth: Individual date of birth.
+     *       ethnicity: Individual ethnicity. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+     *            '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       disorders: Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       phenotypes: Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       populationName: Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+     *            '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       populationSubpopulation: Subpopulation name. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       karyotypicSex: Individual karyotypic sex.
+     *       lifeStatus: Individual life status.
+     *       internalStatus: Filter by internal status.
+     *       status: Filter by status.
+     *       deleted: Boolean to retrieve deleted entries.
+     *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
+     *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+     *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
+     *            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+     *            permissions. Only study owners or administrators can query by this field. .
+     *       release: Release when it was created.
+     *       snapshot: Snapshot value (Latest version of the entry in the specified release).
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("individuals", null, null, null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**

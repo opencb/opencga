@@ -45,6 +45,7 @@ public class Configuration {
     private String jobDir;
 
     private AccountConfiguration account;
+    private QuotaConfiguration quota;
 
     private Monitor monitor;
     private HealthCheck healthCheck;
@@ -80,6 +81,7 @@ public class Configuration {
         panel = new Panel();
         server = new ServerConfiguration();
         account = new AccountConfiguration();
+        quota = QuotaConfiguration.init();
     }
 
     public void serialize(OutputStream configurationOututStream) throws IOException {
@@ -131,6 +133,9 @@ public class Configuration {
         if (configuration.getAccount().getPasswordExpirationDays() < 0) {
             // Disable password expiration by default
             configuration.getAccount().setPasswordExpirationDays(0);
+        }
+        if (configuration.getQuota() == null) {
+            configuration.setQuota(QuotaConfiguration.init());
         }
     }
 
@@ -230,6 +235,7 @@ public class Configuration {
         sb.append(", workspace='").append(workspace).append('\'');
         sb.append(", jobDir='").append(jobDir).append('\'');
         sb.append(", account=").append(account);
+        sb.append(", quota=").append(quota);
         sb.append(", monitor=").append(monitor);
         sb.append(", healthCheck=").append(healthCheck);
         sb.append(", audit=").append(audit);
@@ -316,6 +322,15 @@ public class Configuration {
 
     public Configuration setAccount(AccountConfiguration account) {
         this.account = account;
+        return this;
+    }
+
+    public QuotaConfiguration getQuota() {
+        return quota;
+    }
+
+    public Configuration setQuota(QuotaConfiguration quota) {
+        this.quota = quota;
         return this;
     }
 

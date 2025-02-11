@@ -17,6 +17,7 @@
 package org.opencb.opencga.client.rest.clients;
 
 import java.lang.Object;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -68,6 +69,63 @@ public class SampleClient extends AbstractParentClient {
         params.putIfNotNull("action", action);
         params.put("body", data);
         return execute("samples", null, "acl", members, "update", params, POST, SampleAclEntryList.class);
+    }
+
+    /**
+     * Fetch catalog sample stats.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       id: Comma separated list sample IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list sample UUIDs up to a maximum of 100.
+     *       somatic: Somatic sample.
+     *       individualId: Individual ID or UUID.
+     *       fileIds: Comma separated list of file IDs, paths or UUIDs.
+     *       cohortIds: Comma separated list of cohort IDs.
+     *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       internalStatus: Filter by internal status.
+     *       status: Filter by status.
+     *       processingProduct: Processing product.
+     *       processingPreparationMethod: Processing preparation method.
+     *       processingExtractionMethod: Processing extraction method.
+     *       processingLabSampleId: Processing lab sample id.
+     *       collectionFrom: Collection from.
+     *       collectionType: Collection type.
+     *       collectionMethod: Collection method.
+     *       phenotypes: Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
+     *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+     *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
+     *            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+     *            permissions. Only study owners or administrators can query by this field. .
+     *       internalRgaStatus: Index status of the sample for the Recessive Gene Analysis.
+     *       release: Release when it was created.
+     *       snapshot: Snapshot value (Latest version of the entry in the specified release).
+     *       deleted: Boolean to retrieve deleted entries.
+     *       statsId: Sample variant stats Id. If this field is not provided and the user filters by other stats fields, it will
+     *            automatically be set to ALL.
+     *       statsVariantCount: Sample variant stats VariantCount.
+     *       statsChromosomeCount: Sample variant stats ChromosomeCount.
+     *       statsTypeCount: Sample variant stats TypeCount.
+     *       statsGenotypeCount: Sample variant stats GenotypeCount.
+     *       statsTiTvRatio: Sample variant stats TiTvRatio.
+     *       statsQualityAvg: Sample variant stats QualityAvg.
+     *       statsQualityStdDev: Sample variant stats QualityStdDev.
+     *       statsHeterozygosityRate: Sample variant stats HeterozygosityRate.
+     *       statsDepthCount: Sample variant stats DepthCount.
+     *       statsBiotypeCount: Sample variant stats BiotypeCount.
+     *       statsClinicalSignificanceCount: Sample variant stats ClinicalSignificanceCount.
+     *       statsConsequenceTypeCount: Sample variant stats ConsequenceTypeCount.
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("samples", null, null, null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**
