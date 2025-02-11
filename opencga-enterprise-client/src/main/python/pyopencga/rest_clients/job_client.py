@@ -35,6 +35,53 @@ class Job(_ParentRestClient):
         options['action'] = action
         return self._post(category='jobs', resource='update', subcategory='acl', second_query_id=members, data=data, **options)
 
+    def aggregation_stats(self, **options):
+        """
+        Fetch catalog job stats.
+        PATH: /{apiVersion}/jobs/aggregationStats
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param bool other_studies: Flag indicating the entries being queried
+            can belong to any related study, not just the primary one.
+        :param str id: Comma separated list of job IDs up to a maximum of 100.
+            Also admits basic regular expressions using the operator '~', i.e.
+            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
+            case insensitive search.
+        :param str uuid: Comma separated list of job UUIDs up to a maximum of
+            100.
+        :param str tool_id: Tool ID executed by the job. Also admits basic
+            regular expressions using the operator '~', i.e. '~{perl-regex}'
+            e.g. '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str tool_type: Tool type executed by the job [OPERATION,
+            ANALYSIS].
+        :param str user_id: User that created the job.
+        :param str priority: Priority of the job.
+        :param str status: Filter by status.
+        :param str internal_status: Filter by internal status.
+        :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
+            Examples: >2018, 2017-2018, <201805.
+        :param str modification_date: Modification date. Format:
+            yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        :param bool visited: Visited status of job.
+        :param str tags: Job tags.
+        :param str input: Comma separated list of file IDs used as input.
+        :param str output: Comma separated list of file IDs used as output.
+        :param str acl: Filter entries for which a user has the provided
+            permissions. Format: acl={user}:{permissions}. Example:
+            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which
+            user john has both WRITE and WRITE_ANNOTATIONS permissions. Only
+            study owners or administrators can query by this field. .
+        :param str release: Release when it was created.
+        :param bool deleted: Boolean to retrieve deleted entries.
+        :param str field: Field to apply aggregation statistics to (or a list
+            of fields separated by semicolons), e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
+        """
+
+        return self._get(category='jobs', resource='aggregationStats', **options)
+
     def create(self, data=None, **options):
         """
         Register an executed job with POST method.

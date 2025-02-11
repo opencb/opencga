@@ -62,6 +62,9 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             case "model":
                 queryResponse = model();
                 break;
+            case "openapi":
+                queryResponse = openapi();
+                break;
             case "ping":
                 queryResponse = ping();
                 break;
@@ -117,6 +120,17 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("model", commandOptions.model);
 
         return enterpriseOpenCGAClient.getEnterpriseMetaClient().model(queryParams);
+    }
+
+    private RestResponse<String> openapi() throws Exception {
+        logger.debug("Executing openapi in Meta command line");
+
+        MetaCommandOptions.OpenapiCommandOptions commandOptions = metaCommandOptions.openapiCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("token", commandOptions.token);
+
+        return enterpriseOpenCGAClient.getEnterpriseMetaClient().openapi(queryParams);
     }
 
     private RestResponse<String> ping() throws Exception {

@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CA_DISORDER_ID_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.opencb.commons.datastore.solr.FacetQueryParser.FACET_SEPARATOR;
@@ -121,8 +122,8 @@ public class ClinicalAggregationTest {
         query = new Query(PROJECT_PARAM_NAME, projectId);
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, userToken);
         assertEquals(1, facetResult.getNumResults());
-        assertEquals(2, facetResult.first().getCount());
-        assertEquals(facetName, facetResult.first().getName());
+        assertEquals(2L, facetResult.first().getCount());
+        assertEquals(CA_DISORDER_ID_NAME, facetResult.first().getName());
         for (FacetField result : facetResult.getResults()) {
             System.out.println(result);
         }
