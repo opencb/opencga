@@ -22,10 +22,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.InputMismatchException;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -49,6 +46,11 @@ public class ResourceManager  {
     public static final String ANALYSIS_DIRNAME = "analysis";
     public static final String RESOURCES_DIRNAME = "resources";
 //    public static final String RELEASES_DIRNAME = "releases";
+
+    public static final String STDOUT_UNZIP_PREFIX = "stdout_unzip_";
+    public static final String STDERR_UNZIP_PREFIX = "stderr_unzip_";
+
+    public static final Set<String> SKIPPED_PREFIXES = new HashSet<>(Arrays.asList(STDERR_UNZIP_PREFIX, STDOUT_UNZIP_PREFIX));
 
     protected static Logger logger = LoggerFactory.getLogger(ResourceManager.class);
 
@@ -353,12 +355,19 @@ public class ResourceManager  {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 // Move each file to target directory
-                Path targetFile = targetDir.resolve(sourceDir.relativize(file));
-                logger.info("Moving {} to {} ...", file.toAbsolutePath(), targetFile.toAbsolutePath());
-                FileUtils.copyFile(file.toFile(), targetFile.toFile());
-                Files.delete(file);
-//                Files.move(file, targetFile, StandardCopyOption.REPLACE_EXISTING);
-                logger.info(OK);
+                boolean skip = SKIPPED_PREFIXES.stream().anyMatch(file.getFileName().toString()::startsWith);
+                logger.info("Skip moving the file {} ? {}", file.getFileName(), skip);
+                if (!skip) {
+                    if (Files.exists(file)) {
+                        Path targetFile = targetDir.resolve(sourceDir.relativize(file));
+                        logger.info("Moving {} to {} ...", file.toAbsolutePath(), targetFile.toAbsolutePath());
+                        FileUtils.copyFile(file.toFile(), targetFile.toFile());
+                        Files.delete(file);
+                        logger.info(OK);
+                    } else {
+                        logger.info("File does not exist {} to be moved to resources directory", file.toAbsolutePath());
+                    }
+                }
                 return FileVisitResult.CONTINUE;
             }
 
