@@ -2,6 +2,7 @@ package com.zettagenomics.opencga.enterprise.catalog.utils;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -10,6 +11,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.client.GenericClient;
+import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
@@ -23,6 +25,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyInternal;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.LoginParams;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -163,6 +166,18 @@ public class FederationUtils {
             client.setToken(finalToken);
             // Set token in the federationClient object
             federationClient.setToken(finalToken);
+        } else {
+            // Make a dummy call to check if the token is still valid
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, "id");
+            RestResponse<User> execute = client.execute("users", federationClient.getUserId(), null, null, "info", options,
+                    ParentClient.GET, User.class);
+            if (CollectionUtils.isNotEmpty(execute.getEvents())) {
+                for (Event event : execute.getEvents()) {
+                    if (event.getType().equals(Event.Type.ERROR)) {
+                        throw new ClientException("Federation server error. " + event.getId() + ": " + event.getMessage());
+                    }
+                }
+            }
         }
         return client;
     }

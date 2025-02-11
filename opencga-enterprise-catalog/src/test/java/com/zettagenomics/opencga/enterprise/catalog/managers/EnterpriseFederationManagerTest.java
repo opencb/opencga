@@ -86,14 +86,11 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
 //        client = enterpriseFederationManager.reset("", serverCreateParams.getId(), org2OwnerToken).first();
         enterpriseFederationManager.reset("", serverCreateParams.getId(), org2OwnerToken).first();
 
-        // Update federation client creds
+//        // Update federation client creds
         FederationClientUpdateParams updateParams = new FederationClientUpdateParams()
                 .setPassword(client.getPassword())
                 .setSecurityKey(client.getSecurityKey());
         enterpriseFederationManager.update("org2", updateParams, ownerToken);
-//        ObjectMap params = new ObjectMap();
-//        params.put("body", updateParams);
-//        genericClient.execute("federations", "client", null, null, "update", params, "POST", Object.class);
 
         studyOpenCGAResult = genericClient.execute("studies", "org2@project:study", null, null, "info",
                 new ObjectMap(), "GET", Study.class).first();
