@@ -2,27 +2,19 @@ package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EnterpriseOpenCGAWSServer extends OpenCGAWSServer {
@@ -102,13 +94,6 @@ public class EnterpriseOpenCGAWSServer extends OpenCGAWSServer {
             errorMessage = e.getMessage();
             enterpriseLogger.error("Error while initialising EnterpriseFactory", e);
         }
-    }
-
-    protected Response createResponse(RestResponse restResponse) {
-        Response.Status status = getResponseStatus(restResponse.getResponses());
-        Response response = Response.fromResponse(createJsonResponse(restResponse)).status(status).build();
-        logResponse(response.getStatusInfo(), restResponse);
-        return response;
     }
 
 }

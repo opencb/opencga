@@ -84,7 +84,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> metaList = asList( "about","api","fail","model","ping","sso-login","sso-logout","status")
+    private List<Candidate> metaList = asList( "about","api","fail","model","openapi","ping","sso-login","sso-logout","status")
             .stream()
             .map(Candidate::new)
             .collect(toList());

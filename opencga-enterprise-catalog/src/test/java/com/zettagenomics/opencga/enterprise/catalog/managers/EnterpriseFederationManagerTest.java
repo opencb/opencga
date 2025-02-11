@@ -9,9 +9,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.client.GenericClient;
+import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
@@ -19,10 +21,12 @@ import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclParams;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.util.Collections;
 
@@ -58,6 +62,9 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         enterpriseFederationManager.createFederation("", serverCreateParams, org2OwnerToken).first();
         FederationClientParams client = new FederationClientParams();
 
+        catalogManager.getStudyManager().updateAcl(study.getId(), organizationId, new StudyAclParams("", "view_only"),
+                ParamUtils.AclAction.ADD, org2OwnerToken);
+
         // Check we can log in with that user
         AuthenticationResponse login = catalogManager.getUserManager().login(client.getOrganizationId(), client.getUserId(), client.getPassword());
         System.out.println("login = " + login);
@@ -81,6 +88,11 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         assertEquals("org2@project:study", studyOpenCGAResult.first().getFqn());
         assertFalse(studyOpenCGAResult.first().getInternal().isFederated());
         assertFalse(studyOpenCGAResult.first().getVariableSets().isEmpty());
+
+//        ObjectMap params = new ObjectMap()
+//                .append("member", orgOwnerUserId);
+//        RestResponse<Object> execute = genericClient.execute("studies", "org2@project:study", null, null, "acl", params, ParentClient.GET,
+//                Object.class);
 
         // Reset federation server access
 //        client = enterpriseFederationManager.reset("", serverCreateParams.getId(), org2OwnerToken).first();

@@ -753,6 +753,18 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             String group1 = matcher.group(1);
             String group2 = matcher.group(2);
 
+            if (url.endsWith("/acl")) {
+                Object memberObj = queryParams.get("member");
+                if (memberObj != null) {
+                    String member = String.valueOf(memberObj);
+                    if (userId.equals(member)) {
+                        // The user wants to know the permissions for himself. We need to change for the user being used in the federation
+                        logger.info("Changing member from '{}' to '{}' for federated /acl query", member, federationClient.getUserId());
+                        queryParams.put("member", federationClient.getUserId());
+                    }
+                }
+            }
+
             RestResponse<Object> execute = client.execute(group1, group2, queryParams, body, method, Object.class);
 
             auditManager.audit(organizationId, userId, AuditAction.FEDERATION_REDIRECT, Enums.Resource.ORGANIZATION, organizationId,
