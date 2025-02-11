@@ -20,6 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/samples/acl/{members}/update | study, members[*], action[*], body[*] |
+#' | aggregationStats | /{apiVersion}/samples/aggregationStats | study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount, field |
 #' | loadAnnotationSets | /{apiVersion}/samples/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | create | /{apiVersion}/samples/create | include, exclude, study, includeResult, body[*] |
 #' | distinct | /{apiVersion}/samples/distinct | study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount, field[*] |
@@ -48,6 +49,51 @@ setMethod("sampleClient", "OpencgaR", function(OpencgaR, annotationSet, members,
         #' @param data JSON containing the parameters to update the permissions. If propagate flag is set to true, it will propagate the permissions defined to the individuals that are associated to the matching samples.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="samples", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/samples/aggregationStats:
+        #' Fetch catalog sample stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param id Comma separated list sample IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list sample UUIDs up to a maximum of 100.
+        #' @param somatic Somatic sample.
+        #' @param individualId Individual ID or UUID.
+        #' @param fileIds Comma separated list of file IDs, paths or UUIDs.
+        #' @param cohortIds Comma separated list of cohort IDs.
+        #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param internalStatus Filter by internal status.
+        #' @param status Filter by status.
+        #' @param processingProduct Processing product.
+        #' @param processingPreparationMethod Processing preparation method.
+        #' @param processingExtractionMethod Processing extraction method.
+        #' @param processingLabSampleId Processing lab sample id.
+        #' @param collectionFrom Collection from.
+        #' @param collectionType Collection type.
+        #' @param collectionMethod Collection method.
+        #' @param phenotypes Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
+        #' @param internalRgaStatus Index status of the sample for the Recessive Gene Analysis. Allowed values: ['NOT_INDEXED INDEXED INVALID_PERMISSIONS INVALID_METADATA INVALID']
+        #' @param release Release when it was created.
+        #' @param snapshot Snapshot value (Latest version of the entry in the specified release).
+        #' @param deleted Boolean to retrieve deleted entries.
+        #' @param statsId Sample variant stats Id. If this field is not provided and the user filters by other stats fields, it will automatically be set to ALL.
+        #' @param statsVariantCount Sample variant stats VariantCount.
+        #' @param statsChromosomeCount Sample variant stats ChromosomeCount.
+        #' @param statsTypeCount Sample variant stats TypeCount.
+        #' @param statsGenotypeCount Sample variant stats GenotypeCount.
+        #' @param statsTiTvRatio Sample variant stats TiTvRatio.
+        #' @param statsQualityAvg Sample variant stats QualityAvg.
+        #' @param statsQualityStdDev Sample variant stats QualityStdDev.
+        #' @param statsHeterozygosityRate Sample variant stats HeterozygosityRate.
+        #' @param statsDepthCount Sample variant stats DepthCount.
+        #' @param statsBiotypeCount Sample variant stats BiotypeCount.
+        #' @param statsClinicalSignificanceCount Sample variant stats ClinicalSignificanceCount.
+        #' @param statsConsequenceTypeCount Sample variant stats ConsequenceTypeCount.
+        #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="samples", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/samples/annotationSets/load:

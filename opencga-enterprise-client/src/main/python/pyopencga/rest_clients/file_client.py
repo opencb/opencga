@@ -37,6 +37,74 @@ class File(_ParentRestClient):
         options['action'] = action
         return self._post(category='files', resource='update', subcategory='acl', second_query_id=members, data=data, **options)
 
+    def aggregation_stats(self, **options):
+        """
+        Fetch catalog file stats.
+        PATH: /{apiVersion}/files/aggregationStats
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param str id: Comma separated list of file IDs up to a maximum of
+            100. Also admits basic regular expressions using the operator '~',
+            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i'
+            for case insensitive search.
+        :param str uuid: Comma separated list file UUIDs up to a maximum of
+            100.
+        :param str name: Comma separated list of file names. Also admits basic
+            regular expressions using the operator '~', i.e. '~{perl-regex}'
+            e.g. '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str path: Comma separated list of paths. Also admits basic
+            regular expressions using the operator '~', i.e. '~{perl-regex}'
+            e.g. '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str uri: Comma separated list of uris. Also admits basic
+            regular expressions using the operator '~', i.e. '~{perl-regex}'
+            e.g. '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str type: File type, either FILE or DIRECTORY.
+        :param str bioformat: Comma separated Bioformat values. For existing
+            Bioformats see files/bioformats.
+        :param str format: Comma separated Format values. For existing Formats
+            see files/formats.
+        :param bool external: Boolean field indicating whether to filter by
+            external or non external files.
+        :param str status: Filter by status.
+        :param str internal_status: Filter by internal status.
+        :param str internal_variant_index_status: Filter by internal variant
+            index status.
+        :param str software_name: Software name.
+        :param str directory: Directory under which we want to look for files
+            or folders.
+        :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
+            Examples: >2018, 2017-2018, <201805.
+        :param str modification_date: Modification date. Format:
+            yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        :param str description: Description.
+        :param str tags: Tags. Also admits basic regular expressions using the
+            operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+            sensitive, '~/value/i' for case insensitive search.
+        :param str size: File size.
+        :param str sample_ids: Comma separated list sample IDs or UUIDs up to
+            a maximum of 100.
+        :param str job_id: Job ID that created the file(s) or folder(s).
+        :param str annotation: Annotation filters. Example:
+            age>30;gender=FEMALE. For more information, please visit
+            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        :param str acl: Filter entries for which a user has the provided
+            permissions. Format: acl={user}:{permissions}. Example:
+            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which
+            user john has both WRITE and WRITE_ANNOTATIONS permissions. Only
+            study owners or administrators can query by this field. .
+        :param bool deleted: Boolean to retrieve deleted entries.
+        :param str release: Release when it was created.
+        :param str field: Field to apply aggregation statistics to (or a list
+            of fields separated by semicolons), e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
+        """
+
+        return self._get(category='files', resource='aggregationStats', **options)
+
     def load_annotation_sets(self, variable_set_id, path, data=None, **options):
         """
         Load annotation sets from a TSV file.
