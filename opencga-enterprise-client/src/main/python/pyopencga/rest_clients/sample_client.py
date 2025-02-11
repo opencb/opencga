@@ -39,6 +39,82 @@ class Sample(_ParentRestClient):
         options['action'] = action
         return self._post(category='samples', resource='update', subcategory='acl', second_query_id=members, data=data, **options)
 
+    def aggregation_stats(self, **options):
+        """
+        Fetch catalog sample stats.
+        PATH: /{apiVersion}/samples/aggregationStats
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param str id: Comma separated list sample IDs up to a maximum of 100.
+            Also admits basic regular expressions using the operator '~', i.e.
+            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
+            case insensitive search.
+        :param str uuid: Comma separated list sample UUIDs up to a maximum of
+            100.
+        :param bool somatic: Somatic sample.
+        :param str individual_id: Individual ID or UUID.
+        :param str file_ids: Comma separated list of file IDs, paths or UUIDs.
+        :param str cohort_ids: Comma separated list of cohort IDs.
+        :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
+            Examples: >2018, 2017-2018, <201805.
+        :param str modification_date: Modification date. Format:
+            yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        :param str internal_status: Filter by internal status.
+        :param str status: Filter by status.
+        :param str processing_product: Processing product.
+        :param str processing_preparation_method: Processing preparation
+            method.
+        :param str processing_extraction_method: Processing extraction method.
+        :param str processing_lab_sample_id: Processing lab sample id.
+        :param str collection_from: Collection from.
+        :param str collection_type: Collection type.
+        :param str collection_method: Collection method.
+        :param str phenotypes: Comma separated list of phenotype ids or names.
+            Also admits basic regular expressions using the operator '~', i.e.
+            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
+            case insensitive search.
+        :param str annotation: Annotation filters. Example:
+            age>30;gender=FEMALE. For more information, please visit
+            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        :param str acl: Filter entries for which a user has the provided
+            permissions. Format: acl={user}:{permissions}. Example:
+            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which
+            user john has both WRITE and WRITE_ANNOTATIONS permissions. Only
+            study owners or administrators can query by this field. .
+        :param str internal_rga_status: Index status of the sample for the
+            Recessive Gene Analysis. Allowed values: ['NOT_INDEXED INDEXED
+            INVALID_PERMISSIONS INVALID_METADATA INVALID']
+        :param str release: Release when it was created.
+        :param int snapshot: Snapshot value (Latest version of the entry in
+            the specified release).
+        :param bool deleted: Boolean to retrieve deleted entries.
+        :param str stats_id: Sample variant stats Id. If this field is not
+            provided and the user filters by other stats fields, it will
+            automatically be set to ALL.
+        :param str stats_variant_count: Sample variant stats VariantCount.
+        :param str stats_chromosome_count: Sample variant stats
+            ChromosomeCount.
+        :param str stats_type_count: Sample variant stats TypeCount.
+        :param str stats_genotype_count: Sample variant stats GenotypeCount.
+        :param str stats_ti_tv_ratio: Sample variant stats TiTvRatio.
+        :param str stats_quality_avg: Sample variant stats QualityAvg.
+        :param str stats_quality_std_dev: Sample variant stats QualityStdDev.
+        :param str stats_heterozygosity_rate: Sample variant stats
+            HeterozygosityRate.
+        :param str stats_depth_count: Sample variant stats DepthCount.
+        :param str stats_biotype_count: Sample variant stats BiotypeCount.
+        :param str stats_clinical_significance_count: Sample variant stats
+            ClinicalSignificanceCount.
+        :param str stats_consequence_type_count: Sample variant stats
+            ConsequenceTypeCount.
+        :param str field: Field to apply aggregation statistics to (or a list
+            of fields separated by semicolons), e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
+        """
+
+        return self._get(category='samples', resource='aggregationStats', **options)
+
     def load_annotation_sets(self, variable_set_id, path, data=None, **options):
         """
         Load annotation sets from a TSV file.
