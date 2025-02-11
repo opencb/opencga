@@ -19,14 +19,12 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -75,6 +73,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.*;
+import static org.opencb.commons.datastore.mongodb.MongoDBQueryUtils.SEPARATOR;
 
 /**
  * Created by pfurio on 24/08/16.
@@ -84,6 +83,22 @@ public class FileManagerTest extends AbstractManagerTest {
 
     private FileManager fileManager;
 
+    private static final Map<String, String> MONTH_MAP = new HashMap<>();
+
+    static {
+        MONTH_MAP.put("01", "Jan");
+        MONTH_MAP.put("02", "Feb");
+        MONTH_MAP.put("03", "Mar");
+        MONTH_MAP.put("04", "Apr");
+        MONTH_MAP.put("05", "May");
+        MONTH_MAP.put("06", "Jun");
+        MONTH_MAP.put("07", "Jul");
+        MONTH_MAP.put("08", "Aug");
+        MONTH_MAP.put("09", "Sep");
+        MONTH_MAP.put("10", "Oct");
+        MONTH_MAP.put("11", "Nov");
+        MONTH_MAP.put("12", "Dec");
+    }
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -468,7 +483,7 @@ public class FileManagerTest extends AbstractManagerTest {
         fileManager.unlink(studyFqn, baiFile.getPath(), ownerToken);
         bamFile = fileManager.get(studyFqn, bamFile.getPath(), QueryOptions.empty(), ownerToken).first();
         assertNotNull(bamFile.getInternal().getAlignment().getIndex());
-        assertNull(bamFile.getInternal().getAlignment().getIndex().getFileId());
+        assertTrue(StringUtils.isEmpty(bamFile.getInternal().getAlignment().getIndex().getFileId()));
         assertEquals(FileStatus.DELETED, bamFile.getInternal().getAlignment().getIndex().getStatus().getId());
     }
 
@@ -2442,7 +2457,245 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(result.first().isExternal());
     }
 
-//    @Test
+    @Test
+    public void testFacet() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        System.out.println("results.getResults() = " + results.getResults());
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "format", normalToken1);
+
+        long totalCount = 0;
+        Map<String, Integer> formatMap = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key;
+            if (result.getFormat() == null) {
+                key = "null";
+            } else {
+                key = result.getFormat().name();
+            }
+            if (!formatMap.containsKey(key)) {
+                formatMap.put(key, 0);
+            }
+            formatMap.put(key, 1 + formatMap.get(key));
+            totalCount++;
+        }
+
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount());
+            Assert.assertEquals(formatMap.size(), result.getBuckets().size());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * formatMap.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+
+    @Test
+    public void testFacetDotNotation() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        System.out.println("results.getResults() = " + results.getResults());
+        String facetName = "internal.status.id";
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), facetName, normalToken1);
+
+        long totalCount = 0;
+        Map<String, Integer> internalStatusIdMap = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key;
+            if (result.getInternal() == null || result.getInternal().getStatus() == null || result.getInternal().getStatus().getId() == null) {
+                key = "null";
+            } else {
+                key = result.getInternal().getStatus().getId();
+            }
+            if (!internalStatusIdMap.containsKey(key)) {
+                internalStatusIdMap.put(key, 0);
+            }
+            internalStatusIdMap.put(key, 1 + internalStatusIdMap.get(key));
+            totalCount++;
+        }
+
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount());
+            Assert.assertEquals(internalStatusIdMap.size(), result.getBuckets().size());
+            Assert.assertEquals(facetName, result.getName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * internalStatusIdMap.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    @Test
+    public void testMultipleFacets() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        long totalCount = 0;
+
+        Map<String, Integer> formatMap = new HashMap<>();
+        Map<String, Integer> bioformatMap = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key;
+            if (result.getFormat() == null) {
+                key = "null";
+            } else {
+                key = result.getFormat().name();
+            }
+            if (!formatMap.containsKey(key)) {
+                formatMap.put(key, 0);
+            }
+            formatMap.put(key, 1 + formatMap.get(key));
+
+            if (result.getBioformat() == null) {
+                key = "null";
+            } else {
+                key = result.getBioformat().name();
+            }
+            if (!bioformatMap.containsKey(key)) {
+                bioformatMap.put(key, 0);
+            }
+            bioformatMap.put(key, 1 + bioformatMap.get(key));
+
+            totalCount++;
+        }
+
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "format;bioformat", normalToken1);
+        System.out.println("facets = " + facets);
+
+        Assert.assertEquals(2, facets.getNumResults());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount());
+            Map<String, Integer> map = null;
+            if (result.getName().equals("format")) {
+                map = formatMap;
+            } else if (result.getName().equals("bioformat")) {
+                map = bioformatMap;
+            } else {
+                fail();
+            }
+            Assert.assertEquals(map.size(), result.getBuckets().size());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * map.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    @Test
+    public void testCombineFacets() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        long totalCount = 0;
+
+        Map<String, Integer> map = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key = result.getFormat() + SEPARATOR + result.getBioformat();
+            if (!map.containsKey(key)) {
+                map.put(key, 0);
+            }
+            map.put(key, 1 + map.get(key));
+
+            totalCount++;
+        }
+
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "format,bioformat", normalToken1);
+        System.out.println("facets = " + facets);
+
+        Assert.assertEquals(1, facets.getNumResults());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount());
+            Assert.assertEquals(map.size(), result.getBuckets().size());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertTrue(map.containsKey(bucket.getValue()));
+                Assert.assertEquals(1L * map.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    @Test
+    public void testCreationDate() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+
+        Map<String, Integer> yearCounter = new HashMap<>();
+        Map<String, Integer> monthCounter = new HashMap<>();
+        Map<String, Integer> dayCounter = new HashMap<>();
+
+        String yearKey = "";
+        String monthKey = "";
+        String dayKey = "";
+
+        for (File file : results.getResults()) {
+            String year = file.getCreationDate().substring(0, 4);
+            String month = file.getCreationDate().substring(4, 6);
+            String day = file.getCreationDate().substring(6, 8);
+
+            yearKey = year;
+            if (!yearCounter.containsKey(yearKey)) {
+                yearCounter.put(yearKey, 0);
+            }
+            yearCounter.put(yearKey, 1 + yearCounter.get(yearKey));
+
+            monthKey = MONTH_MAP.get(month) + " " + yearKey;
+            if (!monthCounter.containsKey(monthKey)) {
+                monthCounter.put(monthKey, 0);
+            }
+            monthCounter.put(monthKey, 1 + monthCounter.get(monthKey));
+
+            dayKey = day + " " + monthKey;
+            if (!dayCounter.containsKey(dayKey)) {
+                dayCounter.put(dayKey, 0);
+            }
+            dayCounter.put(dayKey, 1 + dayCounter.get(dayKey));
+        }
+
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "creationDate[YEAR]", normalToken1);
+        System.out.println("facets.first().toString() = " + facets.first().toString());
+        System.out.println("yearCounter.toString() = " + yearCounter.toString());
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals("creationDate", result.getName());
+            Assert.assertEquals(yearCounter.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum(), result.getCount());
+            Assert.assertEquals(yearCounter.size(), result.getBuckets().size());
+            Assert.assertEquals("year", result.getAggregationName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertTrue(yearCounter.containsKey(bucket.getValue()));
+                Assert.assertEquals(1L * yearCounter.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+
+        facets = fileManager.facet(studyFqn, new Query(), "creationDate[MONTH]", normalToken1);
+        System.out.println("facets.first().toString() = " + facets.first().toString());
+        System.out.println("monthCounter.toString() = " + monthCounter.toString());
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals("creationDate", result.getName());
+            Assert.assertEquals(monthCounter.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum(), result.getCount());
+            Assert.assertEquals(monthCounter.size(), result.getBuckets().size());
+            Assert.assertEquals("year" + SEPARATOR + "month", result.getAggregationName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertTrue(monthCounter.containsKey(bucket.getValue()));
+                Assert.assertEquals(1L * monthCounter.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+
+        facets = fileManager.facet(studyFqn, new Query(), "creationDate[DAY]", normalToken1);
+        System.out.println("facets.first().toString() = " + facets.first().toString());
+        System.out.println("dayCounter.toString() = " + dayCounter.toString());
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals("creationDate", result.getName());
+            Assert.assertEquals(dayCounter.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum(), result.getCount());
+            Assert.assertEquals(dayCounter.size(), result.getBuckets().size());
+            Assert.assertEquals("year" + SEPARATOR + "month" + SEPARATOR + "day", result.getAggregationName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertTrue(dayCounter.containsKey(bucket.getValue()));
+                Assert.assertEquals(1L * dayCounter.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    //    @Test
 //    public void testIndex() throws Exception {
 //        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
 //        File file = fileManager.link(studyFqn, uri, "", null, sessionIdUser).first();

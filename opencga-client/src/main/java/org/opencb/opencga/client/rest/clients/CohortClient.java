@@ -17,6 +17,7 @@
 package org.opencb.opencga.client.rest.clients;
 
 import java.lang.Object;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.rest.*;
 import org.opencb.opencga.core.client.ParentClient;
@@ -69,6 +70,36 @@ public class CohortClient extends ParentClient {
         params.putIfNotNull("action", action);
         params.put("body", data);
         return execute("cohorts", null, "acl", members, "update", params, POST, CohortAclEntryList.class);
+    }
+
+    /**
+     * Fetch catalog cohort stats.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       id: Comma separated list of cohort IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~',
+     *            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       name: Comma separated list of cohort names up to a maximum of 100. Also admits basic regular expressions using the operator
+     *            '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list of cohort IDs up to a maximum of 100.
+     *       type: Cohort type.
+     *       creationDate: creationDate.
+     *       modificationDate: modificationDate.
+     *       deleted: deleted.
+     *       status: status.
+     *       internalStatus: internalStatus.
+     *       annotation: Cohort annotation.
+     *       acl: acl.
+     *       samples: Cohort sample IDs.
+     *       numSamples: Number of samples.
+     *       release: release.
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("cohorts", null, null, null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**

@@ -48,6 +48,48 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
         return this._post("analysis", null, "clinical/acl", members, "update", data, {action, ...params});
     }
 
+    /** Fetch catalog clinical analysis aggregation stats
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {String} [params.id] - Comma separated list of Clinical Analysis IDs up to a maximum of 100. Also admits basic regular
+    *     expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list of Clinical Analysis UUIDs up to a maximum of 100.
+    * @param {String} [params.type] - Clinical Analysis type.
+    * @param {String} [params.disorder] - Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.files] - Clinical Analysis files.
+    * @param {String} [params.sample] - Sample associated to the proband or any member of a family.
+    * @param {String} [params.individual] - Proband or any member of a family.
+    * @param {String} [params.proband] - Clinical Analysis proband.
+    * @param {String} [params.probandSamples] - Clinical Analysis proband samples.
+    * @param {String} [params.family] - Clinical Analysis family.
+    * @param {String} [params.familyMembers] - Clinical Analysis family members.
+    * @param {String} [params.familyMemberSamples] - Clinical Analysis family members samples.
+    * @param {String} [params.panels] - Clinical Analysis panels.
+    * @param {Boolean} [params.locked] - Locked Clinical Analyses.
+    * @param {String} [params.analystId] - Clinical Analysis analyst id.
+    * @param {String} [params.priority] - Clinical Analysis priority.
+    * @param {String} [params.flags] - Clinical Analysis flags.
+    * @param {String} [params.creationDate] - Clinical Analysis Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.modificationDate] - Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018,
+    *     <201805.
+    * @param {String} [params.dueDate] - Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.qualityControlSummary] - Clinical Analysis quality control summary.
+    * @param {String} [params.release] - Release when it was created.
+    * @param {Number} [params.snapshot] - Snapshot value (Latest version of the entry in the specified release).
+    * @param {String} [params.status] - Filter by status.
+    * @param {String} [params.internalStatus] - Filter by internal status.
+    * @param {String} [params.annotation] - Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
+    *     http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+    * @param {Boolean} [params.deleted] - Boolean to retrieve deleted entries.
+    * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+    *     studies;type;numSamples[0..10]:1;format:sum(size).
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    aggregationStats(params) {
+        return this._get("analysis", null, "clinical", null, "aggregationStats", params);
+    }
+
     /** Load annotation sets from a TSV file
     * @param {Object} [data] - JSON containing the 'content' of the TSV file if this has not yet been registered into OpenCGA.
     * @param {String} variableSetId - Variable set ID or name.
@@ -128,6 +170,34 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     */
     distinct(field, params) {
         return this._get("analysis", null, "clinical", null, "distinct", {field, ...params});
+    }
+
+    /** Fetch catalog interpretation aggregation stats
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {String} [params.id] - Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions
+    *     using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list of Interpretation UUIDs up to a maximum of 100.
+    * @param {String} [params.name] - Comma separated list of Interpretation names up to a maximum of 100.
+    * @param {String} [params.clinicalAnalysisId] - Clinical Analysis id.
+    * @param {String} [params.analystId] - Analyst ID.
+    * @param {String} [params.methodName] - Interpretation method name. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.panels] - Interpretation panels.
+    * @param {String} [params.primaryFindings] - Interpretation primary findings.
+    * @param {String} [params.secondaryFindings] - Interpretation secondary findings.
+    * @param {String} [params.creationDate] - Interpretation Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.modificationDate] - Interpretation Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018,
+    *     <201805.
+    * @param {String} [params.status] - Filter by status.
+    * @param {String} [params.internalStatus] - Filter by internal status.
+    * @param {String} [params.release] - Release when it was created.
+    * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+    *     studies;type;numSamples[0..10]:1;format:sum(size).
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    aggregationStatsInterpretation(params) {
+        return this._get("analysis", null, "clinical/interpretation", null, "aggregationStats", params);
     }
 
     /** Interpretation distinct method

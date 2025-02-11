@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -70,6 +71,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
+                break;
+            case "aggregationstats":
+                queryResponse = aggregationStats();
                 break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
@@ -145,6 +149,58 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), SampleAclUpdateParams.class);
         }
         return openCGAClient.getSampleClient().updateAcl(commandOptions.members, commandOptions.action, sampleAclUpdateParams, queryParams);
+    }
+
+    private RestResponse<FacetField> aggregationStats() throws Exception {
+        logger.debug("Executing aggregationStats in Samples command line");
+
+        SamplesCommandOptions.AggregationStatsCommandOptions commandOptions = samplesCommandOptions.aggregationStatsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotNull("somatic", commandOptions.somatic);
+        queryParams.putIfNotEmpty("individualId", commandOptions.individualId);
+        queryParams.putIfNotEmpty("fileIds", commandOptions.fileIds);
+        queryParams.putIfNotEmpty("cohortIds", commandOptions.cohortIds);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("processingProduct", commandOptions.processingProduct);
+        queryParams.putIfNotEmpty("processingPreparationMethod", commandOptions.processingPreparationMethod);
+        queryParams.putIfNotEmpty("processingExtractionMethod", commandOptions.processingExtractionMethod);
+        queryParams.putIfNotEmpty("processingLabSampleId", commandOptions.processingLabSampleId);
+        queryParams.putIfNotEmpty("collectionFrom", commandOptions.collectionFrom);
+        queryParams.putIfNotEmpty("collectionType", commandOptions.collectionType);
+        queryParams.putIfNotEmpty("collectionMethod", commandOptions.collectionMethod);
+        queryParams.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
+        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
+        queryParams.putIfNotEmpty("acl", commandOptions.acl);
+        queryParams.putIfNotNull("internalRgaStatus", commandOptions.internalRgaStatus);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        queryParams.putIfNotEmpty("statsId", commandOptions.statsId);
+        queryParams.putIfNotEmpty("statsVariantCount", commandOptions.statsVariantCount);
+        queryParams.putIfNotEmpty("statsChromosomeCount", commandOptions.statsChromosomeCount);
+        queryParams.putIfNotEmpty("statsTypeCount", commandOptions.statsTypeCount);
+        queryParams.putIfNotEmpty("statsGenotypeCount", commandOptions.statsGenotypeCount);
+        queryParams.putIfNotEmpty("statsTiTvRatio", commandOptions.statsTiTvRatio);
+        queryParams.putIfNotEmpty("statsQualityAvg", commandOptions.statsQualityAvg);
+        queryParams.putIfNotEmpty("statsQualityStdDev", commandOptions.statsQualityStdDev);
+        queryParams.putIfNotEmpty("statsHeterozygosityRate", commandOptions.statsHeterozygosityRate);
+        queryParams.putIfNotEmpty("statsDepthCount", commandOptions.statsDepthCount);
+        queryParams.putIfNotEmpty("statsBiotypeCount", commandOptions.statsBiotypeCount);
+        queryParams.putIfNotEmpty("statsClinicalSignificanceCount", commandOptions.statsClinicalSignificanceCount);
+        queryParams.putIfNotEmpty("statsConsequenceTypeCount", commandOptions.statsConsequenceTypeCount);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getSampleClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
