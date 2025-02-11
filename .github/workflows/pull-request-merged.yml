@@ -20,4 +20,4 @@ jobs:
         run: |
           echo "Deleting docker images"
           python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
-
+        secrets: inherit
