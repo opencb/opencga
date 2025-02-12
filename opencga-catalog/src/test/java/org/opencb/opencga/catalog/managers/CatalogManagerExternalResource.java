@@ -100,11 +100,11 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
         // Pedigree graph analysis
         Path analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
-        Files.copy(sourceAnalysisPath.resolve("pedigree-graph/ped.R"),
-                analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
+//        Files.copy(sourceAnalysisPath.resolve("pedigree-graph/ped.R"),
+//                analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
 
-//        InputStream inputStream = getClass().getResource("/pedigree-graph/ped.R").openStream();
-//        Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream inputStream = getClass().getResource("/pedigree-graph/ped.R").openStream();
+        Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
 
         return opencgaHome;
     }
