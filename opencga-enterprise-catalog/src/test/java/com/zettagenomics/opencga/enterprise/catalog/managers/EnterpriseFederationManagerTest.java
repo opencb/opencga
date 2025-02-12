@@ -13,7 +13,6 @@ import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
@@ -89,10 +88,11 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         assertFalse(studyOpenCGAResult.first().getInternal().isFederated());
         assertFalse(studyOpenCGAResult.first().getVariableSets().isEmpty());
 
-//        ObjectMap params = new ObjectMap()
-//                .append("member", orgOwnerUserId);
-//        RestResponse<Object> execute = genericClient.execute("studies", "org2@project:study", null, null, "acl", params, ParentClient.GET,
-//                Object.class);
+        ObjectMap params = new ObjectMap()
+                .append("member", orgOwnerUserId);
+        RestResponse<Object> execute = genericClient.execute("studies", "org2@project:study", null, null, "acl", params, ParentClient.GET,
+                Object.class);
+        System.out.println(execute);
 
         // Reset federation server access
 //        client = enterpriseFederationManager.reset("", serverCreateParams.getId(), org2OwnerToken).first();
