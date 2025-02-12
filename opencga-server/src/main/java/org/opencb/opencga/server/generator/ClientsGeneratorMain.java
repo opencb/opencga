@@ -3,18 +3,12 @@ package org.opencb.opencga.server.generator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.opencb.opencga.server.generator.commons.ApiCommonsImpl;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.RestCategory;
 import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.generator.models.RestParameter;
-import org.opencb.opencga.server.rest.*;
-import org.opencb.opencga.server.rest.admin.AdminWSServer;
-import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
-import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
-import org.opencb.opencga.server.rest.analysis.VariantWebService;
-import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
-import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,26 +26,8 @@ public class ClientsGeneratorMain {
         System.setProperty("opencga.log.file.enabled", "false");
         System.setProperty("opencga.log.level", "info");
         Configurator.reconfigure();
-
-        List<Class<?>> classes = new ArrayList<>();
-        classes.add(OrganizationWSServer.class);
-        classes.add(UserWSServer.class);
-        classes.add(ProjectWSServer.class);
-        classes.add(StudyWSServer.class);
-        classes.add(FileWSServer.class);
-        classes.add(JobWSServer.class);
-        classes.add(SampleWSServer.class);
-        classes.add(IndividualWSServer.class);
-        classes.add(FamilyWSServer.class);
-        classes.add(CohortWSServer.class);
-        classes.add(PanelWSServer.class);
-        classes.add(AlignmentWebService.class);
-        classes.add(VariantWebService.class);
-        classes.add(ClinicalWebService.class);
-        classes.add(VariantOperationWebService.class);
-        classes.add(MetaWSServer.class);
-        classes.add(Ga4ghWSServer.class);
-        classes.add(AdminWSServer.class);
+        ApiCommonsImpl apiCommons = new ApiCommonsImpl();
+        List<Class<?>> classes = apiCommons.getApiClasses();
 
         try {
             // Create CommandLineConfiguration and ClientsGenerator

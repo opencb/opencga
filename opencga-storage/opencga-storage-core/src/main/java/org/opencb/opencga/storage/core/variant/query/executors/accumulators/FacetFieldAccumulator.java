@@ -28,7 +28,7 @@ public abstract class FacetFieldAccumulator<T> {
      * @return predefined list of buckets.
      */
     public FacetField createField() {
-        return new FacetField(getName(), 0, prepareBuckets());
+        return new FacetField(getName(), 0L, prepareBuckets());
     }
 
     /**
