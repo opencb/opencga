@@ -16,6 +16,8 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb;
 
+import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
+import com.zettagenomics.opencga.enterprise.catalog.utils.FederationUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.CvdbConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalAnalysisConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretationConverter;
@@ -43,22 +45,20 @@ import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.FqnUtils;
+import org.opencb.opencga.core.client.GenericClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -66,9 +66,12 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.clinical.CvdbIndexStatus;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.federation.FederationClientParams;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +79,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -134,6 +140,14 @@ public class CvdbSolrEngine {
             CLINICAL_VARIANT_EVIDENCE_CONFIGSET);
 
     public static final String WITHOUT_ID = "-234";
+
+    private final QueryOptions ORGANIZATION_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            OrganizationDBAdaptor.QueryParams.ID.key(), OrganizationDBAdaptor.QueryParams.OWNER.key(),
+            OrganizationDBAdaptor.QueryParams.ADMINS.key(), OrganizationDBAdaptor.QueryParams.FEDERATION.key()));
+
+    private final QueryOptions INCLUDE_PROJECT_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key(), ProjectDBAdaptor.QueryParams.UID.key(),
+            ProjectDBAdaptor.QueryParams.FEDERATION.key()));
 
     public CvdbSolrEngine(Configuration configuration, CvdbConfiguration cvdbConfiguration) {
         this.configuration = configuration;
@@ -855,6 +869,55 @@ public class CvdbSolrEngine {
         // Get organization
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
         String organizationId = jwtPayload.getOrganization();
+
+        DBAdaptorFactory dbAdaptorFactory = EnterpriseFactory.getCatalogDBAdaptorFactory();
+        Organization organization = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(ORGANIZATION_OPTIONS).first();
+
+        List<Project> localProjects = new LinkedList<>();
+        Map<String, List<Project>> federatedProjects = new HashMap<>();
+
+        OpenCGAResult<Project> projectResult;
+        if (CollectionUtils.isEmpty(projectIds)) {
+            projectResult = catalogManager.getProjectManager().search(organizationId, new Query(), INCLUDE_PROJECT_OPTIONS, token);
+        } else {
+            projectResult = catalogManager.getProjectManager().get(projectIds, INCLUDE_PROJECT_OPTIONS, false, token);
+        }
+        for (Project project : projectResult.getResults()) {
+            if (project.getInternal().isFederated()) {
+                federatedProjects.putIfAbsent(project.getFederation().getId(), new LinkedList<>());
+                federatedProjects.get(project.getFederation().getId()).add(project);
+            } else if (existCollections(organizationId, project.getId())) {
+                localProjects.add(project);
+            }
+        }
+
+        if (!federatedProjects.isEmpty()) {
+
+            ExecutorService executor = Executors.newFixedThreadPool(federatedProjects.size());
+            List<Future<RestResponse<ClinicalVariantSummaryStats>>> federatedSummaryFutureList = new ArrayList<>(federatedProjects.size());
+            for (Entry<String, List<Project>> entry : federatedProjects.entrySet()) {
+                String federationId = entry.getKey();
+                List<Project> projectList = entry.getValue();
+                FederationClientParams federationClient = FederationUtils.findFederationClient(organization, federationId);
+                GenericClient client = FederationUtils.getClientInstance(federationClient);
+                Future<RestResponse<ClinicalVariantSummaryStats>> future = executor.submit(() -> {
+                    try {
+                        return client.execute("", "", new ObjectMap(), "GET", ClinicalVariantSummaryStats.class);
+                    } catch (ClientException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                federatedSummaryFutureList.add(future);
+
+
+            }
+        }
+
+
+
+
+
 
         List<String> targetProjectIds = new ArrayList<>();
         if (CollectionUtils.isEmpty(projectIds)) {

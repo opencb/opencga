@@ -200,5 +200,38 @@ public class FederationUtils {
         study.setGroups(groups);
     }
 
+    public static FederationClientParams findFederationClient(Organization organization, String federationId) throws CatalogException {
+        // Obtain the federation client credentials
+        if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getClients())) {
+            throw new CatalogException("The organization does not have any federation clients configured.");
+        }
+
+        for (FederationClientParams client : organization.getFederation().getClients()) {
+            if (client.getId().equals(federationId)) {
+                // Decode security key and user password
+                client.setSecurityKey(decodeSecureString(client.getSecurityKey()));
+                client.setPassword(decodeSecureString(client.getPassword()));
+
+                return client;
+            }
+        }
+
+        throw new CatalogException("Federation client id '" + federationId + "' not found in the organization.");
+    }
+
+    public static FederationServerParams findFederationServer(Organization organization, String federationId) throws CatalogException {
+        // Obtain the federation server credentials
+        if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getServers())) {
+            throw new CatalogException("The organization does not have any federation servers configured.");
+        }
+
+        for (FederationServerParams server : organization.getFederation().getServers()) {
+            if (server.getId().equals(federationId)) {
+                return server;
+            }
+        }
+
+        throw new CatalogException("Federation server id '" + federationId + "' not found in the organization.");
+    }
 
 }

@@ -2,6 +2,7 @@ package com.zettagenomics.opencga.enterprise.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.zettagenomics.opencga.enterprise.catalog.utils.FederationUtils;
+import com.zettagenomics.opencga.enterprise.catalog.utils.SecureKeyUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.core.models.audit.AuditAction;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
@@ -14,7 +15,6 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -27,7 +27,6 @@ import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.client.GenericClient;
 import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.common.MailUtils;
@@ -56,7 +55,6 @@ import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -184,7 +182,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             DBAdaptorFactory catalogDBAdaptorFactory = EnterpriseFactory.getCatalogDBAdaptorFactory();
             Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(ORGANIZATION_OPTIONS)
                     .first();
-            FederationServerParams serverParams = findFederationServer(organization, federationServerId);
+            FederationServerParams serverParams = FederationUtils.findFederationServer(organization, federationServerId);
 
             // Generate new client params
             FederationClientParams clientParams = new FederationClientParams()
@@ -192,7 +190,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                     .setOrganizationId(organizationId)
                     .setUserId(serverParams.getUserId())
                     .setPassword(PasswordUtils.getStrongRandomPassword(PASSWORD_LENGTH))
-                    .setSecurityKey(generateNewSecurityKey());
+                    .setSecurityKey(SecureKeyUtils.generateNewSecurityKey());
 
             // Update security key
             FederationServerUpdateParams updateParams = new FederationServerUpdateParams()
@@ -308,7 +306,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).update(userId, userUpdateParams);
 
             // Generate new security key and user password
-            String newSecurityKey = generateNewSecurityKey();
+            String newSecurityKey = SecureKeyUtils.generateNewSecurityKey();
             String newPassword = PasswordUtils.getStrongRandomPassword(PASSWORD_LENGTH);
             FederationServerUpdateParams updateParams = new FederationServerUpdateParams()
                     .setSecurityKey(newSecurityKey);
@@ -376,7 +374,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             DBAdaptorFactory catalogDBAdaptorFactory = EnterpriseFactory.getCatalogDBAdaptorFactory();
             Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(ORGANIZATION_OPTIONS)
                     .first();
-            FederationServerParams serverParams = findFederationServer(organization, federationServerId);
+            FederationServerParams serverParams = FederationUtils.findFederationServer(organization, federationServerId);
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(OrganizationDBAdaptor.QueryParams.FEDERATION_SERVERS.key(), ParamUtils.AddRemoveAction.REMOVE);
@@ -425,7 +423,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             DBAdaptorFactory catalogDBAdaptorFactory = EnterpriseFactory.getCatalogDBAdaptorFactory();
             Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(ORGANIZATION_OPTIONS)
                     .first();
-            FederationClientParams clientParams = findFederationClient(organization, federationClientId);
+            FederationClientParams clientParams = FederationUtils.findFederationClient(organization, federationClientId);
 
             // 1. Remove federationClient
             Map<String, Object> actionMap = new HashMap<>();
@@ -560,7 +558,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
 
             Organization organization = EnterpriseFactory.getCatalogDBAdaptorFactory().getCatalogOrganizationDBAdaptor(organizationId)
                     .get(ORGANIZATION_OPTIONS).first();
-            FederationClientParams federationClient = findFederationClient(organization, federationId);
+            FederationClientParams federationClient = FederationUtils.findFederationClient(organization, federationId);
             GenericClient client = FederationUtils.getClientInstance(federationClient);
             List<Project> federatedProjects = obtainRemoteProjectsAndStudies(client);
 
@@ -652,7 +650,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             if (StringUtils.isNotEmpty(updateParams.getSecurityKey()) || StringUtils.isNotEmpty(updateParams.getPassword())) {
                 Organization organization = EnterpriseFactory.getCatalogDBAdaptorFactory().getCatalogOrganizationDBAdaptor(organizationId)
                         .get(ORGANIZATION_OPTIONS).first();
-                FederationClientParams federationClient = findFederationClient(organization, clientId);
+                FederationClientParams federationClient = FederationUtils.findFederationClient(organization, clientId);
 
                 // Override values with the new ones
                 federationClient.setSecurityKey(StringUtils.isNotEmpty(updateParams.getSecurityKey())
@@ -711,7 +709,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             // Obtain the federation server credentials
             Organization organization = EnterpriseFactory.getCatalogDBAdaptorFactory().getCatalogOrganizationDBAdaptor(organizationId)
                     .get(ORGANIZATION_OPTIONS).first();
-            FederationClientParams federationClient = findFederationClient(organization, federationId);
+            FederationClientParams federationClient = FederationUtils.findFederationClient(organization, federationId);
 
             // Call to project/study info to check if the user still has access to the project/study before redirecting
             if (StringUtils.isNotEmpty(study)) {
@@ -857,11 +855,11 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                                                                FederationClientUpdateParams updateParams) throws CatalogException {
         if (StringUtils.isNotEmpty(updateParams.getSecurityKey())) {
             // Encode security key before storing in database
-            updateParams.setSecurityKey(encodeSecureString(updateParams.getSecurityKey()));
+            updateParams.setSecurityKey(SecureKeyUtils.encodeSecureString(updateParams.getSecurityKey()));
         }
         if (StringUtils.isNotEmpty(updateParams.getPassword())) {
             // Encode password before storing in database
-            updateParams.setPassword(encodeSecureString(updateParams.getPassword()));
+            updateParams.setPassword(SecureKeyUtils.encodeSecureString(updateParams.getPassword()));
         }
 
         ObjectMap parameters;
@@ -1000,104 +998,12 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                 ? federationServerCreateParams.getUserId()
                 : federationServerCreateParams.getId() + ".user1";
         // Create a random security key
-        String securityKey = generateNewSecurityKey();
+        String securityKey = SecureKeyUtils.generateNewSecurityKey();
 
         // Create the client
         return new FederationServerParams(federationServerCreateParams.getId(),
                 StringUtils.isNotEmpty(federationServerCreateParams.getDescription()) ? federationServerCreateParams.getDescription() : "",
                 federationServerCreateParams.getEmail(), userId, true, securityKey);
-    }
-
-    private FederationClientParams findFederationClient(Organization organization, String federationId) throws CatalogException {
-        // Obtain the federation client credentials
-        if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getClients())) {
-            throw new CatalogException("The organization does not have any federation clients configured.");
-        }
-
-        for (FederationClientParams client : organization.getFederation().getClients()) {
-            if (client.getId().equals(federationId)) {
-                // Decode security key and user password
-                client.setSecurityKey(decodeSecureString(client.getSecurityKey()));
-                client.setPassword(decodeSecureString(client.getPassword()));
-
-                return client;
-            }
-        }
-
-        throw new CatalogException("Federation client id '" + federationId + "' not found in the organization.");
-    }
-
-    private FederationServerParams findFederationServer(Organization organization, String federationId) throws CatalogException {
-        // Obtain the federation server credentials
-        if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getServers())) {
-            throw new CatalogException("The organization does not have any federation servers configured.");
-        }
-
-        for (FederationServerParams server : organization.getFederation().getServers()) {
-            if (server.getId().equals(federationId)) {
-                return server;
-            }
-        }
-
-        throw new CatalogException("Federation server id '" + federationId + "' not found in the organization.");
-    }
-
-    protected String generateNewSecurityKey() throws CatalogException {
-        try {
-            return CryptoUtils.secretKeyToString(CryptoUtils.generateKey(256));
-        } catch (Exception e) {
-            throw new CatalogException("Could not generate a security key for the federation server.", e);
-        }
-    }
-
-    protected String encodeSecureString(String secureString) {
-        int length = secureString.length();
-        if (length % 4 != 0) {
-            // Add padding
-            secureString = secureString + StringUtils.repeat("¬", 4 - (length % 4));
-        }
-        length = secureString.length()/4;
-
-        // Split security key in 4 parts
-        String[] parts = new String[4];
-        for (int i = 0; i < 4; i++) {
-            parts[i] = secureString.substring(i * length, (i + 1) * length);
-        }
-
-        // Reconstruct security key in order 2, 0, 3, 1
-        String newSecurityKey = parts[2] + parts[0] + parts[3] + parts[1];
-
-        // Change position of some odd positions
-        char[] chars = newSecurityKey.toCharArray();
-        for (int i = 1; i < chars.length; i += 4) {
-            char aux = chars[i];
-            chars[i] = chars[i - 1];
-            chars[i - 1] = aux;
-        }
-
-        return new String(chars);
-    }
-
-    protected String decodeSecureString(String encodedSecureString) {
-        // Change position of some odd positions
-        char[] chars = encodedSecureString.toCharArray();
-        for (int i = 1; i < chars.length; i += 4) {
-            char aux = chars[i];
-            chars[i] = chars[i - 1];
-            chars[i - 1] = aux;
-        }
-
-        // Reconstruct security key in correct order
-        String newSecurityKey = new String(chars);
-        int length = newSecurityKey.length()/4;
-        String[] parts = new String[4];
-        for (int i = 0; i < 4; i++) {
-            parts[i] = newSecurityKey.substring(i * length, (i + 1) * length);
-        }
-        String securityKey = parts[1] + parts[3] + parts[0] + parts[2];
-
-        // Remove trailing repeated '¬' character (if any)
-        return securityKey.replaceAll("¬+$", "");
     }
 
 }
