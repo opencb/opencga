@@ -104,7 +104,7 @@ public class WorkflowWSServer extends OpenCGAWSServer {
     @POST
     @Path("/import")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = NextFlowExecutor.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = "Import a workflow", response = Job.class)
     public Response importWorkflow(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Repository parameters", required = true) WorkflowRepositoryParams params) {
