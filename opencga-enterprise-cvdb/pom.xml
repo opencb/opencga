@@ -230,5 +230,9 @@
             <groupId>org.mongodb</groupId>
             <artifactId>bson</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-catalog</artifactId>
+        </dependency>
     </dependencies>
 </project>

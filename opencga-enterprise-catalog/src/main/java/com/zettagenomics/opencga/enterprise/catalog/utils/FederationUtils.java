@@ -22,7 +22,6 @@ import org.opencb.opencga.core.models.federation.FederationServerParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyInternal;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.User;
@@ -209,8 +208,8 @@ public class FederationUtils {
         for (FederationClientParams client : organization.getFederation().getClients()) {
             if (client.getId().equals(federationId)) {
                 // Decode security key and user password
-                client.setSecurityKey(decodeSecureString(client.getSecurityKey()));
-                client.setPassword(decodeSecureString(client.getPassword()));
+                client.setSecurityKey(SecureKeyUtils.decodeSecureString(client.getSecurityKey()));
+                client.setPassword(SecureKeyUtils.decodeSecureString(client.getPassword()));
 
                 return client;
             }

@@ -1,5 +1,6 @@
 package com.zettagenomics.opencga.enterprise.catalog.managers;
 
+import com.zettagenomics.opencga.enterprise.catalog.utils.SecureKeyUtils;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
 import org.junit.Test;
@@ -9,11 +10,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.client.GenericClient;
-import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
@@ -26,7 +25,6 @@ import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.response.RestResponse;
 
 import java.util.Collections;
 
@@ -121,9 +119,9 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
     @Test
     public void securityKeyCodificationTest() throws CatalogException {
         for (int i = 0; i < 10; i++) {
-            String securityKey = enterpriseFederationManager.generateNewSecurityKey();
-            String encodedKey = enterpriseFederationManager.encodeSecureString(securityKey);
-            String decodedKey = enterpriseFederationManager.decodeSecureString(encodedKey);
+            String securityKey = SecureKeyUtils.generateNewSecurityKey();
+            String encodedKey = SecureKeyUtils.encodeSecureString(securityKey);
+            String decodedKey = SecureKeyUtils.decodeSecureString(encodedKey);
             System.out.println("securityKey = " + securityKey);
             System.out.println("encodedKey = " + encodedKey);
             assertEquals(securityKey, decodedKey);
@@ -131,8 +129,8 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
 
         for (int i = 0; i < 10; i++) {
             String securityKey = PasswordUtils.getStrongRandomPassword();
-            String encodedKey = enterpriseFederationManager.encodeSecureString(securityKey);
-            String decodedKey = enterpriseFederationManager.decodeSecureString(encodedKey);
+            String encodedKey = SecureKeyUtils.encodeSecureString(securityKey);
+            String decodedKey = SecureKeyUtils.decodeSecureString(encodedKey);
             System.out.println("password = " + securityKey);
             System.out.println("encodedPassword = " + encodedKey);
             assertEquals(securityKey, decodedKey);
