@@ -778,7 +778,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
      * @return true if the query is an ACL query and the member is the user requesting the information.
      */
     private boolean isAclQuery(String url, Map<String, Object> queryParams, String userId, FederationClientParams federationClient) {
-        if (url.endsWith("/acl")) {
+        if (url.endsWith("/acl") || url.endsWith("/acl/")) {
             Object memberObj = queryParams.get("member");
             if (memberObj != null) {
                 String member = String.valueOf(memberObj);
