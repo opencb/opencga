@@ -751,19 +751,11 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             String group1 = matcher.group(1);
             String group2 = matcher.group(2);
 
-            if (url.endsWith("/acl")) {
-                Object memberObj = queryParams.get("member");
-                if (memberObj != null) {
-                    String member = String.valueOf(memberObj);
-                    if (userId.equals(member)) {
-                        // The user wants to know the permissions for himself. We need to change for the user being used in the federation
-                        logger.info("Changing member from '{}' to '{}' for federated /acl query", member, federationClient.getUserId());
-                        queryParams.put("member", federationClient.getUserId());
-                    }
-                }
-            }
-
+            boolean isAclQuery = isAclQuery(url, queryParams, userId, federationClient);
             RestResponse<Object> execute = client.execute(group1, group2, queryParams, body, method, Object.class);
+            if (isAclQuery) {
+                changeAclResponse(userId, federationClient, execute);
+            }
 
             auditManager.audit(organizationId, userId, AuditAction.FEDERATION_REDIRECT, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -773,6 +765,64 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             auditManager.audit(organizationId, userId, AuditAction.FEDERATION_REDIRECT, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             throw new CatalogException(e);
+        }
+    }
+
+    /**
+     * If the user is requesting the ACLs of its own user, we need to replace the user id for the one used in the federation.
+     *
+     * @param url                 Url requested to validate if it is an ACL query.
+     * @param queryParams         Query parameters of the request.
+     * @param userId              User id of the user requesting the information.
+     * @param federationClient    Federation client object containing the user id used in the federation.
+     * @return true if the query is an ACL query and the member is the user requesting the information.
+     */
+    private boolean isAclQuery(String url, Map<String, Object> queryParams, String userId, FederationClientParams federationClient) {
+        if (url.endsWith("/acl") || url.endsWith("/acl/")) {
+            Object memberObj = queryParams.get("member");
+            if (memberObj != null) {
+                String member = String.valueOf(memberObj);
+                if (userId.equals(member)) {
+                    // The user wants to know the permissions for himself. We need to change for the user being used in the federation
+                    logger.info("Changing member from '{}' to '{}' for federated /acl query", member, federationClient.getUserId());
+                    queryParams.put("member", federationClient.getUserId());
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Assuming the RestResponse object is of type {@link org.opencb.opencga.core.models.AclEntryList}, change the user id from the
+     * federation user to the user id of the user requesting the information.
+     *
+     * @param userId            User id of the user requesting the information.
+     * @param federationClient  Federation client object containing the user id used in the federation.
+     * @param response          RestResponse object containing the ACLs.
+     */
+    private void changeAclResponse(String userId, FederationClientParams federationClient, RestResponse<Object> response) {
+        if (CollectionUtils.isNotEmpty(response.getResponses())) {
+            if (!federationClient.getUserId().equals(response.getParams().get("member"))) {
+                // The member is not the user requesting the information. Nothing to do
+                return;
+            }
+            logger.info("Changing member from '{}' to '{}' for federated /acl query response", federationClient.getUserId(), userId);
+            response.getParams().put("member", userId);
+
+            if (CollectionUtils.isNotEmpty(response.getResponses().get(0).getResults())) {
+                for (Object data : response.getResponses().get(0).getResults()) {
+                    if (data instanceof Map) {
+                        List<Map<String, Object>> list = (List<Map<String, Object>>) ((Map<String, Object>) data).get("acl");
+                        for (Map<String, Object> aclEntry : list) {
+                            String member = String.valueOf(aclEntry.get("member"));
+                            if (federationClient.getUserId().equals(member)) {
+                                aclEntry.put("member", userId);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
