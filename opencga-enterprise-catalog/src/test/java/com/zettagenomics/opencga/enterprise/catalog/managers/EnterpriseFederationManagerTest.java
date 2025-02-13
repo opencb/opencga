@@ -87,10 +87,11 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         assertFalse(studyOpenCGAResult.first().getInternal().isFederated());
         assertFalse(studyOpenCGAResult.first().getVariableSets().isEmpty());
 
-//        ObjectMap params = new ObjectMap()
-//                .append("member", orgOwnerUserId);
-//        RestResponse<Object> execute = genericClient.execute("studies", "org2@project:study", null, null, "acl", params, ParentClient.GET,
-//                Object.class);
+        ObjectMap params = new ObjectMap()
+                .append("member", orgOwnerUserId);
+        RestResponse<Object> execute = genericClient.execute("studies", "org2@project:study", null, null, "acl", params, ParentClient.GET,
+                Object.class);
+        System.out.println(execute);
 
         // Reset federation server access
 //        client = enterpriseFederationManager.reset("", serverCreateParams.getId(), org2OwnerToken).first();
