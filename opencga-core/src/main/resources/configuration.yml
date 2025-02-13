@@ -77,7 +77,7 @@ analysis:
     baseUrl: "http://resources.opencb.org/opencb/opencga/analysis/resources/"
     # Base path where to download the analysis resources.
     basePath: "${OPENCGA.INSTALLATION.DIR}/analysis/resources"
-    # List of resources to fetch during initialization; the willcard '*' can be used, e.g.: to fetch all resources, use '*';
+    # List of resources to fetch during initialization; the wildcard '*' can be used, e.g.: to fetch all resources, use '*';
     # to fetch only Exomiser resources, use 'EXOMISER_*'
     fetchOnInit: ["RELATEDNESS_*"]
     # List of resources
