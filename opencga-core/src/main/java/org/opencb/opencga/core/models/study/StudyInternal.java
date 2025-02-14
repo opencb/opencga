@@ -53,9 +53,9 @@ public class StudyInternal extends Internal {
         this.variant = variant;
     }
 
-    public static StudyInternal init() {
+    public static StudyInternal init(String cellbaseVersion) {
         return new StudyInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), StudyIndex.init(),
-                StudyConfiguration.init(), new StudyInternalVariant());
+                StudyConfiguration.init(cellbaseVersion), new StudyInternalVariant());
     }
 
     @Override

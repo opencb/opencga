@@ -230,7 +230,11 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region) throws IOException {
-        SampleIndexSchema schema = schemaFactory.getSchema(study, sample, false);
+        return rawIterator(study, sample, region, schemaFactory.getSchema(study, sample, false));
+    }
+
+    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region, SampleIndexSchema schema)
+            throws IOException {
         String tableName = getSampleIndexTableName(study, schema.getVersion());
         return hBaseManager.act(tableName, table -> {
             Scan scan = new Scan();
@@ -262,15 +266,15 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         return rawInternalIterator(sampleIndexQuery, sampleIndexQuery.getSchema());
     }
 
-    public CloseableIterator<SampleVariantIndexEntry> rawIterator(Query query) throws IOException {
+    public CloseableIterator<SampleIndexVariant> rawIterator(Query query) throws IOException {
         return rawIterator(parseSampleIndexQuery(query));
     }
 
-    public CloseableIterator<SampleVariantIndexEntry> rawIterator(SampleIndexQuery query) throws IOException {
+    public CloseableIterator<SampleIndexVariant> rawIterator(SampleIndexQuery query) throws IOException {
         return rawIterator(query, new QueryOptions());
     }
 
-    public CloseableIterator<SampleVariantIndexEntry> rawIterator(SampleIndexQuery query, QueryOptions options) throws IOException {
+    public CloseableIterator<SampleIndexVariant> rawIterator(SampleIndexQuery query, QueryOptions options) throws IOException {
         Map<String, List<String>> samples = query.getSamplesMap();
 
         if (samples.isEmpty()) {
@@ -316,15 +320,15 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             }
         }
 
-        final CloseableIterator<SampleVariantIndexEntry> iterator;
+        final CloseableIterator<SampleIndexVariant> iterator;
         if (operation.equals(QueryOperation.OR)) {
             logger.info("Union of " + iterators.size() + " sample indexes");
             iterator = new UnionMultiKeyIterator<>(
-                    Comparator.comparing(SampleVariantIndexEntry::getVariant, VariantDBIterator.VARIANT_COMPARATOR), iterators);
+                    Comparator.comparing(SampleIndexVariant::getVariant, VariantDBIterator.VARIANT_COMPARATOR), iterators);
         } else {
             logger.info("Intersection of " + iterators.size() + " sample indexes plus " + negatedIterators.size() + " negated indexes");
             iterator = new IntersectMultiKeyIterator<>(
-                    Comparator.comparing(SampleVariantIndexEntry::getVariant, VariantDBIterator.VARIANT_COMPARATOR),
+                    Comparator.comparing(SampleIndexVariant::getVariant, VariantDBIterator.VARIANT_COMPARATOR),
                     iterators, negatedIterators);
         }
 
@@ -618,6 +622,9 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (includeAll || !query.emptyFileIndex()) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
+                if (includeAll) {
+                    scan.addColumn(family, SampleIndexSchema.toFileDataColumn(gt));
+                }
                 if (includeAll || query.isIncludeParentColumns()
                         || query.hasFatherFilter() || query.hasMotherFilter() || query.getMendelianErrorType() != null) {
                     scan.addColumn(family, SampleIndexSchema.toParentsGTColumn(gt));
@@ -630,7 +637,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         scan.setCaching(hBaseManager.getConf().getInt("hbase.client.scanner.caching", 100));
 
         logger.info("---------");
-        logger.info("Sample = \"" + query.getSample() + "\" , schema version = " + query.getSchema().getVersion());
+        logger.info("Study = \"" + query.getStudy() + "\" (id=" + studyId + ")");
+        logger.info("Sample = \"" + query.getSample() + "\" (id=" + sampleId + ") , schema version = " + query.getSchema().getVersion());
         logger.info("Table = " + getSampleIndexTableName(query));
         printScan(scan);
         printQuery(locusQuery);

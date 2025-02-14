@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -363,40 +364,36 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/aggregationStats")
+    @ApiOperation(value = "Fetch catalog job stats", response = FacetField.class)
+    public Response getAggregationStats(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.OTHER_STUDIES_FLAG_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.OTHER_STUDIES_FLAG) boolean others,
+            @ApiParam(value = ParamConstants.JOB_IDS_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.JOB_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.JOB_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String toolId,
+            @ApiParam(value = ParamConstants.JOB_TOOL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_TYPE_PARAM) String toolType,
+            @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.JOB_PRIORITY_PARAM) String priority,
+            @ApiParam(value = ParamConstants.JOB_STATUS_DESCRIPTION) @QueryParam(ParamConstants.JOB_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.JOB_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.JOB_INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.JOB_VISITED_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.JOB_VISITED_PARAM) Boolean visited,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS_PARAM) String tags,
+            @ApiParam(value = ParamConstants.JOB_INPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_INPUT_FILES_PARAM) String input,
+            @ApiParam(value = ParamConstants.JOB_OUTPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_OUTPUT_FILES_PARAM) String output,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted,
 
-//    @GET
-//    @Path("/aggregationStats")
-//    @ApiOperation(value = "Fetch catalog job stats", response = FacetField.class)
-//    public Response getAggregationStats(
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-//            @ApiParam(value = "Tool id") @QueryParam("toolId") String toolId,
-//            @ApiParam(value = "Tool scope") @QueryParam("toolScope") String toolScope,
-//            @ApiParam(value = "Tool type") @QueryParam("toolType") String toolType,
-//            @ApiParam(value = "Tool resource") @QueryParam("toolResource") String toolResource,
-//            @ApiParam(value = "User id") @QueryParam("userId") String userId,
-//            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
-//            @ApiParam(value = "Tags") @QueryParam("tags") String tags,
-//            @ApiParam(value = "Executor id") @QueryParam("executorId") String executorId,
-//            @ApiParam(value = "Executor framework") @QueryParam("executorFramework") String executorFramework,
-//            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-//            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-//            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-//            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-//            @ApiParam(value = "Status") @QueryParam("status") String status,
-//            @ApiParam(value = "Release") @QueryParam("release") String release,
-//            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-//            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
-//        try {
-//            query.remove(ParamConstants.STUDY_PARAM);
-//            query.remove("field");
-//
-//            queryOptions.put(QueryOptions.FACET, facet);
-//
-//            DataResult<FacetField> queryResult = catalogManager.getJobManager().facet(studyStr, query, queryOptions, defaultStats,
-//                    token);
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+            // Facet field
+            @ApiParam(value = ParamConstants.FACET_DESCRIPTION) @QueryParam(ParamConstants.FACET_PARAM) String facet) {
+        return run(() -> {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.FACET_PARAM);
+            return catalogManager.getJobManager().facet(studyStr, query, facet, token);
+        });
+    }
 }

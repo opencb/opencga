@@ -30,6 +30,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -481,8 +483,19 @@ public class  AbstractManagerTest extends GenericTest {
         UserManager userManager = spy.getUserManager();
         UserManager userManagerSpy = Mockito.spy(userManager);
         Mockito.doReturn(userManagerSpy).when(spy).getUserManager();
-        MongoDBAdaptorFactory mongoDBAdaptorFactory = mockMongoDBAdaptorFactory();
-        Mockito.doReturn(mongoDBAdaptorFactory).when(userManagerSpy).getCatalogDBAdaptorFactory();
+        MongoDBAdaptorFactory mockMongoFactory = mockMongoDBAdaptorFactory();
+        Mockito.doReturn(mockMongoFactory).when(userManagerSpy).getCatalogDBAdaptorFactory();
+
+        JobManager jobManager = spy.getJobManager();
+        JobManager jobManagerSpy = Mockito.spy(jobManager);
+        Mockito.doReturn(jobManagerSpy).when(spy).getJobManager();
+        Mockito.doReturn(mockMongoFactory).when(jobManagerSpy).getCatalogDBAdaptorFactory();
+
+        ProjectManager projectManager = spy.getProjectManager();
+        ProjectManager projectManagerSpy = Mockito.spy(projectManager);
+        Mockito.doReturn(projectManagerSpy).when(spy).getProjectManager();
+        Mockito.doReturn(mockMongoFactory).when(projectManagerSpy).getCatalogDBAdaptorFactory();
+
         return spy;
     }
 
@@ -492,6 +505,15 @@ public class  AbstractManagerTest extends GenericTest {
         UserDBAdaptor userDBAdaptor = dbAdaptorFactorySpy.getCatalogUserDBAdaptor(organizationId);
         UserDBAdaptor userDBAdaptorSpy = Mockito.spy(userDBAdaptor);
         Mockito.doReturn(userDBAdaptorSpy).when(dbAdaptorFactorySpy).getCatalogUserDBAdaptor(organizationId);
+
+        JobDBAdaptor jobDBAdaptor = dbAdaptorFactorySpy.getCatalogJobDBAdaptor(organizationId);
+        JobDBAdaptor jobDBAdaptorSpy = Mockito.spy(jobDBAdaptor);
+        Mockito.doReturn(jobDBAdaptorSpy).when(dbAdaptorFactorySpy).getCatalogJobDBAdaptor(organizationId);
+
+        ProjectDBAdaptor projectDBAdaptor = dbAdaptorFactorySpy.getCatalogProjectDbAdaptor(organizationId);
+        ProjectDBAdaptor projectDBAdaptorSpy = Mockito.spy(projectDBAdaptor);
+        Mockito.doReturn(projectDBAdaptorSpy).when(dbAdaptorFactorySpy).getCatalogProjectDbAdaptor(organizationId);
+
         return dbAdaptorFactorySpy;
     }
 

@@ -8,8 +8,8 @@ import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotationConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotation;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
@@ -275,25 +275,25 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
     private T filter(SampleIndexEntryIterator variants, MutableInt expectedResultsFromAnnotation) {
         // Either call to next() or to skip(), but no both
 
-        AnnotationIndexEntry annotationIndexEntry;
+        SampleIndexVariantAnnotation annotationIndex;
         try {
-            annotationIndexEntry = variants.nextAnnotationIndexEntry();
+            annotationIndex = variants.nextAnnotationIndexEntry();
         } catch (RuntimeException e) {
             logger.error("Error reading AnnotationIndexEntry at " + variants.toString());
             throw VariantQueryException.internalException(e);
         }
 
         // Test annotation index (if any)
-        if (annotationIndexEntry == null
-                || !annotationIndexEntry.hasSummaryIndex()
-                || testIndex(annotationIndexEntry.getSummaryIndex(), query.getAnnotationIndexMask(), query.getAnnotationIndex())) {
+        if (annotationIndex == null
+                || !annotationIndex.hasSummaryIndex()
+                || testIndex(annotationIndex.getSummaryIndex(), query.getAnnotationIndexMask(), query.getAnnotationIndex())) {
             expectedResultsFromAnnotation.decrement();
 
             // Test other annotation index and popFreq (if any)
-            if (annotationIndexEntry == null
-                    || filterClinicalFields(annotationIndexEntry)
-                    && filterBtCtTfFields(annotationIndexEntry)
-                    && filterPopFreq(annotationIndexEntry)) {
+            if (annotationIndex == null
+                    || filterClinicalFields(annotationIndex)
+                    && filterBtCtTfFields(annotationIndex)
+                    && filterPopFreq(annotationIndex)) {
 
                 // Test file index (if any)
                 if (filterFile(variants)) {
@@ -384,62 +384,63 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
     }
 
     public static boolean isNonIntergenic(byte summaryIndex) {
-        return IndexUtils.testIndex(summaryIndex, AnnotationIndexConverter.INTERGENIC_MASK, (byte) 0);
+        return IndexUtils.testIndex(summaryIndex, SampleIndexVariantAnnotationConverter.INTERGENIC_MASK, (byte) 0);
     }
 
     public static boolean isClinical(byte summaryIndex) {
-        return IndexUtils.testIndex(summaryIndex, AnnotationIndexConverter.CLINICAL_MASK, AnnotationIndexConverter.CLINICAL_MASK);
+        return IndexUtils.testIndex(summaryIndex,
+                SampleIndexVariantAnnotationConverter.CLINICAL_MASK, SampleIndexVariantAnnotationConverter.CLINICAL_MASK);
     }
 
-    private boolean filterPopFreq(AnnotationIndexEntry annotationIndexEntry) {
-        return query.getAnnotationIndexQuery().getPopulationFrequencyFilter().test(annotationIndexEntry.getPopFreqIndex());
+    private boolean filterPopFreq(SampleIndexVariantAnnotation annotationIndex) {
+        return query.getAnnotationIndexQuery().getPopulationFrequencyFilter().test(annotationIndex.getPopFreqIndex());
     }
 
-    private boolean filterClinicalFields(AnnotationIndexEntry annotationIndexEntry) {
+    private boolean filterClinicalFields(SampleIndexVariantAnnotation annotationIndex) {
         if (query.getAnnotationIndexQuery().getClinicalFilter().isNoOp()) {
             // No filter required
             return true;
         }
-        if (annotationIndexEntry == null || !annotationIndexEntry.hasSummaryIndex()) {
+        if (annotationIndex == null || !annotationIndex.hasSummaryIndex()) {
             // unable to filter by this field
             return true;
         }
-        if (!annotationIndexEntry.hasClinical()) {
+        if (!annotationIndex.hasClinical()) {
             return false;
         }
         // FIXME
-        return query.getAnnotationIndexQuery().getClinicalFilter().test(annotationIndexEntry.getClinicalIndex());
+        return query.getAnnotationIndexQuery().getClinicalFilter().test(annotationIndex.getClinicalIndex());
     }
 
-    private boolean filterBtCtTfFields(AnnotationIndexEntry annotationIndexEntry) {
-        if (annotationIndexEntry == null || !annotationIndexEntry.hasSummaryIndex()) {
+    private boolean filterBtCtTfFields(SampleIndexVariantAnnotation annotationIndex) {
+        if (annotationIndex == null || !annotationIndex.hasSummaryIndex()) {
             // Missing annotation. Unable to filter
             return true;
         }
-        if (annotationIndexEntry.isIntergenic()) {
+        if (annotationIndex.isIntergenic()) {
             // unable to filter by this field
             return true;
         }
-        if (annotationIndexEntry.hasBtIndex()
-                && !query.getAnnotationIndexQuery().getBiotypeFilter().test(annotationIndexEntry.getBtIndex())) {
+        if (annotationIndex.hasBtIndex()
+                && !query.getAnnotationIndexQuery().getBiotypeFilter().test(annotationIndex.getBtIndex())) {
             return false;
         }
 
-        if (annotationIndexEntry.hasCtIndex()
-                && !query.getAnnotationIndexQuery().getConsequenceTypeFilter().test(annotationIndexEntry.getCtIndex())) {
+        if (annotationIndex.hasCtIndex()
+                && !query.getAnnotationIndexQuery().getConsequenceTypeFilter().test(annotationIndex.getCtIndex())) {
             return false;
         }
 
-        if (annotationIndexEntry.hasTfIndex()
-                && !query.getAnnotationIndexQuery().getTranscriptFlagFilter().test(annotationIndexEntry.getTfIndex())) {
+        if (annotationIndex.hasTfIndex()
+                && !query.getAnnotationIndexQuery().getTranscriptFlagFilter().test(annotationIndex.getTfIndex())) {
             return false;
         }
 
-        if (annotationIndexEntry.getCtBtTfCombination().getMatrix() != null
-                && !query.getAnnotationIndexQuery().getCtBtTfFilter().test(annotationIndexEntry.getCtBtTfCombination(),
-                annotationIndexEntry.getCtIndex(),
-                annotationIndexEntry.getBtIndex(),
-                annotationIndexEntry.getTfIndex())) {
+        if (annotationIndex.getCtBtTfCombination().getMatrix() != null
+                && !query.getAnnotationIndexQuery().getCtBtTfFilter().test(annotationIndex.getCtBtTfCombination(),
+                annotationIndex.getCtIndex(),
+                annotationIndex.getBtIndex(),
+                annotationIndex.getTfIndex())) {
             return false;
         }
 

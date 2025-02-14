@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotationConverter.*;
 
 /**
  * Created on 17/04/19.
@@ -27,9 +27,9 @@ import static org.opencb.opencga.storage.hadoop.variant.index.annotation.Annotat
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Category(ShortTests.class)
-public class AnnotationIndexConverterTest {
+public class SampleIndexVariantAnnotationConverterTest {
 
-    private AnnotationIndexConverter converter;
+    private SampleIndexVariantAnnotationConverter converter;
     byte b;
     private SampleIndexSchema schema;
 
@@ -49,7 +49,7 @@ public class AnnotationIndexConverterTest {
         populations.stream().map(SampleIndexConfiguration.Population::new).forEach(configuration::addPopulation);
 
         schema = new SampleIndexSchema(configuration, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION);
-        converter = new AnnotationIndexConverter(schema);
+        converter = new SampleIndexVariantAnnotationConverter(schema);
     }
 
 //    @After
@@ -178,7 +178,7 @@ public class AnnotationIndexConverterTest {
         List<String> populations = Arrays.asList("1000G:ALL", "GNOMAD_GENOMES:ALL", "1000G:ALL");
         SampleIndexConfiguration configuration = new SampleIndexConfiguration();
         populations.stream().map(SampleIndexConfiguration.Population::new).forEach(configuration::addPopulation);
-        new AnnotationIndexConverter(new SampleIndexSchema(configuration, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION));
+        new SampleIndexVariantAnnotationConverter(new SampleIndexSchema(configuration, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION));
     }
 
     @Test
