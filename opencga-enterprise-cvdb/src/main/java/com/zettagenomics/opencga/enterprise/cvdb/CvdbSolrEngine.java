@@ -928,6 +928,7 @@ public class CvdbSolrEngine {
         }
 
         // Process summary stats from local projects
+        List<ClinicalVariantSummaryStats> localStatsList = new ArrayList<>(variantIds.size());
         if (CollectionUtils.isNotEmpty(localProjects)) {
             logger.info("Computing variant summary stats for local projects: {}",
                     StringUtils.join(localProjects.stream().map(Project::getFqn).collect(Collectors.toList()), ", "));
@@ -952,45 +953,55 @@ public class CvdbSolrEngine {
                     facetMap.put("probandPhenotypeNames", variantStats.getClinicalAnalysis().getProbandPhenotypes());
                     performFacet(query, facetMap, "analysis", variantStats, order, limit, token);
 
-                    // Clinical interpretation stats: num. primary and secondary interpretations; panel IDs and method names
-                    facetMap.clear();
-                    facetMap.put("primary", null);
-                    facetMap.put("panelIds", variantStats.getInterpretation().getPanels());
-                    facetMap.put("methodName", variantStats.getInterpretation().getMethods());
-                    performFacet(query, facetMap, "interpretation", variantStats, order, limit, token);
-
-                    // Clinical variant stats: status and confidence values
-                    facetMap.clear();
-                    facetMap.put("status", variantStats.getVariant().getStatus());
-                    facetMap.put("confidenceValue", variantStats.getVariant().getConfidences());
-                    performFacet(query, facetMap, "variant", variantStats, order, limit, token);
-
-                    // Clinical variant evidence stats: gene names, transcript IDs, SO term accessions, panel IDs, MoIs, ACMGs, and for review
-                    // tiers, ACMGs and clinical significances
-                    facetMap.clear();
-                    facetMap.put("geneName", variantStats.getEvidence().getGenes());
-                    facetMap.put("transcriptId", variantStats.getEvidence().getTranscripts());
-                    facetMap.put("soTermNames", variantStats.getEvidence().getSoTerms());
-                    facetMap.put("panelId", variantStats.getEvidence().getPanels());
-                    facetMap.put("mois", variantStats.getEvidence().getMois());
-                    facetMap.put("acmgs", variantStats.getEvidence().getAcmgs());
-                    facetMap.put("reviewAcmgs", variantStats.getEvidence().getReviewAcmgs());
-                    facetMap.put("reviewTier", variantStats.getEvidence().getReviewTiers());
-                    facetMap.put("reviewClinicalSignificance", variantStats.getEvidence().getReviewClinicalSignificances());
-                    performFacet(query, facetMap, "evidence", variantStats, order, limit, token);
-
                     if (variantStats.getNumClinicalAnalyses() > 0) {
-                        variantStatsList.add(variantStats);
+                        // Clinical interpretation stats: num. primary and secondary interpretations; panel IDs and method names
+                        facetMap.clear();
+                        facetMap.put("primary", null);
+                        facetMap.put("panelIds", variantStats.getInterpretation().getPanels());
+                        facetMap.put("methodName", variantStats.getInterpretation().getMethods());
+                        performFacet(query, facetMap, "interpretation", variantStats, order, limit, token);
+
+                        // Clinical variant stats: status and confidence values
+                        facetMap.clear();
+                        facetMap.put("status", variantStats.getVariant().getStatus());
+                        facetMap.put("confidenceValue", variantStats.getVariant().getConfidences());
+                        performFacet(query, facetMap, "variant", variantStats, order, limit, token);
+
+                        // Clinical variant evidence stats: gene names, transcript IDs, SO term accessions, panel IDs, MoIs, ACMGs, and for review
+                        // tiers, ACMGs and clinical significances
+                        facetMap.clear();
+                        facetMap.put("geneName", variantStats.getEvidence().getGenes());
+                        facetMap.put("transcriptId", variantStats.getEvidence().getTranscripts());
+                        facetMap.put("soTermNames", variantStats.getEvidence().getSoTerms());
+                        facetMap.put("panelId", variantStats.getEvidence().getPanels());
+                        facetMap.put("mois", variantStats.getEvidence().getMois());
+                        facetMap.put("acmgs", variantStats.getEvidence().getAcmgs());
+                        facetMap.put("reviewAcmgs", variantStats.getEvidence().getReviewAcmgs());
+                        facetMap.put("reviewTier", variantStats.getEvidence().getReviewTiers());
+                        facetMap.put("reviewClinicalSignificance", variantStats.getEvidence().getReviewClinicalSignificances());
+                        performFacet(query, facetMap, "evidence", variantStats, order, limit, token);
+
+                        // Add to the list
+                        localStatsList.add(variantStats);
                     }
                 }
             }
         }
 
+        // Prepare aggregated stats ALL from the federated ones: stats for a given variant that is present in multiple projects
+        Map<String, ClinicalVariantSummaryStats> aggMap = new HashMap<>();
+
         // Get (and wait if necessary for) summary stats from federated projects
         if (CollectionUtils.isNotEmpty(federatedSummaryFutureList)) {
             for (Future<RestResponse<ClinicalVariantSummaryStats>> restResponseFuture : federatedSummaryFutureList) {
                 try {
-                    variantStatsList.addAll(restResponseFuture.get().allResults());
+                    for (ClinicalVariantSummaryStats stats : restResponseFuture.get().allResults()) {
+                        if ("ALL".equals(stats.getId())) {
+                            aggMap.put(stats.getVariantId(), stats);
+                        } else {
+                            variantStatsList.add(stats);
+                        }
+                    }
                 } catch (InterruptedException | ExecutionException e) {
                     logger.error("Error computing summary stats from federated projects", e);
                 }
@@ -998,8 +1009,10 @@ public class CvdbSolrEngine {
         }
 
         // Compute the summary stats ALL for each variant (if necessary)
-        Map<String, ClinicalVariantSummaryStats> aggMap = new HashMap<>();
-        for (ClinicalVariantSummaryStats variantStats : variantStatsList) {
+        for (ClinicalVariantSummaryStats variantStats : localStatsList) {
+            // Add the local stats to the list to return
+            variantStatsList.add(variantStats);
+
             if (!aggMap.containsKey(variantStats.getVariantId())) {
                 ClinicalVariantSummaryStats aggVariantStats = new ClinicalVariantSummaryStats();
                 aggVariantStats.setId("ALL");
@@ -1010,8 +1023,8 @@ public class CvdbSolrEngine {
             updateSummaryStats(variantStats, aggMap.get(variantStats.getVariantId()));
         }
 
-        // Add the summary stats ALL to the list to return
-        variantStatsList.addAll(aggMap.values().stream().filter(s -> s.getNumClinicalAnalyses() > 0).collect(Collectors.toList()));
+        // Add the aggregated stats ALL to the list to return
+        variantStatsList.addAll(aggMap.values().stream().filter(s -> s.getNumClinicalAnalyses() > 1).collect(Collectors.toList()));
 
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         return new DataResult<>(dbTime, null, variantStatsList.size(), variantStatsList, variantStatsList.size());
