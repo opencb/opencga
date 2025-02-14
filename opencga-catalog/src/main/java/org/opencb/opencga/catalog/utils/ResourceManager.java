@@ -18,7 +18,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -362,8 +365,12 @@ public class ResourceManager  {
                         Path targetFile = targetDir.resolve(sourceDir.relativize(file));
                         logger.info("Moving {} to {} ...", file.toAbsolutePath(), targetFile.toAbsolutePath());
                         FileUtils.copyFile(file.toFile(), targetFile.toFile());
-                        Files.delete(file);
-                        logger.info(OK);
+                        try {
+                            Files.delete(file);
+                            logger.info(OK);
+                        } catch (IOException e) {
+                            logger.warn("Could not delete the file '" + file.toAbsolutePath() + "'", e);
+                        }
                     } else {
                         logger.info("File does not exist {} to be moved to resources directory", file.toAbsolutePath());
                     }
@@ -372,11 +379,16 @@ public class ResourceManager  {
             }
 
             @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
                 // Delete the original directory after moving all its content
                 logger.info("Deleting source directory {} ...", dir.toAbsolutePath());
-                Files.delete(dir);
-                logger.info(OK);
+                try {
+                    Files.delete(dir);
+                    logger.info(OK);
+                } catch (IOException e) {
+                    logger.warn("Could not delete the directory '" + dir.toAbsolutePath() + "'", e);
+                }
+
                 return FileVisitResult.CONTINUE;
             }
         });
