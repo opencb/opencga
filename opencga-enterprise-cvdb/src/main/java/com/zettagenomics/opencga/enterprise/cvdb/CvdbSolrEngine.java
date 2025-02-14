@@ -1007,7 +1007,7 @@ public class CvdbSolrEngine {
                 aggMap.put(variantStats.getVariantId(), aggVariantStats);
             }
             // Update aggregated variant stats
-            updateSummaryStats(variantStats, aggMap.get(variantStats.getId()));
+            updateSummaryStats(variantStats, aggMap.get(variantStats.getVariantId()));
         }
 
         // Add the summary stats ALL to the list to return
