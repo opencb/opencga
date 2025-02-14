@@ -53,7 +53,7 @@ public class WorkflowClient extends AbstractParentClient {
     }
 
     /**
-     * Update the set of permissions granted for the member.
+     * Update the set of workflow permissions granted for the member.
      * @param members Comma separated list of user or group ids.
      * @param action Action to be performed [ADD, SET, REMOVE or RESET].
      * @param data JSON containing the parameters to update the permissions.
@@ -120,7 +120,7 @@ public class WorkflowClient extends AbstractParentClient {
     }
 
     /**
-     * Execute a Nextflow analysis.
+     * Import a workflow.
      * @param data Repository parameters.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
@@ -134,7 +134,7 @@ public class WorkflowClient extends AbstractParentClient {
     }
 
     /**
-     * Execute a Nextflow analysis.
+     * Execute a workflow analysis.
      * @param data NextFlow run parameters.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.

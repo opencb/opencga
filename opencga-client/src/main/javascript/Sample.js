@@ -47,6 +47,61 @@ export default class Sample extends OpenCGAParentClass {
         return this._post("samples", null, "acl", members, "update", data, {action, ...params});
     }
 
+    /** Fetch catalog sample stats
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {String} [params.id] - Comma separated list sample IDs up to a maximum of 100. Also admits basic regular expressions using the
+    *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list sample UUIDs up to a maximum of 100.
+    * @param {Boolean} [params.somatic] - Somatic sample.
+    * @param {String} [params.individualId] - Individual ID or UUID.
+    * @param {String} [params.fileIds] - Comma separated list of file IDs, paths or UUIDs.
+    * @param {String} [params.cohortIds] - Comma separated list of cohort IDs.
+    * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.internalStatus] - Filter by internal status.
+    * @param {String} [params.status] - Filter by status.
+    * @param {String} [params.processingProduct] - Processing product.
+    * @param {String} [params.processingPreparationMethod] - Processing preparation method.
+    * @param {String} [params.processingExtractionMethod] - Processing extraction method.
+    * @param {String} [params.processingLabSampleId] - Processing lab sample id.
+    * @param {String} [params.collectionFrom] - Collection from.
+    * @param {String} [params.collectionType] - Collection type.
+    * @param {String} [params.collectionMethod] - Collection method.
+    * @param {String} [params.phenotypes] - Comma separated list of phenotype ids or names. Also admits basic regular expressions using the
+    *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.annotation] - Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
+    *     http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+    * @param {String} [params.acl] - Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}.
+    *     Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+    *     permissions. Only study owners or administrators can query by this field. .
+    * @param {"NOT_INDEXED INDEXED INVALID_PERMISSIONS INVALID_METADATA INVALID"} [params.internalRgaStatus] - Index status of the sample
+    *     for the Recessive Gene Analysis.
+    * @param {String} [params.release] - Release when it was created.
+    * @param {Number} [params.snapshot] - Snapshot value (Latest version of the entry in the specified release).
+    * @param {Boolean} [params.deleted = "false"] - Boolean to retrieve deleted entries. The default value is false.
+    * @param {String} [params.statsId] - Sample variant stats Id. If this field is not provided and the user filters by other stats fields,
+    *     it will automatically be set to ALL.
+    * @param {String} [params.statsVariantCount] - Sample variant stats VariantCount.
+    * @param {String} [params.statsChromosomeCount] - Sample variant stats ChromosomeCount.
+    * @param {String} [params.statsTypeCount] - Sample variant stats TypeCount.
+    * @param {String} [params.statsGenotypeCount] - Sample variant stats GenotypeCount.
+    * @param {String} [params.statsTiTvRatio] - Sample variant stats TiTvRatio.
+    * @param {String} [params.statsQualityAvg] - Sample variant stats QualityAvg.
+    * @param {String} [params.statsQualityStdDev] - Sample variant stats QualityStdDev.
+    * @param {String} [params.statsHeterozygosityRate] - Sample variant stats HeterozygosityRate.
+    * @param {String} [params.statsDepthCount] - Sample variant stats DepthCount.
+    * @param {String} [params.statsBiotypeCount] - Sample variant stats BiotypeCount.
+    * @param {String} [params.statsClinicalSignificanceCount] - Sample variant stats ClinicalSignificanceCount.
+    * @param {String} [params.statsConsequenceTypeCount] - Sample variant stats ConsequenceTypeCount.
+    * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+    *     studies;type;numSamples[0..10]:1;format:sum(size).
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    aggregationStats(params) {
+        return this._get("samples", null, null, null, "aggregationStats", params);
+    }
+
     /** Load annotation sets from a TSV file
     * @param {Object} [data] - JSON containing the 'content' of the TSV file if this has not yet been registered into OpenCGA.
     * @param {String} variableSetId - Variable set ID or name.

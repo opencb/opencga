@@ -44,6 +44,40 @@ export default class Job extends OpenCGAParentClass {
         return this._post("jobs", null, "acl", members, "update", data, action);
     }
 
+    /** Fetch catalog job stats
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {Boolean} [params.otherStudies = "false"] - Flag indicating the entries being queried can belong to any related study, not just
+    *     the primary one. The default value is false.
+    * @param {String} [params.id] - Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the
+    *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list of job UUIDs up to a maximum of 100.
+    * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
+    * @param {String} [params.userId] - User that created the job.
+    * @param {String} [params.priority] - Priority of the job.
+    * @param {String} [params.status] - Filter by status.
+    * @param {String} [params.internalStatus] - Filter by internal status.
+    * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {Boolean} [params.visited] - Visited status of job.
+    * @param {String} [params.tags] - Job tags.
+    * @param {String} [params.input] - Comma separated list of file IDs used as input.
+    * @param {String} [params.output] - Comma separated list of file IDs used as output.
+    * @param {String} [params.acl] - Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}.
+    *     Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+    *     permissions. Only study owners or administrators can query by this field. .
+    * @param {String} [params.release] - Release when it was created.
+    * @param {Boolean} [params.deleted = "false"] - Boolean to retrieve deleted entries. The default value is false.
+    * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+    *     studies;type;numSamples[0..10]:1;format:sum(size).
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    aggregationStats(params) {
+        return this._get("jobs", null, null, null, "aggregationStats", params);
+    }
+
     /** Register an executed job with POST method
     * @param {Object} data - job.
     * @param {Object} [params] - The Object containing the following optional parameters:

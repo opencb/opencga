@@ -34,7 +34,7 @@ export default class Workflow extends OpenCGAParentClass {
         super(config);
     }
 
-    /** Update the set of permissions granted for the member
+    /** Update the set of workflow permissions granted for the member
     * @param {String} members - Comma separated list of user or group ids.
     * @param {Object} data - JSON containing the parameters to update the permissions.
     * @param {"SET ADD REMOVE RESET"} action = "ADD" - Action to be performed [ADD, SET, REMOVE or RESET]. The default value is ADD.
@@ -88,7 +88,7 @@ export default class Workflow extends OpenCGAParentClass {
         return this._get("workflows", null, null, null, "distinct", {field, ...params});
     }
 
-    /** Execute a Nextflow analysis.
+    /** Import a workflow
     * @param {Object} data - Repository parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
@@ -98,7 +98,7 @@ export default class Workflow extends OpenCGAParentClass {
         return this._post("workflows", null, null, null, "import", data, params);
     }
 
-    /** Execute a Nextflow analysis.
+    /** Execute a workflow analysis
     * @param {Object} data - NextFlow run parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.

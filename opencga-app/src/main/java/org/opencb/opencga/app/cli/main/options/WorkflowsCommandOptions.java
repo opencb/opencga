@@ -62,7 +62,7 @@ public class WorkflowsCommandOptions {
     
     }
     
-    @Parameters(commandNames = {"acl-update"}, commandDescription ="Update the set of permissions granted for the member")
+    @Parameters(commandNames = {"acl-update"}, commandDescription ="Update the set of workflow permissions granted for the member")
     public class UpdateAclCommandOptions {
     
         @ParametersDelegate
@@ -227,7 +227,7 @@ public class WorkflowsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"import"}, commandDescription ="Execute a Nextflow analysis.")
+    @Parameters(commandNames = {"import"}, commandDescription ="Import a workflow")
     public class ImportCommandOptions {
     
         @ParametersDelegate
@@ -250,7 +250,7 @@ public class WorkflowsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"run"}, commandDescription ="Execute a Nextflow analysis.")
+    @Parameters(commandNames = {"run"}, commandDescription ="Execute a workflow analysis")
     public class RunCommandOptions {
     
         @ParametersDelegate

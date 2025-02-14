@@ -34,6 +34,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
 
 
         public UpdateAclCommandOptions updateAclCommandOptions;
+        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
         public RetryCommandOptions retryCommandOptions;
@@ -54,6 +55,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         super(commonCommandOptions,jCommander);
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
         this.retryCommandOptions = new RetryCommandOptions();
@@ -94,6 +96,74 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--job"}, description = "The body web service job parameter", required = false, arity = 1)
         public String job;
+    
+    }
+
+    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog job stats")
+    public class AggregationStatsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--other-studies"}, description = "Flag indicating the entries being queried can belong to any related study, not just the primary one.", required = false, help = true, arity = 0)
+        public boolean otherStudies = false; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--uuid"}, description = "Comma separated list of job UUIDs up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String toolId; 
+    
+        @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
+        public String toolType; 
+    
+        @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
+        public String userId; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--visited"}, description = "Visited status of job", required = false, arity = 1)
+        public Boolean visited; 
+    
+        @Parameter(names = {"--tags"}, description = "Job tags", required = false, arity = 1)
+        public String tags; 
+    
+        @Parameter(names = {"--input"}, description = "Comma separated list of file IDs used as input.", required = false, arity = 1)
+        public String input; 
+    
+        @Parameter(names = {"--output"}, description = "Comma separated list of file IDs used as output.", required = false, arity = 1)
+        public String output; 
+    
+        @Parameter(names = {"--acl"}, description = "Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. ", required = false, arity = 1)
+        public String acl; 
+    
+        @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
+    
+        @Parameter(names = {"--field"}, description = "Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
+        public String field; 
     
     }
 

@@ -74,6 +74,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.catalog.db.api.SampleDBAdaptor.QueryParams.ANNOTATION;
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.ADD;
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
@@ -2194,7 +2195,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(sampleId1, sample.getId());
 
         sample = catalogManager.getSampleManager().search(studyFqn, new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
-                        "Individual1"), new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), normalToken2).first();
+                "Individual1"), new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), normalToken2).first();
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
     }
@@ -2773,5 +2774,51 @@ public class SampleManagerTest extends AbstractManagerTest {
         }
     }
 
+    @Test(expected = CatalogDBException.class)
+    public void testFacetEmptyParameter() throws Exception {
+        DataResult queryResult = catalogManager.getSampleManager().facet(studyFqn, new Query(), null, ownerToken);
+    }
+
+    @Test
+    public void testFacet() throws Exception {
+        OpenCGAResult<Sample> searchResult = catalogManager.getSampleManager().search(studyFqn, new Query(), QueryOptions.empty(),
+                ownerToken);
+        for (Sample result : searchResult.getResults()) {
+            System.out.println("result = " + result);
+        }
+        System.out.println("searchResult.getNumResults() = " + searchResult.getNumResults());
+
+//        Query query = new Query(ParamConstants.ID, "s_5");
+        Query query = new Query();
+        String facet = "version";
+//        String facet = "id;somatic;version,release;version[1:5]:1;internal.status.id";
+        DataResult queryResult = catalogManager.getSampleManager().facet(studyFqn, query, facet, ownerToken);
+
+
+//        QueryOptions options = new QueryOptions(QueryOptions.FACET, "individualId");
+//        DataResult queryResult = catalogManager.getSampleManager().facet(studyFqn, new Query(), options, ownerToken);
+        System.out.println("queryResult.getResults() = " + queryResult.getResults());
+
+        //        assertEquals(3, queryResult.getNumResults());
+//        for (Document document : (List<Document>) queryResult.getResults()) {
+//            Document id = (Document) document.get("_id");
+//            List<String> value = ((ArrayList<String>) id.values().iterator().next());
+//
+//            List<String> items = (List<String>) document.get("items");
+//
+//            if (value.isEmpty()) {
+//                assertEquals(4, items.size());
+//                assertTrue(items.containsAll(Arrays.asList("s_6", "s_7", "s_8", "s_9")));
+//            } else if ("CONTROL".equals(value.get(0))) {
+//                assertEquals(3, items.size());
+//                assertTrue(items.containsAll(Arrays.asList("s_1", "s_3", "s_4")));
+//            } else if ("CASE".equals(value.get(0))) {
+//                assertEquals(2, items.size());
+//                assertTrue(items.containsAll(Arrays.asList("s_2", "s_5")));
+//            } else {
+//                fail("It should not get into this condition");
+//            }
+//        }
+    }
 
 }

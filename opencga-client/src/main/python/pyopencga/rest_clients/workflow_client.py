@@ -21,7 +21,7 @@ class Workflow(_ParentRestClient):
 
     def update_acl(self, members, action, data=None, **options):
         """
-        Update the set of permissions granted for the member.
+        Update the set of workflow permissions granted for the member.
         PATH: /{apiVersion}/workflows/acl/{members}/update
 
         :param dict data: JSON containing the parameters to update the
@@ -103,7 +103,7 @@ class Workflow(_ParentRestClient):
 
     def import_workflow(self, data=None, **options):
         """
-        Execute a Nextflow analysis.
+        Import a workflow.
         PATH: /{apiVersion}/workflows/import
 
         :param dict data: Repository parameters. (REQUIRED)
@@ -115,7 +115,7 @@ class Workflow(_ParentRestClient):
 
     def run(self, data=None, **options):
         """
-        Execute a Nextflow analysis.
+        Execute a workflow analysis.
         PATH: /{apiVersion}/workflows/run
 
         :param dict data: NextFlow run parameters. (REQUIRED)
