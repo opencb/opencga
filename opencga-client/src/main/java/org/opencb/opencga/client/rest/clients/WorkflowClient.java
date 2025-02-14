@@ -127,10 +127,10 @@ public class WorkflowClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> importWorkflow(WorkflowRepositoryParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Workflow> importWorkflow(WorkflowRepositoryParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("workflows", null, null, null, "import", params, POST, Job.class);
+        return execute("workflows", null, null, null, "import", params, POST, Workflow.class);
     }
 
     /**

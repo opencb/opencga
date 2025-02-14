@@ -213,7 +213,7 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getWorkflowClient().distinct(commandOptions.field, queryParams);
     }
 
-    private RestResponse<Job> importWorkflow() throws Exception {
+    private RestResponse<Workflow> importWorkflow() throws Exception {
         logger.debug("Executing importWorkflow in Workflows command line");
 
         WorkflowsCommandOptions.ImportCommandOptions commandOptions = workflowsCommandOptions.importCommandOptions;
@@ -227,7 +227,7 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
 
         WorkflowRepositoryParams workflowRepositoryParams = null;
         if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
+            RestResponse<Workflow> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/workflows/import"));
             return res;
