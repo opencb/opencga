@@ -148,7 +148,7 @@ public class CvdbSolrEngine {
 
     private final QueryOptions INCLUDE_PROJECT_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key(), ProjectDBAdaptor.QueryParams.UID.key(),
-            ProjectDBAdaptor.QueryParams.FEDERATION.key()));
+            ProjectDBAdaptor.QueryParams.FEDERATION.key(), ProjectDBAdaptor.QueryParams.INTERNAL.key()));
 
     public CvdbSolrEngine(Configuration configuration, CvdbConfiguration cvdbConfiguration) {
         this.configuration = configuration;
