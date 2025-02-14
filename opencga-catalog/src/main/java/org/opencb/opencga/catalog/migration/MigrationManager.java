@@ -210,6 +210,9 @@ public class MigrationManager {
         for (Class<? extends MigrationTool> migration : runnableMigrations) {
             run(organizationId, migration, appHomePath, params, token);
         }
+
+        // 5. Execute install indexes just in case there are new indexes
+        catalogManager.installIndexes(organizationId, token);
     }
 
     public List<Class<? extends MigrationTool>> getPendingMigrations(String organizationId, String version, String token)
@@ -239,7 +242,8 @@ public class MigrationManager {
                         p -> p.getValue().getStatus(),
                         () -> new EnumMap<>(MigrationRun.MigrationStatus.class),
                         Collectors.counting())))
-                .setVersionCount(runs.stream().collect(Collectors.groupingBy(p -> p.getKey().version(), Collectors.counting())));
+                .setVersionCount(runs.stream().collect(Collectors.groupingBy(p -> p.getKey().version(),
+                        TreeMap::new, Collectors.counting())));
 
         long toBeApplied = migrationSummary
                 .getStatusCount()

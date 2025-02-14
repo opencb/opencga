@@ -46,6 +46,33 @@ export default class Cohort extends OpenCGAParentClass {
         return this._post("cohorts", null, "acl", members, "update", data, {action, ...params});
     }
 
+    /** Fetch catalog cohort stats
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {String} [params.id] - Comma separated list of cohort IDs up to a maximum of 100. Also admits basic regular expressions using
+    *     the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.name] - Comma separated list of cohort names up to a maximum of 100. Also admits basic regular expressions
+    *     using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list of cohort IDs up to a maximum of 100.
+    * @param {String} [params.type] - Cohort type.
+    * @param {String} [params.creationDate] - creationDate.
+    * @param {String} [params.modificationDate] - modificationDate.
+    * @param {Boolean} [params.deleted] - deleted.
+    * @param {String} [params.status] - status.
+    * @param {String} [params.internalStatus] - internalStatus.
+    * @param {String} [params.annotation] - Cohort annotation.
+    * @param {String} [params.acl] - acl.
+    * @param {String} [params.samples] - Cohort sample IDs.
+    * @param {String} [params.numSamples] - Number of samples.
+    * @param {String} [params.release] - release.
+    * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+    *     studies;type;numSamples[0..10]:1;format:sum(size).
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    aggregationStats(params) {
+        return this._get("cohorts", null, null, null, "aggregationStats", params);
+    }
+
     /** Load annotation sets from a TSV file
     * @param {Object} [data] - JSON containing the 'content' of the TSV file if this has not yet been registered into OpenCGA.
     * @param {String} variableSetId - Variable set ID or name.

@@ -60,6 +60,7 @@ public class FieldConstants {
     public static final String NOTES_ID_DESCRIPTION = "Note unique identifier.";
     public static final String NOTES_SCOPE_DESCRIPTION = "Scope of the Note.";
     public static final String NOTES_STUDY_DESCRIPTION = "Study FQN if the Note scope is STUDY.";
+    public static final String NOTES_TYPE_DESCRIPTION = "Note type.";
     public static final String NOTES_TAGS_DESCRIPTION = "Note tags.";
     public static final String NOTES_USER_ID_DESCRIPTION = "User that wrote that Note.";
     public static final String NOTES_VISIBILITY_DESCRIPTION = "Visibility of the Note.";
@@ -68,6 +69,7 @@ public class FieldConstants {
 
     public static final String NOTES_ID_PARAM = "id";
     public static final String NOTES_SCOPE_PARAM = "scope";
+    public static final String NOTES_TYPE_PARAM = "type";
     public static final String NOTES_STUDY_PARAM = "study";
     public static final String NOTES_TAGS_PARAM = "tags";
     public static final String NOTES_USER_ID_PARAM = "userId";
@@ -540,13 +542,12 @@ public class FieldConstants {
     public static final String ALIGNMENT_INDEX_FILE_ID_DESCRIPTION = "File ID, (i.e., BAM/CRAM file ID).";
     public static final String ALIGNMENT_INDEX_OVERWRITE_DESCRIPTION = "Flag to force indexing.";
 
-    // Coverage index parameter descriptions
-    public static final String COVERAGE_INDEX_BAM_FILE_ID_DESCRIPTION = "BAM file ID.";
-    public static final String COVERAGE_INDEX_BAI_FILE_ID_DESCRIPTION = "BAI file ID.";
-    public static final String COVERAGE_INDEX_OVERWRITE_DESCRIPTION = "Window size (i.e., the size of the bins, in bases, for the output"
-        + " of the BIGWIG file).";
+    // Alignment index and coverage
+    public static final String ALIGNMENT_BAM_FILE_ID_DESCRIPTION = "Alignment file ID (in BAM or CRAM format)";
+    public static final String ALIGNMENT_WINDOW_SIZE_DESCRIPTION = "Bin size for the output of the BIGWIG file, in bases.";
+    public static final String ALIGNMENT_OVERWRITE_DESCRIPTION = "Flag to force indexing.";
 
-    // Alignment QC analysis (asample-qc-run)
+    // Alignment QC analysis (alignment-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
     public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"
             + " commas): " + AlignmentQcParams.STATS_SKIP_VALUE + ", " + AlignmentQcParams.FLAGSTATS_SKIP_VALUE + ", "

@@ -23,10 +23,7 @@ import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -269,6 +266,24 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
+    public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("query", query)
+                .append("facet", facet)
+                .append("token", token);
+        Query finalQuery = ParamUtils.defaultObject(query, Query::new);
+
+        return runForQueryOperation(auditParams, Enums.Resource.SAMPLE, Enums.Action.FACET, studyStr, token,
+                StudyManager.INCLUDE_VARIABLE_SET, (organizationId, study, userId) -> {
+                    fixQueryObject(organizationId, study, finalQuery, userId);
+                    query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+                    return getSampleDBAdaptor(organizationId).facet(study.getUid(), finalQuery, facet, userId);
+                });
+    }
+
+    @Override
     public OpenCGAResult<Sample> search(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyStr", studyStr)
@@ -287,6 +302,48 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 });
     }
 
+    public OpenCGAResult<?> distinct(String field, Query query, String token) throws CatalogException {
+        return distinct(Collections.singletonList(field), query, token);
+    }
+
+    /**
+     * Fetch a list containing all the distinct values of the key {@code field}.
+     * Query object may or may not contain a study parameter, so only organization administrators will be able to call to this method.
+     *
+     * @param fields  Fields for which to return distinct values.
+     * @param query   Query object.
+     * @param token   Token of the user logged in.
+     * @return The list of distinct values.
+     * @throws CatalogException CatalogException.
+     */
+    public OpenCGAResult<?> distinct(List<String> fields, Query query, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = tokenPayload.getOrganization();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("fields", fields)
+                .append("query", new Query(query))
+                .append("token", token);
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+            fixQueryObject(organizationId, null, query, userId);
+
+            OpenCGAResult<?> result = getSampleDBAdaptor(organizationId).distinct(fields, query);
+
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.SAMPLE, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.SAMPLE, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     @Override
     public OpenCGAResult<?> distinct(String studyStr, List<String> fields, Query query, String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
@@ -302,6 +359,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     return getSampleDBAdaptor(organizationId).distinct(study.getUid(), fields, finalQuery, userId);
                 });
     }
+
+
 
     void fixQueryObject(String organizationId, Study study, Query query, String userId) throws CatalogException {
         changeQueryId(query, ParamConstants.SAMPLE_RGA_STATUS_PARAM, SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key());

@@ -99,6 +99,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("panels", diseasePanelsCommandOptions);
         JCommander diseasePanelsSubCommands = jCommander.getCommands().get("panels");
         diseasePanelsSubCommands.addCommand("acl-update", diseasePanelsCommandOptions.updateAclCommandOptions);
+        diseasePanelsSubCommands.addCommand("aggregationstats", diseasePanelsCommandOptions.aggregationStatsCommandOptions);
         diseasePanelsSubCommands.addCommand("create", diseasePanelsCommandOptions.createCommandOptions);
         diseasePanelsSubCommands.addCommand("distinct", diseasePanelsCommandOptions.distinctCommandOptions);
         diseasePanelsSubCommands.addCommand("import", diseasePanelsCommandOptions.importCommandOptions);
@@ -112,10 +113,12 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("clinical", analysisClinicalCommandOptions);
         JCommander analysisClinicalSubCommands = jCommander.getCommands().get("clinical");
         analysisClinicalSubCommands.addCommand("acl-update", analysisClinicalCommandOptions.updateAclCommandOptions);
+        analysisClinicalSubCommands.addCommand("aggregationstats", analysisClinicalCommandOptions.aggregationStatsCommandOptions);
         analysisClinicalSubCommands.addCommand("annotation-sets-load", analysisClinicalCommandOptions.loadAnnotationSetsCommandOptions);
         analysisClinicalSubCommands.addCommand("clinical-configuration-update", analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions);
         analysisClinicalSubCommands.addCommand("create", analysisClinicalCommandOptions.createCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);
+        analysisClinicalSubCommands.addCommand("interpretation-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-distinct", analysisClinicalCommandOptions.distinctInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-search", analysisClinicalCommandOptions.searchInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-info", analysisClinicalCommandOptions.infoInterpretationCommandOptions);
@@ -151,6 +154,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("jobs", jobsCommandOptions);
         JCommander jobsSubCommands = jCommander.getCommands().get("jobs");
         jobsSubCommands.addCommand("acl-update", jobsCommandOptions.updateAclCommandOptions);
+        jobsSubCommands.addCommand("aggregationstats", jobsCommandOptions.aggregationStatsCommandOptions);
         jobsSubCommands.addCommand("create", jobsCommandOptions.createCommandOptions);
         jobsSubCommands.addCommand("distinct", jobsCommandOptions.distinctCommandOptions);
         jobsSubCommands.addCommand("retry", jobsCommandOptions.retryCommandOptions);
@@ -182,6 +186,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("individuals", individualsCommandOptions);
         JCommander individualsSubCommands = jCommander.getCommands().get("individuals");
         individualsSubCommands.addCommand("acl-update", individualsCommandOptions.updateAclCommandOptions);
+        individualsSubCommands.addCommand("aggregationstats", individualsCommandOptions.aggregationStatsCommandOptions);
         individualsSubCommands.addCommand("annotation-sets-load", individualsCommandOptions.loadAnnotationSetsCommandOptions);
         individualsSubCommands.addCommand("create", individualsCommandOptions.createCommandOptions);
         individualsSubCommands.addCommand("distinct", individualsCommandOptions.distinctCommandOptions);
@@ -197,6 +202,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("families", familiesCommandOptions);
         JCommander familiesSubCommands = jCommander.getCommands().get("families");
         familiesSubCommands.addCommand("acl-update", familiesCommandOptions.updateAclCommandOptions);
+        familiesSubCommands.addCommand("aggregationstats", familiesCommandOptions.aggregationStatsCommandOptions);
         familiesSubCommands.addCommand("annotation-sets-load", familiesCommandOptions.loadAnnotationSetsCommandOptions);
         familiesSubCommands.addCommand("create", familiesCommandOptions.createCommandOptions);
         familiesSubCommands.addCommand("distinct", familiesCommandOptions.distinctCommandOptions);
@@ -227,6 +233,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("samples", samplesCommandOptions);
         JCommander samplesSubCommands = jCommander.getCommands().get("samples");
         samplesSubCommands.addCommand("acl-update", samplesCommandOptions.updateAclCommandOptions);
+        samplesSubCommands.addCommand("aggregationstats", samplesCommandOptions.aggregationStatsCommandOptions);
         samplesSubCommands.addCommand("annotation-sets-load", samplesCommandOptions.loadAnnotationSetsCommandOptions);
         samplesSubCommands.addCommand("create", samplesCommandOptions.createCommandOptions);
         samplesSubCommands.addCommand("distinct", samplesCommandOptions.distinctCommandOptions);
@@ -312,6 +319,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("files", filesCommandOptions);
         JCommander filesSubCommands = jCommander.getCommands().get("files");
         filesSubCommands.addCommand("acl-update", filesCommandOptions.updateAclCommandOptions);
+        filesSubCommands.addCommand("aggregationstats", filesCommandOptions.aggregationStatsCommandOptions);
         filesSubCommands.addCommand("annotation-sets-load", filesCommandOptions.loadAnnotationSetsCommandOptions);
         filesSubCommands.addCommand("bioformats", filesCommandOptions.bioformatsCommandOptions);
         filesSubCommands.addCommand("create", filesCommandOptions.createCommandOptions);
@@ -376,6 +384,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("cohorts", cohortsCommandOptions);
         JCommander cohortsSubCommands = jCommander.getCommands().get("cohorts");
         cohortsSubCommands.addCommand("acl-update", cohortsCommandOptions.updateAclCommandOptions);
+        cohortsSubCommands.addCommand("aggregationstats", cohortsCommandOptions.aggregationStatsCommandOptions);
         cohortsSubCommands.addCommand("annotation-sets-load", cohortsCommandOptions.loadAnnotationSetsCommandOptions);
         cohortsSubCommands.addCommand("create", cohortsCommandOptions.createCommandOptions);
         cohortsSubCommands.addCommand("distinct", cohortsCommandOptions.distinctCommandOptions);

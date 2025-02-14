@@ -1055,6 +1055,12 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return null;
+    }
+
+    @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
         try (DBIterator<Interpretation> catalogDBIterator = iterator(query, options)) {

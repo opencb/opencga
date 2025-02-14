@@ -21,7 +21,7 @@
 #' | -- | :-- | --: |
 #' | create | /{apiVersion}/organizations/create | include, exclude, includeResult, body[*] |
 #' | createNotes | /{apiVersion}/organizations/notes/create | include, exclude, includeResult, body[*] |
-#' | searchNotes | /{apiVersion}/organizations/notes/search | include, exclude, creationDate, modificationDate, id, scope, visibility, uuid, userId, tags, version |
+#' | searchNotes | /{apiVersion}/organizations/notes/search | include, exclude, creationDate, modificationDate, id, type, scope, visibility, uuid, userId, tags, version |
 #' | deleteNotes | /{apiVersion}/organizations/notes/{id}/delete | id[*], includeResult |
 #' | updateNotes | /{apiVersion}/organizations/notes/{id}/update | include, exclude, id[*], tagsAction, includeResult, body[*] |
 #' | userUpdateStatus | /{apiVersion}/organizations/user/{user}/status/update | include, exclude, user[*], organization, includeResult, body[*] |
@@ -67,6 +67,7 @@ setMethod("organizationClient", "OpencgaR", function(OpencgaR, eventId, id, orga
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param id Note unique identifier.
+        #' @param type Note type.
         #' @param scope Scope of the Note.
         #' @param visibility Visibility of the Note.
         #' @param uuid Unique 32-character identifier assigned automatically by OpenCGA.

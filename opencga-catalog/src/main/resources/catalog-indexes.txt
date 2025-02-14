@@ -1,7 +1,8 @@
-{"collections": ["note", "note_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["note", "note_archive"], "fields": {"id": 1, "studyUid": 1, "type": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["note", "note_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["note", "note_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["note", "note_archive"], "fields": {"scope": 1, "studyUid": 1}, "options": {}}
+{"collections": ["note", "note_archive"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
 {"collections": ["note", "note_archive"], "fields": {"studyUid": 1}, "options": {}}
 {"collections": ["note", "note_archive"], "fields": {"visibility": 1, "studyUid": 1}, "options": {}}
 {"collections": ["note", "note_archive"], "fields": {"userId": 1, "studyUid": 1}, "options": {}}
@@ -68,6 +69,8 @@
 {"collections": ["file"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"internal.variant.index.status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"internal.alignment.coverage.fileId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"internal.alignment.index.fileId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
 {"collections": ["file"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {}}
 {"collections": ["file"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {}}
@@ -105,6 +108,7 @@
 {"collections": ["sample", "sample_archive"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {}}
 {"collections": ["sample", "sample_archive"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {}}
 {"collections": ["sample", "sample_archive"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"internal.variant.index.status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["sample", "sample_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["sample", "sample_archive"], "fields": {"internal.rga.status": 1, "studyUid": 1}, "options": {}}
 

@@ -1,37 +1,66 @@
 package org.opencb.opencga.core.models.variant;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import static org.opencb.opencga.core.models.variant.VariantQueryParams.*;
+
 public class AnnotationVariantQueryParams extends ToolParams {
+    @DataField(description = ID_DESCR)
     private String id;
+    @DataField(description = REFERENCE_DESCR)
     private String region;
+    @DataField(description = GENE_DESCR)
     private String gene;
+    @DataField(description = TYPE_DESCR)
     private String type;
+    @DataField(description = PANEL_DESC)
     private String panel;
+    @DataField(description = PANEL_MOI_DESC)
     private String panelModeOfInheritance;
+    @DataField(description = PANEL_CONFIDENCE_DESC)
     private String panelConfidence;
+    @DataField(description = PANEL_ROLE_IN_CANCER_DESC)
     private String panelRoleInCancer;
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    @DataField(description = PANEL_INTERSECTION_DESC)
     private boolean panelIntersection;
+    @DataField(description = PANEL_FEATURE_TYPE_DESC)
     private String panelFeatureType;
+    @DataField(description = STATS_REF_DESCR)
     private String cohortStatsRef;
+    @DataField(description = STATS_ALT_DESCR)
     private String cohortStatsAlt;
+    @DataField(description = STATS_MAF_DESCR)
     private String cohortStatsMaf;
+    @DataField(description = ANNOT_CONSEQUENCE_TYPE_DESCR)
     private String ct;
+    @DataField(description = ANNOT_XREF_DESCR)
     private String xref;
+    @DataField(description = ANNOT_BIOTYPE_DESCR)
     private String biotype;
+    @DataField(description = ANNOT_PROTEIN_SUBSTITUTION_DESCR)
     private String proteinSubstitution;
+    @DataField(description = ANNOT_CONSERVATION_DESCR)
     private String conservation;
+    @DataField(description = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR)
     private String populationFrequencyMaf;
+    @DataField(description = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR)
     private String populationFrequencyAlt;
+    @DataField(description = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR)
     private String populationFrequencyRef;
+    @DataField(description = ANNOT_TRANSCRIPT_FLAG_DESCR)
     private String transcriptFlag;
+    @DataField(description = ANNOT_FUNCTIONAL_SCORE_DESCR)
     private String functionalScore;
+    @DataField(description = ANNOT_CLINICAL_DESCR)
     private String clinical;
+    @DataField(description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
     private String clinicalSignificance;
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    @DataField(description = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR)
     private boolean clinicalConfirmedStatus;
 
     public AnnotationVariantQueryParams() {
