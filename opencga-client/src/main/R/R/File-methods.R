@@ -20,6 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/files/acl/{members}/update | study, members[*], action[*], body[*] |
+#' | aggregationStats | /{apiVersion}/files/aggregationStats | study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release, field |
 #' | loadAnnotationSets | /{apiVersion}/files/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | bioformats | /{apiVersion}/files/bioformats |  |
 #' | create | /{apiVersion}/files/create | study, parents, body[*] |
@@ -64,6 +65,39 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' @param data JSON containing the parameters to add ACLs.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="files", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/files/aggregationStats:
+        #' Fetch catalog file stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param id Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list file UUIDs up to a maximum of 100.
+        #' @param name Comma separated list of file names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param path Comma separated list of paths. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uri Comma separated list of uris. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param type File type, either FILE or DIRECTORY.
+        #' @param bioformat Comma separated Bioformat values. For existing Bioformats see files/bioformats.
+        #' @param format Comma separated Format values. For existing Formats see files/formats.
+        #' @param external Boolean field indicating whether to filter by external or non external files.
+        #' @param status Filter by status.
+        #' @param internalStatus Filter by internal status.
+        #' @param internalVariantIndexStatus Filter by internal variant index status.
+        #' @param softwareName Software name.
+        #' @param directory Directory under which we want to look for files or folders.
+        #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param description Description.
+        #' @param tags Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param size File size.
+        #' @param sampleIds Comma separated list sample IDs or UUIDs up to a maximum of 100.
+        #' @param jobId Job ID that created the file(s) or folder(s).
+        #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
+        #' @param deleted Boolean to retrieve deleted entries.
+        #' @param release Release when it was created.
+        #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="files", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/files/annotationSets/load:

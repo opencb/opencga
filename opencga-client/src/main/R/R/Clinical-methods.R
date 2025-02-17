@@ -20,10 +20,12 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/analysis/clinical/acl/{members}/update | study, members[*], action[*], propagate, body[*] |
+#' | aggregationStats | /{apiVersion}/analysis/clinical/aggregationStats | study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted, field |
 #' | loadAnnotationSets | /{apiVersion}/analysis/clinical/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | updateClinicalConfiguration | /{apiVersion}/analysis/clinical/clinical/configuration/update | study, body |
 #' | create | /{apiVersion}/analysis/clinical/create | include, exclude, study, skipCreateDefaultInterpretation, includeResult, body[*] |
 #' | distinct | /{apiVersion}/analysis/clinical/distinct | study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted, field[*] |
+#' | aggregationStatsInterpretation | /{apiVersion}/analysis/clinical/interpretation/aggregationStats | study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field |
 #' | distinctInterpretation | /{apiVersion}/analysis/clinical/interpretation/distinct | study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field[*] |
 #' | searchInterpretation | /{apiVersion}/analysis/clinical/interpretation/search | include, exclude, limit, skip, sort, study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release |
 #' | infoInterpretation | /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info | include, exclude, interpretations[*], study, version, deleted |
@@ -42,7 +44,7 @@
 #' | queryRgaVariant | /{apiVersion}/analysis/clinical/rga/variant/query | include, exclude, limit, skip, count, includeIndividual, skipIndividual, limitIndividual, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | summaryRgaVariant | /{apiVersion}/analysis/clinical/rga/variant/summary | limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | search | /{apiVersion}/analysis/clinical/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted |
-#' | queryVariant | /{apiVersion}/analysis/clinical/variant/query | include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, includeInterpretation, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait |
+#' | queryVariant | /{apiVersion}/analysis/clinical/variant/query | include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, includeInterpretation, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, source, trait |
 #' | acl | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/acl | clinicalAnalyses[*], study, member, silent |
 #' | delete | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/delete | study, force, clinicalAnalyses[*] |
 #' | update | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update | include, exclude, clinicalAnalyses[*], study, commentsAction, flagsAction, analystsAction, filesAction, panelsAction, annotationSetsAction, includeResult, body[*] |
@@ -73,6 +75,41 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param data JSON containing the parameters to add ACLs.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical/acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/analysis/clinical/aggregationStats:
+        #' Fetch catalog clinical analysis aggregation stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param id Comma separated list of Clinical Analysis IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list of Clinical Analysis UUIDs up to a maximum of 100.
+        #' @param type Clinical Analysis type.
+        #' @param disorder Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param files Clinical Analysis files.
+        #' @param sample Sample associated to the proband or any member of a family.
+        #' @param individual Proband or any member of a family.
+        #' @param proband Clinical Analysis proband.
+        #' @param probandSamples Clinical Analysis proband samples.
+        #' @param family Clinical Analysis family.
+        #' @param familyMembers Clinical Analysis family members.
+        #' @param familyMemberSamples Clinical Analysis family members samples.
+        #' @param panels Clinical Analysis panels.
+        #' @param locked Locked Clinical Analyses.
+        #' @param analystId Clinical Analysis analyst id.
+        #' @param priority Clinical Analysis priority.
+        #' @param flags Clinical Analysis flags.
+        #' @param creationDate Clinical Analysis Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param dueDate Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param qualityControlSummary Clinical Analysis quality control summary.
+        #' @param release Release when it was created.
+        #' @param snapshot Snapshot value (Latest version of the entry in the specified release).
+        #' @param status Filter by status.
+        #' @param internalStatus Filter by internal status.
+        #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        #' @param deleted Boolean to retrieve deleted entries.
+        #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/annotationSets/load:
@@ -139,6 +176,28 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param field Comma separated list of fields for which to obtain the distinct values.
         distinct=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
                 subcategoryId=NULL, action="distinct", params=params, httpMethod="GET", as.queryParam=c("field"), ...),
+
+        #' @section Endpoint /{apiVersion}/analysis/clinical/interpretation/aggregationStats:
+        #' Fetch catalog interpretation aggregation stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param id Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list of Interpretation UUIDs up to a maximum of 100.
+        #' @param name Comma separated list of Interpretation names up to a maximum of 100.
+        #' @param clinicalAnalysisId Clinical Analysis id.
+        #' @param analystId Analyst ID.
+        #' @param methodName Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param panels Interpretation panels.
+        #' @param primaryFindings Interpretation primary findings.
+        #' @param secondaryFindings Interpretation secondary findings.
+        #' @param creationDate Interpretation Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Interpretation Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param status Filter by status.
+        #' @param internalStatus Filter by internal status.
+        #' @param release Release when it was created.
+        #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        aggregationStatsInterpretation=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
+                subcategory="clinical/interpretation", subcategoryId=NULL, action="aggregationStats", params=params,
+                httpMethod="GET", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/interpretation/distinct:
         #' Interpretation distinct method.
@@ -585,7 +644,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param filter Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.: PASS,LowGQX.
         #' @param qual Specify the QUAL for any of the files. If 'file' filter is provided, will match the file and the qual. e.g.: >123.4.
         #' @param fileData Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from "file" filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP.
-        #' @param sample Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. .
+        #' @param sample Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ',' operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. .
         #' @param sampleData Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}[,;]* . If no sample is specified, will use all samples from "sample" or "genotype" filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10.
         #' @param sampleAnnotation Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith.
         #' @param cohort Select variants with calculated stats for the selected cohorts.
@@ -628,6 +687,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param panelRoleInCancer Filter genes from specific panels that match certain role in cancer. Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ].
         #' @param panelFeatureType Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ].
         #' @param panelIntersection Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.
+        #' @param source Select the variant data source from where to fetch the data. Accepted values are 'variant_index' (default) and 'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved exclusively from that secondary index, and the 'include/exclude' parameters will be ignored. If the given query can not be fully resolved using the secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index, some data might be missing or be partial.
         #' @param trait List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
         queryVariant=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/variant", subcategoryId=NULL, action="query", params=params, httpMethod="GET",

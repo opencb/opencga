@@ -23,10 +23,9 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -38,9 +37,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
-import org.opencb.opencga.storage.core.variant.query.Values;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -158,8 +155,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
 
-        versioned = metadataManager.addSampleIndexConfiguration(STUDY_NAME_2, SampleIndexConfiguration.defaultConfiguration()
-                .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.SAMPLE, "DS", new double[]{0, 1, 2})), true);
+        SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration()
+                .addFileIndexField(new FieldConfiguration(FieldConfiguration.Source.SAMPLE, "DS", new double[]{0, 1, 2}));
+        configuration.getFileDataConfiguration()
+                .setIncludeOriginalCall(null)
+                .setIncludeSecondaryAlternates(null);
+        metadataManager.createStudy(STUDY_NAME_2, engine.getCellBaseUtils().getVersionFromServer());
+        versioned = metadataManager.addSampleIndexConfiguration(metadataManager.getStudyId(STUDY_NAME_2), configuration, true);
         assertEquals(2, versioned.getVersion());
         assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
 
@@ -175,9 +177,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
         // Study 3 - platinum
-        metadataManager.addSampleIndexConfiguration(STUDY_NAME_3, SampleIndexConfiguration.defaultConfiguration()
-                .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.FILE, "culprit",
-                        IndexFieldConfiguration.Type.CATEGORICAL, "DP", "FS", "MQ", "QD").setNullable(true)), true);
+        metadataManager.createStudy(STUDY_NAME_3, engine.getCellBaseUtils().getVersionFromServer());
+        metadataManager.addSampleIndexConfiguration(metadataManager.getStudyId(STUDY_NAME_3), SampleIndexConfiguration.defaultConfiguration()
+                .addFileIndexField(new FieldConfiguration(FieldConfiguration.Source.FILE, "culprit",
+                        FieldConfiguration.Type.CATEGORICAL, "DP", "FS", "MQ", "QD").setNullable(true)), true);
 
         params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_3)
@@ -208,10 +211,11 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         engine.familyIndex(STUDY_NAME_5, trios, new ObjectMap());
 
         // Study 6, multiallelic
+        metadataManager.createStudy(STUDY_NAME_6, engine.getCellBaseUtils().getVersionFromServer());
         SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
-        sampleIndexConfiguration.getFileIndexConfiguration().getCustomField(IndexFieldConfiguration.Source.FILE, "FILTER")
+        sampleIndexConfiguration.getFileIndexConfiguration().getCustomField(FieldConfiguration.Source.FILE, "FILTER")
                 .setValues("PASS", "noPass", "noPass2");
-        engine.getMetadataManager().addSampleIndexConfiguration(STUDY_NAME_6, sampleIndexConfiguration, true);
+        engine.getMetadataManager().addSampleIndexConfiguration(metadataManager.getStudyId(STUDY_NAME_6), sampleIndexConfiguration, true);
 
         params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_6)
@@ -227,9 +231,9 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         // Study 1 - extra sample index configuration, not staging, only one sample in that configuration
 
-        SampleIndexConfiguration configuration = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest().getConfiguration();
+        configuration = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest().getConfiguration();
         // Don't modify the configuration.
-        versioned = engine.getMetadataManager().addSampleIndexConfiguration(STUDY_NAME, configuration, true);
+        versioned = engine.getMetadataManager().addSampleIndexConfiguration(metadataManager.getStudyId(STUDY_NAME), configuration, true);
         assertEquals(2, versioned.getVersion());
         assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
 
@@ -250,11 +254,17 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         versioned = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest(false);
         assertEquals(2, versioned.getVersion());
         assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE, versioned.getStatus());
+        // No fileData fields should be null
+        assertNotNull(versioned.getConfiguration().getFileDataConfiguration().getIncludeOriginalCall());
+        assertNotNull(versioned.getConfiguration().getFileDataConfiguration().getIncludeSecondaryAlternates());
 
         // Study 2 - Latest should be active
         versioned = metadataManager.getStudyMetadata(STUDY_NAME_2).getSampleIndexConfiguration(versioned.getVersion());
         assertEquals(2, versioned.getVersion());
         assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE, versioned.getStatus());
+        // Both fileData fields should be null
+        assertNull(versioned.getConfiguration().getFileDataConfiguration().getIncludeOriginalCall());
+        assertNull(versioned.getConfiguration().getFileDataConfiguration().getIncludeSecondaryAlternates());
 
         // Study 3 - Latest should be active
         versioned = metadataManager.getStudyMetadata(STUDY_NAME_3).getSampleIndexConfiguration(versioned.getVersion());
@@ -324,13 +334,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     .append(SampleIndexDriver.SAMPLE_INDEX_VERSION, version)
                     .append(SampleIndexDriver.OUTPUT, copy)
                     .append(SampleIndexDriver.SAMPLES, "all");
-            new TestMRExecutor().run(SampleIndexDriver.class, SampleIndexDriver.buildArgs(
+            getMrExecutor().run(SampleIndexDriver.class, SampleIndexDriver.buildArgs(
                     dbAdaptor.getArchiveTableName(studyId),
                     dbAdaptor.getVariantTable(),
                     studyId,
                     Collections.emptySet(), options), "");
 
-            new TestMRExecutor().run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
+            getMrExecutor().run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
                     dbAdaptor.getArchiveTableName(studyId),
                     dbAdaptor.getVariantTable(),
                     studyId,
@@ -339,7 +349,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             if (sampleNames.get(study).containsAll(trios.get(0).toList())) {
                 options.put(FamilyIndexDriver.TRIOS, trios.stream().map(Trio::serialize).collect(Collectors.joining(";")));
                 options.put(FamilyIndexDriver.OVERWRITE, true);
-                new TestMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
+                getMrExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
                         dbAdaptor.getArchiveTableName(studyId),
                         dbAdaptor.getVariantTable(),
                         studyId,
@@ -347,7 +357,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             } else if (study.equals(STUDY_NAME_3)) {
                 options.put(FamilyIndexDriver.TRIOS, triosPlatinum.stream().map(Trio::serialize).collect(Collectors.joining(";")));
                 options.put(FamilyIndexDriver.OVERWRITE, true);
-                new TestMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
+                getMrExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
                         dbAdaptor.getArchiveTableName(studyId),
                         dbAdaptor.getVariantTable(),
                         studyId,
@@ -878,7 +888,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(STUDY_NAME_3);
 
         CategoricalMultiValuedIndexField<String> field = schema.getCtIndex().getField();
-        IndexFieldConfiguration ctConf = field.getConfiguration();
+        FieldConfiguration ctConf = field.getConfiguration();
         List<String> cts = new ArrayList<>();
         for (String ct : ctConf.getValues()) {
             if (!field.ambiguous(Collections.singletonList(ct))) {
@@ -1200,6 +1210,30 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     }
                     return v;
                 });
+
+        testSampleIndexOnlyVariantQueryExecutor(
+                new VariantQuery()
+                        .study(STUDY_NAME_6)
+                        .sample("NA19600")
+                        .includeGenotype(true)
+                        .source(VariantQuerySource.SECONDARY_SAMPLE_INDEX),
+                new QueryOptions(),
+                SampleIndexOnlyVariantQueryExecutor.class,
+                av -> {
+                    assertEquals(av.toString(), 1, av.getStudies().get(0).getFiles().size());
+                    for (FileEntry fe : av.getStudies().get(0).getFiles()) {
+                        assertNotNull(fe.getData().get(StudyEntry.FILTER));
+                        fe.setData(Collections.emptyMap());
+                    }
+                    return av;
+                },
+                ev -> {
+                    for (FileEntry fe : ev.getStudies().get(0).getFiles()) {
+                        fe.setData(Collections.emptyMap());
+                    }
+                    ev.setAnnotation(null);
+                   return ev;
+                });
     }
 
     private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected) {
@@ -1207,7 +1241,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected,
-                                                         Function<Variant, Variant> mapper) {
+                                                         Function<Variant, Variant> expectedVariantMapper) {
+        testSampleIndexOnlyVariantQueryExecutor(query, options, expected, expectedVariantMapper, v -> v);
+    }
+
+    private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected,
+                                                         Function<Variant, Variant> actualVariantMapper,
+                                                         Function<Variant, Variant> expectedVariantMapper) {
         ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
 
         VariantQueryExecutor variantQueryExecutor = variantStorageEngine.getVariantQueryExecutor(variantQuery);
@@ -1241,7 +1281,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         for (int i = 0; i < actualVariants.size(); i++) {
             Variant av = actualVariants.get(i);
             Variant ev = expectedVariants.get(i);
-            mapper.apply(av);
+            actualVariantMapper.apply(av);
+            expectedVariantMapper.apply(ev);
             if (!ev.getStudies().isEmpty()) {
                 if (av.getLengthAlternate() == 0 || av.getLengthReference() == 0) {
 //                    System.out.println("-------" + av + "----------");
@@ -1257,8 +1298,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 assertEquals(ev, av);
             } catch (AssertionError error) {
                 System.out.println("-------" + av + "----------");
-                System.out.println("DBAdaptor " + ev.toJson());
-                System.out.println("Actual    " + av.toJson());
+                System.out.println("Expected (DBAdaptor) " + ev.toJson());
+                System.out.println("Actual               " + av.toJson());
                 throw error;
             }
         }

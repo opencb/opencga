@@ -20,6 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/individuals/acl/{members}/update | study, members[*], action[*], propagate, body[*] |
+#' | aggregationStats | /{apiVersion}/individuals/aggregationStats | study, id, uuid, name, father, mother, samples, familyIds, sex, dateOfBirth, ethnicity, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot, field |
 #' | loadAnnotationSets | /{apiVersion}/individuals/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | create | /{apiVersion}/individuals/create | include, exclude, study, samples, includeResult, body[*] |
 #' | distinct | /{apiVersion}/individuals/distinct | study, id, uuid, name, familyIds, father, mother, samples, sex, ethnicity, dateOfBirth, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot, field[*] |
@@ -49,6 +50,39 @@ setMethod("individualClient", "OpencgaR", function(OpencgaR, annotationSet, indi
         #' @param data JSON containing the parameters to update the permissions. If propagate flag is set to true, it will propagate the permissions defined to the samples that are associated to the matching individuals.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="individuals", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/individuals/aggregationStats:
+        #' Fetch catalog individual stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param id Comma separated list individual IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list individual UUIDs up to a maximum of 100.
+        #' @param name Comma separated list individual names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param father Father ID, name or UUID.
+        #' @param mother Mother ID, name or UUID.
+        #' @param samples Sample ID, name or UUID.
+        #' @param familyIds Comma separated list of family ids the individuals may belong to.
+        #' @param sex Individual sex.
+        #' @param dateOfBirth Individual date of birth.
+        #' @param ethnicity Individual ethnicity. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param disorders Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param phenotypes Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param populationName Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param populationSubpopulation Subpopulation name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param karyotypicSex Individual karyotypic sex.
+        #' @param lifeStatus Individual life status.
+        #' @param internalStatus Filter by internal status.
+        #' @param status Filter by status.
+        #' @param deleted Boolean to retrieve deleted entries.
+        #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
+        #' @param release Release when it was created.
+        #' @param snapshot Snapshot value (Latest version of the entry in the specified release).
+        #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="individuals", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/individuals/annotationSets/load:
