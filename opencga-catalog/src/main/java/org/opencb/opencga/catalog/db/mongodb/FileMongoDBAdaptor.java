@@ -665,7 +665,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
     @Override
     OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, File file, ObjectMap parameters,
-                                            List<VariableSet> variableSetList, QueryOptions queryOptions)
+                                            List<VariableSet> variableSetList, QueryOptions queryOptions, boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         variableSetList = ParamUtils.defaultObject(variableSetList, Collections::emptyList);
         queryOptions = ParamUtils.defaultObject(queryOptions, QueryOptions::empty);
@@ -726,8 +726,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
-            throws CatalogDBException {
+    OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument,
+                                            boolean incrementVersion) throws CatalogDBException {
         long tmpStartTime = startQuery();
 
         Document fileUpdate = updateDocument.toFinalUpdateDocument();

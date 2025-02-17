@@ -355,20 +355,21 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
     @Override
     OpenCGAResult<ClinicalAnalysis> transactionalUpdate(ClientSession clientSession, ClinicalAnalysis entry, ObjectMap parameters,
-                                                        List<VariableSet> variableSetList, QueryOptions queryOptions)
+                                                        List<VariableSet> variableSetList, QueryOptions queryOptions,
+                                                        boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         throw new NotImplementedException("Please call to the other transactionalUpdate method passing the ClinicalAudit list");
     }
 
     @Override
     OpenCGAResult<ClinicalAnalysis> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query,
-                                                        UpdateDocument updateDocument)
+                                                        UpdateDocument updateDocument, boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
         Document updateOperation = updateDocument.toFinalUpdateDocument();
         if (!updateOperation.isEmpty()) {
-            return versionedMongoDBAdaptor.update(clientSession, query, entryList -> {
+            SnapshotVersionedMongoDBAdaptor.FunctionWithException<ClinicalAnalysis> updateClinicalReferences = (clinicalList) -> {
                 logger.debug("Update clinical analysis. Query: {}, Update: {}", query.toBsonDocument(), updateDocument);
                 DataResult<?> update = clinicalCollection.update(clientSession, query, updateOperation, null);
 
@@ -385,7 +386,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
                 logger.debug("{} clinical analyses successfully updated", update.getNumUpdated());
                 return endWrite(tmpStartTime, update.getNumMatches(), update.getNumUpdated(), Collections.emptyList());
-            }, null, null);
+            };
+            if (incrementVersion) {
+                return versionedMongoDBAdaptor.update(clientSession, query, null, updateClinicalReferences, null, null);
+            } else {
+                return versionedMongoDBAdaptor.updateWithoutVersionIncrement(clientSession, query, null, updateClinicalReferences);
+            }
         } else {
             throw new CatalogDBException("Nothing to update");
         }

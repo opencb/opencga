@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lmax.disruptor.EventFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Mutation;
@@ -15,11 +16,15 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.TaskType;
+import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
+import org.apache.tephra.TransactionSystemClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,6 +34,8 @@ import org.opencb.opencga.core.config.ConfigurationOption;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
@@ -43,6 +50,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +59,7 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Created on 27/10/17.
@@ -60,6 +69,8 @@ import java.util.List;
 public class VariantMapReduceUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(VariantMapReduceUtil.class);
+    private static final Pattern JAVA_OPTS_XMX_PATTERN =
+            Pattern.compile(".*(?:^|\\s)-Xmx(\\d+)([gGmMkK]?)(?:$|\\s).*");
 
 
     public static void initTableMapperJob(Job job, String inTable, String outTable, Scan scan, Class<? extends TableMapper> mapperClass)
@@ -140,20 +151,13 @@ public class VariantMapReduceUtil {
         }
     }
 
-    public static void initTableMapperJobFromPhoenix(Job job, String variantTable, String sql,
-                                                     Class<? extends Mapper> mapper) {
-        job.setInputFormatClass(CustomPhoenixInputFormat.class);
-
-        LOGGER.info(sql);
-        PhoenixMapReduceUtil.setInput(job, ExposedResultSetDBWritable.class, variantTable,  sql);
-        job.setMapperClass(mapper);
-
-    }
-
     public static void initVariantMapperJob(Job job, Class<? extends VariantMapper> mapperClass, String variantTable,
                                                VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
                                                boolean skipSampleIndex) throws IOException {
-        query = new HadoopVariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
+        VariantQueryParser variantQueryParser = new HadoopVariantQueryParser(null, metadataManager);
+        ParsedVariantQuery variantQuery = variantQueryParser.parseQuery(query, queryOptions);
+        query = variantQuery.getQuery();
+        queryOptions = variantQuery.getInputOptions();
 
         setQuery(job, query);
         setQueryOptions(job, queryOptions);
@@ -161,26 +165,31 @@ public class VariantMapReduceUtil {
             LOGGER.info("Init MapReduce job reading from HBase");
             boolean useSampleIndex = !skipSampleIndex
                     && SampleIndexQueryParser.validSampleIndexQuery(query);
+            String sampleIndexTable = null;
             if (useSampleIndex) {
                 Object regions = query.get(VariantQueryParam.REGION.key());
                 Object geneRegions = query.get(VariantQueryUtils.ANNOT_GENE_REGIONS.key());
                 // Remove extra fields from the query
-                SampleIndexQuery sampleIndexQuery = new SampleIndexDBAdaptor(null, null, metadataManager).parseSampleIndexQuery(query);
+                HBaseVariantTableNameGenerator tableNameGenerator = HBaseVariantTableNameGenerator
+                        .fromVariantsTable(variantTable, job.getConfiguration());
+                SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(null, tableNameGenerator, metadataManager);
+                SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
                 setSampleIndexConfiguration(job,
                         sampleIndexQuery.getSchema().getConfiguration(),
                         sampleIndexQuery.getSchema().getVersion());
+                sampleIndexTable = sampleIndexDBAdaptor.getSampleIndexTableName(sampleIndexQuery);
 
                 // Preserve regions and gene_regions
                 query.put(VariantQueryParam.REGION.key(), regions);
                 query.put(VariantQueryUtils.ANNOT_GENE_REGIONS.key(), geneRegions);
-                LOGGER.info("Use sample index to read from HBase");
+                LOGGER.info("Use sample index to read from HBase from table '{}'", sampleIndexTable);
             }
 
             VariantHBaseQueryParser parser = new VariantHBaseQueryParser(metadataManager);
-            List<Scan> scans = parser.parseQueryMultiRegion(query, queryOptions);
+            List<Scan> scans = parser.parseQueryMultiRegion(variantQuery, queryOptions);
             configureMapReduceScans(scans, job.getConfiguration());
 
-            initVariantMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex);
+            initVariantMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex, sampleIndexTable);
 
             int i = 0;
             for (Scan scan : scans) {
@@ -189,7 +198,7 @@ public class VariantMapReduceUtil {
         } else {
             LOGGER.info("Init MapReduce job reading from Phoenix");
             String sql = new VariantSqlQueryParser(variantTable, metadataManager, job.getConfiguration())
-                    .parse(query, queryOptions);
+                    .parse(variantQuery, queryOptions);
 
             initVariantMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
         }
@@ -198,17 +207,12 @@ public class VariantMapReduceUtil {
     public static void initVariantMapperJobFromHBase(Job job, String variantTableName, Scan scan,
                                                      Class<? extends VariantMapper> variantMapperClass)
             throws IOException {
-        initVariantMapperJobFromHBase(job, variantTableName, scan, variantMapperClass, false);
-    }
-
-    public static void initVariantMapperJobFromHBase(Job job, String variantTableName, Scan scan,
-                                                     Class<? extends VariantMapper> variantMapperClass, boolean useSampleIndex)
-            throws IOException {
-        initVariantMapperJobFromHBase(job, variantTableName, Collections.singletonList(scan), variantMapperClass, useSampleIndex);
+        initVariantMapperJobFromHBase(job, variantTableName, Collections.singletonList(scan), variantMapperClass, false, null);
     }
 
     public static void initVariantMapperJobFromHBase(Job job, String variantTableName, List<Scan> scans,
-                                                     Class<? extends VariantMapper> variantMapperClass, boolean useSampleIndex)
+                                                     Class<? extends VariantMapper> variantMapperClass, boolean useSampleIndex,
+                                                     String sampleIndexTable)
             throws IOException {
         initTableMapperJob(job, variantTableName, scans, TableMapper.class);
 
@@ -218,6 +222,9 @@ public class VariantMapReduceUtil {
         job.setInputFormatClass(HBaseVariantTableInputFormat.class);
         job.getConfiguration().setBoolean(HBaseVariantTableInputFormat.MULTI_SCANS, scans.size() > 1);
         job.getConfiguration().setBoolean(HBaseVariantTableInputFormat.USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, useSampleIndex);
+        if (sampleIndexTable != null) {
+            job.getConfiguration().set(HBaseVariantTableInputFormat.SAMPLE_INDEX_TABLE, sampleIndexTable);
+        }
     }
 
     public static void initVariantMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor,
@@ -242,12 +249,8 @@ public class VariantMapReduceUtil {
                                                        Class<? extends VariantMapper> variantMapperClass)
             throws IOException {
         // VariantDBWritable is the DBWritable class that enables us to process the Result of the query
-        PhoenixMapReduceUtil.setInput(job, PhoenixVariantTableInputFormat.VariantDBWritable.class, variantTableName,  sqlQuery);
-
-        LOGGER.info(sqlQuery);
-        job.setMapperClass(variantMapperClass);
-
-        job.setInputFormatClass(PhoenixVariantTableInputFormat.class);
+        initVariantMapperJobFromPhoenix(job, variantTableName, sqlQuery, variantMapperClass,
+                PhoenixVariantTableInputFormat.VariantDBWritable.class, PhoenixVariantTableInputFormat.class);
     }
 
     public static void initVariantRowMapperJob(Job job, Class<? extends VariantRowMapper> mapperClass, String variantTable,
@@ -274,21 +277,26 @@ public class VariantMapReduceUtil {
             LOGGER.info("Init MapReduce job reading from HBase");
             boolean useSampleIndex = !skipSampleIndex
                     && SampleIndexQueryParser.validSampleIndexQuery(query);
+            String sampleIndexTable = null;
             if (useSampleIndex) {
                 // Remove extra fields from the query
-                SampleIndexQuery sampleIndexQuery = new SampleIndexDBAdaptor(null, null, metadataManager).parseSampleIndexQuery(query);
+                HBaseVariantTableNameGenerator tableNameGenerator = HBaseVariantTableNameGenerator
+                        .fromVariantsTable(variantTable, job.getConfiguration());
+                SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(null, tableNameGenerator, metadataManager);
+                SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
                 setSampleIndexConfiguration(job,
                         sampleIndexQuery.getSchema().getConfiguration(),
                         sampleIndexQuery.getSchema().getVersion());
 
-                LOGGER.info("Use sample index to read from HBase");
+                sampleIndexTable = sampleIndexDBAdaptor.getSampleIndexTableName(sampleIndexQuery);
+                LOGGER.info("Use sample index to read from HBase from table '{}'", sampleIndexTable);
             }
 
             VariantHBaseQueryParser parser = new VariantHBaseQueryParser(metadataManager);
             List<Scan> scans = parser.parseQueryMultiRegion(query, queryOptions);
             configureMapReduceScans(scans, job.getConfiguration());
 
-            initVariantRowMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex);
+            initVariantRowMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex, sampleIndexTable);
 
             int i = 0;
             for (Scan scan : scans) {
@@ -323,17 +331,12 @@ public class VariantMapReduceUtil {
     public static void initVariantRowMapperJobFromHBase(Job job, String variantTableName, Scan scan,
                                                      Class<? extends VariantRowMapper> variantMapperClass)
             throws IOException {
-        initVariantRowMapperJobFromHBase(job, variantTableName, scan, variantMapperClass, false);
-    }
-
-    public static void initVariantRowMapperJobFromHBase(Job job, String variantTableName, Scan scan,
-                                                           Class<? extends VariantRowMapper> variantMapperClass, boolean useSampleIndex)
-            throws IOException {
-        initVariantRowMapperJobFromHBase(job, variantTableName, Collections.singletonList(scan), variantMapperClass, useSampleIndex);
+        initVariantRowMapperJobFromHBase(job, variantTableName, Collections.singletonList(scan), variantMapperClass, false, null);
     }
 
     public static void initVariantRowMapperJobFromHBase(Job job, String variantTableName, List<Scan> scans,
-                                                           Class<? extends VariantRowMapper> variantMapperClass, boolean useSampleIndex)
+                                                        Class<? extends VariantRowMapper> variantMapperClass, boolean useSampleIndex,
+                                                        String sampleIndexTable)
             throws IOException {
         initTableMapperJob(job, variantTableName, scans, TableMapper.class);
 
@@ -343,6 +346,9 @@ public class VariantMapReduceUtil {
         job.setInputFormatClass(HBaseVariantRowTableInputFormat.class);
         job.getConfiguration().setBoolean(HBaseVariantRowTableInputFormat.MULTI_SCANS, scans.size() > 1);
         job.getConfiguration().setBoolean(HBaseVariantRowTableInputFormat.USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, useSampleIndex);
+        if (sampleIndexTable != null) {
+            job.getConfiguration().set(HBaseVariantRowTableInputFormat.SAMPLE_INDEX_TABLE, sampleIndexTable);
+        }
     }
 
     public static void initVariantRowMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor,
@@ -366,13 +372,28 @@ public class VariantMapReduceUtil {
     public static void initVariantRowMapperJobFromPhoenix(Job job, String variantTableName, String sqlQuery,
                                                        Class<? extends Mapper> variantMapperClass)
             throws IOException {
+        initVariantMapperJobFromPhoenix(job, variantTableName, sqlQuery, variantMapperClass,
+                ExposedResultSetDBWritable.class, PhoenixVariantRowTableInputFormat.class);
+    }
+
+    private static void initVariantMapperJobFromPhoenix(Job job, String variantTableName, String sqlQuery,
+                                                        Class<? extends Mapper> variantMapperClass, Class<? extends DBWritable> inputClass,
+                                                        Class<? extends InputFormat> inputFormatClass) throws IOException {
+
+        boolean addDependencyJar = job.getConfiguration().getBoolean(
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(),
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
+        if (addDependencyJar) {
+            TableMapReduceUtil.addDependencyJars(job);
+            TableMapReduceUtil.addDependencyJarsForClasses(job.getConfiguration(),
+                    TransactionSystemClient.class,
+                    EventFactory.class);
+        }
 
         LOGGER.info(sqlQuery);
-        // VariantDBWritable is the DBWritable class that enables us to process the Result of the query
-        PhoenixMapReduceUtil.setInput(job, ExposedResultSetDBWritable.class, variantTableName,  sqlQuery);
-
+        PhoenixMapReduceUtil.setInput(job, inputClass, variantTableName, sqlQuery);
         job.setMapperClass(variantMapperClass);
-        job.setInputFormatClass(PhoenixVariantRowTableInputFormat.class);
+        job.setInputFormatClass(inputFormatClass);
     }
 
     public static void setNoneReduce(Job job) throws IOException {
@@ -479,6 +500,7 @@ public class VariantMapReduceUtil {
     public static void getQueryOptionsFromConfig(QueryOptions options, Configuration conf) {
         options.put(QueryOptions.INCLUDE, conf.get(QueryOptions.INCLUDE));
         options.put(QueryOptions.EXCLUDE, conf.get(QueryOptions.EXCLUDE));
+        options.put(QueryOptions.SORT, conf.get(QueryOptions.SORT));
     }
 
     public static Query getQueryFromConfig(Configuration conf) {
@@ -609,6 +631,26 @@ public class VariantMapReduceUtil {
         return getParam(conf, key, defaultValue, null);
     }
 
+    private static String getParam(JobConf conf, TaskType taskType, Class<? extends AbstractHBaseDriver> clazz,
+                                   HadoopVariantStorageOptions mapKey, HadoopVariantStorageOptions reduceKey) {
+        final String value;
+        switch (taskType) {
+            case MAP:
+                value = getParam(conf, mapKey, clazz);
+                break;
+            case REDUCE:
+                value = getParam(conf, reduceKey, clazz);
+                break;
+            default:
+                throw new IllegalArgumentException("Unexpected task type " + taskType);
+        }
+        return value;
+    }
+
+    public static String getParam(Configuration conf, ConfigurationOption key, Class<? extends AbstractHBaseDriver> aClass) {
+        return getParam(conf, key.key(), key.defaultValue() == null ? null : key.defaultValue().toString(), aClass);
+    }
+
     /**
      * Reads a param that might come in different forms. It will take the the first value in this order:
      * - "--{key}"
@@ -641,4 +683,69 @@ public class VariantMapReduceUtil {
         }
         return value;
     }
+
+    public static void configureTaskJavaHeap(JobConf conf, Class<? extends AbstractHBaseDriver> clazz) {
+        configureTaskJavaHeap(conf, TaskType.MAP, clazz);
+        configureTaskJavaHeap(conf, TaskType.REDUCE, clazz);
+    }
+
+    public static void configureTaskJavaHeap(JobConf conf, TaskType taskType, Class<? extends AbstractHBaseDriver> clazz) {
+        int memoryRequired = conf.getMemoryRequired(taskType);
+        String heapStr = getParam(conf, taskType, clazz,
+                HadoopVariantStorageOptions.MR_HEAP_MAP_MB,
+                HadoopVariantStorageOptions.MR_HEAP_REDUCE_MB);
+
+        int heap;
+        if (heapStr != null) {
+            heap = Integer.parseInt(heapStr);
+        } else {
+            int minHeap = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HEAP_MIN_MB, clazz));
+            int maxHeap = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HEAP_MAX_MB, clazz));
+            double ratio = Double.parseDouble(getParam(conf, HadoopVariantStorageOptions.MR_HEAP_MEMORY_MB_RATIO, clazz));
+            int other = Integer.parseInt(getParam(conf, taskType, clazz,
+                    HadoopVariantStorageOptions.MR_HEAP_MAP_OTHER_MB,
+                    HadoopVariantStorageOptions.MR_HEAP_REDUCE_OTHER_MB));
+
+            heap = (int) Math.round((memoryRequired - other) * ratio);
+            heap = Math.max(minHeap, heap);
+            heap = Math.min(maxHeap, heap);
+        }
+        setTaskJavaHeap(conf, taskType, heap);
+    }
+
+    public static void setTaskJavaHeap(Configuration conf, TaskType taskType, int javaHeapMB) {
+        String javaOpts = getTaskJavaOpts(conf, taskType);
+        String xmx = " -Xmx" + javaHeapMB + "m";
+        if (javaOpts == null) {
+            javaOpts = xmx;
+        } else if (javaOpts.contains("-Xmx")) {
+            javaOpts = JAVA_OPTS_XMX_PATTERN.matcher(javaOpts).replaceFirst(xmx);
+        } else {
+            javaOpts += xmx;
+        }
+        switch (taskType) {
+            case MAP:
+                conf.set(JobConf.MAPRED_MAP_TASK_JAVA_OPTS, javaOpts);
+                break;
+            case REDUCE:
+                conf.set(JobConf.MAPRED_REDUCE_TASK_JAVA_OPTS, javaOpts);
+                break;
+            default:
+                throw new IllegalArgumentException("Unexpected task type " + taskType);
+        }
+    }
+
+    public static String getTaskJavaOpts(Configuration conf, TaskType taskType) {
+        switch (taskType) {
+            case MAP:
+                return conf.get(JobConf.MAPRED_MAP_TASK_JAVA_OPTS,
+                        conf.get(JobConf.MAPRED_TASK_JAVA_OPTS, JobConf.DEFAULT_MAPRED_TASK_JAVA_OPTS));
+            case REDUCE:
+                return conf.get(JobConf.MAPRED_REDUCE_TASK_JAVA_OPTS,
+                        conf.get(JobConf.MAPRED_TASK_JAVA_OPTS, JobConf.DEFAULT_MAPRED_TASK_JAVA_OPTS));
+            default:
+                throw new IllegalArgumentException("Unexpected task type " + taskType);
+        }
+    }
+
 }
