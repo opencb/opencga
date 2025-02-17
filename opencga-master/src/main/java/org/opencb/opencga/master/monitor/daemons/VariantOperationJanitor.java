@@ -109,9 +109,12 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
         }
 
         List<String> organizationIds = catalogManager.getOrganizationManager().getOrganizationIds(token);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.PROJECTS.key());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                OrganizationDBAdaptor.QueryParams.OWNER.key(), OrganizationDBAdaptor.QueryParams.PROJECTS.key()
+        ));
         for (String organizationId : organizationIds) {
             Organization organization = catalogManager.getOrganizationManager().get(organizationId, options, token).first();
+            String ownerToken = catalogManager.getUserManager().getToken(organizationId, organization.getOwner(), null, null, token);
             for (Project project : organization.getProjects()) {
                 if (CollectionUtils.isEmpty(project.getStudies())) {
                     // Empty project. Skip
@@ -122,7 +125,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
                 switch (tool.scope()) {
                     case PROJECT:
                         try {
-                            checkPendingChore(operationChore, project);
+                            checkPendingChore(operationChore, project, ownerToken);
                         } catch (Exception e) {
                             logger.error("Error checking pending chore '{}' in project '{}'. Ignore exception.",
                                     toolId, project.getFqn(), e);
@@ -131,7 +134,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
                     case STUDY:
                         for (Study study : project.getStudies()) {
                             try {
-                                checkPendingChore(operationChore, project, study);
+                                checkPendingChore(operationChore, project, study, ownerToken);
                             } catch (Exception e) {
                                 logger.error("Error checking pending chore '{}' in study '{}'. Ignore exception.",
                                         toolId, study.getFqn(), e);
@@ -145,7 +148,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
         }
     }
 
-    private void checkPendingChore(OperationChore operationChore, Project project) throws CatalogException {
+    private void checkPendingChore(OperationChore operationChore, Project project, String ownerToken) throws CatalogException {
         OperationExecutionConfig config = operationChore.getConfig();
         String toolId = operationChore.getToolId();
         List<String> studyFqns = project.getStudies().stream().map(Study::getFqn).collect(Collectors.toList());
@@ -179,11 +182,11 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
             paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
             catalogManager.getJobManager().submit(studyFqns.get(0), toolId, Enums.Priority.HIGH, paramsMap, null,
                     generateJobDescription(config, operationChore, attributes), null,
-                    Collections.singletonList(TAG), null, null, null, attributes, token);
+                    Collections.singletonList(TAG), null, null, null, attributes, ownerToken);
         }
     }
 
-    private void checkPendingChore(OperationChore operationChore, Project project, Study study) throws CatalogException {
+    private void checkPendingChore(OperationChore operationChore, Project project, Study study, String ownerToken) throws CatalogException {
         OperationExecutionConfig config = operationChore.getConfig();
         String toolId = operationChore.getToolId();
         // 1. Check if operation is pending
@@ -217,7 +220,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
             paramsMap.put(ParamConstants.STUDY_PARAM, study.getFqn());
             catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.HIGH, paramsMap, null,
                     generateJobDescription(config, operationChore, attributes), null,
-                    Collections.singletonList(TAG), null, null, null, attributes, token);
+                    Collections.singletonList(TAG), null, null, null, attributes, ownerToken);
         }
     }
 

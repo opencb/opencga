@@ -69,6 +69,7 @@ public class VariantOperationJanitorTest extends AbstractManagerTest {
         assertEquals(2, lastJobExecution.getAttributes().get(VariantOperationJanitor.ATTEMPT));
         assertEquals(1, ((List<String>) lastJobExecution.getAttributes().get(VariantOperationJanitor.FAILED_ATTEMPT_JOB_IDS)).size());
         assertEquals(jobId, ((List<String>) lastJobExecution.getAttributes().get(VariantOperationJanitor.FAILED_ATTEMPT_JOB_IDS)).get(0));
+        assertEquals(orgOwnerUserId, lastJobExecution.getUserId());
         // Set status to ERROR
         catalogManager.getJobManager().update(studyFqn, lastJobExecution.getId(), updateParams, QueryOptions.empty(), ownerToken);
 
@@ -81,6 +82,7 @@ public class VariantOperationJanitorTest extends AbstractManagerTest {
         assertEquals(1, ((List<String>) lastJobExecution.getAttributes().get(VariantOperationJanitor.FAILED_ATTEMPT_JOB_IDS)).size());
         assertEquals(jobId, ((List<String>) lastJobExecution.getAttributes().get(VariantOperationJanitor.FAILED_ATTEMPT_JOB_IDS)).get(0));
         assertTrue(lastJobExecution.getTags().contains(VariantOperationJanitor.TAG));
+        assertEquals(orgOwnerUserId, lastJobExecution.getUserId());
 
     }
 
