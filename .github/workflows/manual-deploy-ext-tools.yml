@@ -40,7 +40,7 @@ jobs:
             ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
           fi
       - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests
+        run: mvn -T 2 clean install -DskipTests  --no-transfer-progress
       - uses: actions/upload-artifact@v4
         with:
           name: build-folder

@@ -62,6 +62,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -262,7 +263,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, documentResult.first(), parameters, variableSetList,
-                    queryOptions));
+                    queryOptions, true));
         } catch (CatalogException e) {
             logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
             throw new CatalogDBException("Could not update sample " + sampleId + ": " + e.getMessage(), e.getCause());
@@ -297,7 +298,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             String sampleId = sampleDocument.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateUpdate(clientSession, sampleDocument, parameters, variableSetList,
-                        queryOptions)));
+                        queryOptions, true)));
             } catch (CatalogException e) {
                 logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, sampleId, e.getMessage()));
@@ -309,7 +310,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     OpenCGAResult<Sample> privateUpdate(ClientSession clientSession, Document sampleDocument, ObjectMap parameters,
-                                        List<VariableSet> variableSetList, QueryOptions queryOptions)
+                                        List<VariableSet> variableSetList, QueryOptions queryOptions, boolean incrementVersion)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         String sampleId = sampleDocument.getString(QueryParams.ID.key());
@@ -321,7 +322,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(QueryParams.UID.key(), sampleUid);
         Bson bsonQuery = parseQuery(tmpQuery);
-        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, (entrylist) -> {
+        SnapshotVersionedMongoDBAdaptor.FunctionWithException<Sample> updateSampleReferences = (sampleList) -> {
             // Perform the update
             DataResult result = updateAnnotationSets(clientSession, studyUid, sampleUid, parameters, variableSetList, queryOptions, true);
 
@@ -372,12 +373,21 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             }
 
             return endWrite(tmpStartTime, 1, 1, events);
-        }, this::iterator, (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+        };
+
+        List<String> fieldsToInclude = Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(),
+                QueryParams.STUDY_UID.key(), PRIVATE_INDIVIDUAL_UID);
+        if (incrementVersion) {
+            return versionedMongoDBAdaptor.update(clientSession, bsonQuery, fieldsToInclude, updateSampleReferences, this::iterator,
+                    (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+        } else {
+            return versionedMongoDBAdaptor.updateWithoutVersionIncrement(clientSession, bsonQuery, fieldsToInclude, updateSampleReferences);
+        }
     }
 
     @Override
     OpenCGAResult<Sample> transactionalUpdate(ClientSession clientSession, Sample sample, ObjectMap parameters,
-                                              List<VariableSet> variableSetList, QueryOptions queryOptions)
+                                              List<VariableSet> variableSetList, QueryOptions queryOptions, boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         long studyUid = sample.getStudyUid();
@@ -396,8 +406,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 QueryParams.STUDY_UID.key(), PRIVATE_INDIVIDUAL_UID);
 
         Bson bsonQuery = parseQuery(tmpQuery);
-        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, fieldsToInclude, (entrylist) -> {
-            String sampleId = entrylist.get(0).getString(QueryParams.ID.key());
+        SnapshotVersionedMongoDBAdaptor.FunctionWithException<Sample> updateSampleReferences = (sampleList) -> {
+            String sampleId = sampleList.get(0).getString(QueryParams.ID.key());
             // Perform the update
             DataResult<?> result = updateAnnotationSets(clientSession, studyUid, sampleUid, parameters, variableSetList, queryOptions,
                     true);
@@ -420,12 +430,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 result = sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions(MongoDBCollection.MULTI, true));
 
                 if (updateParams.getSet().containsKey(PRIVATE_INDIVIDUAL_UID)) {
-                    long individualUid = entrylist.get(0).getLong(PRIVATE_INDIVIDUAL_UID);
+                    long individualUid = sampleList.get(0).getLong(PRIVATE_INDIVIDUAL_UID);
                     long newIndividualUid = updateParams.getSet().getLong(PRIVATE_INDIVIDUAL_UID);
 
                     // If the sample has been associated a different individual
                     if (newIndividualUid != individualUid) {
-                        int version = entrylist.get(0).getInteger(QueryParams.VERSION.key());
+                        int version = sampleList.get(0).getInteger(QueryParams.VERSION.key());
                         Sample tmpSample = new Sample()
                                 .setUid(sampleUid)
                                 .setVersion(version)
@@ -455,17 +465,23 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             }
 
             return endWrite(tmpStartTime, 1, 1, events);
-        }, this::iterator, (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+        };
+
+        if (incrementVersion) {
+            return versionedMongoDBAdaptor.update(clientSession, bsonQuery, fieldsToInclude, updateSampleReferences, this::iterator,
+                    (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+        } else {
+            return versionedMongoDBAdaptor.updateWithoutVersionIncrement(clientSession, bsonQuery, fieldsToInclude, updateSampleReferences);
+        }
     }
 
     @Override
-    OpenCGAResult<Sample> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
+    OpenCGAResult<Sample> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument,
+                                              boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
-        List<String> includeIds = Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(),
-                QueryParams.STUDY_UID.key(), PRIVATE_INDIVIDUAL_UID);
-        return versionedMongoDBAdaptor.update(clientSession, query, includeIds, (sampleList) -> {
+        Function<List<Document>, OpenCGAResult<Sample>> updateSampleReferences = (sampleList) -> {
             List<Event> events = new ArrayList<>();
             Document update = updateDocument.toFinalUpdateDocument();
             if (!update.isEmpty()) {
@@ -481,7 +497,16 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 logger.debug("Samples {} successfully updated", StringUtils.join(sampleIds, ", "));
             }
             return endWrite(tmpStartTime, sampleList.size(), sampleList.size(), events);
-        }, this::iterator, (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+        };
+
+        List<String> includeIds = Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(),
+                QueryParams.STUDY_UID.key(), PRIVATE_INDIVIDUAL_UID);
+        if (incrementVersion) {
+            return versionedMongoDBAdaptor.update(clientSession, query, includeIds, updateSampleReferences::apply, this::iterator,
+                    (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+        } else {
+            return versionedMongoDBAdaptor.updateWithoutVersionIncrement(clientSession, query, includeIds, updateSampleReferences::apply);
+        }
     }
 
     private void updateReferencesAfterSampleVersionIncrement(ClientSession clientSession, DBIterator<Sample> iterator)
@@ -528,7 +553,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append(QueryParams.UID.key(), sampleUids);
         Bson bsonQuery = parseQuery(query);
 
-        transactionalUpdate(clientSession, studyUid, bsonQuery, updateDocument);
+        transactionalUpdate(clientSession, studyUid, bsonQuery, updateDocument, false);
     }
 
     /**
@@ -1163,12 +1188,28 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
+    public OpenCGAResult<?> distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
         return new OpenCGAResult<>(sampleCollection.distinct(field, bson));
+    }
+
+    @Override
+    public OpenCGAResult<?> distinct(List<String> fields, Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        Bson bson = parseQuery(finalQuery);
+
+        Set<String> results = new LinkedHashSet<>();
+        for (String field : fields) {
+            results.addAll(sampleCollection.distinct(field, bson, String.class).getResults());
+        }
+
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
+                new ArrayList<>(results), -1);
     }
 
     @Override
@@ -1186,6 +1227,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
                 new ArrayList<>(results), -1);
+    }
+
+    @Override
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Bson bson = parseQuery(query, userId);
+        return facet(sampleCollection, bson, facet);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)

@@ -30,6 +30,7 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Analysis;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -85,7 +86,7 @@ public class IBDComputation {
         } catch (IOException e) {
             throw new ToolException("Something wrong happened when copying files during the relatedness analysis execution");
         }
-        File outFile = runIBD(FILTERED_BASENAME, freqPath, outDir);
+        File outFile = runIBD(FILTERED_BASENAME, freqPath, outDir, storageManager.getCatalogManager().getConfiguration().getAnalysis());
 
         if (!outFile.exists()) {
             throw new ToolException("Something wrong happened executing relatedness analysis");
@@ -266,7 +267,7 @@ public class IBDComputation {
         bw.close();
     }
 
-    private static File runIBD(String basename, Path freqPath, Path outDir) throws ToolException {
+    private static File runIBD(String basename, Path freqPath, Path outDir, Analysis analysisConf) throws ToolException {
         // Input bindings
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
         inputBindings.add(new AbstractMap.SimpleEntry<>(freqPath.getParent().toString(), "/input"));
@@ -279,8 +280,8 @@ public class IBDComputation {
         String plinkParams = "plink1.9 --tfile /output/" + basename + " --genome rel-check --read-freq /input/" + freqPath.getFileName()
                 + " --out /output/" + basename;
         try {
-            PlinkWrapperAnalysisExecutor plinkExecutor = new PlinkWrapperAnalysisExecutor();
-            DockerUtils.run(plinkExecutor.getDockerImageName(), inputBindings, outputBinding, plinkParams, null);
+            String dockerImageName = PlinkWrapperAnalysisExecutor.getDockerImageName(analysisConf);
+            DockerUtils.run(dockerImageName, inputBindings, outputBinding, plinkParams, null);
         } catch (IOException e) {
             throw new ToolException(e);
         }

@@ -207,6 +207,9 @@ apiConfig:
       commandName: meta
       ignore: False
       key: Meta
+      commands:
+        - name: openapi
+          ignore: True
     - name: ga4gh
       ignore: True
       key: GA4GH

@@ -19,11 +19,13 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.*;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBDocumentToFacetFieldsConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -42,6 +44,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.TO_REPLACE_DOTS;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 
 /**
@@ -323,6 +327,30 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
+    protected OpenCGAResult<FacetField> facet(MongoDBCollection collection, Bson query, String facet) throws CatalogDBException {
+        if (StringUtils.isEmpty(facet)) {
+            throw new CatalogDBException("The aggregation stats field is empty.");
+        }
+        MongoDBDocumentToFacetFieldsConverter converter = new MongoDBDocumentToFacetFieldsConverter();
+        List<Bson> facets = MongoDBQueryUtils.createFacet(query, facet);
+        logger.info("facet; input = {}", facets);
+        DataResult<List<FacetField>> aggregate = collection.aggregate(facets, converter, null);
+        logger.info("facet; output = {}", aggregate.getResults());
+
+        // Replace "&#46;" by .
+        List<FacetField> facetFields = aggregate.getResults().get(0);
+        for (FacetField facetField : facetFields) {
+            if (StringUtils.isNotEmpty(facetField.getName())) {
+                facetField.setName(facetField.getName().replace(TO_REPLACE_DOTS, "."));
+            }
+        }
+        DataResult<FacetField> result = new DataResult<>(aggregate.getTime(), aggregate.getEvents(), facetFields.size(), facetFields,
+                facetFields.size());
+        logger.info("facet; result = {}", result.getResults());
+
+        return new OpenCGAResult<>(result);
+    }
+
     protected OpenCGAResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {
             return new OpenCGAResult();
@@ -364,8 +392,8 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
             id.append(s.replace(".", GenericDocumentComplexConverter.TO_REPLACE_DOTS), "$" + s);
         }
         Bson group;
-        if (options.getBoolean(QueryOptions.COUNT, false)) {
-            group = Aggregates.group(id, Accumulators.sum(QueryOptions.COUNT, 1));
+        if (options.getBoolean(COUNT, false)) {
+            group = Aggregates.group(id, Accumulators.sum(COUNT, 1));
         } else {
             group = Aggregates.group(id, Accumulators.addToSet("items", "$" + idField));
         }

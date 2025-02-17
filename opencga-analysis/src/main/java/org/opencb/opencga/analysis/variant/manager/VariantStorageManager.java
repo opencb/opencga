@@ -37,6 +37,7 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.VariantWalkerTool;
 import org.opencb.opencga.analysis.variant.manager.operations.*;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
@@ -98,6 +99,7 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResu
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -185,6 +187,37 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             checkSamplesPermissions(finalQuery, queryOptions, token);
             return new VariantExportOperationManager(this, engine)
                     .export(outputFile, outputFormat, variantsFile, finalQuery, queryOptions, token);
+        });
+    }
+
+    /**
+     * Exports the result of the given query and the associated metadata.
+     *
+     * @param outputFile   Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param format       Variant Output format.
+     * @param query        Query with the variants to export
+     * @param queryOptions Query options
+     * @param dockerImage  Docker image to use
+     * @param commandLine  Command line to use
+     * @param token        User's session id
+     * @throws CatalogException       if there is any error with Catalog
+     * @throws StorageEngineException If there is any error exporting variants
+     * @return generated files
+     */
+    public List<URI> walkData(String outputFile, VariantOutputFormat format,
+                              Query query, QueryOptions queryOptions, String dockerImage, String commandLine, String token)
+            throws CatalogException, StorageEngineException {
+        String anyStudy = catalogUtils.getAnyStudy(query, token);
+        return secureAnalysis(VariantWalkerTool.ID, anyStudy, queryOptions, token, engine -> {
+            Query finalQuery = catalogUtils.parseQuery(query, queryOptions, engine.getCellBaseUtils(), token);
+            checkSamplesPermissions(finalQuery, queryOptions, token);
+            URI outputUri;
+            try {
+                outputUri = UriUtils.createUri(outputFile);
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(e);
+            }
+            return engine.walkData(outputUri, format, finalQuery, queryOptions, dockerImage, commandLine);
         });
     }
 
@@ -436,8 +469,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return synchronizer;
     }
 
-    public DataResult<Trio> familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
+    public DataResult<Trio> familyIndexBySamples(String inputStudy, Collection<String> samples, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
+        String study = getStudyFqn(inputStudy, token);
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             Collection<String> thisSamples = samples;
             boolean allSamples;
@@ -507,6 +541,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public ObjectMap configureProject(String projectStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
         return secureOperationByProject("configure", projectStr, params, token, engine -> {
+            validateNewConfiguration(engine, params, token);
+
             DataStore dataStore = getDataStoreByProjectId(projectStr, token);
 
             dataStore.getOptions().putAll(params);
@@ -518,6 +554,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public ObjectMap configureStudy(String studyStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
         return secureOperation("configure", studyStr, params, token, engine -> {
+            validateNewConfiguration(engine, params, token);
             Study study = catalogManager.getStudyManager()
                     .get(studyStr,
                             new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE_OPTIONS.key()),
@@ -541,6 +578,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
+    private void validateNewConfiguration(VariantStorageEngine engine, ObjectMap params, String token)
+            throws StorageEngineException, CatalogException {
+        if (catalogManager.getAuthorizationManager().isOpencgaAdministrator(catalogManager.getUserManager().validateToken(token))) {
+            logger.info("Skip configuration validation. User is an admin.");
+            return;
+        }
+        engine.validateNewConfiguration(params);
+    }
+
     /**
      * Modify SampleIndex configuration. Automatically submit a job to rebuild the sample index.
      *
@@ -556,10 +602,16 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                                    boolean skipRebuild, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
-            String version = engine.getCellBaseUtils().getCellBaseClient().getClientConfiguration().getVersion();
-            sampleIndexConfiguration.validate(version);
+            String cellbaseVersion = engine.getCellBaseUtils().getVersionFromServer();
+            sampleIndexConfiguration.validate(cellbaseVersion);
             String studyFqn = getStudyFqn(studyStr, token);
-            engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration, true);
+            int studyId;
+            if (!engine.getMetadataManager().studyExists(studyFqn)) {
+                studyId = engine.getMetadataManager().createStudy(studyFqn, cellbaseVersion).getId();
+            } else {
+                studyId = engine.getMetadataManager().getStudyId(studyFqn);
+            }
+            engine.getMetadataManager().addSampleIndexConfiguration(studyId, sampleIndexConfiguration, true);
 
             catalogManager.getStudyManager()
                     .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
@@ -1758,8 +1810,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return defaultDataStore(catalogManager.getConfiguration().getDatabasePrefix(), project.getFqn());
     }
 
-    public static DataStore defaultDataStore(String databasePrefix, String projectFqnStr)
-            throws CatalogException {
+    public static DataStore defaultDataStore(String databasePrefix, String projectFqnStr) {
         CatalogFqn projectFqn = CatalogFqn.extractFqnFromProjectFqn(projectFqnStr);
 
         String dbName = buildDatabaseName(databasePrefix, projectFqn.getOrganizationId(), projectFqn.getProjectId());

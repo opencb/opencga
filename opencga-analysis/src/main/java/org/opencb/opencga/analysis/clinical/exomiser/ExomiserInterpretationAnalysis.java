@@ -290,14 +290,14 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                             fields[18]);
                     try {
                         Variant normalized = normalizer.normalize(Collections.singletonList(variant), false).get(0);
-                        String variantId = normalized.toStringSimple();
-                        normalizedToTsv.put(variantId, variant.toStringSimple());
+                        String variantId = normalized.toString();
+                        normalizedToTsv.put(variantId, variant.toString());
                         if (!variantTsvMap.containsKey(variantId)) {
                             variantTsvMap.put(variantId, new ArrayList<>());
                         }
                         variantTsvMap.get(variantId).add(fields);
                     } catch (NonStandardCompliantSampleField e) {
-                        logger.warn("Skipping variant {}, it could not be normalized", variant.toStringSimple());
+                        logger.warn("Skipping variant {}, it could not be normalized", variant);
                     }
 
                     // Next line
@@ -324,18 +324,18 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 for (Variant variant : variantResults.getResults()) {
                     ClinicalVariant clinicalVariant = clinicalVariantCreator.create(variant);
                     List<ExomiserTranscriptAnnotation> exomiserTranscripts = new ArrayList<>();
-                    if (normalizedToTsv.containsKey(variant.toStringSimple())) {
-                        if (variantTranscriptMap.containsKey(normalizedToTsv.get(variant.toStringSimple()))) {
-                            exomiserTranscripts.addAll(variantTranscriptMap.get(normalizedToTsv.get(variant.toStringSimple())));
+                    if (normalizedToTsv.containsKey(variant.toString())) {
+                        if (variantTranscriptMap.containsKey(normalizedToTsv.get(variant.toString()))) {
+                            exomiserTranscripts.addAll(variantTranscriptMap.get(normalizedToTsv.get(variant.toString())));
                         } else {
                             logger.warn("Variant {} (normalizedToTsv {}), not found in map variantTranscriptMap",
-                                    variant != null ? variant.toStringSimple() : null,
-                                    variant != null ? normalizedToTsv.get(variant.toStringSimple()) : null);
+                                    variant != null ? variant.toString() : null,
+                                    variant != null ? normalizedToTsv.get(variant.toString()) : null);
                         }
                     } else {
-                        logger.warn("Variant {} not found in map normalizedToTsv", variant != null ? variant.toStringSimple() : null);
+                        logger.warn("Variant {} not found in map normalizedToTsv", variant != null ? variant.toString() : null);
                     }
-                    for (String[] fields : variantTsvMap.get(variant.toStringSimple())) {
+                    for (String[] fields : variantTsvMap.get(variant.toString())) {
                         ClinicalProperty.ModeOfInheritance moi = getModeOfInheritance(fields[4]);
                         Map<String, Object> attributes = getAttributesFromTsv(fields);
 

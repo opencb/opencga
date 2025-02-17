@@ -243,6 +243,13 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId) throws CatalogDBException,
+            CatalogParameterException, CatalogAuthorizationException {
+        Bson bson = parseQuery(query, userId);
+        return facet(workflowCollection, bson, facet);
+    }
+
+    @Override
     public OpenCGAResult<Workflow> stats(Query query) {
         return null;
     }

@@ -7,18 +7,29 @@ on:
       - "release-*"
     types:
       - closed
-  workflow_dispatch:
 
 jobs:
-  build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
-    with:
-      maven_opts: -P hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
-
   delete-docker:
+<<<<<<< HEAD
     uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@develop
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py delete --images base,workflow --tag ${{ github.head_ref }}
     secrets: inherit
+=======
+    name: Execute delete docker image
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '10'
+      - uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Delete in Docker Hub
+        run: |
+          echo "Deleting docker image ${{ github.head_ref }}"
+          python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
+>>>>>>> TASK-6442
 

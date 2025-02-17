@@ -56,6 +56,7 @@ import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -602,8 +603,8 @@ public class VariantClient extends AbstractParentClient {
      *            organization@project:study.
      *       file: Filter variants from the files specified. This will set includeFile parameter when not provided.
      *       sample: Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This
-     *            filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,)
-     *            operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,)
+     *            filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ','
+     *            operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ','
      *            operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g.
      *            0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match,
      *            regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF,
@@ -743,8 +744,8 @@ public class VariantClient extends AbstractParentClient {
      *            is specified, will use all files from "file" filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can
      *            be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP.
      *       sample: Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This
-     *            filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,)
-     *            operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,)
+     *            filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ','
+     *            operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ','
      *            operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g.
      *            0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match,
      *            regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF,
@@ -828,6 +829,11 @@ public class VariantClient extends AbstractParentClient {
      *       panelFeatureType: Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ].
      *       panelIntersection: Intersect panel genes and regions with given genes and regions from que input query. This will prevent
      *            returning variants from regions out of the panel.
+     *       source: Select the variant data source from where to fetch the data. Accepted values are 'variant_index' (default) and
+     *            'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved exclusively from that secondary
+     *            index, and the 'include/exclude' parameters will be ignored. If the given query can not be fully resolved using the
+     *            secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index,
+     *            some data might be missing or be partial.
      *       trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -896,8 +902,8 @@ public class VariantClient extends AbstractParentClient {
      *       filter: Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.:
      *            PASS,LowGQX.
      *       sample: Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This
-     *            filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,)
-     *            operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,)
+     *            filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ','
+     *            operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ','
      *            operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g.
      *            0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match,
      *            regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF,
@@ -1123,5 +1129,30 @@ public class VariantClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis", null, "variant/stats", null, "run", params, POST, Job.class);
+    }
+
+    /**
+     * Filter and walk variants from the variant storage to produce a file.
+     * @param data Variant walker params.
+     * @param params Map containing any of the following optional parameters.
+     *       include: Fields included in the response, whole JSON path must be provided.
+     *       exclude: Fields excluded in the response, whole JSON path must be provided.
+     *       project: Project [organization@]project where project can be either the ID or the alias.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       jobId: Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
+     *       jobDescription: Job description.
+     *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
+     *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> runWalker(VariantWalkerParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("analysis", null, "variant/walker", null, "run", params, POST, Job.class);
     }
 }

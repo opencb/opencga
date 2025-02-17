@@ -6,6 +6,7 @@ import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.variant.query.Values;
+import org.opencb.opencga.storage.core.variant.query.VariantQuerySource;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.Arrays;
@@ -647,6 +648,20 @@ public class VariantQuery extends Query {
     }
     public Integer release() {
         return getInt(VariantQueryParam.RELEASE.key());
+    }
+
+    public VariantQuery source(String value) {
+        put(VariantQueryParam.SOURCE.key(), value);
+        return this;
+    }
+
+    public VariantQuery source(VariantQuerySource value) {
+        put(VariantQueryParam.SOURCE.key(), value);
+        return this;
+    }
+
+    public String source() {
+        return getString(VariantQueryParam.SOURCE.key());
     }
 
     @Override

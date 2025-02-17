@@ -34,10 +34,12 @@ public class AnalysisClinicalCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
+        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
         public UpdateClinicalConfigurationCommandOptions updateClinicalConfigurationCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
+        public AggregationStatsInterpretationCommandOptions aggregationStatsInterpretationCommandOptions;
         public DistinctInterpretationCommandOptions distinctInterpretationCommandOptions;
         public SearchInterpretationCommandOptions searchInterpretationCommandOptions;
         public InfoInterpretationCommandOptions infoInterpretationCommandOptions;
@@ -75,10 +77,12 @@ public class AnalysisClinicalCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
         this.updateClinicalConfigurationCommandOptions = new UpdateClinicalConfigurationCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
+        this.aggregationStatsInterpretationCommandOptions = new AggregationStatsInterpretationCommandOptions();
         this.distinctInterpretationCommandOptions = new DistinctInterpretationCommandOptions();
         this.searchInterpretationCommandOptions = new SearchInterpretationCommandOptions();
         this.infoInterpretationCommandOptions = new InfoInterpretationCommandOptions();
@@ -141,6 +145,101 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
+    
+    }
+
+    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog clinical analysis aggregation stats")
+    public class AggregationStatsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list of Clinical Analysis IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--uuid"}, description = "Comma separated list of Clinical Analysis UUIDs up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--type"}, description = "Clinical Analysis type", required = false, arity = 1)
+        public String type; 
+    
+        @Parameter(names = {"--disorder"}, description = "Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String disorder; 
+    
+        @Parameter(names = {"--files"}, description = "Clinical Analysis files", required = false, arity = 1)
+        public String files; 
+    
+        @Parameter(names = {"--sample"}, description = "Sample associated to the proband or any member of a family", required = false, arity = 1)
+        public String sample; 
+    
+        @Parameter(names = {"--individual"}, description = "Proband or any member of a family", required = false, arity = 1)
+        public String individual; 
+    
+        @Parameter(names = {"--proband"}, description = "Clinical Analysis proband", required = false, arity = 1)
+        public String proband; 
+    
+        @Parameter(names = {"--proband-samples"}, description = "Clinical Analysis proband samples", required = false, arity = 1)
+        public String probandSamples; 
+    
+        @Parameter(names = {"--family"}, description = "Clinical Analysis family", required = false, arity = 1)
+        public String family; 
+    
+        @Parameter(names = {"--family-members"}, description = "Clinical Analysis family members", required = false, arity = 1)
+        public String familyMembers; 
+    
+        @Parameter(names = {"--family-member-samples"}, description = "Clinical Analysis family members samples", required = false, arity = 1)
+        public String familyMemberSamples; 
+    
+        @Parameter(names = {"--panels"}, description = "Clinical Analysis panels", required = false, arity = 1)
+        public String panels; 
+    
+        @Parameter(names = {"--locked"}, description = "Locked Clinical Analyses", required = false, arity = 1)
+        public Boolean locked; 
+    
+        @Parameter(names = {"--analyst-id"}, description = "Clinical Analysis analyst id", required = false, arity = 1)
+        public String analystId; 
+    
+        @Parameter(names = {"--priority"}, description = "Clinical Analysis priority", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--flags"}, description = "Clinical Analysis flags", required = false, arity = 1)
+        public String flags; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Clinical Analysis Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--due-date"}, description = "Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String dueDate; 
+    
+        @Parameter(names = {"--quality-control-summary"}, description = "Clinical Analysis quality control summary", required = false, arity = 1)
+        public String qualityControlSummary; 
+    
+        @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
+        public Integer snapshot; 
+    
+        @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
+        public String annotation; 
+    
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
+    
+        @Parameter(names = {"--field"}, description = "Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
+        public String field; 
     
     }
 
@@ -442,6 +541,62 @@ public class AnalysisClinicalCommandOptions {
         public boolean deleted = false; 
     
         @Parameter(names = {"--field"}, description = "Comma separated list of fields for which to obtain the distinct values", required = true, arity = 1)
+        public String field; 
+    
+    }
+
+    @Parameters(commandNames = {"interpretation-aggregation-stats"}, commandDescription ="Fetch catalog interpretation aggregation stats")
+    public class AggregationStatsInterpretationCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--uuid"}, description = "Comma separated list of Interpretation UUIDs up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of Interpretation names up to a maximum of 100", required = false, arity = 1)
+        public String name; 
+    
+        @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical Analysis id", required = false, arity = 1)
+        public String clinicalAnalysisId; 
+    
+        @Parameter(names = {"--analyst-id"}, description = "Analyst ID", required = false, arity = 1)
+        public String analystId; 
+    
+        @Parameter(names = {"--method-name"}, description = "Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String methodName; 
+    
+        @Parameter(names = {"--panels"}, description = "Interpretation panels", required = false, arity = 1)
+        public String panels; 
+    
+        @Parameter(names = {"--primary-findings"}, description = "Interpretation primary findings", required = false, arity = 1)
+        public String primaryFindings; 
+    
+        @Parameter(names = {"--secondary-findings"}, description = "Interpretation secondary findings", required = false, arity = 1)
+        public String secondaryFindings; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Interpretation Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Interpretation Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--field"}, description = "Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
         public String field; 
     
     }
@@ -1826,7 +1981,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--file-data"}, description = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from 'file' filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP", required = false, arity = 1)
         public String fileData; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ',' operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--sample-data"}, description = "Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}[,;]* . If no sample is specified, will use all samples from 'sample' or 'genotype' filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10", required = false, arity = 1)
@@ -1954,6 +2109,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
         public boolean panelIntersection = false; 
+    
+        @Parameter(names = {"--source"}, description = "Select the variant data source from where to fetch the data. Accepted values are 'variant_index' (default) and 'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved exclusively from that secondary index, and the 'include/exclude' parameters will be ignored. If the given query can not be fully resolved using the secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index, some data might be missing or be partial.", required = false, arity = 1)
+        public String source; 
     
         @Parameter(names = {"--trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
         public String trait; 
