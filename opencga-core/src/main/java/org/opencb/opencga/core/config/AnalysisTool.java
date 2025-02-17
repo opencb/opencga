@@ -18,6 +18,7 @@ package org.opencb.opencga.core.config;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class AnalysisTool {
 
@@ -105,6 +106,12 @@ public class AnalysisTool {
 
     public AnalysisTool setResources(List<String> resources) {
         this.resources = resources;
+        return this;
+    }
+
+    @Deprecated
+    public AnalysisTool setResources(Map<String, String> resources) {
+        this.resources = new ArrayList<>(resources.keySet());
         return this;
     }
 }

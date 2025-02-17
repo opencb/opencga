@@ -210,8 +210,9 @@ public class ResourceManager  {
 
     private void loadConfiguration() throws IOException {
         if (configuration == null) {
-            this.configuration = Configuration.load(new FileInputStream(openCgaHome.resolve(CONF_DIRNAME)
-                    .resolve(CONFIGURATION_FILENAME).toFile()));
+            try (InputStream is = new FileInputStream(openCgaHome.resolve(CONF_DIRNAME).resolve(CONFIGURATION_FILENAME).toFile())) {
+                this.configuration = Configuration.load(is);
+            }
         }
     }
 

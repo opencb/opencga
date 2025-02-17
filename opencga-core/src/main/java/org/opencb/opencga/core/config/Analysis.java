@@ -19,11 +19,17 @@ package org.opencb.opencga.core.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opencb.opencga.core.config.Configuration.reportUnusedField;
+
 public class Analysis {
 
     private List<String> packages;
 
     private String scratchDir;
+
+    @Deprecated
+    private String resourceUrl;
+
     private Resource resource;
 
     private String opencgaExtTools;
@@ -69,6 +75,18 @@ public class Analysis {
 
     public Analysis setScratchDir(String scratchDir) {
         this.scratchDir = scratchDir;
+        return this;
+    }
+
+    @Deprecated
+    public String getResourceUrl() {
+        return (resource != null) ? this.resource.getBaseUrl() : null;
+    }
+
+    @Deprecated
+    public Analysis setResourceUrl(String resourceUrl) {
+        reportUnusedField("configuration.yml#analysis.resourceUrl", resourceUrl);
+        this.resourceUrl = resourceUrl;
         return this;
     }
 
