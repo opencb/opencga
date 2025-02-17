@@ -16,9 +16,13 @@
 
 package org.opencb.opencga.core.config;
 
+import org.apache.commons.collections4.MapUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.core.config.Configuration.reportUnusedField;
 
 public class AnalysisTool {
 
@@ -27,19 +31,36 @@ public class AnalysisTool {
     private boolean defaultVersion;
     private String dockerId;
     private String params;
-    private List<String> resources;
+
+    @Deprecated
+    private Map<String, String> resources;
+
+    private List<String> resourceIds;
 
     public AnalysisTool() {
-        resources = new ArrayList<>();
+        resourceIds = new ArrayList<>();
     }
 
-    public AnalysisTool(String id, String version, boolean defaultVersion, String dockerId, String params, List<String> resources) {
+    @Deprecated
+    public AnalysisTool(String id, String version, boolean defaultVersion, String dockerId, String params, Map<String, String> resources) {
         this.id = id;
         this.version = version;
         this.defaultVersion = defaultVersion;
         this.dockerId = dockerId;
         this.params = params;
         this.resources = resources;
+        if (MapUtils.isNotEmpty(resources)) {
+            this.resourceIds = new ArrayList<>(resources.keySet());
+        }
+    }
+
+    public AnalysisTool(String id, String version, boolean defaultVersion, String dockerId, String params, List<String> resourceIds) {
+        this.id = id;
+        this.version = version;
+        this.defaultVersion = defaultVersion;
+        this.dockerId = dockerId;
+        this.params = params;
+        this.resourceIds = resourceIds;
     }
 
     @Override
@@ -100,18 +121,27 @@ public class AnalysisTool {
         return this;
     }
 
-    public List<String> getResources() {
-        return resources;
-    }
 
-    public AnalysisTool setResources(List<String> resources) {
-        this.resources = resources;
-        return this;
+    @Deprecated
+    public Map<String, String> getResources() {
+        return resources;
     }
 
     @Deprecated
     public AnalysisTool setResources(Map<String, String> resources) {
-        this.resources = new ArrayList<>(resources.keySet());
+        reportUnusedField("configuration.yml#analysis.tools.resources", resources);
+        if (MapUtils.isNotEmpty(resources)) {
+            this.resourceIds = new ArrayList<>(resources.keySet());
+        }
+        return this;
+    }
+
+    public List<String> getResourceIds() {
+        return resourceIds;
+    }
+
+    public AnalysisTool setResourceIds(List<String> resourceIds) {
+        this.resourceIds = resourceIds;
         return this;
     }
 }
