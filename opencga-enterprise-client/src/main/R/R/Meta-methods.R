@@ -23,6 +23,7 @@
 #' | api | /{apiVersion}/meta/api | category |
 #' | fail | /{apiVersion}/meta/fail |  |
 #' | model | /{apiVersion}/meta/model | model |
+#' | openapi | /{apiVersion}/meta/openapi | token |
 #' | ping | /{apiVersion}/meta/ping |  |
 #' | loginSso | /{apiVersion}/meta/sso/login | url |
 #' | logoutSso | /{apiVersion}/meta/sso/logout | url |
@@ -60,6 +61,12 @@ setMethod("metaClient", "OpencgaR", function(OpencgaR, endpointName, params=NULL
         #' @param model Model description.
         model=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="model", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/meta/openapi:
+        #' Opencga openapi json.
+        #' @param token List of categories to get API from.
+        openapi=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
+                action="openapi", params=params, httpMethod="GET", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/meta/ping:
         #' Ping Opencga webservices.
