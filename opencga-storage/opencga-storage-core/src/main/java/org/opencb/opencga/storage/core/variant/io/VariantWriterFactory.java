@@ -76,11 +76,11 @@ public class VariantWriterFactory {
         VCF_GZ("vcf.gz", false),
         JSON("json"),
         JSON_GZ("json.gz"),
-        AVRO("avro"),
-        AVRO_GZ("avro.gz"),
-        AVRO_SNAPPY("avro.snappy"),
-        PARQUET("parquet"),
-        PARQUET_GZ("parquet.gz"),
+        AVRO("avro", true, true),
+        AVRO_GZ("avro.gz", true, true),
+        AVRO_SNAPPY("avro.snappy", true, true),
+        PARQUET("parquet", true, true),
+        PARQUET_GZ("parquet.gz", true, true),
         STATS("stats.tsv", false),
         STATS_GZ("stats.tsv.gz", false),
         CELLBASE("frequencies.json"),
@@ -90,16 +90,25 @@ public class VariantWriterFactory {
         ENSEMBL_VEP_GZ("vep.txt.gz", false);
 
         private final boolean multiStudy;
+        private final boolean binary;
         private final String extension;
 
         VariantOutputFormat(String extension) {
             this.extension = extension;
             this.multiStudy = true;
+            this.binary = false;
         }
 
         VariantOutputFormat(String extension, boolean multiStudy) {
             this.multiStudy = multiStudy;
             this.extension = extension;
+            this.binary = false;
+        }
+
+        VariantOutputFormat(String extension, boolean multiStudy, boolean binary) {
+            this.multiStudy = multiStudy;
+            this.extension = extension;
+            this.binary = binary;
         }
 
         public String getExtension() {
@@ -120,6 +129,18 @@ public class VariantWriterFactory {
 
         public boolean isSnappy() {
             return extension.endsWith(".snappy");
+        }
+
+        public boolean isBinary() {
+            return binary;
+        }
+
+        public VariantOutputFormat inPlain() {
+            if (!isPlain()) {
+                return VariantOutputFormat.valueOf(name().replace("_GZ", "").replace("_SNAPPY", ""));
+            } else {
+                return this;
+            }
         }
 
         public VariantOutputFormat withGzip() {

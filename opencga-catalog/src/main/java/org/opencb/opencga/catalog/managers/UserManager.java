@@ -194,6 +194,10 @@ public class UserManager extends AbstractManager {
             }
         }
 
+        // Check if we have already reached the limit of users in the Organisation
+        checkUserLimitQuota(organizationId);
+
+        // Check if the user already exists
         checkUserExists(organizationId, user.getId());
 
         try {
@@ -215,6 +219,19 @@ public class UserManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
             throw e;
+        }
+    }
+
+    private void checkUserLimitQuota(String organizationId) throws CatalogException {
+        if (configuration.getQuota().getMaxNumUsers() <= 0) {
+            logger.debug("Skipping user quota check. No limit set.");
+            return;
+        }
+        // Check if we have already reached the limit of users in the Organisation
+        long numUsers = getUserDBAdaptor(organizationId).count(new Query()).getNumMatches();
+        if (numUsers >= configuration.getQuota().getMaxNumUsers()) {
+            throw new CatalogException("The organization '" + organizationId + "' has reached the maximum quota of allowed users ("
+                    + configuration.getQuota().getMaxNumUsers() + ").");
         }
     }
 
@@ -303,9 +320,8 @@ public class UserManager extends AbstractManager {
     }
 
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
-        if (!OPENCGA.equals(authenticationFactory.getUserId(organizationId, authOrigin, token))) {
-            throw new CatalogAuthorizationException("Only the root user can perform this action");
-        }
+        JwtPayload payload = validateToken(token);
+        authorizationManager.checkIsOpencgaAdministrator(payload);
 
         OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study, null, token);
 
@@ -392,9 +408,7 @@ public class UserManager extends AbstractManager {
                 .append("sync", sync)
                 .append("token", token);
         try {
-            if (!OPENCGA.equals(authenticationFactory.getUserId(organizationId, authOrigin, token))) {
-                throw new CatalogAuthorizationException("Only the root user can perform this action");
-            }
+            authorizationManager.checkIsOpencgaAdministrator(payload);
 
             ParamUtils.checkParameter(authOrigin, "Authentication origin");
             ParamUtils.checkParameter(remoteGroup, "Remote group");

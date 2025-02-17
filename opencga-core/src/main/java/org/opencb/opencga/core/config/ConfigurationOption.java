@@ -6,6 +6,10 @@ public interface ConfigurationOption {
 
     <T> T defaultValue();
 
+    default boolean isProtected() {
+        return false;
+    }
+
 //    default boolean isFinal() {
 //        return false;
 //    }

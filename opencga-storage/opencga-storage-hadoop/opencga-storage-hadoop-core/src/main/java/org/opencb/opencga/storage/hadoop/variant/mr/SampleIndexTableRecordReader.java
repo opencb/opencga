@@ -72,6 +72,14 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
 
         Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
         sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
+        String sampleIndexTableName = sampleIndexDBAdaptor.getSampleIndexTableName(sampleIndexQuery);
+        String expectedSampleIndexTable = conf.get(AbstractHBaseVariantTableInputFormat.SAMPLE_INDEX_TABLE);
+        if (expectedSampleIndexTable != null) {
+            if (!expectedSampleIndexTable.equals(sampleIndexTableName)) {
+                throw new IllegalArgumentException("Expected SampleIndexTable "
+                        + expectedSampleIndexTable + " but got " + sampleIndexTableName);
+            }
+        }
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(sampleIndexQuery.getStudy());
 
         allChromosomes = new TreeSet<>(VariantPhoenixKeyFactory.HBASE_KEY_CHROMOSOME_COMPARATOR);

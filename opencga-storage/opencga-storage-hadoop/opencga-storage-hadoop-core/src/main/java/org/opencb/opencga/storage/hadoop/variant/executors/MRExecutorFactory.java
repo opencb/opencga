@@ -1,7 +1,10 @@
 package org.opencb.opencga.storage.hadoop.variant.executors;
 
+import org.apache.hadoop.conf.Configuration;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_EXECUTOR;
 
@@ -12,36 +15,35 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public final class MRExecutorFactory {
 
+    private static Logger logger = LoggerFactory.getLogger(MRExecutorFactory.class);
+
     private MRExecutorFactory() {
     }
 
-    public static MRExecutor getMRExecutor(ObjectMap options) throws StorageEngineException {
+    public static MRExecutor getMRExecutor(String dbName, ObjectMap options, Configuration conf) throws StorageEngineException {
         MRExecutor mrExecutor;
-        Class<? extends MRExecutor> aClass;
         String executor = options.getString(MR_EXECUTOR.key(), MR_EXECUTOR.defaultValue());
         switch (executor.toLowerCase()) {
             case "system":
-                aClass = SystemMRExecutor.class;
+                mrExecutor = new SystemMRExecutor();
                 break;
             case "ssh":
-                aClass = SshMRExecutor.class;
+                mrExecutor = new SshMRExecutor();
                 break;
             default:
                 try {
+                    logger.info("Creating new instance of MRExecutor '{}'", executor);
+                    Class<? extends MRExecutor> aClass;
                     aClass = Class.forName(executor).asSubclass(MRExecutor.class);
-                } catch (ClassNotFoundException | ClassCastException e) {
+                    mrExecutor = aClass.newInstance();
+                } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | ClassCastException e) {
                     throw new StorageEngineException("Error creating MRExecutor '" + executor + "'", e);
                 }
                 break;
         }
-        try {
-            mrExecutor = aClass.newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new StorageEngineException("Error creating MRExecutor '" + executor + "'", e);
-        }
 
         // configure MRExecutor
-        mrExecutor.init(options);
+        mrExecutor.init(dbName, conf, options);
 
         return mrExecutor;
     }

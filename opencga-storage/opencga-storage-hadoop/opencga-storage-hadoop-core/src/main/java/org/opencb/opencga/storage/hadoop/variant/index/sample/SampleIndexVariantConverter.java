@@ -4,23 +4,51 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
-public class VariantFileIndexConverter {
+public class SampleIndexVariantConverter {
 
     private final FileIndexSchema fileIndex;
+    private final FileDataSchema fileDataSchema;
 
-    public VariantFileIndexConverter(SampleIndexSchema configuration) {
+    public SampleIndexVariantConverter(SampleIndexSchema configuration) {
         fileIndex = configuration.getFileIndex();
+        fileDataSchema = configuration.getFileData();
+    }
+
+    public SampleIndexVariant createSampleIndexVariant(int sampleIdx, int filePosition, Variant variant) {
+        // Expecting only one study and only one file
+        StudyEntry study = variant.getStudies().get(0);
+        FileEntry file = study.getFiles().get(0);
+
+        BitBuffer fileIndexValue =  createFileIndexValue(variant.getType(), filePosition, file.getData(),
+                study.getSampleDataKeyPositions(), study.getSampleData(sampleIdx));
+        ByteBuffer fileDataIndexValue = createFileDataIndexValue(variant, filePosition, file.getCall(),
+                study.getSecondaryAlternates());
+
+        return new SampleIndexVariant(variant, fileIndexValue, fileDataIndexValue);
+    }
+
+    public SampleIndexVariant createSampleIndexVariant(
+            int filePosition, Variant variant, OriginalCall call, List<AlternateCoordinate> alts,
+            Function<String, String> fileAttributes, Function<String, String> sampleData) {
+        BitBuffer fileIndexValue =  createFileIndexValue(variant.getType(), filePosition, fileAttributes, sampleData);
+        ByteBuffer fileDataIndexValue = createFileDataIndexValue(variant, filePosition, call,
+                alts);
+
+        return new SampleIndexVariant(variant, fileIndexValue, fileDataIndexValue);
     }
 
     /**
@@ -31,7 +59,7 @@ public class VariantFileIndexConverter {
      * @param variant   Full variant.
      * @return 16 bits of file index.
      */
-    public BitBuffer createFileIndexValue(int sampleIdx, int filePosition, Variant variant) {
+    protected BitBuffer createFileIndexValue(int sampleIdx, int filePosition, Variant variant) {
         // Expecting only one study and only one file
         StudyEntry study = variant.getStudies().get(0);
         FileEntry file = study.getFiles().get(0);
@@ -50,7 +78,7 @@ public class VariantFileIndexConverter {
      * @param sampleData     Sample data values
      * @return BitBuffer of file index.
      */
-    public BitBuffer createFileIndexValue(VariantType type, int filePosition, Map<String, String> fileAttributes,
+    protected BitBuffer createFileIndexValue(VariantType type, int filePosition, Map<String, String> fileAttributes,
                                            Map<String, Integer> sampleDataKeyPositions, List<String> sampleData) {
         return createFileIndexValue(type, filePosition, fileAttributes::get, (key) -> {
             Integer position = sampleDataKeyPositions.get(key);
@@ -67,7 +95,7 @@ public class VariantFileIndexConverter {
      * @param sampleData     Sample data values
      * @return BitBuffer of file index.
      */
-    public BitBuffer createFileIndexValue(VariantType type, int filePosition, Function<String, String> fileAttributes,
+    private BitBuffer createFileIndexValue(VariantType type, int filePosition, Function<String, String> fileAttributes,
                                            Function<String, String> sampleData) {
         BitBuffer bitBuffer = new BitBuffer(fileIndex.getBitsLength());
 
@@ -78,9 +106,9 @@ public class VariantFileIndexConverter {
         for (IndexField<String> fileDataIndexField : fileIndex.getCustomFields()) {
             String key = fileDataIndexField.getKey();
             String value;
-            if (fileDataIndexField.getSource() == IndexFieldConfiguration.Source.FILE) {
+            if (fileDataIndexField.getSource() == FieldConfiguration.Source.FILE) {
                 value = fileAttributes.apply(key);
-            } else if (fileDataIndexField.getSource() == IndexFieldConfiguration.Source.SAMPLE) {
+            } else if (fileDataIndexField.getSource() == FieldConfiguration.Source.SAMPLE) {
                 value = sampleData.apply(key);
             } else {
                 throw new IllegalArgumentException("Unable to build file index with index source "
@@ -91,6 +119,38 @@ public class VariantFileIndexConverter {
             fileDataIndexField.write(value, bitBuffer);
         }
         return bitBuffer;
+    }
+
+    /**
+     * Create the FileIndex value for this specific sample and variant.
+     *
+     * @param filePosition   In case of having multiple files for the same sample, the cardinal value of the load order of the file.
+     * @param call           Original call
+     * @param secondaryAlternates Secondary alternates
+     * @return BitBuffer of file index.
+     */
+    private ByteBuffer createFileDataIndexValue(Variant variant, int filePosition, OriginalCall call,
+                                                List<AlternateCoordinate> secondaryAlternates) {
+//        if (fileDataIndex.isSparse()) {
+//        }
+        int fileDataSize = 0;
+        if (fileDataSchema.isIncludeOriginalCall()) {
+            fileDataSize += fileDataSchema.getOriginalCallField().getByteLength(variant, call);
+        }
+        if (fileDataSchema.isIncludeSecondaryAlternates()) {
+            fileDataSize += fileDataSchema.getSecondaryAlternatesField().getByteLength(variant, secondaryAlternates);
+        }
+        if (fileDataSize == 0) {
+            return null;
+        }
+        ByteBuffer bb = ByteBuffer.allocate(fileDataSize);
+        if (fileDataSchema.isIncludeOriginalCall()) {
+            fileDataSchema.getOriginalCallField().write(variant, call, bb);
+        }
+        if (fileDataSchema.isIncludeSecondaryAlternates()) {
+            fileDataSchema.getSecondaryAlternatesField().write(variant, secondaryAlternates, bb);
+        }
+        return bb;
     }
 
     public BitBuffer addSampleDataIndexValues(BitBuffer bitBuffer, Map<String, Integer> sampleDataKeyPositions,

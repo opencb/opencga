@@ -1,48 +1,43 @@
 package org.opencb.opencga.storage.hadoop.utils;
 
-import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
-import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.GzipCodec;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
-import org.apache.parquet.hadoop.ParquetFileWriter;
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.api.records.YarnApplicationState;
+import org.apache.hadoop.yarn.client.api.YarnClient;
+import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.phoenix.mapreduce.util.PhoenixConfigurationUtil;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
+import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantTableInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
+import java.util.*;
+import java.util.stream.Collectors;
 
-import static org.opencb.opencga.core.common.IOUtils.humanReadableByteCount;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_EXECUTOR_SSH_PASSWORD;
 
 /**
@@ -55,6 +50,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     public static final String COLUMNS_TO_COUNT = "columns_to_count";
     public static final String MR_APPLICATION_ID = "MR_APPLICATION_ID";
     public static final String ERROR_MESSAGE = "ERROR_MESSAGE";
+    public static final String OUTPUT_PARAM = "output";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHBaseDriver.class);
     protected String table;
 
@@ -81,6 +77,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         addJobConf(job, MRJobConfig.JOB_RUNNING_MAP_LIMIT);
         addJobConf(job, MRJobConfig.JOB_RUNNING_REDUCE_LIMIT);
         addJobConf(job, MRJobConfig.TASK_TIMEOUT);
+        VariantMapReduceUtil.configureTaskJavaHeap(((JobConf) job.getConfiguration()), getClass());
         return job;
     }
 
@@ -161,6 +158,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         LOGGER.info("   * InputFormat   : " + job.getInputFormatClass().getName());
         if (StringUtils.isNotEmpty(job.getConfiguration().get(TableInputFormat.INPUT_TABLE))) {
             LOGGER.info("     - InputTable  : " + job.getConfiguration().get(TableInputFormat.INPUT_TABLE));
+            if (job.getConfiguration().getBoolean(AbstractHBaseVariantTableInputFormat.USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, false)) {
+                String sampleIndexTable = job.getConfiguration().get(AbstractHBaseVariantTableInputFormat.SAMPLE_INDEX_TABLE);
+                if (StringUtils.isNotEmpty(sampleIndexTable)) {
+                    LOGGER.info("     - SecondarySampleIndexTable  : " + sampleIndexTable);
+                } else {
+                    LOGGER.info("     - SecondarySampleIndexTable  : (not set)");
+                }
+            }
         } else if (StringUtils.isNotEmpty(job.getConfiguration().get(PhoenixConfigurationUtil.INPUT_TABLE_NAME))) {
             LOGGER.info("     - InputPTable : " + job.getConfiguration().get(PhoenixConfigurationUtil.INPUT_TABLE_NAME));
         } else if (StringUtils.isNotEmpty(job.getConfiguration().get(FileInputFormat.INPUT_DIR))) {
@@ -172,10 +177,15 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         } else {
             LOGGER.info("   * Mapper        : " + job.getMapperClass().getName());
         }
-        LOGGER.info("     - memory (MB) : " + job.getConfiguration().getInt(MRJobConfig.MAP_MEMORY_MB, -1));
+        JobConf jobConf = (JobConf) job.getConfiguration();
+        LOGGER.info("     - memory required (MB) : " + jobConf.getMemoryRequired(TaskType.MAP));
+        LOGGER.info("     - java-heap (MB) : " + JobConf.parseMaximumHeapSizeMB(jobConf.getTaskJavaOpts(TaskType.MAP)));
+        LOGGER.info("     - java-opts : " + jobConf.getTaskJavaOpts(TaskType.MAP));
         if (job.getNumReduceTasks() > 0) {
             LOGGER.info("   * Reducer       : " + job.getNumReduceTasks() + "x " + job.getReducerClass().getName());
-            LOGGER.info("     - memory (MB) : " + job.getConfiguration().getInt(MRJobConfig.REDUCE_MEMORY_MB, -1));
+            LOGGER.info("     - memory required (MB) : " + jobConf.getMemoryRequired(TaskType.REDUCE));
+            LOGGER.info("     - java-heap (MB) : " + JobConf.parseMaximumHeapSizeMB(jobConf.getTaskJavaOpts(TaskType.REDUCE)));
+            LOGGER.info("     - java-opts : " + jobConf.getTaskJavaOpts(TaskType.REDUCE));
         } else {
             LOGGER.info("   * Reducer       : (no reducer)");
         }
@@ -185,16 +195,24 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             LOGGER.info("     - OutputTable : " + job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE));
         } else if (StringUtils.isNotEmpty(job.getConfiguration().get(FileOutputFormat.OUTDIR))) {
             LOGGER.info("     - Outdir      : " + job.getConfiguration().get(FileOutputFormat.OUTDIR));
+
+            if (TextOutputFormat.getCompressOutput(job)) {
+                Class<? extends CompressionCodec> compressorClass = TextOutputFormat.getOutputCompressorClass(job, GzipCodec.class);
+                LOGGER.info("     - Compress    : " + compressorClass.getName());
+            }
         }
         LOGGER.info("=================================================");
+        LOGGER.info("tmpjars=" + Arrays.toString(job.getConfiguration().getStrings("tmpjars")));
+        reportRunningJobs();
         boolean succeed = executeJob(job);
         if (!succeed) {
             LOGGER.error("error with job!");
             if (!"NA".equals(job.getStatus().getFailureInfo())) {
-                LOGGER.error("Failure info: " + job.getStatus().getFailureInfo());
-                printKeyValue(ERROR_MESSAGE, job.getStatus().getFailureInfo());
+                String errorMessage = job.getStatus().getFailureInfo().replace("\n", "\\n");
+                errorMessage += getExtendedTaskErrorMessage(job);
+                LOGGER.error("Failure info: " + errorMessage.replace("\\n", "\n"));
+                printKeyValue(ERROR_MESSAGE, errorMessage);
             }
-
         }
         LOGGER.info("=================================================");
         LOGGER.info("Finish job " + getJobName());
@@ -207,6 +225,73 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         close();
 
         return succeed ? 0 : 1;
+    }
+
+    private static String getExtendedTaskErrorMessage(Job job) {
+        try {
+            StringBuilder sb = new StringBuilder();
+            int eventCounter = 0;
+            TaskCompletionEvent[] events;
+            do {
+                events = job.getTaskCompletionEvents(eventCounter, 10);
+                eventCounter += events.length;
+                for (TaskCompletionEvent event : events) {
+                    if (event.getStatus() == TaskCompletionEvent.Status.FAILED) {
+                        LOGGER.info(event.toString());
+                        // Displaying the task diagnostic information
+                        TaskAttemptID taskId = event.getTaskAttemptId();
+                        String[] taskDiagnostics = job.getTaskDiagnostics(taskId);
+                        if (taskDiagnostics != null) {
+                            for (String diagnostics : taskDiagnostics) {
+                                for (String diagnosticLine : diagnostics.split("\n")) {
+                                    if (diagnosticLine.contains("Error:")
+                                            || diagnosticLine.contains("Caused by:")
+                                            || diagnosticLine.contains("Suppressed:")) {
+                                        sb.append(diagnosticLine);
+                                        sb.append("\\n");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } while (events.length > 0);
+            return sb.toString();
+        } catch (Exception e) {
+            // Ignore
+            LOGGER.error("Error getting task diagnostics", e);
+        }
+        return "";
+    }
+
+    private void reportRunningJobs() {
+        if (getConf().getBoolean("storage.hadoop.mr.skipReportRunningJobs", false)) {
+            LOGGER.info("Skip report running jobs");
+            return;
+        }
+        // Get the number of pending or running jobs in yarn
+        try (YarnClient yarnClient = YarnClient.createYarnClient()) {
+            yarnClient.init(getConf());
+            yarnClient.start();
+
+            List<ApplicationReport> applications = yarnClient.getApplications(EnumSet.of(
+                    YarnApplicationState.NEW,
+                    YarnApplicationState.NEW_SAVING,
+                    YarnApplicationState.SUBMITTED,
+                    YarnApplicationState.ACCEPTED,
+                    YarnApplicationState.RUNNING));
+            if (applications.isEmpty()) {
+                LOGGER.info("No pending or running jobs in yarn");
+            } else {
+                LOGGER.info("Found " + applications.size() + " pending or running jobs in yarn");
+                for (Map.Entry<YarnApplicationState, List<ApplicationReport>> entry : applications.stream()
+                        .collect(Collectors.groupingBy(ApplicationReport::getYarnApplicationState)).entrySet()) {
+                    LOGGER.info("   * " + entry.getKey() + " : " + entry.getValue().size());
+                }
+            }
+        } catch (IOException | YarnException e) {
+            LOGGER.error("Error getting list of pending jobs from YARN", e);
+        }
     }
 
     private boolean configFromArgs(String[] args) {
@@ -256,8 +341,9 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             }
         });
         try {
-            Runtime.getRuntime().addShutdownHook(hook);
             job.submit();
+            // Add shutdown hook after successfully submitting the job.
+            Runtime.getRuntime().addShutdownHook(hook);
             JobID jobID = job.getJobID();
             String applicationId = jobID.appendTo(new StringBuilder(ApplicationId.appIdStrPrefix)).toString();
             printKeyValue(MR_APPLICATION_ID, applicationId);
@@ -283,220 +369,12 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         System.err.println(key + "=" + value);
     }
 
-    protected boolean isLocal(Path path) {
-        return HDFSIOConnector.isLocal(path.toUri(), getConf());
-    }
-
-    protected Path getTempOutdir(String prefix) throws IOException {
-        return getTempOutdir(prefix, "");
-    }
-
-    protected Path getTempOutdir(String prefix, String suffix) throws IOException {
-        return getTempOutdir(prefix, suffix, false);
-    }
-
-    protected Path getTempOutdir(String prefix, String suffix, boolean ensureHdfs) throws IOException {
-        if (StringUtils.isEmpty(suffix)) {
-            suffix = "";
-        } else if (!suffix.startsWith(".")) {
-            suffix = "." + suffix;
-        }
-        // Be aware that
-        // > ABFS does not allow files or directories to end with a dot.
-        String fileName = prefix + "." + TimeUtils.getTime() + suffix;
-
-        Path tmpDir = new Path(getConf().get("hadoop.tmp.dir"));
-        if (ensureHdfs) {
-            FileSystem fileSystem = tmpDir.getFileSystem(getConf());
-            if (!fileSystem.getScheme().equals("hdfs")) {
-                LOGGER.info("Temporary directory is not in hdfs:// . Hdfs is required for this temporary file.");
-                LOGGER.info("   Default file system : " + fileSystem.getUri());
-                for (String nameServiceId : getConf().getTrimmedStringCollection("dfs.nameservices")) {
-                    try {
-                        Path hdfsTmpPath = new Path("hdfs", nameServiceId, "/tmp/");
-                        FileSystem hdfsFileSystem = hdfsTmpPath.getFileSystem(getConf());
-                        if (hdfsFileSystem != null) {
-                            LOGGER.info("Change to file system : " + hdfsFileSystem.getUri());
-                            tmpDir = hdfsTmpPath;
-                            break;
-                        }
-                    } catch (Exception e) {
-                        LOGGER.debug("This file system is not hdfs:// . Skip!", e);
-                    }
-                }
-            }
-        }
-        LOGGER.info("Temporary directory: " + tmpDir.toUri());
-        return new Path(tmpDir, fileName);
-    }
-
-    protected Path getLocalOutput(Path outdir) throws IOException {
-        return getLocalOutput(outdir, () -> null);
-    }
-
-    protected Path getLocalOutput(Path outdir, Supplier<String> nameGenerator) throws IOException {
-        if (!isLocal(outdir)) {
-            throw new IllegalArgumentException("Outdir " + outdir + " is not in the local filesystem");
-        }
-        Path localOutput = outdir;
-        FileSystem localFs = localOutput.getFileSystem(getConf());
-        if (localFs.exists(localOutput)) {
-            if (localFs.isDirectory(localOutput)) {
-                String name = nameGenerator.get();
-                if (StringUtils.isEmpty(name)) {
-                    throw new IllegalArgumentException("Local output '" + localOutput + "' is a directory");
-                }
-                localOutput = new Path(localOutput, name);
-            } else {
-                throw new IllegalArgumentException("File '" + localOutput + "' already exists!");
-            }
-        } else {
-            if (!localFs.exists(localOutput.getParent())) {
-                Files.createDirectories(Paths.get(localOutput.getParent().toUri()));
-//                throw new IOException("No such file or directory: " + localOutput);
-            }
-        }
-        return localOutput;
-    }
-
     protected void deleteTemporaryFile(Path outdir) throws IOException {
         LOGGER.info("Delete temporary file " + outdir.toUri());
         FileSystem fileSystem = outdir.getFileSystem(getConf());
         fileSystem.delete(outdir, true);
         fileSystem.cancelDeleteOnExit(outdir);
         LOGGER.info("Temporary file deleted!");
-    }
-
-    public class MapReduceOutputFile {
-        public static final String OUTPUT_PARAM = "output";
-
-        private final Supplier<String> nameGenerator;
-        private final String tempFilePrefix;
-        protected Path localOutput;
-        protected Path outdir;
-
-        public MapReduceOutputFile(Supplier<String> nameGenerator, String tempFilePrefix) throws IOException {
-            this.nameGenerator = nameGenerator;
-            this.tempFilePrefix = tempFilePrefix;
-            getOutputPath();
-        }
-
-        protected void getOutputPath() throws IOException {
-            String outdirStr = getParam(OUTPUT_PARAM);
-            if (StringUtils.isNotEmpty(outdirStr)) {
-                outdir = new Path(outdirStr);
-
-                if (isLocal(outdir)) {
-                    localOutput = AbstractHBaseDriver.this.getLocalOutput(outdir, nameGenerator);
-                    outdir = getTempOutdir(tempFilePrefix, localOutput.getName());
-                    outdir.getFileSystem(getConf()).deleteOnExit(outdir);
-                }
-                if (localOutput != null) {
-                    LOGGER.info(" * Outdir file: " + localOutput.toUri());
-                    LOGGER.info(" * Temporary outdir file: " + outdir.toUri());
-                } else {
-                    LOGGER.info(" * Outdir file: " + outdir.toUri());
-                }
-            }
-        }
-
-        public void postExecute(boolean succeed) throws IOException {
-            if (succeed) {
-                if (localOutput != null) {
-                    concatMrOutputToLocal(outdir, localOutput);
-                }
-            }
-            if (localOutput != null) {
-                deleteTemporaryFile(outdir);
-            }
-        }
-
-        public Path getLocalOutput() {
-            return localOutput;
-        }
-
-        public Path getOutdir() {
-            return outdir;
-        }
-    }
-
-    /**
-     * Concatenate all generated files from a MapReduce job into one single local file.
-     *
-     * @param mrOutdir      MapReduce output directory
-     * @param localOutput   Local file
-     * @throws IOException  on IOException
-     * @return              List of copied files from HDFS
-     */
-    protected List<Path> concatMrOutputToLocal(Path mrOutdir, Path localOutput) throws IOException {
-        return concatMrOutputToLocal(mrOutdir, localOutput, true);
-    }
-
-    /**
-     * Concatenate all generated files from a MapReduce job into one single local file.
-     *
-     * @param mrOutdir      MapReduce output directory
-     * @param localOutput   Local file
-     * @param removeExtraHeaders Remove header lines starting with "#" from all files but the first
-     * @throws IOException  on IOException
-     * @return              List of copied files from HDFS
-     */
-    protected List<Path> concatMrOutputToLocal(Path mrOutdir, Path localOutput, boolean removeExtraHeaders) throws IOException {
-        // TODO: Allow copy output to any IOConnector
-        FileSystem fileSystem = mrOutdir.getFileSystem(getConf());
-        RemoteIterator<LocatedFileStatus> it = fileSystem.listFiles(mrOutdir, false);
-        List<Path> paths = new ArrayList<>();
-        while (it.hasNext()) {
-            LocatedFileStatus status = it.next();
-            Path path = status.getPath();
-            if (status.isFile()
-                    && !path.getName().equals(FileOutputCommitter.SUCCEEDED_FILE_NAME)
-                    && !path.getName().equals(FileOutputCommitter.PENDING_DIR_NAME)
-                    && !path.getName().equals(ParquetFileWriter.PARQUET_METADATA_FILE)
-                    && !path.getName().equals(ParquetFileWriter.PARQUET_COMMON_METADATA_FILE)
-                    && status.getLen() > 0) {
-                paths.add(path);
-            }
-        }
-        if (paths.size() == 0) {
-            LOGGER.warn("The MapReduce job didn't produce any output. This may not be expected.");
-        } else if (paths.size() == 1) {
-            LOGGER.info("Copy to local file " + paths.get(0).toUri() + " to " + localOutput.toUri());
-            fileSystem.copyToLocalFile(false, paths.get(0), localOutput);
-            LOGGER.info("File size : " + humanReadableByteCount(Files.size(Paths.get(localOutput.toUri())), false));
-        } else {
-            LOGGER.info("Concat and copy to local " + paths.size());
-            LOGGER.info(" Source : " + mrOutdir.toUri());
-            LOGGER.info(" Target : " + localOutput.toUri());
-            LOGGER.info(" ---- ");
-            try (FSDataOutputStream os = localOutput.getFileSystem(getConf()).create(localOutput)) {
-                for (int i = 0; i < paths.size(); i++) {
-                    Path path = paths.get(i);
-                    LOGGER.info("Concat file : '{}' {} ", path.toUri(),
-                            humanReadableByteCount(fileSystem.getFileStatus(path).getLen(), false));
-                    try (FSDataInputStream fsIs = fileSystem.open(path)) {
-                        BufferedReader br;
-                        br = new BufferedReader(new InputStreamReader(fsIs));
-                        InputStream is;
-                        if (removeExtraHeaders && i != 0) {
-                            String line;
-                            do {
-                                br.mark(10 * 1024 * 1024); //10MB
-                                line = br.readLine();
-                            } while (line != null && line.startsWith("#"));
-                            br.reset();
-                            is = new ReaderInputStream(br, Charset.defaultCharset());
-                        } else {
-                            is = fsIs;
-                        }
-
-                        IOUtils.copyBytes(is, os, getConf(), false);
-                    }
-                }
-            }
-            LOGGER.info("File size : " + humanReadableByteCount(Files.size(Paths.get(localOutput.toUri())), false));
-        }
-        return paths;
     }
 
     protected final int getServersSize(String table) throws IOException {

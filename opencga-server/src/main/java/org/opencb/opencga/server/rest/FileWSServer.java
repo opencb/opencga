@@ -1029,44 +1029,43 @@ public class FileWSServer extends OpenCGAWSServer {
 //        }
 //    }
 
-//    @GET
-//    @Path("/aggregationStats")
-//    @ApiOperation(value = "Fetch catalog file stats", response = FacetField.class)
-//    public Response getAggregationStats(
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-//            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-//            @ApiParam(value = "Name") @QueryParam("name") String name,
-//            @ApiParam(value = "Type") @QueryParam("type") String type,
-//            @ApiParam(value = "Format") @QueryParam("format") String format,
-//            @ApiParam(value = "Bioformat") @QueryParam("bioformat") String bioformat,
-//            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-//            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-//            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-//            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-//            @ApiParam(value = "Status") @QueryParam("status") String status,
-//            @ApiParam(value = "Release") @QueryParam("release") String release,
-//            @ApiParam(value = "External") @QueryParam("external") Boolean external,
-//            @ApiParam(value = "Size") @QueryParam("size") String size,
-//            @ApiParam(value = "Software") @QueryParam("software") String software,
-//            @ApiParam(value = "Experiment") @QueryParam("experiment") String experiment,
-//            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
-//            @ApiParam(value = "Number of related files") @QueryParam("numRelatedFiles") String numRelatedFiles,
-//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-//
-//            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-//
-//            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: " +
-//                    "studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
-//        try {
-//            query.remove(ParamConstants.STUDY_PARAM);
-//            query.remove("field");
-//
-//            queryOptions.put(QueryOptions.FACET, facet);
-//
-//            DataResult<FacetField> queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, token);
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @GET
+    @Path("/aggregationStats")
+    @ApiOperation(value = "Fetch catalog file stats", response = FacetField.class)
+    public Response getAggregationStats(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.FILES_ID_DESCRIPTION) @QueryParam("id") String id,
+            @ApiParam(value = ParamConstants.FILES_UUID_DESCRIPTION) @QueryParam("uuid") String uuid,
+            @ApiParam(value = ParamConstants.FILE_NAMES_DESCRIPTION) @QueryParam("name") String name,
+            @ApiParam(value = ParamConstants.FILE_PATHS_DESCRIPTION) @QueryParam("path") String path,
+            @ApiParam(value = ParamConstants.FILE_URIS_DESCRIPTION) @QueryParam("uri") String uri,
+            @ApiParam(value = ParamConstants.FILE_TYPE_DESCRIPTION) @QueryParam("type") String type,
+            @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @QueryParam("bioformat") String bioformat,
+            @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @QueryParam("format") String formats,
+            @ApiParam(value = ParamConstants.FILE_EXTERNAL_DESCRIPTION) @QueryParam("external") Boolean external,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_PARAM) String internalVariantIndexStatus,
+            @ApiParam(value = ParamConstants.FILE_SOFTWARE_NAME_DESCRIPTION) @QueryParam(ParamConstants.FILE_SOFTWARE_NAME_PARAM) String softwareName,
+            @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @QueryParam("directory") String directory,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @QueryParam("description") String description,
+            @ApiParam(value = ParamConstants.FILE_TAGS_DESCRIPTION) @QueryParam("tags") String tags,
+            @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @QueryParam("size") String size,
+            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("sampleIds") String samples,
+            @ApiParam(value = ParamConstants.FILE_JOB_ID_DESCRIPTION) @QueryParam("jobId") String jobId,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam("release") String release,
+
+            // Facet field
+            @ApiParam(value = ParamConstants.FACET_DESCRIPTION) @QueryParam(ParamConstants.FACET_PARAM) String facet) {
+        return run(() -> {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.FACET_PARAM);
+            return catalogManager.getFileManager().facet(studyStr, query, facet, token);
+        });
+    }
 }

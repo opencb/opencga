@@ -36,4 +36,6 @@ public abstract class HBaseCompatApi {
     public abstract List<ServerName> getServerList(Admin admin) throws IOException;
 
     public abstract byte[][] getTableStartKeys(Admin admin, Table table) throws IOException;
+
+    public abstract boolean isSnappyAvailable();
 }
