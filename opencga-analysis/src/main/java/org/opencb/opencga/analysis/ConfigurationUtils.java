@@ -152,7 +152,7 @@ public class ConfigurationUtils {
 
     public static void checkAnalysisResources(String toolId, String version, Configuration configuration) throws ToolException {
         AnalysisTool analysisTool = getAnalysisTool(toolId, version, configuration);
-        for (String resourceId : analysisTool.getResources()) {
+        for (String resourceId : analysisTool.getResourceIds()) {
             getToolResourcePath(resourceId, configuration);
         }
 

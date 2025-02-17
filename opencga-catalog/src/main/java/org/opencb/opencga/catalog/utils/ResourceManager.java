@@ -147,7 +147,7 @@ public class ResourceManager  {
             throw new ToolException(msg);
         }
 
-        for (String resourceId : analysisTool.getResources()) {
+        for (String resourceId : analysisTool.getResourceIds()) {
             boolean found = false;
             for (ResourceFile resourceFile : resourceConfig.getFiles()) {
                 if (resourceId.equalsIgnoreCase(resourceFile.getId())) {
