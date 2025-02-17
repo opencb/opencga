@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.io.managers.IOConnector;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -59,6 +60,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
@@ -94,6 +96,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexBuilder
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
+import org.opencb.opencga.storage.hadoop.variant.mr.StreamVariantDriver;
 import org.opencb.opencga.storage.hadoop.variant.prune.VariantPruneManager;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
@@ -313,6 +316,57 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
         return new HadoopVariantExporter(this, metadataFactory, getMRExecutor(), ioConnectorProvider);
+    }
+
+    @Override
+    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format,
+                              Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
+        ParsedVariantQuery variantQuery = parseQuery(query, queryOptions);
+        int studyId;
+        if (variantQuery.getStudyQuery().getDefaultStudy() == null) {
+            studyId = -1;
+        } else {
+            studyId = variantQuery.getStudyQuery().getDefaultStudy().getId();
+        }
+        ObjectMap params = new ObjectMap(getOptions()).appendAll(variantQuery.getQuery()).appendAll(variantQuery.getInputOptions());
+        params.remove(StreamVariantDriver.COMMAND_LINE_PARAM);
+
+        String dockerMemory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
+        long dockerMemoryBytes = IOUtils.fromHumanReadableToByte(dockerMemory, true);
+
+        String dockerHost = getOptions().getString(MR_STREAM_DOCKER_HOST.key(), MR_STREAM_DOCKER_HOST.defaultValue());
+        if (StringUtils.isNotEmpty(dockerHost)) {
+            params.put(StreamVariantDriver.ENVIRONMENT_VARIABLES, "DOCKER_HOST=" + dockerHost);
+        }
+
+        getMRExecutor().run(StreamVariantDriver.class, StreamVariantDriver.buildArgs(
+                null,
+                getVariantTableName(), studyId, null,
+                params
+                        .append(MR_HEAP_MAP_OTHER_MB.key(), dockerMemoryBytes / 1024 / 1204)
+                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, dockerMemoryBytes / 2)
+                        .append(StreamVariantDriver.COMMAND_LINE_BASE64_PARAM, Base64.getEncoder().encodeToString(commandLine.getBytes()))
+                        .append(StreamVariantDriver.INPUT_FORMAT_PARAM, format.toString())
+                        .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)
+        ), "Walk data");
+        List<URI> uris = new ArrayList<>();
+        URI stderrFile = UriUtils.createUriSafe(outputFile.toString() + StreamVariantDriver.STDERR_TXT_GZ);
+        try {
+            IOConnector ioConnector = ioConnectorProvider.get(outputFile);
+            if (ioConnector.exists(outputFile)) {
+                uris.add(outputFile);
+            } else {
+                logger.warn("Output file not found: {}", outputFile);
+            }
+            if (ioConnector.exists(stderrFile)) {
+                uris.add(stderrFile);
+            } else {
+                logger.warn("Stderr file not found: {}", stderrFile);
+            }
+        } catch (IOException e) {
+            throw new StorageEngineException("Error checking output file", e);
+        }
+        return uris;
     }
 
     @Override
@@ -1279,7 +1333,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     public MRExecutor getMRExecutor() throws StorageEngineException {
         if (mrExecutor == null) {
-            mrExecutor = MRExecutorFactory.getMRExecutor(getOptions());
+            mrExecutor = MRExecutorFactory.getMRExecutor(getDBName(), getOptions(), getConf());
         }
         return mrExecutor;
     }
@@ -1314,6 +1368,17 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         } catch (Exception e) {
             logger.error("Connection to database '" + dbName + "' failed", e);
             throw new StorageEngineException("HBase Database connection test failed", e);
+        }
+    }
+
+    @Override
+    public void validateNewConfiguration(ObjectMap params) throws StorageEngineException {
+        super.validateNewConfiguration(params);
+
+        for (HadoopVariantStorageOptions option : HadoopVariantStorageOptions.values()) {
+            if (option.isProtected() && params.get(option.key()) != null) {
+                throw new StorageEngineException("Unable to update protected option '" + option.key() + "'");
+            }
         }
     }
 
