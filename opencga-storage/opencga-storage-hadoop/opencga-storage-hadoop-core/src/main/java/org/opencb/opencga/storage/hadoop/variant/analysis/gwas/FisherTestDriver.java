@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant.analysis.gwas;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.GzipCodec;
@@ -16,7 +15,6 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -25,6 +23,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
@@ -50,7 +49,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
     private final Logger logger = LoggerFactory.getLogger(FisherTestDriver.class);
 
     // Output directory within DFS
-    public static final String OUTPUT = "output";
+    public static final String OUTPUT = OUTPUT_PARAM;
 //    // Move to local directory (remove from DFS)
 //    public static final String MOVE_TO_LOCAL = "move-to-local";
     public static final String CASE_COHORT = "caseCohort";
@@ -64,8 +63,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
     private Integer controlCohortId;
     private List<Integer> caseCohort;
     private List<Integer> controlCohort;
-    private Path outdir;
-    private Path localOutput;
+    private MapReduceOutputFile output;
     private Query query;
     private QueryOptions queryOptions;
 
@@ -138,24 +136,9 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
                         VariantField.STUDIES_SECONDARY_ALTERNATES,
                         VariantField.STUDIES_STATS));
 
-        String outdirStr = getConf().get(OUTPUT);
-        if (StringUtils.isEmpty(outdirStr)) {
-            outdir = new Path("fisher." + TimeUtils.getTime() + ".tsv");
-        } else {
-            outdir = new Path(outdirStr);
-            if (isLocal(outdir)) {
-                localOutput = getLocalOutput(outdir, () -> "fisher_test." + TimeUtils.getTime() + ".tsv.gz");
-                outdir = getTempOutdir("opencga_fisher_test", "." + localOutput.getName());
-                outdir.getFileSystem(getConf()).deleteOnExit(outdir);
-            }
-            if (localOutput != null) {
-                logger.info(" * Outdir file: " + localOutput.toUri());
-                logger.info(" * Temporary outdir file: " + outdir.toUri());
-            } else {
-                logger.info(" * Outdir file: " + outdir.toUri());
-            }
-        }
+        output = initMapReduceOutputFile();
     }
+
 
     private Pair<Integer, List<Integer>> parseCohort(String cohortStr, String cohortDescription) throws IOException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
@@ -202,11 +185,11 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
         job.getConfiguration().set(CONTROL_COHORT_IDS, controlCohort.stream().map(Objects::toString).collect(Collectors.joining(",")));
 
         job.setOutputFormatClass(TextOutputFormat.class);
-        if (outdir.toString().toLowerCase().endsWith(".gz")) {
+        if (output.getOutdir().toString().toLowerCase().endsWith(".gz")) {
             TextOutputFormat.setCompressOutput(job, true);
             TextOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
         }
-        TextOutputFormat.setOutputPath(job, outdir);
+        TextOutputFormat.setOutputPath(job, output.getOutdir());
 
         job.setReducerClass(FisherTestReducer.class);
         job.setMapOutputKeyClass(NullWritable.class);
@@ -227,14 +210,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
     @Override
     protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         super.postExecution(succeed);
-        if (succeed) {
-            if (localOutput != null) {
-                concatMrOutputToLocal(outdir, localOutput);
-            }
-        }
-        if (localOutput != null) {
-            deleteTemporaryFile(outdir);
-        }
+        output.postExecute(succeed);
     }
 
     public static class FisherTestMapper  extends VariantRowMapper<NullWritable, Text> {

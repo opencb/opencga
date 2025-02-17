@@ -12,13 +12,11 @@ import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.VersionUtils;
-
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -148,13 +146,13 @@ public class CellBaseValidator {
     private CellBaseConfiguration validate(boolean autoComplete) throws IOException {
         CellBaseConfiguration cellBaseConfiguration = getCellBaseConfiguration();
         String inputVersion = getVersion();
-        CellBaseDataResponse<SpeciesProperties> species;
+        SpeciesProperties species;
         try {
             species = retryMetaSpecies();
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'", e);
         }
-        if (species == null || species.firstResult() == null) {
+        if (species == null) {
             if (autoComplete && !cellBaseConfiguration.getVersion().startsWith("v")) {
                 // Version might be missing the starting "v"
                 cellBaseConfiguration.setVersion("v" + cellBaseConfiguration.getVersion());
@@ -162,10 +160,10 @@ public class CellBaseValidator {
                 species = retryMetaSpecies();
             }
         }
-        if (species == null || species.firstResult() == null) {
+        if (species == null) {
             throw new IllegalArgumentException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'");
         }
-        validateSpeciesAssembly(species.firstResult());
+        validateSpeciesAssembly(species);
 
         String serverVersion = getVersionFromServer();
         if (!supportsDataRelease(serverVersion)) {
@@ -334,14 +332,18 @@ public class CellBaseValidator {
     }
 
     private ObjectMap retryMetaAbout() throws IOException {
-        return retry(3, () -> cellBaseClient.getMetaClient().about().firstResult());
+        return retry("meta/about", () -> cellBaseClient.getMetaClient().about().firstResult());
     }
 
-    private CellBaseDataResponse<SpeciesProperties> retryMetaSpecies() throws IOException {
-        return retry(3, () -> cellBaseClient.getMetaClient().species());
+    private SpeciesProperties retryMetaSpecies() throws IOException {
+        return retry("meta/species", () -> cellBaseClient.getMetaClient().species().firstResult());
     }
 
-    private <T> T retry(int retries, Callable<T> function) throws IOException {
+    private <T> T retry(String name, Callable<T> function) throws IOException {
+        return retry(name, function, 3);
+    }
+
+    private <T> T retry(String name, Callable<T> function, int retries) throws IOException {
         if (retries <= 0) {
             return null;
         }
@@ -355,8 +357,8 @@ public class CellBaseValidator {
         if (result == null) {
             try {
                 // Retry
-                logger.warn("Unable to get reach cellbase " + toString() + ". Retrying...");
-                result = retry(retries - 1, function);
+                logger.warn("Unable to get '{}' from cellbase " + toString() + ". Retrying...", name);
+                result = retry(name, function, retries - 1);
             } catch (Exception e1) {
                 if (e == null) {
                     e = e1;
@@ -369,7 +371,6 @@ public class CellBaseValidator {
                     throw new IOException("Error reading from cellbase " + toString(), e);
                 }
             }
-
         }
         return result;
     }

@@ -334,13 +334,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     .append(SampleIndexDriver.SAMPLE_INDEX_VERSION, version)
                     .append(SampleIndexDriver.OUTPUT, copy)
                     .append(SampleIndexDriver.SAMPLES, "all");
-            new TestMRExecutor().run(SampleIndexDriver.class, SampleIndexDriver.buildArgs(
+            getMrExecutor().run(SampleIndexDriver.class, SampleIndexDriver.buildArgs(
                     dbAdaptor.getArchiveTableName(studyId),
                     dbAdaptor.getVariantTable(),
                     studyId,
                     Collections.emptySet(), options), "");
 
-            new TestMRExecutor().run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
+            getMrExecutor().run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
                     dbAdaptor.getArchiveTableName(studyId),
                     dbAdaptor.getVariantTable(),
                     studyId,
@@ -349,7 +349,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             if (sampleNames.get(study).containsAll(trios.get(0).toList())) {
                 options.put(FamilyIndexDriver.TRIOS, trios.stream().map(Trio::serialize).collect(Collectors.joining(";")));
                 options.put(FamilyIndexDriver.OVERWRITE, true);
-                new TestMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
+                getMrExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
                         dbAdaptor.getArchiveTableName(studyId),
                         dbAdaptor.getVariantTable(),
                         studyId,
@@ -357,7 +357,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             } else if (study.equals(STUDY_NAME_3)) {
                 options.put(FamilyIndexDriver.TRIOS, triosPlatinum.stream().map(Trio::serialize).collect(Collectors.joining(";")));
                 options.put(FamilyIndexDriver.OVERWRITE, true);
-                new TestMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
+                getMrExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
                         dbAdaptor.getArchiveTableName(studyId),
                         dbAdaptor.getVariantTable(),
                         studyId,

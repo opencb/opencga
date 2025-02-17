@@ -128,6 +128,13 @@ variant:
     search.intersect.always: false          # Force intersect queries
     search.intersect.params.threshold: 3    # Minimum number of QueryParams in the query to intersect
 
+    walker.docker.memory: "1024m" # Memory limit for the docker executor
+#    walker.docker.cpu: "1"        # CPU limit for the docker executor
+#    walker.docker.user: ""        # User to run the docker executor
+#    walker.docker.env: ""         # Environment variables to be passed to the docker executor. e.g. key=value,key2=value2
+#    walker.docker.mount: ""       # Volumes to be mounted in the docker executor
+#    walker.docker.opts: ""        # Additional docker options
+
   ## The following section defines all available storage engine plugins installed
   engines:
     ## Hadoop Storage Engine
@@ -170,27 +177,31 @@ variant:
         storage.hadoop.mr.executor.ssh.user: ""               # Hadoop edge node user name
        #storage.hadoop.mr.executor.ssh.key: "~/.ssh/id_rsa"   # Hadoop edge node ssh-key file
         storage.hadoop.mr.executor.ssh.password: ""           # Hadoop edge node password. Only if ssh-key is not present. Requires sshpass to run
-        storage.hadoop.mr.executor.ssh.remoteOpenCgaHome:     # Remote opencga home location. Only if different than local location.
+        storage.hadoop.mr.executor.ssh.remoteOpenCgaHome:     # Remote opencga home location. Only if different from local location.
         storage.hadoop.mr.executor.ssh.terminationGracePeriodSeconds:  120 # Termination grace period in seconds for the ssh executor.
 
         # Increase the ScannerTimeoutPeriod from 60000 (1min) to 300000 (5min) to avoid ScannerTimeoutExceptions
         # See opencb/opencga#352 for more info.
         storage.hadoop.mr.scanner.timeout: 300000
 
+        # DOCKER_HOST environment variable to be used by the docker executor inside the MapReduce job
+        storage.hadoop.mr.stream.docker.host: ""
+
+        mapreduce.task.timeout: 1800000
         mapreduce.map.memory.mb: 2048
         DeleteHBaseColumnDriver:
           storage.hadoop.write.mappers.limit.factor: 4
         DiscoverPendingVariantsDriver:
-          mapreduce.map.memory.mb: 750
+          mapreduce.map.memory.mb: 2048
         VariantStatsDriver:
           mapreduce.map.memory.mb: 2048
+        StreamVariantDriver:
+          mapreduce.map.memory.mb: 3072
         SampleIndexDriver:
           mapreduce.map.memory.mb: 4096
           max-columns-per-scan: 8000
         SampleIndexAnnotationLoaderDriver:
           mapreduce.map.memory.mb: 4096
-        VariantMigration200Driver:
-          mapreduce.map.memory.mb: 1024
 
 
 ## PENDING

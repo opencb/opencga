@@ -341,7 +341,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
             queryOptions.putIfNotEmpty("annotations", cliOptions.genericVariantQueryOptions.annotations);
 
             VariantExportParams toolParams = new VariantExportParams(
-                    query, outdir,
+                    query,
                     cliOptions.outputFileName,
                     cliOptions.outputFileFormat,
                     cliOptions.variantsFile);
