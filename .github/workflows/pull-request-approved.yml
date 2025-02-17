@@ -6,6 +6,7 @@ on:
 
 jobs:
   test:
+    if: github.event.review.state == 'approved'
     name: Execute JUnit and Jacoco tests
     runs-on: ubuntu-22.04
     steps:
