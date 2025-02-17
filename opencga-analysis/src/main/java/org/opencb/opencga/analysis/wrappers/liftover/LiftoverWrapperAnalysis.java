@@ -93,11 +93,12 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
         }
         if (LIFTOVER_GRCH38.equalsIgnoreCase(analysisParams.getTargetAssembly())) {
             targetAssembly = LIFTOVER_GRCH38;
-            liftoverResourceIds = Arrays.asList("REFERENCE_GENOME_GRCH38_FA", "REFERENCE_GENOME_GRCH37_FA");
+            liftoverResourceIds = Arrays.asList("REFERENCE_GENOME_GRCH38_FA", "REFERENCE_GENOME_GRCH37_FA",
+                    "REFERENCE_GENOME_GRCH38_CHAIN");
         }
         if (LIFTOVER_HG38.equalsIgnoreCase(analysisParams.getTargetAssembly())) {
             targetAssembly = LIFTOVER_HG38;
-            liftoverResourceIds = Arrays.asList("REFERENCE_GENOME_HG38_FA", "REFERENCE_GENOME_HG19_FA");
+            liftoverResourceIds = Arrays.asList("REFERENCE_GENOME_HG38_FA", "REFERENCE_GENOME_HG19_FA", "REFERENCE_GENOME_HG38_CHAIN");
         }
         if (!LIFTOVER_GRCH38.equals(targetAssembly) && !LIFTOVER_HG38.equals(targetAssembly)) {
             throw new ToolException("Unknown Liftover 'targetAssembly' parameter ('" + analysisParams.getTargetAssembly() + "'), "
@@ -146,7 +147,7 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
         step(CLEAN_RESOURCES_STEP, this::cleanResources);
     }
 
-    protected void prepareResources() throws IOException, ToolException, ResourceException {
+    protected void prepareResources() throws IOException, ResourceException {
         // Create folder where the liftover resources will be saved (within the job dir, aka outdir)
         resourcePath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
 

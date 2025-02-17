@@ -1244,6 +1244,7 @@ public class VariantAnalysisTest {
         try {
             resourceManager.checkResourcePath("REFERENCE_GENOME_HG38_FA");
             resourceManager.checkResourcePath("REFERENCE_GENOME_HG19_FA");
+            resourceManager.checkResourcePath("REFERENCE_GENOME_HG38_CHAIN");
             return true;
         } catch (ResourceException e) {
             System.out.println("First checking if Liftover resources are ready, failed. So they will be downloaded");
@@ -1261,6 +1262,7 @@ public class VariantAnalysisTest {
 
             resourceManager.checkResourcePath("REFERENCE_GENOME_HG38_FA");
             resourceManager.checkResourcePath("REFERENCE_GENOME_HG19_FA");
+            resourceManager.checkResourcePath("REFERENCE_GENOME_HG38_CHAIN");
             return true;
         } catch (ResourceException | ToolException e) {
             e.printStackTrace();

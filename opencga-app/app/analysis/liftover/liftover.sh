@@ -49,7 +49,6 @@ if [ $TARGET_ASSEMBLY == "GRCh38" ]; then
     TARGET_REFERENCE_FILE="${LOCAL_RESOURCES_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
 
     CHAIN_FILE="${LOCAL_RESOURCES_DIR}/GRCh37_to_GRCh38.chain.gz"
-    CHAIN_URL="http://ftp.ensembl.org/pub/assembly_mapping/homo_sapiens/GRCh37_to_GRCh38.chain.gz"
 elif [ $TARGET_ASSEMBLY == "hg38" ]; then
     echo "Liftover from hg19 to $TARGET_ASSEMBLY"
 
@@ -62,17 +61,8 @@ elif [ $TARGET_ASSEMBLY == "hg38" ]; then
     TARGET_REFERENCE_FILE="${LOCAL_RESOURCES_DIR}/hg38.fa"
 
     CHAIN_FILE="${LOCAL_RESOURCES_DIR}/hg19ToHg38.over.chain.gz"
-    CHAIN_URL="http://hgdownload.cse.ucsc.edu/goldenpath/hg19/liftOver/hg19ToHg38.over.chain.gz"
 else
     echo "Unsupported target assembly $TARGET_ASSEMBLY"
-    exit 1
-fi
-
-wget $CHAIN_URL  -O $CHAIN_FILE
-if [[ -e "${CHAIN_FILE}" && -s "${CHAIN_FILE}" ]]; then
-    echo "Downloaded ${CHAIN_URL} in ${CHAIN_FILE}"
-else
-    echo "Error downloading ${CHAIN_URL} in ${CHAIN_FILE}"
     exit 1
 fi
 
