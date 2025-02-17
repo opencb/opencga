@@ -440,6 +440,10 @@ public abstract class AbstractManager {
         OpenCGAResult<T> execute(String organizationId, Study study, String userId) throws CatalogException;
     }
 
+    public interface ExecuteDBIteratorOperation<T> {
+        DBIterator<T> execute(String organizationId, Study study, String userId) throws CatalogException;
+    }
+
     protected <T> OpenCGAResult<T> runForQueryOperation(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
                                                      String token, ExecuteQueryOperation<T> execution) throws CatalogException {
         return runForQueryOperation(params, resource, action, studyStr, token, QueryOptions.empty(), execution, null);
@@ -497,7 +501,51 @@ public abstract class AbstractManager {
         }
     }
 
+    protected <T> DBIterator<T> runForDBIteratorOperation(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                          String token, QueryOptions studyIncludeList,
+                                                          ExecuteDBIteratorOperation<T> execution) throws CatalogException {
+        return runForDBIteratorOperation(params, resource, action, studyStr, token, studyIncludeList, execution, null);
+    }
 
+    protected <T> DBIterator<T> runForDBIteratorOperation(ObjectMap params, Enums.Resource resource, Enums.Action action, String studyStr,
+                                                          String token, QueryOptions studyIncludeList,
+                                                          ExecuteDBIteratorOperation<T> execution, String errorMessage)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        String eventId = resource.name().toLowerCase() + "." + action.name().toLowerCase();
+
+        String eventUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EVENT);
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, userId, tokenPayload.getToken());
+        CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
+        try {
+            // Get study
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
+            opencgaEvent.setStudyFqn(study.getFqn());
+            opencgaEvent.setStudyUuid(study.getUuid());
+
+            // Execute code
+            DBIterator<T> execute = execution.execute(organizationId, study, userId);
+
+//             Fill missing OpencgaEvent entries
+//            opencgaEvent.setResult(execute);
+
+            // Notify event
+            EventManager.getInstance().notify(catalogEvent);
+
+            return execute;
+        } catch (Exception e) {
+            EventManager.getInstance().notify(catalogEvent, e);
+            if (StringUtils.isNotEmpty(errorMessage)) {
+                throw new CatalogException(errorMessage, e);
+            } else {
+                throw e;
+            }
+        }
+    }
 
     /**
      * Interface to execute a multi operation. The user will execute the multi operation in a single call and will provide the list of

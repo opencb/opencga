@@ -74,7 +74,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.UUID.key(),
             SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key()));
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
-    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;somatic";
     private StudyManager studyManager;
 
     SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager,
@@ -248,21 +247,22 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Override
     public DBIterator<Sample> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyStr", studyStr)
+                .append("query", query)
+                .append("options", options)
+                .append("token", token);
+        return runForDBIteratorOperation(auditParams, Enums.Resource.SAMPLE, Enums.Action.ITERATOR, studyStr, token,
+                StudyManager.INCLUDE_VARIABLE_SET, (organizationId, study, userId) -> {
+                    Query finalQuery = query != null ? new Query(query) : new Query();
+                    QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
+                    fixQueryObject(organizationId, study, finalQuery, userId);
+                    AnnotationUtils.fixQueryOptionAnnotation(queryOptions);
+                    finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        Query finalQuery = new Query(query);
-        fixQueryObject(organizationId, study, finalQuery, userId);
-        AnnotationUtils.fixQueryOptionAnnotation(options);
-        finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-        return getSampleDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, options, userId);
+                    return getSampleDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, queryOptions, userId);
+                });
     }
 
     @Override

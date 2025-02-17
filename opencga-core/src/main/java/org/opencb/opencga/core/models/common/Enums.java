@@ -194,6 +194,7 @@ public final class Enums {
         MERGE,
         INFO,
         SEARCH,
+        ITERATOR,
         COUNT,
         DISTINCT,
         DELETE,
