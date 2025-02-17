@@ -150,7 +150,9 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
         String toolId = operationChore.getToolId();
         List<String> studyFqns = project.getStudies().stream().map(Study::getFqn).collect(Collectors.toList());
         // 1. Check if operation is pending
-        operationChore.isOperationRequired(project, null);
+        if (!operationChore.isOperationRequired(project, null)) {
+            return;
+        }
 
         // 2. Check if the operation is already created on any study of the project
         if (pendingJobs(studyFqns, toolId)) {
@@ -185,7 +187,9 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
         OperationExecutionConfig config = operationChore.getConfig();
         String toolId = operationChore.getToolId();
         // 1. Check if operation is pending
-        operationChore.isOperationRequired(project, study);
+        if (!operationChore.isOperationRequired(project, study)) {
+            return;
+        }
 
         // 2. Check if the operation is already created
         if (pendingJobs(study.getFqn(), toolId)) {
