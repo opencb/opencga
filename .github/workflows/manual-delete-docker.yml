@@ -11,7 +11,7 @@ on:
 jobs:
   call-delete-docker:
     name: Call Reusable Delete Docker Workflow
-    uses: ./.github/workflows/delete-docker.yml
+    uses: ./.github/workflows/reusable-delete-docker.yml
     with:
       task: ${{ inputs.task }}
     secrets: inherit
