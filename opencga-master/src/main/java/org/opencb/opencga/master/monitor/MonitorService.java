@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.master.monitor;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -24,15 +25,22 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
+import org.opencb.opencga.analysis.resource.ResourceFetcherTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.Resource;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.JobType;
+import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Collections;
 
@@ -65,7 +73,7 @@ public class MonitorService {
     protected static Logger logger;
 
     public MonitorService(Configuration configuration, StorageConfiguration storageConfiguration, String appHome, String token)
-            throws CatalogException {
+            throws CatalogException, ToolException, IOException {
         this.configuration = configuration;
         this.storageConfiguration = storageConfiguration;
         this.appHome = appHome;
@@ -73,7 +81,7 @@ public class MonitorService {
         init(token);
     }
 
-    private void init(String token) throws CatalogException {
+    private void init(String token) throws CatalogException, ToolException, IOException {
         String logDir = configuration.getLogDir();
         boolean logFileEnabled;
 
@@ -113,6 +121,8 @@ public class MonitorService {
 //            authorizationThread = new Thread(authorizationDaemon, "authorization-thread");
 
         this.port = configuration.getMonitor().getPort();
+
+        fetchResources(token);
     }
 
     public void start() throws Exception {
@@ -197,5 +207,26 @@ public class MonitorService {
         server.stop();
         logger.info("REST server shut down");
         logger.info("*********************************");
+    }
+
+    private void fetchResources(String token) {
+        if (CollectionUtils.isEmpty(configuration.getAnalysis().getResource().getFetchOnInit())) {
+            // Nothing to do
+            logger.info("There are no resources to fetch because the configuration parameter 'fetchOnInit' is empty.");
+            return;
+        }
+
+        try {
+            Resource resourceConfig = configuration.getAnalysis().getResource();
+
+            ResourceFetcherToolParams params = new ResourceFetcherToolParams();
+            params.setResources(resourceConfig.getFetchOnInit());
+
+            catalogManager.getJobManager()
+                    .submit(ParamConstants.ADMIN_STUDY_FQN, JobType.NATIVE, ResourceFetcherTool.ID, Enums.Priority.URGENT,
+                            params.toParams(), null, null, null, null, null, null, false, token);
+        } catch (CatalogException e) {
+            logger.error("Error submitting job '" + ResourceFetcherTool.ID + "'", e);
+        }
     }
 }

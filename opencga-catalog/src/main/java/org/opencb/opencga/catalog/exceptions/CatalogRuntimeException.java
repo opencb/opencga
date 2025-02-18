@@ -8,6 +8,10 @@ public class CatalogRuntimeException extends IllegalArgumentException {
         super(message);
     }
 
+    public CatalogRuntimeException(Throwable cause) {
+        super(cause);
+    }
+
     public CatalogRuntimeException(String message, Throwable cause) {
         super(message, cause);
     }

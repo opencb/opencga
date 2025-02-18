@@ -19,12 +19,12 @@ package org.opencb.opencga.analysis.family.qc;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
-
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
@@ -101,6 +101,9 @@ public class FamilyQcAnalysis extends OpenCgaTool {
 
         Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(FamilyQcAnalysis.ID).resolve("relatedness_thresholds.csv");
         relatednessThresholds = AnalysisUtils.parseRelatednessThresholds(thresholdsPath);
+
+        // Check resources
+        ConfigurationUtils.checkAnalysisResources(RelatednessAnalysis.ID, null, configuration);
     }
 
     @Override
@@ -125,7 +128,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
                 .setRelatednessMethod(relatednessMethod)
                 .setRelatednessMaf(relatednessMaf)
                 .setRelatednessThresholds(relatednessThresholds)
-                .setRelatednesResourcePath(getOpencgaHome().resolve("analysis/resources").resolve(RelatednessAnalysis.ID))
+                .setRelatednesResourcePath(configuration.getAnalysis().getResource().getBasePath().resolve(RelatednessAnalysis.ID))
                 .setQualityControl(qualityControl);
 
         // Step by step

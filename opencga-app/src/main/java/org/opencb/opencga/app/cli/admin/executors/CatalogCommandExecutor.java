@@ -138,7 +138,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 result.put("installed", true);
             } else {
                 String oldDatabase = configuration.getDatabasePrefix() + "_catalog";
-                MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory());
+                MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory(),
+                        catalogManager.getCatalogIOManager());
                 MongoDataStore oldDatastore = mongoDBAdaptorFactory.getMongoManager().get(oldDatabase, mongoDBAdaptorFactory.getMongoDbConfiguration());
                 try {
                     if (oldDatastore.getCollectionNames().contains("metadata")) {

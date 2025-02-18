@@ -289,8 +289,10 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     @Override
-    public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
-        String jobName = buildJobName(jobId);
+    public void execute(org.opencb.opencga.core.models.job.Job job, String queue, String commandLine, Path stdout, Path stderr)
+            throws Exception {
+        String jobName = buildJobName(job.getId());
+        ResourceRequirements resources = getResources(job);
         final io.fabric8.kubernetes.api.model.batch.v1.Job k8sJob = new JobBuilder()
                 .withApiVersion("batch/v1")
                 .withKind("Job")
@@ -338,7 +340,28 @@ public class K8SExecutor implements BatchExecutor {
             k8sJob.getSpec().getTemplate().getSpec().getContainers().add(dockerDaemonSidecar);
         }
         jobStatusCache.put(jobName, Pair.of(Instant.now(), Enums.ExecutionStatus.QUEUED));
-        getKubernetesClient().batch().jobs().inNamespace(namespace).create(k8sJob);
+        getKubernetesClient().batch().v1().jobs().inNamespace(namespace).resource(k8sJob).create();
+    }
+
+    private ResourceRequirements getResources(org.opencb.opencga.core.models.job.Job job) {
+        if (job.getTool().getMinimumRequirements() != null) {
+            ResourceRequirementsBuilder resources = new ResourceRequirementsBuilder(this.resources);
+            if (StringUtils.isNotEmpty(job.getTool().getMinimumRequirements().getMemory())) {
+                long memoryBytes = IOUtils.fromHumanReadableToByte(job.getTool().getMinimumRequirements().getMemory());
+                Quantity memory = new Quantity(String.valueOf(memoryBytes));
+                resources.addToRequests("memory", memory);
+                resources.addToLimits("memory", memory);
+            }
+            if (StringUtils.isNotEmpty(job.getTool().getMinimumRequirements().getCpu())) {
+                double cpuUnits = Double.parseDouble(job.getTool().getMinimumRequirements().getCpu());
+                Quantity cpu = new Quantity(Double.toString(cpuUnits));
+                resources.addToRequests("cpu", cpu);
+                resources.addToLimits("cpu", cpu);
+            }
+            return resources.build();
+        } else {
+            return this.resources;
+        }
     }
 
     private boolean shouldAddDockerDaemon(String queue) {

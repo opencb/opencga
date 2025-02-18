@@ -88,6 +88,7 @@ public class CatalogManager implements AutoCloseable {
     private ClinicalAnalysisManager clinicalAnalysisManager;
     private InterpretationManager interpretationManager;
     private PanelManager panelManager;
+    private WorkflowManager workflowManager;
 
     private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
@@ -105,7 +106,7 @@ public class CatalogManager implements AutoCloseable {
         logger.debug("CatalogManager configureIOManager");
         configureIOManager(configuration);
         logger.debug("CatalogManager configureDBAdaptorFactory");
-        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory);
+        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory, catalogIOManager);
         authorizationDBAdaptorFactory = new AuthorizationMongoDBAdaptorFactory((MongoDBAdaptorFactory) catalogDBAdaptorFactory,
                 configuration);
         authenticationFactory = new AuthenticationFactory(catalogDBAdaptorFactory, configuration);
@@ -163,6 +164,8 @@ public class CatalogManager implements AutoCloseable {
         clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 configuration);
         interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        workflowManager = new WorkflowManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogIOManager, configuration);
     }
 
     private void initializeAdmin(Configuration configuration) throws CatalogDBException {
@@ -365,6 +368,10 @@ public class CatalogManager implements AutoCloseable {
         return ioManagerFactory;
     }
 
+    public CatalogIOManager getCatalogIOManager() {
+        return catalogIOManager;
+    }
+
     private void configureIOManager(Configuration configuration) throws CatalogIOException {
         ioManagerFactory = new IOManagerFactory();
         catalogIOManager = new CatalogIOManager(configuration);
@@ -449,5 +456,9 @@ public class CatalogManager implements AutoCloseable {
 
     public MigrationManager getMigrationManager() {
         return migrationManager;
+    }
+
+    public WorkflowManager getWorkflowManager() {
+        return workflowManager;
     }
 }

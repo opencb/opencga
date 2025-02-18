@@ -17,16 +17,21 @@
 package org.opencb.opencga.core.config;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import static org.opencb.opencga.core.config.Configuration.reportUnusedField;
 
 public class Analysis {
 
     private List<String> packages;
+    private WorkflowConfiguration workflow;
 
     private String scratchDir;
+
+    @Deprecated
     private String resourceUrl;
+
+    private Resource resource;
 
     private String opencgaExtTools;
     private List<AnalysisTool> tools;
@@ -36,10 +41,25 @@ public class Analysis {
     private List<FrameworkConfiguration> frameworks;
 
     public Analysis() {
+        workflow = new WorkflowConfiguration();
         packages = new ArrayList<>();
         tools = new ArrayList<>();
         execution = new Execution();
         frameworks = new ArrayList<>();
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Analysis{");
+        sb.append("packages=").append(packages);
+        sb.append(", scratchDir='").append(scratchDir).append('\'');
+        sb.append(", resource=").append(resource);
+        sb.append(", opencgaExtTools='").append(opencgaExtTools).append('\'');
+        sb.append(", tools=").append(tools);
+        sb.append(", execution=").append(execution);
+        sb.append(", frameworks=").append(frameworks);
+        sb.append('}');
+        return sb.toString();
     }
 
     public List<String> getPackages() {
@@ -48,6 +68,15 @@ public class Analysis {
 
     public Analysis setPackages(List<String> packages) {
         this.packages = packages;
+        return this;
+    }
+
+    public WorkflowConfiguration getWorkflow() {
+        return workflow;
+    }
+
+    public Analysis setWorkflow(WorkflowConfiguration workflow) {
+        this.workflow = workflow;
         return this;
     }
 
@@ -60,12 +89,24 @@ public class Analysis {
         return this;
     }
 
+    @Deprecated
     public String getResourceUrl() {
-        return resourceUrl;
+        return (resource != null) ? this.resource.getBaseUrl() : null;
     }
 
+    @Deprecated
     public Analysis setResourceUrl(String resourceUrl) {
+        reportUnusedField("configuration.yml#analysis.resourceUrl", resourceUrl);
         this.resourceUrl = resourceUrl;
+        return this;
+    }
+
+    public Resource getResource() {
+        return resource;
+    }
+
+    public Analysis setResource(Resource resource) {
+        this.resource = resource;
         return this;
     }
 

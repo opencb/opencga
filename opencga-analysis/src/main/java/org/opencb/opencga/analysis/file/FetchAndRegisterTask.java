@@ -90,9 +90,17 @@ public class FetchAndRegisterTask extends OpenCgaToolScopeStudy {
             }
 
             String userId = jwtPayload.getUserId(catalogFqn.getOrganizationId());
-            // Check write permissions over the path
-            catalogManager.getAuthorizationManager().checkFilePermission(catalogFqn.getOrganizationId(), study.getUid(),
-                    parents.first().getUid(), userId, FilePermissions.WRITE);
+
+            boolean isResource = toolParams.getResource() != null && toolParams.getResource();
+            if (isResource) {
+                // Check it is a study admin
+                catalogManager.getAuthorizationManager().checkIsAtLeastStudyAdministrator(catalogFqn.getOrganizationId(), study.getUid(),
+                        userId);
+            } else {
+                // Check write permissions over the path
+                catalogManager.getAuthorizationManager().checkFilePermission(catalogFqn.getOrganizationId(), study.getUid(),
+                        parents.first().getUid(), userId, FilePermissions.WRITE);
+            }
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -122,7 +130,8 @@ public class FetchAndRegisterTask extends OpenCgaToolScopeStudy {
         step("register", () -> {
             // Move downloaded file and register
             try {
-                moveFile(studyFqn, getOutDir().resolve(fileName), null, toolParams.getPath(), token);
+                boolean isResource = toolParams.getResource() != null && toolParams.getResource();
+                moveFile(studyFqn, getOutDir().resolve(fileName), null, toolParams.getPath(), isResource, token);
             } catch (Exception e) {
                 deleteTemporaryFile();
                 throw new CatalogException(e.getMessage(), e);

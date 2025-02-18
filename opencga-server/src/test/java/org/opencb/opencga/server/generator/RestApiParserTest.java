@@ -71,6 +71,7 @@ public class RestApiParserTest {
         classes.add(StudyWSServer.class);
         classes.add(FileWSServer.class);
         classes.add(JobWSServer.class);
+        classes.add(WorkflowWSServer.class);
         classes.add(SampleWSServer.class);
         classes.add(IndividualWSServer.class);
         classes.add(FamilyWSServer.class);

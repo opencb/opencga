@@ -26,6 +26,7 @@ public class ClientsGeneratorMain {
         System.setProperty("opencga.log.file.enabled", "false");
         System.setProperty("opencga.log.level", "info");
         Configurator.reconfigure();
+
         ApiCommonsImpl apiCommons = new ApiCommonsImpl();
         List<Class<?>> classes = apiCommons.getApiClasses();
 

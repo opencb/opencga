@@ -25,6 +25,9 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.util.Random;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+
 @Category(ShortTests.class)
 public class IOUtilsTest {
 
@@ -70,15 +73,33 @@ public class IOUtilsTest {
     }
 
     @Test
-    public void copyBytesHandlesBufferSizeSmallerThanInput() throws Exception {
-//        byte[] inputData = "Hello, World!".getBytes();
-        byte[] inputData = new byte[10 * 1024 * 1024 + 5]; // 10 MB
-        new Random().nextBytes(inputData);
-        InputStream is = new ByteArrayInputStream(inputData);
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
+    public void fromHumanReadableToByte_ValidInput_ReturnsCorrectBytes() {
+        assertEquals(1024, IOUtils.fromHumanReadableToByte("1Ki"));
+        assertEquals(1024, IOUtils.fromHumanReadableToByte("1KiB"));
+        assertEquals(1024, IOUtils.fromHumanReadableToByte("1.KiB"));
+        assertEquals(1024, IOUtils.fromHumanReadableToByte("1.0KiB"));
+        assertEquals(1024, IOUtils.fromHumanReadableToByte("1.0K", true));
+        assertEquals(1024, IOUtils.fromHumanReadableToByte("1K", true));
+        assertEquals(1024, IOUtils.fromHumanReadableToByte("1KB", true));
 
-        IOUtils.copyBytesParallel(is, os, 4096);
+        assertEquals(1000, IOUtils.fromHumanReadableToByte("1K"));
+        assertEquals(1000, IOUtils.fromHumanReadableToByte("1KB"));
+    }
 
-        Assert.assertArrayEquals(inputData, os.toByteArray());
+    @Test
+    public void fromHumanReadableToByte_ValidInputWithBinaryUnits_ReturnsCorrectBytes() {
+        assertEquals(1048576, IOUtils.fromHumanReadableToByte("1Mi"));
+        assertEquals(1073741824, IOUtils.fromHumanReadableToByte("1Gi"));
+        assertEquals(1099511627776L, IOUtils.fromHumanReadableToByte("1Ti"));
+    }
+
+    @Test
+    public void fromHumanReadableToByte_InvalidInput_ThrowsNumberFormatException() {
+        assertThrows(NumberFormatException.class, () -> IOUtils.fromHumanReadableToByte("1X"));
+    }
+
+    @Test
+    public void fromHumanReadableToByte_NullInput_ThrowsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> IOUtils.fromHumanReadableToByte(null));
     }
 }

@@ -19,6 +19,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -127,8 +128,10 @@ public class MigrationManager {
                              String token) throws CatalogException, IOException {
         runMigration(ParamConstants.ADMIN_ORGANIZATION, version, domains, languages, offline, appHome, params, token);
 
+        CatalogIOManager catalogIOManager = new CatalogIOManager(configuration);
         // ***** Starts code to remove in future versions. Reload MongoDBAdaptorFactory to avoid Notes migration issue. *****/
-        try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory())) {
+        try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration,
+                catalogManager.getIoManagerFactory(), catalogIOManager)) {
             for (String organizationId : mongoDBAdaptorFactory.getOrganizationIds()) {
                 // ***** Finish code to remove in future versions. Reload MongoDBAdaptorFactory to avoid Notes migration issue. *****/
 
@@ -748,7 +751,7 @@ public class MigrationManager {
                         .setCreationDate(TimeUtils.getTime(start))
                         .setCommandLine("opencga-admin.sh")
                         .setParams(params)
-                        .setTool(new ToolInfo(annotation.id(), annotation.description(), Tool.Scope.GLOBAL, null, null))
+                        .setTool(new ToolInfo(annotation.id(), annotation.description(), Tool.Scope.GLOBAL, null, null, null))
                         .setOutDir(outdir.first())
                         .setStderr(stderr.first())
                         .setInternal(new JobInternal()

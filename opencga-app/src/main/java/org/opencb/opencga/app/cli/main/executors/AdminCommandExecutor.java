@@ -21,6 +21,8 @@ import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.common.Enums.Resource;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.User;
@@ -70,6 +72,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "catalog-jwt":
                 queryResponse = jwtCatalog();
+                break;
+            case "resource-fetch":
+                queryResponse = fetchResource();
                 break;
             case "users-create":
                 queryResponse = createUsers();
@@ -168,6 +173,41 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), JWTParams.class);
         }
         return openCGAClient.getAdminClient().jwtCatalog(jWTParams, queryParams);
+    }
+
+    private RestResponse<Job> fetchResource() throws Exception {
+        logger.debug("Executing fetchResource in Admin command line");
+
+        AdminCommandOptions.FetchResourceCommandOptions commandOptions = adminCommandOptions.fetchResourceCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+
+
+        ResourceFetcherToolParams resourceFetcherToolParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/resource/fetch"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            resourceFetcherToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ResourceFetcherToolParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "resources", commandOptions.resources, true);
+
+            resourceFetcherToolParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), ResourceFetcherToolParams.class);
+        }
+        return openCGAClient.getAdminClient().fetchResource(resourceFetcherToolParams, queryParams);
     }
 
     private RestResponse<User> createUsers() throws Exception {

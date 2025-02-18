@@ -156,6 +156,14 @@ apiConfig:
         - name: import
           ## Rename needed as `import` is a reserved word in Java
           rename: importPanels
+    - name: workflows
+      commandName: workflows
+      ignore: False
+      key: Workflow
+      commands:
+        - name: import
+          ## Rename needed as `import` is a reserved word in Java
+          rename: importWorkflow
     - name: analysisAlignment
       commandName: alignments
       ignore: False
