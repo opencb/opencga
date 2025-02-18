@@ -82,6 +82,7 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         // Check files
         for (String file : analysisParams.getFiles()) {
+            logger.info("Checking file {}", file);
             opencgaFiles.add(getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token).first());
         }
 
@@ -189,14 +190,15 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
 
     private void linkOutFile(String outFilename, File inputFile) throws CatalogException, ToolException {
         Path parentPath;
-        String opencgaPath;
+        String opencgaPath = null;
 
         if (SAME_AS_INPUT_VCF.equals(vcfDest)) {
             parentPath = Paths.get(inputFile.getUri().getPath()).getParent();
-            opencgaPath = inputFile.getPath().replace(inputFile.getName(), outFilename);
+            if (StringUtils.isNotEmpty(inputFile.getPath())) {
+                opencgaPath = Paths.get(inputFile.getPath()).getParent().resolve(outFilename).toString();
+            }
         } else {
             parentPath = Paths.get(vcfDest);
-            opencgaPath = null;
         }
 
         // OpenCGA catalog link, if the output file exists
