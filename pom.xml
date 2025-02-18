@@ -53,6 +53,7 @@
         <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
         <commons-io.version>2.8.0</commons-io.version>
         <json-smart.version>2.3</json-smart.version>
+
         <!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
 
@@ -139,6 +140,13 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-catalog</artifactId>
                 <version>${opencga.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-catalog</artifactId>
+                <version>${opencga.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>

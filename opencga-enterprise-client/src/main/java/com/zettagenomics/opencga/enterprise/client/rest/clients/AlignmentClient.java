@@ -20,9 +20,10 @@ import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
 import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
@@ -50,7 +51,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Alignment webservices.
  *    PATH: analysis/alignment
  */
-public class AlignmentClient extends AbstractParentClient {
+public class AlignmentClient extends ParentClient {
 
     public AlignmentClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

@@ -24,7 +24,7 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","alignments","meta","organizations","studies","files","operations","cohorts")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","alignments","meta","organizations","studies","files","federations","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -104,6 +104,11 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
+    private List<Candidate> federationsList = asList( "client-connect","client-study-users-list","client-study-users-update","client-delete","client-synchronize","client-update","server-create","server-delete","server-reset","server-update")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
     private List<Candidate> operationsList = asList( "cellbase-configure","variant-aggregate","variant-annotation-delete","variant-annotation-index","variant-annotation-save","variant-configure","variant-delete","variant-family-aggregate","variant-family-index","variant-index","variant-index-launcher","variant-julie-run","variant-metadata-repair","variant-metadata-synchronize","variant-prune","variant-sample-delete","variant-sample-index","variant-sample-index-configure","variant-score-delete","variant-score-index","variant-secondary-annotation-index","variant-secondary-sample-index","configure-variant-secondary-sample-index","variant-secondary-index","variant-secondary-index-delete","variant-setup","variant-stats-delete","variant-stats-index","variant-study-delete")
             .stream()
             .map(Candidate::new)
@@ -137,6 +142,7 @@ public abstract class OpenCgaCompleter implements Completer {
         mapCandidates.put( "organizations", organizationsList);
         mapCandidates.put( "studies", studiesList);
         mapCandidates.put( "files", filesList);
+        mapCandidates.put( "federations", federationsList);
         mapCandidates.put( "operations", operationsList);
         mapCandidates.put( "cohorts", cohortsList);
          candidates.addAll(checkCandidates(mapCandidates,command)); 

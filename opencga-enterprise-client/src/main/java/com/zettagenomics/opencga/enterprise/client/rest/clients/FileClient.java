@@ -20,9 +20,10 @@ import java.io.DataInputStream;
 import java.lang.Object;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntryList;
@@ -54,7 +55,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the File webservices.
  *    PATH: files
  */
-public class FileClient extends AbstractParentClient {
+public class FileClient extends ParentClient {
 
     public FileClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

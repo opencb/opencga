@@ -25,9 +25,10 @@ import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
@@ -73,7 +74,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Variant webservices.
  *    PATH: analysis/variant
  */
-public class VariantClient extends AbstractParentClient {
+public class VariantClient extends ParentClient {
 
     public VariantClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

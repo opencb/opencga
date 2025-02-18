@@ -44,6 +44,8 @@ apiConfig:
     - name: name
       shortcut: n
   categoryConfigList:
+    - name: federations
+      key: Federation
     - name: organizations
       ignore: False
       key: Organization
