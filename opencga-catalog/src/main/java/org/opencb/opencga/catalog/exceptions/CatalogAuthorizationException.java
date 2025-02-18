@@ -110,6 +110,26 @@ public class CatalogAuthorizationException extends CatalogException {
                 + " cannot " + permission + " any " + resource + ".");
     }
 
+    public static CatalogAuthorizationException userIsBanned(String userId) {
+        return new CatalogAuthorizationException("Too many login attempts. The account for user '" + userId + "' is banned."
+                + " Please, talk to your organization owner/administrator.");
+    }
+
+    public static CatalogAuthorizationException userIsSuspended(String userId) {
+        return new CatalogAuthorizationException("The account for user '" + userId + "' is suspended. Please, talk to your organization"
+                + " owner/administrator.");
+    }
+
+    public static CatalogAuthorizationException accountIsExpired(String userId, String expirationDate) {
+        return new CatalogAuthorizationException("The account for user '" + userId + "' expired on " + expirationDate + ". Please,"
+                + " talk to your organization owner/administrator.");
+    }
+
+    public static CatalogAuthorizationException passwordExpired(String userId, String expirationDate) {
+        return new CatalogAuthorizationException("The password for the user account '" + userId + "' expired on " + expirationDate
+                + ". Please, reset your password or talk to your organization owner/administrator.");
+    }
+
     public static CatalogAuthorizationException notOrganizationOwner() {
         return notOrganizationOwner("perform this action");
     }

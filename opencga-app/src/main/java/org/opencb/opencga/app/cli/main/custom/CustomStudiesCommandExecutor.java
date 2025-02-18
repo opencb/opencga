@@ -22,7 +22,7 @@ import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
-import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.TemplateParams;

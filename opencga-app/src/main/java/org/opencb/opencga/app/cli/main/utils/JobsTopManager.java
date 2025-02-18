@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.io.Table;
 import org.opencb.opencga.app.cli.main.io.TextOutputWriter;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.models.common.Enums;

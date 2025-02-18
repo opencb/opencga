@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.exceptions;
+package org.opencb.opencga.core.exceptions;
 
 import org.opencb.commons.datastore.core.result.Error;
 

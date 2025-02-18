@@ -3,6 +3,7 @@ package org.opencb.opencga.core.models.organizations;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.federation.Federation;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.project.Project;
 
@@ -38,6 +39,9 @@ public class Organization {
 
     @DataField(id = "projects", description = FieldConstants.ORGANIZATION_PROJECTS_DESCRIPTION)
     private List<Project> projects;
+
+    @DataField(id = "federation", description = FieldConstants.ORGANIZATION_FEDERATION_DESCRIPTION)
+    private Federation federation;
 
     @DataField(id = "notes", description = FieldConstants.ORGANIZATION_NOTES_DESCRIPTION)
     private List<Note> notes;
@@ -80,6 +84,7 @@ public class Organization {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", projects=").append(projects);
+        sb.append(", federation=").append(federation);
         sb.append(", notes=").append(notes);
         sb.append(", configuration=").append(configuration);
         sb.append(", internal=").append(internal);
@@ -148,6 +153,15 @@ public class Organization {
 
     public Organization setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
+        return this;
+    }
+
+    public Federation getFederation() {
+        return federation;
+    }
+
+    public Organization setFederation(Federation federation) {
+        this.federation = federation;
         return this;
     }
 
