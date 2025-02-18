@@ -1,4 +1,4 @@
-package org.opencb.opencga.client.config;
+package org.opencb.opencga.core.config.client;
 
 public class HostConfig {
 

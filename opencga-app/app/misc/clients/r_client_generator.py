@@ -11,6 +11,7 @@ class RClientGenerator(RestClientGenerator):
         super().__init__(server_url, output_dir)
 
         self.categories = {
+        	'Federations': 'Federation',
         	'Organizations': 'Organization',
             'Users': 'User',
             'Projects': 'Project',

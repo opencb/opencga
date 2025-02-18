@@ -44,8 +44,9 @@ class JavaClientGenerator(RestClientGenerator):
         headers.append('')
 
         imports = set()
-        imports.add('org.opencb.opencga.client.exceptions.ClientException;')
-        imports.add('org.opencb.opencga.client.config.ClientConfiguration;')
+        imports.add('org.opencb.opencga.core.client.ParentClient;')
+        imports.add('org.opencb.opencga.core.exceptions.ClientException;')
+        imports.add('org.opencb.opencga.core.config.client.ClientConfiguration;')
         # imports.add(parentPackage + '.*;')
         imports.add('org.opencb.opencga.client.rest.*;')
         imports.add('org.opencb.opencga.core.response.RestResponse;')
@@ -79,7 +80,7 @@ class JavaClientGenerator(RestClientGenerator):
             parentClientClass = parentClientClass[0]
             parentClientClass = parentClientClass.rsplit('/', 1)[1].split('.')[0]
         else:
-            parentClientClass = "AbstractParentClient"
+            parentClientClass = "ParentClient"
 
         text = []
         text.append('')

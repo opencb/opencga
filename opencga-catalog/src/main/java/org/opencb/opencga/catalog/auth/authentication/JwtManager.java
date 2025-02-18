@@ -17,7 +17,9 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.slf4j.Logger;
@@ -88,7 +90,7 @@ public class JwtManager {
     }
 
     public String createJWTToken(String organizationId, AuthenticationOrigin.AuthenticationType type, String userId,
-                                 Map<String, Object> claims, long expiration) {
+                                 Map<String, Object> claims, List<JwtPayload.FederationJwtPayload> federations, long expiration) {
         long currentTime = System.currentTimeMillis();
 
         JwtBuilder jwtBuilder = Jwts.builder();
@@ -97,6 +99,9 @@ public class JwtManager {
         }
         if (type != null) {
             jwtBuilder.addClaims(Collections.singletonMap(AUTH_ORIGIN, type));
+        }
+        if (CollectionUtils.isNotEmpty(federations)) {
+            jwtBuilder.addClaims(Collections.singletonMap(JwtPayload.FEDERATIONS, federations));
         }
 
         jwtBuilder.setSubject(userId)
@@ -114,23 +119,19 @@ public class JwtManager {
     }
 
     public void validateToken(String token) throws CatalogAuthenticationException {
-        validateToken(token, this.publicKey);
-    }
-
-    public void validateToken(String token, Key publicKey) throws CatalogAuthenticationException {
-        parseClaims(token, publicKey);
+        parseClaims(token);
     }
 
     public JwtPayload getPayload(String token) throws CatalogAuthenticationException {
-        Claims body = parseClaims(token, publicKey).getBody();
+        Claims body = parseClaims(token).getBody();
         return new JwtPayload(body.getSubject(), body.getAudience(), getAuthOrigin(body), body.getIssuer(), body.getIssuedAt(),
-                body.getExpiration(), token);
+                body.getExpiration(), JwtUtils.getFederations(body), token);
     }
 
     public JwtPayload getPayload(String token, Key publicKey) throws CatalogAuthenticationException {
         Claims body = parseClaims(token, publicKey).getBody();
         return new JwtPayload(body.getSubject(), body.getAudience(), getAuthOrigin(body), body.getIssuer(), body.getIssuedAt(),
-                body.getExpiration(), token);
+                body.getExpiration(), JwtUtils.getFederations(body), token);
     }
 
     private AuthenticationOrigin.AuthenticationType getAuthOrigin(Claims claims) {
@@ -159,7 +160,7 @@ public class JwtManager {
     }
 
     public String getUser(String token, String fieldKey) throws CatalogAuthenticationException {
-        return String.valueOf(parseClaims(token, publicKey).getBody().get(fieldKey));
+        return String.valueOf(parseClaims(token).getBody().get(fieldKey));
     }
 
     public List<String> getGroups(String token, String fieldKey) throws CatalogAuthenticationException {
@@ -192,9 +193,14 @@ public class JwtManager {
         return parseClaims(token, publicKey).getBody().get(claimId);
     }
 
+    private Jws<Claims> parseClaims(String token) throws CatalogAuthenticationException {
+        return parseClaims(token, null);
+    }
+
     private Jws<Claims> parseClaims(String token, Key publicKey) throws CatalogAuthenticationException {
+        Key key = publicKey != null ? publicKey : this.publicKey;
         try {
-            return Jwts.parser().setSigningKey(publicKey).parseClaimsJws(token);
+            return Jwts.parser().setSigningKey(key).parseClaimsJws(token);
         } catch (ExpiredJwtException e) {
             logger.error("JWT Error: '{}'", e.getMessage(), e);
             throw CatalogAuthenticationException.tokenExpired(token);

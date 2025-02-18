@@ -2,9 +2,11 @@ package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.NotImplementedException;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -17,8 +19,8 @@ import java.util.Map;
 
 public class SSOAuthenticationManager extends AuthenticationManager {
 
-    public SSOAuthenticationManager(String algorithm, String secretKeyString, long expiration) {
-        super(expiration);
+    public SSOAuthenticationManager(String algorithm, String secretKeyString, DBAdaptorFactory dbAdaptorFactory, long expiration) {
+        super(dbAdaptorFactory, expiration);
 
         SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.valueOf(algorithm);
         Key secretKey = this.converStringToKeyObject(secretKeyString, signatureAlgorithm.getJcaName());
@@ -71,13 +73,18 @@ public class SSOAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration) {
-        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.SSO, userId, claims, expiration);
+    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration)
+            throws CatalogAuthenticationException {
+        List<JwtPayload.FederationJwtPayload> federations = getFederations(organizationId, userId);
+        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.SSO, userId, claims, federations,
+                expiration);
     }
 
     @Override
-    public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims) {
-        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.SSO, userId, claims, 0L);
+    public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims)
+            throws CatalogAuthenticationException {
+        List<JwtPayload.FederationJwtPayload> federations = getFederations(organizationId, userId);
+        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.SSO, userId, claims, federations, 0L);
     }
 
     @Override

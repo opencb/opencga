@@ -17,9 +17,10 @@
 package org.opencb.opencga.client.rest.clients;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.ConfigUpdateParams;
 import org.opencb.opencga.core.models.user.FilterUpdateParams;
@@ -46,7 +47,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the User webservices.
  *    PATH: users
  */
-public class UserClient extends AbstractParentClient {
+public class UserClient extends ParentClient {
 
     public UserClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
