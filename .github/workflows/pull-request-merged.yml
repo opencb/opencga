@@ -10,13 +10,6 @@ on:
 
 jobs:
   delete-docker:
-<<<<<<< HEAD
-    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@develop
-    needs: build
-    with:
-      cli: python3 ./build/cloud/docker/docker-build.py delete --images base,workflow --tag ${{ github.head_ref }}
-    secrets: inherit
-=======
     name: Execute delete docker image
     runs-on: ubuntu-22.04
     steps:
@@ -31,5 +24,4 @@ jobs:
         run: |
           echo "Deleting docker image ${{ github.head_ref }}"
           python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
->>>>>>> TASK-6442
 
