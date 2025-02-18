@@ -485,7 +485,7 @@ public abstract class OpenCgaTool {
     }
 
     public final String getExpiringToken() throws CatalogException {
-        return catalogManager.getUserManager().refreshToken(token).getToken();
+        return catalogManager.getUserManager().refreshToken(token).first().getToken();
     }
 
     private ToolParams findToolParams() throws ToolException {

@@ -81,7 +81,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
         catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().put(VariantIndexOperationTool.ID, 1);
 
         daemon = new ExecutionDaemon(1000, expiringToken, catalogManager,

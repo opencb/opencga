@@ -79,7 +79,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
         catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
 
-        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
     }
 
     public Path clearOpenCGAHome(String testName) throws IOException {
@@ -126,7 +126,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     public CatalogManager resetCatalogManager() throws CatalogException {
         catalogManager.close();
         catalogManager = new CatalogManager(configuration);
-        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
         return catalogManager;
     }
 

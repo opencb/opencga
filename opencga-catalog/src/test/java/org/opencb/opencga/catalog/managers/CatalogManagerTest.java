@@ -133,7 +133,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals("@group_cancer_some_thing_else", permissions.first().getAcl().get(0).getMember());
         assertFalse(permissions.first().getAcl().get(0).getPermissions().isEmpty());
 
-        String token = catalogManager.getUserManager().login(organizationId, "test", TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "test", TestParamConstants.PASSWORD).first().getToken();
         DataResult<Study> studyDataResult = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), token);
         assertEquals(1, studyDataResult.getNumResults());
         assertTrue(studyDataResult.first().getAttributes().isEmpty());
@@ -464,7 +464,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 opencgaToken);
         catalogManager.getUserManager().create(new User().setId(orgOwnerUserId).setName(orgOwnerUserId).setOrganization(otherOrg),
                 TestParamConstants.PASSWORD, opencgaToken);
-        ownerToken = catalogManager.getUserManager().login(otherOrg, orgOwnerUserId, TestParamConstants.PASSWORD).getToken();
+        ownerToken = catalogManager.getUserManager().login(otherOrg, orgOwnerUserId, TestParamConstants.PASSWORD).first().getToken();
 
         catalogManager.getOrganizationManager().update(otherOrg,
                 new OrganizationUpdateParams()

@@ -60,7 +60,7 @@ public class UserManagerTest extends AbstractManagerTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
         JwtPayload payload = catalogManager.getUserManager().validateToken(token);
         assertEquals(ParamConstants.OPENCGA_USER_ID, payload.getUserId());
         assertEquals(ParamConstants.ADMIN_ORGANIZATION, payload.getOrganization());
@@ -97,7 +97,7 @@ public class UserManagerTest extends AbstractManagerTest {
 
     @Test
     public void testGetToken() throws Exception {
-        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
         Map<String, Object> claims = new HashMap<>();
         claims.put("a", "hola");
         claims.put("ab", "byw");
@@ -116,19 +116,19 @@ public class UserManagerTest extends AbstractManagerTest {
 
     @Test
     public void loginWithoutOrganizationId() throws CatalogException {
-        String token = catalogManager.getUserManager().login(null, ParamConstants.OPENCGA_USER_ID, TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(null, ParamConstants.OPENCGA_USER_ID, TestParamConstants.ADMIN_PASSWORD).first().getToken();
         assertTrue(StringUtils.isNotEmpty(token));
         JwtPayload jwtPayload = new JwtPayload(token);
         assertEquals(ParamConstants.ADMIN_ORGANIZATION, jwtPayload.getOrganization());
 
-        token = catalogManager.getUserManager().login(null, orgOwnerUserId, TestParamConstants.PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(null, orgOwnerUserId, TestParamConstants.PASSWORD).first().getToken();
         assertTrue(StringUtils.isNotEmpty(token));
         jwtPayload = new JwtPayload(token);
         assertEquals(organizationId, jwtPayload.getOrganization());
 
         // Create a third organization
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId("other").setName("Test"), QueryOptions.empty(), opencgaToken);
-        token = catalogManager.getUserManager().login(null, ParamConstants.OPENCGA_USER_ID, TestParamConstants.ADMIN_PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(null, ParamConstants.OPENCGA_USER_ID, TestParamConstants.ADMIN_PASSWORD).first().getToken();
         assertTrue(StringUtils.isNotEmpty(token));
         jwtPayload = new JwtPayload(token);
         assertEquals(ParamConstants.ADMIN_ORGANIZATION, jwtPayload.getOrganization());
@@ -173,22 +173,22 @@ public class UserManagerTest extends AbstractManagerTest {
 
     @Test
     public void refreshTokenTest() throws Exception {
-        String refreshToken = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).getRefreshToken();
-        AuthenticationResponse authenticationResponse = catalogManager.getUserManager().refreshToken(refreshToken);
+        String refreshToken = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).first().getRefreshToken();
+        AuthenticationResponse authenticationResponse = catalogManager.getUserManager().refreshToken(refreshToken).first();
         assertNotNull(authenticationResponse);
         assertNotNull(authenticationResponse.getToken());
     }
 
     @Test
     public void anonymousUserLoginTest() throws CatalogException {
-        AuthenticationResponse authResponse = catalogManager.getUserManager().loginAnonymous(organizationId);
+        AuthenticationResponse authResponse = catalogManager.getUserManager().loginAnonymous(organizationId).first();
         assertNotNull(authResponse.getToken());
 
         String org2 = "otherOrg";
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(org2), QueryOptions.empty(), opencgaToken);
         catalogManager.getUserManager().create(new User().setId("userFromOrg2").setName("name").setOrganization(org2), TestParamConstants.PASSWORD, opencgaToken);
         catalogManager.getOrganizationManager().update(org2, new OrganizationUpdateParams().setOwner("userFromOrg2"), null, opencgaToken);
-        String owner2Token = catalogManager.getUserManager().login(org2, "userFromOrg2", TestParamConstants.PASSWORD).getToken();
+        String owner2Token = catalogManager.getUserManager().login(org2, "userFromOrg2", TestParamConstants.PASSWORD).first().getToken();
         Project p = catalogManager.getProjectManager().create(new ProjectCreateParams()
                         .setId("project")
                         .setOrganism(new ProjectOrganism("Homo sapiens", "GRCh38")),
@@ -205,7 +205,7 @@ public class UserManagerTest extends AbstractManagerTest {
 
         catalogManager.getStudyManager().updateGroup(study.getFqn(), ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), owner2Token);
-        authResponse = catalogManager.getUserManager().loginAnonymous(org2);
+        authResponse = catalogManager.getUserManager().loginAnonymous(org2).first();
         assertNotNull(authResponse.getToken());
 
 
@@ -255,7 +255,7 @@ public class UserManagerTest extends AbstractManagerTest {
         assertEquals(0, userInternal.getAccount().getFailedAttempts());
         assertEquals(UserStatus.READY, user.getInternal().getStatus().getId());
 
-        String token = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).first().getToken();
         assertNotNull(token);
     }
 
@@ -279,7 +279,7 @@ public class UserManagerTest extends AbstractManagerTest {
         assertTrue(incorrect.getMessage().contains("suspended"));
 
         catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, UserStatus.READY, QueryOptions.empty(), orgAdminToken2);
-        String token = catalogManager.getUserManager().login(organizationId, orgAdminUserId1, TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, orgAdminUserId1, TestParamConstants.PASSWORD).first().getToken();
         assertNotNull(token);
 
         CatalogParameterException paramException = assertThrows(CatalogParameterException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, "NOT_A_STATUS", QueryOptions.empty(), orgAdminToken2));
@@ -300,7 +300,7 @@ public class UserManagerTest extends AbstractManagerTest {
 
         // Ensure it doesn't matter whether opencga account is expired or not
         catalogManager.getUserManager().getUserDBAdaptor(ParamConstants.ADMIN_ORGANIZATION).update(ParamConstants.OPENCGA_USER_ID, params);
-        String token = catalogManager.getUserManager().login(ParamConstants.ADMIN_ORGANIZATION, ParamConstants.OPENCGA_USER_ID, TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(ParamConstants.ADMIN_ORGANIZATION, ParamConstants.OPENCGA_USER_ID, TestParamConstants.ADMIN_PASSWORD).first().getToken();
         assertNotNull(token);
     }
 
@@ -365,7 +365,7 @@ public class UserManagerTest extends AbstractManagerTest {
                 opencgaToken);
         catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("test")), ownerToken);
-        String token = catalogManager.getUserManager().login(organizationId, userId, TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, userId, TestParamConstants.PASSWORD).first().getToken();
 
         DataResult<User> user = catalogManager.getUserManager().get(organizationId, userId, new QueryOptions(), token);
         assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
@@ -571,13 +571,13 @@ public class UserManagerTest extends AbstractManagerTest {
     }
 
     private String getAdminToken() throws CatalogException, IOException {
-        return catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+        return catalogManager.getUserManager().loginAsAdmin("admin").first().getToken();
     }
 
     @Test
     public void createUserUsingMailAsId() throws CatalogException {
         catalogManager.getUserManager().create(new User().setId("hello.mail@mymail.org").setName("Hello"), TestParamConstants.PASSWORD, ownerToken);
-        AuthenticationResponse login = catalogManager.getUserManager().login(organizationId, "hello.mail@mymail.org", TestParamConstants.PASSWORD);
+        AuthenticationResponse login = catalogManager.getUserManager().login(organizationId, "hello.mail@mymail.org", TestParamConstants.PASSWORD).first();
         assertNotNull(login);
         User user = catalogManager.getUserManager().get(organizationId, "hello.mail@mymail.org", new QueryOptions(), login.getToken()).first();
         assertEquals("hello.mail@mymail.org", user.getId());
@@ -624,7 +624,7 @@ public class UserManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().createGroup(studyFqn, group, ownerToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "@ldap", new StudyAclParams("", "view_only"),
                 ParamUtils.AclAction.SET, ownerToken);
-        String token = catalogManager.getUserManager().login(organizationId, orgOwnerUserId, "password").getToken();
+        String token = catalogManager.getUserManager().login(organizationId, orgOwnerUserId, "password").first().getToken();
 
         assertEquals(9, catalogManager.getSampleManager().count(studyFqn, new Query(), token).getNumTotalResults());
 
@@ -639,7 +639,7 @@ public class UserManagerTest extends AbstractManagerTest {
     @Test
     public void syncUsers() throws CatalogException {
         // Action only for admins
-        String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin("admin").first().getToken();
 
         catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, "ldap", "bio", "bio", studyFqn, true, token);
         DataResult<Group> bio = catalogManager.getStudyManager().getGroup(studyFqn, "bio", this.ownerToken);

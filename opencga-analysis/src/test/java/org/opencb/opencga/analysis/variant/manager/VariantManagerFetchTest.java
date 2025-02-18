@@ -26,7 +26,6 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOperationManagerTest;
-import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -67,7 +66,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 null, null, null, sessionId).first().getId();
         catalogManager.getStudyManager().updateGroup(dummyStudy, ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList(ParamConstants.ANONYMOUS_USER_ID)), sessionId);
-        anonToken = catalogManager.getUserManager().loginAnonymous(ORGANIZATION).getToken();
+        anonToken = catalogManager.getUserManager().loginAnonymous(ORGANIZATION).first().getToken();
     }
 
     @Override
