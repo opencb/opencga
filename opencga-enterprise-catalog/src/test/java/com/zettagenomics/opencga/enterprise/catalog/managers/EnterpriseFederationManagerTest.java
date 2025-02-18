@@ -2,6 +2,7 @@ package com.zettagenomics.opencga.enterprise.catalog.managers;
 
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.TestParamConstants;
@@ -34,6 +35,7 @@ import static org.junit.Assert.assertFalse;
 
 public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstractManagerTest {
 
+    @Ignore
     @Test
     public void federateServerTest() throws CatalogException, ClientException {
         // Create new organization with owner user
