@@ -240,8 +240,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("create, update or delete variable sets.");
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
+            throw CatalogAuthorizationException.notStudyAdmin("create, update or delete variable sets.");
         }
     }
 

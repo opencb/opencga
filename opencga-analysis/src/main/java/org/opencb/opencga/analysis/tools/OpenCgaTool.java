@@ -202,18 +202,11 @@ public abstract class OpenCgaTool {
             if (!erm.isClosed()) {
                 String message = "Unexpected system shutdown. Job killed by the system.";
                 privateLogger.error(message);
+                if (exception == null) {
+                    exception = new RuntimeException(message);
+                }
                 try {
-                    // TODO: Check for v4.0.0 if we can stop attempting to delete the scratch directory
-                    if (scratchDir != null) {
-                        deleteScratchDirectory();
-                    }
-                    if (exception == null) {
-                        exception = new RuntimeException(message);
-                    }
-                    logException(exception);
-                    ExecutionResult result = erm.close(exception);
-                    privateLogger.info("------- Tool '" + getId() + "' executed in "
-                            + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
+                    close(exception);
                 } catch (ToolException e) {
                     privateLogger.error("Error closing ExecutionResult", e);
                 }
@@ -283,14 +276,25 @@ public abstract class OpenCgaTool {
             }
             throw e;
         } finally {
-            deleteScratchDirectory();
-            stopMemoryMonitor();
-            result = erm.close(exception);
-            logException(exception);
-            privateLogger.info("------- Tool '" + getId() + "' executed in "
-                    + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
-            close();
+            // If the shutdown hook has been executed, the ExecutionResultManager is already closed
+            if (!erm.isClosed()) {
+                result = close(exception);
+            } else {
+                result = erm.read();
+            }
         }
+        return result;
+    }
+
+    private ExecutionResult close(Throwable exception) throws ToolException {
+        if (scratchDir != null) {
+            deleteScratchDirectory();
+        }
+        logException(exception);
+        stopMemoryMonitor();
+        ExecutionResult result = erm.close(exception);
+        privateLogger.info("------- Tool '" + getId() + "' executed in "
+                + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
         return result;
     }
 

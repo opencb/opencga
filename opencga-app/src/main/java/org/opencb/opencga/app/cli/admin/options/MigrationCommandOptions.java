@@ -46,6 +46,10 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         @Parameter(names = {"--user"}, description = "User whose data is going to be migrated. If more than one user of type FULL contains"
                 + " projects and studies, only the one provided will keep the data and will be fully migrated.")
         public String user;
+
+        @Parameter(names = {"--organization-id"}, description = "Optional parameter to specify how the new organization will be named." +
+                " By default, if not provided, the organization id will match the user id that is currently owning the data.")
+        public String organizationId;
     }
 
     @Parameters(commandNames = {"summary"}, commandDescription = "Obtain migrations status summary")
