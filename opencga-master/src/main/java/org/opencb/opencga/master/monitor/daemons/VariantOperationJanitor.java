@@ -93,6 +93,11 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
             throws CatalogException, ToolException {
         OperationExecutionConfig config = operationChore.getConfig();
         String toolId = operationChore.getToolId();
+        if (config.getPolicy() == null) {
+            logger.warn("Policy for operation '{}' is not defined. Skipping.", toolId);
+            return;
+        }
+
         if (config.getPolicy() == OperationExecutionConfig.Policy.NEVER) {
             logger.info("Automatic operation chore '{}' is disabled. Nothing to do.", toolId);
             return;

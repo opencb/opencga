@@ -32,7 +32,7 @@ public class VariantOperationJanitorTest extends AbstractManagerTest {
         String expiringToken = this.catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         // Change to immediate
-        catalogManager.getConfiguration().getAnalysis().getOperations().getVariantAnnotationIndex().setPolicy(OperationExecutionConfig.Policy.IMMEDIATE).setMaxAttempts(2);
+        catalogManager.getConfiguration().getAnalysis().getOperations().getVariantAnnotationIndex().setPolicy(OperationExecutionConfig.Policy.IMMEDIATELY).setMaxAttempts(2);
 
         janitor = new VariantOperationJanitor(catalogManager, expiringToken);
 

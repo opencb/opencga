@@ -18,7 +18,7 @@ public class OperationExecutionConfig {
     private Map<String, String> jobParams;
 
     public enum Policy {
-        IMMEDIATE,
+        IMMEDIATELY,
         NIGHTLY,
         WEEKLY,
         NEVER
