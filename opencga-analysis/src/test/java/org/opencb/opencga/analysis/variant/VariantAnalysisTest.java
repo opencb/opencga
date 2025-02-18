@@ -116,7 +116,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.core.api.FieldConstants.LIFTOVER_VCF_INPUT_FOLDER;
+import static org.opencb.opencga.core.api.FieldConstants.SAME_AS_INPUT_VCF;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 @RunWith(Parameterized.class)
@@ -1202,7 +1202,7 @@ public class VariantAnalysisTest {
         LiftoverWrapperParams params = new LiftoverWrapperParams()
                 .setFiles(Collections.singletonList(file.getName()))
                 .setTargetAssembly("hg38")
-                .setVcfDestination(LIFTOVER_VCF_INPUT_FOLDER);
+                .setVcfDestination(SAME_AS_INPUT_VCF);
 
         toolRunner.execute(LiftoverWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), liftOutdir, null, false, token);
 

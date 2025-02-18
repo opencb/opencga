@@ -15,10 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.apache.commons.io.FileUtils.readLines;
-import static org.opencb.opencga.core.api.FieldConstants.LIFTOVER_VCF_INPUT_FOLDER;
+import static org.opencb.opencga.core.api.FieldConstants.SAME_AS_INPUT_VCF;
 
 @ToolExecutor(id = LiftoverWrapperAnalysisExecutor.ID,
         tool = LiftoverWrapperAnalysis.ID,
@@ -47,7 +46,7 @@ public class LiftoverWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         int numFails = 0;
         for (File file : files) {
             try {
-                if (LIFTOVER_VCF_INPUT_FOLDER.equals(vcfDest)) {
+                if (SAME_AS_INPUT_VCF.equals(vcfDest)) {
                     outPath = Paths.get(file.getParent());
                 }
                 runLiftover(file, outPath);

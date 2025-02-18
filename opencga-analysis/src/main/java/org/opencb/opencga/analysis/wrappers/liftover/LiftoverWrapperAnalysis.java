@@ -23,7 +23,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
-import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -34,7 +33,6 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.variant.LiftoverWrapperParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.ResourceManager;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
@@ -110,7 +108,7 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
         if (StringUtils.isEmpty(vcfDest)) {
             logger.info("Liftover 'vcfDestination' parameter is empty, the resultant VCF files will be stored in the job directory: {}",
                     getOutDir());
-        } else if (!LIFTOVER_VCF_INPUT_FOLDER.equals(vcfDest)) {
+        } else if (!SAME_AS_INPUT_VCF.equals(vcfDest)) {
             File opencgaFile = getCatalogManager().getFileManager().get(study, analysisParams.getVcfDestination(), QueryOptions.empty(),
                     token).first();
             Path path = Paths.get(opencgaFile.getUri().getPath()).toAbsolutePath();
@@ -178,29 +176,39 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
                 .setResourcePath(resourcePath)
                 .execute();
 
-        // If vcfDest is null, Liftover (and rejected) VCF files are NOT stored in the job dir (therefor they are not linked automatically
+        // If vcfDest is null, Liftover (and rejected) VCF files are NOT stored in the job dir (therefore they are not linked automatically
         // by the daemon), so they have to be linked to OpenCGA catalog
         if (!StringUtils.isEmpty(vcfDest)) {
             for (File opencgaFile : opencgaFiles) {
-                Path parentPath;
-                if (LIFTOVER_VCF_INPUT_FOLDER.equals(vcfDest)) {
-                    parentPath = Paths.get(opencgaFile.getUri().getPath()).getParent();
-                } else {
-                    parentPath = Paths.get(vcfDest);
-                }
-                // Link Liftover and rejected VCF files, if they exist
-                linkOutFile(parentPath.resolve(getLiftoverFilename(opencgaFile.getName(), targetAssembly)));
-                linkOutFile(parentPath.resolve(getLiftoverRejectedFilename(opencgaFile.getName(), targetAssembly)));
+                // Link Liftover and rejected VCF files
+                linkOutFile(getLiftoverFilename(opencgaFile.getName(), targetAssembly), opencgaFile);
+                linkOutFile(getLiftoverRejectedFilename(opencgaFile.getName(), targetAssembly), opencgaFile);
             }
         }
     }
 
-    private void linkOutFile(Path outFile) throws CatalogException, ToolException {
+    private void linkOutFile(String outFilename, File inputFile) throws CatalogException, ToolException {
+        Path parentPath;
+        String opencgaPath;
+
+        if (SAME_AS_INPUT_VCF.equals(vcfDest)) {
+            parentPath = Paths.get(inputFile.getUri().getPath()).getParent();
+            opencgaPath = inputFile.getPath().replace(inputFile.getName(), outFilename);
+        } else {
+            parentPath = Paths.get(vcfDest);
+            opencgaPath = null;
+        }
+
+        // OpenCGA catalog link, if the output file exists
+        Path outFile = parentPath.resolve(outFilename);
         if (Files.exists(outFile)) {
             URI uri = outFile.toUri();
             StopWatch stopWatch = StopWatch.createStarted();
             FileLinkParams linkParams = new FileLinkParams().setUri(uri.toString());
-            logger.info("Linking file {}", uri);
+            if (opencgaPath != null) {
+                linkParams.setPath(opencgaPath);
+            }
+            logger.info("Linking file, uri =  {}; OpenCGA path = {}", uri, opencgaPath);
             // Link 'parents' to true to ensure the directory is created
             OpenCGAResult<File> result = catalogManager.getFileManager().link(getStudy(), linkParams, true, getToken());
             if (result.getEvents().stream().anyMatch(e -> e.getMessage().equals(ParamConstants.FILE_ALREADY_LINKED))) {
@@ -211,6 +219,8 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
                 File file = result.first();
                 addGeneratedFile(file);
             }
+        } else {
+            logger.warn("Something wrong happened, exptected output file {} does not exit", outFile.toAbsolutePath());
         }
     }
 
