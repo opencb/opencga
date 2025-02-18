@@ -295,16 +295,19 @@ export default class File extends OpenCGAParentClass {
     /** Resource to upload a file by chunks
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {InputStream} [params.file] - File to upload.
-    * @param {String} [params.fileName] - File name to overwrite the input fileName.
+    * @param {String} [params.name] - File name to overwrite the input fileName.
+    * @param {String} [params.fileName] - [DEPRECATED] File name to overwrite the input fileName.
     * @param {"VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER
-    *     JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN"} [params.fileFormat] - File format.
+    *     JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN"} [params.format] - File format.
+    * @param {"VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER
+    *     JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN"} [params.fileFormat] - [DEPRECATED] File format.
     * @param {"MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX
     *     MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX DATAMATRIX_EXPRESSION IDLIST IDLIST_RANKED
     *     ANNOTATION_GENEVSANNOTATION OTHER_NEWICK OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF OTHER_PED VCF4 VARIANT
     *     ALIGNMENT COVERAGE SEQUENCE PEDIGREE REFERENCE_GENOME NONE UNKNOWN"} [params.bioformat] - File bioformat.
     * @param {String} [params.checksum] - Expected MD5 file checksum.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
-    * @param {String} [params.relativeFilePath] - Path within catalog where the file will be located (default: root folder).
+    * @param {String} [params.relativeFilePath] - Path within catalog (directory) where the file will be located (default: root folder).
     * @param {String} [params.description] - description.
     * @param {Boolean} [params.parents] - Create the parent directories if they do not exist.
     * @returns {Promise} Promise object in the form of RestResponse instance.

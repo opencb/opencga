@@ -422,6 +422,26 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testLinkWithPathAsDirectoryOrFile() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        FileLinkParams linkParams = new FileLinkParams()
+                .setUri(vcfFile)
+                .setPath("data");
+        File file = fileManager.link(studyFqn, linkParams, true, ownerToken).first();
+        String path = "data/variant-test-file.vcf.gz";
+        assertEquals(path, file.getPath());
+        fileManager.getFileDBAdaptor(organizationId).update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(),
+                        FileStatus.PENDING_DELETE),
+                QueryOptions.empty());
+        fileManager.unlink(studyFqn, file.getPath(), ownerToken);
+        assertThrows(CatalogException.class, () -> fileManager.get(studyFqn, path, QueryOptions.empty(), ownerToken));
+
+        linkParams.setPath("data/variant-test-file.vcf.gz");
+        file = fileManager.link(studyFqn, linkParams, true, ownerToken).first();
+        assertEquals("data/variant-test-file.vcf.gz", file.getPath());
+    }
+
+    @Test
     public void testLinkVCFandBAMPair() throws CatalogException {
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
         fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null, null), false, ownerToken);

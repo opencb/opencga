@@ -365,12 +365,14 @@ public class FileClient extends AbstractParentClient {
      * Resource to upload a file by chunks.
      * @param params Map containing any of the following optional parameters.
      *       file: File to upload.
-     *       fileName: File name to overwrite the input fileName.
-     *       fileFormat: File format.
+     *       name: File name to overwrite the input fileName.
+     *       fileName: [DEPRECATED] File name to overwrite the input fileName.
+     *       format: File format.
+     *       fileFormat: [DEPRECATED] File format.
      *       bioformat: File bioformat.
      *       checksum: Expected MD5 file checksum.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
-     *       relativeFilePath: Path within catalog where the file will be located (default: root folder).
+     *       relativeFilePath: Path within catalog (directory) where the file will be located (default: root folder).
      *       description: description.
      *       parents: Create the parent directories if they do not exist.
      * @return a RestResponse object.

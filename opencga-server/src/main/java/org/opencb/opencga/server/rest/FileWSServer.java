@@ -172,14 +172,15 @@ public class FileWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @ApiOperation(httpMethod = "POST", value = "Resource to upload a file by chunks", response = File.class)
     public Response upload(
-            @ApiParam(value = "File to upload") @FormDataParam("file") InputStream fileInputStream,
-            @FormDataParam("file") FormDataContentDisposition fileMetaData,
-            @ApiParam(value = "File name to overwrite the input fileName") @FormDataParam("fileName") String fileName,
-            @ApiParam(value = "File format") @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
+            @ApiParam(value = "File to upload") @FormDataParam("file") InputStream fileInputStream, @FormDataParam("file") FormDataContentDisposition fileMetaData,
+            @ApiParam(value = "File name to overwrite the input fileName") @FormDataParam("name") String name,
+            @ApiParam(value = "[DEPRECATED] File name to overwrite the input fileName") @FormDataParam("fileName") String fileName,
+            @ApiParam(value = "File format") @DefaultValue("") @FormDataParam("format") File.Format format,
+            @ApiParam(value = "[DEPRECATED] File format") @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
             @ApiParam(value = "File bioformat") @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,
             @ApiParam(value = "Expected MD5 file checksum") @DefaultValue("") @FormDataParam("checksum") String expectedChecksum,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Path within catalog where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
+            @ApiParam(value = "Path within catalog (directory) where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
             @ApiParam(value = "description") @DefaultValue("") @FormDataParam("description")
             String description,
             @ApiParam(value = "Create the parent directories if they do not exist", type = "form") @DefaultValue("true") @FormDataParam(
@@ -188,12 +189,12 @@ public class FileWSServer extends OpenCGAWSServer {
             if (relativeFilePath.equals(".")) {
                 relativeFilePath = "";
             } else if (!relativeFilePath.endsWith("/")) {
-                relativeFilePath = relativeFilePath + "/";
+                return createErrorResponse(new CatalogException("The relativeFilePath should be a directory and it must end in '/'"));
             }
         }
 
         if (relativeFilePath.startsWith("/")) {
-            return createErrorResponse(new CatalogException("The path cannot be absolute"));
+            return createErrorResponse(new CatalogException("The relativeFilePath cannot be absolute (it cannot start with '/')"));
         }
 
         if (fileInputStream == null) {
@@ -201,18 +202,23 @@ public class FileWSServer extends OpenCGAWSServer {
         }
 
         try {
-            if (fileName == null) {
-                fileName = fileMetaData.getFileName();
+            if (StringUtils.isEmpty(name) && StringUtils.isNotEmpty(fileName)) {
+                name = fileName;
+            }
+            if (StringUtils.isEmpty(name)) {
+                name = fileMetaData.getFileName();
+            }
+            if (format == null && fileFormat != null) {
+                format = fileFormat;
             }
             long expectedSize = fileMetaData.getSize();
 
             File file = new File()
-                    .setName(fileName)
-                    .setPath(relativeFilePath + fileName)
-                    .setFormat(fileFormat)
+                    .setName(name)
+                    .setPath(relativeFilePath + name)
+                    .setFormat(format)
                     .setBioformat(bioformat);
-            return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true,
-                    expectedChecksum, expectedSize, token));
+            return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true, expectedChecksum, expectedSize, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
