@@ -49,6 +49,11 @@ public class WorkflowManagerTest extends AbstractManagerTest {
         result = workflowManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
         assertEquals(1, result.getNumInserted());
         assertEquals(1, result.first().getVersion());
+
+        params = new WorkflowRepositoryParams("nf-core/pacvar");
+        result = workflowManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumInserted());
+        assertEquals(1, result.first().getVersion());
     }
 
     @Test

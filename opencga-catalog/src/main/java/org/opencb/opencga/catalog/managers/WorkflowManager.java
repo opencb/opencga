@@ -400,6 +400,9 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
     private void fillWithGitpodManifest(Workflow workflow, String rawline) {
         String[] split = rawline.split("=");
+        if (split.length != 2) {
+            return;
+        }
         String key = split[0].replaceAll(" ", "");
         String value = split[1].replace("\"", "").replace("'", "").trim();
         switch (key) {
