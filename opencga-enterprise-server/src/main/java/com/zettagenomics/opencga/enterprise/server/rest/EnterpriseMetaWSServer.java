@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -58,7 +59,9 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             synchronized (opencgaTokenAtomicRef) {
                 try {
                     OpenCGAResult<Organization> result;
-                    try (DBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory())) {
+                    CatalogIOManager catalogIOManager = new CatalogIOManager(configuration);
+                    try (DBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory(),
+                            catalogIOManager)) {
                         result = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(ParamConstants.ADMIN_ORGANIZATION)
                                 .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
 

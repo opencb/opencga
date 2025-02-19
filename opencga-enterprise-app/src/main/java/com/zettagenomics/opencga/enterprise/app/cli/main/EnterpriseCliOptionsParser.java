@@ -84,6 +84,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         analysisVariantSubCommands.addCommand("sample-stats-run", analysisVariantCommandOptions.runSampleStatsCommandOptions);
         analysisVariantSubCommands.addCommand("stats-export-run", analysisVariantCommandOptions.runStatsExportCommandOptions);
         analysisVariantSubCommands.addCommand("stats-run", analysisVariantCommandOptions.runStatsCommandOptions);
+        analysisVariantSubCommands.addCommand("walker-run", analysisVariantCommandOptions.runWalkerCommandOptions);
 
         projectsCommandOptions = new ProjectsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("projects", projectsCommandOptions);
@@ -184,6 +185,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
         adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
         adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
+        adminSubCommands.addCommand("resource-fetch", adminCommandOptions.fetchResourceCommandOptions);
         adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
         adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
         adminSubCommands.addCommand("users-permissions", adminCommandOptions.permissionsUsersCommandOptions);
@@ -278,6 +280,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         metaSubCommands.addCommand("api", metaCommandOptions.apiCommandOptions);
         metaSubCommands.addCommand("fail", metaCommandOptions.failCommandOptions);
         metaSubCommands.addCommand("model", metaCommandOptions.modelCommandOptions);
+        metaSubCommands.addCommand("openapi", metaCommandOptions.openapiCommandOptions);
         metaSubCommands.addCommand("ping", metaCommandOptions.pingCommandOptions);
         metaSubCommands.addCommand("sso-login", metaCommandOptions.loginSsoCommandOptions);
         metaSubCommands.addCommand("sso-logout", metaCommandOptions.logoutSsoCommandOptions);
