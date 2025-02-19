@@ -1,9 +1,12 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseUserManager;
 import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
+import com.zettagenomics.opencga.enterprise.server.generator.EnterpriseApiCommonsImpl;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
@@ -25,7 +28,10 @@ import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.generator.RestApiParser;
+import org.opencb.opencga.server.generator.commons.ApiCommonsImpl;
 import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.openapi.JsonOpenApiGenerator;
+import org.opencb.opencga.server.generator.openapi.models.Swagger;
 import org.opencb.opencga.server.rest.MetaWSServer;
 
 import javax.servlet.http.HttpServletRequest;
@@ -167,6 +173,22 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         }
         RestApi restApi = new RestApiParser().parse(classes, summary);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
+    }
+
+    @GET
+    @Path("/openapi")
+    @ApiOperation(value = "Opencga openapi json", response = String.class)
+    public String openApi(@ApiParam(value = "List of categories to get API from") @QueryParam("token") String token, @QueryParam("environment") String environment) {
+        JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
+        Swagger swagger = generator.generateJsonOpenApi(new EnterpriseApiCommonsImpl(), token, environment);
+        String swaggerJson ="ERROR: Swagger could not be generated";
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger).replace("{apiVersion}", "v2");
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        return swaggerJson;
     }
 
     @GET
