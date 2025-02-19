@@ -349,9 +349,11 @@ public class ResourceManager  {
             if (file.isDirectory()) {
                 move(file.toPath(), destFile.toPath());
             } else {
-                logger.info("Copying {} to {} ...", file.getAbsolutePath(), destFile.getAbsolutePath());
-                FileUtils.copyFile(file, destFile);
-                logger.info(OK);
+                if (Files.exists(file.toPath())) {
+                    logger.info("Copying {} to {} ...", file.getAbsolutePath(), destFile.getAbsolutePath());
+                    FileUtils.copyFile(file, destFile);
+                    logger.info(OK);
+                }
             }
         }
 
@@ -402,8 +404,8 @@ public class ResourceManager  {
     private void unzip(Path zipPath, String analysisId) throws ToolException, IOException {
         // Unzip
         String filename = zipPath.getFileName().toString();
-        Path stdoutPath = zipPath.getParent().resolve("stdout_unzip_" + filename + ".txt");
-        Path stderrPath = zipPath.getParent().resolve("stderr_unzip_" + filename + ".txt");
+        Path stdoutPath = zipPath.getParent().resolve(STDOUT_UNZIP_PREFIX + filename + ".txt");
+        Path stderrPath = zipPath.getParent().resolve(STDERR_UNZIP_PREFIX + filename + ".txt");
         try {
             logger.info("Unzipping resource file '{}' for analysis '{}'.", filename, analysisId);
             new Command("unzip -o -d " + zipPath.getParent() + " " + zipPath)
@@ -417,10 +419,22 @@ public class ResourceManager  {
 
         // Deleting stdout and stderr after unzipping
         if (Files.exists(stdoutPath)) {
-            Files.delete(stdoutPath);
+            try {
+                logger.info("Deleting the stdout log file: {}", stdoutPath);
+                Files.delete(stdoutPath);
+                logger.info(OK);
+            } catch (Exception e) {
+                logger.warn("Could not delete the stdout log file: " + stdoutPath, e);
+            }
         }
         if (Files.exists(stderrPath)) {
-            Files.delete(stderrPath);
+            try {
+                logger.info("Deleting the stderr log file: {}", stderrPath);
+                Files.delete(stderrPath);
+                logger.info(OK);
+            } catch (Exception e) {
+                logger.warn("Could not delete the stderr log file: " + stderrPath, e);
+            }
         }
     }
 
