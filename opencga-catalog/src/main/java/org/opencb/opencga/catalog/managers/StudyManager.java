@@ -37,10 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
-import org.opencb.opencga.catalog.utils.AnnotationUtils;
-import org.opencb.opencga.catalog.utils.CatalogFqn;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -54,6 +51,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.cohort.CohortPermissions;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.FamilyPermissions;
+import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.file.FileStatus;
@@ -113,9 +111,9 @@ public class StudyManager extends AbstractManager {
     static final QueryOptions INCLUDE_VARIABLE_SET = keepFieldInQueryOptions(INCLUDE_STUDY_IDS,
             StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
     static final QueryOptions INCLUDE_CONFIGURATION = keepFieldInQueryOptions(INCLUDE_STUDY_IDS,
-            StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
+            StudyDBAdaptor.QueryParams.INTERNAL.key());
     static final QueryOptions INCLUDE_VARIABLE_SET_AND_CONFIGURATION = keepFieldsInQueryOptions(INCLUDE_STUDY_IDS,
-            Arrays.asList(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key(), StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+            Arrays.asList(StudyDBAdaptor.QueryParams.INTERNAL.key(), StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
     protected Logger logger;
 
@@ -229,15 +227,22 @@ public class StudyManager extends AbstractManager {
             fixQueryOptions(queryOptions, INCLUDE_STUDY_IDS.getAsStringList(QueryOptions.INCLUDE));
         }
 
+        String payloadOrgId = payload.getOrganization();
+        String fqnOrgId = catalogFqn.getOrganizationId();
+        boolean isOpenCGAAdmin = authorizationManager.isOpencgaAdministrator(payload);
+        if (!payloadOrgId.equals(fqnOrgId) && !isOpenCGAAdmin) {
+            // User may be trying to fetch a federated project
+            fqnOrgId = payloadOrgId;
+        }
+
         OpenCGAResult<Study> studyDataResult;
-        if (!payload.getOrganization().equals(catalogFqn.getOrganizationId())) {
+        if (isOpenCGAAdmin) {
             // If it is the administrator, we allow it without checking the user anymore
-            authorizationManager.checkIsOpencgaAdministrator(payload);
-            studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
+            studyDataResult = getStudyDBAdaptor(fqnOrgId).get(query, queryOptions);
         } else {
-            studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions, userId);
+            studyDataResult = getStudyDBAdaptor(fqnOrgId).get(query, queryOptions, userId);
             if (studyDataResult.getNumResults() == 0) {
-                studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
+                studyDataResult = getStudyDBAdaptor(fqnOrgId).get(query, queryOptions);
                 if (studyDataResult.getNumResults() != 0) {
                     throw CatalogAuthorizationException.denyAny(userId, "view", "study");
                 }
@@ -318,13 +323,8 @@ public class StudyManager extends AbstractManager {
             }
         }
 
-        if (organizationFqn != null && !organizationId.equals(organizationFqn)
-                && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
-            logger.error("User '{}' belonging to organization '{}' requested access to organization '{}'", userId, organizationId,
-                    organizationFqn);
-            throw new CatalogAuthorizationException("Cannot access data from a different organization.");
-        } else {
-            // If organization is not part of the FQN, assign it with the organization the user belongs to.
+        if (!organizationId.equals(organizationFqn) && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+            // User may be trying to fetch a federated study
             organizationFqn = organizationId;
         }
 
@@ -440,6 +440,11 @@ public class StudyManager extends AbstractManager {
             study.setSources(ParamUtils.defaultObject(study.getSources(), Collections::emptyList));
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
             study.setInternal(StudyInternal.init(cellbaseVersion));
+            study.setFederation(ParamUtils.defaultObject(study.getFederation(), new FederationClientParamsRef("", "", "")));
+            if (StringUtils.isNotEmpty(study.getFederation().getId())) {
+                FederationUtils.validateFederationId(organizationId, study.getFederation().getId(), catalogDBAdaptorFactory);
+                study.getInternal().setFederated(true);
+            }
             study.setStatus(ParamUtils.defaultObject(study.getStatus(), Status::new));
             study.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(study.getCreationDate(),
                     StudyDBAdaptor.QueryParams.CREATION_DATE.key()));
@@ -1009,6 +1014,13 @@ public class StudyManager extends AbstractManager {
             }
 
             authorizationManager.checkCreateDeleteGroupPermissions(organizationId, study.getUid(), userId, group.getId());
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, group.getUserIds());
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
 
             // Check group exists
             if (existsGroup(organizationId, study.getUid(), group.getId())) {
@@ -1175,6 +1187,12 @@ public class StudyManager extends AbstractManager {
 
             authorizationManager.checkUpdateGroupPermissions(organizationId, study.getUid(), userId, groupId, action);
 
+            if (study.getInternal().isFederated()) {
+                if (!groupId.equals(MEMBERS)) {
+                    throw new CatalogException("Cannot modify groups other than the '" + MEMBERS + "' group in federated studies.");
+                }
+            }
+
             if (CollectionUtils.isNotEmpty(updateParams.getUsers())) {
                 List<String> tmpUsers = updateParams.getUsers();
                 if (groupId.equals(MEMBERS) || groupId.equals(ADMINS)) {
@@ -1187,6 +1205,14 @@ public class StudyManager extends AbstractManager {
                 }
                 if (tmpUsers.size() > 0) {
                     getUserDBAdaptor(organizationId).checkIds(tmpUsers);
+                }
+
+                if (study.getInternal().isFederated()) {
+                    try {
+                        checkIsNotAFederatedUser(organizationId, updateParams.getUsers());
+                    } catch (CatalogException e) {
+                        throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                    }
                 }
             } else {
                 updateParams.setUsers(Collections.emptyList());
@@ -1729,6 +1755,9 @@ public class StudyManager extends AbstractManager {
             if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
+            if (study.getInternal().isFederated()) {
+                throw new CatalogException("Cannot modify ACLs of a federated study.");
+            }
 
             List<String> permissions = Collections.emptyList();
             if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
@@ -1782,6 +1811,13 @@ public class StudyManager extends AbstractManager {
             }
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(organizationId, study.getUid(), members);
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, members);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
 
             switch (action) {
                 case SET:
@@ -2046,7 +2082,7 @@ public class StudyManager extends AbstractManager {
             throw e;
         } catch (Exception e) {
             auditManager.auditCreate(organizationId, userId, Enums.Action.UPLOAD_TEMPLATE, Enums.Resource.STUDY, templateId, "",
-             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                             new Error(-1, "template upload", e.getMessage())));
             throw e;
         } finally {
@@ -2106,7 +2142,7 @@ public class StudyManager extends AbstractManager {
             throw e;
         } catch (Exception e) {
             auditManager.auditCreate(organizationId, userId, Enums.Action.DELETE_TEMPLATE, Enums.Resource.STUDY, templateId, "",
-             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                             new Error(-1, "template delete", e.getMessage())));
             throw e;
         }

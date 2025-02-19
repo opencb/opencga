@@ -17,9 +17,10 @@
 package org.opencb.opencga.client.rest.clients;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.admin.GroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
@@ -49,7 +50,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Admin webservices.
  *    PATH: admin
  */
-public class AdminClient extends AbstractParentClient {
+public class AdminClient extends ParentClient {
 
     public AdminClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

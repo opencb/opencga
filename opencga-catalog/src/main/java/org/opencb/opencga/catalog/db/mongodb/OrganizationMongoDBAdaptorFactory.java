@@ -122,7 +122,7 @@ public class OrganizationMongoDBAdaptorFactory {
 
     private final NoteMongoDBAdaptor notesDBAdaptor;
     private final OrganizationMongoDBAdaptor organizationDBAdaptor;
-    private UserMongoDBAdaptor userDBAdaptor;
+    private final UserMongoDBAdaptor userDBAdaptor;
     private final ProjectMongoDBAdaptor projectDBAdaptor;
     private final StudyMongoDBAdaptor studyDBAdaptor;
     private final IndividualMongoDBAdaptor individualDBAdaptor;

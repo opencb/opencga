@@ -37,6 +37,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationProvider;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -71,8 +72,9 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
     private Map<String, List<String>> filters;
     private Map<String, PublicKey> publicKeyMap;
 
-    public AzureADAuthenticationManager(AuthenticationOrigin authenticationOrigin) throws CatalogException {
-        super(0L);
+    public AzureADAuthenticationManager(AuthenticationOrigin authenticationOrigin, DBAdaptorFactory dbAdaptorFactory)
+            throws CatalogException {
+        super(dbAdaptorFactory, 0L);
 
         this.originId = authenticationOrigin.getId();
 
@@ -152,7 +154,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             throw new CatalogException("Unknown authentication type. Expected type '" + AuthenticationOrigin.AuthenticationType.AzureAD
                     + "' but received '" + authenticationOrigin.getType() + "'.");
         }
-        AzureADAuthenticationManager azureADAuthenticationManager = new AzureADAuthenticationManager(authenticationOrigin);
+        AzureADAuthenticationManager azureADAuthenticationManager = new AzureADAuthenticationManager(authenticationOrigin, null);
         azureADAuthenticationManager.close();
     }
 

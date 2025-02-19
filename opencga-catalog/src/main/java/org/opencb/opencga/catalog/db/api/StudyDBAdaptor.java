@@ -251,6 +251,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogException;
 
+    OpenCGAResult<Group> removeUsersFromAllGroups(List<String> users) throws CatalogException;
+
     /**
      * Delete a group.
      *
@@ -419,12 +421,15 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
         TYPE("type", OBJECT, ""),
+        FEDERATION("federation", OBJECT, ""),
         SOURCES("sources", TEXT_ARRAY, ""),
         NOTES("notes", OBJECT, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         STATUS_DESCRIPTION("status.description", TEXT, ""),
+        INTERNAL("internal", OBJECT, ""),
+        INTERNAL_FEDERATED("internal.federated", BOOLEAN, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),

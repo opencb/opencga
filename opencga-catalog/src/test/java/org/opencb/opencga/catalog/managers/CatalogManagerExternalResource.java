@@ -31,7 +31,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -102,10 +101,10 @@ public class CatalogManagerExternalResource extends ExternalResource {
         Files.createDirectories(analysisPath.resolve(RESOURCES_DIRNAME));
 
         // Pedigree graph analysis
-        Path pedAnalysisPath = Files.createDirectories(analysisPath.resolve("pedigree-graph")).toAbsolutePath();
-        FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
-        Files.copy(inputStream, pedAnalysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
-
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
+        InputStream inputStream = getClass().getResource("/pedigree-graph/ped.R").openStream();
+//        FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
+        Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
         return opencgaHome;
     }
 
