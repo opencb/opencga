@@ -50,7 +50,7 @@ public class SwaggerDefinitionGenerator {
                         // Caso: tipo simple dentro de la lista
                         Class<?> listClass = (Class<?>) listArgumentType;
 
-                        if (!isPrimitiveOrWrapper(listClass) && !definitions.containsKey(listClass.getSimpleName())) {
+                        if (!isPrimitive(listClass) && !definitions.containsKey(listClass.getSimpleName())) {
                             definitions.put(listClass.getSimpleName(), generateDefinition(listClass, definitions, processedClasses));
                         }
 
@@ -81,7 +81,7 @@ public class SwaggerDefinitionGenerator {
                     mapProperty.setType("object");
                     properties.put(fieldName, mapProperty);
 
-                } else if (!isPrimitiveOrWrapper(fieldType)) {
+                } else if (!isPrimitive(fieldType)) {
                     // Manejar tipos complejos anidados
                     if (!definitions.containsKey(fieldType.getSimpleName())) {
                         definitions.put(fieldType.getSimpleName(), generateDefinition(fieldType, definitions, processedClasses));
@@ -110,7 +110,7 @@ public class SwaggerDefinitionGenerator {
         return definition;
     }
 
-    private static boolean isPrimitiveOrWrapper(Class<?> clazz) {
+    public static boolean isPrimitive(Class<?> clazz) {
         return clazz.isPrimitive() || clazz == String.class ||
                 clazz == Integer.class || clazz == Long.class ||
                 clazz == Boolean.class || clazz == Double.class ||
@@ -118,7 +118,7 @@ public class SwaggerDefinitionGenerator {
                 clazz == Short.class || clazz == Character.class;
     }
 
-    private static String mapJavaTypeToSwaggerType(Class<?> clazz) {
+    public static String mapJavaTypeToSwaggerType(Class<?> clazz) {
         if (clazz == String.class) return "string";
         if (clazz == Integer.class || clazz == int.class) return "integer";
         if (clazz == Long.class || clazz == long.class) return "integer";

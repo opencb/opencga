@@ -8,10 +8,8 @@ public class SwaggerJsonSerializer {
     public static void main(String[] args) throws Exception {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
         Swagger swagger = generator.generateJsonOpenApi(new ApiCommonsImpl(), "El token va aquí", "task-xxxx");
-
         ObjectMapper mapper = new ObjectMapper();
         String swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger);
-
         System.out.println(swaggerJson);
     }
 }

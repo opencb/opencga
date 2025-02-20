@@ -17,7 +17,7 @@ public class Method {
     private List<String> consumes;
     private List<String> produces;
     private List<Parameter> parameters;
-    private Map<String,Map<String,Object>> responses;
+    private Map<String,Map<String,Response>> responses;
     private List<Map<String, List<String>>> security;
 
 
@@ -29,7 +29,7 @@ public class Method {
         responses = new HashMap<>();
     }
 
-    public Method(List<String> tags, String summary, String description, String operationId, List<String> consumes, List<String> produces, List<Parameter> parameters, Map<String, Map<String, Object>> responses) {
+    public Method(List<String> tags, String summary, String description, String operationId, List<String> consumes, List<String> produces, List<Parameter> parameters, Map<String, Map<String, Response>> responses) {
         this.tags = tags;
         this.summary = summary;
         this.description = description;
@@ -103,11 +103,11 @@ public class Method {
         return this;
     }
 
-    public Map<String,Map<String,Object>> getResponses() {
+    public Map<String,Map<String,Response>> getResponses() {
         return responses;
     }
 
-    public Method setResponses(Map<String,Map<String,Object>> responses) {
+    public Method setResponses(Map<String,Map<String,Response>> responses) {
         this.responses = responses;
         return this;
     }
