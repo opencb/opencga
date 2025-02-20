@@ -350,9 +350,11 @@ public class ResourceManager  {
                 move(file.toPath(), destFile.toPath());
             } else {
                 if (Files.exists(file.toPath())) {
-                    logger.info("Copying {} to {} ...", file.getAbsolutePath(), destFile.getAbsolutePath());
-                    FileUtils.copyFile(file, destFile);
-                    logger.info(OK);
+                    if (!SKIPPED_PREFIXES.stream().anyMatch(file.getName()::startsWith)) {
+                        logger.info("Copying {} to {} ...", file.getAbsolutePath(), destFile.getAbsolutePath());
+                        FileUtils.copyFile(file, destFile);
+                        logger.info(OK);
+                    }
                 }
             }
         }
