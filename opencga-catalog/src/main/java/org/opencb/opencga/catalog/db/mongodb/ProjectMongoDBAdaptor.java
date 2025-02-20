@@ -427,9 +427,8 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
         long tmpStartTime = startQuery();
         logger.debug("Deleting project {} ({})", project.getId(), project.getUid());
 
-        StudyMongoDBAdaptor studyDBAdaptor = dbAdaptorFactory.getCatalogStudyDBAdaptor();
-
         // First, we delete the studies
+        StudyMongoDBAdaptor studyDBAdaptor = dbAdaptorFactory.getCatalogStudyDBAdaptor();
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
         List<Document> studyList = studyDBAdaptor.nativeGet(clientSession, studyQuery, QueryOptions.empty()).getResults();
         if (studyList != null) {
@@ -438,25 +437,33 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
             }
         }
 
-        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
 
-        // Mark the study as deleted
-        ObjectMap updateParams = new ObjectMap()
-                .append(INTERNAL_STATUS_ID.key(), InternalStatus.DELETED)
-                .append(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime())
-                .append(QueryParams.ID.key(), project.getId() + deleteSuffix);
+        Query query = new Query(PRIVATE_UID, project.getUid());
+        Document projectDoc = nativeGet(clientSession, query, QueryOptions.empty()).first();
 
-        DataResult result = privateUpdate(clientSession, project, updateParams);
-        if (result.getNumMatches() == 0) {
+        // Add status DELETED
+        Document internal = projectDoc.get("internal", Document.class);
+        if (internal != null) {
+            internal.put("status", getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"));
+        }
+
+        Bson bsonQuery = parseQuery(query);
+
+        // Upsert the document into the DELETED collection
+        deletedProjectCollection.update(clientSession, bsonQuery, new Document("$set", projectDoc),
+                new QueryOptions(MongoDBCollection.UPSERT, true));
+
+        // Delete the document from the main PROJECT collection
+        DataResult remove = projectCollection.remove(clientSession, bsonQuery, null);
+        if (remove.getNumMatches() == 0) {
             throw new CatalogDBException("Project " + project.getId() + " not found");
         }
-        List<Event> events = new ArrayList<>();
-        if (result.getNumUpdated() == 0) {
-            events.add(new Event(Event.Type.WARNING, project.getId(), "Project was already deleted"));
+        if (remove.getNumDeleted() == 0) {
+            throw new CatalogDBException("Project " + project.getId() + " could not be deleted");
         }
         logger.debug("Project {} successfully deleted", project.getId());
 
-        return endWrite(tmpStartTime, 1, 0, 0, 1, events);
+        return endWrite(tmpStartTime, 1, 0, 0, 1, null);
     }
 
     OpenCGAResult setStatus(Query query, String status) throws CatalogDBException {
@@ -870,6 +877,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
                     case ORGANISM_SCIENTIFIC_NAME:
                     case ORGANISM_COMMON_NAME:
                     case ORGANISM_ASSEMBLY:
+                    case INTERNAL_FEDERATED:
                     case INTERNAL_STATUS_MSG:
                     case INTERNAL_STATUS_DATE:
                     case INTERNAL_DATASTORES:

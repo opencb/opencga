@@ -77,6 +77,24 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             this.saved = saved;
             return this;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            VariantAnnotationSets that = (VariantAnnotationSets) o;
+            return Objects.equals(current, that.current)
+                    && Objects.equals(saved, that.saved);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(current, saved);
+        }
     }
 
     public static class VariantAnnotationMetadata {
@@ -164,6 +182,28 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         public VariantAnnotationMetadata setPrivateSources(List<String> privateSources) {
             this.privateSources = privateSources;
             return this;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            VariantAnnotationMetadata that = (VariantAnnotationMetadata) o;
+            return id == that.id && Objects.equals(name, that.name)
+                    && Objects.equals(creationDate, that.creationDate)
+                    && Objects.equals(annotator, that.annotator)
+                    && Objects.equals(sourceVersion, that.sourceVersion)
+                    && Objects.equals(dataRelease, that.dataRelease)
+                    && Objects.equals(privateSources, that.privateSources);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id, name, creationDate, annotator, sourceVersion, dataRelease, privateSources);
         }
     }
 
@@ -387,6 +427,27 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
     @JsonIgnore
     public long getStatsLastTimestamp() {
         return getAttributes().getLong(STATS_INDEX_LAST_TIMESTAMP, 0);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ProjectMetadata that = (ProjectMetadata) o;
+        return release == that.release && Objects.equals(species, that.species)
+                && Objects.equals(assembly, that.assembly)
+                && Objects.equals(dataRelease, that.dataRelease)
+                && Objects.equals(annotation, that.annotation)
+                && Objects.equals(counters, that.counters);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(species, assembly, dataRelease, release, annotation, counters);
     }
 
 }

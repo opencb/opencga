@@ -64,6 +64,7 @@ public class DataStore {
         final StringBuilder sb = new StringBuilder("DataStore{");
         sb.append("storageEngine='").append(storageEngine).append('\'');
         sb.append(", dbName='").append(dbName).append('\'');
+        sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
     }

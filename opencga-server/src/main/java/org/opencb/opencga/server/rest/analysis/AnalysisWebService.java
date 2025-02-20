@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
-import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
@@ -31,8 +30,6 @@ import java.io.IOException;
  */
 public class AnalysisWebService extends OpenCGAWSServer {
 
-    protected JobManager jobManager;
-
     public AnalysisWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         this(uriInfo.getPathParameters().getFirst("apiVersion"), uriInfo, httpServletRequest, httpHeaders);
@@ -41,8 +38,6 @@ public class AnalysisWebService extends OpenCGAWSServer {
     public AnalysisWebService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
-
-        this.jobManager = catalogManager.getJobManager();
     }
 
 }

@@ -169,7 +169,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         assertEquals(1, result.getEvents().size());
         assertEquals("Please note that the Cohort Stats for '1000g:cohort2' are currently outdated." +
                 " The statistics have been calculated with 2 samples, while the total number of samples in the cohort is 4." +
-                " To display updated statistics, please execute variant-stats-index.", result.getEvents().get(0).getMessage());
+                " To display updated statistics, please contact your Organization / Study Administrator.", result.getEvents().get(0).getMessage());
 
         VariantStorageEngine engineMock = Mockito.spy(variantStorageEngine);
         VariantStatisticsManager statsManagerMock = Mockito.spy(variantStorageEngine.newVariantStatisticsManager());

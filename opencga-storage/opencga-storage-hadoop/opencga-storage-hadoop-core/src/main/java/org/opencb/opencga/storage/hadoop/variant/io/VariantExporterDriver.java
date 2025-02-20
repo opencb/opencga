@@ -5,19 +5,16 @@ import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapred.AvroValue;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
-import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapred.JobContext;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.parquet.Log;
 import org.apache.parquet.avro.AvroParquetOutputFormat;
 import org.apache.parquet.hadoop.ParquetOutputFormat;
@@ -25,100 +22,63 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.GeneCancerAssociation;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
-import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantFileOutputFormat;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantLocusKey;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantLocusKeyPartitioner;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
-
-/**
- * Created on 14/06/18.
- *
- * export HADOOP_USER_CLASSPATH_FIRST=true
- * hbase_conf=$(hbase classpath | tr ":" "\n" | grep "/conf" | tr "\n" ":")
- * export HADOOP_CLASSPATH=${hbase_conf}:$PWD/libs/avro-1.7.7.jar:$PWD/libs/jackson-databind-2.6.6.jar:$PWD/libs/jackson-core-2.6.6.jar
- * export HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:$PWD/libs/jackson-annotations-2.6.6.jar
- * yarn jar opencga-storage-hadoop-core-1.4.0-jar-with-dependencies.jar \
- *      org.opencb.opencga.storage.hadoop.variant.io.VariantExporterDriver \
- *      opencga_variants study myStudy --of avro --output my.variants.avro --region 22
- *
- * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
- */
-public class VariantExporterDriver extends AbstractVariantsTableDriver {
+public class VariantExporterDriver extends VariantDriver {
 
     public static final String OUTPUT_FORMAT_PARAM = "of";
-    public static final String OUTPUT_PARAM = "output";
-    public static final String CONCAT_OUTPUT_PARAM = "concat-output";
-    private VariantOutputFormat outputFormat;
-    private Path outdir;
-    private Path localOutput;
-    private Query query = new Query();
-    private QueryOptions options = new QueryOptions();
-    private static Logger logger = LoggerFactory.getLogger(VariantExporterDriver.class);
-    private boolean useReduceStep;
+    private VariantWriterFactory.VariantOutputFormat outputFormat;
+    private Class<? extends VariantMapper> mapperClass;
+    private Class<? extends Reducer> reducerClass;
+    private Class<? extends OutputFormat> outputFormatClass;
+    private Class<? extends Partitioner> partitioner;
 
     @Override
     protected void parseAndValidateParameters() throws IOException {
-        setStudyId(-1);
         super.parseAndValidateParameters();
-        outputFormat = VariantOutputFormat.valueOf(getParam(OUTPUT_FORMAT_PARAM, "avro").toUpperCase());
-        String outdirStr = getParam(OUTPUT_PARAM);
-        if (StringUtils.isEmpty(outdirStr)) {
-            throw new IllegalArgumentException("Missing argument " + OUTPUT_PARAM);
-        }
 
-        useReduceStep = Boolean.valueOf(getParam(CONCAT_OUTPUT_PARAM));
-        outdir = new Path(outdirStr);
-        if (isLocal(outdir)) {
-            localOutput = getLocalOutput(outdir);
-            outdir = getTempOutdir("opencga_export", localOutput.getName());
-            outdir.getFileSystem(getConf()).deleteOnExit(outdir);
-        }
-        if (localOutput != null) {
+        outputFormat = VariantWriterFactory.VariantOutputFormat.valueOf(getParam(OUTPUT_FORMAT_PARAM, "avro").toUpperCase());
+        if (outputFormat.isBinary()) {
+            // Binary outputs should be concatenated in a reduce step
             useReduceStep = true;
-            logger.info(" * Outdir file: " + localOutput.toUri());
-            logger.info(" * Temporary outdir file: " + outdir.toUri());
-        } else {
-            logger.info(" * Outdir file: " + outdir.toUri());
-        }
-
-        getQueryFromConfig(query, getConf());
-        getQueryOptionsFromConfig(options, getConf());
-
-        logger.info(" * Query:");
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
-            logger.info("   * " + entry.getKey() + " : " + entry.getValue());
         }
     }
 
     @Override
-    protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
-        Class<? extends VariantMapper> mapperClass;
-        Class<? extends Reducer> reducerClass;
+    protected Class<? extends VariantMapper> getMapperClass() {
+        return mapperClass;
+    }
+
+    @Override
+    protected Class<? extends Reducer> getReducerClass() {
+        return reducerClass;
+    }
+
+    @Override
+    protected Class<? extends Partitioner> getPartitioner() {
+        return partitioner;
+    }
+
+    @Override
+    protected Class<? extends OutputFormat> getOutputFormatClass() {
+        return outputFormatClass;
+    }
+
+    @Override
+    protected void setupJob(Job job) throws IOException {
         job.getConfiguration().setBoolean(JobContext.MAP_OUTPUT_COMPRESS, true);
         job.getConfiguration().setClass(JobContext.MAP_OUTPUT_COMPRESS_CODEC, DeflateCodec.class, CompressionCodec.class);
         switch (outputFormat) {
@@ -127,9 +87,9 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
                 job.getConfiguration().set(AvroJob.CONF_OUTPUT_CODEC, DataFileConstants.DEFLATE_CODEC);
                 // do not break
             case AVRO:
-                job.setOutputFormatClass(AvroKeyOutputFormat.class);
+                outputFormatClass = AvroKeyOutputFormat.class;
                 if (useReduceStep) {
-                    job.setMapOutputKeyClass(NullWritable.class);
+                    job.setMapOutputKeyClass(VariantLocusKey.class);
                     AvroJob.setMapOutputValueSchema(job, VariantAvro.getClassSchema());
                     AvroJob.setOutputKeySchema(job, VariantAvro.getClassSchema());
                     job.setOutputValueClass(NullWritable.class);
@@ -148,7 +108,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
                 ParquetOutputFormat.setCompression(job, CompressionCodecName.GZIP);
                 // do not break
             case PARQUET:
-                job.setOutputFormatClass(AvroParquetOutputFormat.class);
+                outputFormatClass = AvroParquetOutputFormat.class;
                 AvroParquetOutputFormat.setSchema(job, VariantAvro.getClassSchema());
                 if (useReduceStep) {
                     job.setMapOutputKeyClass(NullWritable.class);
@@ -161,84 +121,44 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
                 }
                 break;
             default:
+                if (outputFormat.isBinary()) {
+                    throw new IllegalArgumentException("Unexpected binary output format " + outputFormat);
+                }
                 if (useReduceStep) {
-                    job.setMapOutputKeyClass(NullWritable.class);
+                    job.setMapOutputKeyClass(VariantLocusKey.class);
                     AvroJob.setMapOutputValueSchema(job, VariantAvro.getClassSchema());
                     mapperClass = AvroVariantExporterMapper.class;
                     reducerClass = VariantExporterReducer.class;
+                    partitioner = VariantLocusKeyPartitioner.class;
+                    outputFormatClass = VariantFileOutputFormat.class;
                 } else {
                     AvroJob.setOutputKeySchema(job, VariantAvro.getClassSchema());
-                    mapperClass = VariantExporterDirectMapper.class;
+                    mapperClass = VariantExporterDirectMultipleOutputsMapper.class;
+//                    mapperClass = VariantExporterDirectMapper.class;
+
                     reducerClass = null;
+
+//                    MultipleOutputs.setCountersEnabled(job, true);
+                    MultipleOutputs.addNamedOutput(job, VariantExporterDirectMultipleOutputsMapper.NAMED_OUTPUT,
+                            VariantFileOutputFormat.class, Variant.class, NullWritable.class);
+                    LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
+                    outputFormatClass = LazyOutputFormat.class;
                 }
-                if (outputFormat.isGzip()) {
-                    FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression
-                } else if (outputFormat.isSnappy()) {
-                    FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class); // compression
+                if (HBaseCompat.getInstance().isSnappyAvailable()) {
+                    FileOutputFormat.setCompressOutput(job, true);
+                    // FIXME: SnappyCodec might not be available in client side
+//                      FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+                    FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
+                } else {
+                    FileOutputFormat.setCompressOutput(job, true);
+                    FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
                 }
-                job.setOutputFormatClass(VariantFileOutputFormat.class);
+                job.getConfiguration().set(VariantFileOutputFormat.VARIANT_OUTPUT_FORMAT, outputFormat.name());
                 job.setOutputKeyClass(Variant.class);
                 break;
         }
-
-        if (useReduceStep) {
-            logger.info("Use one Reduce task to produce a single file");
-            job.setReducerClass(reducerClass);
-            job.setNumReduceTasks(1);
-        } else {
-            VariantMapReduceUtil.setNoneReduce(job);
-        }
-
-        VariantQueryParser variantQueryParser = new HadoopVariantQueryParser(null, getMetadataManager());
-        ParsedVariantQuery variantQuery = variantQueryParser.parseQuery(query, options);
-        Query query = variantQuery.getQuery();
-        if (VariantHBaseQueryParser.isSupportedQuery(query)) {
-            logger.info("Init MapReduce job reading from HBase");
-            boolean useSampleIndex = !getConf().getBoolean("skipSampleIndex", false) && SampleIndexQueryParser.validSampleIndexQuery(query);
-            if (useSampleIndex) {
-                // Remove extra fields from the query
-                new SampleIndexDBAdaptor(getHBaseManager(), getTableNameGenerator(), getMetadataManager()).parseSampleIndexQuery(query);
-
-                logger.info("Use sample index to read from HBase");
-            }
-
-            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(getMetadataManager());
-            List<Scan> scans = parser.parseQueryMultiRegion(variantQuery, options);
-            VariantMapReduceUtil.configureMapReduceScans(scans, getConf());
-
-            VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex);
-        } else {
-            logger.info("Init MapReduce job reading from Phoenix");
-            String sql = new VariantSqlQueryParser(variantTable, getMetadataManager(), getHelper().getConf())
-                    .parse(variantQuery, options);
-
-            VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
-        }
-
-        setNoneTimestamp(job);
-
-        FileOutputFormat.setOutputPath(job, outdir); // set Path
-
-        VariantMapReduceUtil.configureVariantConverter(job.getConfiguration(), false, true, true,
-                query.getString(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."));
-
-        job.getConfiguration().set(VariantFileOutputFormat.VARIANT_OUTPUT_FORMAT, outputFormat.name());
-
-        return job;
     }
 
-    @Override
-    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
-        super.postExecution(succeed);
-        if (succeed) {
-            if (localOutput != null) {
-                concatMrOutputToLocal(outdir, localOutput);
-            }
-        }
-        if (localOutput != null) {
-            deleteTemporaryFile(outdir);
-        }
-    }
 
     @Override
     protected String getJobOperationName() {
@@ -247,9 +167,9 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
 
     /**
      * Mapper to convert to Variant.
-     * The output of this mapper should be connected directly to the {@link VariantOutputFormat}
+     * The output of this mapper should be connected directly to the {@link VariantWriterFactory.VariantOutputFormat}
      * This mapper can not work with a reduce step.
-     * @see VariantOutputFormat
+     * @see VariantWriterFactory.VariantOutputFormat
      */
     public static class VariantExporterDirectMapper extends VariantMapper<Variant, NullWritable> {
         @Override
@@ -262,6 +182,58 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
             context.write(value, NullWritable.get());
+        }
+    }
+
+    /**
+     * Mapper to convert to Variant.
+     * The output of this mapper should be connected directly to the {@link VariantWriterFactory.VariantOutputFormat}
+     * This mapper can not work with a reduce step.
+     * The output is written to multiple outputs, ensuring that generated files are sorted by chromosome and position.
+     */
+    public static class VariantExporterDirectMultipleOutputsMapper extends VariantMapper<Variant, NullWritable> {
+
+        public static final String NAMED_OUTPUT = "export";
+        private String baseOutputPath;
+        private String chromosome;
+
+        public static String buildOutputKeyPrefix(String namedOutput, String chromosome, Integer start) {
+            // If it's a single digit chromosome, add a 0 at the beginning
+            //       1 -> 01
+            //       3 -> 03
+            //      22 -> 22
+            // If the first character is a digit, and the second is not, add a 0 at the beginning
+            //      MT -> MT
+            //      1_KI270712v1_random -> 01_KI270712v1_random
+            if (VariantLocusKey.isSingleDigitChromosome(chromosome)) {
+                chromosome = "0" + chromosome;
+            }
+
+            return String.format("%s.%s.%010d", namedOutput, chromosome, start);
+        }
+
+        private MultipleOutputs<Variant, NullWritable> mos;
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+            mos = new MultipleOutputs<>(context);
+            context.getCounter(COUNTER_GROUP_NAME, "variants").increment(0);
+        }
+
+        @Override
+        protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
+            context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
+            if (baseOutputPath == null || !VariantLocusKey.naturalConsecutiveChromosomes(chromosome, value.getChromosome())) {
+                baseOutputPath = buildOutputKeyPrefix(NAMED_OUTPUT, value.getChromosome(), value.getStart());
+                chromosome = value.getChromosome();
+            }
+            mos.write(NAMED_OUTPUT, value, NullWritable.get(), baseOutputPath);
+        }
+
+        @Override
+        protected void cleanup(Mapper<Object, Variant, Variant, NullWritable>.Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+            mos.close();
         }
     }
 
@@ -291,7 +263,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
      * @see VariantExporterReducer
      * @see AvroKeyVariantExporterReducer
      */
-    public static class AvroVariantExporterMapper extends VariantMapper<NullWritable, AvroValue<VariantAvro>> {
+    public static class AvroVariantExporterMapper extends VariantMapper<VariantLocusKey, AvroValue<VariantAvro>> {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
@@ -302,19 +274,19 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
             removeNullsFromAvro(value.getImpl(), context);
-            context.write(NullWritable.get(), new AvroValue<>(value.getImpl()));
+            context.write(new VariantLocusKey(value), new AvroValue<>(value.getImpl()));
         }
     }
 
     /**
      * Reducer to join all VariantAvro and generate Variants.
-     * The output of this reducer should be connected to the {@link VariantOutputFormat}
+     * The output of this reducer should be connected to the {@link VariantWriterFactory.VariantOutputFormat}
      * @see AvroVariantExporterMapper
-     * @see VariantOutputFormat
+     * @see VariantWriterFactory.VariantOutputFormat
      */
-    public static class VariantExporterReducer extends Reducer<NullWritable, AvroValue<VariantAvro>, Variant, NullWritable> {
+    public static class VariantExporterReducer<T> extends Reducer<T, AvroValue<VariantAvro>, Variant, NullWritable> {
         @Override
-        protected void reduce(NullWritable key, Iterable<AvroValue<VariantAvro>> values, Context context)
+        protected void reduce(T key, Iterable<AvroValue<VariantAvro>> values, Context context)
                 throws IOException, InterruptedException {
             for (AvroValue<VariantAvro> value : values) {
                 context.write(new Variant(value.datum()), NullWritable.get());
@@ -328,10 +300,10 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
      * @see AvroVariantExporterMapper
      * @see AvroKeyOutputFormat
      */
-    public static class AvroKeyVariantExporterReducer
-            extends Reducer<NullWritable, AvroValue<VariantAvro>, AvroKey<VariantAvro>, NullWritable> {
+    public static class AvroKeyVariantExporterReducer<T>
+            extends Reducer<T, AvroValue<VariantAvro>, AvroKey<VariantAvro>, NullWritable> {
         @Override
-        protected void reduce(NullWritable key, Iterable<AvroValue<VariantAvro>> values, Context context)
+        protected void reduce(T key, Iterable<AvroValue<VariantAvro>> values, Context context)
                 throws IOException, InterruptedException {
             for (AvroValue<VariantAvro> value : values) {
                 context.write(new AvroKey<>(value.datum()), NullWritable.get());

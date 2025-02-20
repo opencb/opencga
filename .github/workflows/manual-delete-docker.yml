@@ -1,0 +1,17 @@
+name: Manual Delete Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Tag of the Docker image to delete (must start with 'TASK')"
+        required: true
+        type: string
+
+jobs:
+  call-delete-docker:
+    name: Call Reusable Delete Docker Workflow
+    uses: ./.github/workflows/delete-docker.yml
+    with:
+      task: ${{ inputs.task }}
+    secrets: inherit

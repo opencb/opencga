@@ -31,19 +31,23 @@ public class ProjectInternal extends Internal {
     @DataField(id = "variant", description = FieldConstants.PROJECT_INTERNAL_VARIANT)
     private ProjectInternalVariant variant;
 
+    @DataField(id = "federated", indexed = true, description = FieldConstants.PROJECT_INTERNAL_FEDERATED)
+    private boolean federated;
+
     public ProjectInternal() {
     }
 
     public ProjectInternal(InternalStatus status, String registrationDate, String modificationDate, Datastores datastores,
-                           ProjectInternalVariant variant) {
+                           ProjectInternalVariant variant, boolean federated) {
         super(status, registrationDate, modificationDate);
         this.datastores = datastores;
         this.variant = variant;
+        this.federated = federated;
     }
 
     public static ProjectInternal init() {
         return new ProjectInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), new Datastores(),
-                new ProjectInternalVariant());
+                new ProjectInternalVariant(), false);
     }
 
     @Override
@@ -54,6 +58,7 @@ public class ProjectInternal extends Internal {
         sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append(", datastores=").append(datastores);
         sb.append(", variant=").append(variant);
+        sb.append(", federated=").append(federated);
         sb.append('}');
         return sb.toString();
     }
@@ -101,5 +106,13 @@ public class ProjectInternal extends Internal {
     public ProjectInternal setLastModified(String lastModified) {
         this.lastModified = lastModified;
         return this;
+    }
+
+    public boolean isFederated() {
+        return federated;
+    }
+
+    public void setFederated(boolean federated) {
+        this.federated = federated;
     }
 }

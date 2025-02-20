@@ -56,6 +56,10 @@ public class Account {
         this.authentication = null;
     }
 
+    public Account(String expirationDate, AuthenticationOrigin authentication) {
+        this(expirationDate, new Password(), 0, authentication);
+    }
+
     public Account(String expirationDate, Password password, int failedAttempts, AuthenticationOrigin authentication) {
         this.expirationDate = expirationDate;
         this.password = password;
@@ -113,13 +117,19 @@ public class Account {
     public static class AuthenticationOrigin {
 
         private String id;
+        private boolean federation;
         private boolean application;
 
         public AuthenticationOrigin() {
         }
 
         public AuthenticationOrigin(String id, boolean application) {
+            this(id, false, application);
+        }
+
+        public AuthenticationOrigin(String id, boolean federation, boolean application) {
             this.id = id;
+            this.federation = federation;
             this.application = application;
         }
 
@@ -127,6 +137,7 @@ public class Account {
         public String toString() {
             final StringBuilder sb = new StringBuilder("AuthenticationOrigin{");
             sb.append("id='").append(id).append('\'');
+            sb.append(", federation=").append(federation);
             sb.append(", application=").append(application);
             sb.append('}');
             return sb.toString();
@@ -139,6 +150,14 @@ public class Account {
         public AuthenticationOrigin setId(String id) {
             this.id = id;
             return this;
+        }
+
+        public boolean isFederation() {
+            return federation;
+        }
+
+        public void setFederation(boolean federation) {
+            this.federation = federation;
         }
 
         public boolean getApplication() {

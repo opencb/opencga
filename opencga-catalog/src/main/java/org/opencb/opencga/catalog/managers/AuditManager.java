@@ -213,6 +213,13 @@ public class AuditManager {
     public void audit(String organizationId, String operationId, String userId, Enums.Action action, Enums.Resource resource,
                       String resourceId, String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status,
                       ObjectMap attributes) {
+        audit(organizationId, operationId, userId, action.name(), resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
+                attributes);
+    }
+
+    protected void audit(String organizationId, String operationId, String userId, String action, Enums.Resource resource,
+                      String resourceId, String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status,
+                      ObjectMap attributes) {
         String apiVersion = GitRepositoryState.getInstance().getBuildVersion();
         Date date = TimeUtils.getDate();
 

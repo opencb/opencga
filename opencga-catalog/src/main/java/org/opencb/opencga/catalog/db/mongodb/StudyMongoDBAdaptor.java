@@ -493,7 +493,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
     @Override
     public OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogException {
-        if (users == null || users.size() == 0) {
+        if (CollectionUtils.isEmpty(users)) {
             throw new CatalogDBException("Unable to remove users from groups. List of users is empty");
         }
 
@@ -508,7 +508,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                 Bson pull = Updates.pullAll("groups.$.userIds", users);
 
                 // Pull those users while they are still there
-                DataResult update;
+                DataResult<?> update;
                 do {
                     update = studyCollection.update(clientSession, query, pull, null);
                 } while (update.getNumUpdated() > 0);
@@ -517,6 +517,36 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
             });
         } catch (Exception e) {
             logger.error("Could not remove users from all groups of the study. {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    public OpenCGAResult<Group> removeUsersFromAllGroups(List<String> users) throws CatalogException {
+        if (CollectionUtils.isEmpty(users)) {
+            throw new CatalogDBException("Unable to remove users from groups. List of users is empty");
+        }
+
+        try {
+            return runTransaction(clientSession -> {
+                long tmpStartTime = startQuery();
+                logger.debug("Removing list of users '{}' from all groups from all studies", users);
+
+                Document query = new Document()
+                        .append(QueryParams.GROUP_USER_IDS.key(), new Document("$in", users));
+                Bson pull = Updates.pullAll("groups.$.userIds", users);
+
+                QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+                // Pull those users while they are still there
+                DataResult<?> update;
+                do {
+                    update = studyCollection.update(clientSession, query, pull, multi);
+                } while (update.getNumUpdated() > 0);
+
+                return endWrite(tmpStartTime, -1, -1, null);
+            });
+        } catch (Exception e) {
+            logger.error("Could not remove users from all groups from all studies. {}", e.getMessage());
             throw e;
         }
     }
@@ -1504,26 +1534,23 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
         String studyId = studyDocument.getString(QueryParams.ID.key());
         long studyUid = studyDocument.getLong(PRIVATE_UID);
-        long projectUid = studyDocument.getEmbedded(Arrays.asList(PRIVATE_PROJECT, PRIVATE_UID), -1L);
 
         logger.debug("Deleting study {} ({})", studyId, studyUid);
 
         // TODO: In the future, we will want to delete also all the files, samples, cohorts... associated
 
         // Add status DELETED
-        studyDocument.put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"));
+        Document internal = studyDocument.get("internal", Document.class);
+        if (internal != null) {
+            internal.put("status", getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"));
+        }
 
         // Upsert the document into the DELETED collection
-        Bson query = new Document()
-                .append(QueryParams.ID.key(), studyId)
-                .append(PRIVATE_PROJECT_UID, projectUid);
+        Bson query = new Document(PRIVATE_UID, studyUid);
         deletedStudyCollection.update(clientSession, query, new Document("$set", studyDocument),
                 new QueryOptions(MongoDBCollection.UPSERT, true));
 
         // Delete the document from the main STUDY collection
-        query = new Document()
-                .append(PRIVATE_UID, studyUid)
-                .append(PRIVATE_PROJECT_UID, projectUid);
         DataResult remove = studyCollection.remove(clientSession, query, null);
         if (remove.getNumMatches() == 0) {
             throw new CatalogDBException("Study " + studyId + " not found");
@@ -1830,6 +1857,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                     case UUID:
                     case NAME:
                     case DESCRIPTION:
+                    case INTERNAL_FEDERATED:
                     case INTERNAL_STATUS_DATE:
                     case DATASTORES:
                     case SIZE:
