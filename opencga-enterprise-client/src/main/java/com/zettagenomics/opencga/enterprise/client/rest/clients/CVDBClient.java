@@ -22,9 +22,10 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence
 import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.job.Job;
@@ -45,7 +46,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the CVDB webservices.
  *    PATH: analysis/cvdb
  */
-public class CVDBClient extends AbstractParentClient {
+public class CVDBClient extends ParentClient {
 
     public CVDBClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
