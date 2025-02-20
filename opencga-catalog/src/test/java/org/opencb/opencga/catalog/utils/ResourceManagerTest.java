@@ -1,10 +1,9 @@
-package org.opencb.opencga.catalog.managers;
+package org.opencb.opencga.catalog.utils;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
-import org.opencb.opencga.catalog.utils.ResourceManager;
-import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -14,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_DIRNAME;
