@@ -326,6 +326,9 @@ public class StudyManager extends AbstractManager {
         if (!organizationId.equals(organizationFqn) && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
             // User may be trying to fetch a federated study
             organizationFqn = organizationId;
+        } else if (ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) && organizationFqn == null) {
+            // If the user is an admin and the study is not provided, set the organizationFqn to ADMIN_ORGANIZATION
+            organizationFqn = ParamConstants.ADMIN_ORGANIZATION;
         }
 
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project);
