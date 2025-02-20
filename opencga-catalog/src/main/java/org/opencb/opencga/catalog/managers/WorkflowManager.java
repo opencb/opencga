@@ -21,6 +21,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
@@ -45,6 +46,8 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -58,6 +61,12 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
     private final CatalogIOManager catalogIOManager;
     private final IOManagerFactory ioManagerFactory;
+
+    private static final Pattern MEMORY_PATTERN = Pattern.compile("\\s*memory\\s*=\\s*\\{\\s*[^0-9]*([0-9]+\\.[A-Za-z]+)");
+    private static final Pattern CPU_PATTERN = Pattern.compile("\\s*cpus\\s*=\\s*\\{\\s*[^0-9]*([0-9]+)");
+
+    private static final int MAX_CPUS = 16;
+    private static final String MAX_MEMORY = "64GB";
 
     private final Logger logger;
 
@@ -301,8 +310,78 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             throw new CatalogParameterException("Missing 'id' field in workflow import parameters");
         }
         String workflowId = repository.getId().replace("/", ".");
+        Workflow workflow = new Workflow("", "", "", null, new WorkflowSystem(WorkflowSystem.SystemId.NEXTFLOW, ""), new LinkedList<>(),
+                new LinkedList<>(), new MinimumRequirements(), false, repository.toWorkflowRepository(), new LinkedList<>(),
+                new WorkflowInternal(), TimeUtils.getTime(), TimeUtils.getTime(), new HashMap<>());
+
+        try {
+            processNextflowConfig(workflow, repository);
+            processMemoryRequirements(workflow, repository);
+        } catch (CatalogException e) {
+            throw new CatalogException("Could not process repository information from workflow '" + workflowId + "'.", e);
+        }
+
+        return workflow;
+    }
+
+    private void processMemoryRequirements(Workflow workflow, WorkflowRepositoryParams repository) throws CatalogException {
         String urlStr;
 
+        if (StringUtils.isEmpty(repository.getVersion())) {
+            urlStr = "https://raw.githubusercontent.com/" + repository.getId() + "/refs/heads/master/conf/base.config";
+        } else {
+            urlStr = "https://raw.githubusercontent.com/" + repository.getId() + "/refs/tags/" + repository.getVersion()
+                    + "/conf/base.config";
+        }
+
+        try {
+            URL url = new URL(urlStr);
+            BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+
+            int cpus = 0;
+            String memory = null;
+            String inputLine;
+            long maxMemory = IOUtils.fromHumanReadableToByte(MAX_MEMORY);
+            while ((inputLine = in.readLine()) != null) {
+                Matcher cpuMatcher = CPU_PATTERN.matcher(inputLine);
+                Matcher memoryMatcher = MEMORY_PATTERN.matcher(inputLine);
+                if (cpuMatcher.find()) {
+                    String value = cpuMatcher.group(1);
+                    int intValue = Integer.parseInt(value);
+                    if (intValue > cpus) {
+                        cpus = Math.min(intValue, MAX_CPUS);
+                    }
+                } else if (memoryMatcher.find()) {
+                    String value = memoryMatcher.group(1);
+                    if (memory == null) {
+                        memory = value;
+                    } else {
+                        long memoryBytes = IOUtils.fromHumanReadableToByte(value);
+                        long currentMemoryBytes = IOUtils.fromHumanReadableToByte(memory);
+                        if (memoryBytes > currentMemoryBytes) {
+                            if (memoryBytes > maxMemory) {
+                                memory = MAX_MEMORY;
+                            } else {
+                                memory = value;
+                            }
+                        }
+                    }
+                }
+            }
+            if (cpus > 0 && memory != null) {
+                workflow.getMinimumRequirements().setCpu(String.valueOf(cpus));
+                workflow.getMinimumRequirements().setMemory(memory);
+            } else {
+                logger.warn("Could not find the minimum requirements for the workflow " + workflow.getId());
+            }
+            in.close();
+        } catch (Exception e) {
+            throw new CatalogException("Could not process nextflow.config file.", e);
+        }
+    }
+
+    private void processNextflowConfig(Workflow workflow, WorkflowRepositoryParams repository) throws CatalogException {
+        String urlStr;
         if (StringUtils.isEmpty(repository.getVersion())) {
             urlStr = "https://raw.githubusercontent.com/" + repository.getId() + "/refs/heads/master/nextflow.config";
         } else {
@@ -310,9 +389,6 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                     + "/nextflow.config";
         }
 
-        Workflow workflow = new Workflow("", "", "", null, new WorkflowSystem(WorkflowSystem.SystemId.NEXTFLOW, ""), new LinkedList<>(),
-                new LinkedList<>(), new MinimumRequirements(), false, repository.toWorkflowRepository(), new LinkedList<>(),
-                new WorkflowInternal(), TimeUtils.getTime(), TimeUtils.getTime(), new HashMap<>());
         try {
             URL url = new URL(urlStr);
             BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
@@ -357,10 +433,8 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             }
             in.close();
         } catch (Exception e) {
-            throw new CatalogException("Could not import workflow '" + workflowId + "'.", e);
+            throw new CatalogException("Could not process nextflow.config file.", e);
         }
-
-        return workflow;
     }
 
     private void fillWithWorkflowManifest(Workflow workflow, String rawline) {
