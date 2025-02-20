@@ -144,7 +144,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
                 if (StringUtils.isNotEmpty(entry.getValue())) {
                     if ((workflowVariable != null && workflowVariable.isOutput()) || inputFileUtils.isDynamicOutputFolder(entry.getValue())) {
                         processOutputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
-                    } else {
+                    } else if (!inputFileUtils.isFlag(entry.getValue())) {
                         processInputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
                     }
                 } else if (workflowVariable != null) {
@@ -177,7 +177,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
                 }
             } else if (workflowVariable.isOutput()) {
                 processOutputCli("", inputFileUtils, cliParamsBuilder);
-            } else {
+            } else if (workflowVariable.getType() != WorkflowVariable.WorkflowVariableType.FLAG) {
                 throw new ToolException("Missing mandatory parameter: '" + mandatoryParam + "'.");
             }
         }

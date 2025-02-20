@@ -100,6 +100,10 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
                                 .setId("-profile")
                                 .setRequired(true)
                                 .setDefaultValue("docker")
+//                        new WorkflowVariable()
+//                                .setId("-otherFlag")
+//                                .setRequired(true)
+//                                .setType(WorkflowVariable.WorkflowVariableType.FLAG)
                 ))
                 .setRepository(new WorkflowRepository("nf-core/demo"));
         catalogManager.getWorkflowManager().create(studyFqn, workflow.toWorkflow(), QueryOptions.empty(), ownerToken);
@@ -117,6 +121,7 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
         Map<String, String> cliParams = new HashMap<>();
         cliParams.put("input", "file://samplesheet.csv");
+//        cliParams.put("--flag", "$FLAG");
 //        cliParams.put("outdir", "$OUTPUT");
 //        cliParams.put("genome", "GRCh37");
 //        cliParams.put("-profile", "docker");
