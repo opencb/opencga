@@ -290,6 +290,17 @@ public class UserManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void userIsImmediatelyBlockedTest() throws CatalogException {
+        OpenCGAResult<Study> studyOpenCGAResult = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), normalToken1);
+        assertEquals(1, studyOpenCGAResult.getNumResults());
+
+        catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.SUSPENDED, QueryOptions.empty(), ownerToken);
+        CatalogAuthorizationException exception = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), normalToken1));
+        assertTrue(exception.getMessage().contains("suspended"));
+    }
+
+    @Test
     public void loginExpiredAccountTest() throws CatalogException {
         // Expire account of normalUserId1
         ObjectMap params = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_EXPIRATION_DATE.key(), TimeUtils.getTime());

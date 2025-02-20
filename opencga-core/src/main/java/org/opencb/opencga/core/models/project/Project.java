@@ -22,6 +22,7 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.PrivateFields;
+import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.util.HashMap;
@@ -106,6 +107,8 @@ public class Project extends PrivateFields {
             description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int currentRelease;
 
+    @DataField(id = "federation", description = FieldConstants.PROJECT_FEDERATION)
+    private FederationClientParamsRef federation;
 
     @DataField(id = "studies",
             description = FieldConstants.PROJECT_STUDIES)
@@ -163,19 +166,20 @@ public class Project extends PrivateFields {
 
     // Clone a project
     public Project(Project project) {
-        this(project.getUid(), project.getId(), project.getUuid(), project.getName(), project.getFqn(), project.getCreationDate(),
-                project.getModificationDate(), project.getDescription(), project.getOrganism(), project.getCellbase(),
-                project.getCurrentRelease(), project.getStudies(), project.getInternal(), project.getAttributes());
+        this(project.getUid(), project.getId(), project.getUuid(), project.getName(), project.getFqn(), project.getFederation(),
+                project.getCreationDate(), project.getModificationDate(), project.getDescription(), project.getOrganism(),
+                project.getCellbase(), project.getCurrentRelease(), project.getStudies(), project.getInternal(), project.getAttributes());
     }
 
-    public Project(long uid, String id, String uuid, String name, String fqn, String creationDate, String modificationDate,
-                   String description, ProjectOrganism organism, CellBaseConfiguration cellbase, int currentRelease, List<Study> studies,
-                   ProjectInternal internal, Map<String, Object> attributes) {
+    public Project(long uid, String id, String uuid, String name, String fqn, FederationClientParamsRef federation, String creationDate,
+                   String modificationDate, String description, ProjectOrganism organism, CellBaseConfiguration cellbase,
+                   int currentRelease, List<Study> studies, ProjectInternal internal, Map<String, Object> attributes) {
         super(uid);
         this.id = id;
         this.uuid = uuid;
         this.name = name;
         this.fqn = fqn;
+        this.federation = federation;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.description = description;
@@ -200,6 +204,7 @@ public class Project extends PrivateFields {
         sb.append(", organism=").append(organism);
         sb.append(", cellbase=").append(cellbase);
         sb.append(", currentRelease=").append(currentRelease);
+        sb.append(", federation=").append(federation);
         sb.append(", studies=").append(studies);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
@@ -292,6 +297,14 @@ public class Project extends PrivateFields {
     public Project setOrganism(ProjectOrganism organism) {
         this.organism = organism;
         return this;
+    }
+
+    public FederationClientParamsRef getFederation() {
+        return federation;
+    }
+
+    public void setFederation(FederationClientParamsRef federation) {
+        this.federation = federation;
     }
 
     public ProjectInternal getInternal() {

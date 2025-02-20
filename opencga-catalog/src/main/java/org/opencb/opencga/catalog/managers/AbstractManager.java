@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
@@ -42,6 +43,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.event.CatalogEvent;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -289,6 +291,25 @@ public abstract class AbstractManager {
         }
 
         return differences;
+    }
+
+    protected void checkIsNotAFederatedUser(String organizationId, List<String> users) throws CatalogException {
+        if (CollectionUtils.isNotEmpty(users)) {
+            Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), users);
+            OpenCGAResult<User> result = catalogDBAdaptorFactory.getCatalogUserDBAdaptor(organizationId).get(query,
+                    UserManager.INCLUDE_INTERNAL);
+            if (result.getNumResults() != users.size()) {
+                throw new CatalogException("Some users were not found.");
+            }
+            for (User user : result.getResults()) {
+                ParamUtils.checkObj(user.getInternal(), "internal");
+                ParamUtils.checkObj(user.getInternal().getAccount(), "internal.account");
+                ParamUtils.checkObj(user.getInternal().getAccount().getAuthentication(), "internal.account.authentication");
+                if (user.getInternal().getAccount().getAuthentication().isFederation()) {
+                    throw new CatalogException("User '" + user.getId() + "' is a federated user.");
+                }
+            }
+        }
     }
 
     /**

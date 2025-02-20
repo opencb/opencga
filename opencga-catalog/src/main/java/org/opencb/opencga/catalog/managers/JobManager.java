@@ -2039,7 +2039,7 @@ public class JobManager extends ResourceManager<Job> {
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyId, userId, organizationId);
+        Study study = studyManager.resolveId(studyFqn, StudyManager.INCLUDE_CONFIGURATION, tokenPayload);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
@@ -2080,6 +2080,13 @@ public class JobManager extends ResourceManager<Job> {
             }
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(organizationId, study.getUid(), members);
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, members);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
 
             List<Long> jobUids = jobList.stream().map(Job::getUid).collect(Collectors.toList());
             AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(jobUids, permissions,

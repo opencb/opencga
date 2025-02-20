@@ -22,8 +22,8 @@ import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.AnalysisVariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
@@ -1988,6 +1988,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "proteinKeyword", commandOptions.proteinKeyword, true);
             putNestedIfNotEmpty(beanParams, "drug", commandOptions.drug, true);
             putNestedIfNotEmpty(beanParams, "customAnnotation", commandOptions.customAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "source", commandOptions.source, true);
             putNestedIfNotEmpty(beanParams, "unknownGenotype", commandOptions.unknownGenotype, true);
             putNestedIfNotNull(beanParams, "sampleMetadata", commandOptions.sampleMetadata, true);
             putNestedIfNotNull(beanParams, "sort", commandOptions.sort, true);

@@ -1250,7 +1250,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyId, userId, organizationId);
+        Study study = studyManager.resolveId(studyFqn, QueryOptions.empty(), tokenPayload);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
@@ -1316,6 +1316,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(organizationId, study.getUid(), members);
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, members);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
 
             List<AuthorizationManager.CatalogAclParams> aclParamsList = new LinkedList<>();
             List<Long> familyUids = familyList.stream().map(Family::getUid).collect(Collectors.toList());

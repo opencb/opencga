@@ -28,6 +28,7 @@ import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Email;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -48,14 +49,11 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     public static final String OPENCGA = "OPENCGA";
     private final Email emailConfig;
 
-    private final DBAdaptorFactory dbAdaptorFactory;
-
     public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Email emailConfig, String algorithm, String secretKeyString,
                                         long expiration) {
-        super(expiration);
+        super(dbAdaptorFactory, expiration);
 
         this.emailConfig = emailConfig;
-        this.dbAdaptorFactory = dbAdaptorFactory;
 
         SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.valueOf(algorithm);
         Key secretKey = this.converStringToKeyObject(secretKeyString, signatureAlgorithm.getJcaName());
@@ -112,13 +110,18 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration) {
-        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.OPENCGA, userId, claims, expiration);
+    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration)
+            throws CatalogAuthenticationException {
+        List<JwtPayload.FederationJwtPayload> federations = getFederations(organizationId, userId);
+        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.OPENCGA, userId, claims, federations,
+                expiration);
     }
 
     @Override
-    public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims) {
-        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.OPENCGA, userId, claims, 0L);
+    public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims)
+            throws CatalogAuthenticationException {
+        List<JwtPayload.FederationJwtPayload> federations = getFederations(organizationId, userId);
+        return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.OPENCGA, userId, claims, federations, 0L);
     }
 
     @Override
@@ -135,14 +138,10 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
             throw new CatalogException("Could not retrieve the user e-mail.");
         }
 
-        String email = user.first().getEmail();
-
-        String mailUser = this.emailConfig.getUser();
-        String mailPassword = this.emailConfig.getPassword();
-        String mailHost = this.emailConfig.getHost();
-        String mailPort = this.emailConfig.getPort();
         try {
-            MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort, userId);
+            String email = user.first().getEmail();
+            String resetMailContent = MailUtils.getResetMailContent(userId, newPassword);
+            MailUtils.configure(this.emailConfig).sendMail(email, "XetaBase: Password Reset", resetMailContent);
             result = dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).resetPassword(userId, email, newPassword);
         } catch (Exception e) {
             throw new CatalogException("Email could not be sent.", e);
