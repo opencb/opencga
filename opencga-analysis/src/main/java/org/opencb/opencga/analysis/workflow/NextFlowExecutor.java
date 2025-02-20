@@ -252,6 +252,12 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         StopWatch stopWatch = StopWatch.createStarted();
         runDocker(dockerImage, outputBindings, stringBuilder.toString(), dockerParams);
         logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
+
+        try {
+            checkTraceFileMonitorExists();
+        } catch (ToolException e) {
+            throw new ToolException("Error running NextFlow docker image", e);
+        }
     }
 
     @Override
@@ -301,6 +307,13 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
             }
         });
         thread.start();
+    }
+
+    private void checkTraceFileMonitorExists() throws ToolException {
+        Path traceFile = getOutDir().resolve("trace.txt");
+        if (!Files.exists(traceFile)) {
+            throw new ToolException("Trace file not found");
+        }
     }
 
     private void processTraceFile() {
