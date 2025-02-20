@@ -177,7 +177,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 .setExomiserVersion(exomiserVersion)
                 .setAssembly(ExomiserAnalysisUtils.checkAssembly(studyId, catalogManager, token))
                 .setExomiserDataPath(Paths.get(getOpencgaHome().toAbsolutePath().toAbsolutePath().toString(),
-                        ResourceManager.ANALYSIS_DIRNAME, ResourceManager.RESOURCES_DIRNAME, ExomiserWrapperAnalysis.ID))
+                        ResourceManager.ANALYSIS_DIRNAME, ResourceManager.RESOURCES_DIRNAME, ExomiserWrapperAnalysis.ID, exomiserVersion))
                 .setSampleFile(ExomiserAnalysisUtils.getSamplePath(sampleId, getOutDir()))
                 .setVcfFile(ExomiserAnalysisUtils.getVcfPath(sampleId, getOutDir()));
 

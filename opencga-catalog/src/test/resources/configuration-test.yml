@@ -28,29 +28,21 @@ analysis:
     # List of resources
     files:
       # Exomiser resources
-      - id: "EXOMISER_13_1_0_HG19"
-        url: "exomiser/13.1.0/2109_hg19.zip"
-        md5: ""
-        path: "exomiser/13.1.0/2109_hg19"
       - id: "EXOMISER_13_1_0_HG38"
         url: "exomiser/13.1.0/2109_hg38.zip"
-        md5: ""
+        md5: "6d4011146705ca7a28eba9df0bfdacd2"
         path: "exomiser/13.1.0/2109_hg38"
       - id: "EXOMISER_13_1_0_PHENOTYPE"
         url: "exomiser/13.1.0/2109_phenotype.zip"
-        md5: ""
+        md5: "197d126e1b441674f5d5979ac2027591"
         path: "exomiser/13.1.0/2109_phenotype"
-      - id: "EXOMISER_14_0_0_HG19"
-        url: "exomiser/14.0.0/2402_hg19.zip"
-        md5: ""
-        path: "exomiser/2402_hg19"
       - id: "EXOMISER_14_0_0_HG38"
         url: "exomiser/14.0.0/2402_hg38.zip"
-        md5: ""
-        path: "exomiser/2402_hg38"
+        md5: "7f89dcf9221c7aa5d5471a2ffdb58303"
+        path: "exomiser/14.0.0/2402_hg38"
       - id: "EXOMISER_14_0_0_PHENOTYPE"
         url: "exomiser/14.0.0/2402_phenotype.zip"
-        md5: ""
+        md5: "3e7092c852c5f23373ccd465bf2fcd85"
         path: "exomiser/14.0.0/2402_phenotype"
 
       # Reference genomes
@@ -96,12 +88,12 @@ analysis:
     - id: "exomiser"
       version: "13.1.0"
       dockerId: "exomiser/exomiser-cli:13.1.0"
-      resourceIds: ["EXOMISER_13_1_0_HG19", "EXOMISER_13_1_0_HG38", "EXOMISER_13_1_0_PHENOTYPE"]
+      resourceIds: ["EXOMISER_13_1_0_HG38", "EXOMISER_13_1_0_PHENOTYPE"]
     - id: "exomiser"
       version: "14.0.0"
       defaultVersion: true
       dockerId: "exomiser/exomiser-cli:14.0.0"
-      resourceIds: ["EXOMISER_14_0_0_HG19", "EXOMISER_14_0_0_HG38", "EXOMISER_14_0_0_PHENOTYPE"]
+      resourceIds: ["EXOMISER_14_0_0_HG38", "EXOMISER_14_0_0_PHENOTYPE"]
     - id: "mutational-signature"
       resourceIds:
         - "REFERENCE_GENOME_GRCH38_FA"

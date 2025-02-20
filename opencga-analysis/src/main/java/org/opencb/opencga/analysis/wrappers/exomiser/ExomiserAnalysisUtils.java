@@ -266,7 +266,7 @@ public class ExomiserAnalysisUtils  {
             }
         }
 
-        File pedigreeFile = outDir.resolve(fromIndividualToSample.get(pedigree.getProband().getId() + ".ped")).toFile();
+        File pedigreeFile = outDir.resolve(fromIndividualToSample.get(pedigree.getProband().getId()) + ".ped").toFile();
         try {
             PrintWriter pw = new PrintWriter(pedigreeFile);
 
