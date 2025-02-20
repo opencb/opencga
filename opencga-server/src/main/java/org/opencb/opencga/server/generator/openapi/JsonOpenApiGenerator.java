@@ -70,7 +70,7 @@ public class JsonOpenApiGenerator {
                             beansDefinitions.add((Class) apiOperation.response());
                         }
                     }
-                    method.getResponses().put("200", responses);
+                    method.setResponses(responses);
 
                     // Obtener el método HTTP
                     String httpMethod = extractHttpMethod(wsmethod);
