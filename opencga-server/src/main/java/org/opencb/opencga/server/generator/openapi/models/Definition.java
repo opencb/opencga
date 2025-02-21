@@ -3,8 +3,9 @@ package org.opencb.opencga.server.generator.openapi.models;
 import java.util.Map;
 
 public class Definition {
+
     private String type; // "object"
-    private Map<String, Property> properties;
+    private Map<String, FieldDefinition> properties;
     private String ref; // Campo adicional para manejar referencias
 
     // Getters y Setters
@@ -16,11 +17,11 @@ public class Definition {
         this.type = type;
     }
 
-    public Map<String, Property> getProperties() {
+    public Map<String, FieldDefinition> getProperties() {
         return properties;
     }
 
-    public void setProperties(Map<String, Property> properties) {
+    public void setProperties(Map<String, FieldDefinition> properties) {
         this.properties = properties;
     }
 

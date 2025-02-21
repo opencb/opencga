@@ -470,12 +470,12 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
   # substitutions
   subs <- read.table(file = snvs.file, sep = '\t', header = TRUE)
   # subs <- read.table(file = '/home/dapregi/tmp/snvs.tsv', sep = '\t', header = TRUE)
-  subs$color[(subs$ref=='C' & subs$alt=='A') | (subs$ref=='G' & subs$alt=='T')] <- 'royalblue'
-  subs$color[(subs$ref=='C' & subs$alt=='G') | (subs$ref=='G' & subs$alt=='C')] <- 'black'
-  subs$color[(subs$ref=='C' & subs$alt=='T') | (subs$ref=='G' & subs$alt=='A')] <- 'red'
-  subs$color[(subs$ref=='T' & subs$alt=='A') | (subs$ref=='A' & subs$alt=='T')] <- 'grey'
-  subs$color[(subs$ref=='T' & subs$alt=='C') | (subs$ref=='A' & subs$alt=='G')] <- 'green2'
-  subs$color[(subs$ref=='T' & subs$alt=='G') | (subs$ref=='A' & subs$alt=='C')] <- 'hotpink'
+  subs$color[(subs$$ref=='C' & subs$alt=='A') | (subs$$ref=='G' & subs$alt=='T')] <- 'royalblue'
+  subs$color[(subs$$ref=='C' & subs$alt=='G') | (subs$$ref=='G' & subs$alt=='C')] <- 'black'
+  subs$color[(subs$$ref=='C' & subs$alt=='T') | (subs$$ref=='G' & subs$alt=='A')] <- 'red'
+  subs$color[(subs$$ref=='T' & subs$alt=='A') | (subs$$ref=='A' & subs$alt=='T')] <- 'grey'
+  subs$color[(subs$$ref=='T' & subs$alt=='C') | (subs$$ref=='A' & subs$alt=='G')] <- 'green2'
+  subs$color[(subs$$ref=='T' & subs$alt=='G') | (subs$$ref=='A' & subs$alt=='C')] <- 'hotpink'
   
   # indels
   indels <- read.table(file = indels.file, sep = '\t', header = TRUE)

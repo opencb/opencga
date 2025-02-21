@@ -500,7 +500,7 @@ class VariantOperation(_ParentRestClient):
             'PVALUE=n'. The, to indicate the variant associated with the score,
             provide either the columns ['CHROM', 'POS', 'REF', 'ALT'], or the
             column 'VAR' containing a variant representation with format
-            'chr:start:ref:alt'. e.g.
+            'chr:start:$ref:alt'. e.g.
             'CHROM=0,POS=1,REF=3,ALT=4,SCORE=5,PVALUE=6' or
             'VAR=0,SCORE=1,PVALUE=2'. resume: Resume a previously failed
             indexation.

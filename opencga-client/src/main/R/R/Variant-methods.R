@@ -122,7 +122,7 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
 
         #' @section Endpoint /{apiVersion}/analysis/variant/annotation/query:
         #' Query variant annotations from any saved versions.
-        #' @param id List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T.
+        #' @param id List of variant IDs in the format chrom:start:$ref:alt, e.g. 19:7177679:C:T.
         #' @param region List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000.
         #' @param include Fields included in the response, whole JSON path must be provided.
         #' @param exclude Fields excluded in the response, whole JSON path must be provided.
@@ -473,7 +473,7 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param approximateCount Get an approximate count, instead of an exact total count. Reduces execution time.
         #' @param approximateCountSamplingSize Sampling size to get the approximate count. Larger values increase accuracy but also increase execution time.
         #' @param savedFilter Use a saved filter at User level.
-        #' @param id List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T.
+        #' @param id List of variant IDs in the format chrom:start:$ref:alt, e.g. 19:7177679:C:T.
         #' @param region List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000.
         #' @param type List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
         #' @param reference Reference allele.

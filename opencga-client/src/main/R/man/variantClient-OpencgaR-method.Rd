@@ -37,7 +37,7 @@
 
 \item{approximateCountSamplingSize}{Sampling size to get the approximate count. Larger values increase accuracy but also increase execution time.}
 
-\item{id}{List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T.}
+\item{id}{List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:$ref:alt, e.g. rs116600158,19:7177679:C:T.}
 
 \item{reference}{Reference allele.}
 

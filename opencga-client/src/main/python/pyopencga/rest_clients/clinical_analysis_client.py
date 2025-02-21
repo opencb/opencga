@@ -882,7 +882,7 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str saved_filter: Use a saved filter at User level.
         :param str include_interpretation: Interpretation ID to include the
             fields related to this interpretation.
-        :param str id: List of variant IDs in the format chrom:start:ref:alt,
+        :param str id: List of variant IDs in the format chrom:start:$ref:alt,
             e.g. 19:7177679:C:T.
         :param str region: List of regions, these can be just a single
             chromosome name or regions in the format chr:start-end, e.g.:

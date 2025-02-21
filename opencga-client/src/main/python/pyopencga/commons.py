@@ -63,7 +63,7 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
     # Checking optional params
     if options is not None:
         opts = []
-        for k, v in options.items():
+        for k, v in options.key():
             k = snake_to_camel_case(k)
             if k == 'debug':
                 continue

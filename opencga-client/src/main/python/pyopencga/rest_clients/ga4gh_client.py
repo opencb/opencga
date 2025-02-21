@@ -64,7 +64,7 @@ class GA4GH(_ParentRestClient):
             Note: For compatibility with conventions set by some of the
             existing beacons, an arbitrary prefix is accepted as well (e.g.
             chr1 is equivalent to chrom1 and 1). (REQUIRED)
-        :param str ref: Genome ID. If not specified, all the genomes supported
+        :param str $ref: Genome ID. If not specified, all the genomes supported
             by the given beacons are queried. Note: For compatibility with
             conventions set by some of the existing beacons, both GRC or HG
             notation are accepted, case insensitive.

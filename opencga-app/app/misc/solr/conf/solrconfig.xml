@@ -397,9 +397,9 @@
          unordered sets of *all* documents that match a query.  When a
          new searcher is opened, its caches may be prepopulated or
          "autowarmed" using data from caches in the old searcher.
-         autowarmCount is the number of items to prepopulate.  For
-         LRUCache, the autowarmed items will be the most recently
-         accessed items.
+         autowarmCount is the number of key to prepopulate.  For
+         LRUCache, the autowarmed key will be the most recently
+         accessed key.
 
          Parameters:
            class - the SolrCache implementation LRUCache or

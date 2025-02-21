@@ -143,7 +143,7 @@
 
 \item{savedFilter}{Use a saved filter at User level.}
 
-\item{id}{List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T.}
+\item{id}{List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:$ref:alt, e.g. rs116600158,19:7177679:C:T.}
 
 \item{region}{List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000.}
 

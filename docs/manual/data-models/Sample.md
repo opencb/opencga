@@ -152,9 +152,9 @@ This is a full JSON example:
     alignmentMetrics: [
       {
         bamFileId: SonsAlignedBamFile.bam,
-        fastQc: {13 items},
-        samtoolsFlagstats: {14 items},
-        geneCoverageStats: [2 items]
+        fastQc: {13 key},
+        samtoolsFlagstats: {14 key},
+        geneCoverageStats: [2 key]
       }
     ],
     variantMetrics: {
@@ -191,10 +191,10 @@ This is a full JSON example:
       id: "ISDBM322015",
       name: "ISDBM322015",
       uuid: "eba13738-0172-0006-0001-283471b7ae69",
-      father: {4 items},
-      mother: {4 items},
+      father: {4 key},
+      mother: {4 key},
       location: {},
-      qualityControl: {4 items},
+      qualityControl: {4 key},
       sex: "MALE",
       karyotypicSex: "XY",
       ethnicity: "",
@@ -204,10 +204,10 @@ This is a full JSON example:
       creationDate: "20200625131830",
       modificationDate: "20201027004616",
       lifeStatus: "ALIVE",
-      phenotypes: [2 items],
+      phenotypes: [2 key],
       disorders: [1 item],
       parentalConsanguinity: false,
-      status: {3 items},
+      status: {3 key},
       internal: {1 item},
       attributes: {}
     }

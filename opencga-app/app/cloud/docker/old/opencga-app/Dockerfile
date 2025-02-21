@@ -14,7 +14,7 @@ LABEL org.label-schema.vendor="OpenCB" \
       org.label-schema.description="An Open Computational Genomics Analysis platform for big data processing and analysis in genomics" \
       org.label-schema.version=${VERSION} \
       org.label-schema.vcs-url=${VCS_URL} \
-      org.label-schema.vcs-ref=${VCS_REF} \
+      org.label-schema.vcs-$ref=${VCS_REF} \
       org.label-schema.build-date=${BUILD_DATE} \
       org.label-schema.docker.schema-version="1.0"
 

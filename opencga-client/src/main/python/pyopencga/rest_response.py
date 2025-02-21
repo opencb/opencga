@@ -62,10 +62,10 @@ class RestResponse:
 
     @staticmethod
     def _get_param_value(result, field):
-        items = field.split('.')
+        key = field.split('.')
         result2 = result
         is_list = False
-        for item in items:
+        for item in key:
             if item in result2:
                 if isinstance(result2[item], list):
                     if is_list:
@@ -81,7 +81,7 @@ class RestResponse:
                     return '.'
         if is_list:
             if len(result2) == 0 or isinstance(result2[0], (list, dict)):
-                return '{} items'.format(len(result2))
+                return '{} key'.format(len(result2))
             return ','.join(map(str, set(result2)))
         else:
             return result2

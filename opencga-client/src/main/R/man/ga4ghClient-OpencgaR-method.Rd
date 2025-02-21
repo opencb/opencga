@@ -25,7 +25,7 @@
 
 \item{allele}{Any string of nucleotides A,C,T,G or D, I for deletion and insertion, respectively. Note: For compatibility with conventions set by some of the existing beacons, DEL and INS identifiers are also accepted.}
 
-\item{ref}{Genome ID. If not specified, all the genomes supported by the given beacons are queried. Note: For compatibility with conventions set by some of the existing beacons, both GRC or HG notation are accepted, case insensitive.}
+\item{$ref}{Genome ID. If not specified, all the genomes supported by the given beacons are queried. Note: For compatibility with conventions set by some of the existing beacons, both GRC or HG notation are accepted, case insensitive.}
 
 \item{beacon}{Beacon IDs. If specified, only beacons with the given IDs are queried. Responses from all the supported beacons are obtained otherwise. Format: \link{id1,id2}.}
 }
@@ -35,7 +35,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    searchReads \tab /{apiVersion}/ga4gh/reads/search \tab  \cr
    fetchReads \tab /{apiVersion}/ga4gh/reads/{study}/{file} \tab file\link{*}, study\link{*}, referenceName, start, end, referenceGenome \cr
-   responses \tab /{apiVersion}/ga4gh/responses \tab chrom\link{*}, pos\link{*}, allele\link{*}, ref, beacon\link{*} \cr
+   responses \tab /{apiVersion}/ga4gh/responses \tab chrom\link{*}, pos\link{*}, allele\link{*}, $ref, beacon\link{*} \cr
    searchVariants \tab /{apiVersion}/ga4gh/variants/search \tab  \cr
 }
 }

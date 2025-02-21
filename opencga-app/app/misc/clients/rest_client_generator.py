@@ -185,12 +185,12 @@ class RestClientGenerator(ABC):
         return self.id2
 
     @staticmethod
-    def any_arg(items):
-        return any([True if '{' in item and '}' in item else False for item in items])
+    def any_arg(key):
+        return any([True if '{' in item and '}' in item else False for item in key])
 
     @staticmethod
-    def all_arg(items):
-        return all([True if '{' in item and '}' in item else False for item in items])
+    def all_arg(key):
+        return all([True if '{' in item and '}' in item else False for item in key])
 
     def get_method_name(self, endpoint, category):
         if self.get_endpoint_path(endpoint) in self.endpoints:
@@ -198,44 +198,44 @@ class RestClientGenerator(ABC):
 
         method_name = None
         subpath = self.get_endpoint_path(endpoint).replace(self.get_category_path(category) + '/', '')
-        items = subpath.split('/')
-        if len(items) == 1:
-            method_name = items[0]
-        elif len(items) == 2:
+        key = subpath.split('/')
+        if len(key) == 1:
+            method_name = key[0]
+        elif len(key) == 2:
             # e.g. /{apiVersion}/ga4gh/reads/search
-            if not self.any_arg(items):
-                method_name = '_'.join(items[::-1])
+            if not self.any_arg(key):
+                method_name = '_'.join(key[::-1])
             # e.g. /{apiVersion}/users/{user}/info
-            elif self.any_arg([items[0]]) and not self.any_arg([items[1]]):
-                method_name = items[1]
-        elif len(items) == 3:
+            elif self.any_arg([key[0]]) and not self.any_arg([key[1]]):
+                method_name = key[1]
+        elif len(key) == 3:
             # e.g. /{apiVersion}/analysis/variant/cohort/stats/run
-            if not self.any_arg(items):
-                method_name = '_'.join([items[2], items[0], items[1]])
+            if not self.any_arg(key):
+                method_name = '_'.join([key[2], key[0], key[1]])
             # e.g. /{apiVersion}/users/{user}/configs/filters
-            elif self.any_arg([items[0]]) and not self.any_arg([items[1:]]):
-                method_name = '_'.join([items[2], items[1]])
+            elif self.any_arg([key[0]]) and not self.any_arg([key[1:]]):
+                method_name = '_'.join([key[2], key[1]])
             # e.g. /{apiVersion}/studies/acl/{members}/update
-            elif self.any_arg([items[1]]) and not self.any_arg([items[0], items[2]]):
-                method_name = '_'.join([items[2], items[0]])
-        elif len(items) == 4:
+            elif self.any_arg([key[1]]) and not self.any_arg([key[0], key[2]]):
+                method_name = '_'.join([key[2], key[0]])
+        elif len(key) == 4:
             # e.g. /{apiVersion}/operation/variant/sample/genotype/index
-            if not self.any_arg(items):
-                method_name = '_'.join([items[0], items[1], items[2], items[3]])
+            if not self.any_arg(key):
+                method_name = '_'.join([key[0], key[1], key[2], key[3]])
             # /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge
-            elif self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3]]):
-                method_name = '_'.join([items[3], items[1]])
+            elif self.all_arg([key[0], key[2]]) and not self.any_arg([key[1], key[3]]):
+                method_name = '_'.join([key[3], key[1]])
             # /{apiVersion}/admin/users/{user}/groups/update
-            elif self.all_arg([items[1]]) and not self.any_arg([items[0], items[2], items[3]]):
-                method_name = '_'.join([items[0], items[3], items[2]])
-        elif len(items) == 5:
+            elif self.all_arg([key[1]]) and not self.any_arg([key[0], key[2], key[3]]):
+                method_name = '_'.join([key[0], key[3], key[2]])
+        elif len(key) == 5:
             # e.g. /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update
-            if self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3], items[4]]):
-                method_name = '_'.join([items[4], items[1], items[3]])
-            elif not self.any_arg(items):
+            if self.all_arg([key[0], key[2]]) and not self.any_arg([key[1], key[3], key[4]]):
+                method_name = '_'.join([key[4], key[1], key[3]])
+            elif not self.any_arg(key):
                 # e.g. /{apiVersion}/operation/variant/secondary/sample/index/configure
                 method_name = '_'.join(
-                    [items[4], items[0], items[1], items[2], items[3]])  # configure-variant-secondary-sample-index
+                    [key[4], key[0], key[1], key[2], key[3]])  # configure-variant-secondary-sample-index
         if not method_name:
             raise NotImplementedError('Case not implemented for PATH: "{}"'.format(self.get_endpoint_path(endpoint)))
         return re.sub(r'(?<!^)(?=[A-Z])', '_', method_name).lower()

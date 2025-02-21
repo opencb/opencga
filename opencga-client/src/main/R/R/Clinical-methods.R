@@ -636,7 +636,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param approximateCountSamplingSize Sampling size to get the approximate count. Larger values increase accuracy but also increase execution time.
         #' @param savedFilter Use a saved filter at User level.
         #' @param includeInterpretation Interpretation ID to include the fields related to this interpretation.
-        #' @param id List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T.
+        #' @param id List of variant IDs in the format chrom:start:$ref:alt, e.g. 19:7177679:C:T.
         #' @param region List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000.
         #' @param type List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
         #' @param study Filter variants from the given studies, these can be either the numeric ID or the alias with the format organization@project:study.

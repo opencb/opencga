@@ -124,7 +124,7 @@ class Variant(_ParentRestClient):
         Query variant annotations from any saved versions.
         PATH: /{apiVersion}/analysis/variant/annotation/query
 
-        :param str id: List of variant IDs in the format chrom:start:ref:alt,
+        :param str id: List of variant IDs in the format chrom:start:$ref:alt,
             e.g. 19:7177679:C:T.
         :param str region: List of regions, these can be just a single
             chromosome name or regions in the format chr:start-end, e.g.:
@@ -771,7 +771,7 @@ class Variant(_ParentRestClient):
             approximate count. Larger values increase accuracy but also
             increase execution time.
         :param str saved_filter: Use a saved filter at User level.
-        :param str id: List of variant IDs in the format chrom:start:ref:alt,
+        :param str id: List of variant IDs in the format chrom:start:$ref:alt,
             e.g. 19:7177679:C:T.
         :param str region: List of regions, these can be just a single
             chromosome name or regions in the format chr:start-end, e.g.:

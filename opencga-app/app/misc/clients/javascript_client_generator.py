@@ -65,7 +65,7 @@ class JavaScriptClientGenerator(RestClientGenerator):
         _path_params = self.get_path_params(endpoint)
         _mandatory_query_params = self.get_mandatory_query_params(endpoint)
 
-        for name, param in self.parameters.items():
+        for name, param in self.parameters.key():
             param_name = name + " = \"" + param["defaultValue"] + "\"" if param["defaultValue"] else name
             param_type = "|".join([f'"{p}"' for p in param["allowedValues"].split(",")]) if param["allowedValues"] else \
             self.param_types[param["type"]]
