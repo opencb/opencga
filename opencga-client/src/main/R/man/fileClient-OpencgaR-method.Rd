@@ -6,50 +6,32 @@
 \usage{
 \S4method{fileClient}{OpencgaR}(
   OpencgaR,
+  annotationSet,
+  file,
+  files,
   folder,
   members,
-  file,
-  annotationSet,
-  files,
   endpointName,
   params = NULL,
   ...
 )
 }
 \arguments{
-\item{folder}{Folder id or name. Paths must be separated by : instead of /.}
-
-\item{members}{Comma separated list of user or group ids.}
+\item{annotationSet}{AnnotationSet ID to be updated.}
 
 \item{file}{File uuid, id, or name.}
 
-\item{annotationSet}{AnnotationSet ID to be updated.}
-
 \item{files}{Comma separated list of file ids, names or paths. Paths must be separated by : instead of /.}
 
-\item{creationYear}{Creation year.}
+\item{folder}{Folder id or name. Paths must be separated by : instead of /.}
 
-\item{creationMonth}{Creation month (JANUARY, FEBRUARY...).}
-
-\item{creationDay}{Creation day.}
-
-\item{creationDayOfWeek}{Creation day of week (MONDAY, TUESDAY...).}
-
-\item{software}{Software.}
-
-\item{experiment}{Experiment.}
-
-\item{numSamples}{Number of samples.}
-
-\item{numRelatedFiles}{Number of related files.}
-
-\item{default}{Calculate default stats.}
+\item{members}{Comma separated list of user or group ids.}
 
 \item{variableSetId}{Variable set ID or name.}
 
 \item{annotationSetId}{Annotation set id. If not provided, variableSetId will be used.}
 
-\item{field}{Field for which to obtain the distinct values.}
+\item{field}{Comma separated list of fields for which to obtain the distinct values.}
 
 \item{jobDependsOn}{Comma separated list of existing job IDs the job will depend on.}
 
@@ -57,15 +39,21 @@
 
 \item{jobTags}{Job tags.}
 
-\item{id}{Comma separated list of file IDs up to a maximum of 100.}
+\item{jobScheduledStartTime}{Time when the job is scheduled to start.}
+
+\item{jobPriority}{Priority of the job.}
+
+\item{jobDryRun}{Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.}
+
+\item{id}{Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
 \item{uuid}{Comma separated list file UUIDs up to a maximum of 100.}
 
-\item{name}{Comma separated list of file names.}
+\item{name}{Comma separated list of file names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
-\item{path}{Comma separated list of paths.}
+\item{path}{Comma separated list of paths. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
-\item{uri}{Comma separated list of uris.}
+\item{uri}{Comma separated list of uris. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
 \item{type}{File type, either FILE or DIRECTORY.}
 
@@ -87,7 +75,7 @@
 
 \item{modificationDate}{Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
 
-\item{tags}{Tags.}
+\item{tags}{Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
 \item{size}{File size.}
 
@@ -101,11 +89,11 @@
 
 \item{release}{Release when it was created.}
 
-\item{filename}{File name to overwrite the input fileName.}
+\item{fileName}{File name to overwrite the input fileName.}
 
-\item{fileFormat}{File format.}
+\item{fileFormat}{File format. Allowed values: \link{'VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN'}}
 
-\item{bioformat}{File bioformat.}
+\item{bioformat}{File bioformat. Allowed values: \link{'MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX DATAMATRIX_EXPRESSION IDLIST IDLIST_RANKED ANNOTATION_GENEVSANNOTATION OTHER_NEWICK OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF OTHER_PED VCF4 VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE REFERENCE_GENOME NONE UNKNOWN'}}
 
 \item{checksum}{Expected MD5 file checksum.}
 
@@ -125,17 +113,15 @@
 
 \item{deleted}{Boolean to retrieve deleted files.}
 
-\item{sampleIdsAction}{Action to be performed if the array of samples is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{sampleIdsAction}{Action to be performed if the array of samples is being updated. Allowed values: \link{'ADD SET REMOVE'}}
 
-\item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD SET REMOVE'}}
 
-\item{relatedFilesAction}{Action to be performed if the array of relatedFiles is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{relatedFilesAction}{Action to be performed if the array of relatedFiles is being updated. Allowed values: \link{'ADD SET REMOVE'}}
 
-\item{tagsAction}{Action to be performed if the array of tags is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{tagsAction}{Action to be performed if the array of tags is being updated. Allowed values: \link{'ADD SET REMOVE'}}
 
-\item{action}{Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
-
-\item{data}{Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset' containing the comma separated variables that will be set to the default value when the action is RESET.}
+\item{action}{Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any. Allowed values: \link{'ADD SET REMOVE RESET REPLACE'}}
 
 \item{pattern}{String pattern.}
 
@@ -144,6 +130,8 @@
 \item{maxCount}{Stop reading a file after 'n' matching lines. 0 means no limit.}
 
 \item{offset}{Starting byte from which the file will be read.}
+
+\item{data}{Parameters to modify.}
 
 \item{lines}{Maximum number of lines to be returned up to a maximum of 1000.}
 
@@ -157,7 +145,7 @@
 
 \item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
 
-\item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
+\item{study}{Study [\link{organization@}project:]study where study and project can be either the ID or UUID.}
 
 \item{maxDepth}{Maximum depth to get files from.}
 }
@@ -166,18 +154,17 @@ This function implements the OpenCGA calls for managing Files.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/files/acl/{members}/update \tab study, members\link{*}, action\link{*}, body\link{*} \cr
-   aggregationStats \tab /{apiVersion}/files/aggregationStats \tab study, name, type, format, bioformat, creationYear, creationMonth, creationDay, creationDayOfWeek, status, release, external, size, software, experiment, numSamples, numRelatedFiles, annotation, default, field \cr
    loadAnnotationSets \tab /{apiVersion}/files/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    bioformats \tab /{apiVersion}/files/bioformats \tab  \cr
    create \tab /{apiVersion}/files/create \tab study, parents, body\link{*} \cr
    distinct \tab /{apiVersion}/files/distinct \tab study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release, field\link{*} \cr
-   fetch \tab /{apiVersion}/files/fetch \tab jobId, jobDescription, jobDependsOn, jobTags, study, body\link{*} \cr
+   fetch \tab /{apiVersion}/files/fetch \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body\link{*} \cr
    formats \tab /{apiVersion}/files/formats \tab  \cr
    link \tab /{apiVersion}/files/link \tab study, parents, body\link{*} \cr
-   runLink \tab /{apiVersion}/files/link/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
-   runPostlink \tab /{apiVersion}/files/postlink/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
+   runLink \tab /{apiVersion}/files/link/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runPostlink \tab /{apiVersion}/files/postlink/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    search \tab /{apiVersion}/files/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release \cr
-   upload \tab /{apiVersion}/files/upload \tab file, filename, fileFormat, bioformat, checksum, study, relativeFilePath, description, parents \cr
+   upload \tab /{apiVersion}/files/upload \tab file, fileName, fileFormat, bioformat, checksum, study, relativeFilePath, description, parents \cr
    acl \tab /{apiVersion}/files/{files}/acl \tab files\link{*}, study, member, silent \cr
    delete \tab /{apiVersion}/files/{files}/delete \tab study, files\link{*}, skipTrash \cr
    info \tab /{apiVersion}/files/{files}/info \tab include, exclude, flattenAnnotations, files\link{*}, study, deleted \cr
@@ -188,6 +175,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    grep \tab /{apiVersion}/files/{file}/grep \tab file\link{*}, study, pattern, ignoreCase, maxCount \cr
    head \tab /{apiVersion}/files/{file}/head \tab file\link{*}, study, offset, lines \cr
    image \tab /{apiVersion}/files/{file}/image \tab file\link{*}, study \cr
+   move \tab /{apiVersion}/files/{file}/move \tab include, exclude, file\link{*}, study, body\link{*} \cr
    refresh \tab /{apiVersion}/files/{file}/refresh \tab file\link{*}, study \cr
    tail \tab /{apiVersion}/files/{file}/tail \tab file\link{*}, study, lines \cr
    list \tab /{apiVersion}/files/{folder}/list \tab include, exclude, limit, skip, count, folder\link{*}, study \cr
@@ -197,11 +185,6 @@ The following table summarises the available \emph{actions} for this client:\tab
 \section{Endpoint /{apiVersion}/files/acl/{members}/update}{
 
 Update the set of permissions granted for the member.
-}
-
-\section{Endpoint /{apiVersion}/files/aggregationStats}{
-
-Fetch catalog file stats.
 }
 
 \section{Endpoint /{apiVersion}/files/annotationSets/load}{
@@ -307,6 +290,11 @@ Show the first lines of a file (up to a limit).
 \section{Endpoint /{apiVersion}/files/{file}/image}{
 
 Obtain the base64 content of an image.
+}
+
+\section{Endpoint /{apiVersion}/files/{file}/move}{
+
+Move file to a different path.
 }
 
 \section{Endpoint /{apiVersion}/files/{file}/refresh}{
