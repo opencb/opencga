@@ -17,9 +17,10 @@
 package org.opencb.opencga.client.rest.clients;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.job.Job;
@@ -57,7 +58,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Study webservices.
  *    PATH: studies
  */
-public class StudyClient extends AbstractParentClient {
+public class StudyClient extends ParentClient {
 
     public StudyClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

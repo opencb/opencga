@@ -70,7 +70,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         setCatalogDatabaseCredentials(options, options.commonOptions);
 
         OrganizationMigration organizationMigration = new OrganizationMigration(configuration, options.commonOptions.adminPassword,
-                options.user);
+                options.user, options.organizationId, Paths.get(appHome));
         organizationMigration.execute();
     }
 

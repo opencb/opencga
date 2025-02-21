@@ -72,6 +72,7 @@ public class AnalysisVariantCommandOptions {
         public RunSampleStatsCommandOptions runSampleStatsCommandOptions;
         public RunStatsExportCommandOptions runStatsExportCommandOptions;
         public RunStatsCommandOptions runStatsCommandOptions;
+        public RunWalkerCommandOptions runWalkerCommandOptions;
 
 
     public AnalysisVariantCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
@@ -117,6 +118,7 @@ public class AnalysisVariantCommandOptions {
         this.runSampleStatsCommandOptions = new RunSampleStatsCommandOptions();
         this.runStatsExportCommandOptions = new RunStatsExportCommandOptions();
         this.runStatsCommandOptions = new RunStatsCommandOptions();
+        this.runWalkerCommandOptions = new RunWalkerCommandOptions();
     
     }
     
@@ -487,242 +489,242 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id;
     
-        @Parameter(names = {"--region"}, description = "The body web service region parameter", required = false, arity = 1)
+        @Parameter(names = {"--region"}, description = "Reference allele", required = false, arity = 1)
         public String region;
     
-        @Parameter(names = {"--gene"}, description = "The body web service gene parameter", required = false, arity = 1)
+        @Parameter(names = {"--gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
         public String gene;
     
-        @Parameter(names = {"--type"}, description = "The body web service type parameter", required = false, arity = 1)
+        @Parameter(names = {"--type"}, description = "List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL", required = false, arity = 1)
         public String type;
     
-        @Parameter(names = {"--panel"}, description = "The body web service panel parameter", required = false, arity = 1)
+        @Parameter(names = {"--panel"}, description = "Filter by genes from the given disease panel", required = false, arity = 1)
         public String panel;
     
-        @Parameter(names = {"--panel-mode-of-inheritance"}, description = "The body web service panelModeOfInheritance parameter", required = false, arity = 1)
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = "Filter genes from specific panels that match certain mode of inheritance. Accepted values : [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String panelModeOfInheritance;
     
-        @Parameter(names = {"--panel-confidence"}, description = "The body web service panelConfidence parameter", required = false, arity = 1)
+        @Parameter(names = {"--panel-confidence"}, description = "Filter genes from specific panels that match certain confidence. Accepted values : [ high, medium, low, rejected ]", required = false, arity = 1)
         public String panelConfidence;
     
-        @Parameter(names = {"--panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
+        @Parameter(names = {"--panel-role-in-cancer"}, description = "Filter genes from specific panels that match certain role in cancer. Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]", required = false, arity = 1)
         public String panelRoleInCancer;
     
-        @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
         public boolean panelIntersection = false;
     
-        @Parameter(names = {"--panel-feature-type"}, description = "The body web service panelFeatureType parameter", required = false, arity = 1)
+        @Parameter(names = {"--panel-feature-type"}, description = "Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ]", required = false, arity = 1)
         public String panelFeatureType;
     
-        @Parameter(names = {"--cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
+        @Parameter(names = {"--cohort-stats-ref"}, description = "Reference Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String cohortStatsRef;
     
-        @Parameter(names = {"--cohort-stats-alt"}, description = "The body web service cohortStatsAlt parameter", required = false, arity = 1)
+        @Parameter(names = {"--cohort-stats-alt"}, description = "Alternate Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String cohortStatsAlt;
     
-        @Parameter(names = {"--cohort-stats-maf"}, description = "The body web service cohortStatsMaf parameter", required = false, arity = 1)
+        @Parameter(names = {"--cohort-stats-maf"}, description = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String cohortStatsMaf;
     
-        @Parameter(names = {"--ct"}, description = "The body web service ct parameter", required = false, arity = 1)
+        @Parameter(names = {"--ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
         public String ct;
     
-        @Parameter(names = {"--xref"}, description = "The body web service xref parameter", required = false, arity = 1)
+        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
         public String xref;
     
-        @Parameter(names = {"--biotype"}, description = "The body web service biotype parameter", required = false, arity = 1)
+        @Parameter(names = {"--biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
         public String biotype;
     
-        @Parameter(names = {"--protein-substitution"}, description = "The body web service proteinSubstitution parameter", required = false, arity = 1)
+        @Parameter(names = {"--protein-substitution"}, description = "Protein substitution scores include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant", required = false, arity = 1)
         public String proteinSubstitution;
     
-        @Parameter(names = {"--conservation"}, description = "The body web service conservation parameter", required = false, arity = 1)
+        @Parameter(names = {"--conservation"}, description = "Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1", required = false, arity = 1)
         public String conservation;
     
-        @Parameter(names = {"--population-frequency-maf"}, description = "The body web service populationFrequencyMaf parameter", required = false, arity = 1)
+        @Parameter(names = {"--population-frequency-maf"}, description = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String populationFrequencyMaf;
     
-        @Parameter(names = {"--population-frequency-alt"}, description = "The body web service populationFrequencyAlt parameter", required = false, arity = 1)
+        @Parameter(names = {"--population-frequency-alt"}, description = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String populationFrequencyAlt;
     
-        @Parameter(names = {"--population-frequency-ref"}, description = "The body web service populationFrequencyRef parameter", required = false, arity = 1)
+        @Parameter(names = {"--population-frequency-ref"}, description = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String populationFrequencyRef;
     
-        @Parameter(names = {"--transcript-flag"}, description = "The body web service transcriptFlag parameter", required = false, arity = 1)
+        @Parameter(names = {"--transcript-flag"}, description = "List of transcript flags. e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500", required = false, arity = 1)
         public String transcriptFlag;
     
-        @Parameter(names = {"--functional-score"}, description = "The body web service functionalScore parameter", required = false, arity = 1)
+        @Parameter(names = {"--functional-score"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3", required = false, arity = 1)
         public String functionalScore;
     
-        @Parameter(names = {"--clinical"}, description = "The body web service clinical parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinical"}, description = "Clinical source: clinvar, cosmic", required = false, arity = 1)
         public String clinical;
     
-        @Parameter(names = {"--clinical-significance"}, description = "The body web service clinicalSignificance parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
         public String clinicalSignificance;
     
-        @Parameter(names = {"--clinical-confirmed-status"}, description = "The body web service clinicalConfirmedStatus parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
         public boolean clinicalConfirmedStatus = false;
     
-        @Parameter(names = {"--body_project"}, description = "The body web service project parameter", required = false, arity = 1)
+        @Parameter(names = {"--body_project"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
         public String bodyProject;
     
-        @Parameter(names = {"--body_study"}, description = "The body web service study parameter", required = false, arity = 1)
+        @Parameter(names = {"--body_study"}, description = "Filter variants from the given studies, these can be either the numeric ID or the alias with the format organization@project:study", required = false, arity = 1)
         public String bodyStudy;
     
-        @Parameter(names = {"--saved-filter"}, description = "The body web service savedFilter parameter", required = false, arity = 1)
+        @Parameter(names = {"--saved-filter"}, description = "Use a saved filter at User level", required = false, arity = 1)
         public String savedFilter;
     
-        @Parameter(names = {"--chromosome"}, description = "The body web service chromosome parameter", required = false, arity = 1)
+        @Parameter(names = {"--chromosome"}, description = "List of chromosomes, this is an alias of 'region' parameter with just the chromosome names", required = false, arity = 1)
         public String chromosome;
     
-        @Parameter(names = {"--reference"}, description = "The body web service reference parameter", required = false, arity = 1)
+        @Parameter(names = {"--reference"}, description = "Reference allele", required = false, arity = 1)
         public String reference;
     
-        @Parameter(names = {"--alternate"}, description = "The body web service alternate parameter", required = false, arity = 1)
+        @Parameter(names = {"--alternate"}, description = "Main alternate allele", required = false, arity = 1)
         public String alternate;
     
         @Parameter(names = {"--release"}, description = "The body web service release parameter", required = false, arity = 1)
         public String release;
     
-        @Parameter(names = {"--include-study"}, description = "The body web service includeStudy parameter", required = false, arity = 1)
+        @Parameter(names = {"--include-study"}, description = "List of studies to include in the result. Accepts 'all' and 'none'.", required = false, arity = 1)
         public String includeStudy;
     
-        @Parameter(names = {"--include-sample"}, description = "The body web service includeSample parameter", required = false, arity = 1)
+        @Parameter(names = {"--include-sample"}, description = "List of samples to be included in the result. Accepts 'all' and 'none'. If undefined, automatically includes samples used for filtering. If none, no sample is included.", required = false, arity = 1)
         public String includeSample;
     
-        @Parameter(names = {"--include-file"}, description = "The body web service includeFile parameter", required = false, arity = 1)
+        @Parameter(names = {"--include-file"}, description = "List of files to be returned. Accepts 'all' and 'none'. If undefined, automatically includes files used for filtering. If none, no file is included.", required = false, arity = 1)
         public String includeFile;
     
-        @Parameter(names = {"--include-sample-data"}, description = "The body web service includeSampleData parameter", required = false, arity = 1)
+        @Parameter(names = {"--include-sample-data"}, description = "List of Sample Data keys (i.e. FORMAT column from VCF file) from Sample Data to include in the output. e.g: DP,AD. Accepts 'all' and 'none'.", required = false, arity = 1)
         public String includeSampleData;
     
-        @Parameter(names = {"--include-sample-id"}, description = "The body web service includeSampleId parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--include-sample-id"}, description = "Include sampleId on each result", required = false, help = true, arity = 0)
         public boolean includeSampleId = false;
     
-        @Parameter(names = {"--include-genotype"}, description = "The body web service includeGenotype parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--include-genotype"}, description = "Include genotypes, apart of other formats defined with includeFormat", required = false, help = true, arity = 0)
         public boolean includeGenotype = false;
     
-        @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
+        @Parameter(names = {"--file"}, description = "Filter variants from the files specified. This will set includeFile parameter when not provided", required = false, arity = 1)
         public String file;
     
-        @Parameter(names = {"--qual"}, description = "The body web service qual parameter", required = false, arity = 1)
+        @Parameter(names = {"--qual"}, description = "Specify the QUAL for any of the files. If 'file' filter is provided, will match the file and the qual. e.g.: >123.4", required = false, arity = 1)
         public String qual;
     
-        @Parameter(names = {"--filter"}, description = "The body web service filter parameter", required = false, arity = 1)
+        @Parameter(names = {"--filter"}, description = "Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.: PASS,LowGQX", required = false, arity = 1)
         public String filter;
     
-        @Parameter(names = {"--file-data"}, description = "The body web service fileData parameter", required = false, arity = 1)
+        @Parameter(names = {"--file-data"}, description = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from 'file' filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP", required = false, arity = 1)
         public String fileData;
     
-        @Parameter(names = {"--genotype"}, description = "The body web service genotype parameter", required = false, arity = 1)
+        @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1. Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. This will automatically set 'includeSample' parameter when not provided", required = false, arity = 1)
         public String genotype;
     
-        @Parameter(names = {"--sample"}, description = "The body web service sample parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ',' operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--sample-limit"}, description = "The body web service sampleLimit parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample-limit"}, description = "Limit the number of samples to be included in the result", required = false, arity = 1)
         public Integer sampleLimit;
     
-        @Parameter(names = {"--sample-skip"}, description = "The body web service sampleSkip parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample-skip"}, description = "Skip some samples from the result. Useful for sample pagination.", required = false, arity = 1)
         public Integer sampleSkip;
     
-        @Parameter(names = {"--sample-data"}, description = "The body web service sampleData parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample-data"}, description = "Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}[,;]* . If no sample is specified, will use all samples from 'sample' or 'genotype' filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10", required = false, arity = 1)
         public String sampleData;
     
-        @Parameter(names = {"--sample-annotation"}, description = "The body web service sampleAnnotation parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample-annotation"}, description = "Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith", required = false, arity = 1)
         public String sampleAnnotation;
     
-        @Parameter(names = {"--family"}, description = "The body web service family parameter", required = false, arity = 1)
+        @Parameter(names = {"--family"}, description = "Filter variants where any of the samples from the given family contains the variant (HET or HOM_ALT)", required = false, arity = 1)
         public String family;
     
-        @Parameter(names = {"--family-members"}, description = "The body web service familyMembers parameter", required = false, arity = 1)
+        @Parameter(names = {"--family-members"}, description = "Sub set of the members of a given family", required = false, arity = 1)
         public String familyMembers;
     
-        @Parameter(names = {"--family-disorder"}, description = "The body web service familyDisorder parameter", required = false, arity = 1)
+        @Parameter(names = {"--family-disorder"}, description = "Specify the disorder to use for the family segregation", required = false, arity = 1)
         public String familyDisorder;
     
-        @Parameter(names = {"--family-proband"}, description = "The body web service familyProband parameter", required = false, arity = 1)
+        @Parameter(names = {"--family-proband"}, description = "Specify the proband child to use for the family segregation", required = false, arity = 1)
         public String familyProband;
     
-        @Parameter(names = {"--family-segregation"}, description = "The body web service familySegregation parameter", required = false, arity = 1)
+        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String familySegregation;
     
-        @Parameter(names = {"--cohort"}, description = "The body web service cohort parameter", required = false, arity = 1)
+        @Parameter(names = {"--cohort"}, description = "Select variants with calculated stats for the selected cohorts", required = false, arity = 1)
         public String cohort;
     
-        @Parameter(names = {"--cohort-stats-pass"}, description = "The body web service cohortStatsPass parameter", required = false, arity = 1)
+        @Parameter(names = {"--cohort-stats-pass"}, description = "Filter PASS frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8", required = false, arity = 1)
         public String cohortStatsPass;
     
-        @Parameter(names = {"--cohort-stats-mgf"}, description = "The body web service cohortStatsMgf parameter", required = false, arity = 1)
+        @Parameter(names = {"--cohort-stats-mgf"}, description = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String cohortStatsMgf;
     
-        @Parameter(names = {"--missing-alleles"}, description = "The body web service missingAlleles parameter", required = false, arity = 1)
+        @Parameter(names = {"--missing-alleles"}, description = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}", required = false, arity = 1)
         public String missingAlleles;
     
-        @Parameter(names = {"--missing-genotypes"}, description = "The body web service missingGenotypes parameter", required = false, arity = 1)
+        @Parameter(names = {"--missing-genotypes"}, description = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}", required = false, arity = 1)
         public String missingGenotypes;
     
-        @Parameter(names = {"--annotation-exists"}, description = "The body web service annotationExists parameter", required = false, arity = 1)
+        @Parameter(names = {"--annotation-exists"}, description = "Return only annotated variants", required = false, arity = 1)
         public Boolean annotationExists;
     
-        @Parameter(names = {"--score"}, description = "The body web service score parameter", required = false, arity = 1)
+        @Parameter(names = {"--score"}, description = "Filter by variant score: [{study:}]{score}[<|>|<=|>=]{number}", required = false, arity = 1)
         public String score;
     
-        @Parameter(names = {"--polyphen"}, description = "The body web service polyphen parameter", required = false, arity = 1)
+        @Parameter(names = {"--polyphen"}, description = "Polyphen, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. <=0.9 , =benign", required = false, arity = 1)
         public String polyphen;
     
-        @Parameter(names = {"--sift"}, description = "The body web service sift parameter", required = false, arity = 1)
+        @Parameter(names = {"--sift"}, description = "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. >0.1 , ~=tolerant", required = false, arity = 1)
         public String sift;
     
         @Parameter(names = {"--gene-role-in-cancer"}, description = "The body web service geneRoleInCancer parameter", required = false, arity = 1)
         public String geneRoleInCancer;
     
-        @Parameter(names = {"--gene-trait-id"}, description = "The body web service geneTraitId parameter", required = false, arity = 1)
+        @Parameter(names = {"--gene-trait-id"}, description = "List of gene trait association id. e.g. 'umls:C0007222' , 'OMIM:269600'", required = false, arity = 1)
         public String geneTraitId;
     
-        @Parameter(names = {"--gene-trait-name"}, description = "The body web service geneTraitName parameter", required = false, arity = 1)
+        @Parameter(names = {"--gene-trait-name"}, description = "List of gene trait association names. e.g. Cardiovascular Diseases", required = false, arity = 1)
         public String geneTraitName;
     
-        @Parameter(names = {"--trait"}, description = "The body web service trait parameter", required = false, arity = 1)
+        @Parameter(names = {"--trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
         public String trait;
     
-        @Parameter(names = {"--cosmic"}, description = "The body web service cosmic parameter", required = false, arity = 1)
+        @Parameter(names = {"--cosmic"}, description = "List of COSMIC mutation IDs.", required = false, arity = 1)
         public String cosmic;
     
-        @Parameter(names = {"--clinvar"}, description = "The body web service clinvar parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinvar"}, description = "Clinical source: clinvar, cosmic", required = false, arity = 1)
         public String clinvar;
     
-        @Parameter(names = {"--hpo"}, description = "The body web service hpo parameter", required = false, arity = 1)
+        @Parameter(names = {"--hpo"}, description = "List of HPO terms. e.g. 'HP:0000545,HP:0002812'", required = false, arity = 1)
         public String hpo;
     
-        @Parameter(names = {"--go"}, description = "The body web service go parameter", required = false, arity = 1)
+        @Parameter(names = {"--go"}, description = "List of GO (Gene Ontology) terms. e.g. 'GO:0002020'", required = false, arity = 1)
         public String go;
     
-        @Parameter(names = {"--expression"}, description = "The body web service expression parameter", required = false, arity = 1)
+        @Parameter(names = {"--expression"}, description = "List of tissues of interest. e.g. 'lung'", required = false, arity = 1)
         public String expression;
     
-        @Parameter(names = {"--protein-keyword"}, description = "The body web service proteinKeyword parameter", required = false, arity = 1)
+        @Parameter(names = {"--protein-keyword"}, description = "List of Uniprot protein variant annotation keywords", required = false, arity = 1)
         public String proteinKeyword;
     
-        @Parameter(names = {"--drug"}, description = "The body web service drug parameter", required = false, arity = 1)
+        @Parameter(names = {"--drug"}, description = "List of drug names", required = false, arity = 1)
         public String drug;
     
-        @Parameter(names = {"--custom-annotation"}, description = "The body web service customAnnotation parameter", required = false, arity = 1)
+        @Parameter(names = {"--custom-annotation"}, description = "Custom annotation: {key}[<|>|<=|>=]{number} or {key}[~=|=]{text}", required = false, arity = 1)
         public String customAnnotation;
     
-        @Parameter(names = {"--unknown-genotype"}, description = "The body web service unknownGenotype parameter", required = false, arity = 1)
+        @Parameter(names = {"--source"}, description = "Select the variant data source from where to fetch the data. Accepted values are 'variant_index' (default) and 'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved exclusively from that secondary index, and the 'include/exclude' parameters will be ignored. If the given query can not be fully resolved using the secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index, some data might be missing or be partial.", required = false, arity = 1)
+        public String source;
+    
+        @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]", required = false, arity = 1)
         public String unknownGenotype;
     
-        @Parameter(names = {"--sample-metadata"}, description = "The body web service sampleMetadata parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--sample-metadata"}, description = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.", required = false, help = true, arity = 0)
         public boolean sampleMetadata = false;
     
-        @Parameter(names = {"--sort"}, description = "The body web service sort parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--sort"}, description = "Sort the results by chromosome, start, end and alternate allele", required = false, help = true, arity = 0)
         public boolean sort = false;
-    
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
-        public String outdir;
     
         @Parameter(names = {"--output-file-name"}, description = "The body web service outputFileName parameter", required = false, arity = 1)
         public String outputFileName;
@@ -1513,7 +1515,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--file"}, description = "Filter variants from the files specified. This will set includeFile parameter when not provided", required = false, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ',' operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--include-study"}, description = "List of studies to include in the result. Accepts 'all' and 'none'.", required = false, arity = 1)
@@ -1794,7 +1796,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--file-data"}, description = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from 'file' filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP", required = false, arity = 1)
         public String fileData; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ',' operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1. Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. This will automatically set 'includeSample' parameter when not provided", required = false, arity = 1)
@@ -1959,6 +1961,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
         public boolean panelIntersection = false; 
     
+        @Parameter(names = {"--source"}, description = "Select the variant data source from where to fetch the data. Accepted values are 'variant_index' (default) and 'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved exclusively from that secondary index, and the 'include/exclude' parameters will be ignored. If the given query can not be fully resolved using the secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index, some data might be missing or be partial.", required = false, arity = 1)
+        public String source; 
+    
         @Parameter(names = {"--trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
         public String trait; 
     
@@ -2091,7 +2096,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--filter"}, description = "Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.: PASS,LowGQX", required = false, arity = 1)
         public String filter; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ',' operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1. Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. This will automatically set 'includeSample' parameter when not provided", required = false, arity = 1)
@@ -2230,82 +2235,82 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--vs-description"}, description = "Variant stats description.", required = false, arity = 1)
         public String vsDescription;
     
-        @Parameter(names = {"--vs-query-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String vsQueryId;
     
-        @Parameter(names = {"--vs-query-region"}, description = "The body web service region parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-region"}, description = "Reference allele", required = false, arity = 1)
         public String vsQueryRegion;
     
-        @Parameter(names = {"--vs-query-gene"}, description = "The body web service gene parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
         public String vsQueryGene;
     
-        @Parameter(names = {"--vs-query-type"}, description = "The body web service type parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-type"}, description = "List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL", required = false, arity = 1)
         public String vsQueryType;
     
-        @Parameter(names = {"--vs-query-panel"}, description = "The body web service panel parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-panel"}, description = "Filter by genes from the given disease panel", required = false, arity = 1)
         public String vsQueryPanel;
     
-        @Parameter(names = {"--vs-query-panel-mode-of-inheritance"}, description = "The body web service panelModeOfInheritance parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-panel-mode-of-inheritance"}, description = "Filter genes from specific panels that match certain mode of inheritance. Accepted values : [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String vsQueryPanelModeOfInheritance;
     
-        @Parameter(names = {"--vs-query-panel-confidence"}, description = "The body web service panelConfidence parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-panel-confidence"}, description = "Filter genes from specific panels that match certain confidence. Accepted values : [ high, medium, low, rejected ]", required = false, arity = 1)
         public String vsQueryPanelConfidence;
     
-        @Parameter(names = {"--vs-query-panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-panel-role-in-cancer"}, description = "Filter genes from specific panels that match certain role in cancer. Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]", required = false, arity = 1)
         public String vsQueryPanelRoleInCancer;
     
-        @Parameter(names = {"--vs-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--vs-query-panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
         public boolean vsQueryPanelIntersection = false;
     
-        @Parameter(names = {"--vs-query-panel-feature-type"}, description = "The body web service panelFeatureType parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-panel-feature-type"}, description = "Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ]", required = false, arity = 1)
         public String vsQueryPanelFeatureType;
     
-        @Parameter(names = {"--vs-query-cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-cohort-stats-ref"}, description = "Reference Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String vsQueryCohortStatsRef;
     
-        @Parameter(names = {"--vs-query-cohort-stats-alt"}, description = "The body web service cohortStatsAlt parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-cohort-stats-alt"}, description = "Alternate Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String vsQueryCohortStatsAlt;
     
-        @Parameter(names = {"--vs-query-cohort-stats-maf"}, description = "The body web service cohortStatsMaf parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-cohort-stats-maf"}, description = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String vsQueryCohortStatsMaf;
     
-        @Parameter(names = {"--vs-query-ct"}, description = "The body web service ct parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
         public String vsQueryCt;
     
-        @Parameter(names = {"--vs-query-xref"}, description = "The body web service xref parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
         public String vsQueryXref;
     
-        @Parameter(names = {"--vs-query-biotype"}, description = "The body web service biotype parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
         public String vsQueryBiotype;
     
-        @Parameter(names = {"--vs-query-protein-substitution"}, description = "The body web service proteinSubstitution parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-protein-substitution"}, description = "Protein substitution scores include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant", required = false, arity = 1)
         public String vsQueryProteinSubstitution;
     
-        @Parameter(names = {"--vs-query-conservation"}, description = "The body web service conservation parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-conservation"}, description = "Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1", required = false, arity = 1)
         public String vsQueryConservation;
     
-        @Parameter(names = {"--vs-query-population-frequency-maf"}, description = "The body web service populationFrequencyMaf parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-population-frequency-maf"}, description = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String vsQueryPopulationFrequencyMaf;
     
-        @Parameter(names = {"--vs-query-population-frequency-alt"}, description = "The body web service populationFrequencyAlt parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-population-frequency-alt"}, description = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String vsQueryPopulationFrequencyAlt;
     
-        @Parameter(names = {"--vs-query-population-frequency-ref"}, description = "The body web service populationFrequencyRef parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-population-frequency-ref"}, description = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String vsQueryPopulationFrequencyRef;
     
-        @Parameter(names = {"--vs-query-transcript-flag"}, description = "The body web service transcriptFlag parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-transcript-flag"}, description = "List of transcript flags. e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500", required = false, arity = 1)
         public String vsQueryTranscriptFlag;
     
-        @Parameter(names = {"--vs-query-functional-score"}, description = "The body web service functionalScore parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-functional-score"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3", required = false, arity = 1)
         public String vsQueryFunctionalScore;
     
-        @Parameter(names = {"--vs-query-clinical"}, description = "The body web service clinical parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-clinical"}, description = "Clinical source: clinvar, cosmic", required = false, arity = 1)
         public String vsQueryClinical;
     
-        @Parameter(names = {"--vs-query-clinical-significance"}, description = "The body web service clinicalSignificance parameter", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
         public String vsQueryClinicalSignificance;
     
-        @Parameter(names = {"--vs-query-clinical-confirmed-status"}, description = "The body web service clinicalConfirmedStatus parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--vs-query-clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
         public boolean vsQueryClinicalConfirmedStatus = false;
     
         @Parameter(names = {"--ms-id"}, description = "Signature ID.", required = false, arity = 1)
@@ -2423,82 +2428,82 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id;
     
-        @Parameter(names = {"--region"}, description = "The body web service region parameter", required = false, arity = 1)
+        @Parameter(names = {"--region"}, description = "Reference allele", required = false, arity = 1)
         public String region;
     
-        @Parameter(names = {"--gene"}, description = "The body web service gene parameter", required = false, arity = 1)
+        @Parameter(names = {"--gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
         public String gene;
     
-        @Parameter(names = {"--type"}, description = "The body web service type parameter", required = false, arity = 1)
+        @Parameter(names = {"--type"}, description = "List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL", required = false, arity = 1)
         public String type;
     
-        @Parameter(names = {"--panel"}, description = "The body web service panel parameter", required = false, arity = 1)
+        @Parameter(names = {"--panel"}, description = "Filter by genes from the given disease panel", required = false, arity = 1)
         public String panel;
     
-        @Parameter(names = {"--panel-mode-of-inheritance"}, description = "The body web service panelModeOfInheritance parameter", required = false, arity = 1)
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = "Filter genes from specific panels that match certain mode of inheritance. Accepted values : [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String panelModeOfInheritance;
     
-        @Parameter(names = {"--panel-confidence"}, description = "The body web service panelConfidence parameter", required = false, arity = 1)
+        @Parameter(names = {"--panel-confidence"}, description = "Filter genes from specific panels that match certain confidence. Accepted values : [ high, medium, low, rejected ]", required = false, arity = 1)
         public String panelConfidence;
     
-        @Parameter(names = {"--panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
+        @Parameter(names = {"--panel-role-in-cancer"}, description = "Filter genes from specific panels that match certain role in cancer. Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]", required = false, arity = 1)
         public String panelRoleInCancer;
     
-        @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
         public boolean panelIntersection = false;
     
-        @Parameter(names = {"--panel-feature-type"}, description = "The body web service panelFeatureType parameter", required = false, arity = 1)
+        @Parameter(names = {"--panel-feature-type"}, description = "Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ]", required = false, arity = 1)
         public String panelFeatureType;
     
-        @Parameter(names = {"--cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
+        @Parameter(names = {"--cohort-stats-ref"}, description = "Reference Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String cohortStatsRef;
     
-        @Parameter(names = {"--cohort-stats-alt"}, description = "The body web service cohortStatsAlt parameter", required = false, arity = 1)
+        @Parameter(names = {"--cohort-stats-alt"}, description = "Alternate Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String cohortStatsAlt;
     
-        @Parameter(names = {"--cohort-stats-maf"}, description = "The body web service cohortStatsMaf parameter", required = false, arity = 1)
+        @Parameter(names = {"--cohort-stats-maf"}, description = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String cohortStatsMaf;
     
-        @Parameter(names = {"--ct"}, description = "The body web service ct parameter", required = false, arity = 1)
+        @Parameter(names = {"--ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
         public String ct;
     
-        @Parameter(names = {"--xref"}, description = "The body web service xref parameter", required = false, arity = 1)
+        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
         public String xref;
     
-        @Parameter(names = {"--biotype"}, description = "The body web service biotype parameter", required = false, arity = 1)
+        @Parameter(names = {"--biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
         public String biotype;
     
-        @Parameter(names = {"--protein-substitution"}, description = "The body web service proteinSubstitution parameter", required = false, arity = 1)
+        @Parameter(names = {"--protein-substitution"}, description = "Protein substitution scores include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant", required = false, arity = 1)
         public String proteinSubstitution;
     
-        @Parameter(names = {"--conservation"}, description = "The body web service conservation parameter", required = false, arity = 1)
+        @Parameter(names = {"--conservation"}, description = "Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1", required = false, arity = 1)
         public String conservation;
     
-        @Parameter(names = {"--population-frequency-maf"}, description = "The body web service populationFrequencyMaf parameter", required = false, arity = 1)
+        @Parameter(names = {"--population-frequency-maf"}, description = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String populationFrequencyMaf;
     
-        @Parameter(names = {"--population-frequency-alt"}, description = "The body web service populationFrequencyAlt parameter", required = false, arity = 1)
+        @Parameter(names = {"--population-frequency-alt"}, description = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String populationFrequencyAlt;
     
-        @Parameter(names = {"--population-frequency-ref"}, description = "The body web service populationFrequencyRef parameter", required = false, arity = 1)
+        @Parameter(names = {"--population-frequency-ref"}, description = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String populationFrequencyRef;
     
-        @Parameter(names = {"--transcript-flag"}, description = "The body web service transcriptFlag parameter", required = false, arity = 1)
+        @Parameter(names = {"--transcript-flag"}, description = "List of transcript flags. e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500", required = false, arity = 1)
         public String transcriptFlag;
     
-        @Parameter(names = {"--functional-score"}, description = "The body web service functionalScore parameter", required = false, arity = 1)
+        @Parameter(names = {"--functional-score"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3", required = false, arity = 1)
         public String functionalScore;
     
-        @Parameter(names = {"--clinical"}, description = "The body web service clinical parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinical"}, description = "Clinical source: clinvar, cosmic", required = false, arity = 1)
         public String clinical;
     
-        @Parameter(names = {"--clinical-significance"}, description = "The body web service clinicalSignificance parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
         public String clinicalSignificance;
     
-        @Parameter(names = {"--clinical-confirmed-status"}, description = "The body web service clinicalConfirmedStatus parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
         public boolean clinicalConfirmedStatus = false;
     
         @Parameter(names = {"--genotypes"}, description = "The body web service genotypes parameter", required = false, arity = 1)
@@ -2610,82 +2615,82 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--individual"}, description = "The body web service individual parameter", required = false, arity = 1)
         public String individual;
     
-        @Parameter(names = {"--variant-query-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String variantQueryId;
     
-        @Parameter(names = {"--variant-query-region"}, description = "The body web service region parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-region"}, description = "Reference allele", required = false, arity = 1)
         public String variantQueryRegion;
     
-        @Parameter(names = {"--variant-query-gene"}, description = "The body web service gene parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
         public String variantQueryGene;
     
-        @Parameter(names = {"--variant-query-type"}, description = "The body web service type parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-type"}, description = "List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL", required = false, arity = 1)
         public String variantQueryType;
     
-        @Parameter(names = {"--variant-query-panel"}, description = "The body web service panel parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-panel"}, description = "Filter by genes from the given disease panel", required = false, arity = 1)
         public String variantQueryPanel;
     
-        @Parameter(names = {"--variant-query-panel-mode-of-inheritance"}, description = "The body web service panelModeOfInheritance parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-panel-mode-of-inheritance"}, description = "Filter genes from specific panels that match certain mode of inheritance. Accepted values : [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String variantQueryPanelModeOfInheritance;
     
-        @Parameter(names = {"--variant-query-panel-confidence"}, description = "The body web service panelConfidence parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-panel-confidence"}, description = "Filter genes from specific panels that match certain confidence. Accepted values : [ high, medium, low, rejected ]", required = false, arity = 1)
         public String variantQueryPanelConfidence;
     
-        @Parameter(names = {"--variant-query-panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-panel-role-in-cancer"}, description = "Filter genes from specific panels that match certain role in cancer. Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]", required = false, arity = 1)
         public String variantQueryPanelRoleInCancer;
     
-        @Parameter(names = {"--variant-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--variant-query-panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
         public boolean variantQueryPanelIntersection = false;
     
-        @Parameter(names = {"--variant-query-panel-feature-type"}, description = "The body web service panelFeatureType parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-panel-feature-type"}, description = "Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ]", required = false, arity = 1)
         public String variantQueryPanelFeatureType;
     
-        @Parameter(names = {"--variant-query-cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-cohort-stats-ref"}, description = "Reference Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String variantQueryCohortStatsRef;
     
-        @Parameter(names = {"--variant-query-cohort-stats-alt"}, description = "The body web service cohortStatsAlt parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-cohort-stats-alt"}, description = "Alternate Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String variantQueryCohortStatsAlt;
     
-        @Parameter(names = {"--variant-query-cohort-stats-maf"}, description = "The body web service cohortStatsMaf parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-cohort-stats-maf"}, description = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
         public String variantQueryCohortStatsMaf;
     
-        @Parameter(names = {"--variant-query-ct"}, description = "The body web service ct parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
         public String variantQueryCt;
     
-        @Parameter(names = {"--variant-query-xref"}, description = "The body web service xref parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
         public String variantQueryXref;
     
-        @Parameter(names = {"--variant-query-biotype"}, description = "The body web service biotype parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
         public String variantQueryBiotype;
     
-        @Parameter(names = {"--variant-query-protein-substitution"}, description = "The body web service proteinSubstitution parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-protein-substitution"}, description = "Protein substitution scores include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant", required = false, arity = 1)
         public String variantQueryProteinSubstitution;
     
-        @Parameter(names = {"--variant-query-conservation"}, description = "The body web service conservation parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-conservation"}, description = "Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1", required = false, arity = 1)
         public String variantQueryConservation;
     
-        @Parameter(names = {"--variant-query-population-frequency-maf"}, description = "The body web service populationFrequencyMaf parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-population-frequency-maf"}, description = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String variantQueryPopulationFrequencyMaf;
     
-        @Parameter(names = {"--variant-query-population-frequency-alt"}, description = "The body web service populationFrequencyAlt parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-population-frequency-alt"}, description = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String variantQueryPopulationFrequencyAlt;
     
-        @Parameter(names = {"--variant-query-population-frequency-ref"}, description = "The body web service populationFrequencyRef parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-population-frequency-ref"}, description = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
         public String variantQueryPopulationFrequencyRef;
     
-        @Parameter(names = {"--variant-query-transcript-flag"}, description = "The body web service transcriptFlag parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-transcript-flag"}, description = "List of transcript flags. e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500", required = false, arity = 1)
         public String variantQueryTranscriptFlag;
     
-        @Parameter(names = {"--variant-query-functional-score"}, description = "The body web service functionalScore parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-functional-score"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3", required = false, arity = 1)
         public String variantQueryFunctionalScore;
     
-        @Parameter(names = {"--variant-query-clinical"}, description = "The body web service clinical parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-clinical"}, description = "Clinical source: clinvar, cosmic", required = false, arity = 1)
         public String variantQueryClinical;
     
-        @Parameter(names = {"--variant-query-clinical-significance"}, description = "The body web service clinicalSignificance parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
         public String variantQueryClinicalSignificance;
     
-        @Parameter(names = {"--variant-query-clinical-confirmed-status"}, description = "The body web service clinicalConfirmedStatus parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--variant-query-clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
         public boolean variantQueryClinicalConfirmedStatus = false;
     
         @Parameter(names = {"--variant-query-sample-data"}, description = "The body web service sampleData parameter", required = false, arity = 1)
@@ -2829,6 +2834,308 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--aggregation-mapping-file"}, description = "The body web service aggregationMappingFile parameter", required = false, arity = 1)
         public String aggregationMappingFile;
+    
+    }
+
+    @Parameters(commandNames = {"walker-run"}, commandDescription ="Filter and walk variants from the variant storage to produce a file")
+    public class RunWalkerCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
+        public String project; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
+        public String jobId; 
+    
+        @Parameter(names = {"--job-description"}, description = "Job description", required = false, arity = 1)
+        public String jobDescription; 
+    
+        @Parameter(names = {"--job-depends-on"}, description = "Comma separated list of existing job IDs the job will depend on.", required = false, arity = 1)
+        public String jobDependsOn; 
+    
+        @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
+        public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
+        @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
+        public String id;
+    
+        @Parameter(names = {"--region"}, description = "Reference allele", required = false, arity = 1)
+        public String region;
+    
+        @Parameter(names = {"--gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
+        public String gene;
+    
+        @Parameter(names = {"--type"}, description = "List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL", required = false, arity = 1)
+        public String type;
+    
+        @Parameter(names = {"--panel"}, description = "Filter by genes from the given disease panel", required = false, arity = 1)
+        public String panel;
+    
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = "Filter genes from specific panels that match certain mode of inheritance. Accepted values : [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        public String panelModeOfInheritance;
+    
+        @Parameter(names = {"--panel-confidence"}, description = "Filter genes from specific panels that match certain confidence. Accepted values : [ high, medium, low, rejected ]", required = false, arity = 1)
+        public String panelConfidence;
+    
+        @Parameter(names = {"--panel-role-in-cancer"}, description = "Filter genes from specific panels that match certain role in cancer. Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]", required = false, arity = 1)
+        public String panelRoleInCancer;
+    
+        @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
+        public boolean panelIntersection = false;
+    
+        @Parameter(names = {"--panel-feature-type"}, description = "Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ]", required = false, arity = 1)
+        public String panelFeatureType;
+    
+        @Parameter(names = {"--cohort-stats-ref"}, description = "Reference Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cohortStatsRef;
+    
+        @Parameter(names = {"--cohort-stats-alt"}, description = "Alternate Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cohortStatsAlt;
+    
+        @Parameter(names = {"--cohort-stats-maf"}, description = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cohortStatsMaf;
+    
+        @Parameter(names = {"--ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
+        public String ct;
+    
+        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
+        public String xref;
+    
+        @Parameter(names = {"--biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
+        public String biotype;
+    
+        @Parameter(names = {"--protein-substitution"}, description = "Protein substitution scores include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant", required = false, arity = 1)
+        public String proteinSubstitution;
+    
+        @Parameter(names = {"--conservation"}, description = "Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1", required = false, arity = 1)
+        public String conservation;
+    
+        @Parameter(names = {"--population-frequency-maf"}, description = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String populationFrequencyMaf;
+    
+        @Parameter(names = {"--population-frequency-alt"}, description = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String populationFrequencyAlt;
+    
+        @Parameter(names = {"--population-frequency-ref"}, description = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String populationFrequencyRef;
+    
+        @Parameter(names = {"--transcript-flag"}, description = "List of transcript flags. e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500", required = false, arity = 1)
+        public String transcriptFlag;
+    
+        @Parameter(names = {"--functional-score"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3", required = false, arity = 1)
+        public String functionalScore;
+    
+        @Parameter(names = {"--clinical"}, description = "Clinical source: clinvar, cosmic", required = false, arity = 1)
+        public String clinical;
+    
+        @Parameter(names = {"--clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
+        public String clinicalSignificance;
+    
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
+        public boolean clinicalConfirmedStatus = false;
+    
+        @Parameter(names = {"--body_project"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
+        public String bodyProject;
+    
+        @Parameter(names = {"--body_study"}, description = "Filter variants from the given studies, these can be either the numeric ID or the alias with the format organization@project:study", required = false, arity = 1)
+        public String bodyStudy;
+    
+        @Parameter(names = {"--saved-filter"}, description = "Use a saved filter at User level", required = false, arity = 1)
+        public String savedFilter;
+    
+        @Parameter(names = {"--chromosome"}, description = "List of chromosomes, this is an alias of 'region' parameter with just the chromosome names", required = false, arity = 1)
+        public String chromosome;
+    
+        @Parameter(names = {"--reference"}, description = "Reference allele", required = false, arity = 1)
+        public String reference;
+    
+        @Parameter(names = {"--alternate"}, description = "Main alternate allele", required = false, arity = 1)
+        public String alternate;
+    
+        @Parameter(names = {"--release"}, description = "The body web service release parameter", required = false, arity = 1)
+        public String release;
+    
+        @Parameter(names = {"--include-study"}, description = "List of studies to include in the result. Accepts 'all' and 'none'.", required = false, arity = 1)
+        public String includeStudy;
+    
+        @Parameter(names = {"--include-sample"}, description = "List of samples to be included in the result. Accepts 'all' and 'none'. If undefined, automatically includes samples used for filtering. If none, no sample is included.", required = false, arity = 1)
+        public String includeSample;
+    
+        @Parameter(names = {"--include-file"}, description = "List of files to be returned. Accepts 'all' and 'none'. If undefined, automatically includes files used for filtering. If none, no file is included.", required = false, arity = 1)
+        public String includeFile;
+    
+        @Parameter(names = {"--include-sample-data"}, description = "List of Sample Data keys (i.e. FORMAT column from VCF file) from Sample Data to include in the output. e.g: DP,AD. Accepts 'all' and 'none'.", required = false, arity = 1)
+        public String includeSampleData;
+    
+        @Parameter(names = {"--include-sample-id"}, description = "Include sampleId on each result", required = false, help = true, arity = 0)
+        public boolean includeSampleId = false;
+    
+        @Parameter(names = {"--include-genotype"}, description = "Include genotypes, apart of other formats defined with includeFormat", required = false, help = true, arity = 0)
+        public boolean includeGenotype = false;
+    
+        @Parameter(names = {"--file"}, description = "Filter variants from the files specified. This will set includeFile parameter when not provided", required = false, arity = 1)
+        public String file;
+    
+        @Parameter(names = {"--qual"}, description = "Specify the QUAL for any of the files. If 'file' filter is provided, will match the file and the qual. e.g.: >123.4", required = false, arity = 1)
+        public String qual;
+    
+        @Parameter(names = {"--filter"}, description = "Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.: PASS,LowGQX", required = false, arity = 1)
+        public String filter;
+    
+        @Parameter(names = {"--file-data"}, description = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from 'file' filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP", required = false, arity = 1)
+        public String fileData;
+    
+        @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1. Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. This will automatically set 'includeSample' parameter when not provided", required = false, arity = 1)
+        public String genotype;
+    
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ',' operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        public String sample;
+    
+        @Parameter(names = {"--sample-limit"}, description = "Limit the number of samples to be included in the result", required = false, arity = 1)
+        public Integer sampleLimit;
+    
+        @Parameter(names = {"--sample-skip"}, description = "Skip some samples from the result. Useful for sample pagination.", required = false, arity = 1)
+        public Integer sampleSkip;
+    
+        @Parameter(names = {"--sample-data"}, description = "Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}[,;]* . If no sample is specified, will use all samples from 'sample' or 'genotype' filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10", required = false, arity = 1)
+        public String sampleData;
+    
+        @Parameter(names = {"--sample-annotation"}, description = "Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith", required = false, arity = 1)
+        public String sampleAnnotation;
+    
+        @Parameter(names = {"--family"}, description = "Filter variants where any of the samples from the given family contains the variant (HET or HOM_ALT)", required = false, arity = 1)
+        public String family;
+    
+        @Parameter(names = {"--family-members"}, description = "Sub set of the members of a given family", required = false, arity = 1)
+        public String familyMembers;
+    
+        @Parameter(names = {"--family-disorder"}, description = "Specify the disorder to use for the family segregation", required = false, arity = 1)
+        public String familyDisorder;
+    
+        @Parameter(names = {"--family-proband"}, description = "Specify the proband child to use for the family segregation", required = false, arity = 1)
+        public String familyProband;
+    
+        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        public String familySegregation;
+    
+        @Parameter(names = {"--cohort"}, description = "Select variants with calculated stats for the selected cohorts", required = false, arity = 1)
+        public String cohort;
+    
+        @Parameter(names = {"--cohort-stats-pass"}, description = "Filter PASS frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8", required = false, arity = 1)
+        public String cohortStatsPass;
+    
+        @Parameter(names = {"--cohort-stats-mgf"}, description = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cohortStatsMgf;
+    
+        @Parameter(names = {"--missing-alleles"}, description = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}", required = false, arity = 1)
+        public String missingAlleles;
+    
+        @Parameter(names = {"--missing-genotypes"}, description = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}", required = false, arity = 1)
+        public String missingGenotypes;
+    
+        @Parameter(names = {"--annotation-exists"}, description = "Return only annotated variants", required = false, arity = 1)
+        public Boolean annotationExists;
+    
+        @Parameter(names = {"--score"}, description = "Filter by variant score: [{study:}]{score}[<|>|<=|>=]{number}", required = false, arity = 1)
+        public String score;
+    
+        @Parameter(names = {"--polyphen"}, description = "Polyphen, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. <=0.9 , =benign", required = false, arity = 1)
+        public String polyphen;
+    
+        @Parameter(names = {"--sift"}, description = "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. >0.1 , ~=tolerant", required = false, arity = 1)
+        public String sift;
+    
+        @Parameter(names = {"--gene-role-in-cancer"}, description = "The body web service geneRoleInCancer parameter", required = false, arity = 1)
+        public String geneRoleInCancer;
+    
+        @Parameter(names = {"--gene-trait-id"}, description = "List of gene trait association id. e.g. 'umls:C0007222' , 'OMIM:269600'", required = false, arity = 1)
+        public String geneTraitId;
+    
+        @Parameter(names = {"--gene-trait-name"}, description = "List of gene trait association names. e.g. Cardiovascular Diseases", required = false, arity = 1)
+        public String geneTraitName;
+    
+        @Parameter(names = {"--trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
+        public String trait;
+    
+        @Parameter(names = {"--cosmic"}, description = "List of COSMIC mutation IDs.", required = false, arity = 1)
+        public String cosmic;
+    
+        @Parameter(names = {"--clinvar"}, description = "Clinical source: clinvar, cosmic", required = false, arity = 1)
+        public String clinvar;
+    
+        @Parameter(names = {"--hpo"}, description = "List of HPO terms. e.g. 'HP:0000545,HP:0002812'", required = false, arity = 1)
+        public String hpo;
+    
+        @Parameter(names = {"--go"}, description = "List of GO (Gene Ontology) terms. e.g. 'GO:0002020'", required = false, arity = 1)
+        public String go;
+    
+        @Parameter(names = {"--expression"}, description = "List of tissues of interest. e.g. 'lung'", required = false, arity = 1)
+        public String expression;
+    
+        @Parameter(names = {"--protein-keyword"}, description = "List of Uniprot protein variant annotation keywords", required = false, arity = 1)
+        public String proteinKeyword;
+    
+        @Parameter(names = {"--drug"}, description = "List of drug names", required = false, arity = 1)
+        public String drug;
+    
+        @Parameter(names = {"--custom-annotation"}, description = "Custom annotation: {key}[<|>|<=|>=]{number} or {key}[~=|=]{text}", required = false, arity = 1)
+        public String customAnnotation;
+    
+        @Parameter(names = {"--source"}, description = "Select the variant data source from where to fetch the data. Accepted values are 'variant_index' (default) and 'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved exclusively from that secondary index, and the 'include/exclude' parameters will be ignored. If the given query can not be fully resolved using the secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index, some data might be missing or be partial.", required = false, arity = 1)
+        public String source;
+    
+        @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]", required = false, arity = 1)
+        public String unknownGenotype;
+    
+        @Parameter(names = {"--sample-metadata"}, description = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.", required = false, help = true, arity = 0)
+        public boolean sampleMetadata = false;
+    
+        @Parameter(names = {"--sort"}, description = "Sort the results by chromosome, start, end and alternate allele", required = false, help = true, arity = 0)
+        public boolean sort = false;
+    
+        @Parameter(names = {"--output-file-name"}, description = "Output file name", required = false, arity = 1)
+        public String outputFileName;
+    
+        @Parameter(names = {"--input-format"}, description = "Format that will be used as input for the variant walker", required = false, arity = 1)
+        public String inputFormat;
+    
+        @Parameter(names = {"--docker-image"}, description = "Docker image to use", required = false, arity = 1)
+        public String dockerImage;
+    
+        @Parameter(names = {"--command-line"}, description = "Command line to execute from the walker", required = false, arity = 1)
+        public String commandLine;
+    
+        @Parameter(names = {"--body_include"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String bodyInclude;
+    
+        @Parameter(names = {"--body_exclude"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String bodyExclude;
     
     }
 

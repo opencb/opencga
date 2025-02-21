@@ -63,8 +63,9 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.checkEmail;
  */
 public class UserManager extends AbstractManager {
 
-    static final QueryOptions INCLUDE_INTERNAL = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
-            UserDBAdaptor.QueryParams.INTERNAL.key(), UserDBAdaptor.QueryParams.DEPRECATED_ACCOUNT.key()));
+    public static final QueryOptions INCLUDE_INTERNAL = new QueryOptions(QueryOptions.INCLUDE,
+            Arrays.asList(UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.INTERNAL.key(),
+                    UserDBAdaptor.QueryParams.DEPRECATED_ACCOUNT.key()));
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     private final CatalogIOManager catalogIOManager;
     private final AuthenticationFactory authenticationFactory;
@@ -127,9 +128,50 @@ public class UserManager extends AbstractManager {
 
         Organization organization = getOrganizationDBAdaptor(organizationId).get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION)
                 .first();
-
+        validateNewUser(user, password, organization.getConfiguration().getDefaultUserExpirationDate(), organizationId);
         ObjectMap auditParams = new ObjectMap("user", user);
 
+        if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
+            JwtPayload jwtPayload = validateToken(token);
+            // If it's not one of the SUPERADMIN users or the owner or one of the admins of the organisation, we should not allow it
+            if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
+                String errorMsg = "Please ask your administrator to create your account.";
+                auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
+                throw new CatalogException(errorMsg);
+            }
+        }
+
+        // Check if we have already reached the limit of users in the Organisation
+        checkUserLimitQuota(organizationId);
+
+        // Check if the user already exists
+        checkUserExists(organizationId, user.getId());
+
+        try {
+            if (StringUtils.isNotEmpty(password) && !PasswordUtils.isStrongPassword(password)) {
+                throw new CatalogException("Invalid password. " + PasswordUtils.PASSWORD_REQUIREMENT);
+            }
+            if (user.getProjects() != null && !user.getProjects().isEmpty()) {
+                throw new CatalogException("Creating user and projects in a single transaction is forbidden");
+            }
+
+            getUserDBAdaptor(organizationId).insert(user, password, QueryOptions.empty());
+
+            auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return getUserDBAdaptor(organizationId).get(user.getId(), QueryOptions.empty());
+        } catch (CatalogIOException | CatalogDBException e) {
+            auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+
+            throw e;
+        }
+    }
+
+    public void validateNewUser(User user, String password, String defaultUserExpirationDate, String organizationId)
+            throws CatalogException {
         // Initialise fields
         ParamUtils.checkObj(user, "User");
         ParamUtils.checkValidUserId(user.getId());
@@ -156,7 +198,7 @@ public class UserManager extends AbstractManager {
         Account account = user.getInternal().getAccount();
         account.setPassword(ParamUtils.defaultObject(account.getPassword(), Password::new));
         if (StringUtils.isEmpty(account.getExpirationDate())) {
-            account.setExpirationDate(organization.getConfiguration().getDefaultUserExpirationDate());
+            account.setExpirationDate(defaultUserExpirationDate);
         } else {
             // Validate expiration date is not over
             ParamUtils.checkDateIsNotExpired(account.getExpirationDate(), UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_EXPIRATION_DATE.key());
@@ -167,7 +209,12 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Unknown authentication origin id '" + account.getAuthentication() + "'");
             }
         } else {
-            account.setAuthentication(new Account.AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, false));
+            if (account.getAuthentication() != null) {
+                account.getAuthentication().setId(AuthenticationOrigin.AuthenticationType.OPENCGA.name());
+            } else {
+                account.setAuthentication(new Account.AuthenticationOrigin(AuthenticationOrigin.AuthenticationType.OPENCGA.name(), false,
+                        false));
+            }
         }
 
         // Set password expiration
@@ -182,39 +229,18 @@ public class UserManager extends AbstractManager {
             Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
             account.getPassword().setExpirationDate(TimeUtils.getTime(date));
         }
+    }
 
-        if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
-            JwtPayload jwtPayload = validateToken(token);
-            // If it's not one of the SUPERADMIN users or the owner or one of the admins of the organisation, we should not allow it
-            if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
-                String errorMsg = "Please ask your administrator to create your account.";
-                auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
-                throw new CatalogException(errorMsg);
-            }
+    private void checkUserLimitQuota(String organizationId) throws CatalogException {
+        if (configuration.getQuota().getMaxNumUsers() <= 0) {
+            logger.debug("Skipping user quota check. No limit set.");
+            return;
         }
-
-        checkUserExists(organizationId, user.getId());
-
-        try {
-            if (StringUtils.isNotEmpty(password) && !PasswordUtils.isStrongPassword(password)) {
-                throw new CatalogException("Invalid password. " + PasswordUtils.PASSWORD_REQUIREMENT);
-            }
-            if (user.getProjects() != null && !user.getProjects().isEmpty()) {
-                throw new CatalogException("Creating user and projects in a single transaction is forbidden");
-            }
-
-            getUserDBAdaptor(organizationId).insert(user, password, QueryOptions.empty());
-
-            auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return getUserDBAdaptor(organizationId).get(user.getId(), QueryOptions.empty());
-        } catch (CatalogIOException | CatalogDBException e) {
-            auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-
-            throw e;
+        // Check if we have already reached the limit of users in the Organisation
+        long numUsers = getUserDBAdaptor(organizationId).count(new Query()).getNumMatches();
+        if (numUsers >= configuration.getQuota().getMaxNumUsers()) {
+            throw new CatalogException("The organization '" + organizationId + "' has reached the maximum quota of allowed users ("
+                    + configuration.getQuota().getMaxNumUsers() + ").");
         }
     }
 
@@ -285,9 +311,9 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(jwtPayload.getUserId(), "jwt user");
         ParamUtils.checkParameter(jwtPayload.getOrganization(), "jwt organization");
 
-        String authOrigin;
+        Account.AuthenticationOrigin authOrigin;
         if (ParamConstants.ANONYMOUS_USER_ID.equals(jwtPayload.getUserId())) {
-            authOrigin = CatalogAuthenticationManager.OPENCGA;
+            authOrigin = new Account.AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, false, false);
         } else {
             OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(),
                     INCLUDE_INTERNAL);
@@ -295,17 +321,17 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("User '" + jwtPayload.getUserId() + "' could not be found.");
             }
             User user = userResult.first();
-            authOrigin = user.getInternal().getAccount().getAuthentication().getId();
+            checkValidUserAccountStatus(user.getId(), user);
+            authOrigin = user.getInternal().getAccount().getAuthentication();
         }
 
-        authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, token);
+        authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, jwtPayload);
         return jwtPayload;
     }
 
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
-        if (!OPENCGA.equals(authenticationFactory.getUserId(organizationId, authOrigin, token))) {
-            throw new CatalogAuthorizationException("Only the root user can perform this action");
-        }
+        JwtPayload payload = validateToken(token);
+        authorizationManager.checkIsOpencgaAdministrator(payload);
 
         OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study, null, token);
 
@@ -392,9 +418,7 @@ public class UserManager extends AbstractManager {
                 .append("sync", sync)
                 .append("token", token);
         try {
-            if (!OPENCGA.equals(authenticationFactory.getUserId(organizationId, authOrigin, token))) {
-                throw new CatalogAuthorizationException("Only the root user can perform this action");
-            }
+            authorizationManager.checkIsOpencgaAdministrator(payload);
 
             ParamUtils.checkParameter(authOrigin, "Authentication origin");
             ParamUtils.checkParameter(remoteGroup, "Remote group");
@@ -802,6 +826,7 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(password, "password");
 
         String authId = null;
+        String userId = null;
         AuthenticationResponse response = null;
 
         if (StringUtils.isEmpty(organizationId)) {
@@ -821,45 +846,18 @@ public class UserManager extends AbstractManager {
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_INTERNAL);
         if (userOpenCGAResult.getNumResults() == 1) {
             User user = userOpenCGAResult.first();
+            userId = user.getId();
             // Only local OPENCGA users that are not superadmins can be automatically banned or their accounts be expired
             boolean userCanBeBanned = !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)
                     && CatalogAuthenticationManager.OPENCGA.equals(user.getInternal().getAccount().getAuthentication().getId());
             // We check
             if (userCanBeBanned) {
-                // Check user is not banned, suspended or has an expired account
-                if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
-                    throw CatalogAuthenticationException.userIsBanned(username);
-                }
-                if (UserStatus.SUSPENDED.equals(user.getInternal().getStatus().getId())) {
-                    throw CatalogAuthenticationException.userIsSuspended(username);
-                }
-                Account account2 = user.getInternal().getAccount();
-                if (account2.getPassword().getExpirationDate() != null) {
-                    Account account1 = user.getInternal().getAccount();
-                    Date passwordExpirationDate = TimeUtils.toDate(account1.getPassword().getExpirationDate());
-                    if (passwordExpirationDate == null) {
-                        throw new CatalogException("Unexpected null 'passwordExpirationDate' for user '" + username + "'.");
-                    }
-                    if (passwordExpirationDate.before(new Date())) {
-                        Account account = user.getInternal().getAccount();
-                        throw CatalogAuthenticationException.passwordExpired(username, account.getPassword().getExpirationDate());
-                    }
-                }
-                if (user.getInternal().getAccount().getExpirationDate() != null) {
-                    Date date = TimeUtils.toDate(user.getInternal().getAccount().getExpirationDate());
-                    if (date == null) {
-                        throw new CatalogException("Unexpected null 'expirationDate' for user '" + username + "'.");
-                    }
-                    if (date.before(new Date())) {
-                        throw CatalogAuthenticationException.accountIsExpired(username,
-                                user.getInternal().getAccount().getExpirationDate());
-                    }
-                }
+                checkValidUserAccountStatus(username, user);
             }
-            User user1 = userOpenCGAResult.first();
-            authId = user1.getInternal().getAccount().getAuthentication().getId();
+            Account.AuthenticationOrigin authentication = user.getInternal().getAccount().getAuthentication();
+            authId = user.getInternal().getAccount().getAuthentication().getId();
             try {
-                response = authenticationFactory.authenticate(organizationId, authId, username, password);
+                response = authenticationFactory.authenticate(organizationId, authentication, username, password);
             } catch (CatalogAuthenticationException e) {
                 if (userCanBeBanned) {
                     // We can only lock the account if it is not the root user
@@ -896,11 +894,13 @@ public class UserManager extends AbstractManager {
                 try {
                     response = authenticationManager.authenticate(organizationId, username, password);
                     authId = entry.getKey();
+                    userId = authenticationManager.getUserId(response.getToken());
                     break;
                 } catch (CatalogAuthenticationException e) {
                     logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
                 }
             }
+
         }
 
         if (response == null) {
@@ -911,7 +911,6 @@ public class UserManager extends AbstractManager {
 
         auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
         if (!CatalogAuthenticationManager.OPENCGA.equals(authId) && !CatalogAuthenticationManager.INTERNAL.equals(authId)) {
             // External authorization
             try {
@@ -938,6 +937,38 @@ public class UserManager extends AbstractManager {
         }
 
         return response;
+    }
+
+    private static void checkValidUserAccountStatus(String username, User user) throws CatalogException {
+        // Check user is not banned, suspended or has an expired account
+        if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
+            throw CatalogAuthorizationException.userIsBanned(username);
+        }
+        if (UserStatus.SUSPENDED.equals(user.getInternal().getStatus().getId())) {
+            throw CatalogAuthorizationException.userIsSuspended(username);
+        }
+        Account account2 = user.getInternal().getAccount();
+        if (account2.getPassword().getExpirationDate() != null) {
+            Account account1 = user.getInternal().getAccount();
+            Date passwordExpirationDate = TimeUtils.toDate(account1.getPassword().getExpirationDate());
+            if (passwordExpirationDate == null) {
+                throw new CatalogException("Unexpected null 'passwordExpirationDate' for user '" + username + "'.");
+            }
+            if (passwordExpirationDate.before(new Date())) {
+                Account account = user.getInternal().getAccount();
+                throw CatalogAuthorizationException.passwordExpired(username, account.getPassword().getExpirationDate());
+            }
+        }
+        if (user.getInternal().getAccount().getExpirationDate() != null) {
+            Date date = TimeUtils.toDate(user.getInternal().getAccount().getExpirationDate());
+            if (date == null) {
+                throw new CatalogException("Unexpected null 'expirationDate' for user '" + username + "'.");
+            }
+            if (date.before(new Date())) {
+                throw CatalogAuthorizationException.accountIsExpired(username,
+                        user.getInternal().getAccount().getExpirationDate());
+            }
+        }
     }
 
     public AuthenticationResponse loginAnonymous(String organizationId) throws CatalogException {

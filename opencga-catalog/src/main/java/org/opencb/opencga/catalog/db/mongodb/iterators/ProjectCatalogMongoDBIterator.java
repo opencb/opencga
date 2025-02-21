@@ -7,9 +7,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
+import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.StudyMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -26,10 +28,12 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
 
     private final QueryOptions options;
     private boolean includeStudyInfo;
+    private final OrganizationMongoDBAdaptor organizationMongoDBAdaptor;
     private final StudyMongoDBAdaptor studyDBAdaptor;
     private QueryOptions studyQueryOptions;
 
     private final Queue<Document> projectListBuffer;
+    private List<Document> federationClients;
 
     private final Logger logger;
 
@@ -42,6 +46,7 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
                                          QueryOptions options, String user) {
         super(mongoCursor, clientSession, converter, null);
 
+        this.organizationMongoDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor();
         this.studyDBAdaptor = dbAdaptorFactory.getCatalogStudyDBAdaptor();
 
         this.options = options != null ? new QueryOptions(options) : new QueryOptions();
@@ -52,6 +57,7 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
 
         this.user = user;
 
+        this.federationClients = null;
         this.projectListBuffer = new LinkedList<>();
         this.logger = LoggerFactory.getLogger(ProjectCatalogMongoDBIterator.class);
     }
@@ -97,6 +103,7 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
             }
         }
 
+        addFederationRef();
         if (!projectUidSet.isEmpty()) {
             OpenCGAResult<Document> studyResult;
             Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), new ArrayList<>(projectUidSet));
@@ -130,6 +137,53 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
                 });
             }
         }
+    }
+
+    private List<Document> getFederationClients() {
+        if (federationClients == null) {
+            // The study is federated. We need to fetch the information from the corresponding collection
+            QueryOptions orgOptions = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.FEDERATION_CLIENTS.key());
+            try {
+                Document organization = organizationMongoDBAdaptor.nativeGet(clientSession, user, orgOptions).first();
+                Document orgFederation = organization.get(OrganizationDBAdaptor.QueryParams.FEDERATION.key(), Document.class);
+                if (orgFederation == null) {
+                    logger.warn("Federation information could not be filled in. Organization was not found.");
+                    // Remove null so we don't try to fetch the information again
+                    federationClients = Collections.emptyList();
+                    return federationClients;
+                }
+                federationClients = orgFederation.getList("clients", Document.class);
+                if (federationClients == null) {
+                    logger.warn("Federation information could not be filled in. Federation clients were not found.");
+                    // Remove null so we don't try to fetch the information again
+                    federationClients = Collections.emptyList();
+                }
+            } catch (CatalogDBException e) {
+                logger.warn("Could not obtain the Organization information", e);
+            }
+        }
+        return federationClients;
+    }
+
+    private void addFederationRef() {
+        projectListBuffer.forEach(project -> {
+            Document federation = project.get(ProjectDBAdaptor.QueryParams.FEDERATION.key(), Document.class);
+            if (federation == null) {
+                return;
+            }
+            String federationId = federation.getString("id");
+            if (StringUtils.isEmpty(federationId)) {
+                return;
+            }
+            List<Document> federationClients = getFederationClients();
+            for (Document client : federationClients) {
+                String clientId = client.getString("id");
+                if (federationId.equals(clientId)) {
+                    project.put(ProjectDBAdaptor.QueryParams.FEDERATION.key(), client);
+                    return;
+                }
+            }
+        });
     }
 
     private boolean includeStudyInfo() {

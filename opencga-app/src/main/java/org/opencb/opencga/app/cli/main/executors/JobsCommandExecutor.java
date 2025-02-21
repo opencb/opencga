@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -14,8 +15,8 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.Job;
@@ -69,6 +70,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
+                break;
+            case "aggregationstats":
+                queryResponse = aggregationStats();
                 break;
             case "create":
                 queryResponse = create();
@@ -145,6 +149,39 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), JobAclUpdateParams.class);
         }
         return openCGAClient.getJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
+    }
+
+    private RestResponse<FacetField> aggregationStats() throws Exception {
+        logger.debug("Executing aggregationStats in Jobs command line");
+
+        JobsCommandOptions.AggregationStatsCommandOptions commandOptions = jobsCommandOptions.aggregationStatsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("otherStudies", commandOptions.otherStudies);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
+        queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
+        queryParams.putIfNotEmpty("userId", commandOptions.userId);
+        queryParams.putIfNotEmpty("priority", commandOptions.priority);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotNull("visited", commandOptions.visited);
+        queryParams.putIfNotEmpty("tags", commandOptions.tags);
+        queryParams.putIfNotEmpty("input", commandOptions.input);
+        queryParams.putIfNotEmpty("output", commandOptions.output);
+        queryParams.putIfNotEmpty("acl", commandOptions.acl);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getJobClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> create() throws Exception {

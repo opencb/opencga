@@ -17,9 +17,10 @@
 package org.opencb.opencga.client.rest.clients;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
@@ -47,7 +48,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Organization webservices.
  *    PATH: organizations
  */
-public class OrganizationClient extends AbstractParentClient {
+public class OrganizationClient extends ParentClient {
 
     public OrganizationClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

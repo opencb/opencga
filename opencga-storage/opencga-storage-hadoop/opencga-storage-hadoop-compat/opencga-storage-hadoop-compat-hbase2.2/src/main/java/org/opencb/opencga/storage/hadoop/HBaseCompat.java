@@ -7,6 +7,7 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.io.compress.SnappyCodec;
 import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.PhoenixCompat;
 import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.PhoenixCompatApi;
 
@@ -44,5 +45,10 @@ public class HBaseCompat extends HBaseCompatApi {
             startKeys[i] = regions.get(i).getStartKey();
         }
         return startKeys;
+    }
+
+    @Override
+    public boolean isSnappyAvailable() {
+        return SnappyCodec.isNativeCodeLoaded();
     }
 }

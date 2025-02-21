@@ -38,4 +38,10 @@ public class HBaseCompat extends HBaseCompatApi {
     public byte[][] getTableStartKeys(Admin admin, Table table) throws IOException {
         return table.getRegionLocator().getStartKeys();
     }
+
+    @Override
+    public boolean isSnappyAvailable() {
+        // [HADOOP-17125] - Using snappy-java in SnappyCodec - 3.3.1, 3.4.0
+        return true;
+    }
 }

@@ -18,10 +18,12 @@ package org.opencb.opencga.client.rest.clients;
 
 import java.io.DataInputStream;
 import java.lang.Object;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntryList;
@@ -53,7 +55,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the File webservices.
  *    PATH: files
  */
-public class FileClient extends AbstractParentClient {
+public class FileClient extends ParentClient {
 
     public FileClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
@@ -75,6 +77,53 @@ public class FileClient extends AbstractParentClient {
         params.putIfNotNull("action", action);
         params.put("body", data);
         return execute("files", null, "acl", members, "update", params, POST, FileAclEntryList.class);
+    }
+
+    /**
+     * Fetch catalog file stats.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       id: Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~',
+     *            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list file UUIDs up to a maximum of 100.
+     *       name: Comma separated list of file names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}'
+     *            e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       path: Comma separated list of paths. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+     *            '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uri: Comma separated list of uris. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+     *            '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       type: File type, either FILE or DIRECTORY.
+     *       bioformat: Comma separated Bioformat values. For existing Bioformats see files/bioformats.
+     *       format: Comma separated Format values. For existing Formats see files/formats.
+     *       external: Boolean field indicating whether to filter by external or non external files.
+     *       status: Filter by status.
+     *       internalStatus: Filter by internal status.
+     *       internalVariantIndexStatus: Filter by internal variant index status.
+     *       softwareName: Software name.
+     *       directory: Directory under which we want to look for files or folders.
+     *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       description: Description.
+     *       tags: Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+     *            sensitive, '~/value/i' for case insensitive search.
+     *       size: File size.
+     *       sampleIds: Comma separated list sample IDs or UUIDs up to a maximum of 100.
+     *       jobId: Job ID that created the file(s) or folder(s).
+     *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
+     *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+     *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
+     *            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+     *            permissions. Only study owners or administrators can query by this field. .
+     *       deleted: Boolean to retrieve deleted entries.
+     *       release: Release when it was created.
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", null, null, null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**
