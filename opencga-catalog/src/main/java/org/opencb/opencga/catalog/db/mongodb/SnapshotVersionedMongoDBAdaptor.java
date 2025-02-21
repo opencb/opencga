@@ -227,7 +227,7 @@ public class SnapshotVersionedMongoDBAdaptor {
         }
 
         if (entryList.isEmpty()) {
-            throw new CatalogDBException("No documents could be found to be updated");
+            return OpenCGAResult.empty();
         }
 
         // 2. Execute main update

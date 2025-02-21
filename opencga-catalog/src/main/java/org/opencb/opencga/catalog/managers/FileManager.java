@@ -3209,10 +3209,10 @@ public class FileManager extends AnnotationSetManager<File> {
                 authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId, FilePermissions.DELETE);
             }
 
-            // File must exist in the file system
-            if (!unlink && !ioManager.exists(file.getUri())) {
-                throw new CatalogException("File " + file.getUri() + " not found in file system");
-            }
+//            // File must exist in the file system
+//            if (!unlink && !ioManager.exists(file.getUri())) {
+//                throw new CatalogException("File " + file.getUri() + " not found in file system");
+//            }
 
             checkValidStatusForDeletion(file, acceptedStatus);
             indexFiles.addAll(getProducedFromIndexFiles(file));
