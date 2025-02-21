@@ -3,15 +3,13 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators.extensions
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.opencb.biodata.models.common.DataVersion;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
@@ -21,14 +19,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Category(ShortTests.class)
 public class CosmicVariantAnnotatorExtensionTaskTest {
 
     private final String ASSEMBLY ="GRCh38";
-    private final String COSMIC_VERSION = "v95";
+    private final String COSMIC_VERSION = "v101";
 
     @Test
     public void testSetupCosmicVariantAnnotatorExtensionTask() throws Exception {
@@ -99,18 +96,18 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
 
         List<VariantAnnotation> inputVariantAnnotations = new ArrayList<>();
         VariantAnnotation variantAnnotation1 = new VariantAnnotation();
-        variantAnnotation1.setChromosome("12");
-        variantAnnotation1.setStart(124402657);
-        variantAnnotation1.setEnd(124402657);
+        variantAnnotation1.setChromosome("6");
+        variantAnnotation1.setStart(25864933);
+        variantAnnotation1.setEnd(25864933);
         variantAnnotation1.setReference("G");
-        variantAnnotation1.setAlternate("T");
+        variantAnnotation1.setAlternate("A");
         inputVariantAnnotations.add(variantAnnotation1);
         VariantAnnotation variantAnnotation2 = new VariantAnnotation();
-        variantAnnotation2.setChromosome("22");
-        variantAnnotation2.setStart(124402657);
-        variantAnnotation2.setEnd(124402657);
-        variantAnnotation2.setReference("G");
-        variantAnnotation2.setAlternate("T");
+        variantAnnotation2.setChromosome("8");
+        variantAnnotation2.setStart(107264278);
+        variantAnnotation2.setEnd(107264278);
+        variantAnnotation2.setReference("T");
+        variantAnnotation2.setAlternate("G");
         inputVariantAnnotations.add(variantAnnotation2);
 
         List<VariantAnnotation> outputVariantAnnotations = task.apply(inputVariantAnnotations);
@@ -120,13 +117,18 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
 
         // Checking variantAnnotation1
         Assert.assertEquals(1, outputVariantAnnotations.get(0).getTraitAssociation().size());
-        Assert.assertEquals("COSV62300079", outputVariantAnnotations.get(0).getTraitAssociation().get(0).getId());
-        Assert.assertEquals("liver", outputVariantAnnotations.get(0).getTraitAssociation().get(0).getSomaticInformation().getPrimarySite());
-        Assert.assertEquals("hepatocellular carcinoma", outputVariantAnnotations.get(0).getTraitAssociation().get(0).getSomaticInformation().getHistologySubtype());
-        Assert.assertEquals("PMID:323", outputVariantAnnotations.get(0).getTraitAssociation().get(0).getBibliography().get(0));
+        Assert.assertEquals("COSV57759629", outputVariantAnnotations.get(0).getTraitAssociation().get(0).getId());
+        Assert.assertEquals("haematopoietic and lymphoid tissue", outputVariantAnnotations.get(0).getTraitAssociation().get(0).getSomaticInformation().getPrimarySite());
+        Assert.assertTrue(StringUtils.isEmpty(outputVariantAnnotations.get(0).getTraitAssociation().get(0).getSomaticInformation().getHistologySubtype()));
+        Assert.assertEquals("lymphoid neoplasm", outputVariantAnnotations.get(0).getTraitAssociation().get(0).getSomaticInformation().getPrimaryHistology());
+        Assert.assertTrue(CollectionUtils.isEmpty(outputVariantAnnotations.get(0).getTraitAssociation().get(0).getBibliography()));
 
         // Checking variantAnnotation2
-        Assert.assertTrue(CollectionUtils.isEmpty(outputVariantAnnotations.get(1).getTraitAssociation()));
+        Assert.assertEquals(1, outputVariantAnnotations.get(1).getTraitAssociation().size());
+        Assert.assertEquals("COSV108830958", outputVariantAnnotations.get(1).getTraitAssociation().get(0).getId());
+        Assert.assertEquals("thyroid", outputVariantAnnotations.get(1).getTraitAssociation().get(0).getSomaticInformation().getPrimarySite());
+        Assert.assertEquals("papillary carcinoma", outputVariantAnnotations.get(1).getTraitAssociation().get(0).getSomaticInformation().getHistologySubtype());
+        Assert.assertEquals("PMID:33888599", outputVariantAnnotations.get(1).getTraitAssociation().get(0).getBibliography().get(0));
     }
 
     public static Path initCosmicPath() throws IOException {
@@ -134,7 +136,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         if (!cosmicPath.toFile().mkdirs()) {
             throw new IOException("Error creating the COSMIC path: " + cosmicPath.toAbsolutePath());
         }
-        Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/cosmic.small.tsv.gz").getPath());
+        Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/Small_Cosmic_v101_GRCh38.tar.gz").getPath());
         Path targetPath = cosmicPath.resolve(cosmicFile.getFileName());
         Files.copy(cosmicFile, targetPath);
 
