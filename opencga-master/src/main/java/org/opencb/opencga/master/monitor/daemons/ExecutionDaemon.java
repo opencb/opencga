@@ -692,11 +692,11 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             return;
         }
 
-        List<String> fileUriList = new ArrayList<>(job.getInput().size());
+        List<String> filePathList = new ArrayList<>(job.getInput().size());
         for (File file : job.getInput()) {
-            fileUriList.add(file.getUri().getPath());
+            filePathList.add(file.getPath());
         }
-        List<File> inputFiles = VariantFileIndexerOperationManager.getInputFiles(catalogManager, job.getStudy().getId(), fileUriList,
+        List<File> inputFiles = VariantFileIndexerOperationManager.getInputFiles(catalogManager, job.getStudy().getId(), filePathList,
                 token);
         // Fetch the samples that are going to be indexed
         Set<String> sampleIds = new HashSet<>();
