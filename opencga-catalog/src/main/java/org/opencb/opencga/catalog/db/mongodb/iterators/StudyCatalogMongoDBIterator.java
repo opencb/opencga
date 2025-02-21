@@ -24,9 +24,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.NoteDBAdaptor;
+import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils;
 import org.opencb.opencga.catalog.db.mongodb.NoteMongoDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -48,6 +50,7 @@ public class StudyCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
     private final Function<Document, Boolean> studyFilter;
     private final String user;
     private final QueryOptions options;
+    private final OrganizationMongoDBAdaptor organizationMongoDBAdaptor;
     private final NoteMongoDBAdaptor noteMongoDBAdaptor;
     private Document previousDocument;
 
@@ -62,6 +65,7 @@ public class StudyCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
         this.studyFilter = studyFilter;
         this.options = ParamUtils.defaultObject(options, QueryOptions::new);
         this.user = user;
+        this.organizationMongoDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor();
         this.noteMongoDBAdaptor = dbAdaptorFactory.getCatalogNotesDBAdaptor();
 
         this.logger = LoggerFactory.getLogger(StudyCatalogMongoDBIterator.class);
@@ -84,30 +88,74 @@ public class StudyCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
             }
 
             if (previousDocument != null) {
-                List<String> noteField = Collections.singletonList(StudyDBAdaptor.QueryParams.NOTES.key());
-                if (includeField(options, noteField)) {
-                    Query query = new Query()
-                            .append(NoteDBAdaptor.QueryParams.STUDY_UID.key(), previousDocument.get(StudyDBAdaptor.QueryParams.UID.key()))
-                            .append(NoteDBAdaptor.QueryParams.SCOPE.key(), Note.Scope.STUDY.name());
-                    if (!isAtLeastStudyAdmin(previousDocument)) {
-                        query.append(NoteDBAdaptor.QueryParams.VISIBILITY.key(), Note.Visibility.PUBLIC.name());
-                    }
-
-                    QueryOptions noteOptions = createInnerQueryOptionsForVersionedEntity(options,
-                            StudyDBAdaptor.QueryParams.NOTES.key(), true);
-                    noteOptions.put(QueryOptions.LIMIT, 1000);
-                    try {
-                        OpenCGAResult<Document> result = noteMongoDBAdaptor.nativeGet(clientSession, query, noteOptions);
-                        previousDocument.put(StudyDBAdaptor.QueryParams.NOTES.key(), result.getResults());
-                    } catch (CatalogDBException e) {
-                        logger.warn("Could not obtain the organization notes", e);
-                    }
-                }
-
+                addStudyNotes();
+                addFederationRef();
                 addAclInformation(previousDocument, options);
             }
         } else {
             this.previousDocument = null;
+        }
+    }
+
+    private void addStudyNotes() {
+        List<String> noteField = Collections.singletonList(StudyDBAdaptor.QueryParams.NOTES.key());
+        if (includeField(options, noteField)) {
+            Query query = new Query()
+                    .append(NoteDBAdaptor.QueryParams.STUDY_UID.key(), previousDocument.get(StudyDBAdaptor.QueryParams.UID.key()))
+                    .append(NoteDBAdaptor.QueryParams.SCOPE.key(), Note.Scope.STUDY.name());
+            if (!isAtLeastStudyAdmin(previousDocument)) {
+                query.append(NoteDBAdaptor.QueryParams.VISIBILITY.key(), Note.Visibility.PUBLIC.name());
+            }
+
+            QueryOptions noteOptions = createInnerQueryOptionsForVersionedEntity(options,
+                    StudyDBAdaptor.QueryParams.NOTES.key(), true);
+            noteOptions.put(QueryOptions.LIMIT, 1000);
+            try {
+                OpenCGAResult<Document> result = noteMongoDBAdaptor.nativeGet(clientSession, query, noteOptions);
+                previousDocument.put(StudyDBAdaptor.QueryParams.NOTES.key(), result.getResults());
+            } catch (CatalogDBException e) {
+                logger.warn("Could not obtain the organization notes", e);
+            }
+        }
+    }
+
+    private void addFederationRef() {
+        Document federation = previousDocument.get(StudyDBAdaptor.QueryParams.FEDERATION.key(), Document.class);
+        if (federation == null) {
+            return;
+        }
+        String federationId = federation.getString("id");
+        if (StringUtils.isEmpty(federationId)) {
+            return;
+        }
+
+        // The study is federated. We need to fetch the information from the corresponding collection
+        QueryOptions orgOptions = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.FEDERATION_CLIENTS.key());
+        try {
+            Document organization = organizationMongoDBAdaptor.nativeGet(clientSession, user, orgOptions).first();
+            Document orgFederation = organization.get(OrganizationDBAdaptor.QueryParams.FEDERATION.key(), Document.class);
+            if (orgFederation == null) {
+                logger.warn("Study {} is federated but federation information could not be filled in. Organization was not found.",
+                        previousDocument.getString("fqn"));
+                return;
+            }
+            List<Document> clients = orgFederation.getList("clients", Document.class);
+            if (clients == null) {
+                logger.warn("Study {} is federated but federation information could not be filled in. Federation clients were not found.",
+                        previousDocument.getString("fqn"));
+                return;
+            }
+            for (Document client : clients) {
+                String clientId = client.getString("id");
+                if (federationId.equals(clientId)) {
+                    previousDocument.put(StudyDBAdaptor.QueryParams.FEDERATION.key(), client);
+                    return;
+                }
+            }
+            logger.warn("Study {} is federated but federation information could not be filled in. Federation information was not found.",
+                    previousDocument.getString("fqn"));
+        } catch (CatalogDBException e) {
+            logger.warn("Could not obtain the Organization information", e);
         }
     }
 

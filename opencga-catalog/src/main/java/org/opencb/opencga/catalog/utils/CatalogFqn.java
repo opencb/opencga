@@ -1,10 +1,14 @@
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.models.JwtPayload;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public final class CatalogFqn {
 
@@ -112,7 +116,17 @@ public final class CatalogFqn {
         Matcher matcher = ORGANIZATION_PROJECT_STUDY_PATTERN.matcher(studyStr);
         if (matcher.find()) {
             // studyStr contains the full path (organization@project:study)
-            String organizationId = matcher.group(1);
+
+            // Check for federated studies
+            Set<String> federatedStudies = new HashSet<>();
+            if (CollectionUtils.isNotEmpty(payload.getFederations())) {
+                federatedStudies = payload.getFederations().stream()
+                        .flatMap(federation -> federation.getStudyIds().stream())
+                        .collect(Collectors.toSet());
+            }
+
+            // If the study is federated, the organization that we should be using (where it should be stored) is the one from the payload
+            String organizationId = federatedStudies.contains(studyStr) ? payload.getOrganization() : matcher.group(1);
             String projectId = matcher.group(2);
             String studyId = matcher.group(3);
             return new CatalogFqn(organizationId, studyStr)

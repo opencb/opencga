@@ -1,14 +1,17 @@
 package org.opencb.opencga.app.migrations.v3.v3_2_1;
 
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.UpdateOneModel;
+import com.mongodb.client.model.Updates;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
+import org.opencb.opencga.catalog.utils.Constants;
 
 import java.util.Arrays;
 
@@ -46,5 +49,14 @@ public class MoveUserAccountToInternalMigration extends MigrationTool {
 
                     bulk.add(new UpdateOneModel<>(Filters.eq("_id", document.get("_id")), updateDocument.toFinalUpdateDocument()));
                 });
+
+        // Due to patch 2 from TASK-6013, default user expirationDate for some users was not set.
+        MongoCollection<Document> userCollection = getMongoCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION);
+        userCollection.updateMany(
+                Filters.or(
+                        Filters.eq("internal.account.expirationDate", null),
+                        Filters.eq("internal.account.expirationDate", "")
+                ),
+                Updates.set("internal.account.expirationDate", Constants.DEFAULT_USER_EXPIRATION_DATE));
     }
 }
