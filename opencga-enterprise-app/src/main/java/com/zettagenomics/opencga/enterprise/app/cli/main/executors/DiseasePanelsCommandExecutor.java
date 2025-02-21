@@ -7,13 +7,14 @@ import com.zettagenomics.opencga.enterprise.app.cli.main.options.DiseasePanelsCo
 import java.util.HashMap;
 import java.util.List;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclEntryList;
@@ -61,6 +62,9 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
             case "acl-update":
                 queryResponse = updateAcl();
                 break;
+            case "aggregationstats":
+                queryResponse = aggregationStats();
+                break;
             case "create":
                 queryResponse = create();
                 break;
@@ -97,8 +101,9 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<PanelAclEntryList> updateAcl() throws Exception {
         logger.debug("Executing updateAcl in Disease Panels command line");
 
-        ObjectMap queryParams = new ObjectMap();
         DiseasePanelsCommandOptions.UpdateAclCommandOptions commandOptions = diseasePanelsCommandOptions.updateAclCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -126,11 +131,45 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
         return enterpriseOpenCGAClient.getEnterpriseDiseasePanelClient().updateAcl(commandOptions.members, commandOptions.action, panelAclUpdateParams, queryParams);
     }
 
+    private RestResponse<FacetField> aggregationStats() throws Exception {
+        logger.debug("Executing aggregationStats in Disease Panels command line");
+
+        DiseasePanelsCommandOptions.AggregationStatsCommandOptions commandOptions = diseasePanelsCommandOptions.aggregationStatsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("name", commandOptions.name);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("disorders", commandOptions.disorders);
+        queryParams.putIfNotEmpty("variants", commandOptions.variants);
+        queryParams.putIfNotEmpty("genes", commandOptions.genes);
+        queryParams.putIfNotEmpty("source", commandOptions.source);
+        queryParams.putIfNotEmpty("regions", commandOptions.regions);
+        queryParams.putIfNotEmpty("categories", commandOptions.categories);
+        queryParams.putIfNotEmpty("tags", commandOptions.tags);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("acl", commandOptions.acl);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return enterpriseOpenCGAClient.getEnterpriseDiseasePanelClient().aggregationStats(queryParams);
+    }
+
     private RestResponse<Panel> create() throws Exception {
         logger.debug("Executing create in Disease Panels command line");
 
-        ObjectMap queryParams = new ObjectMap();
         DiseasePanelsCommandOptions.CreateCommandOptions commandOptions = diseasePanelsCommandOptions.createCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -173,8 +212,9 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Object> distinct() throws Exception {
         logger.debug("Executing distinct in Disease Panels command line");
 
-        ObjectMap queryParams = new ObjectMap();
         DiseasePanelsCommandOptions.DistinctCommandOptions commandOptions = diseasePanelsCommandOptions.distinctCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
@@ -204,8 +244,9 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Job> importPanels() throws Exception {
         logger.debug("Executing importPanels in Disease Panels command line");
 
-        ObjectMap queryParams = new ObjectMap();
         DiseasePanelsCommandOptions.ImportCommandOptions commandOptions = diseasePanelsCommandOptions.importCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -243,8 +284,9 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Panel> search() throws Exception {
         logger.debug("Executing search in Disease Panels command line");
 
-        ObjectMap queryParams = new ObjectMap();
         DiseasePanelsCommandOptions.SearchCommandOptions commandOptions = diseasePanelsCommandOptions.searchCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -279,8 +321,9 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<PanelAclEntryList> acl() throws Exception {
         logger.debug("Executing acl in Disease Panels command line");
 
-        ObjectMap queryParams = new ObjectMap();
         DiseasePanelsCommandOptions.AclCommandOptions commandOptions = diseasePanelsCommandOptions.aclCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
@@ -294,8 +337,9 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Panel> delete() throws Exception {
         logger.debug("Executing delete in Disease Panels command line");
 
-        ObjectMap queryParams = new ObjectMap();
         DiseasePanelsCommandOptions.DeleteCommandOptions commandOptions = diseasePanelsCommandOptions.deleteCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -307,8 +351,9 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Panel> info() throws Exception {
         logger.debug("Executing info in Disease Panels command line");
 
-        ObjectMap queryParams = new ObjectMap();
         DiseasePanelsCommandOptions.InfoCommandOptions commandOptions = diseasePanelsCommandOptions.infoCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -324,8 +369,9 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Panel> update() throws Exception {
         logger.debug("Executing update in Disease Panels command line");
 
-        ObjectMap queryParams = new ObjectMap();
         DiseasePanelsCommandOptions.UpdateCommandOptions commandOptions = diseasePanelsCommandOptions.updateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);

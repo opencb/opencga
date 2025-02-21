@@ -24,8 +24,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSummary;
@@ -105,6 +105,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
             case "acl-update":
                 queryResponse = updateAcl();
                 break;
+            case "aggregationstats":
+                queryResponse = aggregationStats();
+                break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
                 break;
@@ -143,6 +146,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
                 break;
             case "distinct":
                 queryResponse = distinct();
+                break;
+            case "interpretation-aggregation-stats":
+                queryResponse = aggregationStatsInterpretation();
                 break;
             case "interpretation-distinct":
                 queryResponse = distinctInterpretation();
@@ -246,8 +252,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalAnalysisAclEntryList> updateAcl() throws Exception {
         logger.debug("Executing updateAcl in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.UpdateAclCommandOptions commandOptions = analysisClinicalCommandOptions.updateAclCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("propagate", commandOptions.propagate);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -276,11 +283,54 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().updateAcl(commandOptions.members, commandOptions.action, clinicalAnalysisAclUpdateParams, queryParams);
     }
 
+    private RestResponse<FacetField> aggregationStats() throws Exception {
+        logger.debug("Executing aggregationStats in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.AggregationStatsCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
+        queryParams.putIfNotEmpty("disorder", commandOptions.disorder);
+        queryParams.putIfNotEmpty("files", commandOptions.files);
+        queryParams.putIfNotEmpty("sample", commandOptions.sample);
+        queryParams.putIfNotEmpty("individual", commandOptions.individual);
+        queryParams.putIfNotEmpty("proband", commandOptions.proband);
+        queryParams.putIfNotEmpty("probandSamples", commandOptions.probandSamples);
+        queryParams.putIfNotEmpty("family", commandOptions.family);
+        queryParams.putIfNotEmpty("familyMembers", commandOptions.familyMembers);
+        queryParams.putIfNotEmpty("familyMemberSamples", commandOptions.familyMemberSamples);
+        queryParams.putIfNotEmpty("panels", commandOptions.panels);
+        queryParams.putIfNotNull("locked", commandOptions.locked);
+        queryParams.putIfNotEmpty("analystId", commandOptions.analystId);
+        queryParams.putIfNotEmpty("priority", commandOptions.priority);
+        queryParams.putIfNotEmpty("flags", commandOptions.flags);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("dueDate", commandOptions.dueDate);
+        queryParams.putIfNotEmpty("qualityControlSummary", commandOptions.qualityControlSummary);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStats(queryParams);
+    }
+
     private RestResponse<Job> loadAnnotationSets() throws Exception {
         logger.debug("Executing loadAnnotationSets in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = analysisClinicalCommandOptions.loadAnnotationSetsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("parents", commandOptions.parents);
         queryParams.putIfNotEmpty("annotationSetId", commandOptions.annotationSetId);
@@ -312,8 +362,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ObjectMap> updateClinicalConfiguration() throws Exception {
         logger.debug("Executing updateClinicalConfiguration in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.UpdateClinicalConfigurationCommandOptions commandOptions = analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -343,8 +394,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalAnalysis> create() throws Exception {
         logger.debug("Executing create in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.CreateCommandOptions commandOptions = analysisClinicalCommandOptions.createCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -419,8 +471,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<FacetField> aggregationStatsCvdbCase() throws Exception {
         logger.debug("Executing aggregationStatsCvdbCase in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.AggregationStatsCvdbCaseCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbCaseCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
@@ -517,8 +570,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalAnalysis> queryCvdbCase() throws Exception {
         logger.debug("Executing queryCvdbCase in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.QueryCvdbCaseCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbCaseCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -617,8 +671,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Job> runCvdbIndex() throws Exception {
         logger.debug("Executing runCvdbIndex in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.RunCvdbIndexCommandOptions commandOptions = analysisClinicalCommandOptions.runCvdbIndexCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -657,8 +712,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<FacetField> aggregationStatsCvdbInterpretation() throws Exception {
         logger.debug("Executing aggregationStatsCvdbInterpretation in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.AggregationStatsCvdbInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
@@ -755,8 +811,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Interpretation> queryCvdbInterpretation() throws Exception {
         logger.debug("Executing queryCvdbInterpretation in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.QueryCvdbInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -855,8 +912,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<FacetField> aggregationStatsCvdbVariant() throws Exception {
         logger.debug("Executing aggregationStatsCvdbVariant in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.AggregationStatsCvdbVariantCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbVariantCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
@@ -953,8 +1011,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalVariant> queryCvdbVariant() throws Exception {
         logger.debug("Executing queryCvdbVariant in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.QueryCvdbVariantCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbVariantCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -1053,8 +1112,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<FacetField> aggregationStatsCvdbVariantEvidence() throws Exception {
         logger.debug("Executing aggregationStatsCvdbVariantEvidence in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.AggregationStatsCvdbVariantEvidenceCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbVariantEvidenceCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
@@ -1151,8 +1211,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalVariantEvidence> queryCvdbVariantEvidence() throws Exception {
         logger.debug("Executing queryCvdbVariantEvidence in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.QueryCvdbVariantEvidenceCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbVariantEvidenceCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -1251,8 +1312,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ObjectMap> distinct() throws Exception {
         logger.debug("Executing distinct in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.DistinctCommandOptions commandOptions = analysisClinicalCommandOptions.distinctCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
@@ -1288,11 +1350,41 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().distinct(commandOptions.field, queryParams);
     }
 
+    private RestResponse<FacetField> aggregationStatsInterpretation() throws Exception {
+        logger.debug("Executing aggregationStatsInterpretation in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.AggregationStatsInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("name", commandOptions.name);
+        queryParams.putIfNotEmpty("clinicalAnalysisId", commandOptions.clinicalAnalysisId);
+        queryParams.putIfNotEmpty("analystId", commandOptions.analystId);
+        queryParams.putIfNotEmpty("methodName", commandOptions.methodName);
+        queryParams.putIfNotEmpty("panels", commandOptions.panels);
+        queryParams.putIfNotEmpty("primaryFindings", commandOptions.primaryFindings);
+        queryParams.putIfNotEmpty("secondaryFindings", commandOptions.secondaryFindings);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsInterpretation(queryParams);
+    }
+
     private RestResponse<ObjectMap> distinctInterpretation() throws Exception {
         logger.debug("Executing distinctInterpretation in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.DistinctInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.distinctInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
@@ -1318,8 +1410,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Interpretation> searchInterpretation() throws Exception {
         logger.debug("Executing searchInterpretation in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.SearchInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.searchInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -1350,8 +1443,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Interpretation> infoInterpretation() throws Exception {
         logger.debug("Executing infoInterpretation in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.InfoInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.infoInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -1367,8 +1461,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Job> runInterpreterCancerTiering() throws Exception {
         logger.debug("Executing runInterpreterCancerTiering in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.RunInterpreterCancerTieringCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterCancerTieringCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1407,8 +1502,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Job> runInterpreterExomiser() throws Exception {
         logger.debug("Executing runInterpreterExomiser in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.RunInterpreterExomiserCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterExomiserCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1446,8 +1542,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Job> runInterpreterTeam() throws Exception {
         logger.debug("Executing runInterpreterTeam in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.RunInterpreterTeamCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterTeamCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1487,8 +1584,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Job> runInterpreterTiering() throws Exception {
         logger.debug("Executing runInterpreterTiering in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.RunInterpreterTieringCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterTieringCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1528,8 +1626,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Job> runInterpreterZetta() throws Exception {
         logger.debug("Executing runInterpreterZetta in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.RunInterpreterZettaCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterZettaCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1616,8 +1715,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Job> load() throws Exception {
         logger.debug("Executing load in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.LoadCommandOptions commandOptions = analysisClinicalCommandOptions.loadCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1654,8 +1754,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<FacetField> aggregationStatsRga() throws Exception {
         logger.debug("Executing aggregationStatsRga in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.AggregationStatsRgaCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsRgaCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotEmpty("sampleId", commandOptions.sampleId);
@@ -1689,8 +1790,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<RgaKnockoutByGene> queryRgaGene() throws Exception {
         logger.debug("Executing queryRgaGene in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.QueryRgaGeneCommandOptions commandOptions = analysisClinicalCommandOptions.queryRgaGeneCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -1730,8 +1832,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<KnockoutByGeneSummary> summaryRgaGene() throws Exception {
         logger.debug("Executing summaryRgaGene in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.SummaryRgaGeneCommandOptions commandOptions = analysisClinicalCommandOptions.summaryRgaGeneCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotNull("count", commandOptions.count);
@@ -1766,8 +1869,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Job> runRgaIndex() throws Exception {
         logger.debug("Executing runRgaIndex in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.RunRgaIndexCommandOptions commandOptions = analysisClinicalCommandOptions.runRgaIndexCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -1805,8 +1909,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<KnockoutByIndividual> queryRgaIndividual() throws Exception {
         logger.debug("Executing queryRgaIndividual in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.QueryRgaIndividualCommandOptions commandOptions = analysisClinicalCommandOptions.queryRgaIndividualCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -1843,8 +1948,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<KnockoutByIndividualSummary> summaryRgaIndividual() throws Exception {
         logger.debug("Executing summaryRgaIndividual in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.SummaryRgaIndividualCommandOptions commandOptions = analysisClinicalCommandOptions.summaryRgaIndividualCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotNull("count", commandOptions.count);
@@ -1879,8 +1985,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<KnockoutByVariant> queryRgaVariant() throws Exception {
         logger.debug("Executing queryRgaVariant in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.QueryRgaVariantCommandOptions commandOptions = analysisClinicalCommandOptions.queryRgaVariantCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -1920,8 +2027,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<KnockoutByVariantSummary> summaryRgaVariant() throws Exception {
         logger.debug("Executing summaryRgaVariant in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.SummaryRgaVariantCommandOptions commandOptions = analysisClinicalCommandOptions.summaryRgaVariantCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotNull("count", commandOptions.count);
@@ -1956,8 +2064,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalAnalysis> search() throws Exception {
         logger.debug("Executing search in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.SearchCommandOptions commandOptions = analysisClinicalCommandOptions.searchCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -2002,8 +2111,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalVariant> queryVariant() throws Exception {
         logger.debug("Executing queryVariant in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.QueryVariantCommandOptions commandOptions = analysisClinicalCommandOptions.queryVariantCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -2064,6 +2174,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("panelRoleInCancer", commandOptions.panelRoleInCancer);
         queryParams.putIfNotEmpty("panelFeatureType", commandOptions.panelFeatureType);
         queryParams.putIfNotNull("panelIntersection", commandOptions.panelIntersection);
+        queryParams.putIfNotEmpty("source", commandOptions.source);
         queryParams.putIfNotEmpty("trait", commandOptions.trait);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -2075,8 +2186,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalAnalysisAclEntryList> acl() throws Exception {
         logger.debug("Executing acl in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.AclCommandOptions commandOptions = analysisClinicalCommandOptions.aclCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
@@ -2090,8 +2202,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalAnalysis> delete() throws Exception {
         logger.debug("Executing delete in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.DeleteCommandOptions commandOptions = analysisClinicalCommandOptions.deleteCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("force", commandOptions.force);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -2104,8 +2217,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalAnalysis> update() throws Exception {
         logger.debug("Executing update in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.UpdateCommandOptions commandOptions = analysisClinicalCommandOptions.updateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -2176,8 +2290,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Sample> updateAnnotationSetsAnnotations() throws Exception {
         logger.debug("Executing updateAnnotationSetsAnnotations in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = analysisClinicalCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("action", commandOptions.action);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -2201,8 +2316,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalAnalysis> info() throws Exception {
         logger.debug("Executing info in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.InfoCommandOptions commandOptions = analysisClinicalCommandOptions.infoCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);
@@ -2219,8 +2335,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Interpretation> createInterpretation() throws Exception {
         logger.debug("Executing createInterpretation in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.CreateInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.createInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -2265,8 +2382,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Interpretation> clearInterpretation() throws Exception {
         logger.debug("Executing clearInterpretation in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.ClearInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.clearInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -2278,8 +2396,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Interpretation> deleteInterpretation() throws Exception {
         logger.debug("Executing deleteInterpretation in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.DeleteInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.deleteInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("setAsPrimary", commandOptions.setAsPrimary);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -2292,8 +2411,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Interpretation> revertInterpretation() throws Exception {
         logger.debug("Executing revertInterpretation in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.RevertInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.revertInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -2305,8 +2425,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<Interpretation> updateInterpretation() throws Exception {
         logger.debug("Executing updateInterpretation in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.UpdateInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.updateInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -2350,8 +2471,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
     private RestResponse<ClinicalReport> updateReport() throws Exception {
         logger.debug("Executing updateReport in Analysis - Clinical command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisClinicalCommandOptions.UpdateReportCommandOptions commandOptions = analysisClinicalCommandOptions.updateReportCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);

@@ -14,11 +14,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteType;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
@@ -108,8 +109,9 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Organization> create() throws Exception {
         logger.debug("Executing create in Organizations command line");
 
-        ObjectMap queryParams = new ObjectMap();
         OrganizationsCommandOptions.CreateCommandOptions commandOptions = organizationsCommandOptions.createCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
@@ -143,8 +145,9 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Note> createNotes() throws Exception {
         logger.debug("Executing createNotes in Organizations command line");
 
-        ObjectMap queryParams = new ObjectMap();
         OrganizationsCommandOptions.CreateNotesCommandOptions commandOptions = organizationsCommandOptions.createNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
@@ -162,6 +165,7 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
             putNestedIfNotNull(beanParams, "valueType", commandOptions.valueType, true);
@@ -176,13 +180,15 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Note> searchNotes() throws Exception {
         logger.debug("Executing searchNotes in Organizations command line");
 
-        ObjectMap queryParams = new ObjectMap();
         OrganizationsCommandOptions.SearchNotesCommandOptions commandOptions = organizationsCommandOptions.searchNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("scope", commandOptions.scope);
         queryParams.putIfNotEmpty("visibility", commandOptions.visibility);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
@@ -196,8 +202,9 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Note> deleteNotes() throws Exception {
         logger.debug("Executing deleteNotes in Organizations command line");
 
-        ObjectMap queryParams = new ObjectMap();
         OrganizationsCommandOptions.DeleteNotesCommandOptions commandOptions = organizationsCommandOptions.deleteNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
         return enterpriseOpenCGAClient.getEnterpriseOrganizationClient().deleteNotes(commandOptions.id, queryParams);
@@ -206,8 +213,9 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Note> updateNotes() throws Exception {
         logger.debug("Executing updateNotes in Organizations command line");
 
-        ObjectMap queryParams = new ObjectMap();
         OrganizationsCommandOptions.UpdateNotesCommandOptions commandOptions = organizationsCommandOptions.updateNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("tagsAction", commandOptions.tagsAction);
@@ -225,6 +233,7 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
                     .readValue(new java.io.File(commandOptions.jsonFile), NoteUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
 
@@ -238,8 +247,9 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<User> userUpdateStatus() throws Exception {
         logger.debug("Executing userUpdateStatus in Organizations command line");
 
-        ObjectMap queryParams = new ObjectMap();
         OrganizationsCommandOptions.UserUpdateStatusCommandOptions commandOptions = organizationsCommandOptions.userUpdateStatusCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
@@ -269,8 +279,9 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<User> updateUser() throws Exception {
         logger.debug("Executing updateUser in Organizations command line");
 
-        ObjectMap queryParams = new ObjectMap();
         OrganizationsCommandOptions.UpdateUserCommandOptions commandOptions = organizationsCommandOptions.updateUserCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
@@ -306,8 +317,9 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<OrganizationConfiguration> updateConfiguration() throws Exception {
         logger.debug("Executing updateConfiguration in Organizations command line");
 
-        ObjectMap queryParams = new ObjectMap();
         OrganizationsCommandOptions.UpdateConfigurationCommandOptions commandOptions = organizationsCommandOptions.updateConfigurationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
@@ -341,8 +353,9 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Organization> info() throws Exception {
         logger.debug("Executing info in Organizations command line");
 
-        ObjectMap queryParams = new ObjectMap();
         OrganizationsCommandOptions.InfoCommandOptions commandOptions = organizationsCommandOptions.infoCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
 
@@ -352,8 +365,9 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
     private RestResponse<Organization> update() throws Exception {
         logger.debug("Executing update in Organizations command line");
 
-        ObjectMap queryParams = new ObjectMap();
         OrganizationsCommandOptions.UpdateCommandOptions commandOptions = organizationsCommandOptions.updateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);

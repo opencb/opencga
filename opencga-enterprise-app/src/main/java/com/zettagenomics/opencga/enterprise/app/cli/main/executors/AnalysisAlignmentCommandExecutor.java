@@ -13,8 +13,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
 import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
@@ -113,8 +113,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<Job> runBwa() throws Exception {
         logger.debug("Executing runBwa in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.RunBwaCommandOptions commandOptions = analysisAlignmentCommandOptions.runBwaCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -156,8 +157,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<Job> runCoverageIndex() throws Exception {
         logger.debug("Executing runCoverageIndex in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.RunCoverageIndexCommandOptions commandOptions = analysisAlignmentCommandOptions.runCoverageIndexCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -182,9 +184,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
                     .readValue(new java.io.File(commandOptions.jsonFile), CoverageIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "bamFileId", commandOptions.bamFileId, true);
-            putNestedIfNotEmpty(beanParams, "baiFileId", commandOptions.baiFileId, true);
+            putNestedIfNotEmpty(beanParams, "fileId", commandOptions.fileId, true);
             putNestedIfNotNull(beanParams, "windowSize", commandOptions.windowSize, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             coverageIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -196,8 +198,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<Job> coverageQcGeneCoverageStatsRun() throws Exception {
         logger.debug("Executing coverageQcGeneCoverageStatsRun in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.CoverageQcGeneCoverageStatsRunCommandOptions commandOptions = analysisAlignmentCommandOptions.coverageQcGeneCoverageStatsRunCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -236,8 +239,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<RegionCoverage> queryCoverage() throws Exception {
         logger.debug("Executing queryCoverage in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.QueryCoverageCommandOptions commandOptions = analysisAlignmentCommandOptions.queryCoverageCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("region", commandOptions.region);
         queryParams.putIfNotEmpty("gene", commandOptions.gene);
@@ -256,8 +260,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<RegionCoverage> ratioCoverage() throws Exception {
         logger.debug("Executing ratioCoverage in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.RatioCoverageCommandOptions commandOptions = analysisAlignmentCommandOptions.ratioCoverageCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("skipLog2", commandOptions.skipLog2);
         queryParams.putIfNotEmpty("region", commandOptions.region);
@@ -276,8 +281,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<GeneCoverageStats> statsCoverage() throws Exception {
         logger.debug("Executing statsCoverage in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.StatsCoverageCommandOptions commandOptions = analysisAlignmentCommandOptions.statsCoverageCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("threshold", commandOptions.threshold);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -290,8 +296,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<Job> runDeeptools() throws Exception {
         logger.debug("Executing runDeeptools in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.RunDeeptoolsCommandOptions commandOptions = analysisAlignmentCommandOptions.runDeeptoolsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -330,8 +337,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<Job> runFastqc() throws Exception {
         logger.debug("Executing runFastqc in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.RunFastqcCommandOptions commandOptions = analysisAlignmentCommandOptions.runFastqcCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -370,8 +378,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<Job> runIndex() throws Exception {
         logger.debug("Executing runIndex in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.RunIndexCommandOptions commandOptions = analysisAlignmentCommandOptions.runIndexCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -409,8 +418,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<Job> runPicard() throws Exception {
         logger.debug("Executing runPicard in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.RunPicardCommandOptions commandOptions = analysisAlignmentCommandOptions.runPicardCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -449,8 +459,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<Job> runQc() throws Exception {
         logger.debug("Executing runQc in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.RunQcCommandOptions commandOptions = analysisAlignmentCommandOptions.runQcCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
@@ -490,8 +501,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<ReadAlignment> query() throws Exception {
         logger.debug("Executing query in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.QueryCommandOptions commandOptions = analysisAlignmentCommandOptions.queryCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotNull("count", commandOptions.count);
@@ -521,8 +533,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     private RestResponse<Job> runSamtools() throws Exception {
         logger.debug("Executing runSamtools in Analysis - Alignment command line");
 
-        ObjectMap queryParams = new ObjectMap();
         AnalysisAlignmentCommandOptions.RunSamtoolsCommandOptions commandOptions = analysisAlignmentCommandOptions.runSamtoolsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);

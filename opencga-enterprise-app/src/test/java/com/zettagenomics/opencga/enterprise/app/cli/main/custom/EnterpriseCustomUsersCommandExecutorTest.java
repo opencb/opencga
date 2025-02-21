@@ -1,11 +1,11 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.custom;
 
 import org.junit.Test;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.config.HostConfig;
-import org.opencb.opencga.client.config.RestConfig;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.config.client.HostConfig;
+import org.opencb.opencga.core.config.client.RestConfig;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 
 import java.util.Collections;

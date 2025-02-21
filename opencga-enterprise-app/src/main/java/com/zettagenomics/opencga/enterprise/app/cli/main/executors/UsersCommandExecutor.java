@@ -17,8 +17,8 @@ import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.ConfigUpdateParams;
@@ -123,7 +123,6 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<AuthenticationResponse> anonymous() throws Exception {
         logger.debug("Executing anonymous in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.AnonymousCommandOptions commandOptions = usersCommandOptions.anonymousCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseUserClient().anonymous(commandOptions.organization);
     }
@@ -131,7 +130,6 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<User> create() throws Exception {
         logger.debug("Executing create in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.CreateCommandOptions commandOptions = usersCommandOptions.createCommandOptions;
 
         UserCreateParams userCreateParams = null;
@@ -161,8 +159,8 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<AuthenticationResponse> login() throws Exception {
         logger.debug("Executing login in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         CustomUsersCommandOptions.LoginCommandOptions commandOptions = usersCommandOptions.loginCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotEmpty("user", commandOptions.user);
         queryParams.putIfNotEmpty("password", commandOptions.password);
@@ -174,7 +172,6 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<User> password() throws Exception {
         logger.debug("Executing password in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.PasswordCommandOptions commandOptions = usersCommandOptions.passwordCommandOptions;
 
         PasswordChangeParams passwordChangeParams = null;
@@ -204,8 +201,9 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<User> search() throws Exception {
         logger.debug("Executing search in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.SearchCommandOptions commandOptions = usersCommandOptions.searchCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -221,8 +219,8 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<AuthenticationResponse> loginSso() throws Exception {
         logger.debug("Executing loginSso in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.LoginSsoCommandOptions commandOptions = usersCommandOptions.loginSsoCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
         com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor customUsersCommandExecutor = new com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customUsersCommandExecutor.loginSso(commandOptions);
     }
@@ -230,8 +228,8 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<AuthenticationResponse> logoutSso() throws Exception {
         logger.debug("Executing logoutSso in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.LogoutSsoCommandOptions commandOptions = usersCommandOptions.logoutSsoCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
         com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor customUsersCommandExecutor = new com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customUsersCommandExecutor.logoutSso(commandOptions);
     }
@@ -239,8 +237,9 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<User> info() throws Exception {
         logger.debug("Executing info in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.InfoCommandOptions commandOptions = usersCommandOptions.infoCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
@@ -251,8 +250,9 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<ObjectMap> configs() throws Exception {
         logger.debug("Executing configs in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.ConfigsCommandOptions commandOptions = usersCommandOptions.configsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("name", commandOptions.name);
 
         return enterpriseOpenCGAClient.getEnterpriseUserClient().configs(commandOptions.user, queryParams);
@@ -261,8 +261,9 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<ObjectMap> updateConfigs() throws Exception {
         logger.debug("Executing updateConfigs in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.UpdateConfigsCommandOptions commandOptions = usersCommandOptions.updateConfigsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
@@ -290,8 +291,9 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<UserFilter> filters() throws Exception {
         logger.debug("Executing filters in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.FiltersCommandOptions commandOptions = usersCommandOptions.filtersCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("id", commandOptions.id);
 
         return enterpriseOpenCGAClient.getEnterpriseUserClient().filters(commandOptions.user, queryParams);
@@ -300,7 +302,6 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<User> resetPassword() throws Exception {
         logger.debug("Executing resetPassword in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.ResetPasswordCommandOptions commandOptions = usersCommandOptions.resetPasswordCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseUserClient().resetPassword(commandOptions.user);
     }
@@ -308,8 +309,9 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
     private RestResponse<User> update() throws Exception {
         logger.debug("Executing update in Users command line");
 
-        ObjectMap queryParams = new ObjectMap();
         UsersCommandOptions.UpdateCommandOptions commandOptions = usersCommandOptions.updateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);

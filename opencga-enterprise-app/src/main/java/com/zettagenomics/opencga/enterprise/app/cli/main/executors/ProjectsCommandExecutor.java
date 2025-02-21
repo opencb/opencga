@@ -10,9 +10,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
@@ -85,8 +85,9 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Project> create() throws Exception {
         logger.debug("Executing create in Projects command line");
 
-        ObjectMap queryParams = new ObjectMap();
         ProjectsCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
@@ -127,8 +128,9 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Project> search() throws Exception {
         logger.debug("Executing search in Projects command line");
 
-        ObjectMap queryParams = new ObjectMap();
         ProjectsCommandOptions.SearchCommandOptions commandOptions = projectsCommandOptions.searchCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -154,8 +156,9 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Project> info() throws Exception {
         logger.debug("Executing info in Projects command line");
 
-        ObjectMap queryParams = new ObjectMap();
         ProjectsCommandOptions.InfoCommandOptions commandOptions = projectsCommandOptions.infoCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
 
@@ -165,7 +168,6 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Integer> incRelease() throws Exception {
         logger.debug("Executing incRelease in Projects command line");
 
-        ObjectMap queryParams = new ObjectMap();
         ProjectsCommandOptions.IncReleaseCommandOptions commandOptions = projectsCommandOptions.incReleaseCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseProjectClient().incRelease(commandOptions.project);
     }
@@ -173,8 +175,9 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Study> studies() throws Exception {
         logger.debug("Executing studies in Projects command line");
 
-        ObjectMap queryParams = new ObjectMap();
         ProjectsCommandOptions.StudiesCommandOptions commandOptions = projectsCommandOptions.studiesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -186,8 +189,9 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     private RestResponse<Project> update() throws Exception {
         logger.debug("Executing update in Projects command line");
 
-        ObjectMap queryParams = new ObjectMap();
         ProjectsCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);

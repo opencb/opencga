@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -15,8 +16,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.ExternalSource;
 import org.opencb.opencga.core.models.common.RgaIndex.Status;
 import org.opencb.opencga.core.models.common.StatusParams;
@@ -71,6 +72,9 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
             case "acl-update":
                 queryResponse = updateAcl();
                 break;
+            case "aggregationstats":
+                queryResponse = aggregationStats();
+                break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
                 break;
@@ -113,8 +117,9 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<SampleAclEntryList> updateAcl() throws Exception {
         logger.debug("Executing updateAcl in Samples command line");
 
-        ObjectMap queryParams = new ObjectMap();
         SamplesCommandOptions.UpdateAclCommandOptions commandOptions = samplesCommandOptions.updateAclCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -146,11 +151,64 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
         return enterpriseOpenCGAClient.getEnterpriseSampleClient().updateAcl(commandOptions.members, commandOptions.action, sampleAclUpdateParams, queryParams);
     }
 
+    private RestResponse<FacetField> aggregationStats() throws Exception {
+        logger.debug("Executing aggregationStats in Samples command line");
+
+        SamplesCommandOptions.AggregationStatsCommandOptions commandOptions = samplesCommandOptions.aggregationStatsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotNull("somatic", commandOptions.somatic);
+        queryParams.putIfNotEmpty("individualId", commandOptions.individualId);
+        queryParams.putIfNotEmpty("fileIds", commandOptions.fileIds);
+        queryParams.putIfNotEmpty("cohortIds", commandOptions.cohortIds);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("processingProduct", commandOptions.processingProduct);
+        queryParams.putIfNotEmpty("processingPreparationMethod", commandOptions.processingPreparationMethod);
+        queryParams.putIfNotEmpty("processingExtractionMethod", commandOptions.processingExtractionMethod);
+        queryParams.putIfNotEmpty("processingLabSampleId", commandOptions.processingLabSampleId);
+        queryParams.putIfNotEmpty("collectionFrom", commandOptions.collectionFrom);
+        queryParams.putIfNotEmpty("collectionType", commandOptions.collectionType);
+        queryParams.putIfNotEmpty("collectionMethod", commandOptions.collectionMethod);
+        queryParams.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
+        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
+        queryParams.putIfNotEmpty("acl", commandOptions.acl);
+        queryParams.putIfNotNull("internalRgaStatus", commandOptions.internalRgaStatus);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        queryParams.putIfNotEmpty("statsId", commandOptions.statsId);
+        queryParams.putIfNotEmpty("statsVariantCount", commandOptions.statsVariantCount);
+        queryParams.putIfNotEmpty("statsChromosomeCount", commandOptions.statsChromosomeCount);
+        queryParams.putIfNotEmpty("statsTypeCount", commandOptions.statsTypeCount);
+        queryParams.putIfNotEmpty("statsGenotypeCount", commandOptions.statsGenotypeCount);
+        queryParams.putIfNotEmpty("statsTiTvRatio", commandOptions.statsTiTvRatio);
+        queryParams.putIfNotEmpty("statsQualityAvg", commandOptions.statsQualityAvg);
+        queryParams.putIfNotEmpty("statsQualityStdDev", commandOptions.statsQualityStdDev);
+        queryParams.putIfNotEmpty("statsHeterozygosityRate", commandOptions.statsHeterozygosityRate);
+        queryParams.putIfNotEmpty("statsDepthCount", commandOptions.statsDepthCount);
+        queryParams.putIfNotEmpty("statsBiotypeCount", commandOptions.statsBiotypeCount);
+        queryParams.putIfNotEmpty("statsClinicalSignificanceCount", commandOptions.statsClinicalSignificanceCount);
+        queryParams.putIfNotEmpty("statsConsequenceTypeCount", commandOptions.statsConsequenceTypeCount);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().aggregationStats(queryParams);
+    }
+
     private RestResponse<Job> loadAnnotationSets() throws Exception {
         logger.debug("Executing loadAnnotationSets in Samples command line");
 
-        ObjectMap queryParams = new ObjectMap();
         SamplesCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = samplesCommandOptions.loadAnnotationSetsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("parents", commandOptions.parents);
         queryParams.putIfNotEmpty("annotationSetId", commandOptions.annotationSetId);
@@ -182,8 +240,9 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Sample> create() throws Exception {
         logger.debug("Executing create in Samples command line");
 
-        ObjectMap queryParams = new ObjectMap();
         SamplesCommandOptions.CreateCommandOptions commandOptions = samplesCommandOptions.createCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -241,8 +300,9 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Object> distinct() throws Exception {
         logger.debug("Executing distinct in Samples command line");
 
-        ObjectMap queryParams = new ObjectMap();
         SamplesCommandOptions.DistinctCommandOptions commandOptions = samplesCommandOptions.distinctCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
@@ -291,8 +351,9 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Sample> load() throws Exception {
         logger.debug("Executing load in Samples command line");
 
-        ObjectMap queryParams = new ObjectMap();
         SamplesCommandOptions.LoadCommandOptions commandOptions = samplesCommandOptions.loadCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("variableSet", commandOptions.variableSet);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -305,8 +366,9 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Sample> search() throws Exception {
         logger.debug("Executing search in Samples command line");
 
-        ObjectMap queryParams = new ObjectMap();
         SamplesCommandOptions.SearchCommandOptions commandOptions = samplesCommandOptions.searchCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
@@ -362,8 +424,9 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<SampleAclEntryList> acl() throws Exception {
         logger.debug("Executing acl in Samples command line");
 
-        ObjectMap queryParams = new ObjectMap();
         SamplesCommandOptions.AclCommandOptions commandOptions = samplesCommandOptions.aclCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
@@ -377,8 +440,9 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Sample> delete() throws Exception {
         logger.debug("Executing delete in Samples command line");
 
-        ObjectMap queryParams = new ObjectMap();
         SamplesCommandOptions.DeleteCommandOptions commandOptions = samplesCommandOptions.deleteCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("force", commandOptions.force);
         queryParams.putIfNotEmpty("emptyFilesAction", commandOptions.emptyFilesAction);
         queryParams.putIfNotNull("deleteEmptyCohorts", commandOptions.deleteEmptyCohorts);
@@ -393,8 +457,9 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Sample> info() throws Exception {
         logger.debug("Executing info in Samples command line");
 
-        ObjectMap queryParams = new ObjectMap();
         SamplesCommandOptions.InfoCommandOptions commandOptions = samplesCommandOptions.infoCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeIndividual", commandOptions.includeIndividual);
@@ -412,8 +477,9 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Sample> update() throws Exception {
         logger.debug("Executing update in Samples command line");
 
-        ObjectMap queryParams = new ObjectMap();
         SamplesCommandOptions.UpdateCommandOptions commandOptions = samplesCommandOptions.updateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -472,8 +538,9 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
     private RestResponse<Sample> updateAnnotationSetsAnnotations() throws Exception {
         logger.debug("Executing updateAnnotationSetsAnnotations in Samples command line");
 
-        ObjectMap queryParams = new ObjectMap();
         SamplesCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = samplesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("action", commandOptions.action);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {

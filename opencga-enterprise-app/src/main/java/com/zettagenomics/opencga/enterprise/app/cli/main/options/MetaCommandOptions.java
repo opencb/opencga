@@ -37,6 +37,7 @@ public class MetaCommandOptions {
         public ApiCommandOptions apiCommandOptions;
         public FailCommandOptions failCommandOptions;
         public ModelCommandOptions modelCommandOptions;
+        public OpenapiCommandOptions openapiCommandOptions;
         public PingCommandOptions pingCommandOptions;
         public StatusCommandOptions statusCommandOptions;
 
@@ -49,6 +50,7 @@ public class MetaCommandOptions {
         this.apiCommandOptions = new ApiCommandOptions();
         this.failCommandOptions = new FailCommandOptions();
         this.modelCommandOptions = new ModelCommandOptions();
+        this.openapiCommandOptions = new OpenapiCommandOptions();
         this.pingCommandOptions = new PingCommandOptions();
         this.statusCommandOptions = new StatusCommandOptions();
     
@@ -89,6 +91,17 @@ public class MetaCommandOptions {
     
         @Parameter(names = {"--model"}, description = "Model description", required = false, arity = 1)
         public String model; 
+    
+    }
+
+    @Parameters(commandNames = {"openapi"}, commandDescription ="Opencga openapi json")
+    public class OpenapiCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--token"}, description = "List of categories to get API from", required = false, arity = 1)
+        public String token; 
     
     }
 
