@@ -2346,7 +2346,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     public void checkRegisteredUserPermissions() throws CatalogException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, organizationId, 50000L,
                 opencgaToken);
-        String token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).first().getToken();
 
         catalogManager.getStudyManager().updateGroup(studyFqn2, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList(ParamConstants.REGISTERED_USERS)), this.ownerToken);
@@ -2362,7 +2362,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     public void checkRegisteredUserPermissions2() throws CatalogException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, organizationId, 50000L,
                 opencgaToken);
-        String token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).first().getToken();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList(ParamConstants.REGISTERED_USERS)), this.ownerToken);
@@ -2382,7 +2382,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateAcl(studyFqn2, "@members", new StudyAclParams("", AuthorizationManager.ROLE_VIEW_ONLY),
                 ParamUtils.AclAction.ADD, this.ownerToken);
 
-        String token = catalogManager.getUserManager().loginAnonymous(organizationId).getToken();
+        String token = catalogManager.getUserManager().loginAnonymous(organizationId).first().getToken();
         thrown.expect(CatalogException.class);
         thrown.expectMessage("view any study");
         catalogManager.getStudyManager().get(studyFqn2, QueryOptions.empty(), token);
@@ -2390,7 +2390,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void checkAnonymousUserPermissions() throws CatalogException {
-        String token = catalogManager.getUserManager().loginAnonymous(organizationId).getToken();
+        String token = catalogManager.getUserManager().loginAnonymous(organizationId).first().getToken();
 
         OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), token);
         assertEquals(1, studyResult.getNumResults());
@@ -2404,7 +2404,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateAcl(studyFqn, "@members", new StudyAclParams("", AuthorizationManager.ROLE_VIEW_ONLY),
                 ParamUtils.AclAction.ADD, this.ownerToken);
 
-        String token = catalogManager.getUserManager().loginAnonymous(organizationId).getToken();
+        String token = catalogManager.getUserManager().loginAnonymous(organizationId).first().getToken();
         OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), token);
         assertEquals(1, studyResult.getNumResults());
         assertTrue(catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(), token).getNumResults() > 0);
@@ -2412,7 +2412,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, organizationId, 50000L,
                 opencgaToken);
-        token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).first().getToken();
         studyResult = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), token);
         assertEquals(1, studyResult.getNumResults());
         assertTrue(catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(), token).getNumResults() > 0);

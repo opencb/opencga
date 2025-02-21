@@ -34,7 +34,7 @@ public class CustomFilesCommandOptions {
         @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
         public String file;
 
-        @Parameter(names = {"--file-format"}, description = "[DEPRECATED] Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
+        @Parameter(names = {"--file-format"}, description = "[DEPRECATED] Use --format",
                 arity = 1)
         public String fileFormat;
 
@@ -46,18 +46,16 @@ public class CustomFilesCommandOptions {
                 arity = 1)
         public String bioformat;
 
-        @Parameter(names = {"--catalog-path"}, description = "[DEPRECATED] Path within catalog where the file will be located (Default: root folder)",
-                arity = 1)
+        @Parameter(names = {"--relative-file-path"}, description = "Path (directory) within catalog where the file will be located (Default: root folder)", arity = 1)
         public String relativeFilePath;
 
-        @Parameter(names = {"--path"}, description = "Path within catalog where the file will be located (Default: root folder)",
-                arity = 1)
+        @Parameter(names = {"--path"}, description = "[DEPRECATED] Use --relative-file-path", arity = 1)
         public String path;
 
         @Parameter(names = {"--description"}, description = "Description of the file", arity = 1)
         public String description;
 
-        @Parameter(names = {"--file-name"}, description = "[DEPRECATED] Name of the file by which it will be stored in catalog", required = false,
+        @Parameter(names = {"--file-name"}, description = "[DEPRECATED] Use --name", required = false,
                 arity = 1)
         public String fileName;
 

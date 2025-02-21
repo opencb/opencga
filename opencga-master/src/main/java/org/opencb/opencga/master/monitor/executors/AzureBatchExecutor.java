@@ -24,12 +24,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Path;
 
 /**
  * Created by wasim on 17/12/18.
+ *
+ *  ## Azure Batch Service configuration example
+ *  # azure.batchAccount : "batchAccount"
+ *  # azure.batchKey : "batchKey"
+ *  # azure.batchUri : "https://batchservice.uksouth.batch.azure.com"
+ *  # azure.batchPoolId : "poolId"
+ *  # azure.dockerImageName : "openCGADockerImageName"
+ *  # azure.dockerArgs : "dockerRunOptions"
  */
-public class AzureBatchExecutor implements BatchExecutor {
+public abstract class AzureBatchExecutor implements BatchExecutor {
 
     private String batchAccount;
     private String batchKey;
@@ -92,11 +99,6 @@ public class AzureBatchExecutor implements BatchExecutor {
 
     private BatchClient createBatchClient() {
         return BatchClient.open(new BatchSharedKeyCredentials(batchUri, batchAccount, batchKey));
-    }
-
-    @Override
-    public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
-//        submitAzureTask(job, token);
     }
 
     @Override

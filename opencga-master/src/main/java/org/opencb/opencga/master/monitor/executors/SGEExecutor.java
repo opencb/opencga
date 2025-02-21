@@ -18,6 +18,7 @@ package org.opencb.opencga.master.monitor.executors;
 
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +43,8 @@ public class SGEExecutor implements BatchExecutor {
     }
 
     @Override
-    public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
-        sgeManager.queueJob(jobId, "", -1, getCommandLine(commandLine, stdout, stderr), null);
+    public void execute(Job job, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
+        sgeManager.queueJob(job.getId(), "", -1, getCommandLine(commandLine, stdout, stderr), null);
     }
 
     @Override

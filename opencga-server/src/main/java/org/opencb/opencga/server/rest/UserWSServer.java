@@ -33,7 +33,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -127,7 +126,7 @@ public class UserWSServer extends OpenCGAWSServer {
             if (login == null) {
                 login = new LoginParams();
             }
-            AuthenticationResponse authenticationResponse;
+            OpenCGAResult<AuthenticationResponse> authenticationResponse;
             if (StringUtils.isNotEmpty(login.getPassword()) && StringUtils.isNotEmpty(login.getUser())) {
                 if (StringUtils.isNotEmpty(login.getRefreshToken())) {
                     throw new Exception("Only 'user' and 'password' fields or 'refreshToken' field are allowed at the same time");
@@ -142,10 +141,7 @@ public class UserWSServer extends OpenCGAWSServer {
                 throw new Exception("Neither 'user' and 'password' for login nor 'refreshToken' for refreshing token were provided.");
             }
 
-            OpenCGAResult<AuthenticationResponse> response = new OpenCGAResult<>(0, Collections.emptyList(), 1,
-                    Collections.singletonList(authenticationResponse), 1);
-
-            return createOkResponse(response);
+            return createOkResponse(authenticationResponse);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -158,10 +154,8 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response anonymous(
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ORGANIZATION) String organizationId) {
         try {
-            AuthenticationResponse authenticationResponse = catalogManager.getUserManager().loginAnonymous(organizationId);
-            OpenCGAResult<AuthenticationResponse> response = new OpenCGAResult<>(0, Collections.emptyList(), 1,
-                    Collections.singletonList(authenticationResponse), 1);
-            return createOkResponse(response);
+            OpenCGAResult<AuthenticationResponse> authenticationResponse = catalogManager.getUserManager().loginAnonymous(organizationId);
+            return createOkResponse(authenticationResponse);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -189,7 +183,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response resetPassword(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
         try {
-            OpenCGAResult<User> result = catalogManager.getUserManager().resetPassword(userId, token);
+            OpenCGAResult<?> result = catalogManager.getUserManager().resetPassword(userId, token);
             return createOkResponse(result, "The new password has been sent to the user's email.");
         } catch (Exception e) {
             return createErrorResponse(e);

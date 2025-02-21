@@ -80,7 +80,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         setCatalogDatabaseCredentials(options, options.commonOptions);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).first().getToken();
             catalogManager.getMigrationManager().updateMigrationRuns(token);
             Map<String, MigrationSummary> migrationSummaryMap = catalogManager.getMigrationManager().getMigrationSummary();
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter()
@@ -93,7 +93,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         setCatalogDatabaseCredentials(options, options.commonOptions);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).first().getToken();
 
             List<String> organizationIds;
             if (StringUtils.isNotEmpty(options.organizationId)) {
@@ -160,7 +160,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         setCatalogDatabaseCredentials(options, options.commonOptions);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).first().getToken();
 
             String version = parseVersion(options.version);
 
@@ -174,7 +174,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         setCatalogDatabaseCredentials(options, options.commonOptions);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).first().getToken();
 
             catalogManager.getMigrationManager().runManualMigration(parseVersion(options.version), options.id, Paths.get(appHome),
                     options.force, options.offline, new ObjectMap(options.commonOptions.commonOptions.params), token);

@@ -52,7 +52,7 @@ public final class CatalogDemo {
             throws CatalogException {
         catalogManager.installCatalogDB("HS256", PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH), adminPassword,
                 "opencga@admin.com", force);
-        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).first().getToken();
         try {
             populateDatabase(catalogManager, organizationId, token);
         } catch (IOException e) {
@@ -68,7 +68,7 @@ public final class CatalogDemo {
                 null);
         catalogManager.getOrganizationManager().update(organizationId, new OrganizationUpdateParams().setOwner("owner"),
                 QueryOptions.empty(), opencgaToken);
-        String ownerToken = catalogManager.getUserManager().login(organizationId, "owner", "owner_pass").getToken();
+        String ownerToken = catalogManager.getUserManager().login(organizationId, "owner", "owner_pass").first().getToken();
 
         // Create users
         Map<String, String> userSessions = new HashMap<>(5);
@@ -79,7 +79,7 @@ public final class CatalogDemo {
             String email = id + "@gmail.com";
             catalogManager.getUserManager().create(id, name, email, password, organizationId, 2000L,
                     ownerToken);
-            userSessions.put(id, catalogManager.getUserManager().login(organizationId, id, password).getToken());
+            userSessions.put(id, catalogManager.getUserManager().login(organizationId, id, password).first().getToken());
         }
 
         // Create one project per user

@@ -23,5 +23,5 @@ jobs:
       - name: Delete in Docker Hub
         run: |
           echo "Deleting docker image ${{ github.head_ref }}"
-          python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
+          python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base,workflow --tag ${{ github.head_ref }}
 

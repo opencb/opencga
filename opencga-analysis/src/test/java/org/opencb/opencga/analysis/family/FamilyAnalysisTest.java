@@ -1,8 +1,6 @@
 package org.opencb.opencga.analysis.family;
 
 import org.apache.commons.lang3.StringUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
@@ -92,7 +90,7 @@ public class FamilyAnalysisTest extends GenericTest {
         catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList(USER)),
                 null,
                 opencga.getAdminToken());
-        sessionIdUser = catalogManager.getUserManager().login(ORGANIZATION, USER, TestParamConstants.PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login(ORGANIZATION, USER, TestParamConstants.PASSWORD).first().getToken();
 
         projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
                 INCLUDE_RESULT, sessionIdUser).first().getId();

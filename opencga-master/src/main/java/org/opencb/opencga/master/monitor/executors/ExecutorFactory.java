@@ -40,10 +40,10 @@ public class ExecutorFactory {
             case "sge":
                 this.executor = new SGEExecutor(execution);
                 break;
-            case "azure":
-            case "azure-batch":
-                this.executor = new AzureBatchExecutor(execution);
-                break;
+//            case "azure":
+//            case "azure-batch":
+//                this.executor = new AzureBatchExecutor(execution);
+//                break;
             case "k8s":
             case "kubernetes":
                 this.executor = new K8SExecutor(configuration);

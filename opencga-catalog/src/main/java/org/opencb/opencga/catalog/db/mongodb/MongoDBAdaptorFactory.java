@@ -399,6 +399,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         return getOrganizationMongoDBAdaptorFactory(organizationId).getInterpretationDBAdaptor();
     }
 
+    @Override
+    public WorkflowDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getWorkflowDBAdaptor();
+    }
+
     public MongoDataStoreManager getMongoManager() {
         return mongoManager;
     }

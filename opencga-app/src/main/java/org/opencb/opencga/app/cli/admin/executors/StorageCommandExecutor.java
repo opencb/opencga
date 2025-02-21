@@ -74,7 +74,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration);
              VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, factory)) {
             String adminPassword = getAdminPassword(true);
-            token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
+            token = catalogManager.getUserManager().loginAsAdmin(adminPassword).first().getToken();
 
             ObjectMap status = new ObjectMap();
             Collection<String> liveNodes;
@@ -143,7 +143,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration);
              VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, factory)) {
             String adminPassword = getAdminPassword(true);
-            token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
+            token = catalogManager.getUserManager().loginAsAdmin(adminPassword).first().getToken();
             Set<String> variantStorageProjects = Collections.emptySet();
             List<String> organizationIds = parseOrganizationIds(catalogManager, commandOptions.organizationId);
 

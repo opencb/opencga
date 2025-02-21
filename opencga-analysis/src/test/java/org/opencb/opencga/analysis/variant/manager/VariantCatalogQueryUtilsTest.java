@@ -126,7 +126,7 @@ public class VariantCatalogQueryUtilsTest {
                 null,
                 catalogManagerExternalResource.getAdminToken());
 
-        sessionId = catalog.getUserManager().login(ORGANIZATION, "user", TestParamConstants.PASSWORD).getToken();
+        sessionId = catalog.getUserManager().login(ORGANIZATION, "user", TestParamConstants.PASSWORD).first().getToken();
         assembly = "GRCh38";
         Project project = catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, INCLUDE_RESULT, sessionId).first();
         catalog.getStudyManager().create(project.getFqn(), "s1", "s1", "s1", null, null, null, null, null, null, sessionId);

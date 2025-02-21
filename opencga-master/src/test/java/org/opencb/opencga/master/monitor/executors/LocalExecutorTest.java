@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.Execution;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.nio.file.Files;
@@ -53,7 +54,7 @@ public class LocalExecutorTest {
     public void test() throws Exception {
         System.out.println(rootDir.toAbsolutePath());
         for (int i = 0; i < 10; i++) {
-            localExecutor.execute("jobId-" + i, "default", "echo Hello World", rootDir.resolve("out_" + i + ".txt"), rootDir.resolve("err_" + i + ".txt"));
+            localExecutor.execute(new Job().setId("jobId-" + i), "default", "echo Hello World", rootDir.resolve("out_" + i + ".txt"), rootDir.resolve("err_" + i + ".txt"));
         }
 
         for (int i = 0; i < 10; i++) {
@@ -73,7 +74,7 @@ public class LocalExecutorTest {
         System.out.println(rootDir.toAbsolutePath());
         for (int i = 0; i < 10; i++) {
 //            System.out.println("Submitting job " + i);
-            localExecutor.execute("jobId-" + i, "default", "sleep 20", rootDir.resolve("out_" + i + ".txt"), rootDir.resolve("err_" + i + ".txt"));
+            localExecutor.execute(new Job().setId("jobId-" + i), "default", "sleep 20", rootDir.resolve("out_" + i + ".txt"), rootDir.resolve("err_" + i + ".txt"));
         }
 
         // Allow some time for the jobs to start

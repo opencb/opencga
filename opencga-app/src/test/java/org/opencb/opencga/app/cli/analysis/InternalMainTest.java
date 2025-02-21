@@ -103,7 +103,7 @@ public class InternalMainTest {
 
         catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", organizationId, null, opencga.getAdminToken());
 
-        sessionId = catalogManager.getUserManager().login(organizationId, userId, "user").getToken();
+        sessionId = catalogManager.getUserManager().login(organizationId, userId, "user").first().getToken();
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 

@@ -528,6 +528,12 @@
                                     </fileset>
                                 </chmod>
 
+                                <chmod perm="u+x">
+                                    <fileset dir="${build.dir}">
+                                        <include name="**/*.py"/>
+                                    </fileset>
+                                </chmod>
+
                                 <echo>Create clicompletion</echo>
                                 <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>

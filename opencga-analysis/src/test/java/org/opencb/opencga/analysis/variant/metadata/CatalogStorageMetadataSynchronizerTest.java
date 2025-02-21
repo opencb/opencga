@@ -99,7 +99,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList("user")),
                 null,
                 catalogManagerExternalResource.getAdminToken());
-        sessionId = catalogManager.getUserManager().login(ORGANIZATION, "user", TestParamConstants.PASSWORD).getToken();
+        sessionId = catalogManager.getUserManager().login(ORGANIZATION, "user", TestParamConstants.PASSWORD).first().getToken();
 
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionId).first().getId();

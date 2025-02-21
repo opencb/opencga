@@ -266,7 +266,7 @@ public class StudyManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().createGroup(studyFqn, "@test2", Collections.singletonList("dummy"), ownerToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "@test2", new StudyAclParams("", "view_only"), ParamUtils.AclAction.ADD, ownerToken);
 
-        String dummyToken = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
+        String dummyToken = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).first().getToken();
         OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(), dummyToken);
         assertTrue(search.getNumResults() > 0);
     }

@@ -105,7 +105,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
                 FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
                 FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(),
-                FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
+                FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key(),
+                FileDBAdaptor.QueryParams.SIZE.key()));
         EXCLUDE_FILE_ATTRIBUTES = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
                 FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), FileDBAdaptor.QueryParams.STATS.key()));
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
@@ -2099,7 +2100,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
                 logger.error("Cannot update file {}: {}", file.getId(), e.getMessage());
                 auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.FILE, file.getId(), file.getUuid(),
-                 study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
         auditManager.finishAuditBatch(organizationId, operationId);
@@ -2322,7 +2323,7 @@ public class FileManager extends AnnotationSetManager<File> {
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated file
             OpenCGAResult<File> result = getFileDBAdaptor(organizationId).get(study.getUid(), new Query(FileDBAdaptor.QueryParams.UID.key(),
-                            file.getUid()), options, userId);
+                    file.getUid()), options, userId);
             update.setResults(result.getResults());
         }
         return update;
@@ -2640,7 +2641,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     Collections.singletonList(fileContent), 1);
         } catch (CatalogException e) {
             auditManager.audit(organizationId, userId, Enums.Action.IMAGE_CONTENT, Enums.Resource.FILE, fileId, "", study.getId(),
-             study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -2679,7 +2680,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     Collections.singletonList(fileContent), 1);
         } catch (CatalogException e) {
             auditManager.audit(organizationId, userId, Enums.Action.HEAD_CONTENT, Enums.Resource.FILE, fileId, "", study.getId(),
-             study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -2756,7 +2757,7 @@ public class FileManager extends AnnotationSetManager<File> {
             return dataInputStream;
         } catch (CatalogException e) {
             auditManager.audit(organizationId, userId, Enums.Action.DOWNLOAD, Enums.Resource.FILE, fileId, "", study.getId(),
-             study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -3208,10 +3209,10 @@ public class FileManager extends AnnotationSetManager<File> {
                 authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId, FilePermissions.DELETE);
             }
 
-            // File must exist in the file system
-            if (!unlink && !ioManager.exists(file.getUri())) {
-                throw new CatalogException("File " + file.getUri() + " not found in file system");
-            }
+//            // File must exist in the file system
+//            if (!unlink && !ioManager.exists(file.getUri())) {
+//                throw new CatalogException("File " + file.getUri() + " not found in file system");
+//            }
 
             checkValidStatusForDeletion(file, acceptedStatus);
             indexFiles.addAll(getProducedFromIndexFiles(file));

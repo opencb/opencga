@@ -18,6 +18,10 @@ package org.opencb.opencga.core.config;
 
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.models.job.JobRunDockerParams;
+import org.opencb.opencga.core.models.job.JobRunParams;
+import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
+import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.IOException;
@@ -35,6 +39,14 @@ public class ConfigurationTest {
 
     @Test
     public void testDefault() throws IOException {
+        JobRunParams jobRunParams = new JobRunParams().setDocker(new JobRunDockerParams("repository", "tag", "token"));
+        Map<String, Object> params = jobRunParams.toParams();
+        System.out.println(params);
+
+        SampleQcAnalysisParams qcParams = new SampleQcAnalysisParams().setVsQuery(new AnnotationVariantQueryParams().setBiotype("biotype"));
+        Map<String, Object> params1 = qcParams.toParams();
+        System.out.println(params1);
+
         Configuration configuration = new Configuration();
 
         configuration.setLogLevel("INFO");
