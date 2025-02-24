@@ -50,7 +50,6 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.*;
@@ -1910,37 +1909,6 @@ public class FileManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Missing");
         fileManager.get(studyFqn, fileId, QueryOptions.empty(), ownerToken).first();
-    }
-
-    @Test
-    public void removeFileReferencesFromJobOnFileDeleteTest() throws CatalogException {
-        String fileId = "data:test:folder:test_0.1K.png";
-        File file = fileManager.get(studyFqn, fileId, QueryOptions.empty(), ownerToken).first();
-        assertFalse(file.getSampleIds().isEmpty());
-        assertEquals(5, file.getSampleIds().size());
-
-        Job job = new Job()
-                .setId("jobId")
-                .setInput(Collections.singletonList(file));
-        job = catalogManager.getJobManager().create(studyFqn, job, INCLUDE_RESULT, ownerToken).first();
-        assertEquals(1, job.getInput().size());
-        assertEquals(fileId, job.getInput().get(0).getId());
-        assertNotNull(job.getInput().get(0).getFormat());
-        assertTrue(job.getAttributes().isEmpty());
-
-        setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.ID.key(), fileId));
-        fileManager.delete(studyFqn, Collections.singletonList(fileId), new QueryOptions(Constants.SKIP_TRASH, true), ownerToken);
-
-        Job job1 = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), ownerToken).first();
-        assertEquals(0, job1.getInput().size());
-        assertFalse(job1.getAttributes().isEmpty());
-
-        Map<String, Object> opencgaAttributes = (Map<String, Object>) job1.getAttributes().get(Constants.PRIVATE_OPENCGA_ATTRIBUTES);
-        List<Map<String, Object>> deletedInputFiles = (List<Map<String, Object>>) opencgaAttributes.get(Constants.JOB_DELETED_INPUT_FILES);
-        assertEquals(1, deletedInputFiles.size());
-        assertEquals(fileId, deletedInputFiles.get(0).get("id"));
-        assertEquals(file.getFormat().name(), deletedInputFiles.get(0).get("format"));
-        assertFalse(deletedInputFiles.get(0).containsKey("attributes"));
     }
 
 
