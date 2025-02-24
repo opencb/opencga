@@ -58,6 +58,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         EXTERNAL("external", BOOLEAN, ""),
+        RESOURCE("resource", BOOLEAN, ""),
         RELEASE("release", INTEGER, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_ID("status.id", TEXT, ""),

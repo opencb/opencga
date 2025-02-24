@@ -359,7 +359,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Query query = new Query();
         String projectId = catalogManager.getProjectManager().search(organizationId, query, null, ownerToken).first().getFqn();
         Study study_1 = catalogManager.getStudyManager().create(projectId, new Study().setId("study_1").setCreationDate("20150101120000")
-                , null, ownerToken).first();
+                , INCLUDE_RESULT, ownerToken).first();
         assertEquals("20150101120000", study_1.getCreationDate());
 
         catalogManager.getStudyManager().create(projectId, "study_2", null, "study_2", "description", null, null, null, null, null, ownerToken);
@@ -367,7 +367,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().create(projectId, "study_3", null, "study_3", "description", null, null, null, null, null, ownerToken);
 
         String study_4 = catalogManager.getStudyManager().create(projectId, "study_4", null, "study_4", "description", null, null, null,
-                null, null, ownerToken).first().getId();
+                null, INCLUDE_RESULT, ownerToken).first().getId();
 
         assertEquals(new HashSet<>(Collections.singletonList(studyId)), catalogManager.getStudyManager().searchInOrganization(organizationId,
                         new Query(StudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), normalUserId1), null, ownerToken)
@@ -483,7 +483,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Create another study with alias phase3
         DataResult<Study> study = catalogManager.getStudyManager().create(project.getFqn(), "phase3", null, "Phase 3", "d", null,
-                null, null, null, null, ownerToken);
+                null, null, null, INCLUDE_RESULT, ownerToken);
         try {
             studyManager.resolveIds(Collections.emptyList(), ParamConstants.ANONYMOUS_USER_ID, otherOrg);
             fail("This should throw an exception. No studies should be found for user anonymous");

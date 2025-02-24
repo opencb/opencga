@@ -52,6 +52,7 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserAnalysisUtils;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
@@ -633,7 +634,13 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = ExomiserWrapperParams.DESCRIPTION, required = true) ExomiserWrapperParams params) {
-        return submitJob(ExomiserWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return run(() -> {
+            // Check before submitting the job
+            ExomiserAnalysisUtils.checkResources(params.getExomiserVersion(), study, catalogManager, token, opencgaHome);
+
+            // Submit the exomiser analysis
+            return submitJobRaw(ExomiserWrapperAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        });
     }
 
 

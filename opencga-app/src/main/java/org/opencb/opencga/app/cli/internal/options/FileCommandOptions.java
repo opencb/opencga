@@ -121,6 +121,9 @@ public class FileCommandOptions {
                 description = "Folder path where the downloaded file will be registered", required = true, arity = 1)
         public String path;
 
+        @Parameter(names = {"--resource"}, description = "File resource", arity = 1)
+        public Boolean resource;
+
         @Parameter(names = {"--url"}, description = "External url where the file to be registered can be downloaded from", required = true,
                 arity = 1)
         public String url;

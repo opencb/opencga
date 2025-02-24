@@ -101,7 +101,7 @@ public class FileUploadServlet extends HttpServlet {
                 copyInputStreamToFile(fileContent, file);
                 logger.info("File uploaded " + file.getAbsolutePath());
                 result = catalogManager.getFileManager().moveAndRegister(studyId,
-                        file.toPath(), null, path != null ? path : "/", token);
+                        file.toPath(), null, path != null ? path : "/", false, token);
                 logger.info("Registered file " + file.getName() + " to " + studyId);
             }
 

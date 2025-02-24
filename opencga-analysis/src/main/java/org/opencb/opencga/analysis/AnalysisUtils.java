@@ -1,15 +1,21 @@
 package org.opencb.opencga.analysis;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.BufferedReader;
@@ -19,6 +25,13 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class AnalysisUtils {
+
+    public static String REFERENCE_GENOME_GRCH38_FA = "REFERENCE_GENOME_GRCH38_FA";
+    public static String REFERENCE_GENOME_GRCH38_FAI= "REFERENCE_GENOME_GRCH38_FAI";
+    public static String REFERENCE_GENOME_GRCH38_GZI = "REFERENCE_GENOME_GRCH38_GZI";
+    public static String REFERENCE_GENOME_GRCH37_FA= "REFERENCE_GENOME_GRCH37_FA";
+    public static String REFERENCE_GENOME_GRCH37_FAI = "REFERENCE_GENOME_GRCH37_FAI";
+    public static String REFERENCE_GENOME_GRCH37_GZI= "REFERENCE_GENOME_GRCH37_GZI";
 
     public static boolean isSupportedCommand(String commands) {
         Set<String> commandSet = new HashSet<>(Arrays.asList(commands.replace(" ", "").split(",")));
@@ -192,5 +205,23 @@ public class AnalysisUtils {
             return null;
         }
         return path.substring(index + 5);
+    }
+
+    public static String getAssembly(CatalogManager catalogManager, String studyId, String sessionId) throws CatalogException {
+        String assembly = "";
+        OpenCGAResult<Project> projectQueryResult;
+
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
+        String organizationId = studyFqn.getOrganizationId();
+
+        projectQueryResult = catalogManager.getProjectManager().search(organizationId, new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
+        if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())
+                && projectQueryResult.first().getOrganism() != null
+                && projectQueryResult.first().getOrganism().getAssembly() != null) {
+            assembly = projectQueryResult.first().getOrganism().getAssembly();
+        }
+        return assembly;
     }
 }

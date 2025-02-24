@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.managers.NoteManager;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -54,6 +55,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private final IOManagerFactory ioManagerFactory;
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration mongoDbConfiguration;
+    private final CatalogIOManager catalogIOManager;
     private final Configuration configuration;
 
     private static final String ORGANIZATION_PREFIX = "ORG_";
@@ -68,7 +70,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private final Logger logger;
 
-    public MongoDBAdaptorFactory(Configuration catalogConfiguration, IOManagerFactory ioManagerFactory) throws CatalogDBException {
+    public MongoDBAdaptorFactory(Configuration catalogConfiguration, IOManagerFactory ioManagerFactory, CatalogIOManager catalogIOManager)
+            throws CatalogDBException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String host : catalogConfiguration.getCatalog().getDatabase().getHosts()) {
             if (host.contains(":")) {
@@ -92,6 +95,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         this.mongoDbConfiguration = mongoDBConfiguration;
         this.configuration = catalogConfiguration;
         this.ioManagerFactory = ioManagerFactory;
+        this.catalogIOManager = catalogIOManager;
 
         logger = LoggerFactory.getLogger(this.getClass());
         connect(catalogConfiguration);
@@ -208,7 +212,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private OrganizationMongoDBAdaptorFactory configureOrganizationMongoDBAdaptorFactory(String organizationId, Configuration configuration)
             throws CatalogDBException {
-        return new OrganizationMongoDBAdaptorFactory(organizationId, mongoManager, mongoDbConfiguration, configuration, ioManagerFactory);
+        return new OrganizationMongoDBAdaptorFactory(organizationId, mongoManager, mongoDbConfiguration, configuration, catalogIOManager,
+                ioManagerFactory);
     }
 
     public OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organization) throws CatalogDBException {
@@ -232,7 +237,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                         // Organization is present, so create new OrganizationMongoDBAdaptorFactory for the organization
                         OrganizationMongoDBAdaptorFactory organizationMongoDBAdaptorFactory =
                                 new OrganizationMongoDBAdaptorFactory(organizationId, mongoManager, mongoDbConfiguration, configuration,
-                                        ioManagerFactory);
+                                        catalogIOManager, ioManagerFactory);
                         organizationDBAdaptorMap.put(organizationId, organizationMongoDBAdaptorFactory);
                         return organizationMongoDBAdaptorFactory;
                     }
@@ -269,7 +274,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         try {
             // Create organization
             OrganizationMongoDBAdaptorFactory organizationDBAdaptorFactory = new OrganizationMongoDBAdaptorFactory(organization.getId(),
-                    mongoManager, mongoDbConfiguration, configuration, ioManagerFactory);
+                    mongoManager, mongoDbConfiguration, configuration, catalogIOManager, ioManagerFactory);
             organizationDBAdaptorMap.put(organization.getId(), organizationDBAdaptorFactory);
 
             OrganizationSummary organizationSummary = new OrganizationSummary(organization.getId(),
