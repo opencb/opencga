@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.utils;
 
 import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.utils.DockerUtils;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 
@@ -30,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.analysis.AnalysisUtils.ANALYSIS_FOLDER;
 import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.QC_FOLDER;
 import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.RESOURCES_FOLDER;
 
@@ -53,8 +53,8 @@ public class VariantQcAnalysisExecutorUtils {
         try {
             // Input binding
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-            inputBindings.add(new AbstractMap.SimpleEntry<>(opencgaHome.resolve(ANALYSIS_FOLDER).resolve(QC_FOLDER).toAbsolutePath()
-                    .toString(), SCRIPT_VIRTUAL_FOLDER));
+            inputBindings.add(new AbstractMap.SimpleEntry<>(opencgaHome.resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(QC_FOLDER)
+                    .toAbsolutePath().toString(), SCRIPT_VIRTUAL_FOLDER));
 
             // Output binding
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDir.toAbsolutePath().toString(),

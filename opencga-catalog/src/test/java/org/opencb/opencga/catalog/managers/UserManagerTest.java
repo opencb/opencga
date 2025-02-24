@@ -13,13 +13,17 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
@@ -40,7 +44,6 @@ import java.util.*;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 @Category(MediumTests.class)
@@ -287,6 +290,17 @@ public class UserManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void userIsImmediatelyBlockedTest() throws CatalogException {
+        OpenCGAResult<Study> studyOpenCGAResult = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), normalToken1);
+        assertEquals(1, studyOpenCGAResult.getNumResults());
+
+        catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.SUSPENDED, QueryOptions.empty(), ownerToken);
+        CatalogAuthorizationException exception = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), normalToken1));
+        assertTrue(exception.getMessage().contains("suspended"));
+    }
+
+    @Test
     public void loginExpiredAccountTest() throws CatalogException {
         // Expire account of normalUserId1
         ObjectMap params = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_EXPIRATION_DATE.key(), TimeUtils.getTime());
@@ -508,6 +522,25 @@ public class UserManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void createUserQuotaTest() throws CatalogException {
+        catalogManager.getConfiguration().getQuota().setMaxNumUsers(15);
+        try (CatalogManager mockCatalogManager = mockCatalogManager()) {
+            UserDBAdaptor userDBAdaptor = mockCatalogManager.getUserManager().getUserDBAdaptor(organizationId);
+
+            // Mock there already exists 50 users
+            OpenCGAResult<User> result = new OpenCGAResult<>(0, Collections.emptyList());
+            result.setNumMatches(50);
+            Mockito.doReturn(result).when(userDBAdaptor).count();
+            Mockito.doReturn(result).when(userDBAdaptor).count(Mockito.any(Query.class));
+
+            User user = new User("newUser");
+            CatalogException exception = assertThrows(CatalogException.class,
+                    () -> mockCatalogManager.getUserManager().create(user, TestParamConstants.PASSWORD, ownerToken));
+            assertTrue(exception.getMessage().contains("quota"));
+        }
+    }
+
+    @Test
     public void changePasswordTest() throws CatalogException {
         String newPassword = PasswordUtils.getStrongRandomPassword();
         catalogManager.getUserManager().changePassword(organizationId, normalUserId1, TestParamConstants.PASSWORD, newPassword);
@@ -660,5 +693,22 @@ public class UserManagerTest extends AbstractManagerTest {
         catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, "ldap", remoteGroup, internalGroup, studyFqn, true, getAdminToken());
     }
 
+    @Test
+    public void syncUsersTest() throws CatalogException {
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, ParamUtils.UpdateAction.ADD);
+        QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        List<AuthenticationOrigin> authenticationOrigins = Collections.singletonList(new AuthenticationOrigin("CAS",
+                AuthenticationOrigin.AuthenticationType.SSO, null, null));
+        OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration()
+                .setAuthenticationOrigins(authenticationOrigins);
+        catalogManager.getOrganizationManager().updateConfiguration(organizationId, organizationConfiguration, queryOptions, orgAdminToken1);
+
+        catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, "CAS", "opencb", "opencb", studyFqn, true, opencgaToken);
+        OpenCGAResult<Group> opencb = catalogManager.getStudyManager().getGroup(studyFqn, "opencb", studyAdminToken1);
+        assertEquals(1, opencb.getNumResults());
+        assertEquals("@opencb", opencb.first().getId());
+    }
 
 }

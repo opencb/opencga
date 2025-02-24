@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
@@ -183,6 +184,18 @@ public class AuditManager {
         audit(organizationId, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
+    public void auditError(String organizationId, String userId, Enums.Action action, Enums.Resource resource, String resourceId,
+                      String resourceUuid, String studyId, String studyUuid, ObjectMap params, Exception e) {
+        Error error;
+        if (e instanceof CatalogException) {
+            error = ((CatalogException) e).getError();
+        } else {
+            error = new Error(0, "", e.getMessage());
+        }
+        AuditRecord.Status status = new AuditRecord.Status(AuditRecord.Status.Result.ERROR, error);
+        audit(organizationId, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
+    }
+
     public void audit(String organizationId, String userId, Enums.Action action, Enums.Resource resource, String resourceId,
                       String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status,
                       ObjectMap attributes) {
@@ -198,6 +211,13 @@ public class AuditManager {
     }
 
     public void audit(String organizationId, String operationId, String userId, Enums.Action action, Enums.Resource resource,
+                      String resourceId, String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status,
+                      ObjectMap attributes) {
+        audit(organizationId, operationId, userId, action.name(), resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
+                attributes);
+    }
+
+    protected void audit(String organizationId, String operationId, String userId, String action, Enums.Resource resource,
                       String resourceId, String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status,
                       ObjectMap attributes) {
         String apiVersion = GitRepositoryState.getInstance().getBuildVersion();

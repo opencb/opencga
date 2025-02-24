@@ -22,11 +22,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.organizations.TokenConfiguration;
 import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -68,8 +70,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     private String host;
     private boolean ldaps;
 
-    public LDAPAuthenticationManager(AuthenticationOrigin authenticationOrigin, String algorithm, String secretKeyString, long expiration) {
-        super(expiration);
+    public LDAPAuthenticationManager(AuthenticationOrigin authenticationOrigin, String algorithm, String secretKeyString,
+                                     DBAdaptorFactory dbAdaptorFactory, long expiration) {
+        super(dbAdaptorFactory, expiration);
         this.logger = LoggerFactory.getLogger(LDAPAuthenticationManager.class);
         this.host = authenticationOrigin.getHost();
 
@@ -135,7 +138,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
         TokenConfiguration defaultTokenConfig = TokenConfiguration.init();
         LDAPAuthenticationManager ldapAuthenticationManager = new LDAPAuthenticationManager(authenticationOrigin,
-                defaultTokenConfig.getAlgorithm(), defaultTokenConfig.getSecretKey(), defaultTokenConfig.getExpiration());
+                defaultTokenConfig.getAlgorithm(), defaultTokenConfig.getSecretKey(), null, defaultTokenConfig.getExpiration());
         DirContext dirContext = ldapAuthenticationManager.getDirContext(ldapAuthenticationManager.getDefaultEnv(), 1);
         if (dirContext == null) {
             throw new CatalogException("LDAP: Could not connect to the LDAP server using the provided configuration.");
@@ -234,13 +237,17 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration) {
-        return jwtManager.createJWTToken(organizationId, AuthenticationType.LDAP, userId, claims, expiration);
+    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration)
+            throws CatalogAuthenticationException {
+        List<JwtPayload.FederationJwtPayload> federations = getFederations(organizationId, userId);
+        return jwtManager.createJWTToken(organizationId, AuthenticationType.LDAP, userId, claims, federations, expiration);
     }
 
     @Override
-    public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims) {
-        return jwtManager.createJWTToken(organizationId, AuthenticationType.LDAP, userId, claims, 0L);
+    public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims)
+            throws CatalogAuthenticationException {
+        List<JwtPayload.FederationJwtPayload> federations = getFederations(organizationId, userId);
+        return jwtManager.createJWTToken(organizationId, AuthenticationType.LDAP, userId, claims, federations, 0L);
     }
 
     /* Private methods */

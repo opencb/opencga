@@ -21,8 +21,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveForceRemoveAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord.Status.Result;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -33,6 +33,7 @@ import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteType;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.study.CustomGroup;
 import org.opencb.opencga.core.models.study.Group;
@@ -398,6 +399,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
             putNestedIfNotNull(beanParams, "valueType", commandOptions.valueType, true);
@@ -420,6 +422,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
         queryParams.putIfNotEmpty("userId", commandOptions.userId);
         queryParams.putIfNotEmpty("tags", commandOptions.tags);
@@ -463,6 +466,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), NoteUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
 

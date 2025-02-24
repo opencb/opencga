@@ -229,7 +229,8 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
                     .setIndexId(analysisParams.getVsId())
                     .setBatchSize(2)
                     .setIndexOverwrite(analysisParams.getOverwrite())
-                    .setVariantQuery(new SampleVariantStatsAnalysisParams.VariantQueryParams(analysisParams.getVsQuery().toQuery()));
+                    .setVariantQuery(new SampleVariantStatsAnalysisParams
+                            .VariantQueryParamsForSampleVariantStats(analysisParams.getVsQuery().toQuery()));
 
             callToolRunner = true;
 

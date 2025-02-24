@@ -34,6 +34,7 @@ public class IndividualsCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
+        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
@@ -51,6 +52,7 @@ public class IndividualsCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
@@ -96,6 +98,95 @@ public class IndividualsCommandOptions {
     
         @Parameter(names = {"--sample"}, description = "The body web service sample parameter", required = false, arity = 1)
         public String sample;
+    
+    }
+
+    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog individual stats")
+    public class AggregationStatsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list individual IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--uuid"}, description = "Comma separated list individual UUIDs up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list individual names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String name; 
+    
+        @Parameter(names = {"--father"}, description = "Father ID, name or UUID", required = false, arity = 1)
+        public String father; 
+    
+        @Parameter(names = {"--mother"}, description = "Mother ID, name or UUID", required = false, arity = 1)
+        public String mother; 
+    
+        @Parameter(names = {"--samples"}, description = "Sample ID, name or UUID", required = false, arity = 1)
+        public String samples; 
+    
+        @Parameter(names = {"--family-ids"}, description = "Comma separated list of family ids the individuals may belong to.", required = false, arity = 1)
+        public String familyIds; 
+    
+        @Parameter(names = {"--sex"}, description = "Individual sex", required = false, arity = 1)
+        public String sex; 
+    
+        @Parameter(names = {"--date-of-birth"}, description = "Individual date of birth", required = false, arity = 1)
+        public String dateOfBirth; 
+    
+        @Parameter(names = {"--ethnicity"}, description = "Individual ethnicity. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String ethnicity; 
+    
+        @Parameter(names = {"--disorders"}, description = "Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String disorders; 
+    
+        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String phenotypes; 
+    
+        @Parameter(names = {"--population-name"}, description = "Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String populationName; 
+    
+        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String populationSubpopulation; 
+    
+        @Parameter(names = {"--karyotypic-sex"}, description = "Individual karyotypic sex", required = false, arity = 1)
+        public String karyotypicSex; 
+    
+        @Parameter(names = {"--life-status"}, description = "Individual life status", required = false, arity = 1)
+        public String lifeStatus; 
+    
+        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
+        public String annotation; 
+    
+        @Parameter(names = {"--acl"}, description = "Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. ", required = false, arity = 1)
+        public String acl; 
+    
+        @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
+        public Integer snapshot; 
+    
+        @Parameter(names = {"--field"}, description = "Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
+        public String field; 
     
     }
 

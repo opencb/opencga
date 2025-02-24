@@ -747,27 +747,45 @@ public class OpenCGAWSServer {
         for (OpenCGAResult<?> openCGAResult : list) {
             setFederationServer(openCGAResult, uriInfo.getBaseUri().toString());
         }
-        Response.Status status = getResponseStatus(list);
-
         queryResponse.setResponses(list);
+        Response.Status status = getResponseStatus(queryResponse);
 
         Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(status).build();
         logResponse(response.getStatusInfo(), queryResponse);
         return response;
     }
 
-    private Response.Status getResponseStatus(List<OpenCGAResult<?>> list) {
-        if (list != null) {
-            for (OpenCGAResult<?> openCGAResult : list) {
-                if (CollectionUtils.isNotEmpty(openCGAResult.getEvents())) {
-                    for (Event event : openCGAResult.getEvents()) {
-                        if (event.getType().equals(Event.Type.ERROR)) {
-                            if (event.getMessage().contains("denied")) {
-                                return Response.Status.UNAUTHORIZED;
-                            } else {
-                                return Response.Status.BAD_REQUEST;
-                            }
-                        }
+    protected Response createResponse(RestResponse<?> restResponse) {
+        Response.Status status = getResponseStatus(restResponse);
+        Response response = Response.fromResponse(createJsonResponse(restResponse)).status(status).build();
+        logResponse(response.getStatusInfo(), restResponse);
+        return response;
+    }
+
+    protected Response.Status getResponseStatus(RestResponse<?> restResponse) {
+        Response.Status responseStatus = getResponseStatus(restResponse.getEvents());
+        if (responseStatus != Response.Status.OK) {
+            return responseStatus;
+        }
+        if (CollectionUtils.isNotEmpty(restResponse.getResponses())) {
+            for (OpenCGAResult<?> response : restResponse.getResponses()) {
+                responseStatus = getResponseStatus(response.getEvents());
+                if (responseStatus != Response.Status.OK) {
+                    return responseStatus;
+                }
+            }
+        }
+        return Response.Status.OK;
+    }
+
+    protected Response.Status getResponseStatus(List<Event> eventList) {
+        if (CollectionUtils.isNotEmpty(eventList)) {
+            for (Event event : eventList) {
+                if (event.getType().equals(Event.Type.ERROR)) {
+                    if (event.getMessage().contains("denied")) {
+                        return Response.Status.UNAUTHORIZED;
+                    } else {
+                        return Response.Status.BAD_REQUEST;
                     }
                 }
             }
@@ -794,11 +812,11 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
-    void logResponse(Response.StatusType statusInfo) {
+    protected void logResponse(Response.StatusType statusInfo) {
         logResponse(statusInfo, null, startTime, requestDescription);
     }
 
-    void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
+    protected void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
         logResponse(statusInfo, queryResponse, startTime, requestDescription);
     }
 
@@ -882,7 +900,12 @@ public class OpenCGAWSServer {
                                            String jobDescription, String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime,
                                            String jobPriority, Boolean dryRun)
             throws CatalogException {
-        Map<String, Object> paramsMap = bodyParams.toParams();
+        Map<String, Object> paramsMap;
+        if (bodyParams != null) {
+            paramsMap = bodyParams.toParams();
+        } else {
+            paramsMap = new HashMap<>();
+        }
         if (StringUtils.isNotEmpty(study)) {
             paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
         }

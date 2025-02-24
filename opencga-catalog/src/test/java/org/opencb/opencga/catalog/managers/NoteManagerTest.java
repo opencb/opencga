@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteType;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.study.Study;
@@ -37,11 +38,14 @@ public class NoteManagerTest extends AbstractManagerTest {
         Note note = catalogManager.getNotesManager().createOrganizationNote(noteCreateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(noteCreateParams.getId(), note.getId());
         assertEquals(orgOwnerUserId, note.getUserId());
+        assertEquals(NoteType.UNKNOWN, note.getType());
 
         noteCreateParams.setId("note2");
+        noteCreateParams.setType(NoteType.FAMILY);
         note = catalogManager.getNotesManager().createOrganizationNote(noteCreateParams, INCLUDE_RESULT, orgAdminToken1).first();
         assertEquals(noteCreateParams.getId(), note.getId());
         assertEquals(orgAdminUserId1, note.getUserId());
+        assertEquals(NoteType.FAMILY, note.getType());
 
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("denied");
@@ -59,10 +63,12 @@ public class NoteManagerTest extends AbstractManagerTest {
         assertEquals(1, note.getVersion());
 
         NoteUpdateParams noteUpdateParams = new NoteUpdateParams()
-                .setTags(Arrays.asList("tag1", "tag2"));
+                .setTags(Arrays.asList("tag1", "tag2"))
+                .setType(NoteType.GENE);
         note = catalogManager.getNotesManager().updateOrganizationNote(note.getId(), noteUpdateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(2, note.getVersion());
         assertEquals(orgOwnerUserId, note.getUserId());
+        assertEquals(NoteType.GENE, note.getType());
         assertEquals(2, note.getTags().size());
         assertArrayEquals(noteUpdateParams.getTags().toArray(), note.getTags().toArray());
 

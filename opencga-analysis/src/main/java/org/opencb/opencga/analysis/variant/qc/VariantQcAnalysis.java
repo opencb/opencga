@@ -24,7 +24,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -58,7 +57,6 @@ import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.
 public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
 
     // QC folders
-    private final static String RESOURCES_URL = "http://resources.opencb.org/task-6766/";
     private static final String QC = "qc";
 
     public static final String QC_FOLDER = QC + "/";
@@ -331,33 +329,11 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     //-------------------------------------------------------------------------
 
     protected void prepareResources() throws ToolException {
-        // First, download default resource files
-        downloadQcResourceFiles();
+        // Check resources are available
+        Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
         if (userResourcesPath != null) {
             // If necessary, copy the user resource files
             copyUserResourceFiles();
-        }
-    }
-
-    protected void downloadQcResourceFiles() throws ToolException {
-        Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
-
-        List<java.io.File> resourceFiles;
-        try {
-            resourceFiles = ResourceUtils.getResourceFiles(RESOURCES_URL, QC, getOpencgaHome());
-        } catch (IOException e) {
-            throw new ToolException(e);
-        }
-
-        for (java.io.File resourceFile : resourceFiles) {
-            Path dest = destResourcesPath.resolve(resourceFile.getName());
-            try {
-                Files.copy(resourceFile.toPath(), dest, StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                if (!Files.exists(dest) || dest.toFile().length() != resourceFile.length()) {
-                    throw new ToolException("Error copying resource file '" + resourceFile + "'", e);
-                }
-            }
         }
     }
 

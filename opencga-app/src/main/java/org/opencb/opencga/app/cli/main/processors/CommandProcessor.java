@@ -12,8 +12,8 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.Session;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.utils.JwtUtils;
-import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.JwtUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -136,9 +136,13 @@ public class CommandProcessor {
 
     public void loadSessionStudies(OpencgaCommandExecutor commandExecutor) {
         Session session = commandExecutor.getSessionManager().getSession();
-        logger.debug("Loading session studies using token: "
-                + session.getToken());
         OpenCGAClient openCGAClient = commandExecutor.getOpenCGAClient();
+        logger.debug("openCGAClient Token: " + openCGAClient.getToken());
+        if(StringUtils.isEmpty(openCGAClient.getToken())) {
+            openCGAClient.setToken(session.getToken());
+        }
+        logger.debug("Loading session studies using token: "
+                + openCGAClient.getToken());
         try {
             // Query the server to retrieve the studies of user projects
             RestResponse<Project> res = openCGAClient.getProjectClient().search(new ObjectMap());

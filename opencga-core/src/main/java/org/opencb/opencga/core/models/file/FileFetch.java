@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.CliParam;
 
@@ -27,6 +29,9 @@ public class FileFetch extends ToolParams {
     @CliParam(required = true)
     private String url;
 
+    @DataField(id = "resource", description = FieldConstants.FILE_RESOURCE)
+    private Boolean resource;
+
     /**
      * Folder path where the file will be downloaded.
      */
@@ -35,15 +40,17 @@ public class FileFetch extends ToolParams {
     public FileFetch() {
     }
 
-    public FileFetch(String url, String path) {
+    public FileFetch(String url, String path, Boolean resource) {
         this.path = path;
         this.url = url;
+        this.resource = resource;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileFetch{");
         sb.append("url='").append(url).append('\'');
+        sb.append(", resource=").append(resource);
         sb.append(", path='").append(path).append('\'');
         sb.append('}');
         return sb.toString();
@@ -64,6 +71,15 @@ public class FileFetch extends ToolParams {
 
     public FileFetch setPath(String path) {
         this.path = path;
+        return this;
+    }
+
+    public Boolean getResource() {
+        return resource;
+    }
+
+    public FileFetch setResource(Boolean resource) {
+        this.resource = resource;
         return this;
     }
 }

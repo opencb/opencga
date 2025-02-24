@@ -20,14 +20,13 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.*;
@@ -360,7 +359,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Query query = new Query();
         String projectId = catalogManager.getProjectManager().search(organizationId, query, null, ownerToken).first().getFqn();
         Study study_1 = catalogManager.getStudyManager().create(projectId, new Study().setId("study_1").setCreationDate("20150101120000")
-                , null, ownerToken).first();
+                , INCLUDE_RESULT, ownerToken).first();
         assertEquals("20150101120000", study_1.getCreationDate());
 
         catalogManager.getStudyManager().create(projectId, "study_2", null, "study_2", "description", null, null, null, null, null, ownerToken);
@@ -368,7 +367,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().create(projectId, "study_3", null, "study_3", "description", null, null, null, null, null, ownerToken);
 
         String study_4 = catalogManager.getStudyManager().create(projectId, "study_4", null, "study_4", "description", null, null, null,
-                null, null, ownerToken).first().getId();
+                null, INCLUDE_RESULT, ownerToken).first().getId();
 
         assertEquals(new HashSet<>(Collections.singletonList(studyId)), catalogManager.getStudyManager().searchInOrganization(organizationId,
                         new Query(StudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), normalUserId1), null, ownerToken)
@@ -484,7 +483,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Create another study with alias phase3
         DataResult<Study> study = catalogManager.getStudyManager().create(project.getFqn(), "phase3", null, "Phase 3", "d", null,
-                null, null, null, null, ownerToken);
+                null, null, null, INCLUDE_RESULT, ownerToken);
         try {
             studyManager.resolveIds(Collections.emptyList(), ParamConstants.ANONYMOUS_USER_ID, otherOrg);
             fail("This should throw an exception. No studies should be found for user anonymous");
@@ -968,6 +967,99 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         query = new Query(JobDBAdaptor.QueryParams.VISITED.key(), false);
         assertEquals(1, catalogManager.getJobManager().count(studyFqn, query, ownerToken).getNumMatches());
+    }
+
+    @Test
+    public void testJobsFacet() throws CatalogException {
+        Query query = new Query();
+        String studyId = catalogManager.getStudyManager().searchInOrganization(organizationId, query, null, ownerToken).first().getId();
+
+//        catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob"), null, ownerToken);
+//
+//        QueryOptions options = new QueryOptions(QueryOptions.COUNT, true);
+//        DataResult<Job> allJobs = catalogManager.getJobManager().search(studyId, null, options, ownerToken);
+
+        int numJobs = 88;
+        for (int i = numJobs; i > 0; i--) {
+            ToolInfo toolInfo = new ToolInfo();
+            toolInfo.setId("tool-" + (i % 5) + Integer.valueOf(RandomStringUtils.randomNumeric(1)));
+            Job job = new Job().setId("myJob-" + i).setTool(toolInfo);
+            catalogManager.getJobManager().create(studyId, job, null, ownerToken);
+        }
+
+        Map<String, Integer> toolIdCounter = new HashMap<>();
+        QueryOptions options = new QueryOptions(QueryOptions.COUNT, true);
+        DataResult<Job> allJobs = catalogManager.getJobManager().search(studyId, null, options, ownerToken);
+        for (Job job : allJobs.getResults()) {
+            String toolId = job.getTool().getId();
+            if (!toolIdCounter.containsKey(toolId)) {
+                toolIdCounter.put(toolId, 0);
+            }
+            toolIdCounter.put(toolId, 1 + toolIdCounter.get(toolId));
+        }
+
+        for (Map.Entry<String, Integer> entry : toolIdCounter.entrySet()) {
+            System.out.println(entry.getKey() + " --> " + entry.getValue());
+        }
+
+        String field = "tool.id";
+        FacetField facetField = catalogManager.getJobManager().facet(studyId, new Query(), field, ownerToken).first();
+        Assert.assertEquals(field, facetField.getName());
+        Assert.assertEquals(numJobs, facetField.getCount(), 0.001);
+        for (FacetField.Bucket bucket : facetField.getBuckets()) {
+            Assert.assertTrue(toolIdCounter.containsKey(bucket.getValue()));
+            Assert.assertEquals(toolIdCounter.get(bucket.getValue()), bucket.getCount(), 0.001);
+        }
+    }
+
+    public void testJobQuotaLimit() throws CatalogException {
+        // Submit a dummy job. This shouldn't raise any error
+        catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken);
+
+        OpenCGAResult<ExecutionTime> result = catalogManager.getJobManager().getExecutionTimeByMonth(organizationId, new Query(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals(0, result.first().getTime().getHours(), 0.0);
+        assertEquals(0, result.first().getTime().getMinutes(), 0.0);
+        assertEquals(0, result.first().getTime().getSeconds(), 0.0);
+
+        try (CatalogManager mockManager = mockCatalogManager()) {
+            // Mock check result
+            OpenCGAResult<ExecutionTime> results = new OpenCGAResult<>(0, Collections.singletonList(new ExecutionTime("1", "2024",
+                    new ExecutionTime.Time(1000.0, 1000 * 60.0, 1000.0 * 60 * 60))));
+            JobDBAdaptor jobDBAdaptor = mockManager.getJobManager().getJobDBAdaptor(organizationId);
+
+            Mockito.doReturn(results).when(jobDBAdaptor).executionTimeByMonth(Mockito.any(Query.class));
+
+            // Submit a job. This should raise an error
+            CatalogException exception = assertThrows(CatalogException.class, () -> mockManager.getJobManager()
+                    .submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken));
+            assertTrue(exception.getMessage().contains("quota"));
+        }
+    }
+
+    @Test
+    public void rescheduleJobTest() throws CatalogException {
+        Job job = catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
+
+        Date firstDayOfNextMonth = TimeUtils.getFirstDayOfNextMonth(new Date());
+        String scheduleStartTime = TimeUtils.getTime(firstDayOfNextMonth);
+        catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime, "My message",
+                opencgaToken);
+
+        OpenCGAResult<Job> result = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals(scheduleStartTime, result.first().getScheduledStartTime());
+        assertEquals(1, result.first().getInternal().getEvents().size());
+        assertEquals("My message", result.first().getInternal().getEvents().get(0).getMessage());
+
+        // Ensure only "opencga" are authorised
+        assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime,
+                        "My message", ownerToken));
+        CatalogAuthorizationException authException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime,
+                        "My message", normalToken1));
+        assertTrue(authException.getMessage().contains("OPENCGA ADMINISTRATOR"));
     }
 
     /**

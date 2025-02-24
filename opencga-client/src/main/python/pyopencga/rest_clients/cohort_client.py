@@ -37,6 +37,41 @@ class Cohort(_ParentRestClient):
         options['action'] = action
         return self._post(category='cohorts', resource='update', subcategory='acl', second_query_id=members, data=data, **options)
 
+    def aggregation_stats(self, **options):
+        """
+        Fetch catalog cohort stats.
+        PATH: /{apiVersion}/cohorts/aggregationStats
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param str id: Comma separated list of cohort IDs up to a maximum of
+            100. Also admits basic regular expressions using the operator '~',
+            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i'
+            for case insensitive search.
+        :param str name: Comma separated list of cohort names up to a maximum
+            of 100. Also admits basic regular expressions using the operator
+            '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive,
+            '~/value/i' for case insensitive search.
+        :param str uuid: Comma separated list of cohort IDs up to a maximum of
+            100.
+        :param str type: Cohort type.
+        :param str creation_date: creationDate.
+        :param str modification_date: modificationDate.
+        :param bool deleted: deleted.
+        :param str status: status.
+        :param str internal_status: internalStatus.
+        :param str annotation: Cohort annotation.
+        :param str acl: acl.
+        :param str samples: Cohort sample IDs.
+        :param str num_samples: Number of samples.
+        :param str release: release.
+        :param str field: Field to apply aggregation statistics to (or a list
+            of fields separated by semicolons), e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
+        """
+
+        return self._get(category='cohorts', resource='aggregationStats', **options)
+
     def load_annotation_sets(self, variable_set_id, path, data=None, **options):
         """
         Load annotation sets from a TSV file.

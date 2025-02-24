@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop</artifactId>
-        <version>3.3.0-SNAPSHOT</version>
+        <version>4.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -211,6 +211,10 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.parquet</groupId>
@@ -440,6 +444,15 @@
                                 </ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>
                                     commons-lang:commons-lang
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    org.apache.tephra:tephra-core
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    org.apache.tephra:tephra-core-shaded
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    com.lmax:disruptor
                                 </ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                         </configuration>

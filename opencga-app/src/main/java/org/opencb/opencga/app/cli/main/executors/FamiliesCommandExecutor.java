@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -14,8 +15,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.Family;
@@ -64,6 +65,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
+                break;
+            case "aggregationstats":
+                queryResponse = aggregationStats();
                 break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
@@ -135,6 +139,38 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), FamilyAclUpdateParams.class);
         }
         return openCGAClient.getFamilyClient().updateAcl(commandOptions.members, commandOptions.action, familyAclUpdateParams, queryParams);
+    }
+
+    private RestResponse<FacetField> aggregationStats() throws Exception {
+        logger.debug("Executing aggregationStats in Families command line");
+
+        FamiliesCommandOptions.AggregationStatsCommandOptions commandOptions = familiesCommandOptions.aggregationStatsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("name", commandOptions.name);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("members", commandOptions.members);
+        queryParams.putIfNotNull("expectedSize", commandOptions.expectedSize);
+        queryParams.putIfNotEmpty("samples", commandOptions.samples);
+        queryParams.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
+        queryParams.putIfNotEmpty("disorders", commandOptions.disorders);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
+        queryParams.putIfNotEmpty("acl", commandOptions.acl);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getFamilyClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
