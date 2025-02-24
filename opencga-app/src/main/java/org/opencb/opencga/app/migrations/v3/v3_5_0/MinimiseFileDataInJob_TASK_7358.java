@@ -11,9 +11,7 @@ import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Migration(id = "minimize_file_data_in_job_7358",
         description = "Minimize file data in Job  #7358", version = "3.5.0",
@@ -33,23 +31,33 @@ public class MinimiseFileDataInJob_TASK_7358 extends MigrationTool {
                     Document ocgaAttributes = document.get("attributes", Document.class).get("_opencga", Document.class);
 
                     // Process deleted input files list
-                    List<Document> deletedInputFiles = ocgaAttributes.getList("deletedInputFiles", Document.class);
-                    if (deletedInputFiles != null) {
-                        List<Document> reducedDeletedInputFiles = new ArrayList<>(deletedInputFiles.size());
-                        for (Document deletedInputFile : deletedInputFiles) {
-                            reducedDeletedInputFiles.add(getReducedFileDocument(deletedInputFile));
+                    if (ocgaAttributes.containsKey("deletedInputFiles")) {
+                        List<Document> deletedInputFiles = ocgaAttributes.getList("deletedInputFiles", Document.class);
+                        if (deletedInputFiles != null) {
+                            List<Document> reducedDeletedInputFiles = new ArrayList<>(deletedInputFiles.size());
+                            for (Document deletedInputFile : deletedInputFiles) {
+                                reducedDeletedInputFiles.add(getReducedFileDocument(deletedInputFile));
+                            }
+                            updateDocument.getSet().put("attributes._opencga.deletedInputFiles", reducedDeletedInputFiles);
                         }
-                        updateDocument.getSet().put("attributes._opencga.deletedInputFiles", reducedDeletedInputFiles);
                     }
 
                     // Process deleted output files list
-                    List<Document> deletedOutputFiles = ocgaAttributes.getList("deletedOutputFiles", Document.class);
-                    if (deletedOutputFiles != null) {
-                        List<Document> reducedDeletedOutputFiles = new ArrayList<>(deletedOutputFiles.size());
-                        for (Document deletedOutputFile : deletedOutputFiles) {
-                            reducedDeletedOutputFiles.add(getReducedFileDocument(deletedOutputFile));
+                    if (ocgaAttributes.containsKey("deletedOutputFiles")) {
+                        Object deletedOutputFilesObject = ocgaAttributes.get("deletedOutputFiles");
+                        List<Document> deletedOutputFiles;
+                        if (deletedOutputFilesObject instanceof Map) {
+                            deletedOutputFiles = Collections.singletonList((Document) deletedOutputFilesObject);
+                        } else {
+                            deletedOutputFiles = ocgaAttributes.getList("deletedOutputFiles", Document.class);
                         }
-                        updateDocument.getSet().put("attributes._opencga.deletedOutputFiles", reducedDeletedOutputFiles);
+                        if (deletedOutputFiles != null) {
+                            List<Document> reducedDeletedOutputFiles = new ArrayList<>(deletedOutputFiles.size());
+                            for (Document deletedOutputFile : deletedOutputFiles) {
+                                reducedDeletedOutputFiles.add(getReducedFileDocument(deletedOutputFile));
+                            }
+                            updateDocument.getSet().put("attributes._opencga.deletedOutputFiles", reducedDeletedOutputFiles);
+                        }
                     }
 
                     bulk.add(new UpdateOneModel<>(Filters.eq("_id", document.get("_id")), updateDocument.toFinalUpdateDocument()));
