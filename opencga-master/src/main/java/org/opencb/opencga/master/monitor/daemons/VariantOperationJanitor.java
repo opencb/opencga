@@ -185,6 +185,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
                 paramsMap = new HashMap<>();
             }
             paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
+            operationChore.addSpecificParams(paramsMap);
             catalogManager.getJobManager().submit(studyFqns.get(0), toolId, Enums.Priority.HIGH, paramsMap, null,
                     generateJobDescription(config, operationChore, attributes), null,
                     Collections.singletonList(TAG), null, null, null, attributes, ownerToken);
@@ -223,6 +224,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
                 paramsMap = new HashMap<>();
             }
             paramsMap.put(ParamConstants.STUDY_PARAM, study.getFqn());
+            operationChore.addSpecificParams(paramsMap);
             catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.HIGH, paramsMap, null,
                     generateJobDescription(config, operationChore, attributes), null,
                     Collections.singletonList(TAG), null, null, null, attributes, ownerToken);
@@ -250,6 +252,9 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
         List<String> dependantTools();
 
         OperationExecutionConfig getConfig();
+
+        default void addSpecificParams(Map<String, Object> params) {
+        }
 
     }
 
@@ -305,6 +310,12 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
         @Override
         public OperationExecutionConfig getConfig() {
             return operationConfig;
+        }
+
+        @Override
+        public void addSpecificParams(Map<String, Object> params) {
+            params.put("sample", Collections.singletonList(ParamConstants.ALL));
+            params.put("familyIndex", true);
         }
     }
 
