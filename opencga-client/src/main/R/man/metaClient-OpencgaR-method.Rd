@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{category}{List of categories to get API from.}
+
+\item{model}{Model description.}
 }
 \description{
 This function implements the OpenCGA calls for managing Meta.
@@ -16,6 +18,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    about \tab /{apiVersion}/meta/about \tab  \cr
    api \tab /{apiVersion}/meta/api \tab category \cr
    fail \tab /{apiVersion}/meta/fail \tab  \cr
+   model \tab /{apiVersion}/meta/model \tab model \cr
    ping \tab /{apiVersion}/meta/ping \tab  \cr
    status \tab /{apiVersion}/meta/status \tab  \cr
 }
@@ -33,6 +36,11 @@ API.
 \section{Endpoint /{apiVersion}/meta/fail}{
 
 Ping Opencga webservices.
+}
+
+\section{Endpoint /{apiVersion}/meta/model}{
+
+Opencga model webservices.
 }
 
 \section{Endpoint /{apiVersion}/meta/ping}{

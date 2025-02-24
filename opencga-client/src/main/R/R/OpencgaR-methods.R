@@ -147,22 +147,23 @@ readConfFile <- function(conf){
 #' 
 #' \dontrun{
 #' con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
-#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser", showToken = TRUE)
+#' con <- opencgaLogin(opencga = con, userid = "xxx", passwd = "xxx", showToken = TRUE)
 #'
 #' # Configuration in list format
 #' conf <- list(version="v2", rest=list(host="http://bioinfo.hpc.cam.ac.uk/opencga-prod/"))
 #' con <- initOpencgaR(opencgaConfig=conf)
-#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = demouser")
+#' con <- opencgaLogin(opencga = con, userid = "xxx", passwd = xxx")
 #'
 #' # Configuration in file format ("YAML" or "JSON")
 #' conf <- "/path/to/conf/client-configuration.yml"
 #' con <- initOpencgaR(opencgaConfig=conf)
-#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser")
+#' con <- opencgaLogin(opencga = con, userid = "xxx", passwd = "xxx")
 #' }
 #' @export
 
 opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE, 
-                         autoRenew=FALSE, verbose=FALSE, showToken=FALSE){
+                         autoRenew=FALSE, verbose=FALSE, showToken=FALSE, 
+                         organization=NULL){
     if (class(opencga) == "OpencgaR"){
         host <- slot(object = opencga, name = "host")
         version <- slot(object = opencga, name = "version")
@@ -183,16 +184,18 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
       if(requireNamespace("miniUI", quietly = TRUE) & requireNamespace("shiny", quietly = TRUE)){
         user_login <- function() {
           ui <- miniUI::miniPage(
-            miniUI::gadgetTitleBar("Please enter your username and password"),
+            miniUI::gadgetTitleBar("Please enter your username, password and organization (optional):"),
             miniUI::miniContentPanel(
               shiny::textInput("username", "Username"),
-              shiny::passwordInput("password", "Password")))
+              shiny::passwordInput("password", "Password"),
+              shiny::passwordInput("organization", "Organization")))
           
           server <- function(input, output) {
             shiny::observeEvent(input$done, {
               user <- input$username
               pass <- input$password
-              res <- list(user=user, pass=pass)
+              org <- input$organization
+              res <- list(user=user, pass=pass, org=org)
               shiny::stopApp(res)
             })
             shiny::observeEvent(input$cancel, {
@@ -205,6 +208,7 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
         cred <- user_login()
         userid <- cred$user
         passwd <- cred$pass
+        organization <- cred$org
       }else{
         print("The 'miniUI' and 'shiny' packages are required to run the 
            interactive login, please install it and try again.
@@ -215,7 +219,11 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
     # end interactive login
 
     # Send request
-    query <- httr::POST(baseurl, body = list(user=userid, password=passwd), encode = "json")
+    body_req <- list(user=userid, password=passwd)
+    if (!is.null(organization) && organization != ""){
+        body_req <- append(x=body_req, values=list(organization=organization))
+    }
+    query <- httr::POST(baseurl, body = body_req, encode = "json")
 
     # check query status
     httr::warn_for_status(query)
@@ -235,14 +243,14 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
     # get expiration time
     loginInfo <- unlist(strsplit(x=token, split="\\."))[2]
     loginInfojson <- jsonlite::fromJSON(rawToChar(base64enc::base64decode(what=loginInfo)))
-    loginTime <- as.character(as.POSIXct(loginInfojson$iat, origin="1970-01-01"), format="%Y%m%d%H%M%S")
-    expirationTime <- as.character(as.POSIXct(loginInfojson$exp, origin="1970-01-01"), format="%Y%m%d%H%M%S")
+    loginTime <- lubridate::as_datetime(as.POSIXct(loginInfojson$iat, origin="1970-01-01"))
+    expirationTime <- lubridate::as_datetime(as.POSIXct(loginInfojson$exp, origin="1970-01-01"))
     
     # Create session JSON
     sessionDf <- data.frame(host=opencga@host, version=opencga@version, 
                             user=opencga@user, token=opencga@token,
                             refreshToken=opencga@refreshToken,
-                            login=loginTime, expirationTime=expirationTime)
+                            login=as.character(loginTime), expirationTime=as.character(expirationTime))
     sessionJson <- jsonlite::toJSON(sessionDf)
     
     # Get system to define session directory
@@ -267,10 +275,10 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
             sessionTable <- rbind(sessionTable, sessionDf)
             write(x = jsonlite::toJSON(sessionTable), file = sessionFile)
         }else if (length(sessionTableMatch) == 1){
-            sessionTable[sessionTableMatch, "login"] <- loginTime
+            sessionTable[sessionTableMatch, "login"] <- as.character(loginTime)
             sessionTable[sessionTableMatch, "token"] <- token
             sessionTable[sessionTableMatch, "refreshToken"] <- refreshToken
-            sessionTable[sessionTableMatch, "expirationTime"] <- expirationTime
+            sessionTable[sessionTableMatch, "expirationTime"] <- as.character(expirationTime)
             write(x = jsonlite::toJSON(sessionTable), file = sessionFile)
         }else{
             stop(paste("There is more than one connection to this host in your rsession file. Please, remove any duplicated entries in", 
