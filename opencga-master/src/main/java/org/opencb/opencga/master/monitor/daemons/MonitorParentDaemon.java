@@ -17,8 +17,6 @@
 package org.opencb.opencga.master.monitor.daemons;
 
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.master.monitor.executors.BatchExecutor;
-import org.opencb.opencga.master.monitor.executors.ExecutorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +28,10 @@ import java.io.IOException;
  */
 public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
-    protected final int interval;
-    protected final CatalogManager catalogManager;
-    protected BatchExecutor batchExecutor;
+    protected int interval;
+    protected CatalogManager catalogManager;
 
-    private volatile boolean exit = false;
+    protected volatile boolean exit = false;
 
     protected final String token;
     protected final Logger logger;
@@ -44,8 +41,6 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
         this.catalogManager = catalogManager;
         this.token = token;
         logger = LoggerFactory.getLogger(this.getClass());
-        ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
-        this.batchExecutor = executorFactory.getExecutor();
     }
 
     public boolean isExit() {
@@ -55,6 +50,8 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
     public void setExit(boolean exit) {
         this.exit = exit;
     }
+
+    protected abstract void apply() throws Exception;
 
     public void run() {
         try {
@@ -66,6 +63,12 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
         while (!exit) {
             try {
+                apply();
+            } catch (Exception e) {
+                logger.error("Catch exception " + e.getMessage(), e);
+            }
+
+            try {
                 Thread.sleep(interval);
             } catch (InterruptedException e) {
                 if (!exit) {
@@ -73,12 +76,6 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
                 }
                 // If interrupted, stop the daemon
                 break;
-            }
-
-            try {
-                apply();
-            } catch (Exception e) {
-                logger.error("Catch exception " + e.getMessage(), e);
             }
         }
 
@@ -93,5 +90,7 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
     }
 
-    public abstract void apply() throws Exception;
+    @Override
+    public void close() throws IOException {
+    }
 }

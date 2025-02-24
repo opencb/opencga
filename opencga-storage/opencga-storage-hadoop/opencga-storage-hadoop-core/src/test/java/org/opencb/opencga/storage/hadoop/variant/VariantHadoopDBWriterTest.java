@@ -62,7 +62,6 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.load.VariantHadoopDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
@@ -101,8 +100,6 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     public void setUp() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         clearDB(variantStorageManager.getDBName());
-        //Force HBaseConverter to fail if something goes wrong
-        HBaseToVariantConverter.setFailOnWrongVariants(true);
         engine = getVariantStorageEngine();
         dbAdaptor = engine.getDBAdaptor();
 
