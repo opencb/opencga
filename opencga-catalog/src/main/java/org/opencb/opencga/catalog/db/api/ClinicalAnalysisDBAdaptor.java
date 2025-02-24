@@ -62,6 +62,7 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
+        INTERNAL_CVDB_INDEX("internal.cvdbIndex", OBJECT, ""),
         QUALITY_CONTROL("qualityControl", OBJECT, ""),
         QUALITY_CONTROL_SUMMARY("qualityControl.summary", TEXT, ""),
         CONSENT("consent", OBJECT, ""),

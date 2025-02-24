@@ -161,10 +161,10 @@ class PythonClientGenerator(RestClientGenerator):
         return '\n'.join(text)
 
     def get_file_name(self, category):
-        return self.to_snake_case(self.categories[self.get_category_name(category)]) + '_client.py' \
-            if self.categories[self.get_category_name(category)] != 'GA4GH' \
-            else self.categories[self.get_category_name(category)].lower() + '_client.py'
-
+        if self.categories[self.get_category_name(category)] == 'GA4GH' or self.categories[self.get_category_name(category)] == 'CVDB':
+            return self.categories[self.get_category_name(category)].lower() + '_client.py'
+        else:
+            return self.to_snake_case(self.categories[self.get_category_name(category)]) + '_client.py'
 
 def _setup_argparse():
     desc = 'This script creates automatically all Python RestClients files'

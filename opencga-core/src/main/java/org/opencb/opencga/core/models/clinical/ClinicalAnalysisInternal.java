@@ -22,23 +22,27 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 
 public class ClinicalAnalysisInternal extends Internal {
 
+    private CvdbIndexStatus cvdbIndex;
+
     public ClinicalAnalysisInternal() {
     }
 
-    public ClinicalAnalysisInternal(String registrationDate, String modificationDate, InternalStatus status) {
-        super(status, registrationDate, modificationDate);
+    public ClinicalAnalysisInternal(InternalStatus status, String registrationDate, String lastModified, CvdbIndexStatus cvdbIndex) {
+        super(status, registrationDate, lastModified);
+        this.cvdbIndex = cvdbIndex;
     }
 
     public static ClinicalAnalysisInternal init() {
-        return new ClinicalAnalysisInternal(TimeUtils.getTime(), TimeUtils.getTime(), new InternalStatus());
+        return new ClinicalAnalysisInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), new CvdbIndexStatus());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisInternal{");
-        sb.append("status=").append(status);
+        sb.append("cvdbIndex=").append(cvdbIndex);
+        sb.append(", status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(lastModified).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -67,6 +71,15 @@ public class ClinicalAnalysisInternal extends Internal {
 
     public ClinicalAnalysisInternal setLastModified(String lastModified) {
         this.lastModified = lastModified;
+        return this;
+    }
+
+    public CvdbIndexStatus getCvdbIndex() {
+        return cvdbIndex;
+    }
+
+    public ClinicalAnalysisInternal setCvdbIndex(CvdbIndexStatus cvdbIndex) {
+        this.cvdbIndex = cvdbIndex;
         return this;
     }
 }
