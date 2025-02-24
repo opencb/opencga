@@ -38,6 +38,8 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
         public LoginCommandOptions loginCommandOptions;
         public PasswordCommandOptions passwordCommandOptions;
         public SearchCommandOptions searchCommandOptions;
+        public LoginSsoCommandOptions loginSsoCommandOptions;
+        public LogoutSsoCommandOptions logoutSsoCommandOptions;
         public InfoCommandOptions infoCommandOptions;
         public ConfigsCommandOptions configsCommandOptions;
         public UpdateConfigsCommandOptions updateConfigsCommandOptions;
@@ -54,6 +56,8 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
         this.loginCommandOptions = new LoginCommandOptions();
         this.passwordCommandOptions = new PasswordCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
+        this.loginSsoCommandOptions = new LoginSsoCommandOptions();
+        this.logoutSsoCommandOptions = new LogoutSsoCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.configsCommandOptions = new ConfigsCommandOptions();
         this.updateConfigsCommandOptions = new UpdateConfigsCommandOptions();
@@ -167,6 +171,22 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
     
         @Parameter(names = {"--authentication-id"}, description = "Authentication origin ID", required = false, arity = 1)
         public String authenticationId; 
+    
+    }
+
+    @Parameters(commandNames = {"sso-login"}, commandDescription ="Single Sign On.")
+    public class LoginSsoCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+    }
+
+    @Parameters(commandNames = {"sso-logout"}, commandDescription ="Logout from Single Sign On.")
+    public class LogoutSsoCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
     
     }
 
