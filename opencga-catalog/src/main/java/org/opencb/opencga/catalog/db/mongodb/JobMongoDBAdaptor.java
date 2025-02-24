@@ -786,7 +786,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                 .append(QueryParams.OUT_DIR_UID.key(), fileUid);
         document = new UpdateDocument();
         document.getSet().put(QueryParams.OUT_DIR.key(), new Document(FileDBAdaptor.QueryParams.UID.key(), -1));
-        document.getSet().put(prefix + Constants.JOB_DELETED_OUTPUT_DIRECTORY, fileCopy);
+        document.getPush().put(prefix + Constants.JOB_DELETED_OUTPUT_DIRECTORY, fileCopy);
         updateDocument = document.toFinalUpdateDocument();
 
         logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.OUT_DIR.key(), query.toBsonDocument(),
