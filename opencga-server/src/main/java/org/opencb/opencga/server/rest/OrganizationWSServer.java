@@ -86,7 +86,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "Action to be performed if the array of admins is being updated.", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
                 @QueryParam("adminsAction") ParamUtils.AddRemoveAction adminsAction,
-            @ApiParam(value = "JSON containing the params to be updated.", required = true) OrganizationUpdateParams parameters) {
+            @ApiParam(name = "body", value = "JSON containing the params to be updated.", required = true) OrganizationUpdateParams parameters) {
         try {
             if (adminsAction == null) {
                 adminsAction = ParamUtils.AddRemoveAction.ADD;
@@ -114,7 +114,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "Action to be performed if the array of authenticationOrigins is being updated.",
                     allowableValues = "ADD,REMOVE,SET,REPLACE", defaultValue = "ADD") @QueryParam("authenticationOriginsAction") ParamUtils.UpdateAction authOriginsAction,
-            @ApiParam(value = "JSON containing the params to be updated.", required = true) OrganizationConfiguration parameters) {
+            @ApiParam(name = "body",value = "JSON containing the params to be updated.", required = true) OrganizationConfiguration parameters) {
         try {
             if (authOriginsAction == null) {
                 authOriginsAction = ParamUtils.UpdateAction.ADD;
@@ -139,7 +139,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
     })
     public Response create(
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
-            @ApiParam(value = "JSON containing the organization to be created.", required = true) OrganizationCreateParams parameters) {
+            @ApiParam(name = "body",value = "JSON containing the organization to be created.", required = true) OrganizationCreateParams parameters) {
         try {
             OpenCGAResult<Organization> result = catalogManager.getOrganizationManager().create(parameters, queryOptions, token);
             return createOkResponse(result);
@@ -187,7 +187,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
     })
     public Response createNote(
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
-            @ApiParam(value = "JSON containing the Note to be added.", required = true) NoteCreateParams parameters) {
+            @ApiParam(name = "body",value = "JSON containing the Note to be added.", required = true) NoteCreateParams parameters) {
         try {
             OpenCGAResult<Note> result = catalogManager.getNotesManager().createOrganizationNote(parameters, queryOptions, token);
             return createOkResponse(result);
@@ -209,7 +209,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,REMOVE,SET", defaultValue = "ADD")
                 @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
-            @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
+            @ApiParam(name = "body",value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
         try {
             if (tagsAction == null) {
                 tagsAction = ParamUtils.BasicUpdateAction.ADD;
@@ -250,7 +250,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
-            @ApiParam(value = "JSON containing the User fields to be updated.", required = true) OrganizationUserUpdateParams parameters) {
+            @ApiParam(name = "body",value = "JSON containing the User fields to be updated.", required = true) OrganizationUserUpdateParams parameters) {
         try {
             OpenCGAResult<User> result = catalogManager.getOrganizationManager().updateUser(organizationId, userId, parameters, queryOptions, token);
             return createOkResponse(result);
@@ -271,7 +271,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
-            @ApiParam(value = "JSON containing the User fields to be updated.", required = true) UserStatusUpdateParams parameters) {
+            @ApiParam(name = "body",value = "JSON containing the User fields to be updated.", required = true) UserStatusUpdateParams parameters) {
         try {
             OpenCGAResult<User> result = catalogManager.getUserManager().changeStatus(organizationId, userId, parameters.getStatus(), queryOptions, token);
             return createOkResponse(result);

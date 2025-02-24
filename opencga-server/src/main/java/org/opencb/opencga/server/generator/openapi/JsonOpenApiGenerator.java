@@ -4,7 +4,6 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
-import org.opencb.opencga.server.generator.models.RestParameter;
 import org.opencb.opencga.server.generator.openapi.models.*;
 import org.opencb.opencga.server.generator.openapi.common.SwaggerDefinitionGenerator;
 
@@ -149,7 +148,7 @@ public class JsonOpenApiGenerator {
             if (apiParam == null || apiParam.hidden()) {
                 continue;
             }
-            if(apiParam.value().equals("body") || apiParam.name().equals("body")){
+            if(apiParam.value().equals("body") || apiParam.name().equals("body") || isBody(methodParam)){
                 parameter.setName("body");
                 parameter.setIn("body");
                 parameter.setDescription(apiParam.value());
@@ -198,6 +197,13 @@ public class JsonOpenApiGenerator {
 
         return parameters;
     }
+
+    private boolean isBody(java.lang.reflect.Parameter methodParameter) {
+        return methodParameter.getAnnotation(PathParam.class) == null &&
+                methodParameter.getAnnotation(QueryParam.class) == null &&
+                methodParameter.getAnnotation(FormDataParam.class) == null;
+    }
+
 
     private String getIn(java.lang.reflect.Parameter methodParameter) {
         if (methodParameter.getAnnotation(PathParam.class) != null) {

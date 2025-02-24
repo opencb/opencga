@@ -4,9 +4,8 @@ import java.util.Map;
 
 public class Definition {
 
-    private String type; // "object"
+    private String type; // enum, object, array, string, integer, number, boolean, null
     private Map<String, FieldDefinition> properties;
-    private String ref; // Campo adicional para manejar referencias
 
     // Getters y Setters
     public String getType() {
@@ -25,12 +24,6 @@ public class Definition {
         this.properties = properties;
     }
 
-    public String getRef() {
-        return ref;
-    }
 
-    public void setRef(String ref) {
-        this.ref = ref;
-    }
 }
 

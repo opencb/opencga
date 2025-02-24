@@ -53,7 +53,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new user", response = User.class)
     public Response create(
-            @ApiParam(value = "JSON containing the parameters", required = true) UserCreateParams user
+            @ApiParam(name = "body",value = "JSON containing the parameters", required = true) UserCreateParams user
     ) {
         try {
             if (!user.checkValidParams()) {
@@ -209,7 +209,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response updateByPost(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
-            @ApiParam(value = "JSON containing the params to be updated.", required = true) UserUpdateParams parameters) {
+            @ApiParam(name = "body", value = "JSON containing the params to be updated.", required = true) UserUpdateParams parameters) {
         try {
             ObjectUtils.defaultIfNull(parameters, new UserUpdateParams());
 
@@ -230,7 +230,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
             @QueryParam("action") ParamUtils.AddRemoveAction action,
-            @ApiParam(value = "JSON containing anything useful for the application such as user or default preferences. " +
+            @ApiParam(name = "body",value = "JSON containing anything useful for the application such as user or default preferences. " +
                     "When removing, only the id will be necessary.", required = true) ConfigUpdateParams params) {
         try {
             if (action == null) {
@@ -270,7 +270,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
             @QueryParam("action") ParamUtils.AddRemoveAction action,
-            @ApiParam(value = "Filter parameters. When removing, only the 'name' of the filter will be necessary", required = true) UserFilter params) {
+            @ApiParam(name = "body", value = "Filter parameters. When removing, only the 'name' of the filter will be necessary", required = true) UserFilter params) {
         try {
             if (action == null) {
                 action = ParamUtils.AddRemoveAction.ADD;
@@ -292,7 +292,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response updateFilterPOST(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = "Filter id", required = true) @PathParam("filterId") String id,
-            @ApiParam(value = "Filter parameters", required = true) FilterUpdateParams params) {
+            @ApiParam(name = "body", value = "Filter parameters", required = true) FilterUpdateParams params) {
         try {
             return createOkResponse(catalogManager.getUserManager().updateFilter(userId, id,
                     new ObjectMap(getUpdateObjectMapper().writeValueAsString(params)), token));

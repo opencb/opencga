@@ -189,7 +189,7 @@ public class SwaggerDefinitionGenerator {
                 Type valueType = paramType.getActualTypeArguments()[1];
 
                 FieldDefinition mapDefinition = new MapDefinition();
-                mapDefinition.setType("map");
+                mapDefinition.setType("array");
 
                 ((MapDefinition) mapDefinition).setKey(manageGenericType(keyType));
                 ((MapDefinition) mapDefinition).setValue(manageGenericType(valueType));
