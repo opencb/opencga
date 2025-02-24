@@ -44,10 +44,10 @@ server:
     port: ${OPENCGA.SERVER.GRPC.PORT}
 
 quota:                             # Quotas per organisation
-  maxNumUsers: 15                  # Maximum number of users that an organisation can have
-  maxNumProjects: 5                # Maximum number of projects that an organisation can have
-  maxNumVariantIndexSamples: 15000 # Maximum number of variant index samples that an organisation can have
-  maxNumJobHours: 100              # Maximum number of hours that the organisation can use in jobs on a monthly basis
+  maxNumUsers: -1                  # Maximum number of users that an organisation can have. -1 to disable.
+  maxNumProjects: -1               # Maximum number of projects that an organisation can have. -1 to disable.
+  maxNumVariantIndexSamples: -1    # Maximum number of variant index samples that an organisation can have. -1 to disable.
+  maxNumJobHours: -1               # Maximum number of hours that the organisation can use in jobs on a monthly basis. -1 to disable.
 
 audit:
   manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
