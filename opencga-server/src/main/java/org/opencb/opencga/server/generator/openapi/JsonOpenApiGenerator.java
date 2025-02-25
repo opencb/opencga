@@ -4,7 +4,6 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
-import org.opencb.opencga.server.generator.models.RestParameter;
 import org.opencb.opencga.server.generator.openapi.models.*;
 import org.opencb.opencga.server.generator.openapi.common.SwaggerDefinitionGenerator;
 
@@ -13,9 +12,10 @@ import java.util.*;
 
 public class JsonOpenApiGenerator {
 
+    private final List<Class<?>> beansDefinitions= new ArrayList<>();
+
     public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token, String environment) {
         List<Class<?>> classes = apiCommons.getApiClasses();
-        List<Class<?>> beansDefinitions= new ArrayList<>();
         Swagger swagger = new Swagger();
         Info info = new Info();
         info.setTitle("OpenCGA RESTful Web Services");
@@ -62,12 +62,14 @@ public class JsonOpenApiGenerator {
                     method.setSummary(apiOperation.value());
                     method.setDescription(apiOperation.notes());
                     method.setTags(Collections.singletonList(api.value()));
-                    Map<String,Object> responses=new HashMap<>();
-                    responses.put("type", String.valueOf(apiOperation.response()));
-                    if(apiOperation.response() instanceof Class){
-                        beansDefinitions.add((Class) apiOperation.response());
+                    Map<String,Response> responses=new HashMap<>();
+                    responses.put("200",new Response().setDescription("Successful operation").setSchema(new Schema("#/definitions/"+apiOperation.response().getSimpleName())));
+                    if(!SwaggerDefinitionGenerator.isPrimitive(apiOperation.response())){
+                        if(!beansDefinitions.contains((Class) apiOperation.response())){
+                            beansDefinitions.add((Class) apiOperation.response());
+                        }
                     }
-                    method.getResponses().put("200", responses);
+                    method.setResponses(responses);
 
                     // Obtener el método HTTP
                     String httpMethod = extractHttpMethod(wsmethod);
@@ -146,41 +148,62 @@ public class JsonOpenApiGenerator {
             if (apiParam == null || apiParam.hidden()) {
                 continue;
             }
-
-            // Procesar PathParam
-            PathParam pathParam = methodParam.getAnnotation(PathParam.class);
-            if (pathParam != null) {
-                parameter.setName(pathParam.value());
-                 parameter.setDescription(pathParam.value());
-                parameter.setRequired(true);
-                parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
-            }
-
-            // Procesar QueryParam
-            QueryParam queryParam = methodParam.getAnnotation(QueryParam.class);
-            if (queryParam != null) {
-                parameter.setName(queryParam.value());
-                 parameter.setDescription(queryParam.value());
+            if(apiParam.value().equals("body") || apiParam.name().equals("body") || isBody(methodParam)){
+                parameter.setName("body");
+                parameter.setIn("body");
+                parameter.setDescription(StringUtils.isNotEmpty(apiParam.value()) ? apiParam.value() : "body");
                 parameter.setRequired(apiParam.required());
-                parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
-            }
+                parameter.setType(methodParam.getType().getTypeName());
+                parameter.setSchema(new Schema("#/definitions/"+methodParam.getType().getSimpleName()));
+                if(!beansDefinitions.contains((Class) methodParam.getType())){
+                    beansDefinitions.add(methodParam.getType());
+                }
+            }else {
+                // Procesar PathParam
+                PathParam pathParam = methodParam.getAnnotation(PathParam.class);
+                if (pathParam != null) {
+                    parameter.setName(pathParam.value());
+                    parameter.setDescription(pathParam.value());
+                    parameter.setRequired(true);
+                }
 
-            FormDataParam formDataParam = methodParam.getAnnotation(FormDataParam.class);
-            if (formDataParam != null) {
-                parameter.setName(formDataParam.value());
-                parameter.setDescription(formDataParam.value());
-                parameter.setRequired(apiParam.required());
-                parameter.setType(methodParam.getType().getSimpleName().toLowerCase(Locale.ROOT));
+                // Procesar QueryParam
+                QueryParam queryParam = methodParam.getAnnotation(QueryParam.class);
+                if (queryParam != null) {
+                    parameter.setName(queryParam.value());
+                    parameter.setDescription(queryParam.value());
+                    parameter.setRequired(apiParam.required());
+                }
 
+                FormDataParam formDataParam = methodParam.getAnnotation(FormDataParam.class);
+                if (formDataParam != null) {
+                    parameter.setName(formDataParam.value());
+                    parameter.setDescription(formDataParam.value());
+                    parameter.setRequired(apiParam.required());
+                }
+                if(SwaggerDefinitionGenerator.isPrimitive(methodParam.getType())){
+                    parameter.setType(SwaggerDefinitionGenerator.mapJavaTypeToSwaggerType(methodParam.getType()));
+                }else {
+                    parameter.setType(methodParam.getType().getTypeName());
+                }
+                parameter.setIn(getIn(methodParam));
+                parameter.setDefaultValue(apiParam.defaultValue());
+                parameter.setDescription(StringUtils.isEmpty(parameter.getDescription()) ? apiParam.value() : parameter.getDescription());
             }
-            parameter.setIn(getIn(methodParam));
-            parameter.setDefaultValue(apiParam.defaultValue());
-            parameter.setDescription(StringUtils.isEmpty(parameter.getDescription())?apiParam.value():parameter.getDescription());
-            parameters.add(parameter);
+            if(parameter.getName()!=null){
+                parameters.add(parameter);
+            }
         }
 
         return parameters;
     }
+
+    private boolean isBody(java.lang.reflect.Parameter methodParameter) {
+        return methodParameter.getAnnotation(PathParam.class) == null &&
+                methodParameter.getAnnotation(QueryParam.class) == null &&
+                methodParameter.getAnnotation(FormDataParam.class) == null;
+    }
+
 
     private String getIn(java.lang.reflect.Parameter methodParameter) {
         if (methodParameter.getAnnotation(PathParam.class) != null) {
