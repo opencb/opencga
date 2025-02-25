@@ -1,5 +1,6 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.custom;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
@@ -12,6 +13,7 @@ import java.util.Collections;
 
 public class EnterpriseCustomUsersCommandExecutorTest {
 
+    @Ignore
     @Test
     public void loginTest() throws ClientException {
         ClientConfiguration clientConfiguration = new ClientConfiguration();

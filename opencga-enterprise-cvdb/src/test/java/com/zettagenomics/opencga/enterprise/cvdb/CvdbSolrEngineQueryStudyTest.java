@@ -115,10 +115,10 @@ public class CvdbSolrEngineQueryStudyTest {
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
-        study0 = catalogManager.getStudyManager().create(projectId, "phase0", null, "Phase 0", "Done", null, null, null, null, null,
-                sessionIdUser).first();
-        study1 = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
-                sessionIdUser).first();
+        study0 = catalogManager.getStudyManager().create(projectId, "phase0", null, "Phase 0", "Done", null, null, null, null,
+                INCLUDE_RESULT, sessionIdUser).first();
+        study1 = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null,
+                INCLUDE_RESULT, sessionIdUser).first();
     }
 
     //-----------------------------------------------------------------------

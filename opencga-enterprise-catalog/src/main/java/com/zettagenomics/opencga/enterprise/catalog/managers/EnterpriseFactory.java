@@ -4,7 +4,9 @@ import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfigu
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.exceptions.CatalogRuntimeException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,14 +30,15 @@ public class EnterpriseFactory implements AutoCloseable {
     }
 
     public static synchronized void init(CatalogManager catalogManager, EnterpriseConfiguration configuration)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogIOException {
         if (catalogManagerRef.get() == null) {
             catalogManagerRef.set(catalogManager);
             configurationRef.set(configuration);
 
             logger.debug("Configure DBAdaptorFactory");
+            CatalogIOManager catalogIOManager = new CatalogIOManager(catalogManager.getConfiguration());
             catalogDBAdaptorFactoryRef.set(new MongoDBAdaptorFactory(catalogManager.getConfiguration(),
-                    catalogManager.getIoManagerFactory()));
+                    catalogManager.getIoManagerFactory(), catalogIOManager));
 
             logger.debug("Configure Managers");
             configureManagers();
