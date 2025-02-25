@@ -206,10 +206,10 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
             throw new ToolException(e);
         }
 
-        // Prepare resource files
-        if (CollectionUtils.isNotEmpty(targetSomaticSamples)) {
-            prepareResources();
-        }
+//        // Prepare resource files
+//        if (CollectionUtils.isNotEmpty(targetSomaticSamples)) {
+//            prepareResources();
+//        }
     }
 
     protected void runSampleVariantStatsStep() throws ToolException {

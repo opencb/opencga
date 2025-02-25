@@ -86,6 +86,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     public static final String GENOME_PLOT_ANALYSIS_ID = "genome-plot";
 
     // Tool QC steps
+    protected static final String PREPARE_RESOURCES_STEP = "prepare-resources";
     protected static final String PREPARE_QC_STEP = "prepare-qc";
     protected static final String INDEX_QC_STEP = "index-qc";
 
@@ -228,6 +229,15 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
+    protected Path getCustomResourcePath(String fileEntry, String token, String resourceDesc) throws CatalogException, ToolException {
+        File file = getCatalogManager().getFileManager().get(study, fileEntry, QueryOptions.empty(), token).first();
+        Path path = Paths.get(file.getUri());
+        if (!Files.exists(path)) {
+            throw new ToolException(resourceDesc + " does not exist: " + path.toAbsolutePath());
+        }
+        return path;
+    }
+
     //-------------------------------------------------------------------------
     // QC file result management
     //-------------------------------------------------------------------------
@@ -328,14 +338,14 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     // QC RESOURCES MANAGEMENT
     //-------------------------------------------------------------------------
 
-    protected void prepareResources() throws ToolException {
-        // Check resources are available
-        Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
-        if (userResourcesPath != null) {
-            // If necessary, copy the user resource files
-            copyUserResourceFiles();
-        }
-    }
+//    protected void prepareResources() throws ToolException {
+//        // Check resources are available
+//        Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
+//        if (userResourcesPath != null) {
+//            // If necessary, copy the user resource files
+//            copyUserResourceFiles();
+//        }
+//    }
 
     protected void copyUserResourceFiles() throws ToolException {
         // Sanity check

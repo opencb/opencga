@@ -20,10 +20,11 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class FamilyQcAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Family QC analysis params.";
 
     @DataField(id = "families", description = FieldConstants.FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION)
     private List<String> families;
@@ -39,13 +40,14 @@ public class FamilyQcAnalysisParams extends ToolParams {
      * @deprecated to be removed when latest changes take place
      */
     @Deprecated
+    @DataField(id = "relatednessMethod", description = FieldConstants.RELATEDNESS_METHOD_DESCRIPTION, deprecated = true)
     private String relatednessMethod;
 
     /**
      * @deprecated to be removed when latest changes take place
      */
     @Deprecated
-    @DataField(id = "relatednessMaf", description = FieldConstants.FAMILY_QC_RELATEDNESS_MAF_DESCRIPTION, deprecated = true)
+    @DataField(id = "relatednessMaf", description = FieldConstants.RELATEDNESS_MAF_DESCRIPTION, deprecated = true)
     private String relatednessMaf;
 
     @DataField(id = "skipIndex", description = FieldConstants.QC_SKIP_INDEX_DESCRIPTION)
@@ -54,8 +56,14 @@ public class FamilyQcAnalysisParams extends ToolParams {
     @DataField(id = "overwrite", description = FieldConstants.QC_OVERWRITE_DESCRIPTION)
     private Boolean overwrite;
 
-    @DataField(id = "resourcesDir", description = FieldConstants.QC_RESOURCES_DIR_DESCRIPTION)
-    private String resourcesDir;
+    @DataField(id = "relatednessPruneInFreqsFile", description = FieldConstants.RELATEDNESS_PRUNE_IN_FREQS_FILE_DESCRIPTION)
+    private String relatednessPruneInFreqsFile;
+
+    @DataField(id = "relatednessPruneOutMarkersFile", description = FieldConstants.RELATEDNESS_PRUNE_OUT_MARKERS_FILE_DESCRIPTION)
+    private String relatednessPruneOutMarkersFile;
+
+    @DataField(id = "relatednessThresholdsFile", description = FieldConstants.RELATEDNESS_THRESHOLDS_FILE_DESCRIPTION)
+    private String relatednessThresholdsFile;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
@@ -63,15 +71,14 @@ public class FamilyQcAnalysisParams extends ToolParams {
     public FamilyQcAnalysisParams() {
     }
 
-    public FamilyQcAnalysisParams(List<String> families, String family, String relatednessMethod, String relatednessMaf,
-                                  Boolean skipIndex, Boolean overwrite, String resourcesDir, String outdir) {
+    public FamilyQcAnalysisParams(List<String> families, Boolean skipIndex, Boolean overwrite, String relatednessPruneInFreqsFile,
+                                  String relatednessPruneOutMarkersFile, String relatednessThresholdsFile, String outdir) {
         this.families = families;
-        this.family = family;
-        this.relatednessMethod = relatednessMethod;
-        this.relatednessMaf = relatednessMaf;
         this.skipIndex = skipIndex;
         this.overwrite = overwrite;
-        this.resourcesDir = resourcesDir;
+        this.relatednessPruneInFreqsFile = relatednessPruneInFreqsFile;
+        this.relatednessPruneOutMarkersFile = relatednessPruneOutMarkersFile;
+        this.relatednessThresholdsFile = relatednessThresholdsFile;
         this.outdir = outdir;
     }
 
@@ -84,7 +91,9 @@ public class FamilyQcAnalysisParams extends ToolParams {
         sb.append(", relatednessMaf='").append(relatednessMaf).append('\'');
         sb.append(", skipIndex=").append(skipIndex);
         sb.append(", overwrite=").append(overwrite);
-        sb.append(", resourcesDir='").append(resourcesDir).append('\'');
+        sb.append(", relatednessPruneInFreqsFile='").append(relatednessPruneInFreqsFile).append('\'');
+        sb.append(", relatednessPruneOutMarkersFile='").append(relatednessPruneOutMarkersFile).append('\'');
+        sb.append(", relatednessThresholdsFile='").append(relatednessThresholdsFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -99,28 +108,34 @@ public class FamilyQcAnalysisParams extends ToolParams {
         return this;
     }
 
+    @Deprecated
     public String getFamily() {
-        return family;
+        return families.get(0);
     }
 
+    @Deprecated
     public FamilyQcAnalysisParams setFamily(String family) {
-        this.family = family;
+        this.families = new ArrayList<>(Arrays.asList(family));
         return this;
     }
 
+    @Deprecated
     public String getRelatednessMethod() {
         return relatednessMethod;
     }
 
+    @Deprecated
     public FamilyQcAnalysisParams setRelatednessMethod(String relatednessMethod) {
         this.relatednessMethod = relatednessMethod;
         return this;
     }
 
+    @Deprecated
     public String getRelatednessMaf() {
         return relatednessMaf;
     }
 
+    @Deprecated
     public FamilyQcAnalysisParams setRelatednessMaf(String relatednessMaf) {
         this.relatednessMaf = relatednessMaf;
         return this;
@@ -144,12 +159,30 @@ public class FamilyQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getResourcesDir() {
-        return resourcesDir;
+    public String getRelatednessPruneInFreqsFile() {
+        return relatednessPruneInFreqsFile;
     }
 
-    public FamilyQcAnalysisParams setResourcesDir(String resourcesDir) {
-        this.resourcesDir = resourcesDir;
+    public FamilyQcAnalysisParams setRelatednessPruneInFreqsFile(String relatednessPruneInFreqsFile) {
+        this.relatednessPruneInFreqsFile = relatednessPruneInFreqsFile;
+        return this;
+    }
+
+    public String getRelatednessPruneOutMarkersFile() {
+        return relatednessPruneOutMarkersFile;
+    }
+
+    public FamilyQcAnalysisParams setRelatednessPruneOutMarkersFile(String relatednessPruneOutMarkersFile) {
+        this.relatednessPruneOutMarkersFile = relatednessPruneOutMarkersFile;
+        return this;
+    }
+
+    public String getRelatednessThresholdsFile() {
+        return relatednessThresholdsFile;
+    }
+
+    public FamilyQcAnalysisParams setRelatednessThresholdsFile(String relatednessThresholdsFile) {
+        this.relatednessThresholdsFile = relatednessThresholdsFile;
         return this;
     }
 

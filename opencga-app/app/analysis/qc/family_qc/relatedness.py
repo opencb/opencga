@@ -37,10 +37,13 @@ class RelatednessAnalysis:
     def set_relatedness_files(self):
         LOGGER.info('Checking and setting up relatedness files')
         if os.path.exists(self.family_qc_executor_info["resource_dir"]):
+            LOGGER.info(self.family_qc_executor_info["config"])
+            configFile = open(self.family_qc_executor_info["config"], 'r')
+            config = json.load(configFile)
             relatedness_files = {
-                "pop_freq_file": os.path.join(self.family_qc_executor_info["resource_dir"],'autosomes_1000G_QC_prune_in.frq'),
-                "pop_exclude_var_file": os.path.join(self.family_qc_executor_info["resource_dir"],'autosomes_1000G_QC.prune.out'),
-                "relatedness_thresholds_file": os.path.join(self.family_qc_executor_info["resource_dir"],'relatedness_thresholds.tsv')
+                "pop_freq_file": os.path.join(self.family_qc_executor_info["resource_dir"],config.get("relatednessPruneInFreqsFile")),
+                "pop_exclude_var_file": os.path.join(self.family_qc_executor_info["resource_dir"],config.get("relatednessPruneOutMarkersFile")),
+                "relatedness_thresholds_file": os.path.join(self.family_qc_executor_info["resource_dir"],config.get("relatednessThresholdsFile"))
                 }
             for key,file in relatedness_files.items():
                 if os.path.isfile(file):
@@ -321,8 +324,8 @@ class RelatednessAnalysis:
     @staticmethod
     def relatedness_report(samples_individuals_info):
         # Getting reported family relationship block:
-        expected_keys = ["sampleId1","individualInfo1","sampleId2","individualInfo2"]
-        if expected_keys != list(samples_individuals_info.keys()):
+        expected_keys = {"sampleId1","individualInfo1","sampleId2","individualInfo2"}
+        if expected_keys != set(samples_individuals_info.keys()):
             msg = "Expected keys {} are not present in samples_individuals_info dictionary. Keys found: {}".format(expected_keys, samples_individuals_info.keys())
             LOGGER.error(msg)
             raise TypeError(msg)

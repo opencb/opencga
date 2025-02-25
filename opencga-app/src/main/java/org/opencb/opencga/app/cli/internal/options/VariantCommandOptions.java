@@ -64,8 +64,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
-import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_SAMPLE_DESCRIPTION;
-import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_VERSION_DESCRIPTION;
+import static org.opencb.opencga.core.api.FieldConstants.*;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.core.models.variant.VariantQueryParams.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
@@ -1490,20 +1489,27 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        @Parameter(names = {"--study"}, description = STUDY_DESCRIPTION)
         public String study;
 
-        @Parameter(names = {"--families"}, description = "List of family IDs", required = true)
+        @Parameter(names = {"--families"}, description = FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION, required = true)
         public List<String> families;
 
-        @Parameter(names = {"--skip-index"}, description = "Do not save the computed quality control in catalog", required = false, arity = 1)
+        @Parameter(names = {"--skip-index"}, description = QC_SKIP_INDEX_DESCRIPTION, arity = 1)
         public Boolean skipIndex;
 
-        @Parameter(names = {"--overwrite"}, description = "Overwrite quality control in catalog", required = false, arity = 1)
+        @Parameter(names = {"--overwrite"}, description = QC_OVERWRITE_DESCRIPTION, arity = 1)
         public Boolean overwrite;
 
-        @Parameter(names = {"--resources-dir"}, description = "Directory where the QC resource files are located", required = false, arity = 1)
-        public String resourcesDir;
+        @Parameter(names = {"--relatedness-prune-in-freqs-file"}, description = RELATEDNESS_PRUNE_IN_FREQS_FILE_DESCRIPTION,
+                arity = 1)
+        public String relatednessPruneInFreqsFile;
+
+        @Parameter(names = {"--relatedness-prune-out-markers-file"}, description = RELATEDNESS_PRUNE_OUT_MARKERS_FILE_DESCRIPTION, arity = 1)
+        public String relatednessPruneOutMarkersFile;
+
+        @Parameter(names = {"--relatedness-thresholds-file"}, description = RELATEDNESS_THRESHOLDS_FILE_DESCRIPTION, arity = 1)
+        public String relatednessThresholdsFile;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;

@@ -53,11 +53,11 @@ import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
@@ -859,7 +859,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setFamilies(cliOptions.families)
                 .setSkipIndex(cliOptions.skipIndex)
                 .setOverwrite(cliOptions.overwrite)
-                .setResourcesDir(cliOptions.resourcesDir)
+                .setRelatednessPruneInFreqsFile(cliOptions.relatednessPruneInFreqsFile)
+                .setRelatednessPruneOutMarkersFile(cliOptions.relatednessPruneOutMarkersFile)
+                .setRelatednessThresholdsFile(cliOptions.relatednessThresholdsFile)
                 .setOutdir(cliOptions.outdir);
 
         ObjectMap params = familyParams.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);

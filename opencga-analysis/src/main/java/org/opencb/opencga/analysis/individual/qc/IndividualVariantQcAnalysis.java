@@ -185,9 +185,6 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
             clean();
             throw new ToolException(e);
         }
-
-        // Prepare resource files
-        prepareResources();
     }
 
     protected void runIndividualQc() throws ToolException {

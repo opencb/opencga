@@ -28,9 +28,13 @@ import org.opencb.biodata.models.clinical.qc.Relatedness;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.ResourceManager;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -38,7 +42,6 @@ import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyInternal;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
-import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.variant.qc.FamilyQcAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -54,6 +57,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.utils.ResourceManager.*;
 import static org.opencb.opencga.core.models.common.InternalStatus.READY;
 import static org.opencb.opencga.core.models.common.QualityControlStatus.ERROR;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
@@ -66,6 +70,13 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
     public static final String ID = "family-variant-qc";
     public static final String DESCRIPTION = "Run quality control (QC) for a given family. It computes the relatedness scores among the"
             + " family members";
+
+    private Path resourcePath;
+    private Path relatednessPruneInFreqsPath;
+    private Path relatednessPruneOutMarkersPath;
+    private Path relatednessThresholdsPath;
+
+    private ResourceManager resourceManager;
 
     @ToolParams
     protected final FamilyQcAnalysisParams analysisParams = new FamilyQcAnalysisParams();
@@ -84,13 +95,36 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
         // Check parameters
         checkParameters(analysisParams, study, catalogManager, token);
 
-        // Check custom resources path
-        userResourcesPath = checkResourcesDir(analysisParams.getResourcesDir(), study, catalogManager, token);
+        // Check custom relatedness resources: prune-in, frq and thresholds files
+        if (StringUtils.isNotEmpty(analysisParams.getRelatednessPruneInFreqsFile())) {
+            relatednessPruneInFreqsPath = getCustomResourcePath(analysisParams.getRelatednessPruneInFreqsFile(), token,
+                    FieldConstants.RELATEDNESS_PRUNE_IN_FREQS_FILE_DESCRIPTION);
+        }
+        if (StringUtils.isNotEmpty(analysisParams.getRelatednessPruneOutMarkersFile())) {
+            relatednessPruneOutMarkersPath = getCustomResourcePath(analysisParams.getRelatednessPruneOutMarkersFile(), token,
+                    FieldConstants.RELATEDNESS_PRUNE_OUT_MARKERS_FILE_DESCRIPTION);
+        }
+        if (StringUtils.isNotEmpty(analysisParams.getRelatednessThresholdsFile())) {
+            relatednessThresholdsPath = getCustomResourcePath(analysisParams.getRelatednessThresholdsFile(), token,
+                    FieldConstants.RELATEDNESS_THRESHOLDS_FILE_DESCRIPTION);
+        }
+
+        // Check default resources, if necessary
+        resourceManager = new ResourceManager(getOpencgaHome());
+        if (relatednessPruneInFreqsPath == null) {
+            relatednessPruneInFreqsPath = resourceManager.checkResourcePath(RELATEDNESS_PRUNE_IN_FREQS);
+        }
+        if (relatednessPruneOutMarkersPath == null) {
+            relatednessPruneOutMarkersPath = resourceManager.checkResourcePath(RELATEDNESS_PRUNE_OUT_MARKERS);
+        }
+        if (relatednessThresholdsPath == null) {
+            relatednessThresholdsPath = resourceManager.checkResourcePath(RELATEDNESS_THRESHOLDS);
+        }
     }
 
     @Override
     protected List<String> getSteps() {
-        List<String> steps = new ArrayList<>(Arrays.asList(PREPARE_QC_STEP, ID));
+        List<String> steps = new ArrayList<>(Arrays.asList(PREPARE_RESOURCES_STEP, PREPARE_QC_STEP, ID));
         if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
             steps.add(INDEX_QC_STEP);
         }
@@ -100,6 +134,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
     @Override
     protected void run() throws ToolException {
         // Main steps
+        step(PREPARE_RESOURCES_STEP, this::prepareResources);
         step(PREPARE_QC_STEP, this::prepareQualityControl);
         step(ID, this::runFamilyQc);
         if (getSteps().contains(INDEX_QC_STEP)) {
@@ -110,13 +145,39 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
         clean();
     }
 
+    protected void prepareResources() throws IOException, ResourceException {
+        // Create folder where the family QC resources will be saved (within the job dir, aka outdir)
+        resourcePath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
+
+        // Copy resource files
+        FileUtils.copyFile(relatednessPruneInFreqsPath.toFile(), resourcePath.resolve(relatednessPruneInFreqsPath.getFileName())
+                .toFile());
+        FileUtils.copyFile(relatednessPruneOutMarkersPath.toFile(), resourcePath.resolve(relatednessPruneOutMarkersPath.getFileName())
+                .toFile());
+        FileUtils.copyFile(relatednessThresholdsPath.toFile(), resourcePath.resolve(relatednessThresholdsPath.getFileName()).toFile());
+    }
+
+
     protected void prepareQualityControl() throws ToolException {
         try {
             ObjectWriter objectWriter = JacksonUtils.getDefaultObjectMapper().writerFor(Family.class);
             for (String familyId : analysisParams.getFamilies()) {
+                String basename = getOutDir().resolve(familyId).toAbsolutePath().toString();
+
                 // Get family
                 OpenCGAResult<Family> familyResult = catalogManager.getFamilyManager().get(study, familyId, QueryOptions.empty(), token);
                 Family family = familyResult.first();
+
+                // Write family (JSON format)
+                Path jsonPath = Paths.get(basename + "_info." + JSON.getExtension());
+                objectWriter.writeValue(jsonPath.toFile(), family);
+
+                // Check JSON file
+                if (!Files.exists(jsonPath)) {
+                    throw new ToolException("Something wrong happened when saving JSON file for family ID " + familyId + ". JSON file "
+                            + jsonPath + " was not created.");
+                }
+                jsonPaths.add(jsonPath);
 
                 // Add family to the list
                 families.add(family);
@@ -136,7 +197,6 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                 QueryOptions queryOptions = new QueryOptions().append(QueryOptions.INCLUDE, "id,studies.samples");
 
                 // Export variants (VCF.GZ format)
-                String basename = getOutDir().resolve(familyId).toAbsolutePath().toString();
                 getVariantStorageManager().exportData(basename, VCF_GZ, null, query, queryOptions, token);
 
                 // Check VCF file
@@ -147,31 +207,22 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                             + queryOptions.toJson());
                 }
                 vcfPaths.add(vcfPath);
-
-                // Write family (JSON format)
-                Path jsonPath = Paths.get(basename + "_info." + JSON.getExtension());
-                objectWriter.writeValue(jsonPath.toFile(), family);
-
-                // Check JSON file
-                if (!Files.exists(jsonPath)) {
-                    throw new ToolException("Something wrong happened when saving JSON file for family ID " + familyId + ". JSON file "
-                            + jsonPath + " was not created.");
-                }
-                jsonPaths.add(jsonPath);
             }
         } catch (CatalogException | IOException | StorageEngineException e) {
             // Clean execution
             clean();
             throw new ToolException(e);
         }
-
-        // Prepare resource files
-        prepareResources();
     }
 
     protected void runFamilyQc() throws ToolException {
         // Get executor to execute Python script that computes the family QC
         FamilyVariantQcAnalysisExecutor executor = getToolExecutor(FamilyVariantQcAnalysisExecutor.class);
+
+        analysisParams.setRelatednessPruneInFreqsFile(relatednessPruneInFreqsPath.getFileName().toString());
+        analysisParams.setRelatednessPruneOutMarkersFile(relatednessPruneOutMarkersPath.getFileName().toString());
+        analysisParams.setRelatednessThresholdsFile(relatednessThresholdsPath.getFileName().toString());
+
         executor.setVcfPaths(vcfPaths)
                 .setJsonPaths(jsonPaths)
                 .setQcParams(analysisParams)
@@ -296,8 +347,5 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
             throw new ToolException("Found the following errors: " + StringUtils.join(errors.entrySet().stream().map(
                     e -> "Family ID '" + e.getKey() + "': " + e.getValue()).collect(Collectors.toList()), ","));
         }
-
-        // Check resources dir
-        checkResourcesDir(params.getResourcesDir(), studyId, catalogManager, token);
     }
 }

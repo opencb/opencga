@@ -133,14 +133,18 @@ analysis:
         path: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
 
       # Relatedness resources
-      - id: "RELATEDNESS_VARIANTS_PRUNE_IN"
-        url: "relatedness/20221026_152242/variants.prune.in"
-        md5: "9d04ef8199108cfa1223f5217f96d144"
-        path: "relatedness/variants.prune.in"
-      - id: "RELATEDNESS_VARIANTS_FRQ"
-        url: "relatedness/20221026_152242/variants.frq"
-        md5: "30c42b1a87b5c028f1d8201fd47935e6"
-        path: "relatedness/variants.frq"
+      - id: "RELATEDNESS_PRUNE_IN_FREQS"
+        url: "relatedness/20250225_070521/relatedness_prune_in_freqs.txt"
+        md5: "0262b1a013484ddb01d3b96ab68f18d1"
+        path: "relatedness/relatedness_prune_in_freqs.txt"
+      - id: "RELATEDNESS_PRUNE_OUT_MARKERS"
+        url: "relatedness/20250225_070521/relatedness_prune_out_markers.txt"
+        md5: "d19a636702193ccff45688d9d46ef494"
+        path: "relatedness/relatedness_prune_out_markers.txt"
+      - id: "RELATEDNESS_THRESHOLDS"
+        url: "relatedness/20250225_070521/relatedness_thresholds.tsv"
+        md5: "97175d1574f14fe45bae13ffe277f295"
+        path: "relatedness/relatedness_thresholds.tsv"
 
   # Docker used by OpenCGA analysis and containing external tools such as samtools, bcftools, tabix, fastqc, plink1.9, bwa and r-base
   # You can indicate the version, e.g: opencb/opencga-ext-tools:2.12.0, otherwise the current OpenCGA version will be used
@@ -164,7 +168,8 @@ analysis:
         - "REFERENCE_GENOME_GRCH37_FAI"
         - "REFERENCE_GENOME_GRCH37_GZI"
     - id: "relatedness"
-      resourceIds: ["RELATEDNESS_VARIANTS_PRUNE_IN", "RELATEDNESS_VARIANTS_FRQ"]
+      resourceIds: ["RELATEDNESS_PRUNE_IN_FREQS", "RELATEDNESS_PRUNE_OUT_MARKERS", "RELATEDNESS_THRESHOLDS"]
+
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory

@@ -815,13 +815,13 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--families"}, description = "List of family IDs", required = false, arity = 1)
         public String families;
     
-        @Parameter(names = {"--family"}, description = "Family ID", required = false, arity = 1)
+        @Parameter(names = {"--family"}, description = "[DEPRECATED] Family ID", required = false, arity = 1)
         public String family;
     
-        @Parameter(names = {"--relatedness-method"}, description = "The body web service relatednessMethod parameter", required = false, arity = 1)
+        @Parameter(names = {"--relatedness-method"}, description = "[DEPRECATED] Relatedness method", required = false, arity = 1)
         public String relatednessMethod;
     
-        @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequence (MAF) is used to filter variants before computing relatedness, e.g.: 1000G:CEU>0.35 or cohort:ALL>0.05", required = false, arity = 1)
+        @Parameter(names = {"--relatedness-maf"}, description = "[DEPRECATED] Minor allele frequence (MAF) is used to filter variants before computing relatedness, e.g.: 1000G:CEU>0.35 or cohort:ALL>0.05", required = false, arity = 1)
         public String relatednessMaf;
     
         @Parameter(names = {"--skip-index"}, description = "Do not save the computed quality control in catalog", required = false, arity = 1)
@@ -830,8 +830,14 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "Overwrite quality control in catalog", required = false, arity = 1)
         public Boolean overwrite;
     
-        @Parameter(names = {"--resources-dir"}, description = "Directory where the QC resource files are located", required = false, arity = 1)
-        public String resourcesDir;
+        @Parameter(names = {"--relatedness-prune-in-freqs-file"}, description = "Relatedness frequencies file to prune-in input variants", required = false, arity = 1)
+        public String relatednessPruneInFreqsFile;
+    
+        @Parameter(names = {"--relatedness-prune-out-markers-file"}, description = "Relatedness markers file to prune-out input variants", required = false, arity = 1)
+        public String relatednessPruneOutMarkersFile;
+    
+        @Parameter(names = {"--relatedness-thresholds-file"}, description = "Relatedness thresholds file", required = false, arity = 1)
+        public String relatednessThresholdsFile;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
@@ -1303,7 +1309,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--inferred-sex-method"}, description = "Inferred sex method.", required = false, arity = 1)
         public String inferredSexMethod;
     
-        @Parameter(names = {"--resources-dir"}, description = "Directory where the QC resource files are located", required = false, arity = 1)
+        @Parameter(names = {"--resources-dir"}, description = "[DEPRECATED] Directory where the QC resource files are located", required = false, arity = 1)
         public String resourcesDir;
     
         @Parameter(names = {"--skip-analysis"}, description = "List of individual QC analysis to skip. Valid values are: inferred-sex, mendelian-errors and relatedness (if parents are present)", required = false, arity = 1)
@@ -2348,7 +2354,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "Overwrite quality control in catalog", required = false, arity = 1)
         public Boolean overwrite;
     
-        @Parameter(names = {"--resources-dir"}, description = "Directory where the QC resource files are located", required = false, arity = 1)
+        @Parameter(names = {"--resources-dir"}, description = "[DEPRECATED] Directory where the QC resource files are located", required = false, arity = 1)
         public String resourcesDir;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)

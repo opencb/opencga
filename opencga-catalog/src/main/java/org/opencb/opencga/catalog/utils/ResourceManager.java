@@ -28,6 +28,11 @@ import java.util.stream.Collectors;
 
 public class ResourceManager  {
 
+    // Resources IDs
+    public static final String RELATEDNESS_PRUNE_IN_FREQS = "RELATEDNESS_PRUNE_IN_FREQS";
+    public static final String RELATEDNESS_PRUNE_OUT_MARKERS = "RELATEDNESS_PRUNE_OUT_MARKERS";
+    public static final String RELATEDNESS_THRESHOLDS = "RELATEDNESS_THRESHOLDS";
+
     public static final String REFERENCE_GENOMES = "reference-genomes";
 
     public static final String OK = "Ok";

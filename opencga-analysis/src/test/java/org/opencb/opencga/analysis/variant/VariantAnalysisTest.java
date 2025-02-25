@@ -41,6 +41,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
 import org.opencb.opencga.analysis.family.qc.FamilyVariantQcAnalysis;
+import org.opencb.opencga.analysis.resource.ResourceFetcherTool;
 import org.opencb.opencga.analysis.sample.qc.SampleVariantQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
@@ -1144,7 +1145,18 @@ public class VariantAnalysisTest {
 
     @Test
     public void testFamilyQC() throws Exception {
+        Path relatednessFreqsPruneInPath = Paths.get("/opt/opencga/analysis/resources/relatedness/relatedness_prune_in_freqs.txt");
+        Assume.assumeTrue(Files.exists(relatednessFreqsPruneInPath));
+        Path relatednessMarkersPruneOutPath = Paths.get("/opt/opencga/analysis/resources/relatedness/relatedness_prune_out_markers.txt");
+        Assume.assumeTrue(Files.exists(relatednessMarkersPruneOutPath));
+        Path relatednessThresholdsPath = Paths.get("/opt/opencga/analysis/resources/relatedness/relatedness_thresholds.tsv");
+        Assume.assumeTrue(Files.exists(relatednessThresholdsPath));
+
         Path outDir = Paths.get(opencga.createTmpOutdir("_family_qc"));
+
+        Family familyObj = catalogManager.getFamilyManager().get(STUDY, family, QueryOptions.empty(), token).first();
+        JacksonUtils.getDefaultObjectMapper().writerFor(Family.class).writeValue(Paths.get("/tmp/" + family + "_info.json").toFile(), familyObj);
+
 
         // To be sure, all samples are no-somatic
         SampleUpdateParams sampleUpdateParams = new SampleUpdateParams().setSomatic(false);

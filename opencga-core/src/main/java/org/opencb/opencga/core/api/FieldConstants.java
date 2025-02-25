@@ -208,16 +208,26 @@ public class FieldConstants {
     public static final String RELATEDNESS_ID = "relatedness";
     public static final String QC_SKIP_INDEX_DESCRIPTION = "Do not save the computed quality control in catalog";
     public static final String QC_OVERWRITE_DESCRIPTION = "Overwrite quality control in catalog";
-    public static final String QC_RESOURCES_DIR_DESCRIPTION = "Directory where the QC resource files are located";
+    @Deprecated
+    public static final String QC_RESOURCES_DIR_DESCRIPTION = "[DEPRECATED] Directory where the QC resource files are located";
+
+    // Relatedness params used by family and individual QC
+    public static final String RELATEDNESS_PRUNE_IN_FREQS_FILE_DESCRIPTION = "Relatedness frequencies file to prune-in input variants";
+    public static final String RELATEDNESS_PRUNE_OUT_MARKERS_FILE_DESCRIPTION = "Relatedness markers file to prune-out input variants";
+    public static final String RELATEDNESS_THRESHOLDS_FILE_DESCRIPTION = "Relatedness thresholds file";
+    @Deprecated
+    public static final String RELATEDNESS_METHOD_DESCRIPTION = "[DEPRECATED] Relatedness method";
+    @Deprecated
+    public static final String RELATEDNESS_MAF_DESCRIPTION = "[DEPRECATED] Minor allele frequence (MAF) is used to filter variants before"
+            + " computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G + ":CEU>0.35 or cohort:ALL>0.05";
 
     // Family QC parameters
+    public static final String FAMILY_QC_PARAMS_DESCRIPTION = "Family QC analysis params.";
     public static final String FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION = "List of family IDs";
     @Deprecated
-    public static final String FAMILY_QC_FAMILY_ID_DESCRIPTION = "Family ID";
+    public static final String FAMILY_QC_FAMILY_ID_DESCRIPTION = "[DEPRECATED] Family ID";
     @Deprecated
-    public static final String FAMILY_QC_RELATEDNESS_MAF_DESCRIPTION = "Minor allele frequence (MAF) is used to filter variants before"
-            + " computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G + ":CEU>0.35 or cohort:ALL>0.05";
-    public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_REPORT_DESCRIPTION = "Relatedness report for family QC";
+    public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_REPORT_DESCRIPTION = "[DEPRECATED] Relatedness report for family QC";
 
     // Individual QC parameters
     public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_LIST_DESCRIPTION = "List of individual IDs";
