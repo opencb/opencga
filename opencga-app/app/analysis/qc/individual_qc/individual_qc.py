@@ -8,9 +8,6 @@ from utils import create_output_dir, execute_bash_command
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
-chrx_vars = "data/20201028_CCDG_14151_B01_GRM_WGS_2020-08-05_chrX.recalibrated_variants_filtered_annotated_chrX.prune.in"
-chrx_var_frq = "data/20201028_CCDG_14151_B01_GRM_WGS_2020-08-05_chrX.recalibrated_variants_filtered_annotated_chrX.frq"
-
 class IndividualQCExecutor:
     def __init__(self, vcf_file, info_file, bam_file, config, resource_dir, output_parent_dir, sample_ids, id_):
         """Create output dir
@@ -43,7 +40,8 @@ class IndividualQCExecutor:
         # self.checking_data()  # TODO check input data
 
         # Running sample QC steps
-        # self.step1()  # TODO run all encessary steps for this QC (e.g. relatedness)
+        # self.step1()  # TODO run all necessary steps for this QC (e.g. relatedness)
+        self.calculate_variant_based_inferred_sex()
         if self.bam_file != None:
             self.compute_coverage_metrics(bam_file=self.bam_file, output_dir=self.output_parent_dir)
             # check the output of the compute_coverage_metrics is OK and continue with the checks
@@ -101,6 +99,7 @@ class IndividualQCExecutor:
         else:
             LOGGER.warning("Coverage-based inferred sex not calculate for sample {sample}. Missing or invalid coverage "
                            "values".format(sample=sample_ids))
+
 
     def filter_variants(self, chrx_vars, outdir_path):
         """
@@ -208,59 +207,6 @@ class IndividualQCExecutor:
     pass
 
 
-    def inferred_sex_results_data_model(sex_method):
-        inferredSex = [
-            {
-                method: "",
-                sampleId: "",
-                inferredKaryotypicSex "", #### I'M NOT SURE I LIKE THIS - I'D RATHER HAVE "inferredSex" - it's specific to the coverage based inference
-                software: {
-                    name: "plink",
-                    version: "1.9",
-                    commit: "",
-                    params: {
-                        key: value
-                    }
-                },
-                values: {
-                    "sampleId": "",
-                    "PEDSEX": "",
-                    "SNPSEX": "",
-                    "STATUS": "",
-                    "F": ""
-                },
-                images: [
-                    {
-                        name: "Sex check",
-                        base64: "",
-                        description: "TO UPDATE"
-                    }
-                ],
-                attributes: {
-                    cli: "",
-                    files: [],
-                    JOB_ID: ""
-                }
-            }
-        ]
-        if sex_method == "Plink/check-sex":
-            LOGGER.info("Relatedness method used: '{}'".format(sex_method))
-            inferredSex['method'] = str(sex_method)
-        elif sex_method == "Plink/impute-sex":
-            LOGGER.info("Relatedness method used: '{}'".format(sex_method))
-            inferredSex['method'] = str(sex_method)
-            inferredSex['values']['PEDSEX'] == "NA"
-            inferredSex['values']['STATUS'] == "INFERRED"
-#        elif sex_method == "MartaCoverageBasedSexMethodName":
-#            LOGGER.info("Relatedness method used: '{}'".format(sex_method))
-#            #etc
-        else:
-            LOGGER.warning("No method for sex inference defined.")
-        # Return inferredSex data model json with method specific fields filled in:
-        return inferredSex
-    pass
-
-
     def check_sex_plink(self,filtered_vcf_path,chrx_var_frq,plink_outdir,sex_method="Plink/check-sex"):
         # Define Plink check-sex methodology:
         LOGGER.info("Method: {}".format(sex_method))
@@ -351,7 +297,7 @@ class IndividualQCExecutor:
         pass
 
 
-    def run_inferred_sex(self):
+    def calculate_variant_based_inferred_sex(self):
         """
         Run Plink check-sex or impute-sex as appropriate, dependent on the availability of user supplied sex information.
         :param self: Input data
@@ -360,6 +306,12 @@ class IndividualQCExecutor:
         :param plink_outdir: Output directory path
         :return:
         """
+        # Reference file paths:
+        chrx_vars = "resource_dir/20201028_CCDG_14151_B01_GRM_WGS_2020-08-05_chrX.recalibrated_variants_filtered_annotated_chrX.prune.in"
+        chrx_var_frq = "resource_dir/20201028_CCDG_14151_B01_GRM_WGS_2020-08-05_chrX.recalibrated_variants_filtered_annotated_chrX.frq"
+
+        # Create results output directory:
+        output_dir = create_output_dir([self.output_parent_dir, 'variant_based_inferred_sex'])
         # Retrieve sex information:
         individual_id = self.id_
         ind_metadata = self.get_individual_sex()
@@ -379,5 +331,58 @@ class IndividualQCExecutor:
         # Plot results:
         pass
 
+
+
+    def inferred_sex_results_data_model(sex_method):
+        inferredSex = [
+            {
+                method: "",
+                sampleId: "",
+                inferredKaryotypicSex "", #### I'M NOT SURE I LIKE THIS - I'D RATHER HAVE "inferredSex" - it's specific to the coverage based inference
+                software: {
+                    name: "plink",
+                    version: "1.9",
+                    commit: "",
+                    params: {
+                        key: value
+                    }
+                },
+                values: {
+                    "sampleId": "",
+                    "PEDSEX": "",
+                    "SNPSEX": "",
+                    "STATUS": "",
+                    "F": ""
+                },
+                images: [
+                    {
+                        name: "Sex check",
+                        base64: "",
+                        description: "TO UPDATE"
+                    }
+                ],
+                attributes: {
+                    cli: "",
+                    files: [],
+                    JOB_ID: ""
+                }
+            }
+        ]
+        if sex_method == "Plink/check-sex":
+            LOGGER.info("Relatedness method used: '{}'".format(sex_method))
+            inferredSex['method'] = str(sex_method)
+        elif sex_method == "Plink/impute-sex":
+            LOGGER.info("Relatedness method used: '{}'".format(sex_method))
+            inferredSex['method'] = str(sex_method)
+            inferredSex['values']['PEDSEX'] == "NA"
+            inferredSex['values']['STATUS'] == "INFERRED"
+#        elif sex_method == "MartaCoverageBasedSexMethodName":
+#            LOGGER.info("Relatedness method used: '{}'".format(sex_method))
+#            #etc
+        else:
+            LOGGER.warning("No method for sex inference defined.")
+        # Return inferredSex data model json with method specific fields filled in:
+        return inferredSex
+    pass
 
 
