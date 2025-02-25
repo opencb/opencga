@@ -12,7 +12,8 @@ opencgaLogin(
   interactive = FALSE,
   autoRenew = FALSE,
   verbose = FALSE,
-  showToken = FALSE
+  showToken = FALSE,
+  organization = NULL
 )
 }
 \arguments{
@@ -31,17 +32,17 @@ an Opencga class object
 
 \dontrun{
 con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
-con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser", showToken = TRUE)
+con <- opencgaLogin(opencga = con, userid = "xxx", passwd = "xxx", showToken = TRUE)
 
 # Configuration in list format
 conf <- list(version="v2", rest=list(host="http://bioinfo.hpc.cam.ac.uk/opencga-prod/"))
 con <- initOpencgaR(opencgaConfig=conf)
-con <- opencgaLogin(opencga = con, userid = "demouser", passwd = demouser")
+con <- opencgaLogin(opencga = con, userid = "xxx", passwd = xxx")
 
 # Configuration in file format ("YAML" or "JSON")
 conf <- "/path/to/conf/client-configuration.yml"
 con <- initOpencgaR(opencgaConfig=conf)
-con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser")
+con <- opencgaLogin(opencga = con, userid = "xxx", passwd = "xxx")
 }
 }
 \description{
