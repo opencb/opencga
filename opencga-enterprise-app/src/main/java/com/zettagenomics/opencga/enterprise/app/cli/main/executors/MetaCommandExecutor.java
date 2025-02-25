@@ -68,12 +68,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             case "ping":
                 queryResponse = ping();
                 break;
-            case "sso-login":
-                queryResponse = loginSso();
-                break;
-            case "sso-logout":
-                queryResponse = logoutSso();
-                break;
             case "status":
                 queryResponse = status();
                 break;
@@ -138,28 +132,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         MetaCommandOptions.PingCommandOptions commandOptions = metaCommandOptions.pingCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseMetaClient().ping();
-    }
-
-    private RestResponse<ObjectMap> loginSso() throws Exception {
-        logger.debug("Executing loginSso in Meta command line");
-
-        MetaCommandOptions.LoginSsoCommandOptions commandOptions = metaCommandOptions.loginSsoCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("url", commandOptions.url);
-
-        return enterpriseOpenCGAClient.getEnterpriseMetaClient().loginSso(queryParams);
-    }
-
-    private RestResponse<ObjectMap> logoutSso() throws Exception {
-        logger.debug("Executing logoutSso in Meta command line");
-
-        MetaCommandOptions.LogoutSsoCommandOptions commandOptions = metaCommandOptions.logoutSsoCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("url", commandOptions.url);
-
-        return enterpriseOpenCGAClient.getEnterpriseMetaClient().logoutSso(queryParams);
     }
 
     private RestResponse<ObjectMap> status() throws Exception {

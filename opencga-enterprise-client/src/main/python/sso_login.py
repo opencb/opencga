@@ -16,6 +16,7 @@ from multiprocessing import Process
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 SERVER = None
+TIMEOUT = 60
 
 
 @app.route('/secure')
@@ -43,8 +44,8 @@ def secure():
 def create_session_file(session_info):
     """Create session file with cookies"""
     out_dir = os.path.join(os.path.expanduser('~'), '.opencga')
-    os.makedirs(os.path.dirname(out_dir), exist_ok=True)
-    out_fpath = open(os.path.join(out_dir, 'python_session.json'), 'w')
+    os.makedirs(out_dir, exist_ok=True)
+    out_fpath = open(os.path.join(out_dir, 'session.json'), 'w')
     out_fpath.write(json.dumps(session_info))
     out_fpath.close()
 
@@ -93,7 +94,7 @@ def get_host(config_fpath, host_name):
 
 def parse_arguments():
     """Parse input arguments"""
-    desc = 'This script creates a "~/.opencga/python_session.json" file with OpenCGA session info'
+    desc = 'This script creates a "~/.opencga/session.json" file with OpenCGA session info'
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--client_config_file', help='Client configuration file')
@@ -129,15 +130,17 @@ def main():
     # Starting server
     global SERVER
     SERVER = Process(target=app.run)
+    sys.stdout.write('You have now {} seconds to authenticate\n'.format(TIMEOUT))
     SERVER.start()
 
     # Opening browser
-    url = host + '/webservices/rest/v2/meta/sso?url=http://localhost:5000/secure'
+    url = host.strip('/') + '/webservices/rest/v2/meta/sso/login?url=http://localhost:5000/secure'
     webbrowser.open(url, new=2)
 
-    # Waiting until server is killed
-    while SERVER.is_alive():
-        time.sleep(3)
+    # Wait for some time and then kill the server
+    SERVER.join(TIMEOUT)
+    if SERVER.is_alive():
+        SERVER.kill()
 
 
 if __name__ == '__main__':

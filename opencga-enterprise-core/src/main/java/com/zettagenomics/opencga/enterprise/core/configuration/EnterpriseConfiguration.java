@@ -101,9 +101,6 @@ public class EnterpriseConfiguration {
                     case "ENTERPRISE_SSO_SERVER_NAME":
                         configuration.getSso().setServerName(value);
                         break;
-                    case "ENTERPRISE_SSO_PYTHON_BIN":
-                        configuration.getSso().setPythonBin(value);
-                        break;
                     case "ENTERPRISE_SSO_PROTOCOL":
                         configuration.getSso().setProtocol(value);
                         break;
