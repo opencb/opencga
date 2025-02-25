@@ -4,7 +4,7 @@
 get_xetabase_branch() {
   # Input parameter (branch name)
   target_branch="$1"
-  current_branch="$1"
+  current_branch="$2"
 
   # If the branch begins with 'TASK' and exists in the opencga-enterprise repository, I return it
   if [[ $current_branch == TASK* ]]; then
