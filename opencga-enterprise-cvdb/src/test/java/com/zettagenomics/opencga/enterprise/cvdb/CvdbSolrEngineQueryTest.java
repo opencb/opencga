@@ -121,8 +121,8 @@ public class CvdbSolrEngineQueryTest {
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
-                sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null,
+                INCLUDE_RESULT, sessionIdUser).first();
     }
 
     //-----------------------------------------------------------------------

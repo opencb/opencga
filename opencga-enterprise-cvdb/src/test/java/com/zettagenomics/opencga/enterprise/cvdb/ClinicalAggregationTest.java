@@ -21,6 +21,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -108,10 +109,10 @@ public class ClinicalAggregationTest {
 
         sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
 
-        catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
+        Project project = catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
-                sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null,
+                INCLUDE_RESULT, sessionIdUser).first();
     }
 
     //-----------------------------------------------------------------------
