@@ -20,6 +20,7 @@ import org.opencb.opencga.core.config.OperationExecutionConfig;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -314,8 +315,10 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
 
         @Override
         public void addSpecificParams(Map<String, Object> params) {
-            params.put("sample", ParamConstants.ALL);
-            params.put("familyIndex", true);
+            VariantSecondarySampleIndexParams variantSecondarySampleIndexParams = new VariantSecondarySampleIndexParams()
+                    .setSample(Collections.singletonList(ParamConstants.ALL))
+                    .setFamilyIndex(true);
+            params.putAll(variantSecondarySampleIndexParams.toParams());
         }
     }
 
