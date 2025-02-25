@@ -87,8 +87,8 @@ public class SwaggerDefinitionGenerator {
         }
 
         // Default behavior for non-array types
-        complexProperty.setType("#/definitions/" + fieldType.getSimpleName());
-        complexProperty.setRef("#/definitions/" + fieldType.getSimpleName());
+        complexProperty.setType("object");
+        complexProperty.set$ref("#/definitions/" + fieldType.getSimpleName());
         return complexProperty;
     }
 
