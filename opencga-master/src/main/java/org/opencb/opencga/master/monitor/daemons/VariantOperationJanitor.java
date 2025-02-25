@@ -314,7 +314,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
 
         @Override
         public void addSpecificParams(Map<String, Object> params) {
-            params.put("sample", Collections.singletonList(ParamConstants.ALL));
+            params.put("sample", ParamConstants.ALL);
             params.put("familyIndex", true);
         }
     }
