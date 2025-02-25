@@ -87,7 +87,7 @@ public class SwaggerDefinitionGenerator {
         }
 
         // Default behavior for non-array types
-        complexProperty.setType(fieldType.getName());
+        complexProperty.setType("#/definitions/" + fieldType.getSimpleName());
         complexProperty.setRef("#/definitions/" + fieldType.getSimpleName());
         return complexProperty;
     }
@@ -132,7 +132,7 @@ public class SwaggerDefinitionGenerator {
 
             } else if (Map.class.isAssignableFrom(field.getType())) {
                 FieldDefinition mapDefinition = new MapDefinition();
-                mapDefinition.setType("map");
+                mapDefinition.setType("array");
                 Type keyType = typeArguments[0];
                 Type valueType = typeArguments[1];
                 ((MapDefinition) mapDefinition).setKey(manageGenericType(keyType));
