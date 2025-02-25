@@ -107,10 +107,10 @@ public class FileManager extends AnnotationSetManager<File> {
                 FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), FileDBAdaptor.QueryParams.STATS.key()));
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
 
-        ROOT_FIRST_COMPARATOR = (f1, f2) -> (f1.getPath() == null ? 0 : f1.getPath().length())
-                - (f2.getPath() == null ? 0 : f2.getPath().length());
-        ROOT_LAST_COMPARATOR = (f1, f2) -> (f2.getPath() == null ? 0 : f2.getPath().length())
-                - (f1.getPath() == null ? 0 : f1.getPath().length());
+        ROOT_FIRST_COMPARATOR = (f1, f2) -> (f1.getId() == null ? 0 : f1.getId().length())
+                - (f2.getId() == null ? 0 : f2.getId().length());
+        ROOT_LAST_COMPARATOR = (f1, f2) -> (f2.getId() == null ? 0 : f2.getId().length())
+                - (f1.getId() == null ? 0 : f1.getId().length());
 
         logger = LoggerFactory.getLogger(FileManager.class);
     }
