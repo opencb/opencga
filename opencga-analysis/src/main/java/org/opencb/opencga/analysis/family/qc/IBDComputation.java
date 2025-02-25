@@ -26,10 +26,8 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
-import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Analysis;
@@ -41,7 +39,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.*;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -49,41 +46,12 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.TPED;
 
 public class IBDComputation {
-
     private static final String BASENAME = "variants";
     private static final String FILTERED_BASENAME = "variants.filtered";
-    private static final String FREQ_FILENAME = BASENAME + ".frq";
-    private static final String PRUNE_IN_FILENAME = BASENAME + ".prune.in";
 
     public static RelatednessReport compute(String study, Family family, List<String> samples, String maf,
-                                            Map<String, Map<String, Float>> thresholds, Path resourcesPath, Path outDir,
+                                            Map<String, Map<String, Float>> thresholds, Path pruneInPath, Path freqPath, Path outDir,
                                             VariantStorageManager storageManager, String token) throws ToolException {
-        // Check resource (variants.frq and variants.prune.in) and download if necessary
-        // TODO: download into the folder /analysis/relatedness
-        try {
-            URL url = new URL(ResourceUtils.URL + "analysis/" + RelatednessAnalysis.ID + "/" + PRUNE_IN_FILENAME);
-            ResourceUtils.downloadThirdParty(url, outDir);
-        } catch (IOException e) {
-            throw new ToolException("Something wrong happened when downloading resource files during the relatedness analysis execution");
-        }
-        Path pruneInPath = outDir.resolve(PRUNE_IN_FILENAME);
-//        Path pruneInPath = resourcesPath.resolve(PRUNE_IN_FILENAME);
-
-        //        if (!resourcesPath.resolve(FREQ_FILENAME).toFile().exists()) {
-//            // Download freq file from resources
-//        }
-        try {
-            URL url = new URL(ResourceUtils.URL + "analysis/" + RelatednessAnalysis.ID + "/" + FREQ_FILENAME);
-            ResourceUtils.downloadThirdParty(url, outDir);
-        } catch (IOException e) {
-            throw new ToolException("Something wrong happened when downloading resource files during the relatedness analysis execution");
-        }
-        Path freqPath = outDir.resolve(FREQ_FILENAME);
-//        Path freqPath = resourcesPath.resolve(FREQ_FILENAME);
-//        if (!resourcesPath.resolve(PRUNE_IN_FILENAME).toFile().exists()) {
-//            // Download prune-in variant file from resources
-//        }
-
         // Export family VCF
         if (family != null) {
             List<String> trio = getTrio(family);
@@ -309,7 +277,7 @@ public class IBDComputation {
                 "/output");
 
         // Run IBD using PLINK in docker
-        String plinkParams = "plink1.9 --tfile /output/" + basename + " --genome rel-check --read-freq /input/" + FREQ_FILENAME
+        String plinkParams = "plink1.9 --tfile /output/" + basename + " --genome rel-check --read-freq /input/" + freqPath.getFileName()
                 + " --out /output/" + basename;
         try {
             String dockerImageName = PlinkWrapperAnalysisExecutor.getDockerImageName(analysisConf);
