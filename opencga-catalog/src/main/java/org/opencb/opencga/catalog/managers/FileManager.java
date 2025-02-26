@@ -107,10 +107,10 @@ public class FileManager extends AnnotationSetManager<File> {
                 FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), FileDBAdaptor.QueryParams.STATS.key()));
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
 
-        ROOT_FIRST_COMPARATOR = (f1, f2) -> (f1.getPath() == null ? 0 : f1.getPath().length())
-                - (f2.getPath() == null ? 0 : f2.getPath().length());
-        ROOT_LAST_COMPARATOR = (f1, f2) -> (f2.getPath() == null ? 0 : f2.getPath().length())
-                - (f1.getPath() == null ? 0 : f1.getPath().length());
+        ROOT_FIRST_COMPARATOR = (f1, f2) -> (f1.getId() == null ? 0 : f1.getId().length())
+                - (f2.getId() == null ? 0 : f2.getId().length());
+        ROOT_LAST_COMPARATOR = (f1, f2) -> (f2.getId() == null ? 0 : f2.getId().length())
+                - (f1.getId() == null ? 0 : f1.getId().length());
 
         logger = LoggerFactory.getLogger(FileManager.class);
     }
@@ -2920,7 +2920,7 @@ public class FileManager extends AnnotationSetManager<File> {
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyId, userId, organizationId);
+        Study study = studyManager.resolveId(studyFqn, QueryOptions.empty(), tokenPayload);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
@@ -2983,6 +2983,13 @@ public class FileManager extends AnnotationSetManager<File> {
             }
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(organizationId, study.getUid(), members);
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, members);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
 
             List<Long> fileUids = extendedFileList.stream().map(File::getUid).collect(Collectors.toList());
             AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(fileUids, permissions,

@@ -13,15 +13,21 @@
 
 \item{users}{Comma separated list of user IDs.}
 
+\item{limit}{Number of results to be returned.}
+
+\item{skip}{Number of results to skip.}
+
+\item{count}{Get the total number of results matching the query. Deactivated by default.}
+
+\item{authenticationId}{Authentication origin ID.}
+
+\item{organization}{Organization id.}
+
 \item{name}{Unique name (typically the name of the application).}
 
 \item{id}{Filter id. If provided, it will only fetch the specified filter.}
 
-\item{action}{Action to be performed: ADD or REMOVE a group. Allowed values: \link{'ADD', 'REMOVE'}}
-
-\item{limit}{Number of results to be returned.}
-
-\item{skip}{Number of results to skip.}
+\item{action}{Action to be performed: ADD or REMOVE a group. Allowed values: \link{'ADD REMOVE'}}
 
 \item{include}{Fields included in the response, whole JSON path must be provided.}
 
@@ -35,20 +41,26 @@
 This function implements the OpenCGA calls for managing Users.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
+   anonymous \tab /{apiVersion}/users/anonymous \tab organization\link{*} \cr
    create \tab /{apiVersion}/users/create \tab body\link{*} \cr
    login \tab /{apiVersion}/users/login \tab body \cr
    password \tab /{apiVersion}/users/password \tab body\link{*} \cr
-   info \tab /{apiVersion}/users/{users}/info \tab include, exclude, users\link{*} \cr
+   search \tab /{apiVersion}/users/search \tab include, exclude, limit, skip, count, organization, id, authenticationId \cr
+   info \tab /{apiVersion}/users/{users}/info \tab include, exclude, organization, users\link{*} \cr
    configs \tab /{apiVersion}/users/{user}/configs \tab user\link{*}, name \cr
    updateConfigs \tab /{apiVersion}/users/{user}/configs/update \tab user\link{*}, action, body\link{*} \cr
    filters \tab /{apiVersion}/users/{user}/filters \tab user\link{*}, id \cr
    updateFilters \tab /{apiVersion}/users/{user}/filters/update \tab user\link{*}, action, body\link{*} \cr
    updateFilter \tab /{apiVersion}/users/{user}/filters/{filterId}/update \tab user\link{*}, filterId\link{*}, body\link{*} \cr
    resetPassword \tab /{apiVersion}/users/{user}/password/reset \tab user\link{*} \cr
-   projects \tab /{apiVersion}/users/{user}/projects \tab include, exclude, limit, skip, user\link{*} \cr
    update \tab /{apiVersion}/users/{user}/update \tab include, exclude, user\link{*}, includeResult, body\link{*} \cr
 }
 }
+\section{Endpoint /{apiVersion}/users/anonymous}{
+
+Get an anonymous token to gain access to the system.
+}
+
 \section{Endpoint /{apiVersion}/users/create}{
 
 Create a new user.
@@ -62,6 +74,11 @@ Get identified and gain access to the system.
 \section{Endpoint /{apiVersion}/users/password}{
 
 Change the password of a user.
+}
+
+\section{Endpoint /{apiVersion}/users/search}{
+
+User search method.
 }
 
 \section{Endpoint /{apiVersion}/users/{users}/info}{
@@ -97,11 +114,6 @@ Update a custom filter.
 \section{Endpoint /{apiVersion}/users/{user}/password/reset}{
 
 Reset password.
-}
-
-\section{Endpoint /{apiVersion}/users/{user}/projects}{
-
-Retrieve the projects of the user.
 }
 
 \section{Endpoint /{apiVersion}/users/{user}/update}{

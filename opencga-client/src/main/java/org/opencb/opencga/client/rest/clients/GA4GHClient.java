@@ -17,9 +17,10 @@
 package org.opencb.opencga.client.rest.clients;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -37,7 +38,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the GA4GH webservices.
  *    PATH: ga4gh
  */
-public class GA4GHClient extends AbstractParentClient {
+public class GA4GHClient extends ParentClient {
 
     public GA4GHClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

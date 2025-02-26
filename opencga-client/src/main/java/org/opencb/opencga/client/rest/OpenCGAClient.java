@@ -20,8 +20,9 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.client.rest.clients.*;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.LoginParams;
@@ -41,7 +42,7 @@ public class OpenCGAClient {
     protected String refreshToken;
     protected ClientConfiguration clientConfiguration;
 
-    protected Map<String, AbstractParentClient> clients;
+    protected Map<String, ParentClient> clients;
     protected boolean throwExceptionOnError;
 
     public OpenCGAClient(ClientConfiguration clientConfiguration) {
@@ -155,7 +156,7 @@ public class OpenCGAClient {
     }
 
     @SuppressWarnings("unchecked")
-    protected  <T extends AbstractParentClient> T getClient(Class<T> clazz, Supplier<T> constructor) {
+    protected  <T extends ParentClient> T getClient(Class<T> clazz, Supplier<T> constructor) {
         return (T) clients.computeIfAbsent(clazz.getName(), (k) -> {
             T t = constructor.get();
             t.setThrowExceptionOnError(throwExceptionOnError);

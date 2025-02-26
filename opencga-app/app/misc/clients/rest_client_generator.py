@@ -36,6 +36,7 @@ class RestClientGenerator(ABC):
             'workflows/import': {'method_name': 'import_workflow'}
         }
         self.categories = {
+        	'Federations': 'Federation',
             'Organizations': 'Organization',
             'Users': 'User',
             'Projects': 'Project',
