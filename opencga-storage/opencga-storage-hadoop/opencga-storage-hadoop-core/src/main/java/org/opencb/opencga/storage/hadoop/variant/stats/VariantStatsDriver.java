@@ -19,6 +19,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
@@ -101,9 +102,9 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
         logger.info(" * " + VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key() + ": " + statsDefaultGenotype);
 
 
-        output = new MapReduceOutputFile(() -> "variant_stats."
+        output = initMapReduceOutputFile(() -> "variant_stats."
                 + (cohorts.size() < 10 ? "." + String.join("_", cohortNames) : "")
-                + TimeUtils.getTime() + ".json", "opencga_sample_variant_stats");
+                + TimeUtils.getTime() + ".json", true);
     }
 
     @Override
@@ -129,7 +130,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             query.put(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.NONE);
         }
 
-        if (output.getOutdir() != null) {
+        if (output != null) {
             // Do not index stats.
             // Allow any input query.
             // Write stats to file.
@@ -212,7 +213,9 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
     @Override
     protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         super.postExecution(succeed);
-        output.postExecute(succeed);
+        if (output != null) {
+            output.postExecute(succeed);
+        }
     }
 
     @Override

@@ -84,6 +84,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisVariantSubCommands.addCommand("sample-stats-run", analysisVariantCommandOptions.runSampleStatsCommandOptions);
         analysisVariantSubCommands.addCommand("stats-export-run", analysisVariantCommandOptions.runStatsExportCommandOptions);
         analysisVariantSubCommands.addCommand("stats-run", analysisVariantCommandOptions.runStatsCommandOptions);
+        analysisVariantSubCommands.addCommand("walker-run", analysisVariantCommandOptions.runWalkerCommandOptions);
 
         projectsCommandOptions = new ProjectsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("projects", projectsCommandOptions);
@@ -175,6 +176,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
         adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
         adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
+        adminSubCommands.addCommand("resource-fetch", adminCommandOptions.fetchResourceCommandOptions);
         adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
         adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
         adminSubCommands.addCommand("users-permissions", adminCommandOptions.permissionsUsersCommandOptions);

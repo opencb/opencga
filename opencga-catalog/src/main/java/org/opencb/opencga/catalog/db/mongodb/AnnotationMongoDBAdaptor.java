@@ -70,11 +70,23 @@ public abstract class AnnotationMongoDBAdaptor<T> extends CatalogMongoDBAdaptor 
 
     protected abstract MongoDBCollection getCollection();
 
-    abstract OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, T entry, ObjectMap parameters,
+    OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, T entry, ObjectMap parameters,
                                                   List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        return transactionalUpdate(clientSession, entry, parameters, variableSetList, queryOptions, true);
+    }
+
+    abstract OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, T entry, ObjectMap parameters,
+                                                  List<VariableSet> variableSetList, QueryOptions queryOptions, boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException;
 
-    abstract OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
+    OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        return transactionalUpdate(clientSession, studyUid, query, updateDocument, true);
+    }
+
+    abstract OpenCGAResult<T> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument,
+                                         boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException;
 
     public enum AnnotationSetParams implements QueryParam {

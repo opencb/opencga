@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
 
@@ -72,6 +73,8 @@ public class CustomFilesCommandOptions {
                 + "removed", arity = 0)
         public boolean replace;
 
+        @Parameter(names = {"--resource"}, description = ParamConstants.FILE_RESOURCE_DESCRIPTION, arity = 1)
+        public Boolean resource;
 //        @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", arity = 0)
 //        public boolean checksum;
 

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.apache.solr.common.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -197,11 +198,11 @@ public enum VariantField {
         }
 
         List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
-        if (includeList != null && !includeList.isEmpty()) {
+        if (!isEmpty(includeList)) {
             includeFields = parseInclude(includeList);
         } else {
             List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-            if (excludeList != null && !excludeList.isEmpty()) {
+            if (!isEmpty(excludeList)) {
                 includeFields = parseExclude(excludeList);
             } else {
                 includeFields = new HashSet<>(Arrays.asList(values()));
@@ -212,6 +213,10 @@ public enum VariantField {
         }
 
         return includeFields;
+    }
+
+    private static boolean isEmpty(List<String> stringList) {
+        return stringList == null || stringList.isEmpty() || (stringList.size() == 1 && StringUtils.isEmpty(stringList.get(0)));
     }
 
     public static Set<VariantField> parseInclude(String... includeList) {

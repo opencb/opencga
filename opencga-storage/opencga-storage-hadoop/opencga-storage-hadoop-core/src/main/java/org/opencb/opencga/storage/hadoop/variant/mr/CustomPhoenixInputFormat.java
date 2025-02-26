@@ -7,6 +7,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
@@ -21,11 +23,17 @@ import org.apache.phoenix.query.KeyRange;
 import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.util.PhoenixRuntime;
 import org.opencb.opencga.storage.hadoop.HBaseCompat;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -39,6 +47,7 @@ import java.util.Properties;
  */
 public class CustomPhoenixInputFormat<T extends DBWritable> extends InputFormat<NullWritable, T> {
     private static final Log LOG = LogFactory.getLog(CustomPhoenixInputFormat.class);
+    private static Logger logger = LoggerFactory.getLogger(CustomPhoenixInputFormat.class);
 
     @Override
     public RecordReader<NullWritable, T> createRecordReader(InputSplit split, TaskAttemptContext context)
@@ -56,6 +65,35 @@ public class CustomPhoenixInputFormat<T extends DBWritable> extends InputFormat<
 
         public CloseValueRecordReader(RecordReader<K, V> recordReader) {
             super(recordReader, v -> v);
+        }
+
+        @Override
+        public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+            super.initialize(split, context);
+            if (split instanceof PhoenixInputSplit) {
+                PhoenixInputSplit phoenixInputSplit = (PhoenixInputSplit) split;
+                KeyRange keyRange = phoenixInputSplit.getKeyRange();
+                logger.info("Key range : " + keyRange);
+
+                try {
+                    Pair<String, Integer> chrPosStart = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(keyRange.getLowerRange());
+                    Pair<String, Integer> chrPosEnd = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(keyRange.getUpperRange());
+                    logger.info("Variants key range : "
+                            + (keyRange.isLowerInclusive() ? "[" : "(")
+                            + chrPosStart.getFirst() + ":" + chrPosStart.getSecond()
+                            + " - "
+                            + chrPosEnd.getFirst() + ":" + chrPosEnd.getSecond()
+                            + (keyRange.isUpperInclusive() ? "]" : ")"));
+                } catch (Exception e) {
+                    logger.error("Error parsing key range: {}", e.getMessage());
+                }
+
+                logger.info("Split: " + phoenixInputSplit.getScans().size() + " scans");
+                int i = 0;
+                for (Scan scan : phoenixInputSplit.getScans()) {
+                    logger.info("[{}] Scan: {}", ++i, scan);
+                }
+            }
         }
 
         @Override
@@ -78,16 +116,54 @@ public class CustomPhoenixInputFormat<T extends DBWritable> extends InputFormat<
         final Configuration configuration = context.getConfiguration();
         final QueryPlan queryPlan = getQueryPlan(context, configuration);
         final List<KeyRange> allSplits = queryPlan.getSplits();
-        final List<InputSplit> splits = generateSplits(queryPlan, allSplits);
+        final List<InputSplit> splits = generateSplits(queryPlan, allSplits, configuration);
         return splits;
     }
 
-    private List<InputSplit> generateSplits(final QueryPlan qplan, final List<KeyRange> splits) throws IOException {
+    private List<InputSplit> generateSplits(final QueryPlan qplan, final List<KeyRange> splits, Configuration configuration)
+            throws IOException {
         Preconditions.checkNotNull(qplan);
         Preconditions.checkNotNull(splits);
         final List<InputSplit> psplits = Lists.newArrayListWithExpectedSize(splits.size());
+        int undividedSplits = 0;
+        int numScanSplit = configuration.getInt(HadoopVariantStorageOptions.MR_HBASE_PHOENIX_SCAN_SPLIT.key(),
+                HadoopVariantStorageOptions.MR_HBASE_PHOENIX_SCAN_SPLIT.defaultValue());
         for (List<Scan> scans : qplan.getScans()) {
-            psplits.add(new PhoenixInputSplit(scans));
+            if (scans.size() == 1) {
+                // Split scans into multiple smaller scans
+                List<Scan> splitScans = new ArrayList<>(numScanSplit);
+                Scan scan = scans.get(0);
+                byte[] startRow = scan.getStartRow();
+                if (startRow == null || startRow.length == 0) {
+                    startRow = Bytes.toBytesBinary("1\\x00\\x00\\x00\\x00\\x00");
+                    logger.info("Scan with empty startRow. Set default start. "
+                            + "[" + Bytes.toStringBinary(startRow) + " - " + Bytes.toStringBinary(scan.getStopRow()) + ")");
+                }
+                byte[] stopRow = scan.getStopRow();
+                if (stopRow == null || stopRow.length == 0) {
+                    stopRow = Bytes.toBytesBinary("Z\\x00\\x00\\x00\\x00\\x00");
+                    logger.info("Scan with empty stopRow. Set default stop. "
+                            + "[" + Bytes.toStringBinary(startRow) + " - " + Bytes.toStringBinary(stopRow) + ")");
+                }
+                byte[][] ranges = Bytes.split(startRow, stopRow, numScanSplit - 1);
+                for (int i = 1; i < ranges.length; i++) {
+                    Scan splitScan = new Scan(scan);
+                    splitScan.withStartRow(ranges[i - 1]);
+                    splitScan.withStopRow(ranges[i], false);
+                    splitScans.add(splitScan);
+                }
+                for (Scan splitScan : splitScans) {
+                    psplits.add(new PhoenixInputSplit(Collections.singletonList(splitScan)));
+                }
+            } else {
+                psplits.add(new PhoenixInputSplit(scans));
+                undividedSplits++;
+            }
+        }
+        logger.info("Subdivided " + qplan.getScans().size() + " splits into " + psplits.size() + " splits. "
+                + "Intended sub-splits per split: " + numScanSplit);
+        if (undividedSplits > 0) {
+            logger.info("There are " + undividedSplits + " splits that were not subdivided.");
         }
         return psplits;
     }

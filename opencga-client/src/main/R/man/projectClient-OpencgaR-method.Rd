@@ -4,22 +4,20 @@
 \alias{projectClient,OpencgaR-method}
 \title{ProjectClient methods}
 \usage{
-\S4method{projectClient}{OpencgaR}(OpencgaR, projects, project, endpointName, params = NULL, ...)
+\S4method{projectClient}{OpencgaR}(OpencgaR, project, projects, endpointName, params = NULL, ...)
 }
 \arguments{
-\item{projects}{Comma separated list of projects \link{user@}project up to a maximum of 100.}
+\item{project}{Project \link{organization@}project where project can be either the ID or the alias.}
 
-\item{project}{Project \link{user@}project where project can be either the ID or the alias.}
+\item{projects}{Comma separated list of projects \link{organization@}project up to a maximum of 100.}
 
-\item{owner}{Owner of the project.}
+\item{organization}{Project organization.}
 
-\item{id}{Project \link{user@}project where project can be either the ID or the alias.}
+\item{id}{Project \link{organization@}project where project can be either the ID or the alias.}
 
 \item{name}{Project name.}
 
 \item{fqn}{Project fqn.}
-
-\item{organization}{Project organization.}
 
 \item{description}{Project description.}
 
@@ -32,20 +30,6 @@
 \item{internalStatus}{Filter by internal status.}
 
 \item{attributes}{Attributes.}
-
-\item{default}{Calculate default stats.}
-
-\item{fileFields}{List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type.}
-
-\item{individualFields}{List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type.}
-
-\item{familyFields}{List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type.}
-
-\item{sampleFields}{List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type.}
-
-\item{cohortFields}{List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type.}
-
-\item{jobFields}{List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type.}
 
 \item{limit}{Number of results to be returned.}
 
@@ -64,8 +48,7 @@ This function implements the OpenCGA calls for managing Projects.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    create \tab /{apiVersion}/projects/create \tab include, exclude, includeResult, body\link{*} \cr
-   search \tab /{apiVersion}/projects/search \tab include, exclude, limit, skip, owner, id, name, fqn, organization, description, study, creationDate, modificationDate, internalStatus, attributes \cr
-   aggregationStats \tab /{apiVersion}/projects/{projects}/aggregationStats \tab projects\link{*}, default, fileFields, individualFields, familyFields, sampleFields, cohortFields, jobFields \cr
+   search \tab /{apiVersion}/projects/search \tab include, exclude, limit, skip, organization, id, name, fqn, organization, description, study, creationDate, modificationDate, internalStatus, attributes \cr
    info \tab /{apiVersion}/projects/{projects}/info \tab include, exclude, projects\link{*} \cr
    incRelease \tab /{apiVersion}/projects/{project}/incRelease \tab project\link{*} \cr
    studies \tab /{apiVersion}/projects/{project}/studies \tab include, exclude, limit, skip, project\link{*} \cr
@@ -80,11 +63,6 @@ Create a new project.
 \section{Endpoint /{apiVersion}/projects/search}{
 
 Search projects.
-}
-
-\section{Endpoint /{apiVersion}/projects/{projects}/aggregationStats}{
-
-Fetch catalog project stats.
 }
 
 \section{Endpoint /{apiVersion}/projects/{projects}/info}{

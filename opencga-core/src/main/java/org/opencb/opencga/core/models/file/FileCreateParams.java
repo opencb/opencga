@@ -1,6 +1,8 @@
 package org.opencb.opencga.core.models.file;
 
 import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.common.StatusParams;
 
 import java.util.List;
@@ -17,6 +19,10 @@ public class FileCreateParams {
     private List<String> sampleIds;
     private Software software;
     private List<String> tags;
+
+    @DataField(id = "resource", description = FieldConstants.FILE_RESOURCE)
+    private Boolean resource;
+
     private String jobId;
     private String creationDate;
     private String modificationDate;
@@ -27,8 +33,8 @@ public class FileCreateParams {
     }
 
     public FileCreateParams(String content, String path, String description, File.Type type, File.Format format, File.Bioformat bioformat,
-                            List<String> sampleIds, Software software, List<String> tags, String jobId, String creationDate,
-                            String modificationDate, StatusParams status, Map<String, Object> attributes) {
+                            List<String> sampleIds, Software software, List<String> tags, Boolean resource, String jobId,
+                            String creationDate, String modificationDate, StatusParams status, Map<String, Object> attributes) {
         this.content = content;
         this.path = path;
         this.description = description;
@@ -38,6 +44,7 @@ public class FileCreateParams {
         this.sampleIds = sampleIds;
         this.software = software;
         this.tags = tags;
+        this.resource = resource;
         this.jobId = jobId;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
@@ -57,6 +64,7 @@ public class FileCreateParams {
         sb.append(", sampleIds=").append(sampleIds);
         sb.append(", software=").append(software);
         sb.append(", tags=").append(tags);
+        sb.append(", resource=").append(resource);
         sb.append(", jobId='").append(jobId).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -144,6 +152,15 @@ public class FileCreateParams {
 
     public FileCreateParams setTags(List<String> tags) {
         this.tags = tags;
+        return this;
+    }
+
+    public Boolean getResource() {
+        return resource;
+    }
+
+    public FileCreateParams setResource(Boolean resource) {
+        this.resource = resource;
         return this;
     }
 

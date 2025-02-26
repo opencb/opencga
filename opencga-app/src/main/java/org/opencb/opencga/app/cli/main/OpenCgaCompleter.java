@@ -29,7 +29,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> variantList = asList( "aggregationstats","annotation-metadata","annotation-query","circos-run","cohort-stats-delete","cohort-stats-info","cohort-stats-run","exomiser-run","export-run","family-genotypes","family-qc-run","file-delete","gatk-run","genome-plot-run","gwas-run","hr-detect-run","index-run","individual-qc-run","inferred-sex-run","knockout-gene-query","knockout-individual-query","knockout-run","mendelian-error-run","metadata","mutational-signature-query","mutational-signature-run","plink-run","query","relatedness-run","rvtests-run","sample-aggregation-stats","sample-eligibility-run","sample-qc-run","sample-query","sample-run","sample-stats-query","sample-stats-run","stats-export-run","stats-run")
+    private List<Candidate> variantList = asList( "aggregationstats","annotation-metadata","annotation-query","circos-run","cohort-stats-delete","cohort-stats-info","cohort-stats-run","exomiser-run","export-run","family-genotypes","family-qc-run","file-delete","gatk-run","genome-plot-run","gwas-run","hr-detect-run","index-run","individual-qc-run","inferred-sex-run","knockout-gene-query","knockout-individual-query","knockout-run","mendelian-error-run","metadata","mutational-signature-query","mutational-signature-run","plink-run","query","relatedness-run","rvtests-run","sample-aggregation-stats","sample-eligibility-run","sample-qc-run","sample-query","sample-run","sample-stats-query","sample-stats-run","stats-export-run","stats-run","walker-run")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -54,7 +54,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> adminList = asList( "audit-group-by","catalog-install","catalog-jwt","users-create","users-import","users-permissions","users-search","users-sync","update-groups-users")
+    private List<Candidate> adminList = asList( "audit-group-by","catalog-install","catalog-jwt","resource-fetch","users-create","users-import","users-permissions","users-search","users-sync","update-groups-users")
             .stream()
             .map(Candidate::new)
             .collect(toList());

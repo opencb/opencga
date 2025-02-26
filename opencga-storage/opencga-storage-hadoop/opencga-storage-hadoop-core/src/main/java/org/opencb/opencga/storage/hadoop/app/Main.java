@@ -28,6 +28,9 @@ public abstract class Main {
         executor.addSubCommand(Arrays.asList("convertintovirtual", "ConvertIntoVirtual"), "Migrate into virtual file", args -> {
             new ConvertIntoVirtual().run(args);
         });
+        executor.addSubCommand(Arrays.asList("hadoop", "hdfs"), "Run hadoop commands", args -> {
+            new HadoopMain().run(args);
+        });
         executor.exec(mainArgs);
     }
 
