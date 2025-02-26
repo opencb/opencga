@@ -2473,6 +2473,19 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), ownerToken).getNumResults());
         Files.copy(sourcePath, copy);
 
+        // Try to register to the root path directory
+        result = fileManager.moveAndRegister(studyFqn, copy, null, "/", false, normalToken1);
+        assertEquals("variant-test-file.vcf.gz", result.first().getPath());
+        assertEquals(studyPath.resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
+        assertTrue(Files.exists(studyPath.resolve("variant-test-file.vcf.gz")));
+
+        // We remove the file to start again
+        query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());
+        setToPendingDelete(studyFqn, query);
+        fileManager.delete(studyFqn, query, new QueryOptions(Constants.SKIP_TRASH, true), ownerToken);
+        assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), ownerToken).getNumResults());
+        Files.copy(sourcePath, copy);
+
         // Register to an incorrect path
         try {
             fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), "otherFolder", false, ownerToken);

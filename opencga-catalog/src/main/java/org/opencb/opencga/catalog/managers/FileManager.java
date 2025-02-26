@@ -1266,7 +1266,10 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             String filePath = path;
-            if (!filePath.endsWith("/")) {
+            if (filePath.length() == 1 && filePath.equals("/")) {
+                filePath = "";
+            }
+            if (filePath.length() > 0 && !filePath.endsWith("/")) {
                 filePath += "/";
             }
             filePath += fileName;
