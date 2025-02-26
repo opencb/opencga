@@ -50,6 +50,7 @@
 {"collections": ["file"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"format": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"bioformat": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"resource": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"size": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"software.name": 1, "studyUid": 1}, "options": {}}

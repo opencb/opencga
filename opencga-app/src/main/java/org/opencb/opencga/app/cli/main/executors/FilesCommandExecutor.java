@@ -331,6 +331,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "software.website", commandOptions.softwareWebsite, true);
             putNestedMapIfNotEmpty(beanParams, "software.params", commandOptions.softwareParams, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "resource", commandOptions.resource, true);
             putNestedIfNotEmpty(beanParams, "jobId", commandOptions.jobId, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
@@ -362,6 +363,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("bioformat", commandOptions.bioformat);
         queryParams.putIfNotEmpty("format", commandOptions.format);
         queryParams.putIfNotNull("external", commandOptions.external);
+        queryParams.putIfNotNull("resource", commandOptions.resource);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("internalVariantIndexStatus", commandOptions.internalVariantIndexStatus);
@@ -416,6 +418,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "url", commandOptions.url, true);
+            putNestedIfNotNull(beanParams, "resource", commandOptions.resource, true);
             putNestedIfNotEmpty(beanParams, "path", commandOptions.path, true);
 
             fileFetch = JacksonUtils.getDefaultObjectMapper().copy()
@@ -580,6 +583,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("bioformat", commandOptions.bioformat);
         queryParams.putIfNotEmpty("format", commandOptions.format);
         queryParams.putIfNotNull("external", commandOptions.external);
+        queryParams.putIfNotNull("resource", commandOptions.resource);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("internalVariantIndexStatus", commandOptions.internalVariantIndexStatus);
@@ -615,6 +619,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("fileFormat", commandOptions.fileFormat);
         queryParams.putIfNotNull("bioformat", commandOptions.bioformat);
         queryParams.putIfNotEmpty("checksum", commandOptions.checksum);
+        queryParams.putIfNotNull("resource", commandOptions.resource);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("relativeFilePath", commandOptions.relativeFilePath);
         queryParams.putIfNotEmpty("description", commandOptions.description);

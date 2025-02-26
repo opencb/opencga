@@ -4,12 +4,12 @@
 get_xetabase_branch() {
   # Input parameter (branch name)
   target_branch="$1"
-  current_branch="$1"
+  current_branch="$2"
 
   # If the branch begins with 'TASK' and exists in the opencga-enterprise repository, I return it
   if [[ $current_branch == TASK* ]]; then
-    if [ "$(git ls-remote "https://$ZETTA_REPO_ACCESS_TOKEN@github.com/zetta-genomics/opencga-enterprise.git" "$target_branch" )" ] ; then
-      echo "$target_branch";
+    if [ "$(git ls-remote "https://$ZETTA_REPO_ACCESS_TOKEN@github.com/zetta-genomics/opencga-enterprise.git" "$current_branch" )" ] ; then
+      echo "$current_branch";
       return 0;
     fi
   fi

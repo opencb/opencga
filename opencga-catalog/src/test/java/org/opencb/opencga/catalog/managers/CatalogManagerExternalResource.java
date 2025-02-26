@@ -24,6 +24,7 @@ import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -40,6 +41,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
+import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_DIRNAME;
 
 /**
  * Created on 05/05/16
@@ -89,11 +93,17 @@ public class CatalogManagerExternalResource extends ExternalResource {
         } while (opencgaHome.toFile().exists());
         Files.createDirectories(opencgaHome);
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
+        Path confPath = Files.createDirectories(opencgaHome.resolve("conf"));
+        Files.copy(getClass().getResource("/configuration-test.yml").openStream(), confPath.resolve("configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
         configuration.setJobDir(opencgaHome.resolve("JOBS").toAbsolutePath().toString());
 
+        Path analysisPath = opencgaHome.resolve(ANALYSIS_DIRNAME);
+        Files.createDirectories(analysisPath.resolve(RESOURCES_DIRNAME));
+
         // Pedigree graph analysis
-        Path analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
         InputStream inputStream = getClass().getResource("/pedigree-graph/ped.R").openStream();
 //        FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
@@ -139,7 +149,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
     }
 
     public static void clearCatalog(Configuration configuration) throws CatalogException, URISyntaxException {
-        try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory())) {
+        CatalogIOManager catalogIOManager = new CatalogIOManager(configuration);
+        try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory(), catalogIOManager)) {
             dbAdaptorFactory.deleteCatalogDB();
         }
 

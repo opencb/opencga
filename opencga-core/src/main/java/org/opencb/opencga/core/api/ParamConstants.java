@@ -47,6 +47,7 @@ public class ParamConstants {
     public static final String PERMISSION_LIST = "permissions";
     private static final String REGEX_SUPPORT = ". Also admits basic regular expressions using the operator '~', "
             + "i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.";
+    public static final String RESOURCES_FOLDER = "RESOURCES";
     @Deprecated // Use INTERNAL_VARIANT_INDEX_STATUS_PARAM
     public static final String INTERNAL_INDEX_STATUS_PARAM = "internalIndexStatus";
     public static final String INTERNAL_VARIANT_INDEX_STATUS_PARAM = "internalVariantIndexStatus";
@@ -199,6 +200,7 @@ public class ParamConstants {
     public static final String FILE_TYPE_DESCRIPTION = "File type, either FILE or DIRECTORY";
     public static final String FILE_FORMAT_DESCRIPTION = "Comma separated Format values. For existing Formats see files/formats";
     public static final String FILE_EXTERNAL_DESCRIPTION = "Boolean field indicating whether to filter by external or non external files";
+    public static final String FILE_RESOURCE_DESCRIPTION = "Boolean field indicating whether the file is a resource or not";
     public static final String FILE_BIOFORMAT_DESCRIPTION = "Comma separated Bioformat values. For existing Bioformats see " +
             "files/bioformats";
     public static final String FILE_STATUS_DESCRIPTION = "File status";

@@ -179,6 +179,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "[DEPRECATED] File format") @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
             @ApiParam(value = "File bioformat") @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,
             @ApiParam(value = "Expected MD5 file checksum") @DefaultValue("") @FormDataParam("checksum") String expectedChecksum,
+            @ApiParam(value = ParamConstants.FILE_RESOURCE_DESCRIPTION) @FormDataParam("resource") Boolean resource,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Path within catalog (directory) where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
             @ApiParam(value = "description") @DefaultValue("") @FormDataParam("description")
@@ -213,9 +214,11 @@ public class FileWSServer extends OpenCGAWSServer {
             }
             long expectedSize = fileMetaData.getSize();
 
+            boolean isResource = resource != null && resource;
             File file = new File()
                     .setName(name)
                     .setPath(relativeFilePath + name)
+                    .setResource(isResource)
                     .setFormat(format)
                     .setBioformat(bioformat);
             return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true, expectedChecksum, expectedSize, token));
@@ -326,6 +329,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @QueryParam("bioformat") String bioformat,
             @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @QueryParam("format") String formats,
             @ApiParam(value = ParamConstants.FILE_EXTERNAL_DESCRIPTION) @QueryParam("external") Boolean external,
+            @ApiParam(value = ParamConstants.FILE_RESOURCE_DESCRIPTION) @QueryParam("resource") Boolean resource,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_PARAM) String internalVariantIndexStatus,
@@ -364,6 +368,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @QueryParam("bioformat") String bioformat,
             @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @QueryParam("format") String formats,
             @ApiParam(value = ParamConstants.FILE_EXTERNAL_DESCRIPTION) @QueryParam("external") Boolean external,
+            @ApiParam(value = ParamConstants.FILE_RESOURCE_DESCRIPTION) @QueryParam("resource") Boolean resource,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_PARAM) String internalIndexStatus,

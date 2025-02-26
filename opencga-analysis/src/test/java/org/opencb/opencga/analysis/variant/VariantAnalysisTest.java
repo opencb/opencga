@@ -58,6 +58,7 @@ import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -792,6 +793,8 @@ public class VariantAnalysisTest {
 
     @Test
     public void testMutationalSignatureFittingSNV() throws Exception {
+        Assume.assumeTrue(Files.exists(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ResourceManager.RESOURCES_DIRNAME).resolve(ResourceManager.REFERENCE_GENOMES)));
+
         Path outDir = Paths.get(opencga.createTmpOutdir("_mutational_signature_fitting_snv"));
         System.out.println("outDir = " + outDir);
 
@@ -847,10 +850,12 @@ public class VariantAnalysisTest {
 
     @Test
     public void testMutationalSignatureCatalogueSV() throws Exception {
+        Assume.assumeTrue(Files.exists(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ResourceManager.RESOURCES_DIRNAME).resolve(ResourceManager.REFERENCE_GENOMES)));
+
         Path outDir = Paths.get(opencga.createTmpOutdir("_mutational_signature_catalogue_sv"));
         System.out.println("outDir = " + outDir);
 
-        Path opencgaHome = opencga.getOpencgaHome();
+        Path opencgaHome = opencga.getOpencgaHome().toAbsolutePath();
         System.out.println("OpenCGA home = " + opencgaHome);
 
         MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
@@ -902,6 +907,8 @@ public class VariantAnalysisTest {
 
     @Test
     public void testMutationalSignatureFittingSV() throws Exception {
+        Assume.assumeTrue(Files.exists(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ResourceManager.RESOURCES_DIRNAME).resolve(ResourceManager.REFERENCE_GENOMES)));
+
         Path outDir = Paths.get(opencga.createTmpOutdir("_mutational_signature_fitting"));
         System.out.println("outDir = " + outDir);
 
@@ -952,6 +959,8 @@ public class VariantAnalysisTest {
 
     @Test
     public void testHRDetect() throws Exception {
+        Assume.assumeTrue(Files.exists(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ResourceManager.RESOURCES_DIRNAME).resolve(ResourceManager.REFERENCE_GENOMES)));
+
         Path snvFittingOutDir = Paths.get(opencga.createTmpOutdir("_snv_fitting"));
         Path svFittingOutDir = Paths.get(opencga.createTmpOutdir("_sv_fitting"));
         Path hrdetectOutDir = Paths.get(opencga.createTmpOutdir("_hrdetect"));

@@ -35,8 +35,12 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -66,6 +70,8 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
     public final static String CA_ID4 = "clinical-analysis-4";
     public final static String PROBAND_ID4 = "HG105";
+
+    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -101,11 +107,13 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
         token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
 
-        catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
-                new QueryOptions(), token);
+        ProjectCreateParams projectCreateParams = new ProjectCreateParams()
+                .setId("1000G")
+                .setOrganism(new ProjectOrganism("hsapiens", "grch38"));
+        Project project = catalogManager.getProjectManager().create(projectCreateParams, INCLUDE_RESULT, token).first();
+        System.out.println("project.toString() = " + project.toString());
 
-        Study study = catalogManager.getStudyManager().create("1000G", "phase1", null, "Phase 1", "Done", null, null,
-                null, null, null, token).first();
+        Study study = catalogManager.getStudyManager().create("1000G", new Study().setId("phase1"), INCLUDE_RESULT, token).first();
         studyFqn = study.getFqn();
 
         family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();
