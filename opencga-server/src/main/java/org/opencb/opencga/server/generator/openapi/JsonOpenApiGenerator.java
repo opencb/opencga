@@ -55,8 +55,10 @@ public class JsonOpenApiGenerator {
 
             // Procesar métodos
             for (java.lang.reflect.Method wsmethod : clazz.getDeclaredMethods()) {
+
                 ApiOperation apiOperation = wsmethod.getAnnotation(ApiOperation.class);
-                if (apiOperation != null) {
+
+                if (apiOperation != null && !apiOperation.hidden()) {
                     // Crear operación Swagger
                     Method method = new Method();
                     method.setSummary(apiOperation.value());
