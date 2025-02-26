@@ -65,7 +65,7 @@ public class JsonOpenApiGenerator {
                     Map<String,Response> responses=new HashMap<>();
                     responses.put("200",new Response().setDescription("Successful operation").setSchema(new Schema("#/definitions/"+apiOperation.response().getSimpleName())));
                     if(!SwaggerDefinitionGenerator.isPrimitive(apiOperation.response())){
-                        if(!beansDefinitions.contains((Class) apiOperation.response())){
+                        if(!beansDefinitions.contains((Class) apiOperation.response())  && SwaggerDefinitionGenerator.isOpencbBean((Class) apiOperation.response())){
                             beansDefinitions.add((Class) apiOperation.response());
                         }
                     }

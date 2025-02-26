@@ -17,7 +17,7 @@ public class SwaggerDefinitionGenerator {
     private final static Set<String> processedFields = new HashSet<>();
     public static Map<String, Definition> getDefinitions(List<Class<?>> classes) {
         for (Class<?> clazz : classes) {
-            if (!definitions.containsKey(clazz.getSimpleName())) {
+            if (!definitions.containsKey(clazz.getSimpleName()) && isOpencbBean(clazz)) {
                 definitions.put(clazz.getSimpleName(), generateDefinition(clazz));
             }
         }
@@ -54,7 +54,7 @@ public class SwaggerDefinitionGenerator {
     private static FieldDefinition manageField(Class<?> fieldType) {
         try {
             if (!isPrimitive(fieldType)) {
-                if (!definitions.containsKey(fieldType.getSimpleName()) && !processedFields.contains(fieldType.getName())) {
+                if (!definitions.containsKey(fieldType.getSimpleName()) && !processedFields.contains(fieldType.getName()) && isOpencbBean(fieldType)) {
                     definitions.put(fieldType.getSimpleName(), generateDefinition(fieldType));
                 }
                 return manageComplexField(fieldType);
@@ -67,6 +67,10 @@ public class SwaggerDefinitionGenerator {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static boolean isOpencbBean(Class<?> fieldType) {
+        return fieldType.getName().contains("org.opencb");
     }
 
     private static FieldDefinition managePrimitiveField(Class<?> fieldType) {
@@ -88,7 +92,11 @@ public class SwaggerDefinitionGenerator {
 
         // Default behavior for non-array types
         complexProperty.setType("object");
-        complexProperty.set$ref("#/definitions/" + fieldType.getSimpleName());
+        if(isOpencbBean(fieldType)){
+            complexProperty.set$ref("#/definitions/" + fieldType.getSimpleName());
+        }else{
+            complexProperty.setRef(fieldType.getSimpleName());
+        }
         return complexProperty;
     }
 

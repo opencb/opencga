@@ -4,6 +4,7 @@ public class FieldDefinition {
 
     private String type;
     private String $ref;
+    private String ref;
 
 
     public FieldDefinition() {
@@ -28,6 +29,16 @@ public class FieldDefinition {
 
     public FieldDefinition set$ref(String $ref) {
         this.$ref = $ref;
+        return this;
+    }
+
+
+    public String getRef() {
+        return ref;
+    }
+
+    public FieldDefinition setRef(String ref) {
+        this.ref = ref;
         return this;
     }
 
