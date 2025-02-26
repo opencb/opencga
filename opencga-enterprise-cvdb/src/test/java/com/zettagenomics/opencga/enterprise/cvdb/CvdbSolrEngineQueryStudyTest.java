@@ -39,7 +39,7 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
@@ -115,10 +115,10 @@ public class CvdbSolrEngineQueryStudyTest {
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, userToken).first();
-        study0 = catalogManager.getStudyManager().create(projectId, "phase0", null, "Phase 0", "Done", null, null, null, null, null,
-                userToken).first();
-        study1 = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
-                userToken).first();
+        study0 = catalogManager.getStudyManager().create(projectId, "phase0", null, "Phase 0", "Done", null, null, null, null,
+                INCLUDE_RESULT, userToken).first();
+        study1 = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null,
+                INCLUDE_RESULT, userToken).first();
     }
 
     //-----------------------------------------------------------------------

@@ -1004,8 +1004,7 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             FederationUtils.removeStudyFieldsForStorage(organization, study);
             study.setFederation(new FederationClientParamsRef(federationId));
             study.getInternal().setFederated(true);
-            dbAdaptorFactory.getCatalogStudyDBAdaptor(organization.getId()).insert(project, study, Collections.emptyList(),
-                    QueryOptions.empty());
+            dbAdaptorFactory.getCatalogStudyDBAdaptor(organization.getId()).insert(project, study, QueryOptions.empty());
         }
     }
 

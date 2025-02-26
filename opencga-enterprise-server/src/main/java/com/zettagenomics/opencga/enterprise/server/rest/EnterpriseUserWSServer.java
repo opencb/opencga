@@ -1,12 +1,7 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseUserManager;
-import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
-import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
-import com.zettagenomics.opencga.enterprise.server.generator.EnterpriseApiCommonsImpl;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
@@ -23,16 +18,12 @@ import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.TokenConfiguration;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
-import org.opencb.opencga.server.generator.RestApiParser;
-import org.opencb.opencga.server.generator.commons.ApiCommonsImpl;
-import org.opencb.opencga.server.generator.models.RestApi;
-import org.opencb.opencga.server.generator.openapi.JsonOpenApiGenerator;
-import org.opencb.opencga.server.generator.openapi.models.Swagger;
-import org.opencb.opencga.server.rest.MetaWSServer;
+import org.opencb.opencga.server.rest.UserWSServer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -42,159 +33,25 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
-import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Path("/{apiVersion}/meta")
-@Produces("application/json")
-@Api(value = "Meta", description = "Meta RESTful Web Services API")
-public class EnterpriseMetaWSServer extends MetaWSServer {
+@Path("/{apiVersion}/users")
+@Produces({"application/json"})
+@Api(value = "Users", description = "Methods for working with 'users' endpoint")
+public class EnterpriseUserWSServer extends UserWSServer {
 
     private static final AtomicReference<String> opencgaTokenAtomicRef = new AtomicReference<>();
     private static final AtomicReference<EnterpriseConfiguration> enterpriseConfigurationAtomicRef = new AtomicReference<>();
     public static final AtomicReference<EnterpriseUserManager> enterpriseUserManagerAtomicRef = new AtomicReference<>();
 
-    public EnterpriseMetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+    public EnterpriseUserWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                   @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    private String getOpencgaToken() {
-        String opencgaToken = opencgaTokenAtomicRef.get();
-        if (opencgaToken == null) {
-            synchronized (opencgaTokenAtomicRef) {
-                try {
-                    OpenCGAResult<Organization> result;
-                    CatalogIOManager catalogIOManager = new CatalogIOManager(configuration);
-                    try (DBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory(),
-                            catalogIOManager)) {
-                        result = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(ParamConstants.ADMIN_ORGANIZATION)
-                                .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
-
-                        if (result.getNumResults() == 0) {
-                            throw new CatalogException("Organization '" + ParamConstants.ADMIN_ORGANIZATION + "' not found.");
-                        }
-                        Organization organization = result.first();
-                        if (organization.getConfiguration() == null
-                                || CollectionUtils.isEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
-                            throw new CatalogException("Missing authentication origin for '" + ParamConstants.ADMIN_ORGANIZATION
-                                    + "' organization.");
-                        }
-                        if (organization.getConfiguration().getToken() == null) {
-                            throw new CatalogException("Internal error: Missing required information to generate"
-                                    + " tokens.");
-                        }
-                        AuthenticationOrigin authOrigin = null;
-                        for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
-                            if (AuthenticationOrigin.AuthenticationType.OPENCGA.equals(authenticationOrigin.getType())
-                                    && CatalogAuthenticationManager.OPENCGA.equals(authenticationOrigin.getId())) {
-                                authOrigin = authenticationOrigin;
-                                break;
-                            }
-                        }
-                        if (authOrigin == null) {
-                            throw new CatalogException("Missing '" + CatalogAuthenticationManager.OPENCGA
-                                    + "'  authentication origin in '" + ParamConstants.ADMIN_ORGANIZATION
-                                    + "' organization.");
-                        }
-                        TokenConfiguration tokenConf = organization.getConfiguration().getToken();
-                        CatalogAuthenticationManager authManager = new CatalogAuthenticationManager(dbAdaptorFactory,
-                                null, tokenConf.getAlgorithm(), tokenConf.getSecretKey(), tokenConf.getExpiration());
-                        opencgaToken = authManager.createNonExpiringToken(ParamConstants.ADMIN_ORGANIZATION,
-                                ParamConstants.OPENCGA_USER_ID, null);
-                    }
-                } catch (CatalogException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
-        }
-        return opencgaToken;
-    }
-
-    private EnterpriseConfiguration getEnterpriseConfiguration() {
-        EnterpriseConfiguration enterpriseConfiguration = enterpriseConfigurationAtomicRef.get();
-        if (enterpriseConfiguration == null) {
-            synchronized (enterpriseConfigurationAtomicRef) {
-                enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
-            }
-        }
-        return enterpriseConfiguration;
-    }
-
-    private EnterpriseUserManager getEnterpriseUserManager() {
-        EnterpriseUserManager enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
-        if (enterpriseUserManager == null) {
-            synchronized (enterpriseUserManagerAtomicRef) {
-                enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
-                if (enterpriseUserManager == null) {
-                    enterpriseUserManager = new EnterpriseUserManager(catalogManager, getEnterpriseConfiguration(),
-                            getOpencgaToken());
-                    enterpriseUserManagerAtomicRef.set(enterpriseUserManager);
-                }
-            }
-        }
-        return enterpriseUserManager;
-    }
-
-    @Override
-    @GET
-    @Path("/about")
-    @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.", response = Map.class)
-    public Response getAbout() {
-        Map<String, String> info = new LinkedHashMap<>(6);
-        info.put("Program", "XetaBase (Zetta Genomics)");
-        info.put("Version", GitUtils.getEnterprise().getBuildVersion());
-        info.put("Git branch", GitUtils.getEnterprise().getBranch());
-        info.put("Git commit", GitUtils.getEnterprise().getCommitId());
-        info.put("Description", "Big Data platform for processing and analysing NGS data");
-        info.put("OpenCGA Version", GitUtils.getOpenCGA().getBuildVersion());
-
-        OpenCGAResult<Object> queryResult = new OpenCGAResult<>();
-        queryResult.setTime(0);
-        queryResult.setResults(Collections.singletonList(info));
-        return createOkResponse(queryResult);
-    }
-
-    @Override
-    @GET
-    @Path("/api")
-    @ApiOperation(value = "API", response = List.class)
-    public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr,
-                        @QueryParam("summary") boolean summary) {
-        List<Class<?>> classes = new ArrayList<>();
-        if (StringUtils.isNotEmpty(categoryStr)) {
-            // Check if some categories have been selected
-            for (String category : categoryStr.split(",")) {
-                classes.add(EnterpriseResourceConfig.enterpriseApiClasses.get(category));
-            }
-        } else {
-            // Get API for all categories
-            classes = new ArrayList<>(EnterpriseResourceConfig.enterpriseApiClasses.values());
-        }
-        RestApi restApi = new RestApiParser().parse(classes, summary);
-        return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
-    }
-
-    @Deprecated
-    @GET
-    @Path("/openapi")
-    @ApiOperation(value = "Opencga openapi json", response = String.class)
-    public String openApi(@ApiParam(value = "List of categories to get API from") @QueryParam("token") String token, @QueryParam("environment") String environment) {
-        JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
-        Swagger swagger = generator.generateJsonOpenApi(new EnterpriseApiCommonsImpl(), token, environment);
-        String swaggerJson ="ERROR: Swagger could not be generated";
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger).replace("{apiVersion}", "v2");
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-        return swaggerJson;
-    }
-
     @GET
     @Path("/sso/login")
-    @ApiOperation(httpMethod = "GET", value = "Single Sign On.", response = Map.class, hidden = true)
+    @ApiOperation(httpMethod = "GET", value = "Single Sign On.", response = AuthenticationResponse.class)
     public Response singleSignOn(@ApiParam(value = "Callback URL") @QueryParam("url") String service) {
         if (StringUtils.isEmpty(service)) {
             return createErrorResponse(new CatalogParameterException("Missing mandatory field 'service'"));
@@ -223,10 +80,9 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         return Response.temporaryRedirect(targetURIForRedirection).build();
     }
 
-    @Deprecated
     @GET
     @Path("/sso/logout")
-    @ApiOperation(httpMethod = "GET", value = "Logout from Single Sign On.", response = Map.class, hidden = true)
+    @ApiOperation(httpMethod = "GET", value = "Logout from Single Sign On.", response = AuthenticationResponse.class)
     public Response singleSignOnLogout(
             @ApiParam(value = "Callback URL") @QueryParam("url") String service,
             @ApiParam(value = "Successfully logout from CAS service", hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout
@@ -309,4 +165,82 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             return Response.ok(htmlBuilder.toString(), MediaType.TEXT_HTML_TYPE).build();
         }
     }
+
+    private String getOpencgaToken() {
+        String opencgaToken = opencgaTokenAtomicRef.get();
+        if (opencgaToken == null) {
+            synchronized (opencgaTokenAtomicRef) {
+                try {
+                    OpenCGAResult<Organization> result;
+                    CatalogIOManager catalogIOManager = new CatalogIOManager(configuration);
+                    try (DBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory(),
+                            catalogIOManager)) {
+                        result = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(ParamConstants.ADMIN_ORGANIZATION)
+                                .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
+
+                        if (result.getNumResults() == 0) {
+                            throw new CatalogException("Organization '" + ParamConstants.ADMIN_ORGANIZATION + "' not found.");
+                        }
+                        Organization organization = result.first();
+                        if (organization.getConfiguration() == null
+                                || CollectionUtils.isEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
+                            throw new CatalogException("Missing authentication origin for '" + ParamConstants.ADMIN_ORGANIZATION
+                                    + "' organization.");
+                        }
+                        if (organization.getConfiguration().getToken() == null) {
+                            throw new CatalogException("Internal error: Missing required information to generate"
+                                    + " tokens.");
+                        }
+                        AuthenticationOrigin authOrigin = null;
+                        for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
+                            if (AuthenticationOrigin.AuthenticationType.OPENCGA.equals(authenticationOrigin.getType())
+                                    && CatalogAuthenticationManager.OPENCGA.equals(authenticationOrigin.getId())) {
+                                authOrigin = authenticationOrigin;
+                                break;
+                            }
+                        }
+                        if (authOrigin == null) {
+                            throw new CatalogException("Missing '" + CatalogAuthenticationManager.OPENCGA
+                                    + "'  authentication origin in '" + ParamConstants.ADMIN_ORGANIZATION
+                                    + "' organization.");
+                        }
+                        TokenConfiguration tokenConf = organization.getConfiguration().getToken();
+                        CatalogAuthenticationManager authManager = new CatalogAuthenticationManager(dbAdaptorFactory,
+                                null, tokenConf.getAlgorithm(), tokenConf.getSecretKey(), tokenConf.getExpiration());
+                        opencgaToken = authManager.createNonExpiringToken(ParamConstants.ADMIN_ORGANIZATION,
+                                ParamConstants.OPENCGA_USER_ID, null);
+                    }
+                } catch (CatalogException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        return opencgaToken;
+    }
+
+    private EnterpriseConfiguration getEnterpriseConfiguration() {
+        EnterpriseConfiguration enterpriseConfiguration = enterpriseConfigurationAtomicRef.get();
+        if (enterpriseConfiguration == null) {
+            synchronized (enterpriseConfigurationAtomicRef) {
+                enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
+            }
+        }
+        return enterpriseConfiguration;
+    }
+
+    private EnterpriseUserManager getEnterpriseUserManager() {
+        EnterpriseUserManager enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
+        if (enterpriseUserManager == null) {
+            synchronized (enterpriseUserManagerAtomicRef) {
+                enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
+                if (enterpriseUserManager == null) {
+                    enterpriseUserManager = new EnterpriseUserManager(catalogManager, getEnterpriseConfiguration(),
+                            getOpencgaToken());
+                    enterpriseUserManagerAtomicRef.set(enterpriseUserManager);
+                }
+            }
+        }
+        return enterpriseUserManager;
+    }
+
 }

@@ -3,6 +3,7 @@ package com.zettagenomics.opencga.enterprise.server;
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseClinicalWebService;
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseCvdbWebService;
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseMetaWSServer;
+import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseUserWSServer;
 import com.zettagenomics.opencga.enterprise.server.rest.FederationWebService;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.opencb.opencga.server.rest.*;
@@ -34,7 +35,7 @@ public class EnterpriseResourceConfig extends ResourceConfig {
         enterpriseApiClasses = new LinkedHashMap<>(26);
         enterpriseApiClasses.put("federations", FederationWebService.class);
         enterpriseApiClasses.put("organizations", OrganizationWSServer.class);
-        enterpriseApiClasses.put("users", UserWSServer.class);
+        enterpriseApiClasses.put("users", EnterpriseUserWSServer.class);
         enterpriseApiClasses.put("projects", ProjectWSServer.class);
         enterpriseApiClasses.put("studies", StudyWSServer.class);
         enterpriseApiClasses.put("files", FileWSServer.class);

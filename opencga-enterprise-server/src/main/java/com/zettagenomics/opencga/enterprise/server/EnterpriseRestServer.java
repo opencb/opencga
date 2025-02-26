@@ -25,6 +25,7 @@ import org.opencb.opencga.server.RestServer;
 
 import javax.servlet.DispatcherType;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,6 +55,8 @@ public class EnterpriseRestServer extends RestServer {
             ParamUtils.checkParameter(enterpriseConfiguration.getSso().getCasServerPrefixUrl(), "sso.casServerPrefixUrl");
             ParamUtils.checkParameter(enterpriseConfiguration.getSso().getServerName(), "sso.serverName");
             ParamUtils.checkParameter(enterpriseConfiguration.getSso().getProtocol(), "sso.protocol");
+            Map<String, String> initParameters = enterpriseConfiguration.getSso().getInitParameters() != null
+                    ? enterpriseConfiguration.getSso().getInitParameters() : Collections.emptyMap();
 
             switch (enterpriseConfiguration.getSso().getProtocol().toUpperCase()) {
                 case "CAS":
@@ -65,6 +68,7 @@ public class EnterpriseRestServer extends RestServer {
                     Map<String, String> casInitParameters = new HashMap<>();
                     casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    casInitParameters.putAll(initParameters);
                     casValidationFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(casValidationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -75,6 +79,7 @@ public class EnterpriseRestServer extends RestServer {
                     casInitParameters = new HashMap<>();
                     casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    casInitParameters.putAll(initParameters);
                     casAuthenticationFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(casAuthenticationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -84,6 +89,7 @@ public class EnterpriseRestServer extends RestServer {
                     casInitParameters = new HashMap<>();
                     casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    casInitParameters.putAll(initParameters);
                     requestWrapperFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(requestWrapperFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
                     // End of CAS configuration
@@ -97,6 +103,7 @@ public class EnterpriseRestServer extends RestServer {
                     Map<String, String> samlInitParameters = new HashMap<>();
                     samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    samlInitParameters.putAll(initParameters);
                     samlValidationFilterHolder.setInitParameters(samlInitParameters);
                     webapp.addFilter(samlValidationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -107,6 +114,7 @@ public class EnterpriseRestServer extends RestServer {
                     samlInitParameters = new HashMap<>();
                     samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    samlInitParameters.putAll(initParameters);
                     samlAuthenticationFilterHolder.setInitParameters(samlInitParameters);
                     webapp.addFilter(samlAuthenticationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -116,6 +124,7 @@ public class EnterpriseRestServer extends RestServer {
                     samlInitParameters = new HashMap<>();
                     samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    samlInitParameters.putAll(initParameters);
                     saml1RequestWrapperFilterHolder.setInitParameters(samlInitParameters);
                     webapp.addFilter(saml1RequestWrapperFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
                     // End of SAML1 configuration
