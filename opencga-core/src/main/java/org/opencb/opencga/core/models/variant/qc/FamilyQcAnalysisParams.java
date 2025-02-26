@@ -110,7 +110,7 @@ public class FamilyQcAnalysisParams extends ToolParams {
 
     @Deprecated
     public String getFamily() {
-        return families.get(0);
+        return family;
     }
 
     @Deprecated
