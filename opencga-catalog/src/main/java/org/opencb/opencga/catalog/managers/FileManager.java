@@ -1228,9 +1228,15 @@ public class FileManager extends AnnotationSetManager<File> {
                 // We get the relative path
                 String relativePath = Paths.get(parentFolder.getPath()).relativize(Paths.get(path)).toString();
                 folderDestiny = Paths.get(parentFolder.getUri()).resolve(relativePath);
+                logger.debug("Setting folderDestiny to {}", folderDestiny);
             }
 
-            if (folderDestiny.toString().startsWith(study.getUri().getPath())) {
+            String studyUri = study.getUri().getPath();
+            if (studyUri.endsWith("/")) {
+                studyUri = studyUri.substring(0, studyUri.length() - 1);
+            }
+            logger.debug("Study path: {}", studyUri);
+            if (folderDestiny.toString().startsWith(studyUri)) {
                 if (StringUtils.isNotEmpty(path)) {
                     String myPath = path;
                     if (!myPath.endsWith("/")) {
@@ -1238,13 +1244,13 @@ public class FileManager extends AnnotationSetManager<File> {
                     }
                     myPath += fileName;
 
-                    String relativePath = Paths.get(study.getUri().getPath()).relativize(folderDestiny.resolve(fileName)).toString();
+                    String relativePath = Paths.get(studyUri).relativize(folderDestiny.resolve(fileName)).toString();
                     if (!relativePath.equals(myPath)) {
                         throw new CatalogException("Destination uri within the workspace and path do not match");
                     }
                 } else {
                     //Set the path to whichever path would corresponding based on the workspace uri
-                    path = Paths.get(study.getUri().getPath()).relativize(folderDestiny).toString();
+                    path = Paths.get(studyUri).relativize(folderDestiny).toString();
                 }
 
                 if (isResource) {
