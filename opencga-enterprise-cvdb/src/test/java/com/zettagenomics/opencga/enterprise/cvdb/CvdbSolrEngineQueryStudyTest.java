@@ -100,7 +100,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
-        opencgaToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).getToken();
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).first().getToken();
 
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"), QueryOptions.empty(), opencgaToken);
         catalogManager.getUserManager().create(new User().setId("user").setName("User Name").setOrganization(organizationId), PASSWORD, opencgaToken);
@@ -111,7 +111,7 @@ public class CvdbSolrEngineQueryStudyTest {
                         .setOwner("user"),
                 null, opencgaToken);
 
-        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();

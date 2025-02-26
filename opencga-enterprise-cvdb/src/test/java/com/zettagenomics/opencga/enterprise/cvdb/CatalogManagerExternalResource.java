@@ -100,7 +100,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         // FIXME!! Should not need to create again the catalogManager
         //  Have to create again the CatalogManager, as it has a random "secretKey" inside
         catalogManager = new CatalogManager(configuration);
-        adminToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).getToken();
+        adminToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).first().getToken();
     }
 
     @Override

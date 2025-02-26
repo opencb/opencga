@@ -68,6 +68,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         analysisVariantSubCommands.addCommand("knockout-gene-query", analysisVariantCommandOptions.queryKnockoutGeneCommandOptions);
         analysisVariantSubCommands.addCommand("knockout-individual-query", analysisVariantCommandOptions.queryKnockoutIndividualCommandOptions);
         analysisVariantSubCommands.addCommand("knockout-run", analysisVariantCommandOptions.runKnockoutCommandOptions);
+        analysisVariantSubCommands.addCommand("liftover-run", analysisVariantCommandOptions.runLiftoverCommandOptions);
         analysisVariantSubCommands.addCommand("mendelian-error-run", analysisVariantCommandOptions.runMendelianErrorCommandOptions);
         analysisVariantSubCommands.addCommand("metadata", analysisVariantCommandOptions.metadataCommandOptions);
         analysisVariantSubCommands.addCommand("mutational-signature-query", analysisVariantCommandOptions.queryMutationalSignatureCommandOptions);
@@ -170,6 +171,8 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jobsSubCommands.addCommand("distinct", jobsCommandOptions.distinctCommandOptions);
         jobsSubCommands.addCommand("retry", jobsCommandOptions.retryCommandOptions);
         jobsSubCommands.addCommand("search", jobsCommandOptions.searchCommandOptions);
+        jobsSubCommands.addCommand("tool-build", jobsCommandOptions.buildToolCommandOptions);
+        jobsSubCommands.addCommand("tool-run", jobsCommandOptions.runToolCommandOptions);
         jobsSubCommands.addCommand("top", jobsCommandOptions.topCommandOptions);
         jobsSubCommands.addCommand("acl", jobsCommandOptions.aclCommandOptions);
         jobsSubCommands.addCommand("delete", jobsCommandOptions.deleteCommandOptions);

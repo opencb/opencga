@@ -22,9 +22,11 @@
 #' | updateAcl | /{apiVersion}/jobs/acl/{members}/update | members[*], action[*], body[*] |
 #' | aggregationStats | /{apiVersion}/jobs/aggregationStats | study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field |
 #' | create | /{apiVersion}/jobs/create | study, body[*] |
-#' | distinct | /{apiVersion}/jobs/distinct | study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field[*] |
+#' | distinct | /{apiVersion}/jobs/distinct | study, otherStudies, id, uuid, type, toolId, toolType, tool.externalExecutor.id, parentId, dryRun, internal.killJobRequested, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field[*] |
 #' | retry | /{apiVersion}/jobs/retry | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, study, body[*] |
-#' | search | /{apiVersion}/jobs/search | include, exclude, limit, skip, count, study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted |
+#' | search | /{apiVersion}/jobs/search | include, exclude, limit, skip, count, study, otherStudies, id, uuid, type, toolId, toolType, tool.externalExecutor.id, parentId, dryRun, internal.killJobRequested, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted |
+#' | buildTool | /{apiVersion}/jobs/tool/build | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runTool | /{apiVersion}/jobs/tool/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | top | /{apiVersion}/jobs/top | limit, study, internalStatus, priority, userId, toolId |
 #' | acl | /{apiVersion}/jobs/{jobs}/acl | jobs[*], member, silent |
 #' | delete | /{apiVersion}/jobs/{jobs}/delete | study, jobs[*] |
@@ -91,8 +93,13 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param otherStudies Flag indicating the entries being queried can belong to any related study, not just the primary one.
         #' @param id Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param uuid Comma separated list of job UUIDs up to a maximum of 100.
+        #' @param type Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
         #' @param toolId Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param toolType Tool type executed by the job [OPERATION, ANALYSIS].
+        #' @param tool.externalExecutor.id Id of the external executor. This field is only applicable for jobs executed by an external executor.
+        #' @param parentId Job id that generated this job (if any).
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param internal.killJobRequested Flag indicating that the user requested to kill the job.
         #' @param userId User that created the job.
         #' @param priority Priority of the job.
         #' @param status Filter by status.
@@ -133,8 +140,13 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param otherStudies Flag indicating the entries being queried can belong to any related study, not just the primary one.
         #' @param id Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param uuid Comma separated list of job UUIDs up to a maximum of 100.
+        #' @param type Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
         #' @param toolId Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param toolType Tool type executed by the job [OPERATION, ANALYSIS].
+        #' @param tool.externalExecutor.id Id of the external executor. This field is only applicable for jobs executed by an external executor.
+        #' @param parentId Job id that generated this job (if any).
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param internal.killJobRequested Flag indicating that the user requested to kill the job.
         #' @param userId User that created the job.
         #' @param priority Priority of the job.
         #' @param status Filter by status.
@@ -150,6 +162,34 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param deleted Boolean to retrieve deleted entries.
         search=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="search", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/jobs/tool/build:
+        #' Execute an analysis from a custom binary.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
+        #' @param jobDescription Job description.
+        #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
+        #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param data body.
+        buildTool=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory="tool",
+                subcategoryId=NULL, action="build", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/jobs/tool/run:
+        #' Execute an analysis from a custom binary.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
+        #' @param jobDescription Job description.
+        #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
+        #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param data NextFlow run parameters.
+        runTool=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory="tool", subcategoryId=NULL,
+                action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/jobs/top:
         #' Provide a summary of the running jobs.

@@ -46,7 +46,7 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         catalogManager.getOrganizationManager().update("org2", new OrganizationUpdateParams().setOwner("user"), null, opencgaToken);
 
         // Create project and study
-        String org2OwnerToken = catalogManager.getUserManager().login("org2", "user", TestParamConstants.PASSWORD).getToken();
+        String org2OwnerToken = catalogManager.getUserManager().login("org2", "user", TestParamConstants.PASSWORD).first().getToken();
         ProjectCreateParams projectCreateParams = new ProjectCreateParams()
                 .setId("project")
                 .setOrganism(new ProjectOrganism("hsapiens", "GRCh38"));
@@ -67,7 +67,8 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
                 ParamUtils.AclAction.ADD, org2OwnerToken);
 
         // Check we can log in with that user
-        AuthenticationResponse login = catalogManager.getUserManager().login(client.getOrganizationId(), client.getUserId(), client.getPassword());
+        AuthenticationResponse login = catalogManager.getUserManager().login(client.getOrganizationId(), client.getUserId(),
+                client.getPassword()).first();
         System.out.println("login = " + login);
 
         // Grant access to the federated user to the study
@@ -80,7 +81,7 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         enterpriseFederationManager.connect(client, ownerToken);
 
         // Check we can access remote data
-        ownerToken = catalogManager.getUserManager().refreshToken(ownerToken).getToken();
+        ownerToken = catalogManager.getUserManager().refreshToken(ownerToken).first().getToken();
         ClientConfiguration clientConfiguration = new ClientConfiguration("http://localhost:9090/opencga");
         GenericClient genericClient = new GenericClient(ownerToken, clientConfiguration);
         OpenCGAResult<Study> studyOpenCGAResult = genericClient.execute("studies", "org2@project:study", null, null, "info",
