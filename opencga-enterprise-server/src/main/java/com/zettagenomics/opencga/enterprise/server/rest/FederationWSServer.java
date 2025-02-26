@@ -22,10 +22,10 @@ import java.util.stream.Collectors;
 @Path("/{apiVersion}/federations")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Federations", description = "Methods for working with Federations")
-public class FederationWebService extends EnterpriseOpenCGAWSServer {
+public class FederationWSServer extends EnterpriseOpenCGAWSServer {
 
-    public FederationWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                                @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public FederationWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                              @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
@@ -33,7 +33,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     @Path("/server/create")
     @ApiOperation(value = "Share a resource with another XetaBase instance.")
     public Response create(
-            @ApiParam(value = "JSON containing the new Federation object", required = true) FederationServerCreateParams createParams) {
+            @ApiParam(name = "body", value = "JSON containing the new Federation object", required = true) FederationServerCreateParams createParams) {
         return run(() -> {
             String url = httpServletRequest.getRequestURL().toString();
             url = url.substring(0, url.indexOf("/webservices"));
@@ -58,7 +58,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     @ApiOperation(value = "Update some fields from a Federation server.")
     public Response updateServer(
             @ApiParam(value = "Federation server id") @PathParam("id") String id,
-            @ApiParam(value = "JSON containing the Federation server parameters to be updated", required = true) FederationServerUpdateParams params
+            @ApiParam(name = "body", value = "JSON containing the Federation server parameters to be updated", required = true) FederationServerUpdateParams params
     ) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().update(id, params, token));
     }
@@ -76,7 +76,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     @Path("/client/connect")
     @ApiOperation(value = "Connect to a shared XetaBase instance.")
     public Response connect(
-            @ApiParam(value = "JSON containing the Federation server configuration", required = true) FederationClientParams createParams) {
+            @ApiParam(name = "body", value = "JSON containing the Federation server configuration", required = true) FederationClientParams createParams) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().connect(createParams, token));
     }
 
@@ -84,7 +84,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     @Path("/client/{id}/synchronize")
     @ApiOperation(value = "Synchronize data from a known Federation server")
     public Response synchronize(
-            @ApiParam(value = "Federation client id to be synchronized", required = true) @PathParam("id") String federationClientId) {
+            @ApiParam(name = "body", value = "Federation client id to be synchronized", required = true) @PathParam("id") String federationClientId) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
     }
 
@@ -93,7 +93,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
     @ApiOperation(value = "Update some fields from a Federation client.")
     public Response updateClient(
             @ApiParam(value = "Federation client id") @PathParam("id") String id,
-            @ApiParam(value = "JSON containing the Federation client parameters to be updated", required = true) FederationClientUpdateParams params
+            @ApiParam(name = "body", value = "JSON containing the Federation client parameters to be updated", required = true) FederationClientUpdateParams params
     ) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().update(id, params, token));
     }
@@ -105,7 +105,7 @@ public class FederationWebService extends EnterpriseOpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed: ADD access or REMOVE access.", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
                 @QueryParam("action") String action,
-            @ApiParam(value = "JSON containing the list of users to which this action will be applied.", required = true) FederationUserParams params
+            @ApiParam(name = "body", value = "JSON containing the list of users to which this action will be applied.", required = true) FederationUserParams params
     ) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().shareStudy(studyStr, action, params, token));
     }

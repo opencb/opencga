@@ -1,9 +1,9 @@
 package com.zettagenomics.opencga.enterprise.server;
 
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseClinicalWebService;
+import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseClinicalWSServer;
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseMetaWSServer;
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseUserWSServer;
-import com.zettagenomics.opencga.enterprise.server.rest.FederationWebService;
+import com.zettagenomics.opencga.enterprise.server.rest.FederationWSServer;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
@@ -32,7 +32,7 @@ public class EnterpriseResourceConfig extends ResourceConfig {
         logger = LoggerFactory.getLogger(EnterpriseResourceConfig.class);
 
         enterpriseApiClasses = new LinkedHashMap<>(26);
-        enterpriseApiClasses.put("federations", FederationWebService.class);
+        enterpriseApiClasses.put("federations", FederationWSServer.class);
         enterpriseApiClasses.put("organizations", OrganizationWSServer.class);
         enterpriseApiClasses.put("users", EnterpriseUserWSServer.class);
         enterpriseApiClasses.put("projects", ProjectWSServer.class);
@@ -48,7 +48,7 @@ public class EnterpriseResourceConfig extends ResourceConfig {
         enterpriseApiClasses.put("variant", VariantWebService.class);
         enterpriseApiClasses.put("variantOperation", VariantOperationWebService.class);
         enterpriseApiClasses.put("meta", EnterpriseMetaWSServer.class);
-        enterpriseApiClasses.put("clinical", EnterpriseClinicalWebService.class);
+        enterpriseApiClasses.put("clinical", EnterpriseClinicalWSServer.class);
         enterpriseApiClasses.put("admin", AdminWSServer.class);
 
         // Utils, Filters and hidden API classes

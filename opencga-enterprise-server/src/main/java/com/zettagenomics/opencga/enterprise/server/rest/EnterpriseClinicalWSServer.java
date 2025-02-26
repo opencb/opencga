@@ -33,13 +33,13 @@ import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 @Path("/{apiVersion}/analysis/clinical")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Clinical", position = 4, description = "Methods for working with Clinical Interpretations")
-public class EnterpriseClinicalWebService extends ClinicalWebService {
+public class EnterpriseClinicalWSServer extends ClinicalWebService {
 
     protected static CvdbSolrEngine cvdbEngine;
 
     private static AtomicBoolean eClinicalInitialized = new AtomicBoolean(false);
 
-    public EnterpriseClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public EnterpriseClinicalWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
         // Get enterprise configuration to set the CVDB engine
