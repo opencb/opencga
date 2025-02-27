@@ -388,7 +388,7 @@ public class NoteManager extends AbstractManager {
     }
 
     public static void validateNewNote(Note note, String userId) throws CatalogParameterException {
-        ParamUtils.checkIdentifier(note.getId(), NoteDBAdaptor.QueryParams.ID.key());
+        ParamUtils.checkNoteIdentifier(note.getId(), NoteDBAdaptor.QueryParams.ID.key());
         ParamUtils.checkObj(note.getScope(), NoteDBAdaptor.QueryParams.SCOPE.key());
         if (note.getScope().equals(Note.Scope.STUDY)) {
             ParamUtils.checkParameter(note.getStudy(), NoteDBAdaptor.QueryParams.STUDY.key());
