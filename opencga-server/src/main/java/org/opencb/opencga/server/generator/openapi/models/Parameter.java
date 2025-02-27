@@ -8,17 +8,9 @@ public class Parameter {
     private String type="";
     private String format="";
     private String defaultValue="";
+    private Schema schema = null;
 
     public Parameter() {
-    }
-
-    public Parameter(String name, String in, String description, boolean required, String type, String format) {
-        this.name = name;
-        this.in = in;
-        this.description = description;
-        this.required = required;
-        this.type = type;
-        this.format = format;
     }
 
     // Getters y Setters
@@ -85,5 +77,14 @@ public class Parameter {
         this.defaultValue = defaultValue;
         return this;
     }
+
+    public void setSchema(Schema schema) {
+        this.schema = schema;
+    }
+
+    public Schema getSchema() {
+        return schema;
+    }
+
 }
 
