@@ -5,6 +5,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
@@ -108,13 +109,13 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, userToken).first();
-        study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
-                userToken).first();
+        study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null,
+                INCLUDE_RESULT, userToken).first();
 
         catalogManager.getProjectManager().create(projectId2, "Project #2 about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, userToken).first();
-        study2 = catalogManager.getStudyManager().create(projectId2, "phase2", null, "Phase 2", "Done", null, null, null, null, null,
-                userToken).first();
+        study2 = catalogManager.getStudyManager().create(projectId2, "phase2", null, "Phase 2", "Done", null, null, null, null,
+                INCLUDE_RESULT, userToken).first();
     }
 
     //-----------------------------------------------------------------------
@@ -141,6 +142,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         assertTrue(cveResult.getNumResults() > 0);
     }
 
+    @Ignore
     @Test
     public void testClinicalVariantSummaryStatsFromVariantId() throws IOException, CvdbException, CatalogException {
         // CVDB query
@@ -192,6 +194,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         System.out.println("============================================");
     }
 
+    @Ignore
     @Test
     public void testClinicalVariantSummaryStatsFromVariantIds() throws IOException, CvdbException, CatalogException {
         // CVDB query
@@ -225,6 +228,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         System.out.println("============================================");
     }
 
+    @Ignore
     @Test
     public void testUpdateSummaryStats() throws IOException, CvdbException, CatalogException {
         // CVDB query

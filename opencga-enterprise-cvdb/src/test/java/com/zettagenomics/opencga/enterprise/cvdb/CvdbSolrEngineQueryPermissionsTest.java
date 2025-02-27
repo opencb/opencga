@@ -34,7 +34,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
@@ -170,7 +170,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariant cv : result.getResults()) {
-            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+            String ciId = (String) cv.getAttributes().get(OPENCGA_INTERPRETATION_ID);
             assertTrue(StringUtils.isNotEmpty(ciId));
             if (!alreadyChecked.contains(ciId)) {
                 Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
@@ -185,7 +185,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariant cv : result.getResults()) {
-            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+            String ciId = (String) cv.getAttributes().get(OPENCGA_INTERPRETATION_ID);
             assertTrue(StringUtils.isNotEmpty(ciId));
             if (!alreadyChecked.contains(ciId)) {
                 Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
@@ -252,7 +252,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
         assertTrue(result.getNumResults() > 0);
         for (ClinicalVariantEvidence cve : result.getResults()) {
-            String variantId = (String) cve.getAttributes().get(CV_VARIANT_ID_NAME);
+            String variantId = (String) cve.getAttributes().get(OPENCGA_VARIANT_ID);
             assertTrue(StringUtils.isNotEmpty(variantId));
             ClinicalVariant cv = TestUtilities.getClinicalVariant(variantId, projectId, cvdbEngine, userToken);
             assertEquals(query.getString(CV_TYPE_NAME), cv.getType().name());
@@ -263,12 +263,12 @@ public class CvdbSolrEngineQueryPermissionsTest {
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
         assertTrue(result.getNumResults() > 0);
         for (ClinicalVariantEvidence cve : result.getResults()) {
-            String variantId = (String) cve.getAttributes().get(CV_VARIANT_ID_NAME);
+            String variantId = (String) cve.getAttributes().get(OPENCGA_VARIANT_ID);
             assertTrue(StringUtils.isNotEmpty(variantId));
             ClinicalVariant cv = TestUtilities.getClinicalVariant(variantId, projectId, cvdbEngine, userToken);
             assertEquals(query.getString(CV_TYPE_NAME), cv.getType().name());
 
-            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
+            String ciId = (String) cve.getAttributes().get(OPENCGA_INTERPRETATION_ID);
             Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
             assertEquals(user2ViewerforCaId, ci.getClinicalAnalysisId());
         }

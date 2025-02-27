@@ -123,7 +123,7 @@ public class ClinicalAggregationTest {
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, userToken);
         assertEquals(1, facetResult.getNumResults());
         assertEquals(2L, facetResult.first().getCount());
-        assertEquals(CA_DISORDER_ID_NAME, facetResult.first().getName());
+        assertEquals("disorderId", facetResult.first().getName());
         for (FacetField result : facetResult.getResults()) {
             System.out.println(result);
         }

@@ -39,7 +39,7 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
@@ -454,7 +454,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariant cv : result.getResults()) {
-            String caId = (String) cv.getAttributes().get(CA_ID_NAME);
+            String caId = (String) cv.getAttributes().get(OPENCGA_CLINICAL_ANALYSIS_ID);
             assertTrue(StringUtils.isNotEmpty(caId));
             if (!alreadyChecked.contains(caId)) {
                 ClinicalAnalysis ca = TestUtilities.getClinicalAnalyis(caId, projectId, cvdbEngine, userToken);
@@ -476,7 +476,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariant cv : result.getResults()) {
-            String caId = (String) cv.getAttributes().get(CA_ID_NAME);
+            String caId = (String) cv.getAttributes().get(OPENCGA_CLINICAL_ANALYSIS_ID);
             assertTrue(StringUtils.isNotEmpty(caId));
             if (!alreadyChecked.contains(caId)) {
                 ClinicalAnalysis ca = TestUtilities.getClinicalAnalyis(caId, projectId, cvdbEngine, userToken);
@@ -492,7 +492,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariant cv : result.getResults()) {
-            String caId = (String) cv.getAttributes().get(CA_ID_NAME);
+            String caId = (String) cv.getAttributes().get(OPENCGA_CLINICAL_ANALYSIS_ID);
             assertTrue(StringUtils.isNotEmpty(caId));
             if (!alreadyChecked.contains(caId)) {
                 ClinicalAnalysis ca = TestUtilities.getClinicalAnalyis(caId, projectId, cvdbEngine, userToken);
@@ -519,7 +519,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariantEvidence cve : result.getResults()) {
-            String caId = (String) cve.getAttributes().get(CA_ID_NAME);
+            String caId = (String) cve.getAttributes().get(OPENCGA_CLINICAL_ANALYSIS_ID);
             assertTrue(StringUtils.isNotEmpty(caId));
             if (!alreadyChecked.contains(caId)) {
                 ClinicalAnalysis ca = TestUtilities.getClinicalAnalyis(caId, projectId, cvdbEngine, userToken);
@@ -541,7 +541,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariantEvidence cve : result.getResults()) {
-            String caId = (String) cve.getAttributes().get(CA_ID_NAME);
+            String caId = (String) cve.getAttributes().get(OPENCGA_CLINICAL_ANALYSIS_ID);
             assertTrue(StringUtils.isNotEmpty(caId));
             if (!alreadyChecked.contains(caId)) {
                 ClinicalAnalysis ca = TestUtilities.getClinicalAnalyis(caId, projectId, cvdbEngine, userToken);
@@ -557,7 +557,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariantEvidence cve : result.getResults()) {
-            String caId = (String) cve.getAttributes().get(CA_ID_NAME);
+            String caId = (String) cve.getAttributes().get(OPENCGA_CLINICAL_ANALYSIS_ID);
             assertTrue(StringUtils.isNotEmpty(caId));
             if (!alreadyChecked.contains(caId)) {
                 ClinicalAnalysis ca = TestUtilities.getClinicalAnalyis(caId, projectId, cvdbEngine, userToken);
@@ -895,7 +895,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariant cv : result.getResults()) {
-            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+            String ciId = (String) cv.getAttributes().get(OPENCGA_INTERPRETATION_ID);
             assertTrue(StringUtils.isNotEmpty(ciId));
             if (!alreadyChecked.contains(ciId)) {
                 Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
@@ -911,7 +911,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariant cv : result.getResults()) {
-            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+            String ciId = (String) cv.getAttributes().get(OPENCGA_INTERPRETATION_ID);
             assertTrue(StringUtils.isNotEmpty(ciId));
             if (!alreadyChecked.contains(ciId)) {
                 Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
@@ -933,7 +933,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariant cv : result.getResults()) {
-            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+            String ciId = (String) cv.getAttributes().get(OPENCGA_INTERPRETATION_ID);
             assertTrue(StringUtils.isNotEmpty(ciId));
             if (!alreadyChecked.contains(ciId)) {
                 Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
@@ -959,7 +959,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariantEvidence cve : result.getResults()) {
-            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
+            String ciId = (String) cve.getAttributes().get(OPENCGA_INTERPRETATION_ID);
             assertTrue(StringUtils.isNotEmpty(ciId));
             if (!alreadyChecked.contains(ciId)) {
                 Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
@@ -975,7 +975,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariantEvidence cve : result.getResults()) {
-            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
+            String ciId = (String) cve.getAttributes().get(OPENCGA_INTERPRETATION_ID);
             assertTrue(StringUtils.isNotEmpty(ciId));
             if (!alreadyChecked.contains(ciId)) {
                 Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
@@ -997,7 +997,7 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariantEvidence cve : result.getResults()) {
-            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
+            String ciId = (String) cve.getAttributes().get(OPENCGA_INTERPRETATION_ID);
             assertTrue(StringUtils.isNotEmpty(ciId));
             if (!alreadyChecked.contains(ciId)) {
                 Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
@@ -1075,7 +1075,7 @@ public class CvdbSolrEngineQueryStudyTest {
         DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, userToken);
         assertTrue(result.getNumResults() > 0);
         for (ClinicalVariantEvidence cve : result.getResults()) {
-            String variantId = (String) cve.getAttributes().get(CV_VARIANT_ID_NAME);
+            String variantId = (String) cve.getAttributes().get(OPENCGA_VARIANT_ID);
             assertTrue(StringUtils.isNotEmpty(variantId));
             ClinicalVariant cv = TestUtilities.getClinicalVariant(variantId, projectId, cvdbEngine, userToken);
             assertEquals(query.getString(CV_TYPE_NAME), cv.getType().name());
@@ -1144,26 +1144,6 @@ public class CvdbSolrEngineQueryStudyTest {
                 for (ClinicalVariant cv : ca.getInterpretation().getPrimaryFindings()) {
                     for (ClinicalVariantEvidence cve : cv.getEvidences()) {
                         if (query.getString(CVE_PANEL_ID_NAME).equals(cve.getPanelId())) {
-                            found = true;
-                        }
-                    }
-                }
-                assertTrue(found);
-                alreadyChecked.add(ca.getId());
-            }
-        }
-
-        // Check consequence type ID
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(CVE_SO_TERM_NAME_NAME, "SO:0001821");
-        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
-        assertTrue(result.getNumResults() > 0);
-        for (ClinicalAnalysis ca : result.getResults()) {
-            if (!alreadyChecked.contains(ca.getId())) {
-                boolean found = false;
-                for (ClinicalVariant cv : ca.getInterpretation().getPrimaryFindings()) {
-                    for (ClinicalVariantEvidence cve : cv.getEvidences()) {
-                        if (cve.getGenomicFeature().getConsequenceTypes().stream().map(SequenceOntologyTerm::getAccession).collect(Collectors.toList()).contains(query.getString(CVE_SO_TERM_NAME_NAME))) {
                             found = true;
                         }
                     }
@@ -1408,26 +1388,6 @@ public class CvdbSolrEngineQueryStudyTest {
             }
         }
 
-        // Check consequence type ID
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(CVE_SO_TERM_NAME_NAME, "SO:0001821");
-        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, userToken);
-        assertTrue(result.getNumResults() > 0);
-        for (Interpretation ci : result.getResults()) {
-            if (!alreadyChecked.contains(ci.getId())) {
-                boolean found = false;
-                for (ClinicalVariant cv : ci.getPrimaryFindings()) {
-                    for (ClinicalVariantEvidence cve : cv.getEvidences()) {
-                        if (cve.getGenomicFeature().getConsequenceTypes().stream().map(SequenceOntologyTerm::getAccession).collect(Collectors.toList()).contains(query.getString(CVE_SO_TERM_NAME_NAME))) {
-                            found = true;
-                        }
-                    }
-                }
-                assertTrue(found);
-                alreadyChecked.add(ci.getId());
-            }
-        }
-
         // Check consequence type name
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CVE_SO_TERM_NAME_NAME, "inframe_insertion");
@@ -1658,21 +1618,6 @@ public class CvdbSolrEngineQueryStudyTest {
             assertTrue(found);
         }
 
-        // Check consequence type ID
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(CVE_SO_TERM_NAME_NAME, "SO:0001821");
-        result = cvdbEngine.searchClinicalVariants(query, queryOptions, userToken);
-        assertTrue(result.getNumResults() > 0);
-        for (ClinicalVariant cv : result.getResults()) {
-            boolean found = false;
-            for (ClinicalVariantEvidence cve : cv.getEvidences()) {
-                if (cve.getGenomicFeature().getConsequenceTypes().stream().map(SequenceOntologyTerm::getAccession).collect(Collectors.toList()).contains(query.getString(CVE_SO_TERM_NAME_NAME))) {
-                    found = true;
-                }
-            }
-            assertTrue(found);
-        }
-
         // Check consequence type name
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CVE_SO_TERM_NAME_NAME, "inframe_insertion");
@@ -1818,16 +1763,16 @@ public class CvdbSolrEngineQueryStudyTest {
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_ID.key(), study0.getId());
         DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, userToken);
-        assertEquals(26, result.getNumResults());
+        assertEquals(28, result.getNumResults());
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_ID.key(), study1.getId());
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, userToken);
-        assertEquals(5, result.getNumResults());
+        assertEquals(8, result.getNumResults());
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, userToken);
-        assertEquals(31, result.getNumResults());
+        assertEquals(36, result.getNumResults());
 
         // Check tier
         query = new Query(PROJECT_PARAM_NAME, projectId);
@@ -1854,15 +1799,6 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(result.getNumResults() > 0);
         for (ClinicalVariantEvidence cve : result.getResults()) {
             assertEquals(query.getString(CVE_PANEL_ID_NAME), cve.getPanelId());
-        }
-
-        // Check consequence type ID
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(CVE_SO_TERM_NAME_NAME, "SO:0001821");
-        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, userToken);
-        assertTrue(result.getNumResults() > 0);
-        for (ClinicalVariantEvidence cve : result.getResults()) {
-            assertTrue(cve.getGenomicFeature().getConsequenceTypes().stream().map(SequenceOntologyTerm::getAccession).collect(Collectors.toList()).contains(query.getString(CVE_SO_TERM_NAME_NAME)));
         }
 
         // Check consequence type name
