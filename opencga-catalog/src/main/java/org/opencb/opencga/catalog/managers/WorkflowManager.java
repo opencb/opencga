@@ -65,8 +65,8 @@ public class WorkflowManager extends ResourceManager<Workflow> {
     private static final Pattern MEMORY_PATTERN = Pattern.compile("\\s*memory\\s*=\\s*\\{\\s*[^0-9]*([0-9]+\\.[A-Za-z]+)");
     private static final Pattern CPU_PATTERN = Pattern.compile("\\s*cpus\\s*=\\s*\\{\\s*[^0-9]*([0-9]+)");
 
-    private static final int MAX_CPUS = 16;
-    private static final String MAX_MEMORY = "64GB";
+    public static final int MAX_CPUS = 16;
+    public static final String MAX_MEMORY = "64.GB";  // Format is important for Nextflow. It requires the dot symbol.
 
     private final Logger logger;
 

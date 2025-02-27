@@ -31,7 +31,9 @@ import org.opencb.opencga.core.tools.result.ToolStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -198,8 +200,8 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         URL nextflowConfig = getClass().getResource("/nextflow.config");
         Path nextflowConfigPath;
         if (nextflowConfig != null) {
-            nextflowConfigPath = temporalInputDir.resolve("nextflow.config");
-            writeNextflowConfigFile(nextflowConfig, nextflowConfigPath, outDirPath);
+            nextflowConfigPath = getOutDir().resolve("nextflow.config");
+            writeNextflowConfigFile(nextflowConfigPath);
             dockerInputBindings.add(new AbstractMap.SimpleEntry<>(nextflowConfigPath.toString(), nextflowConfigPath.toString()));
         } else {
             throw new ToolException("Can't fetch nextflow.config file");
@@ -277,20 +279,37 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         endTraceFileMonitor();
     }
 
-    private void writeNextflowConfigFile(URL inputUrl, Path outputFile, String outdirPath) throws ToolException {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputUrl.openStream()));
-             BufferedWriter writer = Files.newBufferedWriter(outputFile)) {
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                // Replace occurrences of "$OUTPUT" with the replacement string
-                line = line.replace("$OUTPUT", outdirPath);
-                writer.write(line);
-                writer.newLine();
-            }
+    private void writeNextflowConfigFile(Path outputFile) throws ToolException {
+        try (BufferedWriter writer = Files.newBufferedWriter(outputFile)) {
+            writeTraceConfig(writer);
+            writeResourceLimitsConfig(writer);
         } catch (IOException e) {
             throw new ToolException("Could not replace 'nextflow.config' file contents", e);
         }
+    }
+
+    private void writeTraceConfig(BufferedWriter writer) throws IOException {
+        writer.write("trace {\n");
+        writer.write("    enabled = true\n");
+        writer.write("    file = '" + outDirPath + "/trace.txt'\n");
+        writer.write("    overwrite = true\n");
+        writer.write("    fields = 'task_id,hash,name,status,start,complete,%cpu,peak_vmem'\n");
+        writer.write("}\n");
+    }
+
+    private void writeResourceLimitsConfig(BufferedWriter writer) throws IOException {
+        if (workflow.getMinimumRequirements() == null || StringUtils.isEmpty(workflow.getMinimumRequirements().getMemory()) ||
+                StringUtils.isEmpty(workflow.getMinimumRequirements().getCpu())) {
+            return;
+        }
+
+        writer.newLine();
+        writer.write("process {\n");
+        writer.write("    resourceLimits = [\n");
+        writer.write("        cpus: " + workflow.getMinimumRequirements().getCpu() + ",\n");
+        writer.write("        memory: " + workflow.getMinimumRequirements().getMemory() + "\n");
+        writer.write("    ]\n");
+        writer.write("}\n");
     }
 
     protected void endTraceFileMonitor() {
