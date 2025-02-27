@@ -276,6 +276,7 @@ public abstract class OpenCgaTool {
             }
             throw e;
         } finally {
+            close();
             // If the shutdown hook has been executed, the ExecutionResultManager is already closed
             if (!erm.isClosed()) {
                 result = close(exception);
