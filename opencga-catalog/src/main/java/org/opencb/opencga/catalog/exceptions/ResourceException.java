@@ -14,28 +14,18 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.config;
+package org.opencb.opencga.catalog.exceptions;
 
-/**
- * Created by imedina on 04/05/16.
- */
-public class GrpcConfig {
-
-    private String host;
-
-    public GrpcConfig() {
+public class ResourceException extends Exception {
+    public ResourceException(String message) {
+        super(message);
     }
 
-    public GrpcConfig(String host) {
-        this.host = host;
+    public ResourceException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public String getHost() {
-        return host;
-    }
-
-    public GrpcConfig setHost(String host) {
-        this.host = host;
-        return this;
+    public ResourceException(Throwable cause) {
+        super(cause);
     }
 }

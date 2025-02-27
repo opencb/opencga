@@ -1449,7 +1449,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyStr, userId, organizationId);
+        Study study = studyManager.resolveId(studyFqn, StudyManager.INCLUDE_CONFIGURATION, tokenPayload);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyStr)
@@ -1561,6 +1561,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
             checkMembers(organizationId, study.getUid(), members);
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, members);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
         } catch (CatalogException e) {
             if (sampleStringList != null) {
                 for (String sampleId : sampleStringList) {

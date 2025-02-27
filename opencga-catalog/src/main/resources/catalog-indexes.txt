@@ -10,10 +10,11 @@
 {"collections": ["note", "note_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["note", "note_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
 
-{"collections": ["project"], "fields": {"id": 1}, "options": {"unique": true}}
+{"collections": ["project"], "fields": {"id": 1}, "options": {}}
 {"collections": ["project"], "fields": {"uid": 1}, "options": {"unique": true}}
 {"collections": ["project"], "fields": {"uuid": 1}, "options": {"unique": true}}
 {"collections": ["project"], "fields": {"fqn": 1}, "options": {"unique": true}}
+{"collections": ["project"], "fields": {"internal.federated": 1}, "options": {}}
 
 {"collections": ["user"], "fields": {"id": 1}, "options": {"unique": true}}
 
@@ -25,6 +26,7 @@
 {"collections": ["study"], "fields": {"groups.userIds": 1, "uid": 1}, "options": {"unique": true}}
 {"collections": ["study"], "fields": {"_acl": 1}, "options": {}}
 {"collections": ["study"], "fields": {"_project.uid": 1}, "options": {}}
+{"collections": ["study"], "fields": {"internal.federated": 1}, "options": {}}
 {"collections": ["study"], "fields": {"variableSets.id": 1, "uid": 1}, "options": {"unique": true}}
 
 {"collections": ["job"], "fields": {"uuid": 1}, "options": {"unique": true}}
@@ -57,6 +59,7 @@
 {"collections": ["file"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"format": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"bioformat": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"resource": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"size": 1, "studyUid": 1}, "options": {}}
 {"collections": ["file"], "fields": {"software.name": 1, "studyUid": 1}, "options": {}}

@@ -14,26 +14,28 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.exceptions;
+package org.opencb.opencga.core.config.client;
 
-import org.opencb.commons.datastore.core.result.Error;
+/**
+ * Created by imedina on 04/05/16.
+ */
+public class GrpcConfig {
 
-public class ClientException extends Exception {
+    private String host;
 
-    public ClientException(String message) {
-        super(message);
+    public GrpcConfig() {
     }
 
-    public ClientException(Error error) {
-        super(error.getDescription());
+    public GrpcConfig(String host) {
+        this.host = host;
     }
 
-    public ClientException(String message, Throwable cause) {
-        super(message, cause);
+    public String getHost() {
+        return host;
     }
 
-    public ClientException(Throwable cause) {
-        super(cause);
+    public GrpcConfig setHost(String host) {
+        this.host = host;
+        return this;
     }
-
 }

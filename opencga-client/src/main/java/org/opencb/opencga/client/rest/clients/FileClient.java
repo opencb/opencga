@@ -20,9 +20,10 @@ import java.io.DataInputStream;
 import java.lang.Object;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntryList;
@@ -54,7 +55,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the File webservices.
  *    PATH: files
  */
-public class FileClient extends AbstractParentClient {
+public class FileClient extends ParentClient {
 
     public FileClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
@@ -190,6 +191,7 @@ public class FileClient extends AbstractParentClient {
      *       bioformat: Comma separated Bioformat values. For existing Bioformats see files/bioformats.
      *       format: Comma separated Format values. For existing Formats see files/formats.
      *       external: Boolean field indicating whether to filter by external or non external files.
+     *       resource: Boolean field indicating whether the file is a resource or not.
      *       status: Filter by status.
      *       internalStatus: Filter by internal status.
      *       internalVariantIndexStatus: Filter by internal variant index status.
@@ -333,6 +335,7 @@ public class FileClient extends AbstractParentClient {
      *       bioformat: Comma separated Bioformat values. For existing Bioformats see files/bioformats.
      *       format: Comma separated Format values. For existing Formats see files/formats.
      *       external: Boolean field indicating whether to filter by external or non external files.
+     *       resource: Boolean field indicating whether the file is a resource or not.
      *       status: Filter by status.
      *       internalStatus: Filter by internal status.
      *       internalVariantIndexStatus: Filter by internal variant index status.
@@ -369,6 +372,7 @@ public class FileClient extends AbstractParentClient {
      *       fileFormat: File format.
      *       bioformat: File bioformat.
      *       checksum: Expected MD5 file checksum.
+     *       resource: Boolean field indicating whether the file is a resource or not.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       relativeFilePath: Path within catalog where the file will be located (default: root folder).
      *       description: description.

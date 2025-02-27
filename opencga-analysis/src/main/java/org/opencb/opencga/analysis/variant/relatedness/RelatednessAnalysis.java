@@ -23,6 +23,7 @@ import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
@@ -42,6 +43,9 @@ public class RelatednessAnalysis extends OpenCgaTool {
     public static final String DESCRIPTION = "Compute a score to quantify relatedness between samples.";
 
     public static final String MAF_DEFAULT_VALUE = "1000G:ALL>0.3";
+
+    public static final String RELATEDNESS_VARIANTS_PRUNE_IN = "RELATEDNESS_VARIANTS_PRUNE_IN";
+    public static final String RELATEDNESS_VARIANTS_FRQ = "RELATEDNESS_VARIANTS_FRQ";
 
     private String studyId;
     private String familyId;
@@ -159,6 +163,10 @@ public class RelatednessAnalysis extends OpenCgaTool {
 
         Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(FamilyQcAnalysis.ID).resolve("relatedness_thresholds.csv");
         thresholds = AnalysisUtils.parseRelatednessThresholds(thresholdsPath);
+
+        // Check resources
+        ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
+        resourceManager.checkResourcePaths(ID);
     }
 
     @Override
@@ -172,7 +180,7 @@ public class RelatednessAnalysis extends OpenCgaTool {
                     .setSampleIds(sampleIds)
                     .setMinorAlleleFreq(minorAlleleFreq)
                     .setThresholds(thresholds)
-                    .setResourcePath(getOpencgaHome().resolve("analysis/resources").resolve(ID))
+                    .setResourcePath(configuration.getAnalysis().getResource().getBasePath().resolve(ID))
                     .execute();
         });
     }

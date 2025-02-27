@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.config;
+package org.opencb.opencga.core.config.client;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -47,6 +48,12 @@ public final class ClientConfiguration {
 
     public ClientConfiguration() {
         logger = LoggerFactory.getLogger(ClientConfiguration.class);
+    }
+
+    public ClientConfiguration(String opencgaUrl) {
+        logger = LoggerFactory.getLogger(ClientConfiguration.class);
+        HostConfig hostConfig = new HostConfig("opencga", opencgaUrl);
+        this.rest = new RestConfig(Collections.singletonList(hostConfig), false, null);
     }
 
     public static ClientConfiguration load(Path clientConfigurationPath) throws IOException {

@@ -184,6 +184,8 @@ class File(_ParentRestClient):
             see files/formats.
         :param bool external: Boolean field indicating whether to filter by
             external or non external files.
+        :param bool resource: Boolean field indicating whether the file is a
+            resource or not.
         :param str status: Filter by status.
         :param str internal_status: Filter by internal status.
         :param str internal_variant_index_status: Filter by internal variant
@@ -358,6 +360,8 @@ class File(_ParentRestClient):
             see files/formats.
         :param bool external: Boolean field indicating whether to filter by
             external or non external files.
+        :param bool resource: Boolean field indicating whether the file is a
+            resource or not.
         :param str status: Filter by status.
         :param str internal_status: Filter by internal status.
         :param str internal_variant_index_status: Filter by internal variant
@@ -413,6 +417,8 @@ class File(_ParentRestClient):
             OTHER_PED VCF4 VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE
             REFERENCE_GENOME NONE UNKNOWN']
         :param str checksum: Expected MD5 file checksum.
+        :param bool resource: Boolean field indicating whether the file is a
+            resource or not.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param str relative_file_path: Path within catalog where the file will

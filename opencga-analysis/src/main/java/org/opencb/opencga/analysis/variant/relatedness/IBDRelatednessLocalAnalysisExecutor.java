@@ -20,33 +20,47 @@ import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.family.qc.IBDComputation;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.IBDRelatednessAnalysisExecutor;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import static org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis.RELATEDNESS_VARIANTS_FRQ;
+import static org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis.RELATEDNESS_VARIANTS_PRUNE_IN;
 
 @ToolExecutor(id="opencga-local", tool = RelatednessAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
 public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisExecutor implements StorageToolExecutor {
 
     @Override
-    public void run() throws ToolException {
+    public void run() throws ToolException, ResourceException {
         // Get managers
         VariantStorageManager variantStorageManager = getVariantStorageManager();
 
         // Sanity check to compute
         String opencgaHome = getExecutorParams().getString("opencgaHome");
         if (!Paths.get(opencgaHome).toFile().exists()) {
-
+            throw new ToolException("Internal error: OpenCGA home not setting!");
         }
 
         // Run IBD/IBS computation using PLINK in docker
-        RelatednessReport report = IBDComputation.compute(getStudyId(), getFamily(), getSampleIds(), getMinorAlleleFreq(), getThresholds(),
-                getResourcePath(), getOutDir(), variantStorageManager, getToken());
+        RelatednessReport report;
+        try {
+            ResourceManager resourceManager = new ResourceManager(Paths.get(getExecutorParams().getString("opencgaHome")));
+            Path pruneInPath = resourceManager.checkResourcePath(RELATEDNESS_VARIANTS_PRUNE_IN);
+            Path freqPath = resourceManager.checkResourcePath(RELATEDNESS_VARIANTS_FRQ);
+
+            report = IBDComputation.compute(getStudyId(), getFamily(), getSampleIds(), getMinorAlleleFreq(), getThresholds(), pruneInPath,
+                    freqPath, getOutDir(), variantStorageManager, getToken());
+        } catch (IOException e) {
+            throw new ToolException(e);
+        }
 
         // Sanity check
         if (report == null) {
