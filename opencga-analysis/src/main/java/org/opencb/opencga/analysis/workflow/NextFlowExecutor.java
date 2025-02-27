@@ -221,7 +221,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 //            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
             stringBuilder.append(workflow.getRepository().getId());
             // Add the repository version if we have it and the user is not specifying it
-            if (StringUtils.isNotEmpty(workflow.getRepository().getVersion()) && !cliParams.contains(" -r ")) {
+            if (StringUtils.isNotEmpty(workflow.getRepository().getVersion()) && !cliParams.contains("-r ")) {
                 stringBuilder
                         .append(" -r ")
                         .append(workflow.getRepository().getVersion());
