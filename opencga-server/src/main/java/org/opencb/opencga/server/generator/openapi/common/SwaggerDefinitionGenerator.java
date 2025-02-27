@@ -70,7 +70,7 @@ public class SwaggerDefinitionGenerator {
     }
 
     public static boolean isOpencbBean(Class<?> fieldType) {
-        return fieldType.getName().contains("org.opencb");
+        return fieldType.getName().contains("org.opencb") || fieldType.getName().contains("com.zettagenomics");
     }
 
     private static FieldDefinition managePrimitiveField(Class<?> fieldType) {
