@@ -339,7 +339,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         final String[] acceptedListParams = {QueryParams.MANAGER.key(), QueryParams.SCRIPTS.key(), QueryParams.TAGS.key(),
-                QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
+                QueryParams.REPOSITORY.key(), QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedListParams);
 
 //        // Check if the scripts exist.

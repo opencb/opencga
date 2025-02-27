@@ -28,6 +28,7 @@ public interface WorkflowDBAdaptor extends CoreDBAdaptor<Workflow> {
         COMMAND_LINE("commandLine", TEXT, ""),
         MANAGER("manager", OBJECT, ""),
         MANAGER_ID("manager.id", TEXT, ""),
+        REPOSITORY("repository", OBJECT, ""),
         SCRIPTS("scripts", OBJECT, ""),
         VARIABLES("variables", OBJECT, ""),
         MINIMUM_REQUIREMENTS("minimumRequirements", OBJECT, ""),
