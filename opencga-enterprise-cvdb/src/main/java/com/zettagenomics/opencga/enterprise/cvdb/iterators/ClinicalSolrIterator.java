@@ -22,6 +22,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -29,7 +31,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 
-public class ClinicalSolrterator<T> implements Iterator<T>, AutoCloseable {
+public class ClinicalSolrIterator<T> implements Iterator<T>, AutoCloseable {
 
     private SolrClient solrClient;
     private String collection;
@@ -45,7 +47,9 @@ public class ClinicalSolrterator<T> implements Iterator<T>, AutoCloseable {
 
     private static final int BATCH_SIZE = 100;
 
-    public ClinicalSolrterator(SolrClient solrClient, String collection, SolrQuery solrQuery, Class<T> classType)
+    protected static Logger logger = LoggerFactory.getLogger(ClinicalSolrIterator.class);
+
+    public ClinicalSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, Class<T> classType)
             throws IOException, SolrServerException {
         this.solrClient = solrClient;
         this.collection = collection;
@@ -57,6 +61,7 @@ public class ClinicalSolrterator<T> implements Iterator<T>, AutoCloseable {
         this.solrQuery.setSort(SolrQuery.SortClause.asc("id"));
 
         // This is the limit of the user, or the default limit if it is not passed
+
         this.remaining = (solrQuery.getRows() == null || solrQuery.getRows() < 0)
                 ? Integer.MAX_VALUE
                 : solrQuery.getRows();
@@ -131,7 +136,6 @@ public class ClinicalSolrterator<T> implements Iterator<T>, AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        // nothing to do
     }
 
     public long getNumFound() {

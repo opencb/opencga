@@ -22,7 +22,6 @@ import org.opencb.opencga.core.models.federation.FederationServerParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyInternal;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.User;
@@ -200,5 +199,38 @@ public class FederationUtils {
         study.setGroups(groups);
     }
 
+    public static FederationClientParams findFederationClient(Organization organization, String federationId) throws CatalogException {
+        // Obtain the federation client credentials
+        if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getClients())) {
+            throw new CatalogException("The organization does not have any federation clients configured.");
+        }
+
+        for (FederationClientParams client : organization.getFederation().getClients()) {
+            if (client.getId().equals(federationId)) {
+                // Decode security key and user password
+                client.setSecurityKey(SecureKeyUtils.decodeSecureString(client.getSecurityKey()));
+                client.setPassword(SecureKeyUtils.decodeSecureString(client.getPassword()));
+
+                return client;
+            }
+        }
+
+        throw new CatalogException("Federation client id '" + federationId + "' not found in the organization.");
+    }
+
+    public static FederationServerParams findFederationServer(Organization organization, String federationId) throws CatalogException {
+        // Obtain the federation server credentials
+        if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getServers())) {
+            throw new CatalogException("The organization does not have any federation servers configured.");
+        }
+
+        for (FederationServerParams server : organization.getFederation().getServers()) {
+            if (server.getId().equals(federationId)) {
+                return server;
+            }
+        }
+
+        throw new CatalogException("Federation server id '" + federationId + "' not found in the organization.");
+    }
 
 }

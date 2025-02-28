@@ -70,7 +70,7 @@ public class FederationFilter implements Filter {
 
         String url = request.getRequestURL().toString(); // http://localhost:8080/opencga/webservices/rest/v2/sample/search
         String urlPrefix = "http://test.app.zettagenomics.com/opencga/webservices/rest";
-        String urlPrefixReplacement = "https://test.app.zettagenomics.com/TASK-7192/opencga/webservices/rest";
+        String urlPrefixReplacement = "https://test.app.zettagenomics.com/TASK-7400/opencga/webservices/rest";
         logger.info("Requested URL: {}", url);
         if (url.contains(urlPrefix)) {
             logger.info("Replacing URL prefix: {} -> {}", urlPrefix, urlPrefixReplacement);

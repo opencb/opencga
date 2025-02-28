@@ -93,8 +93,8 @@ function manage_dependency() {
   git checkout "$BRANCH_NAME"
   local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
   if [ "$VERSION" == "$REPO_VERSION" ];then
-    log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
-    log_summary "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
+    log "Version of $REPO downloaded is correct: version $VERSION in branch $BRANCH_NAME"
+    log_summary "Version of $REPO downloaded is correct: version $VERSION in branch $BRANCH_NAME"
     log_version_summary "$REPO,$VERSION,$BRANCH_NAME"
     if [ "$COMMAND" == "build" ];then
       log "Building $REPO branch $BRANCH_NAME."
@@ -121,7 +121,7 @@ function manage_dependency() {
       fi
     fi
   else
-      log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
+    log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
   fi
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 }

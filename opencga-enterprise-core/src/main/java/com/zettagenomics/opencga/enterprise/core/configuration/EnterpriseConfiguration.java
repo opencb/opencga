@@ -1,6 +1,5 @@
 package com.zettagenomics.opencga.enterprise.core.configuration;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.slf4j.Logger;
@@ -28,8 +27,8 @@ public class EnterpriseConfiguration {
     }
 
     public EnterpriseConfiguration() {
-        sso = new SsoConfiguration();
-        cvdb = new CvdbConfiguration();
+        this.sso = new SsoConfiguration();
+        this.cvdb = new CvdbConfiguration();
     }
 
 
