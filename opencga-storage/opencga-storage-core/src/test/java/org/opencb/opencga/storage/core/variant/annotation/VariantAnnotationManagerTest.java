@@ -32,6 +32,8 @@ import java.util.Collection;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.CosmicVariantAnnotatorExtensionTaskTest.COSMIC_ASSEMBLY;
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.CosmicVariantAnnotatorExtensionTaskTest.COSMIC_VERSION;
 
 /**
  * Created on 24/04/18.
@@ -257,8 +259,8 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
-                .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
-                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95")
+                .append(VariantStorageOptions.ASSEMBLY.key(), COSMIC_ASSEMBLY)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
 
         URI annotOutdir = outputUri.resolve("annot1");
@@ -305,8 +307,8 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
-                .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
-                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95")
+                .append(VariantStorageOptions.ASSEMBLY.key(), COSMIC_ASSEMBLY)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
 
 
@@ -327,8 +329,8 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
-                .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
-                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95");
+                .append(VariantStorageOptions.ASSEMBLY.key(), COSMIC_ASSEMBLY)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION);
 
         URI annotOutdir = outputUri.resolve("annot1");
         Files.createDirectories(Paths.get(annotOutdir));
@@ -351,7 +353,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
-                .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
+                .append(VariantStorageOptions.ASSEMBLY.key(), COSMIC_ASSEMBLY)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
 
         URI annotOutdir = outputUri.resolve("annot1");
@@ -375,7 +377,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
-                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95")
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
 
         URI annotOutdir = outputUri.resolve("annot1");
@@ -400,7 +402,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh37")
-                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95")
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
 
         URI annotOutdir = outputUri.resolve("annot1");
