@@ -140,13 +140,13 @@ public class ParamUtils {
         }
     }
 
-    public static void checkIdentifier(String identifier, String name) throws CatalogParameterException {
-        if (identifier == null || identifier.isEmpty() || !identifier.matches("^[A-Za-z0-9](?!.*[-_.:]{2})[A-Za-z0-9-_.:]*[A-Za-z0-9]$")) {
-            throw new CatalogParameterException("Error in identifier: '" + identifier + "' is not a valid " + name + ".");
-        }
-    }
+//    public static void checkNoteIdentifier(String identifier, String name) throws CatalogParameterException {
+//        if (identifier == null || identifier.isEmpty() || !identifier.matches("^[A-Za-z0-9](?!.*[-_.:]{2})[A-Za-z0-9-_.:]*[A-Za-z0-9]$")) {
+//            throw new CatalogParameterException("Error in identifier: '" + identifier + "' is not a valid " + name + ".");
+//        }
+//    }
 
-    public static void checkNoteIdentifier(String identifier, String name) throws CatalogParameterException {
+    public static void checkIdentifier(String identifier, String name) throws CatalogParameterException {
         if (identifier == null || identifier.isEmpty() || !identifier.matches("^[A-Za-z0-9][A-Za-z0-9-_.:]*$")) {
             throw new CatalogParameterException("Error in identifier: '" + identifier + "' is not a valid " + name + ".");
         }

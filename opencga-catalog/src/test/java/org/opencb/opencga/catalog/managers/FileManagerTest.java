@@ -170,6 +170,29 @@ public class FileManagerTest extends AbstractManagerTest {
                 "data/test/folder/file.txt"), null, ownerToken).getNumResults());
     }
 
+    @Test
+    public void testCreateFileWithSemicolonInId() throws CatalogException {
+        StudyAclParams aclParams = new StudyAclParams("", "analyst");
+        catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId2, aclParams, ParamUtils.AclAction.ADD, ownerToken);
+        fileManager.create(studyFqn,
+                new FileCreateParams()
+                        .setType(File.Type.FILE)
+                        .setPath("data/test/folder/file::hello.txt")
+                        .setDescription("My description")
+                        .setContent("blabla"),
+                true, normalToken2);
+        OpenCGAResult<File> search = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/test/folder/file::hello.txt"), null, ownerToken);
+        assertEquals(1, search.getNumResults());
+        assertTrue(search.first().getId().contains("\\:\\:"));
+        assertEquals(1, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.ID.key(), search.first().getId()), null, ownerToken).getNumResults());
+
+        File file = fileManager.get(studyFqn, search.first().getId(), QueryOptions.empty(), ownerToken).first();
+        assertEquals(search.first().getUid(), file.getUid());
+
+        file = fileManager.get(studyFqn, search.first().getPath(), QueryOptions.empty(), ownerToken).first();
+        assertEquals(search.first().getUid(), file.getUid());
+    }
+
     URI getStudyURI() throws CatalogException {
         return catalogManager.getStudyManager().get(studyFqn,
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key()), ownerToken).first().getUri();

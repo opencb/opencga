@@ -171,7 +171,14 @@ public class FileManager extends AnnotationSetManager<File> {
                 param = FileDBAdaptor.QueryParams.UUID;
                 fileStringFunction = File::getUuid;
             } else {
-                String fileName = entry.replace(":", "/");
+                String fileName = entry;
+                if (!entry.contains("/")) {
+                    // Treat as a file so we may need to revert the usage of ":" as part of the path
+                    fileName = entry
+                            .replace("\\:", "__OPENCGA__") // Pre-replacement to preserve original ":" from subpath
+                            .replace(":", "/")             // Replace ":" by "/"
+                            .replace("__OPENCGA__", ":");  // Revert replacement to original ":"
+                }
                 if (fileName.startsWith("/")) {
                     // Remove the starting /. Absolute paths are not supported.
                     fileName = fileName.substring(1);
@@ -804,7 +811,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         file.setName(Paths.get(file.getPath()).getFileName().toString());
-        file.setId(file.getPath().replace("/", ":"));
+        file.setId(file.getPath().replace(":", "\\:").replace("/", ":"));
 
         URI uri;
         try {
