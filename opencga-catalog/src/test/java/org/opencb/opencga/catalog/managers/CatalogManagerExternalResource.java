@@ -50,16 +50,24 @@ import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_DIRNAME
  */
 public class CatalogManagerExternalResource extends ExternalResource {
 
-    private CatalogManager catalogManager;
-    private Configuration configuration;
-    private Path opencgaHome;
-    private String adminToken;
+    protected CatalogManager catalogManager;
+    protected Configuration configuration;
+    protected Path opencgaHome;
+    protected String adminToken;
     public boolean initialized = false;
 
+    protected Path sourceAnalysisPath;
+
     public CatalogManagerExternalResource() {
+        this(Paths.get("../opencga-app/app/analysis/"));
+    }
+
+    public CatalogManagerExternalResource(Path sourceAnalysisPath) {
+        this.sourceAnalysisPath = sourceAnalysisPath;
         Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
         Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
     }
+
 
     @Override
     public void before() throws Exception {
@@ -103,8 +111,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
         // Pedigree graph analysis
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
         InputStream inputStream = getClass().getResource("/pedigree-graph/ped.R").openStream();
-//        FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
+
         return opencgaHome;
     }
 
