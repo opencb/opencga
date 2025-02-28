@@ -24,8 +24,8 @@ import java.util.List;
 @Category(ShortTests.class)
 public class CosmicVariantAnnotatorExtensionTaskTest {
 
-    private final String ASSEMBLY ="GRCh38";
-    private final String COSMIC_VERSION = "v101";
+    public static final String COSMIC_ASSEMBLY ="GRCh38";
+    public static final String COSMIC_VERSION = "v101";
 
     @Test
     public void testSetupCosmicVariantAnnotatorExtensionTask() throws Exception {
@@ -42,7 +42,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         ObjectMap options = new ObjectMap();
         options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
         options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION);
-        options.put(VariantStorageOptions.ASSEMBLY.key(), ASSEMBLY);
+        options.put(VariantStorageOptions.ASSEMBLY.key(), COSMIC_ASSEMBLY);
 
         CosmicVariantAnnotatorExtensionTask task = new CosmicVariantAnnotatorExtensionTask(options);
 
@@ -57,7 +57,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         ObjectMap metadata = task.getMetadata();
         Assert.assertEquals(COSMIC_VERSION, metadata.get("version"));
         Assert.assertEquals(CosmicVariantAnnotatorExtensionTask.ID, metadata.get("data"));
-        Assert.assertEquals(ASSEMBLY, metadata.get("assembly"));
+        Assert.assertEquals(COSMIC_ASSEMBLY, metadata.get("assembly"));
 
         Assert.assertEquals(true, task.isAvailable());
     }
@@ -84,7 +84,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         ObjectMap options = new ObjectMap();
         options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
         options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION);
-        options.put(VariantStorageOptions.ASSEMBLY.key(), ASSEMBLY);
+        options.put(VariantStorageOptions.ASSEMBLY.key(), COSMIC_ASSEMBLY);
         options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID);
 
         CosmicVariantAnnotatorExtensionTask task = (CosmicVariantAnnotatorExtensionTask) new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(options).get(0);
@@ -136,7 +136,8 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         if (!cosmicPath.toFile().mkdirs()) {
             throw new IOException("Error creating the COSMIC path: " + cosmicPath.toAbsolutePath());
         }
-        Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/Small_Cosmic_v101_GRCh38.tar.gz").getPath());
+        Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/Small_Cosmic_"
+                + COSMIC_VERSION + "_" + COSMIC_ASSEMBLY + ".tar.gz").getPath());
         Path targetPath = cosmicPath.resolve(cosmicFile.getFileName());
         Files.copy(cosmicFile, targetPath);
 
