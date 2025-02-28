@@ -6,7 +6,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.InputFileUtils;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 
@@ -105,7 +107,11 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
         ObjectMap params = new ObjectMap()
                 .append(JobDBAdaptor.QueryParams.TAGS.key(), tags)
                 .append(JobDBAdaptor.QueryParams.TOOL_EXTERNAL_EXECUTOR.key(), executor);
-        catalogManager.getJobManager().update(getStudyFqn(), getJobId(), params, QueryOptions.empty(), token);
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(JobDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getJobManager().update(getStudyFqn(), getJobId(), params, options, token);
     }
 
     protected void processInputParams(String commandLineParams, StringBuilder builder) throws CatalogException {
