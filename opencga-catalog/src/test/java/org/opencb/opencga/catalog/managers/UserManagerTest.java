@@ -238,14 +238,14 @@ public class UserManagerTest extends AbstractManagerTest {
         assertEquals(5, userInternal2.getAccount().getFailedAttempts());
         assertEquals(UserStatus.BANNED, user.getInternal().getStatus().getId());
 
-        CatalogAuthenticationException incorrect = assertThrows(CatalogAuthenticationException.class, () -> catalogManager.getUserManager().login(organizationId, normalUserId1, "incorrect"));
+        CatalogAuthorizationException incorrect = assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().login(organizationId, normalUserId1, "incorrect"));
         assertTrue(incorrect.getMessage().contains("banned"));
         user = catalogManager.getUserManager().get(organizationId, normalUserId1, QueryOptions.empty(), ownerToken).first();
         UserInternal userInternal1 = user.getInternal();
         assertEquals(5, userInternal1.getAccount().getFailedAttempts());
         assertEquals(UserStatus.BANNED, user.getInternal().getStatus().getId());
 
-        CatalogAuthenticationException authException = assertThrows(CatalogAuthenticationException.class, () -> catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD));
+        CatalogAuthorizationException authException = assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD));
         assertTrue(authException.getMessage().contains("banned"));
 
         // Remove ban from user
@@ -275,7 +275,7 @@ public class UserManagerTest extends AbstractManagerTest {
         authException = assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, UserStatus.SUSPENDED, QueryOptions.empty(), orgAdminToken2));
         assertTrue(authException.getMessage().contains("suspend administrators"));
 
-        CatalogAuthenticationException incorrect = assertThrows(CatalogAuthenticationException.class, () -> catalogManager.getUserManager().login(organizationId, orgAdminUserId1, TestParamConstants.PASSWORD));
+        CatalogAuthorizationException incorrect = assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().login(organizationId, orgAdminUserId1, TestParamConstants.PASSWORD));
         assertTrue(incorrect.getMessage().contains("suspended"));
 
         catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, UserStatus.READY, QueryOptions.empty(), orgAdminToken2);
@@ -306,7 +306,7 @@ public class UserManagerTest extends AbstractManagerTest {
         ObjectMap params = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_EXPIRATION_DATE.key(), TimeUtils.getTime());
         catalogManager.getUserManager().getUserDBAdaptor(organizationId).update(normalUserId1, params);
 
-        CatalogAuthenticationException authException = assertThrows(CatalogAuthenticationException.class, () -> catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD));
+        CatalogAuthorizationException authException = assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD));
         assertTrue(authException.getMessage().contains("expired"));
 
         // Ensure it doesn't matter whether opencga account is expired or not
@@ -515,7 +515,7 @@ public class UserManagerTest extends AbstractManagerTest {
             user.getInternal().getAccount().getPassword().setExpirationDate(beforeYesterday);
 
             Mockito.doReturn(result).when(userDBAdaptor).get(normalUserId1, UserManager.INCLUDE_INTERNAL);
-            CatalogAuthenticationException exception = assertThrows(CatalogAuthenticationException.class,
+            CatalogAuthorizationException exception = assertThrows(CatalogAuthorizationException.class,
                     () -> mockCatalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD));
             assertTrue(exception.getMessage().contains("expired on " + beforeYesterday));
         }
