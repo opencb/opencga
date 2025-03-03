@@ -53,6 +53,12 @@ public class ClinicalAnalysisSearch {
     @Field("probandId")
     private String probandId;
 
+    @Field("probandDisorderIds")
+    private List<String> probandDisorderIds;
+
+    @Field("probandPhenotypeNames")
+    private List<String> probandPhenotypeNames;
+
     @Field("familyId")
     private String familyId;
 
@@ -86,6 +92,8 @@ public class ClinicalAnalysisSearch {
     public ClinicalAnalysisSearch() {
         viewers = new ArrayList<>();
         fileNames = new ArrayList<>();
+        probandDisorderIds = new ArrayList<>();
+        probandPhenotypeNames = new ArrayList<>();
         familyPhenotypeNames = new ArrayList<>();
         familyMemberIds = new ArrayList<>();
         panelIds = new ArrayList<>();
@@ -102,6 +110,8 @@ public class ClinicalAnalysisSearch {
         sb.append(", disorderId='").append(disorderId).append('\'');
         sb.append(", fileNames=").append(fileNames);
         sb.append(", probandId='").append(probandId).append('\'');
+        sb.append(", probandDisorderIds=").append(probandDisorderIds);
+        sb.append(", probandPhenotypeNames=").append(probandPhenotypeNames);
         sb.append(", familyId='").append(familyId).append('\'');
         sb.append(", familyPhenotypeNames=").append(familyPhenotypeNames);
         sb.append(", familyMemberIds=").append(familyMemberIds);
@@ -185,6 +195,24 @@ public class ClinicalAnalysisSearch {
 
     public ClinicalAnalysisSearch setProbandId(String probandId) {
         this.probandId = probandId;
+        return this;
+    }
+
+    public List<String> getProbandDisorderIds() {
+        return probandDisorderIds;
+    }
+
+    public ClinicalAnalysisSearch setProbandDisorderIds(List<String> probandDisorderIds) {
+        this.probandDisorderIds = probandDisorderIds;
+        return this;
+    }
+
+    public List<String> getProbandPhenotypeNames() {
+        return probandPhenotypeNames;
+    }
+
+    public ClinicalAnalysisSearch setProbandPhenotypeNames(List<String> probandPhenotypeNames) {
+        this.probandPhenotypeNames = probandPhenotypeNames;
         return this;
     }
 

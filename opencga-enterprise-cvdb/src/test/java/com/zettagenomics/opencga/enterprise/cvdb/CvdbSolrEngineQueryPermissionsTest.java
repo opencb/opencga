@@ -3,7 +3,7 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -35,8 +35,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
-import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
+import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
+import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -51,11 +51,11 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
     public static CvdbSolrExtenalResource cvdbSolrExternalResource;
 
-    public static CatalogManagerExternalResource catalogManagerResource;
+    public static OpenCGAEnterpriseCatalogManagerExternalResource catalogManagerResource;
 
     protected static CatalogManager catalogManager;
     private static String opencgaToken;
-    protected static String sessionIdUser;
+    protected static String userToken;
     private static FamilyManager familyManager;
 
     public static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
@@ -64,10 +64,10 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
     @BeforeClass
     public static void before() throws Throwable {
-        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
         cvdbSolrExternalResource.before();
 
-        catalogManagerResource = new CatalogManagerExternalResource();
+        catalogManagerResource = new OpenCGAEnterpriseCatalogManagerExternalResource();
         catalogManagerResource.before();
 
         // Catalog
@@ -80,15 +80,15 @@ public class CvdbSolrEngineQueryPermissionsTest {
         cvdbEngine.setCatalogManager(catalogManager);
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
-        if (!cvdbEngine.existCollections(projectId)) {
-            cvdbEngine.createCollections(projectId);
+        if (!cvdbEngine.existCollections(organizationId, projectId)) {
+            cvdbEngine.createCollections(organizationId, projectId);
         }
 
         // Load and index
-        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study.getId());
+        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study);
 
         // CVDB index from catalog
-        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, catalogManager, true, sessionIdUser);
+        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
         System.out.println(indexResult.getFailures());
         assertEquals(2, indexResult.getNumIndexed());
         assertEquals(0, indexResult.getFailures().size());
@@ -106,12 +106,12 @@ public class CvdbSolrEngineQueryPermissionsTest {
                         .setOwner("user"),
                 null, opencgaToken);
 
-        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
+        userToken = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
+                null, "GRCh38", INCLUDE_RESULT, userToken).first();
         study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null,
-                INCLUDE_RESULT, sessionIdUser).first();
+                INCLUDE_RESULT, userToken).first();
     }
 
     //-----------------------------------------------------------------------
@@ -127,7 +127,6 @@ public class CvdbSolrEngineQueryPermissionsTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "FAMILY");
 
         // "user" can access to all clinical analyses
@@ -163,7 +162,6 @@ public class CvdbSolrEngineQueryPermissionsTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
 
         // "user" can access to all clinical analyses
@@ -172,10 +170,10 @@ public class CvdbSolrEngineQueryPermissionsTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariant cv : result.getResults()) {
-            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+            String ciId = (String) cv.getAttributes().get(OPENCGA_INTERPRETATION_ID);
             assertTrue(StringUtils.isNotEmpty(ciId));
             if (!alreadyChecked.contains(ciId)) {
-                Interpretation ci = getClinicalInterpretation(ciId);
+                Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
                 assertTrue(ci.getPanels().stream().map(p -> p.getId()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
                 alreadyChecked.add(ciId);
             }
@@ -187,10 +185,10 @@ public class CvdbSolrEngineQueryPermissionsTest {
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
         for (ClinicalVariant cv : result.getResults()) {
-            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+            String ciId = (String) cv.getAttributes().get(OPENCGA_INTERPRETATION_ID);
             assertTrue(StringUtils.isNotEmpty(ciId));
             if (!alreadyChecked.contains(ciId)) {
-                Interpretation ci = getClinicalInterpretation(ciId);
+                Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
                 assertTrue(ci.getPanels().stream().map(p -> p.getId()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
                 assertEquals(user2ViewerforCaId, ci.getClinicalAnalysisId());
                 alreadyChecked.add(ciId);
@@ -213,7 +211,6 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
         // Check type
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_TYPE_NAME, "INDEL");
 
         // "user" can access to all clinical analyses
@@ -249,16 +246,15 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
         // Check type
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_TYPE_NAME, "INDEL");
 
         String token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
         DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
         assertTrue(result.getNumResults() > 0);
         for (ClinicalVariantEvidence cve : result.getResults()) {
-            String cvId = (String) cve.getAttributes().get(CV_ID_NAME);
-            assertTrue(StringUtils.isNotEmpty(cvId));
-            ClinicalVariant cv = getClinicalVariant(cvId);
+            String variantId = (String) cve.getAttributes().get(OPENCGA_VARIANT_ID);
+            assertTrue(StringUtils.isNotEmpty(variantId));
+            ClinicalVariant cv = TestUtilities.getClinicalVariant(variantId, projectId, cvdbEngine, userToken);
             assertEquals(query.getString(CV_TYPE_NAME), cv.getType().name());
         }
 
@@ -267,13 +263,13 @@ public class CvdbSolrEngineQueryPermissionsTest {
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
         assertTrue(result.getNumResults() > 0);
         for (ClinicalVariantEvidence cve : result.getResults()) {
-            String cvId = (String) cve.getAttributes().get(CV_ID_NAME);
-            assertTrue(StringUtils.isNotEmpty(cvId));
-            ClinicalVariant cv = getClinicalVariant(cvId);
+            String variantId = (String) cve.getAttributes().get(OPENCGA_VARIANT_ID);
+            assertTrue(StringUtils.isNotEmpty(variantId));
+            ClinicalVariant cv = TestUtilities.getClinicalVariant(variantId, projectId, cvdbEngine, userToken);
             assertEquals(query.getString(CV_TYPE_NAME), cv.getType().name());
 
-            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
-            Interpretation ci = getClinicalInterpretation(ciId);
+            String ciId = (String) cve.getAttributes().get(OPENCGA_INTERPRETATION_ID);
+            Interpretation ci = TestUtilities.getClinicalInterpretation(ciId, projectId, cvdbEngine, userToken);
             assertEquals(user2ViewerforCaId, ci.getClinicalAnalysisId());
         }
 
@@ -293,10 +289,9 @@ public class CvdbSolrEngineQueryPermissionsTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CA_TYPE_NAME, "FAMILY");
 
-        // "user" can access to all clinical analyses
+        // No token provided
         // expected = IllegalArgumentException.class
         cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
     }
@@ -307,7 +302,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
     private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CA_ID_NAME, caId);
-        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), sessionIdUser);
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());
         assertEquals(caId, result.first().getId());
         return result.first();
@@ -315,9 +310,8 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
     private Interpretation getClinicalInterpretation(String ciId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CI_ID_NAME, ciId);
-        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), sessionIdUser);
+        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());
         assertEquals(ciId, result.first().getId());
         return result.first();
@@ -325,9 +319,8 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
     private ClinicalVariant getClinicalVariant(String cvId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_ID_NAME, cvId);
-        DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), sessionIdUser);
+        DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());
         assertEquals(cvId, result.first().getId());
         return result.first();
@@ -364,11 +357,11 @@ public class CvdbSolrEngineQueryPermissionsTest {
         return false;
     }
 
-    public static void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
+    public static void loadClinicalAnalsysesInCatalog(List<String> caFilenames, Study study) throws IOException, CatalogException {
         for (String caFilename : caFilenames) {
             URL resource = ClinicalInterpretationConverterTest.class.getClassLoader().getResource(caFilename);
-            ClinicalAnalysisLoadResult loadResult = catalogManager.getClinicalAnalysisManager().load(studyId, Paths.get(resource.getPath()),
-                    sessionIdUser);
+            ClinicalAnalysisLoadResult loadResult = catalogManager.getClinicalAnalysisManager().load(study.getFqn(), Paths.get(resource.getPath()),
+                    userToken);
             System.out.println(loadResult);
         }
         OpenCGAResult<ClinicalAnalysis> results = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),

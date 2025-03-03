@@ -1,0 +1,8 @@
+##fileformat=VCFv4.0
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=.,Description="unknown filter state">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	LP3000436-DNA_A11	LP3000452-DNA_B07	LP3000453-DNA_F03	LP3000456-DNA_G11
+X	53196017	.	G	A	100.00	PASS	.	GT	0/1	0/0	1/1	0/1
+X	1285902	.	C	G	100.00	PASS	.	GT	0/1	0/0	0/1	0/1
+X	124481724	.	T	TA	100.00	PASS	.	GT	0/1	./.	0/1	0/1

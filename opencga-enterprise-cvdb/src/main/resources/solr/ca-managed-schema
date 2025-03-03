@@ -580,6 +580,8 @@
     <field name="disorderId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="fileNames" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="probandId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="probandDisorderIds" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="probandPhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="familyId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="familyPhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="familyMemberIds" type="string" indexed="true" stored="true" multiValued="true"/>

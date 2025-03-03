@@ -57,10 +57,13 @@
         <!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
 
-        <opencga-hadoop-shaded.id-default>hdp3.1</opencga-hadoop-shaded.id-default>
+        <opencga.hadoop.thirdparty.version>1.0.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
+
+        <opencga-hadoop-shaded.id-default>hdi3.1</opencga-hadoop-shaded.id-default>
         <opencga-storage-hadoop-lib.artifactId-default>opencga-storage-hadoop-${opencga-hadoop-shaded.id-default}</opencga-storage-hadoop-lib.artifactId-default>
         <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id-default}</opencga-hadoop-shaded.id>
         <opencga-storage-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-storage-hadoop-lib.artifactId>
+        <opencga-storage-hadoop-thirdparty.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}</opencga-storage-hadoop-thirdparty.artifactId>
 
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -74,7 +77,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <guava.version>28.0-jre</guava.version>
-        <commons-lang.version>2.6</commons-lang.version>
+<!--        <commons-lang.version>2.6</commons-lang.version>-->
         <bson.version>4.8.2</bson.version>
     </properties>
 
@@ -430,6 +433,11 @@
                 <version>${protobuf.version}</version>
             </dependency>
             <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java-util</artifactId>
                 <version>${protobuf.version}</version>
@@ -567,11 +575,6 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>commons-lang</groupId>
-                <artifactId>commons-lang</artifactId>
-                <version>${commons-lang.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>

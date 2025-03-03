@@ -1,5 +1,6 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseUserManager;
@@ -184,6 +185,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         Swagger swagger = generator.generateJsonOpenApi(new EnterpriseApiCommonsImpl(), token, environment);
         String swaggerJson ="ERROR: Swagger could not be generated";
         ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         try {
             swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger).replace("{apiVersion}", "v2");
         } catch (JsonProcessingException e) {

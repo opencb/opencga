@@ -5,14 +5,11 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -21,13 +18,13 @@ import java.util.stream.Collectors;
 
 public class SearchConverter<M, N> {
 
-    public static final String CVDB_INTERNALS_KEY = "OPENCGA_CVDB_INTERNALS";
-    public static final String CVDB_VIEWERS_KEY = "OPENCGA_VIEWERS";
-    public static final String CVDB_STUDY_ID_KEY = "OPENCGA_STUDY_ID";
-
-    protected static final String UP_FIELD_SEPARATOR = "===";
-    protected static final String FIELD_SEPARATOR = "---";
-    protected static final String EMPTY_VALUE = "**";
+//    public static final String CVDB_INTERNALS_KEY = "OPENCGA_CVDB_INTERNALS";
+//    public static final String CVDB_VIEWERS_KEY = "OPENCGA_VIEWERS";
+//    public static final String CVDB_STUDY_ID_KEY = "OPENCGA_STUDY_ID";
+//
+//    protected static final String UP_FIELD_SEPARATOR = "===";
+//    protected static final String FIELD_SEPARATOR = "---";
+//    protected static final String EMPTY_VALUE = "**";
 
     protected ObjectMapper mapper;
     protected ObjectReader mapReader;

@@ -6,6 +6,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParam
 import org.junit.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -30,8 +31,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
-import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
+import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
+import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 
 public class CvdbTaskTest {
 
@@ -42,10 +43,10 @@ public class CvdbTaskTest {
     private ToolRunner toolRunner;
 
     @Rule
-    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);;
+    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
 
     @Rule
-    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+    public OpenCGAEnterpriseCatalogManagerExternalResource catalogManagerResource = new OpenCGAEnterpriseCatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
 
@@ -180,8 +181,9 @@ public class CvdbTaskTest {
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(CvdbIndexTask.class.getClassLoader()
                 .getResource("enterprise-configuration.yml").openStream());
 
-        CvdbSolrEngine cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), null, null);
-        return cvdbEngine.getSolrManager().isAlive();
+        return new SolrManager(enterpriseConfiguration.getCvdb().getDatabase().getHosts(),
+                enterpriseConfiguration.getCvdb().getDatabase().getMode(),
+                enterpriseConfiguration.getCvdb().getDatabase().getTimeout()).isAlive();
     }
 
 }

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantSearch;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantConfidence;
@@ -32,14 +32,16 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
         this.clinicalVariantReader = mapper.readerFor(ClinicalVariant.class);
     }
 
-    public ClinicalVariantSearch toClinicalVariantSearch(ClinicalVariant cv, boolean primary, String interpretationId,
-                                                         String clinicalAnalysisId, String studyId, List<String> viewers)
-            throws CvdbException {
-        return toClinicalVariantSearch(Collections.singletonList(cv), primary, interpretationId, clinicalAnalysisId, studyId, viewers)
+    public ClinicalVariantSearch toClinicalVariantSearch(ClinicalVariant cv, boolean isPrimaryFinding, String interpretationId,
+                                                         boolean isPrimaryInterpretation, String clinicalAnalysisId, String studyId,
+                                                         List<String> viewers) throws CvdbException {
+        return toClinicalVariantSearch(Collections.singletonList(cv), isPrimaryFinding, interpretationId, isPrimaryInterpretation,
+                clinicalAnalysisId, studyId, viewers)
                 .get(0);
     }
 
-    public List<ClinicalVariantSearch> toClinicalVariantSearch(List<ClinicalVariant> cvList, boolean primary, String interpretationId,
+    public List<ClinicalVariantSearch> toClinicalVariantSearch(List<ClinicalVariant> cvList, boolean isPrimaryFinding,
+                                                               String interpretationId, boolean isPrimaryInterpretation,
                                                                String clinicalAnalysisId, String studyId, List<String> viewers)
             throws CvdbException {
         List<ClinicalVariantSearch> cvsList = new ArrayList<>();
@@ -50,9 +52,10 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
 
             cvs.setId(interpretationId + "-" + variantSearchModel.getVariantId());
 
-            cvs.setCiId(interpretationId)
+            cvs.setPrimaryFinding(isPrimaryFinding)
+                    .setCiId(interpretationId)
+                    .setPrimaryInterpretation(isPrimaryInterpretation)
                     .setCaId(clinicalAnalysisId)
-                    .setPrimary(primary)
                     .setStudyId(studyId)
                     .setViewers(viewers);
 
@@ -127,7 +130,35 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
         List<ClinicalVariant> cvList = new ArrayList<>();
         for (ClinicalVariantSearch cvs : cvsList) {
             try {
-                cvList.add(clinicalVariantReader.readValue(cvs.getJson()));
+                ClinicalVariant cv;
+                if (StringUtils.isNotEmpty(cvs.getJson())) {
+                    //logger.info("Convert to clinical variant from JSON");
+                    cv = clinicalVariantReader.readValue(cvs.getJson());
+                } else {
+                    //logger.info("Convert to clinical variant from indexed fields");
+                    cv = new ClinicalVariant();
+
+                    // Status
+                    if (StringUtils.isNotEmpty(cvs.getStatus())) {
+                        cv.setStatus(ClinicalVariant.Status.valueOf(cvs.getStatus()));
+                    }
+
+                    // Confidence
+                    ClinicalVariantConfidence confidence = new ClinicalVariantConfidence();
+                    if (StringUtils.isNotEmpty(cvs.getConfidenceValue())) {
+                        confidence.setValue(ClinicalVariantConfidence.Confidence.valueOf(cvs.getConfidenceValue()));
+                    }
+                    if (StringUtils.isNotEmpty(cvs.getConfidenceAuthor())) {
+                        confidence.setAuthor(cvs.getConfidenceAuthor());
+                    }
+                    if (cvs.getConfidenceDate() != null) {
+                        confidence.setAuthor(simpleDateFormat.format(cvs.getConfidenceDate()));
+                    }
+                    cv.setConfidence(confidence);
+                }
+
+                // Add to the list
+                cvList.add(cv);
             } catch (JsonProcessingException e) {
                 throw new CvdbException("Error when converting to clinical variant " + cvs.getVariantId(), e);
             }

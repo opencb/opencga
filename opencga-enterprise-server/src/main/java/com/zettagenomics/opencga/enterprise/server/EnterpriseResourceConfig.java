@@ -1,9 +1,6 @@
 package com.zettagenomics.opencga.enterprise.server;
 
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseClinicalWSServer;
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseMetaWSServer;
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseUserWSServer;
-import com.zettagenomics.opencga.enterprise.server.rest.FederationWSServer;
+import com.zettagenomics.opencga.enterprise.server.rest.*;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
@@ -49,7 +46,8 @@ public class EnterpriseResourceConfig extends ResourceConfig {
         enterpriseApiClasses.put("variant", VariantWebService.class);
         enterpriseApiClasses.put("variantOperation", VariantOperationWebService.class);
         enterpriseApiClasses.put("meta", EnterpriseMetaWSServer.class);
-        enterpriseApiClasses.put("clinical", EnterpriseClinicalWSServer.class);
+        enterpriseApiClasses.put("clinical", EnterpriseClinicalWebService.class);
+        enterpriseApiClasses.put("cvdb", EnterpriseCvdbWebService.class);
         enterpriseApiClasses.put("admin", AdminWSServer.class);
 
         // Utils, Filters and hidden API classes

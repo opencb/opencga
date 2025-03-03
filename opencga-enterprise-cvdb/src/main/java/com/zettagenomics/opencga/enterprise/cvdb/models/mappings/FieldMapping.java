@@ -2,11 +2,7 @@ package com.zettagenomics.opencga.enterprise.cvdb.models.mappings;
 
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 
 public class FieldMapping {
     protected Map<String, String> modelToSchema;

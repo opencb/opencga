@@ -120,15 +120,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("annotation-sets-load", analysisClinicalCommandOptions.loadAnnotationSetsCommandOptions);
         analysisClinicalSubCommands.addCommand("clinical-configuration-update", analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions);
         analysisClinicalSubCommands.addCommand("create", analysisClinicalCommandOptions.createCommandOptions);
-        analysisClinicalSubCommands.addCommand("cvdb-case-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsCvdbCaseCommandOptions);
-        analysisClinicalSubCommands.addCommand("cvdb-case-query", analysisClinicalCommandOptions.queryCvdbCaseCommandOptions);
-        analysisClinicalSubCommands.addCommand("cvdb-index-run", analysisClinicalCommandOptions.runCvdbIndexCommandOptions);
-        analysisClinicalSubCommands.addCommand("cvdb-interpretation-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsCvdbInterpretationCommandOptions);
-        analysisClinicalSubCommands.addCommand("cvdb-interpretation-query", analysisClinicalCommandOptions.queryCvdbInterpretationCommandOptions);
-        analysisClinicalSubCommands.addCommand("cvdb-variant-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsCvdbVariantCommandOptions);
-        analysisClinicalSubCommands.addCommand("cvdb-variant-query", analysisClinicalCommandOptions.queryCvdbVariantCommandOptions);
-        analysisClinicalSubCommands.addCommand("cvdb-variant-evidence-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsCvdbVariantEvidenceCommandOptions);
-        analysisClinicalSubCommands.addCommand("cvdb-variant-evidence-query", analysisClinicalCommandOptions.queryCvdbVariantEvidenceCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-distinct", analysisClinicalCommandOptions.distinctInterpretationCommandOptions);
