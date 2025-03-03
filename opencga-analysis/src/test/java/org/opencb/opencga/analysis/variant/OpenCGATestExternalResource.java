@@ -65,7 +65,7 @@ import java.util.Set;
  */
 public class OpenCGATestExternalResource extends ExternalResource {
 
-    private final CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
+    private final CatalogManagerExternalResource catalogManagerExternalResource;
     private Path opencgaHome;
     private String storageEngine;
     private boolean initiated = false;
@@ -74,21 +74,27 @@ public class OpenCGATestExternalResource extends ExternalResource {
     private StorageConfiguration storageConfiguration;
     private StorageEngineFactory storageEngineFactory;
     private ToolRunner toolRunner;
-
+    protected Path sourceAnalysisPath;
 
     public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource
             = new HadoopVariantStorageTest.HadoopExternalResource();
 
     public OpenCGATestExternalResource() {
-        this(false);
+        this(false, Paths.get("../opencga-app/app/analysis/"));
     }
 
     public OpenCGATestExternalResource(boolean storageHadoop) {
+        this(storageHadoop, Paths.get("../opencga-app/app/analysis/"));
+    }
+
+    public OpenCGATestExternalResource(boolean storageHadoop, Path sourceAnalysisPath) {
         if (storageHadoop) {
             this.storageEngine = HadoopVariantStorageEngine.STORAGE_ENGINE_ID;
         } else {
             this.storageEngine = DummyVariantStorageEngine.STORAGE_ENGINE_ID;
         }
+        this.sourceAnalysisPath = sourceAnalysisPath;
+        catalogManagerExternalResource = new CatalogManagerExternalResource(sourceAnalysisPath);
     }
 
     @Override

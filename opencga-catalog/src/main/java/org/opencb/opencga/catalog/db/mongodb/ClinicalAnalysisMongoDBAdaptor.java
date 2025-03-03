@@ -49,7 +49,10 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
+import org.opencb.opencga.core.models.clinical.FlagValueParam;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
@@ -461,7 +464,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
                 QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(), QueryParams.PRIORITY.key(),
                 QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key(), REPORT.key(),
-                REQUEST.key(), RESPONSIBLE.key(), ATTRIBUTES.key(), };
+                INTERNAL_CVDB_INDEX.key(), REQUEST.key(), RESPONSIBLE.key(), ATTRIBUTES.key(), };
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(INTERPRETATION.key()) && parameters.get(INTERPRETATION.key()) == null) {
