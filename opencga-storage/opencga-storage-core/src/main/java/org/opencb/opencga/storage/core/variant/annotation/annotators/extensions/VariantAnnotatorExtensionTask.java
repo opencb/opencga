@@ -10,6 +10,13 @@ import java.util.List;
 public interface VariantAnnotatorExtensionTask extends Task<VariantAnnotation, VariantAnnotation> {
 
     /**
+     * Get the variant annotator extension task ID.
+     *
+     * @return Variant annotator extension task ID
+     */
+    String getId();
+
+    /**
      * Set up the annotator extension.
      * This method will be called before any other method. It might generate extra files or data needed for the annotation.
      *
