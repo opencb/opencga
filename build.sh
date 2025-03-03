@@ -46,6 +46,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+echo "OPENCGA_HOME_DIR= $OPENCGA_HOME_DIR"
+echo "STORAGE_HADOOP_DEPS= $STORAGE_HADOOP_DEPS"
+echo "PWD= $PWD"
+echo "OPENCGA_ENTERPRISE_HOME_DIR= $OPENCGA_ENTERPRISE_HOME_DIR"
 
 cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
@@ -67,7 +71,7 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
     fi
 
     #mvn clean install -DskipTests -Pstorage-hadoop -P"$STORAGE_HADOOP_DEPS" -T 2
-    mvn clean install -DskipTests -P storage-hadoop,"$STORAGE_HADOOP_DEPS",opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make -T 2 --no-transfer-progress
+    mvn clean install -DskipTests --no-transfer-progress -P storage-hadoop,"$STORAGE_HADOOP_DEPS",opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make -T 2 --no-transfer-progress
     # shellcheck disable=SC2181
     if [ $? -eq 0 ]; then
       echo "Opencga compilation success!"
@@ -104,4 +108,4 @@ fi
 
 cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 
-mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" -Dopencga-storage-hadoop-deps.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga --no-transfer-progress
+mvn clean install -DskipTests --no-transfer-progress -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" -Dopencga-storage-hadoop-deps.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga
