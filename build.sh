@@ -14,7 +14,7 @@ function printUsage() {
 }
 
 OPENCGA_HOME_DIR="$PWD/opencga-home/"
-STORAGE_HADOOP_DEPS="hdp3.1"
+STORAGE_HADOOP_DEPS="emr6.1"
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -66,7 +66,8 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
       exit 1
     fi
 
-    mvn clean install -DskipTests -Pstorage-hadoop -P"$STORAGE_HADOOP_DEPS" -T 2
+    #mvn clean install -DskipTests -Pstorage-hadoop -P"$STORAGE_HADOOP_DEPS" -T 2
+    mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS",storage_hadoop,opencga-storage-hadoop-deps -pl :opencga-app --also-make -T 2
     # shellcheck disable=SC2181
     if [ $? -eq 0 ]; then
       echo "Opencga compilation success!"
