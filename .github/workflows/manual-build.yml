@@ -6,7 +6,8 @@ on:
       storage_hadoop:
         type: string
         required: false
-        default: hdp3.1
+        description: 'Hadoop flavour'
+        default: emr6.1
 
 jobs:
   build:
