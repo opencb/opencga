@@ -14,7 +14,7 @@ public class VariantAnnotatorExtensionsFactory {
 
         List<VariantAnnotatorExtensionTask> tasks = new LinkedList<>();
         for (String extensionId : options.getAsStringList(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key())) {
-            VariantAnnotatorExtensionTask task = null;
+            VariantAnnotatorExtensionTask task;
             switch (extensionId) {
                 case CosmicVariantAnnotatorExtensionTask.ID:
                     task = new CosmicVariantAnnotatorExtensionTask(options);

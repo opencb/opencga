@@ -61,6 +61,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     public List<URI> setup(URI output) throws Exception {
         // Sanity check
         Path cosmicFile = Paths.get(options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+        logger.info("COSMIC file {}", cosmicFile.toAbsolutePath());
         FileUtils.checkFile(cosmicFile);
 
         // Check and decompress tarball, checking the COSMIC files: GenomeScreensMutant and Classification
@@ -159,6 +160,10 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
         closeRocksDB();
     }
 
+    @Override
+    public String getId() {
+        return ID;
+    }
 
     private void closeRocksDB() {
         if (rdb != null) {
