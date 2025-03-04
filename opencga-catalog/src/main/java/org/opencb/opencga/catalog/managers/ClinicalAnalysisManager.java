@@ -88,7 +88,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalysis> {
+public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalysis, ClinicalAnalysisPermissions> {
 
     public static final QueryOptions INCLUDE_CLINICAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
@@ -124,7 +124,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.CLINICAL_ANALYSIS;
     }
 
@@ -2415,12 +2415,6 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> getAcls(String studyStr, List<String> clinicalList, String member,
-                                                                            boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyStr, clinicalList,
-                StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(), ignoreException, token);
-    }
-
     public OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> getAcls(String studyId, List<String> clinicalList, List<String> members,
                                                                             boolean ignoreException, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);

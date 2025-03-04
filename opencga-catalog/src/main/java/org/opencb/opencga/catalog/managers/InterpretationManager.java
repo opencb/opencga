@@ -44,6 +44,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
@@ -63,7 +64,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class InterpretationManager extends ResourceManager<Interpretation> {
+public class InterpretationManager extends ResourceManager<Interpretation, ClinicalAnalysisPermissions> {
 
     public static final QueryOptions INCLUDE_CLINICAL_ANALYSIS = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
             Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key(),
@@ -90,7 +91,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.INTERPRETATION;
     }
 
@@ -1571,6 +1572,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String token)
             throws CatalogException {
         return null;
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> getAcls(String studyId, List<String> idList, List<String> members,
+                                                                            boolean ignoreException, String token) throws CatalogException {
+        throw new UnsupportedOperationException("Interpretations don't support ACLs");
     }
 
     protected void fixQueryObject(String organizationId, Study study, Query query, String user) throws CatalogException {

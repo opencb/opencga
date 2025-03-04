@@ -1476,7 +1476,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         }
 
         protected final <T extends PrivateStudyUid> List<String> validate(String defaultStudyStr, List<String> values, Integer release,
-                                                                          VariantQueryParam param, ResourceManager<T> manager,
+                                                                          VariantQueryParam param, ResourceManager<T, ?> manager,
                                                                           Function<T, String> getId, Function<T, Integer> getRelease,
                                                                           Consumer<T> valueValidator, String sessionId)
                 throws CatalogException {
@@ -1484,7 +1484,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         }
 
         protected final <T extends PrivateStudyUid> List<String> validate(String defaultStudyStr, List<String> values, Integer release,
-                                                                          VariantQueryParam param, ResourceManager<T> manager,
+                                                                          VariantQueryParam param, ResourceManager<T, ?> manager,
                                                                           Function<T, String> getId, Function<T, Integer> getRelease,
                                                                           Consumer<T> valueValidator, String sessionId, Query query)
                 throws CatalogException {

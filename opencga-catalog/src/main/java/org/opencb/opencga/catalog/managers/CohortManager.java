@@ -62,7 +62,7 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 /**
  * Created by pfurio on 06/07/16.
  */
-public class CohortManager extends AnnotationSetManager<Cohort> {
+public class CohortManager extends AnnotationSetManager<Cohort, CohortPermissions> {
 
     public static final QueryOptions INCLUDE_COHORT_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             CohortDBAdaptor.QueryParams.STUDY_UID.key(), CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.UID.key(),
@@ -85,7 +85,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.COHORT;
     }
 

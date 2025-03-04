@@ -57,7 +57,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
 /**
  * Created by pfurio on 06/07/16.
  */
-public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends ResourceManager<R> {
+public abstract class AnnotationSetManager<R extends PrivateStudyUid, S extends Enum<S>> extends ResourceManager<R, S> {
 
     public static final String ANNOTATION_SETS = "annotationSets";
     public static final String ANNOTATIONS = "annotations";

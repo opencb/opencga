@@ -82,7 +82,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FileManager extends AnnotationSetManager<File> {
+public class FileManager extends AnnotationSetManager<File, FilePermissions> {
 
     public static final QueryOptions INCLUDE_FILE_IDS;
     public static final QueryOptions INCLUDE_FILE_URI;
@@ -137,7 +137,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.FILE;
     }
 

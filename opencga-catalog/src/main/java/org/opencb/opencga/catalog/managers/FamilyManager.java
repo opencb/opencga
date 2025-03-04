@@ -71,7 +71,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
 /**
  * Created by pfurio on 02/05/17.
  */
-public class FamilyManager extends AnnotationSetManager<Family> {
+public class FamilyManager extends AnnotationSetManager<Family, FamilyPermissions> {
 
     public static final QueryOptions INCLUDE_FAMILY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.UUID.key(),
@@ -124,7 +124,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.FAMILY;
     }
 

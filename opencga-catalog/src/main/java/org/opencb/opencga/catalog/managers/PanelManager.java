@@ -65,7 +65,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
-public class PanelManager extends ResourceManager<Panel> {
+public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
 
     public static final QueryOptions INCLUDE_PANEL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             PanelDBAdaptor.QueryParams.ID.key(), PanelDBAdaptor.QueryParams.UID.key(), PanelDBAdaptor.QueryParams.UUID.key(),
@@ -83,7 +83,7 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.DISEASE_PANEL;
     }
 
