@@ -280,7 +280,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = CatalogException.class)
     public void testAnonymous() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
@@ -292,7 +292,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         query.put(CA_TYPE_NAME, "FAMILY");
 
         // No token provided
-        // expected = IllegalArgumentException.class
+        // expected = CatalogException.class
         cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
     }
 
