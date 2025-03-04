@@ -267,7 +267,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 return variantAnnotationList;
             };
 
-            logger.info("Getting annotator extensions from params: {}", params.toJson());
+            logger.info("Getting annotator extension tasks from params: {}", params.toJson());
             List<VariantAnnotatorExtensionTask> extensions = new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(params);
             for (VariantAnnotatorExtensionTask extension : extensions) {
                 logger.info("Setting up the annotator extension task {} in directory {}", extension.getId(), outDir);
