@@ -2,12 +2,11 @@ package org.opencb.opencga.server.generator.openapi.models;
 
 public class Schema {
 
+    private FieldDefinition updateParams;
+    private String $ref;
+
     public Schema() {
 
-    }
-
-    public Schema(String $ref) {
-        this.$ref = $ref;
     }
 
     public String get$ref() {
@@ -19,6 +18,12 @@ public class Schema {
         return this;
     }
 
-    private String $ref;
+    public FieldDefinition getUpdateParams() {
+        return updateParams;
+    }
 
+    public Schema setUpdateParams(FieldDefinition updateParams) {
+        this.updateParams = updateParams;
+        return this;
+    }
 }
