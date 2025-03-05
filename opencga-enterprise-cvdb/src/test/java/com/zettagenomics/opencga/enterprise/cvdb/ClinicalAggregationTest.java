@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CA_DISORDER_ID_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.opencb.commons.datastore.solr.FacetQueryParser.FACET_SEPARATOR;
@@ -85,7 +84,7 @@ public class ClinicalAggregationTest {
     }
 
     public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
-        opencgaToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).getToken();
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).first().getToken();
 
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"), QueryOptions.empty(), opencgaToken);
         catalogManager.getUserManager().create(new User().setId("user").setName("User Name").setOrganization(organizationId), PASSWORD, opencgaToken);
@@ -96,7 +95,7 @@ public class ClinicalAggregationTest {
                         .setOwner("user"),
                 null, opencgaToken);
 
-        userToken = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
+        userToken = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, userToken).first();

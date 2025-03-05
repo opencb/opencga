@@ -16,6 +16,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
@@ -94,7 +95,8 @@ public class EnterpriseCvdbWebService extends EnterpriseOpenCGAWSServer {
             @ApiParam(value = CvdbIndexTaskParams.DESCRIPTION, required = true) CvdbIndexTaskParams params) {
         try {
             // Execute CVDB index as a job
-            return submitJob(CvdbIndexTask.ID, study, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            return submitJob(study, JobType.NATIVE, CvdbIndexTask.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+
         } catch (Exception e) {
             return createErrorResponse(CvdbIndexTask.DESCRIPTION, e.getMessage());
         }
