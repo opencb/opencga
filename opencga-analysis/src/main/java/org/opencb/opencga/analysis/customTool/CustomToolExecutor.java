@@ -14,10 +14,7 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Tool(id = CustomToolExecutor.ID, resource = Enums.Resource.JOB, description = CustomToolExecutor.DESCRIPTION)
 public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
@@ -73,7 +70,7 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
 
         Map<String, String> dockerParams = new HashMap<>();
         dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
-        String cmdline = runDocker(dockerImage, null, cliParams, dockerParams);
+        String cmdline = runDocker(dockerImage, Collections.emptyList(), cliParams, dockerParams);
 
         logger.info("Docker command line: " + cmdline);
         logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));

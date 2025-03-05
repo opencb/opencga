@@ -31,11 +31,13 @@ import org.opencb.opencga.core.tools.result.ToolStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -54,6 +56,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     private String cliParams;
 
     private String outDirPath;
+    private String ephimeralDirPath;
 
     private Thread thread;
     private final int monitorThreadPeriod = 5000;
@@ -88,6 +91,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         }
 
         outDirPath = getOutDir().toAbsolutePath().toString();
+        ephimeralDirPath = getScratchDir().toAbsolutePath().toString();
 
         Set<String> mandatoryParams = new HashSet<>();
         Map<String, WorkflowVariable> variableMap = new HashMap<>();
@@ -142,7 +146,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
                 if (StringUtils.isNotEmpty(entry.getValue())) {
                     if ((workflowVariable != null && workflowVariable.isOutput()) || inputFileUtils.isDynamicOutputFolder(entry.getValue())) {
                         processOutputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
-                    } else {
+                    } else if (!inputFileUtils.isFlag(entry.getValue())) {
                         processInputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
                     }
                 } else if (workflowVariable != null) {
@@ -175,7 +179,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
                 }
             } else if (workflowVariable.isOutput()) {
                 processOutputCli("", inputFileUtils, cliParamsBuilder);
-            } else {
+            } else if (workflowVariable.getType() != WorkflowVariable.WorkflowVariableType.FLAG) {
                 throw new ToolException("Missing mandatory parameter: '" + mandatoryParam + "'.");
             }
         }
@@ -196,15 +200,17 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         URL nextflowConfig = getClass().getResource("/nextflow.config");
         Path nextflowConfigPath;
         if (nextflowConfig != null) {
-            nextflowConfigPath = temporalInputDir.resolve("nextflow.config");
-            Files.copy(nextflowConfig.openStream(), nextflowConfigPath);
+            nextflowConfigPath = getOutDir().resolve("nextflow.config");
+            writeNextflowConfigFile(nextflowConfigPath);
             dockerInputBindings.add(new AbstractMap.SimpleEntry<>(nextflowConfigPath.toString(), nextflowConfigPath.toString()));
         } else {
-            throw new RuntimeException("Can't fetch nextflow.config file");
+            throw new ToolException("Can't fetch nextflow.config file");
         }
 
-        // Build output binding
-        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDirPath, outDirPath);
+        // Build output binding with output and ephimeral out directories
+        List<AbstractMap.SimpleEntry<String, String>> outputBindings = new ArrayList<>(2);
+        outputBindings.add(new AbstractMap.SimpleEntry<>(outDirPath, outDirPath));
+        outputBindings.add(new AbstractMap.SimpleEntry<>(ephimeralDirPath, ephimeralDirPath));
 
         String dockerImage = "opencb/opencga-workflow:TASK-6445";
         StringBuilder stringBuilder = new StringBuilder()
@@ -216,6 +222,12 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getId())) {
 //            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
             stringBuilder.append(workflow.getRepository().getId());
+            // Add the repository version if we have it and the user is not specifying it
+            if (StringUtils.isNotEmpty(workflow.getRepository().getVersion()) && !cliParams.contains("-r ")) {
+                stringBuilder
+                        .append(" -r ")
+                        .append(workflow.getRepository().getVersion());
+            }
         } else {
             for (WorkflowScript script : workflow.getScripts()) {
                 if (script.isMain()) {
@@ -234,13 +246,26 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         Map<String, String> dockerParams = new HashMap<>();
         // Set HOME environment variable to the temporal input directory. This is because nextflow creates a hidden folder there and,
         // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
-        dockerParams.put("-e", "HOME=" + temporalInputDir);
-        dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
+        // TODO: Temporal solution. We should be able to add multiple "-e" parameters
+        dockerParams.put("-e", "HOME=" + ephimeralDirPath + " -e OPENCGA_TOKEN=" + getExpiringToken());
+        dockerParams.put("-w", ephimeralDirPath);
+
+        // Set user uid and guid to 1001
+        dockerParams.put("user", "1001:1001");
+
+        // Grant all permissions to the scratch dir to avoid permission issues from Nextflow binary
+        Files.setPosixFilePermissions(getScratchDir(), PosixFilePermissions.fromString("rwxrwxrwx"));
 
         // Execute docker image
         StopWatch stopWatch = StopWatch.createStarted();
-        runDocker(dockerImage, outputBinding, stringBuilder.toString(), dockerParams);
+        runDocker(dockerImage, outputBindings, stringBuilder.toString(), dockerParams);
         logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
+
+        try {
+            checkTraceFileMonitorExists();
+        } catch (ToolException e) {
+            throw new ToolException("Error running NextFlow docker image", e);
+        }
     }
 
     @Override
@@ -252,25 +277,39 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     protected void close() {
         super.close();
         endTraceFileMonitor();
-        deleteTemporalFiles();
     }
 
-    private void deleteTemporalFiles() {
-        // Delete temporal files and folders created by nextflow
-        try (Stream<Path> paths = Files.walk(getOutDir().resolve(".nextflow"))) {
-            paths.sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(java.io.File::delete);
+    private void writeNextflowConfigFile(Path outputFile) throws ToolException {
+        try (BufferedWriter writer = Files.newBufferedWriter(outputFile)) {
+            writeTraceConfig(writer);
+            writeResourceLimitsConfig(writer);
         } catch (IOException e) {
-            logger.warn("Could not delete temporal nextflow directory: " + getOutDir().resolve(".nextflow"), e);
+            throw new ToolException("Could not replace 'nextflow.config' file contents", e);
         }
-        try (Stream<Path> paths = Files.walk(getOutDir().resolve("work"))) {
-            paths.sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(java.io.File::delete);
-        } catch (IOException e) {
-            logger.warn("Could not delete temporal work directory: " + getOutDir().resolve("work"), e);
+    }
+
+    private void writeTraceConfig(BufferedWriter writer) throws IOException {
+        writer.write("trace {\n");
+        writer.write("    enabled = true\n");
+        writer.write("    file = '" + outDirPath + "/trace.txt'\n");
+        writer.write("    overwrite = true\n");
+        writer.write("    fields = 'task_id,hash,name,status,start,complete,%cpu,peak_vmem'\n");
+        writer.write("}\n");
+    }
+
+    private void writeResourceLimitsConfig(BufferedWriter writer) throws IOException {
+        if (workflow.getMinimumRequirements() == null || StringUtils.isEmpty(workflow.getMinimumRequirements().getMemory()) ||
+                StringUtils.isEmpty(workflow.getMinimumRequirements().getCpu())) {
+            return;
         }
+
+        writer.newLine();
+        writer.write("process {\n");
+        writer.write("    resourceLimits = [\n");
+        writer.write("        cpus: " + workflow.getMinimumRequirements().getCpu() + ",\n");
+        writer.write("        memory: " + workflow.getMinimumRequirements().getMemory() + "\n");
+        writer.write("    ]\n");
+        writer.write("}\n");
     }
 
     protected void endTraceFileMonitor() {
@@ -293,6 +332,13 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
             }
         });
         thread.start();
+    }
+
+    private void checkTraceFileMonitorExists() throws ToolException {
+        Path traceFile = getOutDir().resolve("trace.txt");
+        if (!Files.exists(traceFile)) {
+            throw new ToolException("Trace file not found");
+        }
     }
 
     private void processTraceFile() {

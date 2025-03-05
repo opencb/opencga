@@ -1203,6 +1203,9 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 return dbAdaptorFactory.getCatalogFamilyDBAdaptor().getArchiveFamilyCollection();
             case WORKFLOW:
                 return dbAdaptorFactory.getWorkflowDBAdaptor().getArchiveCollection();
+            case CLINICAL:
+            case CLINICAL_ANALYSIS:
+                return dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getArchiveCollection();
             default:
                 throw new CatalogDBException("Unexpected resource '" + resource + "' parameter received.");
         }

@@ -152,7 +152,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     @Test
     public void testMigration() throws Exception {
         MigrationManager migrationManager = catalogManager.getMigrationManager();
-        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
 
         List<Class<? extends MigrationTool>> pendingMigrations = migrationManager.getPendingMigrations(organizationId, "0.0.1", token);
         assertEquals(0, pendingMigrations.size());
@@ -226,7 +226,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testManualMigrations() throws CatalogException, IOException {
-        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
 
         MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration(organizationId, "0.2.1", "test4-1-manual",
                 catalogManagerResource.getOpencgaHome(), false, false, new ObjectMap("key", "OtherValue"), token);
@@ -239,7 +239,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testMigrationsWithJobs() throws CatalogException, IOException {
-        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
 
         catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual",
                 catalogManagerResource.getOpencgaHome(), new ObjectMap("key", "value"), token);
@@ -294,7 +294,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testMigrationWithStorageReadOnly() throws Exception {
-        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
 
         try (OutputStream os = new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml").toFile())) {
             new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_ONLY).serialize(os);

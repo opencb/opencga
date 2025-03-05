@@ -213,7 +213,7 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getWorkflowClient().distinct(commandOptions.field, queryParams);
     }
 
-    private RestResponse<Job> importWorkflow() throws Exception {
+    private RestResponse<Workflow> importWorkflow() throws Exception {
         logger.debug("Executing importWorkflow in Workflows command line");
 
         WorkflowsCommandOptions.ImportCommandOptions commandOptions = workflowsCommandOptions.importCommandOptions;
@@ -227,7 +227,7 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
 
         WorkflowRepositoryParams workflowRepositoryParams = null;
         if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
+            RestResponse<Workflow> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/workflows/import"));
             return res;
@@ -357,6 +357,9 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "repository.version", commandOptions.repositoryVersion, true);
             putNestedIfNotEmpty(beanParams, "repository.author", commandOptions.repositoryAuthor, true);
             putNestedIfNotEmpty(beanParams, "repository.description", commandOptions.repositoryDescription, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
             putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);

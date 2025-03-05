@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ProjectManager;
@@ -275,6 +276,7 @@ public abstract class OpenCgaTool {
             }
             throw e;
         } finally {
+            close();
             // If the shutdown hook has been executed, the ExecutionResultManager is already closed
             if (!erm.isClosed()) {
                 result = close(exception);
@@ -310,6 +312,10 @@ public abstract class OpenCgaTool {
     }
 
     private void deleteScratchDirectory() throws ToolException {
+        if (NextFlowExecutor.ID.equals(getId())) {
+            privateLogger.info("Skip deleting scratch directory for tool '{}'.", getId());
+            return;
+        }
         try {
             FileUtils.deleteDirectory(scratchDir.toFile());
         } catch (IOException e) {
@@ -480,7 +486,7 @@ public abstract class OpenCgaTool {
     }
 
     public final String getExpiringToken() throws CatalogException {
-        return catalogManager.getUserManager().refreshToken(token).getToken();
+        return catalogManager.getUserManager().refreshToken(token).first().getToken();
     }
 
     private ToolParams findToolParams() throws ToolException {
@@ -593,7 +599,8 @@ public abstract class OpenCgaTool {
         try {
             file = catalogManager.getFileManager().moveAndRegister(study, source, destiny, catalogDirectoryPath, isResource, token).first();
         } catch (Exception e) {
-            throw new ToolException("Error moving file from " + source + " to " + destiny, e);
+            throw new ToolException("Error moving file from " + source + " to {uri: " + destiny + ", path: " + catalogDirectoryPath + "}",
+                    e);
         }
         // Add only if move is successful
         addGeneratedFile(file);

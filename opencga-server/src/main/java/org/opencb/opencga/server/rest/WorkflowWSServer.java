@@ -3,7 +3,6 @@ package org.opencb.opencga.server.rest;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
 import org.opencb.opencga.catalog.managers.WorkflowManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -86,7 +85,7 @@ public class WorkflowWSServer extends OpenCGAWSServer {
     @POST
     @Path("/run")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = NextFlowExecutor.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = "Execute a workflow analysis", response = Job.class)
     public Response updateByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -104,7 +103,7 @@ public class WorkflowWSServer extends OpenCGAWSServer {
     @POST
     @Path("/import")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = NextFlowExecutor.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = "Import a workflow", response = Workflow.class)
     public Response importWorkflow(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Repository parameters", required = true) WorkflowRepositoryParams params) {
@@ -237,7 +236,7 @@ public class WorkflowWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = WorkflowAclEntryList.class)
+    @ApiOperation(value = "Update the set of workflow permissions granted for the member", response = WorkflowAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberIds,

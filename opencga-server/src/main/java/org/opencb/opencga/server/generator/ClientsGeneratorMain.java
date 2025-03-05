@@ -15,7 +15,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 public class ClientsGeneratorMain {
 
@@ -26,7 +29,6 @@ public class ClientsGeneratorMain {
         System.setProperty("opencga.log.file.enabled", "false");
         System.setProperty("opencga.log.level", "info");
         Configurator.reconfigure();
-
         ApiCommonsImpl apiCommons = new ApiCommonsImpl();
         List<Class<?>> classes = apiCommons.getApiClasses();
 

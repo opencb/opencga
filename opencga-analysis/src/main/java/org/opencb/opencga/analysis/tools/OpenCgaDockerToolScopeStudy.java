@@ -1,11 +1,14 @@
 package org.opencb.opencga.analysis.tools;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.InputFileUtils;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 
@@ -13,7 +16,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Stream;
 
 public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy {
 
@@ -28,25 +30,13 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
     protected void check() throws Exception {
         super.check();
         this.dockerInputBindings = new LinkedList<>();
-        this.temporalInputDir = Files.createDirectory(getOutDir().resolve(".opencga_input"));
+        this.temporalInputDir = Files.createDirectory(getScratchDir().resolve(".opencga_input"));
         this.inputFileUtils = new InputFileUtils(catalogManager);
     }
 
     @Override
     protected void close() {
         super.close();
-        deleteTemporalFiles();
-    }
-
-    private void deleteTemporalFiles() {
-        // Delete input files and temporal directory
-        try (Stream<Path> paths = Files.walk(temporalInputDir)) {
-            paths.sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(java.io.File::delete);
-        } catch (IOException e) {
-            logger.warn("Could not delete temporal input directory: " + temporalInputDir, e);
-        }
     }
 
     /**
@@ -117,7 +107,11 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
         ObjectMap params = new ObjectMap()
                 .append(JobDBAdaptor.QueryParams.TAGS.key(), tags)
                 .append(JobDBAdaptor.QueryParams.TOOL_EXTERNAL_EXECUTOR.key(), executor);
-        catalogManager.getJobManager().update(getStudyFqn(), getJobId(), params, QueryOptions.empty(), token);
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(JobDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getJobManager().update(getStudyFqn(), getJobId(), params, options, token);
     }
 
     protected void processInputParams(String commandLineParams, StringBuilder builder) throws CatalogException {
@@ -132,7 +126,7 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
     }
 
     protected String runDocker(String image, String cli) throws IOException {
-        return runDocker(image, null, cli, null);
+        return runDocker(image, Collections.emptyList(), cli, null);
     }
 
     protected String runDocker(String image, AbstractMap.SimpleEntry<String, String> userOutputBinding, String cmdParams,
@@ -152,6 +146,25 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
         }
 
         return DockerUtils.run(image, dockerInputBindings, outputBinding, cmdParams, dockerParams);
+    }
+
+    protected String runDocker(String image, List<AbstractMap.SimpleEntry<String, String>> userOutputBindings, String cmdParams,
+                               Map<String, String> userDockerParams) throws IOException {
+        List<AbstractMap.SimpleEntry<String, String>> outputBindings = CollectionUtils.isNotEmpty(userOutputBindings)
+                ? userOutputBindings
+                : Collections.singletonList(new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), getOutDir().toAbsolutePath().toString()));
+
+        Map<String, String> dockerParams = new HashMap<>();
+        // Establish working directory
+        dockerParams.put("-w", getOutDir().toAbsolutePath().toString());
+        dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
+        dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
+        dockerParams.put("--network", "host");
+        if (userDockerParams != null) {
+            dockerParams.putAll(userDockerParams);
+        }
+
+        return DockerUtils.run(image, dockerInputBindings, outputBindings, cmdParams, dockerParams);
     }
 
 }

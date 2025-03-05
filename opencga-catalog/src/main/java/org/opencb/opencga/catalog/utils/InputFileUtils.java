@@ -22,9 +22,10 @@ public class InputFileUtils {
     private final CatalogManager catalogManager;
 
     private static final Pattern OPENCGA_PATH_PATTERN = Pattern.compile("^(?i)(ocga://|opencga://|file://)(.+)$");
-    private static final Pattern OPENCGA_PATH_IN_LINE_PATTERN = Pattern.compile("(?i)(ocga://|opencga://|file://)(\\S+)");
+    private static final Pattern OPENCGA_PATH_IN_LINE_PATTERN = Pattern.compile("(?i)(ocga://|opencga://|file://)([^\\s,;]+)");
     private static final String OUTPUT = "$OUTPUT";
     private static final List<String> OUTPUT_LIST = Arrays.asList("$OUTPUT", "$JOB_OUTPUT");
+    private static final String FLAG = "$FLAG";
     private final Logger logger = LoggerFactory.getLogger(InputFileUtils.class);
 
     public InputFileUtils(CatalogManager catalogManager) {
@@ -105,6 +106,10 @@ public class InputFileUtils {
             }
         }
         return false;
+    }
+
+    public boolean isFlag(String file) {
+        return file.equalsIgnoreCase(FLAG);
     }
 
     public String getDynamicOutputFolder(String file, String outDir) throws CatalogException {

@@ -77,7 +77,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.UUID.key(),
             SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key()));
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
-    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;somatic";
     private StudyManager studyManager;
 
     SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,

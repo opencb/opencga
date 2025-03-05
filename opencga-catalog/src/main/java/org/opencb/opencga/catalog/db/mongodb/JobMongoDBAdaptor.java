@@ -414,9 +414,6 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
         String[] acceptedBooleanParams = {QueryParams.VISITED.key(), QueryParams.INTERNAL_KILL_JOB_REQUESTED.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
-        String[] acceptedStringListParams = {QueryParams.TAGS.key()};
-        filterStringListParams(parameters, document.getSet(), acceptedStringListParams);
-
         if (parameters.containsKey(QueryParams.TOOL.key())) {
             if (parameters.get(QueryParams.TOOL.key()) instanceof ToolInfo) {
                 document.getSet().put(QueryParams.TOOL.key(), getMongoDBDocument(parameters.get(QueryParams.TOOL.key()),
@@ -432,6 +429,28 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                 document.getSet().put(QueryParams.INTERNAL_WEBHOOK.key(), getMongoDBDocument(value, "JobInternalWebhook"));
             } else {
                 document.getSet().put(QueryParams.INTERNAL_WEBHOOK.key(), value);
+            }
+        }
+
+        if (parameters.containsKey(QueryParams.TAGS.key())) {
+            List<String> tagList = parameters.getAsStringList(QueryParams.TAGS.key());
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.TAGS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            if (ParamUtils.BasicUpdateAction.SET.equals(operation) || !tagList.isEmpty()) {
+                switch (operation) {
+                    case SET:
+                        document.getSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case REMOVE:
+                        document.getPullAll().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case ADD:
+                        document.getAddToSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown operation " + operation);
+                }
             }
         }
 

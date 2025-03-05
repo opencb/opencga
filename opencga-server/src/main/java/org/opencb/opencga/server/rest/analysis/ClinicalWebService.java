@@ -48,6 +48,7 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobType;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.variant.VariantQueryParams;
@@ -1401,7 +1402,9 @@ public class ClinicalWebService extends AnalysisWebService {
             ExomiserAnalysisUtils.checkResources(params.getExomiserVersion(), study, catalogManager, token, opencgaHome);
 
             // Submit the exomiser interpretation analysis
-            return submitJobRaw(null, study, JobType.NATIVE, ExomiserInterpretationAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            ToolInfo toolInfo = new ToolInfo()
+                    .setId(ExomiserInterpretationAnalysis.ID);
+            return submitJobRaw(null, study, JobType.NATIVE, toolInfo, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
         });
     }
 

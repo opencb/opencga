@@ -189,6 +189,15 @@ public class WorkflowUpdateParams {
         return this;
     }
 
+    public MinimumRequirements getMinimumRequirements() {
+        return minimumRequirements;
+    }
+
+    public WorkflowUpdateParams setMinimumRequirements(MinimumRequirements minimumRequirements) {
+        this.minimumRequirements = minimumRequirements;
+        return this;
+    }
+
     public Map<String, Object> getAttributes() {
         return attributes;
     }

@@ -244,7 +244,7 @@ public class CatalogManager implements AutoCloseable {
         try {
             logger.info("Installing database {} in {}", getCatalogAdminDatabase(), configuration.getCatalog().getDatabase().getHosts());
             privateInstall(algorithm, secretKey, password, email);
-            String token = userManager.loginAsAdmin(password).getToken();
+            String token = userManager.loginAsAdmin(password).first().getToken();
             installIndexes(ADMIN_ORGANIZATION, token);
         } catch (Exception e) {
             try {
@@ -284,7 +284,7 @@ public class CatalogManager implements AutoCloseable {
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
                 .setOrganization(ADMIN_ORGANIZATION);
         userManager.create(user, password, null);
-        String token = userManager.login(ADMIN_ORGANIZATION, OPENCGA, password).getToken();
+        String token = userManager.login(ADMIN_ORGANIZATION, OPENCGA, password).first().getToken();
 
         // Add OPENCGA as owner of ADMIN_ORGANIZATION
         organizationManager.update(ADMIN_ORGANIZATION, new OrganizationUpdateParams().setOwner(OPENCGA), QueryOptions.empty(), token);

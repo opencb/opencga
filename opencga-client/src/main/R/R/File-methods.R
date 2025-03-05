@@ -31,7 +31,7 @@
 #' | runLink | /{apiVersion}/files/link/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | runPostlink | /{apiVersion}/files/postlink/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | search | /{apiVersion}/files/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, path, uri, type, bioformat, format, external, resource, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release |
-#' | upload | /{apiVersion}/files/upload | file, fileName, fileFormat, bioformat, checksum, resource, study, relativeFilePath, description, parents |
+#' | upload | /{apiVersion}/files/upload | file, name, fileName, format, fileFormat, bioformat, checksum, resource, study, relativeFilePath, description, parents |
 #' | acl | /{apiVersion}/files/{files}/acl | files[*], study, member, silent |
 #' | delete | /{apiVersion}/files/{files}/delete | study, files[*], skipTrash |
 #' | info | /{apiVersion}/files/{files}/info | include, exclude, flattenAnnotations, files[*], study, deleted |
@@ -256,13 +256,15 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' @section Endpoint /{apiVersion}/files/upload:
         #' Resource to upload a file by chunks.
         #' @param file File to upload.
-        #' @param fileName File name to overwrite the input fileName.
-        #' @param fileFormat File format. Allowed values: ['VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN']
+        #' @param name File name to overwrite the input fileName.
+        #' @param fileName [DEPRECATED] File name to overwrite the input fileName.
+        #' @param format File format. Allowed values: ['VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN']
+        #' @param fileFormat [DEPRECATED] File format. Allowed values: ['VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN']
         #' @param bioformat File bioformat. Allowed values: ['MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX DATAMATRIX_EXPRESSION IDLIST IDLIST_RANKED ANNOTATION_GENEVSANNOTATION OTHER_NEWICK OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF OTHER_PED VCF4 VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE REFERENCE_GENOME NONE UNKNOWN']
         #' @param checksum Expected MD5 file checksum.
         #' @param resource Boolean field indicating whether the file is a resource or not.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
-        #' @param relativeFilePath Path within catalog where the file will be located (default: root folder).
+        #' @param relativeFilePath Path within catalog (directory) where the file will be located (default: root folder).
         #' @param description description.
         #' @param parents Create the parent directories if they do not exist.
         upload=fetchOpenCGA(object=OpencgaR, category="files", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,

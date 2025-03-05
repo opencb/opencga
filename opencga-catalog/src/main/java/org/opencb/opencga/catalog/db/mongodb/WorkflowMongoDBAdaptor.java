@@ -243,8 +243,8 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
-    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId) throws CatalogDBException,
-            CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, userId);
         return facet(workflowCollection, bson, facet);
     }
@@ -331,13 +331,15 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         final String[] acceptedBooleanParams = {QueryParams.DRAFT.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key(),
+            QueryParams.TYPE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedListParams = {QueryParams.MANAGER.key(), QueryParams.SCRIPTS.key(), QueryParams.VARIABLES.key()};
+        final String[] acceptedListParams = {QueryParams.MANAGER.key(), QueryParams.SCRIPTS.key(), QueryParams.TAGS.key(),
+                QueryParams.REPOSITORY.key(), QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedListParams);
 
 //        // Check if the scripts exist.

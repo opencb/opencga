@@ -54,7 +54,7 @@ public class WorkflowClient extends ParentClient {
     }
 
     /**
-     * Update the set of permissions granted for the member.
+     * Update the set of workflow permissions granted for the member.
      * @param members Comma separated list of user or group ids.
      * @param action Action to be performed [ADD, SET, REMOVE or RESET].
      * @param data JSON containing the parameters to update the permissions.
@@ -121,21 +121,21 @@ public class WorkflowClient extends ParentClient {
     }
 
     /**
-     * Execute a Nextflow analysis.
+     * Import a workflow.
      * @param data Repository parameters.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> importWorkflow(WorkflowRepositoryParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Workflow> importWorkflow(WorkflowRepositoryParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("workflows", null, null, null, "import", params, POST, Job.class);
+        return execute("workflows", null, null, null, "import", params, POST, Workflow.class);
     }
 
     /**
-     * Execute a Nextflow analysis.
+     * Execute a workflow analysis.
      * @param data NextFlow run parameters.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.

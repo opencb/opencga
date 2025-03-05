@@ -102,4 +102,17 @@ public class IOUtilsTest {
     public void fromHumanReadableToByte_NullInput_ThrowsNullPointerException() {
         assertThrows(NullPointerException.class, () -> IOUtils.fromHumanReadableToByte(null));
     }
+
+    @Test
+    public void copyBytesHandlesBufferSizeSmallerThanInput() throws Exception {
+//        byte[] inputData = "Hello, World!".getBytes();
+        byte[] inputData = new byte[10 * 1024 * 1024 + 5]; // 10 MB
+        new Random().nextBytes(inputData);
+        InputStream is = new ByteArrayInputStream(inputData);
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+        IOUtils.copyBytesParallel(is, os, 4096);
+
+        Assert.assertArrayEquals(inputData, os.toByteArray());
+    }
 }

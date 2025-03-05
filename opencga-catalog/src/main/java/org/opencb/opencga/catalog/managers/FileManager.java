@@ -171,7 +171,14 @@ public class FileManager extends AnnotationSetManager<File> {
                 param = FileDBAdaptor.QueryParams.UUID;
                 fileStringFunction = File::getUuid;
             } else {
-                String fileName = entry.replace(":", "/");
+                String fileName = entry;
+                if (!entry.contains("/")) {
+                    // Treat as a file so we may need to revert the usage of ":" as part of the path
+                    fileName = entry
+                            .replace("\\:", "__OPENCGA__") // Pre-replacement to preserve original ":" from subpath
+                            .replace(":", "/")             // Replace ":" by "/"
+                            .replace("__OPENCGA__", ":");  // Revert replacement to original ":"
+                }
                 if (fileName.startsWith("/")) {
                     // Remove the starting /. Absolute paths are not supported.
                     fileName = fileName.substring(1);
@@ -804,7 +811,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         file.setName(Paths.get(file.getPath()).getFileName().toString());
-        file.setId(file.getPath().replace("/", ":"));
+        file.setId(file.getPath().replace(":", "\\:").replace("/", ":"));
 
         URI uri;
         try {
@@ -1228,9 +1235,15 @@ public class FileManager extends AnnotationSetManager<File> {
                 // We get the relative path
                 String relativePath = Paths.get(parentFolder.getPath()).relativize(Paths.get(path)).toString();
                 folderDestiny = Paths.get(parentFolder.getUri()).resolve(relativePath);
+                logger.debug("Setting folderDestiny to {}", folderDestiny);
             }
 
-            if (folderDestiny.toString().startsWith(study.getUri().getPath())) {
+            String studyUri = study.getUri().getPath();
+            if (studyUri.endsWith("/")) {
+                studyUri = studyUri.substring(0, studyUri.length() - 1);
+            }
+            logger.debug("Study path: {}", studyUri);
+            if (folderDestiny.toString().startsWith(studyUri)) {
                 if (StringUtils.isNotEmpty(path)) {
                     String myPath = path;
                     if (!myPath.endsWith("/")) {
@@ -1238,13 +1251,13 @@ public class FileManager extends AnnotationSetManager<File> {
                     }
                     myPath += fileName;
 
-                    String relativePath = Paths.get(study.getUri().getPath()).relativize(folderDestiny.resolve(fileName)).toString();
+                    String relativePath = Paths.get(studyUri).relativize(folderDestiny.resolve(fileName)).toString();
                     if (!relativePath.equals(myPath)) {
                         throw new CatalogException("Destination uri within the workspace and path do not match");
                     }
                 } else {
                     //Set the path to whichever path would corresponding based on the workspace uri
-                    path = Paths.get(study.getUri().getPath()).relativize(folderDestiny).toString();
+                    path = Paths.get(studyUri).relativize(folderDestiny).toString();
                 }
 
                 if (isResource) {
@@ -1266,7 +1279,10 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             String filePath = path;
-            if (!filePath.endsWith("/")) {
+            if (filePath.length() == 1 && filePath.equals("/")) {
+                filePath = "";
+            }
+            if (filePath.length() > 0 && !filePath.endsWith("/")) {
                 filePath += "/";
             }
             filePath += fileName;
@@ -3270,10 +3286,10 @@ public class FileManager extends AnnotationSetManager<File> {
                 authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId, FilePermissions.DELETE);
             }
 
-            // File must exist in the file system
-            if (!unlink && !ioManager.exists(file.getUri())) {
-                throw new CatalogException("File " + file.getUri() + " not found in file system");
-            }
+//            // File must exist in the file system
+//            if (!unlink && !ioManager.exists(file.getUri())) {
+//                throw new CatalogException("File " + file.getUri() + " not found in file system");
+//            }
 
             checkValidStatusForDeletion(file, acceptedStatus);
             indexFiles.addAll(getProducedFromIndexFiles(file));
