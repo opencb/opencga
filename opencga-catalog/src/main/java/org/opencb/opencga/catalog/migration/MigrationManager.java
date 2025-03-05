@@ -751,7 +751,7 @@ public class MigrationManager {
                         .setCreationDate(TimeUtils.getTime(start))
                         .setCommandLine("opencga-admin.sh")
                         .setParams(params)
-                        .setTool(new ToolInfo(annotation.id(), annotation.description(), Tool.Scope.GLOBAL, null, null))
+                        .setTool(new ToolInfo(annotation.id(), annotation.description(), Tool.Scope.GLOBAL, null, null, null))
                         .setOutDir(outdir.first())
                         .setStderr(stderr.first())
                         .setInternal(new JobInternal()

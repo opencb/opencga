@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.master.monitor.executors;
 
+import org.opencb.opencga.core.models.job.Job;
+
 import java.io.Closeable;
 import java.nio.file.Path;
 
@@ -24,16 +26,7 @@ import java.nio.file.Path;
  */
 public interface BatchExecutor extends Closeable {
 
-    String TIMEOUT = "timeout";
-    String STDOUT = "stdout";
-    String STDERR = "stderr";
-    String OUTDIR = "outdir";
-    String NUM_THREADS = "num_threads";
-    String MAX_MEM = "max_mem";
-    String OUT_LOG_EXTENSION = ".log";
-    String ERR_LOG_EXTENSION = ".err";
-
-    void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception;
+    void execute(Job job, String queue, String commandLine, Path stdout, Path stderr) throws Exception;
 
     String getStatus(String jobId);
 
@@ -48,10 +41,6 @@ public interface BatchExecutor extends Closeable {
     }
 
     boolean isExecutorAlive();
-
-    default String getCommandLine(String commandLine) {
-        return getCommandLine(commandLine, null, null);
-    }
 
     /**
      * We do it this way to avoid writing the session id in the command line (avoid display/monitor/logs) attribute of Job.

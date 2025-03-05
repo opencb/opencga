@@ -34,6 +34,7 @@ import org.opencb.opencga.core.config.Resource;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
 import org.slf4j.Logger;
@@ -222,8 +223,8 @@ public class MonitorService {
             params.setResources(resourceConfig.getFetchOnInit());
 
             catalogManager.getJobManager()
-                    .submit(ParamConstants.ADMIN_STUDY_FQN, ResourceFetcherTool.ID, Enums.Priority.URGENT, params.toParams(), null, null,
-                            null, null, null, null, false, token);
+                    .submit(ParamConstants.ADMIN_STUDY_FQN, JobType.NATIVE, ResourceFetcherTool.ID, Enums.Priority.URGENT,
+                            params.toParams(), null, null, null, null, null, null, false, token);
         } catch (CatalogException e) {
             logger.error("Error submitting job '" + ResourceFetcherTool.ID + "'", e);
         }

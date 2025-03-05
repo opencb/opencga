@@ -76,6 +76,16 @@ analysis:
   # List of packages where to find analysis tools
   packages:
     - "org.opencb.opencga"
+  workflow:
+    # Minimum requirements to run a workflow
+    minRequirements:
+      cpu: 2
+      memory: 8GB
+      disk: 100GB
+    # List of supported workflow managers and the version to be launched by default
+    managers:
+      - id: "NEXTFLOW"
+        version: "24.04.4"
   # Scratch folder for the analysis.
   scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"
   resource:
@@ -166,7 +176,7 @@ analysis:
     - id: "relatedness"
       resourceIds: ["RELATEDNESS_VARIANTS_PRUNE_IN", "RELATEDNESS_VARIANTS_FRQ"]
   execution:
-    # Accepted values are "local", "SGE", "azure-batch", "k8s"
+    # Accepted values are "local", "SGE", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
     id: "${OPENCGA.EXECUTION.MODE}"
     defaultQueue: ""            # Default queue to be used to submit jobs
@@ -209,13 +219,6 @@ analysis:
         - "variant-secondary-sample-index"
       ## Local executor configuration
       local.maxConcurrentJobs: 2    # Max number of concurrent jobs to be executed locally in the master
-      ## Azure Batch Service configuration example
-      # azure.batchAccount : "batchAccount"
-      # azure.batchKey : "batchKey"
-      # azure.batchUri : "https://batchservice.uksouth.batch.azure.com"
-      # azure.batchPoolId : "poolId"
-      # azure.dockerImageName : "openCGADockerImageName"
-      # azure.dockerArgs : "dockerRunOptions"
 
       ## Kubernetes executor configuration example
       # k8s.masterUrl: "https://192.168.99.100:8443/"
@@ -243,12 +246,6 @@ analysis:
         agentpool: jobs
         kubernetes.io/os: linux
       # FOR ACI:
-      # k8s.requests:
-      #   cpu: 2
-      #   memory: "12G"
-      # k8s.limits:
-      #   cpu: 2
-      #   memory: "12G"
       # k8s.nodeSelector:
       #   kubernetes.io/role: agent
       #   kubernetes.io/os: linux

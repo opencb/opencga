@@ -53,8 +53,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created on 26/08/15
@@ -352,27 +354,15 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     public String createTmpOutdir(String studyId, String suffix, String sessionId) throws CatalogException, IOException {
-        return createTmpOutdir(suffix);
+        return catalogManagerExternalResource.createTmpOutdir(suffix);
     }
 
     public String createTmpOutdir() throws IOException {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        // stackTrace[0] = "Thread.currentThread"
-        // stackTrace[1] = "newOutputUri"
-        // stackTrace[2] =  caller method
-        String testName = stackTrace[2].getMethodName();
-        return createTmpOutdir(testName);
+        return catalogManagerExternalResource.createTmpOutdir();
     }
 
     public String createTmpOutdir(String suffix) throws IOException {
-        if (suffix.endsWith("_")) {
-            suffix = suffix.substring(0, suffix.length() - 1);
-        }
-        String folder = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
-        Path tmpOutDir = Paths.get(getCatalogManager().getConfiguration().getJobDir()).resolve(folder);
-        Files.createDirectories(tmpOutDir);
-        return tmpOutDir.toString();
-//        return getCatalogManager().getJobManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
+        return catalogManagerExternalResource.createTmpOutdir(suffix);
     }
 
     public void restore(URL resource) throws Exception {

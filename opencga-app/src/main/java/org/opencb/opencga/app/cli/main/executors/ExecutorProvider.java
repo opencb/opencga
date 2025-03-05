@@ -25,6 +25,9 @@ public class ExecutorProvider {
             case "files":
                 commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFilesCommandOptions());
                 break;
+            case "workflows":
+                commandExecutor = new WorkflowsCommandExecutor(cliOptionsParser.getWorkflowsCommandOptions());
+                break;
             case "jobs":
                 commandExecutor = new JobsCommandExecutor(cliOptionsParser.getJobsCommandOptions());
                 break;

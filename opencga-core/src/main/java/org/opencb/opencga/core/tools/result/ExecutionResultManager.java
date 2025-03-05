@@ -29,6 +29,7 @@ import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.ToolDependency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,6 +182,13 @@ public class ExecutionResultManager {
                     break;
                 }
             }
+            for (ToolStep executionStep : execution.getSteps()) {
+                if (Status.Type.ERROR.equals(executionStep.getStatus())) {
+                    // If there is any ERROR on any step, the final status will be ERROR
+                    finalStatus = Status.Type.ERROR;
+                    break;
+                }
+            }
         } else {
             addError(throwable, execution);
             finalStatus = Status.Type.ERROR;
@@ -252,6 +260,21 @@ public class ExecutionResultManager {
             }
             return step.getAttributes().put(key, value);
         });
+    }
+
+    public void addDependency(ToolDependency dependency) throws ToolException {
+        addDependencies(Collections.singletonList(dependency));
+    }
+
+    public void addDependencies(List<ToolDependency> dependencyList) throws ToolException {
+        updateResult(result -> {
+            result.getDependencies().addAll(dependencyList);
+            return null;
+        });
+    }
+
+    public void setManualSteps(List<ToolStep> steps) throws ToolException {
+        updateResult(result -> result.setSteps(steps));
     }
 
     public void errorStep() throws ToolException {

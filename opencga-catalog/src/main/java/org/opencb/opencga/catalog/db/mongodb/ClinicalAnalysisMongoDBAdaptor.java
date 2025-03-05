@@ -110,6 +110,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         return clinicalCollection;
     }
 
+    public MongoDBCollection getArchiveCollection() {
+        return archiveClinicalCollection;
+    }
+
     static void fixCommentsForRemoval(ObjectMap parameters) {
         if (parameters.get(COMMENTS.key()) == null) {
             return;

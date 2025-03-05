@@ -326,11 +326,35 @@ public class FieldConstants {
 
 
     //ToolInfo
+    public static final String TOOL_INFO_VERSION_DESCRIPTION = "Version of the tool to be executed.";
     public static final String TOOL_INFO_SCOPE_DESCRIPTION = "Tool info scope can have the values GLOBAL, PROJECT and STUDY.";
     public static final String TOOL_INFO_TYPE_DESCRIPTION = "Tool info type can have the values OPERATION and ANALYSIS.";
     public static final String TOOL_INFO_RESOURCE_DESCRIPTION = "Tool info resource can have the values AUDIT, USER, PROJECT, "
             + "STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, "
             + "VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.";
+    public static final String TOOL_INFO_EXTERNAL_EXECUTOR_DESCRIPTION = "Object containing the id and version of the external tool that"
+            + " is being executed.";
+
+    // Workflow
+    public static final String WORKFLOW_ID_DESCRIPTION = "Workflow ID.";
+    public static final String WORKFLOW_NAME_DESCRIPTION = "Workflow name.";
+    public static final String WORKFLOW_TYPE_DESCRIPTION = "Workflow type. Valid values: NEXTFLOW.";
+    public static final String WORKFLOW_MANAGER_DESCRIPTION = "Workflow system corresponding to the workflow.";
+    public static final String WORKFLOW_DRAFT_DESCRIPTION = "Flag indicating whether the workflow is still a draft or not.";
+    public static final String WORKFLOW_REPOSITORY_DESCRIPTION = "Workflow repository image to execute. If any, providing a list of"
+            + " scripts will not be mandatory.";
+    public static final String WORKFLOW_SCRIPTS_DESCRIPTION = "List of scripts used by the Workflow.";
+    public static final String WORKFLOW_TAGS_DESCRIPTION = "List of tags.";
+    public static final String WORKFLOW_VARIABLES_DESCRIPTION = "List of variables accepted by the Workflow.";
+    public static final String MINIMUM_REQUIREMENTS_DESCRIPTION = "Minimum requirements to execute the process.";
+    public static final String WORKFLOW_INTERNAL_DESCRIPTION = "Workflow internal information.";
+
+    public static final String MIN_REQUIREMENTS_CPU_DESCRIPTION = "Minimum number of cpu cores required to execute the process.";
+    public static final String MIN_REQUIREMENTS_MEMORY_DESCRIPTION = "Minimum memory required to execute the process.";
+    public static final String MIN_REQUIREMENTS_DISK_DESCRIPTION = "Minimum disk required to execute the process.";
+
+    public static final String WORKFLOW_SYSTEM_ID_DESCRIPTION = "Workflow system id. Valid values: NEXTFLOW.";
+    public static final String WORKFLOW_SYSTEM_VERSION_DESCRIPTION = "Workflow system version to use.";
 
     //FileInternal
     public static final String FILE_INTERNAL_STATUS_DESCRIPTION = "File status can have the values READY, DELETED, "
@@ -398,11 +422,13 @@ public class FieldConstants {
     public static final String EXECUTION_RESULT_START = "Date the execution started.";
     public static final String EXECUTION_RESULT_END = "Date the execution was completed.";
     public static final String EXECUTION_RESULT_STATUS = "Executor status can have the values PENDING, RUNNING, DONE and ERROR.";
+    public static final String EXECUTION_RESULT_DEPENDENCIES = "List of tool dependencies used during the execution.";
     public static final String EXECUTION_RESULT_EXTERNAL_FILES = "List of uris to the external files.";
     public static final String EXECUTION_RESULT_STEPS = "List of ToolStep.";
     public static final String EXECUTION_RESULT_EVENTS = "List of Event.";
 
     //Job
+    public static final String JOB_TYPE = "Job type indicating the origin of the tool that will be run.";
     public static final String JOB_TOOL = "Job tool info.";
     public static final String JOB_USER_ID = "Job user id.";
     public static final String JOB_COMMAND_LINE = "Job command line.";
