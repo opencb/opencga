@@ -1039,7 +1039,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void rescheduleJobTest() throws CatalogException {
-        Job job = catalogManager.getJobManager().submit(studyId, JobType.NATIVE, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
+        Job job = catalogManager.getJobManager().submit(studyId, JobType.NATIVE, "command-subcommand", null, Collections.emptyMap(),
+                ownerToken).first();
 
         Date firstDayOfNextMonth = TimeUtils.getFirstDayOfNextMonth(new Date());
         String scheduleStartTime = TimeUtils.getTime(firstDayOfNextMonth);

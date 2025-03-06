@@ -139,9 +139,11 @@ public class Configuration {
             // Disable password expiration by default
             configuration.getAccount().setPasswordExpirationDays(0);
         }
+
         if (configuration.getQuota() == null) {
             configuration.setQuota(QuotaConfiguration.init());
         }
+
         if (configuration.getAnalysis().getWorkflow() == null) {
             configuration.getAnalysis().setWorkflow(new WorkflowConfiguration());
         }

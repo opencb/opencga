@@ -112,6 +112,11 @@ public class ConfigurationTest {
 //        File file = new File(url.toURI());
 //        System.out.println(file.list());
 
+
+        String path = "data/toto.txt/toto.txt";
+        System.out.println("Paths.get(path).getParent() = " + Paths.get(path).getParent());
+        System.out.println("Paths.get(path).getFileName() = " + Paths.get(path).getFileName());
+
         Configuration configuration = Configuration
                 .load(getClass().getResource("/configuration-test.yml").openStream());
         System.out.println("catalogConfiguration = " + configuration);

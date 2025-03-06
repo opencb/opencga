@@ -74,7 +74,7 @@ class JavaClientGenerator(RestClientGenerator):
     def get_class_definition(self, category):
         self.java_types = set()
 
-        ## Check if there is a parent class to extend, otherwise we use default 'AbstractParentClient'
+        ## Check if there is a parent class to extend, otherwise we use default 'ParentClient'
         parentClientClass = glob.glob(self.output_dir + '/../*ParentClient.java')
         if len(parentClientClass) > 0:
             parentClientClass = parentClientClass[0]

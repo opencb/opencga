@@ -610,6 +610,18 @@ public class FieldConstants {
             + " the default version will be used. Refer to the configuration file to view all installed Exomiser versions and identify the"
             + " default version.";
 
+    // Liftover
+    public static final String LIFTOVER_GRCH38 = "GRCh38";
+    public static final String LIFTOVER_HG38 = "hg38";
+    public static final String SAME_AS_INPUT_VCF = "SAME_AS_INPUT_VCF";
+    public static final String LIFTOVER_FILES_DESCRIPTION = "List of VCF files to lift over";
+    public static final String LIFTOVER_TARGET_ASSEMBLY_DESCRIPTION = "Target assembly for lift over. Valid values: " + LIFTOVER_GRCH38
+            + " (for Ensembl) or " + LIFTOVER_HG38 + " (for NCBI)";
+    public static final String LIFTOVER_VCF_DESTINATION_DESCRIPTION = "Destination path where the lifted-over VCF files will be stored."
+            + " If left empty, the VCF files will be stored in the job folder. If the keyword " + SAME_AS_INPUT_VCF
+            + " is used, then VCF files be stored in the same folder as the input VCF files. Otherwise, they will be stored in the specified"
+            + " destination path";
+
     // Fetch resources
     public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"
             + " specified in the configuration file). The wildcard '*' can be used: for example, use '*' to fetch all resources, or"

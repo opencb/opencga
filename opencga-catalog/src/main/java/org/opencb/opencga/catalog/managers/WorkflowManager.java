@@ -594,10 +594,11 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
 
-        fixQueryObject(query);
-        query.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        Query finalQuery = new Query(query);
+        fixQueryObject(finalQuery);
+        finalQuery.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return getWorkflowDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);
+        return getWorkflowDBAdaptor(organizationId).facet(study.getUid(), finalQuery, facet, userId);
     }
 
     @Override
