@@ -159,8 +159,7 @@ public class JsonOpenApiGenerator {
                 parameter.setRequired(apiParam.required());
                 if("java.util.Map".equals(methodParam.getType().getTypeName())){
                     parameter.setType("array");
-                    parameter.setSchema(new Schema().setUpdateParams(getMapDefinition(methodParam)));
-
+                    parameter.setSchema(getMapSchema(methodParam));
                 }else {
                     parameter.setType(methodParam.getType().getTypeName());
                     parameter.setSchema(new Schema().set$ref("#/definitions/" + methodParam.getType().getSimpleName()));
@@ -208,6 +207,69 @@ public class JsonOpenApiGenerator {
         return parameters;
     }
 
+    public Schema getMapSchema(java.lang.reflect.Parameter methodParam) {
+        Schema schema = new Schema();
+        schema.setType("object");
+        Type paramType = methodParam.getParameterizedType();
+        if (paramType instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) paramType;
+            Type[] typeArguments = parameterizedType.getActualTypeArguments();
+
+            if (typeArguments.length == 2) {
+                Schema keySchema = getTypeSchema(typeArguments[0]);
+                Schema valueSchema = getTypeSchema(typeArguments[1]);
+
+                // En OpenAPI los mapas solo pueden tener claves tipo String
+                if (!"string".equals(keySchema.getType())) {
+                    throw new IllegalArgumentException("OpenAPI solo permite Map con claves de tipo String.");
+                }
+
+                schema.setAdditionalProperties(valueSchema);
+            }
+        } else {
+            // Si no es un tipo parametrizado, asumimos Map<String, Object>
+            Schema additionalPropertiesSchema = new Schema();
+            additionalPropertiesSchema.setType("object");
+            schema.setAdditionalProperties(additionalPropertiesSchema);
+        }
+
+        return schema;
+    }
+
+    private Schema getTypeSchema(Type type) {
+        Schema schema = new Schema();
+
+        if (type instanceof Class<?>) {
+            Class<?> clazz = (Class<?>) type;
+
+            if (String.class.equals(clazz)) {
+                schema.setType("string");
+            } else if (Integer.class.equals(clazz) || int.class.equals(clazz)) {
+                schema.setType("integer");
+                schema.setFormat("int32");
+            } else if (Long.class.equals(clazz) || long.class.equals(clazz)) {
+                schema.setType("integer");
+                schema.setFormat("int64");
+            } else if (Boolean.class.equals(clazz) || boolean.class.equals(clazz)) {
+                schema.setType("boolean");
+            } else if (Double.class.equals(clazz) || double.class.equals(clazz)) {
+                schema.setType("number");
+                schema.setFormat("double");
+            } else if (Float.class.equals(clazz) || float.class.equals(clazz)) {
+                schema.setType("number");
+                schema.setFormat("float");
+            } else if (clazz.isArray()) {
+                schema.setType("array");
+                schema.setItems(getTypeSchema(clazz.getComponentType()));
+            } else {
+                schema.setType("object");
+            }
+        } else {
+            schema.setType("object"); // Si es un tipo genérico desconocido, asumimos objeto
+        }
+
+        return schema;
+    }
     private FieldDefinition getMapDefinition(java.lang.reflect.Parameter methodParam) {
         FieldDefinition mapDefinition = new MapDefinition();
         mapDefinition.setType("array");
