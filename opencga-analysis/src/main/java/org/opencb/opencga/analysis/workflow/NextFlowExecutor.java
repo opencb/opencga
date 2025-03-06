@@ -213,7 +213,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         outputBindings.add(new AbstractMap.SimpleEntry<>(outDirPath, outDirPath));
         outputBindings.add(new AbstractMap.SimpleEntry<>(ephimeralDirPath, ephimeralDirPath));
 
-        String dockerImage = "opencb/opencga-workflow:TASK-6445";
+        String dockerImage = "opencb/opencga-workflow:" + GitRepositoryState.getInstance().getBuildVersion() + "-hdp3.1";
         StringBuilder stringBuilder = new StringBuilder()
                 .append("bash -c \"NXF_VER=")
                 .append(workflow.getManager().getVersion())
