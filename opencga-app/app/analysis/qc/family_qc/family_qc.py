@@ -3,7 +3,7 @@ import os
 import logging
 import json
 
-from family_qc.relatedness import RelatednessAnalysis
+from common.relatedness import RelatednessAnalysis
 
 LOGGER = logging.getLogger('variant_qc_logger')
 

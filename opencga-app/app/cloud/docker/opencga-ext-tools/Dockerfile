@@ -23,18 +23,18 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib
 
 # Upgrade pip and install the pydantic Python module
-RUN pip3 install --upgrade pip && pip3 install pydantic
+RUN pip3 install --upgrade pip && pip3 install pydantic numpy pyBigWig
 
-WORKDIR /opt/opencga/signature.tools.lib
-
-RUN git fetch origin --tags && \
-    git checkout tags/v2.4.4 && \
-    sed -i '/Mmusculus/d' DESCRIPTION && \
-    sed -i '/Cfamiliaris/d' DESCRIPTION && \
-    sed -i '/1000genomes/d' DESCRIPTION && \
-    R -e 'options(timeout = 3600);devtools::install(repos="https://www.stats.bris.ac.uk/R/")' && \
-    ## Clean up
-    rm -rf /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
-    strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
+#WORKDIR /opt/opencga/signature.tools.lib
+#
+#RUN git fetch origin --tags && \
+#    git checkout tags/v2.4.4 && \
+#    sed -i '/Mmusculus/d' DESCRIPTION && \
+#    sed -i '/Cfamiliaris/d' DESCRIPTION && \
+#    sed -i '/1000genomes/d' DESCRIPTION && \
+#    R -e 'options(timeout = 3600);devtools::install(repos="https://www.stats.bris.ac.uk/R/")' && \
+#    ## Clean up
+#    rm -rf /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
+#    strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 
 WORKDIR /opt/opencga

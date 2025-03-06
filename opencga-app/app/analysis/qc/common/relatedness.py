@@ -6,7 +6,7 @@ import gzip
 import json
 
 from utils import create_output_dir, execute_bash_command, generate_results_json
-from family_qc.relatedness_results import RelatednessResults, Software, Scores, Values, Images, Attributes
+from common.relatedness_results import RelatednessResults, Software, Scores, Values, Images, Attributes
 
 
 LOGGER = logging.getLogger('variant_qc_logger')
