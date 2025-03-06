@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -305,6 +306,10 @@ public class UserManager extends AbstractManager {
     }
 
     public JwtPayload validateToken(String token) throws CatalogException {
+        if (StringUtils.isEmpty(token)) {
+            throw new CatalogException("Missing token parameter");
+        }
+
         JwtPayload jwtPayload = new JwtPayload(token);
         ParamUtils.checkParameter(jwtPayload.getUserId(), "jwt user");
         ParamUtils.checkParameter(jwtPayload.getOrganization(), "jwt organization");
@@ -795,7 +800,7 @@ public class UserManager extends AbstractManager {
         throw new UnsupportedOperationException();
     }
 
-    public OpenCGAResult resetPassword(String userId, String token) throws CatalogException {
+    public OpenCGAResult<?> resetPassword(String userId, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         JwtPayload jwtPayload = validateToken(token);
@@ -803,7 +808,7 @@ public class UserManager extends AbstractManager {
         try {
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId());
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
-            OpenCGAResult writeResult = authenticationFactory.resetPassword(organizationId, authOrigin, userId);
+            OpenCGAResult<?> writeResult = authenticationFactory.resetPassword(organizationId, authOrigin, userId);
 
             auditManager.auditUser(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.RESET_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -815,11 +820,11 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    public AuthenticationResponse loginAsAdmin(String password) throws CatalogException {
+    public OpenCGAResult<AuthenticationResponse> loginAsAdmin(String password) throws CatalogException {
         return login(ParamConstants.ADMIN_ORGANIZATION, OPENCGA, password);
     }
 
-    public AuthenticationResponse login(String organizationId, String username, String password) throws CatalogException {
+    public OpenCGAResult<AuthenticationResponse> login(String organizationId, String username, String password) throws CatalogException {
         ParamUtils.checkParameter(username, "userId");
         ParamUtils.checkParameter(password, "password");
 
@@ -842,6 +847,7 @@ public class UserManager extends AbstractManager {
         }
 
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_INTERNAL);
+        List<Event> eventList = new LinkedList<>();
         if (userOpenCGAResult.getNumResults() == 1) {
             User user = userOpenCGAResult.first();
             userId = user.getId();
@@ -850,7 +856,7 @@ public class UserManager extends AbstractManager {
                     && CatalogAuthenticationManager.OPENCGA.equals(user.getInternal().getAccount().getAuthentication().getId());
             // We check
             if (userCanBeBanned) {
-                checkValidUserAccountStatus(username, user);
+                eventList.addAll(checkValidUserAccountStatus(username, user));
             }
             Account.AuthenticationOrigin authentication = user.getInternal().getAccount().getAuthentication();
             authId = user.getInternal().getAccount().getAuthentication().getId();
@@ -934,10 +940,13 @@ public class UserManager extends AbstractManager {
             }
         }
 
-        return response;
+        return new OpenCGAResult<>(0, eventList, 1, Collections.singletonList(response), 1);
     }
 
-    private static void checkValidUserAccountStatus(String username, User user) throws CatalogException {
+    private static List<Event> checkValidUserAccountStatus(String username, User user) throws CatalogException {
+        List<Event> eventList = new LinkedList<>();
+        Date futureDate = TimeUtils.addDaysToCurrentDate(15);
+
         // Check user is not banned, suspended or has an expired account
         if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
             throw CatalogAuthorizationException.userIsBanned(username);
@@ -956,6 +965,9 @@ public class UserManager extends AbstractManager {
                 Account account = user.getInternal().getAccount();
                 throw CatalogAuthorizationException.passwordExpired(username, account.getPassword().getExpirationDate());
             }
+            if (passwordExpirationDate.before(futureDate)) {
+                eventList.add(new Event(Event.Type.WARNING, "Password expiration date is close. Please, consider changing it."));
+            }
         }
         if (user.getInternal().getAccount().getExpirationDate() != null) {
             Date date = TimeUtils.toDate(user.getInternal().getAccount().getExpirationDate());
@@ -966,10 +978,16 @@ public class UserManager extends AbstractManager {
                 throw CatalogAuthorizationException.accountIsExpired(username,
                         user.getInternal().getAccount().getExpirationDate());
             }
+            if (date.before(futureDate)) {
+                eventList.add(new Event(Event.Type.WARNING, "Account expiration date is close. Please, talk to your"
+                        + " administrator."));
+            }
         }
+
+        return eventList;
     }
 
-    public AuthenticationResponse loginAnonymous(String organizationId) throws CatalogException {
+    public OpenCGAResult<AuthenticationResponse> loginAnonymous(String organizationId) throws CatalogException {
         ParamUtils.checkParameter(organizationId, "organization id");
 
         // Check user anonymous has access to any study within the organization
@@ -981,17 +999,19 @@ public class UserManager extends AbstractManager {
 
         String token = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.OPENCGA,
                 ParamConstants.ANONYMOUS_USER_ID);
-        return new AuthenticationResponse(token);
+
+        AuthenticationResponse response = new AuthenticationResponse(token);
+        return new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(response), 1);
     }
 
     /**
      * Create a new token if the token provided corresponds to the user and it is not expired yet.
      *
      * @param token          active token.
-     * @return a new AuthenticationResponse object.
+     * @return a new OpenCGAResult of AuthenticationResponse object.
      * @throws CatalogException if the token does not correspond to the user or the token is expired.
      */
-    public AuthenticationResponse refreshToken(String token) throws CatalogException {
+    public OpenCGAResult<AuthenticationResponse> refreshToken(String token) throws CatalogException {
         JwtPayload payload = new JwtPayload(token);
         String organizationId = payload.getOrganization();
         AuthenticationResponse response = null;
@@ -1021,7 +1041,7 @@ public class UserManager extends AbstractManager {
 
         auditManager.auditUser(organizationId, userId, Enums.Action.REFRESH_TOKEN, userId,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        return response;
+        return  new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(response), 1);
     }
 
     public OpenCGAResult<User> changeStatus(String organizationId, String userId, String status, QueryOptions options, String token)

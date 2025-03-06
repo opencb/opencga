@@ -112,6 +112,9 @@ public class InternalMain {
                         case "studies":
                             commandExecutor = new StudyCommandExecutor(cliOptionsParser.getStudyCommandOptions());
                             break;
+                        case "workflows":
+                            commandExecutor = new WorkflowCommandExecutor(cliOptionsParser.getWorkflowCommandOptions());
+                            break;
                         default:
                             System.err.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;

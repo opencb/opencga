@@ -119,8 +119,8 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
             stop(paste("There is more than one connection to this host in your rsession file. Please, remove any duplicated entries in", 
                        object@sessionFile))
         }
-        timeNow <- Sys.time()
-        timeLeft <- as.numeric(difftime(as.POSIXct(expirationTime, format="%Y%m%d%H%M%S"), timeNow, units="mins"))
+        timeNow <- lubridate::as_datetime(Sys.time())
+        timeLeft <- as.numeric(difftime(expirationTime, timeNow, units="mins"))
         if (timeLeft > 0 & timeLeft <= 5){
             print("INFO: Your session will expire in less than 5 minutes.")
             urlNewToken <- paste0(host, version, "users/login")
@@ -270,11 +270,28 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam,
     return(list(resp=resp, content=content))
 }
 
+
+# A function to print Events
+printEvents <- function (row){
+    print(paste(row$type, ":", row$name, row$message))
+}
+
+
 ## A function to parse the json data into R dataframes
 parseResponse <- function(resp, content, verbose){
     js <- jsonlite::fromJSON(content)
     if (resp$status_code == 200){
-        if (!("warning" %in% js[[1]]) || js[[1]]$warning == ""){
+        # QUERY SUCCESSFUL
+        if ("events" %in% names(js) == 0){
+            if (length(js$events)){
+                if (isTRUE(verbose)){
+                    print("Query successful!")
+                }
+            }else if (nrow(js$events) > 0){
+                print("Query successful with warnings.")
+                printEvents(js$events)
+            }
+        }else if (!("warning" %in% js[[1]]) || js[[1]]$warning == ""){
             if (isTRUE(verbose)){
                 print("Query successful!")
             }
@@ -283,15 +300,19 @@ parseResponse <- function(resp, content, verbose){
             print(paste("WARNING:", js[[1]]$warning))
         }
     }else{
+      # QUERY UNSUCCESSFUL
         print("Query unsuccessful.")
         print(paste("Category:", httr::http_status(resp)$category))
         print(paste("Reason:", httr::http_status(resp)$reason))
-        if (js[[1]]$warning != ""){
-            print(paste("WARNING:", js[[1]]$warning))
-            print()
-        }
-        if (js[[1]]$error != ""){
-            stop(paste("ERROR:", js[[1]]$error))
+        if ("events" %in% names(js)){
+            printEvents(js$events)
+        }else{
+            if (js[[1]]$warning != ""){
+                print(paste("WARNING:", js[[1]]$warning))
+            }
+            if (js[[1]]$error != ""){
+                stop(paste("ERROR:", js[[1]]$error))
+            }
         }
     }
     

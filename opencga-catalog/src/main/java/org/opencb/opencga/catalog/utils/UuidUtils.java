@@ -51,7 +51,8 @@ public class UuidUtils {
         INTERPRETATION(11),
         ORGANIZATION(12),
         NOTES(13),
-        EVENT(14);
+        WORKFLOW(14),
+        EVENT(15);
 
         private final int mask;
 

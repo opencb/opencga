@@ -33,6 +33,7 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.operations.variant.VariantFileIndexJobLauncherParams;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -211,7 +212,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
         }
         VariantFileIndexJobLauncherParams params = new VariantFileIndexJobLauncherParams().setDirectory("data/vcfs");
         List<String> tags = Arrays.asList("tag1", "tag2");
-        Job job = catalogManager.getJobManager().submit(studyFqn, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
+        Job job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
                 params.toParams(STUDY_PARAM, studyFqn), null, null, null, tags, null, null, false, sessionId).first();
         ExecutionResult result = toolRunner.execute(job, Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), sessionId);
 
@@ -230,7 +231,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
 
         //// Execute again, no new jobs should be submitted
         tags = Arrays.asList("tag10", "tag20");
-        job = catalogManager.getJobManager().submit(studyFqn, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
+        job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
                 params.toParams(STUDY_PARAM, studyFqn), null, null, null, tags, null, null, false, sessionId).first();
         result = toolRunner.execute(job, Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), sessionId);
 

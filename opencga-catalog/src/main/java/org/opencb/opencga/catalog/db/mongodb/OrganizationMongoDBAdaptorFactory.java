@@ -13,6 +13,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
@@ -43,6 +44,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
     public static final String EVENT_COLLECTION = "event";
+    public static final String WORKFLOW_COLLECTION = "workflow";
 
     public static final String NOTE_ARCHIVE_COLLECTION = "note_archive";
     public static final String SAMPLE_ARCHIVE_COLLECTION = "sample_archive";
@@ -51,6 +53,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
     public static final String CLINICAL_ANALYSIS_ARCHIVE_COLLECTION = "clinical_archive";
     public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
+    public static final String WORKFLOW_ARCHIVE_COLLECTION = "workflow_archive";
 
     public static final String EVENT_ARCHIVE_COLLECTION = "event_archive";
 
@@ -67,6 +70,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String DELETED_PANEL_COLLECTION = "panel_deleted";
     public static final String DELETED_CLINICAL_ANALYSIS_COLLECTION = "clinical_deleted";
     public static final String DELETED_INTERPRETATION_COLLECTION = "interpretation_deleted";
+    public static final String DELETED_WORKFLOW_COLLECTION = "workflow_deleted";
 
     public static final String METADATA_COLLECTION = "metadata";
     public static final String MIGRATION_COLLECTION = "migration";
@@ -88,6 +92,7 @@ public class OrganizationMongoDBAdaptorFactory {
             CLINICAL_ANALYSIS_COLLECTION,
             INTERPRETATION_COLLECTION,
             EVENT_COLLECTION,
+            WORKFLOW_COLLECTION,
 
             NOTE_ARCHIVE_COLLECTION,
             SAMPLE_ARCHIVE_COLLECTION,
@@ -96,6 +101,7 @@ public class OrganizationMongoDBAdaptorFactory {
             PANEL_ARCHIVE_COLLECTION,
             CLINICAL_ANALYSIS_ARCHIVE_COLLECTION,
             INTERPRETATION_ARCHIVE_COLLECTION,
+            WORKFLOW_ARCHIVE_COLLECTION,
 
             DELETED_NOTE_COLLECTION,
             DELETED_USER_COLLECTION,
@@ -110,6 +116,7 @@ public class OrganizationMongoDBAdaptorFactory {
             DELETED_FAMILY_COLLECTION,
             DELETED_CLINICAL_ANALYSIS_COLLECTION,
             DELETED_INTERPRETATION_COLLECTION,
+            DELETED_WORKFLOW_COLLECTION,
 
             MIGRATION_COLLECTION,
             // FIXME metadata collection is unused
@@ -138,6 +145,7 @@ public class OrganizationMongoDBAdaptorFactory {
     private final ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private final InterpretationMongoDBAdaptor interpretationDBAdaptor;
     private final EventMongoDBAdaptor eventDBAdaptor;
+    private final WorkflowMongoDBAdaptor workflowDBAdaptor;
     private final AuditMongoDBAdaptor auditDBAdaptor;
 //    private final MetaMongoDBAdaptor metaDBAdaptor;
     private final MigrationMongoDBAdaptor migrationDBAdaptor;
@@ -150,7 +158,8 @@ public class OrganizationMongoDBAdaptorFactory {
 
     public OrganizationMongoDBAdaptorFactory(String organizationId, MongoDataStoreManager mongoDataStoreManager,
                                              MongoDBConfiguration mongoDBConfiguration, Configuration configuration,
-                                             IOManagerFactory ioManagerFactory) throws CatalogDBException {
+                                             CatalogIOManager catalogIOManager, IOManagerFactory ioManagerFactory)
+            throws CatalogDBException {
         logger = LoggerFactory.getLogger(OrganizationMongoDBAdaptorFactory.class);
         this.mongoManager = mongoDataStoreManager;
         this.organizationId = organizationId;
@@ -178,6 +187,7 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
         MongoDBCollection interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
         MongoDBCollection eventCollection = mongoDataStore.getCollection(EVENT_COLLECTION);
+        MongoDBCollection workflowCollection = mongoDataStore.getCollection(WORKFLOW_COLLECTION);
 
         MongoDBCollection notesArchivedCollection = mongoDataStore.getCollection(NOTE_ARCHIVE_COLLECTION);
         MongoDBCollection sampleArchivedCollection = mongoDataStore.getCollection(SAMPLE_ARCHIVE_COLLECTION);
@@ -186,6 +196,7 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection panelArchivedCollection = mongoDataStore.getCollection(PANEL_ARCHIVE_COLLECTION);
         MongoDBCollection clinicalArchivedCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_ARCHIVE_COLLECTION);
         MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
+        MongoDBCollection workflowArchivedCollection = mongoDataStore.getCollection(WORKFLOW_ARCHIVE_COLLECTION);
 
         MongoDBCollection eventArchiveCollection = mongoDataStore.getCollection(EVENT_ARCHIVE_COLLECTION);
 
@@ -202,6 +213,7 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection deletedFamilyCollection = mongoDataStore.getCollection(DELETED_FAMILY_COLLECTION);
         MongoDBCollection deletedClinicalCollection = mongoDataStore.getCollection(DELETED_CLINICAL_ANALYSIS_COLLECTION);
         MongoDBCollection deletedInterpretationCollection = mongoDataStore.getCollection(DELETED_INTERPRETATION_COLLECTION);
+        MongoDBCollection deletedWorkflowCollection = mongoDataStore.getCollection(DELETED_WORKFLOW_COLLECTION);
 
         MongoDBCollection auditCollection = mongoDataStore.getCollection(AUDIT_COLLECTION);
 
@@ -218,7 +230,7 @@ public class OrganizationMongoDBAdaptorFactory {
 
         sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, sampleArchivedCollection, deletedSampleCollection, configuration,
                 this);
-        studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, configuration, this);
+        studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, catalogIOManager, configuration, this);
         userDBAdaptor = new UserMongoDBAdaptor(userCollection, deletedUserCollection, configuration, this);
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, configuration, this);
         panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, panelArchivedCollection, deletedPanelCollection, configuration, this);
@@ -226,6 +238,8 @@ public class OrganizationMongoDBAdaptorFactory {
                 configuration, this);
         interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, interpretationArchivedCollection,
                 deletedInterpretationCollection, configuration, this);
+        workflowDBAdaptor = new WorkflowMongoDBAdaptor(workflowCollection, workflowArchivedCollection, deletedWorkflowCollection,
+                configuration, this);
 //        metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, configuration, this);
         migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, configuration, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, configuration);
@@ -251,6 +265,7 @@ public class OrganizationMongoDBAdaptorFactory {
         mongoDBCollectionMap.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
         mongoDBCollectionMap.put(INTERPRETATION_COLLECTION, interpretationCollection);
         mongoDBCollectionMap.put(EVENT_COLLECTION, eventCollection);
+        mongoDBCollectionMap.put(WORKFLOW_COLLECTION, workflowCollection);
 
         mongoDBCollectionMap.put(NOTE_ARCHIVE_COLLECTION, notesArchivedCollection);
         mongoDBCollectionMap.put(SAMPLE_ARCHIVE_COLLECTION, sampleArchivedCollection);
@@ -258,6 +273,7 @@ public class OrganizationMongoDBAdaptorFactory {
         mongoDBCollectionMap.put(FAMILY_ARCHIVE_COLLECTION, familyArchivedCollection);
         mongoDBCollectionMap.put(PANEL_ARCHIVE_COLLECTION, panelArchivedCollection);
         mongoDBCollectionMap.put(INTERPRETATION_ARCHIVE_COLLECTION, interpretationArchivedCollection);
+        mongoDBCollectionMap.put(WORKFLOW_ARCHIVE_COLLECTION, workflowArchivedCollection);
 
         mongoDBCollectionMap.put(DELETED_NOTE_COLLECTION, deletedNotesCollection);
         mongoDBCollectionMap.put(DELETED_USER_COLLECTION, deletedUserCollection);
@@ -271,6 +287,7 @@ public class OrganizationMongoDBAdaptorFactory {
         mongoDBCollectionMap.put(DELETED_FAMILY_COLLECTION, deletedFamilyCollection);
         mongoDBCollectionMap.put(DELETED_CLINICAL_ANALYSIS_COLLECTION, deletedClinicalCollection);
         mongoDBCollectionMap.put(DELETED_INTERPRETATION_COLLECTION, deletedInterpretationCollection);
+        mongoDBCollectionMap.put(DELETED_WORKFLOW_COLLECTION, deletedWorkflowCollection);
 
         mongoDBCollectionMap.put(AUDIT_COLLECTION, auditCollection);
     }
@@ -490,6 +507,10 @@ public class OrganizationMongoDBAdaptorFactory {
 
     public InterpretationMongoDBAdaptor getInterpretationDBAdaptor() {
         return interpretationDBAdaptor;
+    }
+
+    public WorkflowMongoDBAdaptor getWorkflowDBAdaptor() {
+        return workflowDBAdaptor;
     }
 
     public AuthorizationMongoDBAdaptor getAuthorizationDBAdaptor() {

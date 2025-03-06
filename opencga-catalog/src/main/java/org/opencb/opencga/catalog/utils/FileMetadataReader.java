@@ -181,7 +181,7 @@ public class FileMetadataReader {
                     try {
                         Map<String, Object> alignmentHeaderMap = JacksonUtils.getDefaultObjectMapper().readValue(
                                 JacksonUtils.getDefaultObjectMapper().writeValueAsString(alignmentHeader), Map.class);
-                        updateParams.setAttributes(file.getAttributes());
+                        updateParams.setAttributes(file.getAttributes() != null ? new HashMap<>(file.getAttributes()) : new HashMap<>());
                         updateParams.getAttributes().put("alignmentHeader", alignmentHeaderMap);
                     } catch (IOException e) {
                         throw new CatalogIOException("Could not parse SAMFileHeader to Map", e);

@@ -1,7 +1,9 @@
 package org.opencb.opencga.server.generator.openapi.common;
 
 import org.opencb.opencga.server.generator.openapi.models.Definition;
-import org.opencb.opencga.server.generator.openapi.models.Property;
+import org.opencb.opencga.server.generator.openapi.models.FieldDefinition;
+import org.opencb.opencga.server.generator.openapi.models.ListDefinition;
+import org.opencb.opencga.server.generator.openapi.models.MapDefinition;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -10,107 +12,212 @@ import java.util.*;
 
 public class SwaggerDefinitionGenerator {
 
-    public static Map<String, Definition> getDefinitions(List<Class<?>> classes) {
-        Map<String, Definition> definitions = new HashMap<>();
-        Set<Class<?>> processedClasses = new HashSet<>();
 
+    private final static Map<String, Definition> definitions = new HashMap<>();
+    private final static Set<String> processedFields = new HashSet<>();
+    public static Map<String, Definition> getDefinitions(List<Class<?>> classes) {
         for (Class<?> clazz : classes) {
-            if (!definitions.containsKey(clazz.getSimpleName())) {
-                definitions.put(clazz.getSimpleName(), generateDefinition(clazz, definitions, processedClasses));
+            if (!definitions.containsKey(clazz.getSimpleName()) && isOpencbBean(clazz)) {
+                definitions.put(clazz.getSimpleName(), generateDefinition(clazz));
             }
         }
-
         return definitions;
     }
 
-    private static Definition generateDefinition(Class<?> clazz, Map<String, Definition> definitions, Set<Class<?>> processedClasses) {
-        // Evitar procesar clases ya visitadas para prevenir recursión infinita
-        if (processedClasses.contains(clazz)) {
-            Definition refDefinition = new Definition();
-            refDefinition.setRef("#/definitions/" + clazz.getSimpleName());
-            return refDefinition; // Retornar una referencia
-        }
-
-        processedClasses.add(clazz); // Marcar la clase como procesada
+    private static Definition generateDefinition(Class<?> clazz) {
+        processedFields.add(clazz.getName());
         Definition definition = new Definition();
-        Map<String, Property> properties = new LinkedHashMap<>();
-
+        Map<String, FieldDefinition> properties = new LinkedHashMap<>();
         Field[] fields = clazz.getDeclaredFields();
+
         for (Field field : fields) {
-            String fieldName = field.getName();
-            Class<?> fieldType = field.getType();
-
             try {
-                // Detectar campos de tipo List
-                if (List.class.isAssignableFrom(fieldType)) {
-                    ParameterizedType listType = (ParameterizedType) field.getGenericType();
-                    Type listArgumentType = listType.getActualTypeArguments()[0];
-
-                    if (listArgumentType instanceof Class<?>) {
-                        // Caso: tipo simple dentro de la lista
-                        Class<?> listClass = (Class<?>) listArgumentType;
-
-                        if (!isPrimitiveOrWrapper(listClass) && !definitions.containsKey(listClass.getSimpleName())) {
-                            definitions.put(listClass.getSimpleName(), generateDefinition(listClass, definitions, processedClasses));
-                        }
-
-                        Property listProperty = new Property();
-                        listProperty.setType("array");
-                        listProperty.setItems(new Property("#/definitions/" + listClass.getSimpleName()));
-                        properties.put(fieldName, listProperty);
-
-                    } else if (listArgumentType instanceof ParameterizedType) {
-                        // Caso: tipo parametrizado dentro de la lista (ej., List<Map<String, Object>>)
-                        ParameterizedType parameterizedType = (ParameterizedType) listArgumentType;
-                        Type rawType = parameterizedType.getRawType();
-
-                        if (rawType instanceof Class<?>) {
-                            Class<?> rawClass = (Class<?>) rawType;
-
-                            Property listProperty = new Property();
-                            listProperty.setType("array");
-                            listProperty.setItems(new Property("#/definitions/" + rawClass.getSimpleName()));
-                            properties.put(fieldName, listProperty);
-                        }
-                    } else {
-                        System.err.println("Unsupported type argument for field: " + fieldName + " in class " + clazz.getSimpleName());
-                    }
-                }else if (Map.class.isAssignableFrom(fieldType)) {
-                    // Manejar campos de tipo Map como objetos
-                    Property mapProperty = new Property();
-                    mapProperty.setType("object");
-                    properties.put(fieldName, mapProperty);
-
-                } else if (!isPrimitiveOrWrapper(fieldType)) {
-                    // Manejar tipos complejos anidados
-                    if (!definitions.containsKey(fieldType.getSimpleName())) {
-                        definitions.put(fieldType.getSimpleName(), generateDefinition(fieldType, definitions, processedClasses));
-                    }
-
-                    Property complexProperty = new Property();
-                    complexProperty.setRef("#/definitions/" + fieldType.getSimpleName());
-                    properties.put(fieldName, complexProperty);
-
-                } else {
-                    // Manejar tipos primitivos y simples
-                    Property primitiveProperty = new Property();
-                    primitiveProperty.setType(mapJavaTypeToSwaggerType(fieldType));
-                    properties.put(fieldName, primitiveProperty);
+                FieldDefinition fieldDefinition;
+                if(isCollection(field.getType())){
+                    fieldDefinition = manageCollectionType(field);
+                }else{
+                    Class<?> fieldType = field.getType();
+                    fieldDefinition = manageField(fieldType);
                 }
+                properties.put(field.getName(), fieldDefinition);
             } catch (Exception e) {
-                // Manejar errores inesperados durante la reflexión
-                System.err.println("Error processing field: " + fieldName + " in class " + clazz.getName());
+                System.err.println("Error processing field: " + field.getType().getSimpleName() + " in class " + field.getType().getName());
                 e.printStackTrace();
             }
         }
 
         definition.setType("object");
         definition.setProperties(properties);
-        processedClasses.remove(clazz); // Eliminar la clase del conjunto procesado al terminar
         return definition;
     }
 
-    private static boolean isPrimitiveOrWrapper(Class<?> clazz) {
+    private static FieldDefinition manageField(Class<?> fieldType) {
+        try {
+            if (!isPrimitive(fieldType)) {
+                if (!definitions.containsKey(fieldType.getSimpleName()) && !processedFields.contains(fieldType.getName()) && isOpencbBean(fieldType)) {
+                    definitions.put(fieldType.getSimpleName(), generateDefinition(fieldType));
+                }
+                return manageComplexField(fieldType);
+            } else {
+                return managePrimitiveField(fieldType);
+            }
+        } catch (Exception e) {
+            // Manejar errores inesperados durante la reflexión
+            System.err.println("Error processing field: " + fieldType.getSimpleName() + " in class " + fieldType.getName());
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static boolean isOpencbBean(Class<?> fieldType) {
+        return fieldType.getName().contains("org.opencb") || fieldType.getName().contains("com.zettagenomics");
+    }
+
+    private static FieldDefinition managePrimitiveField(Class<?> fieldType) {
+        FieldDefinition primitiveProperty = new FieldDefinition();
+        if (fieldType.getName().startsWith("[L")) {
+            return manageArrayField(fieldType);
+        }
+        primitiveProperty.setType(mapJavaTypeToSwaggerType(fieldType));
+        return primitiveProperty;
+    }
+
+    private static FieldDefinition manageComplexField(Class<?> fieldType) {
+        FieldDefinition complexProperty = new FieldDefinition();
+
+        // Handle Java object arrays
+        if (fieldType.getName().startsWith("[L")) {
+            return manageArrayField(fieldType);
+        }
+
+        // Default behavior for non-array types
+        complexProperty.setType("object");
+        if(isOpencbBean(fieldType)){
+            complexProperty.set$ref("#/definitions/" + fieldType.getSimpleName());
+        }else{
+            complexProperty.setRef(fieldType.getSimpleName());
+        }
+        return complexProperty;
+    }
+
+    private static FieldDefinition manageArrayField(Class<?> fieldType) {
+        // Extract the class name without "[L" and ";"
+        String className = fieldType.getName().substring(2, fieldType.getName().length() - 1);
+        try {
+            Class<?> arrayElementType = Class.forName(className);
+
+            // Define it as an array in OpenAPI
+            ListDefinition arrayProperty = new ListDefinition();
+            arrayProperty.setType("array");
+            arrayProperty.setItems(manageField(arrayElementType));
+
+            return arrayProperty;
+        } catch (ClassNotFoundException e) {
+            System.err.println("Error resolving array type: " + className);
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    private static boolean isCollection(Class<?> fieldType) {
+        return List.class.isAssignableFrom(fieldType) || Map.class.isAssignableFrom(fieldType);
+    }
+
+    private static FieldDefinition manageCollectionType(Field field) {
+        Type genericType = field.getGenericType();
+        if (genericType instanceof ParameterizedType) {
+            ParameterizedType paramType = (ParameterizedType) genericType;
+            Type[] typeArguments = paramType.getActualTypeArguments();
+
+            if (List.class.isAssignableFrom(field.getType())) {
+                FieldDefinition listDefinition = new ListDefinition();
+                listDefinition.setType("array");
+                // Get the item type of the list
+                Type listItemType = typeArguments[0];
+                ((ListDefinition) listDefinition).setItems(manageGenericType(listItemType));
+                return listDefinition;
+
+            } else if (Map.class.isAssignableFrom(field.getType())) {
+                FieldDefinition mapDefinition = new MapDefinition();
+                mapDefinition.setType("array");
+                Type keyType = typeArguments[0];
+                Type valueType = typeArguments[1];
+                ((MapDefinition) mapDefinition).setKey(manageGenericType(keyType));
+                ((MapDefinition) mapDefinition).setValue(manageGenericType(valueType));
+                return mapDefinition;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Handles different types, including raw classes, generic types, and parameterized types.
+     * Prevents errors caused by trying to resolve generic placeholders like T, K, or V.
+     */
+    private static FieldDefinition manageGenericType(Type type) {
+        if (type instanceof Class<?>) {
+            // If it's a concrete class, process it normally
+            return manageField((Class<?>) type);
+        } else if (type instanceof ParameterizedType) {
+            // If it's another Map/List with generics, handle it recursively
+            return manageCollectionTypeForType(type);
+        } else if (type instanceof java.lang.reflect.TypeVariable) {
+            // If it's a generic placeholder like T, K, or V, assign a default type
+            FieldDefinition genericField = new FieldDefinition();
+            genericField.setType("UnknownType"); // Generic placeholder in OpenAPI
+            return genericField;
+        } else if (type instanceof java.lang.reflect.WildcardType) {
+            // Handle wildcard types like ? extends Number
+            FieldDefinition wildcardField = new FieldDefinition();
+            wildcardField.setType("WildcardType");
+            return wildcardField;
+        } else if (type instanceof java.lang.reflect.GenericArrayType) {
+            // Handle generic arrays like T[]
+            FieldDefinition arrayField = new ListDefinition();
+            arrayField.setType("array");
+            Type componentType = ((java.lang.reflect.GenericArrayType) type).getGenericComponentType();
+            ((ListDefinition) arrayField).setItems(manageGenericType(componentType));
+            return arrayField;
+        }
+        return null;
+    }
+
+    /**
+     * Handles parameterized types within collections (List<T>, Map<K, V>, etc.).
+     */
+    private static FieldDefinition manageCollectionTypeForType(Type type) {
+        if (type instanceof ParameterizedType) {
+            ParameterizedType paramType = (ParameterizedType) type;
+            Type rawType = paramType.getRawType();
+
+            if (rawType instanceof Class<?> && Map.class.isAssignableFrom((Class<?>) rawType)) {
+                // It's a Map inside another collection
+                Type keyType = paramType.getActualTypeArguments()[0];
+                Type valueType = paramType.getActualTypeArguments()[1];
+
+                FieldDefinition mapDefinition = new MapDefinition();
+                mapDefinition.setType("array");
+
+                ((MapDefinition) mapDefinition).setKey(manageGenericType(keyType));
+                ((MapDefinition) mapDefinition).setValue(manageGenericType(valueType));
+                return mapDefinition;
+
+            } else if (rawType instanceof Class<?> && List.class.isAssignableFrom((Class<?>) rawType)) {
+                // It's a List inside another List or Map
+                Type listItemType = paramType.getActualTypeArguments()[0];
+
+                FieldDefinition listDefinition = new ListDefinition();
+                listDefinition.setType("array");
+                ((ListDefinition) listDefinition).setItems(manageGenericType(listItemType));
+                return listDefinition;
+            }
+        }
+        return null;
+    }
+
+
+    public static boolean isPrimitive(Class<?> clazz) {
         return clazz.isPrimitive() || clazz == String.class ||
                 clazz == Integer.class || clazz == Long.class ||
                 clazz == Boolean.class || clazz == Double.class ||
@@ -118,7 +225,7 @@ public class SwaggerDefinitionGenerator {
                 clazz == Short.class || clazz == Character.class;
     }
 
-    private static String mapJavaTypeToSwaggerType(Class<?> clazz) {
+    public static String mapJavaTypeToSwaggerType(Class<?> clazz) {
         if (clazz == String.class) return "string";
         if (clazz == Integer.class || clazz == int.class) return "integer";
         if (clazz == Long.class || clazz == long.class) return "integer";

@@ -37,6 +37,7 @@ import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.models.workflow.WorkflowPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.annotation.Nullable;
@@ -232,6 +233,9 @@ public interface AuthorizationManager {
 
     void checkClinicalAnalysisPermission(String organizationId, long studyId, long analysisId, String userId,
                                          ClinicalAnalysisPermissions permission) throws CatalogException;
+
+    void checkWorkflowPermission(String organizationId, long studyUid, long workflowUid, String userId, WorkflowPermissions permission)
+            throws CatalogException;
 
     default List<Acl> getEffectivePermissions(String organizationId, long studyUid, String resourceId, Enums.Resource resource)
             throws CatalogException {

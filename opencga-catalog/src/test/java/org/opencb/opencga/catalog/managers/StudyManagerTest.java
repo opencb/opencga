@@ -50,8 +50,8 @@ public class StudyManagerTest extends AbstractManagerTest {
 
     @Test
     public void testDefaultVariableSets() throws Exception {
-        String fqn = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
-                null, null, null, new QueryOptions(), ownerToken).first().getFqn();
+        String fqn = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null, null, null, null,
+                INCLUDE_RESULT, ownerToken).first().getFqn();
 
         Study study = catalogManager.getStudyManager().get(fqn, null, ownerToken).first();
 
@@ -120,7 +120,7 @@ public class StudyManagerTest extends AbstractManagerTest {
     @Test
     public void internalVariableSetTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
-                null, null, null, new QueryOptions(), ownerToken).first();
+                null, null, null, INCLUDE_RESULT, ownerToken).first();
 
         Set<Variable> variables = new HashSet<>();
         variables.add(new Variable().setId("a").setType(Variable.VariableType.STRING));
@@ -147,8 +147,8 @@ public class StudyManagerTest extends AbstractManagerTest {
 
     @Test
     public void updateInternalRecessiveGene() throws CatalogException {
-        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
-                null, null, null, new QueryOptions(), ownerToken).first();
+        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null, null, null, null,
+                INCLUDE_RESULT, ownerToken).first();
         assertEquals(RecessiveGeneSummaryIndex.Status.NOT_INDEXED, study.getInternal().getIndex().getRecessiveGene().getStatus());
 
         String date = TimeUtils.getTime();
@@ -170,8 +170,8 @@ public class StudyManagerTest extends AbstractManagerTest {
 
     @Test
     public void updateClinicalConfiguration() throws CatalogException {
-        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
-                null, null, null, new QueryOptions(), ownerToken).first();
+        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null, null, null, null,
+                INCLUDE_RESULT, ownerToken).first();
         assertNotNull(study.getInternal().getConfiguration());
         assertNotNull(study.getInternal().getConfiguration().getClinical());
         assertFalse(study.getInternal().getConfiguration().getClinical().getPriorities().isEmpty());
@@ -266,7 +266,7 @@ public class StudyManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().createGroup(studyFqn, "@test2", Collections.singletonList("dummy"), ownerToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "@test2", new StudyAclParams("", "view_only"), ParamUtils.AclAction.ADD, ownerToken);
 
-        String dummyToken = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
+        String dummyToken = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).first().getToken();
         OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(), dummyToken);
         assertTrue(search.getNumResults() > 0);
     }

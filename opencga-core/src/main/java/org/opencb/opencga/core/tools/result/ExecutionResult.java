@@ -20,6 +20,7 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.tools.ToolDependency;
 
 import java.net.URI;
 import java.util.Date;
@@ -49,6 +50,9 @@ public class ExecutionResult {
             description = FieldConstants.EXECUTION_RESULT_STATUS)
     private Status status;
 
+    @DataField(id = "dependencies", description = FieldConstants.EXECUTION_RESULT_DEPENDENCIES)
+    private List<ToolDependency> dependencies;
+
     @DataField(id = "externalFiles", indexed = true,
             description = FieldConstants.EXECUTION_RESULT_EXTERNAL_FILES)
     private List<URI> externalFiles;
@@ -68,6 +72,7 @@ public class ExecutionResult {
     public ExecutionResult() {
         executor = new ExecutorInfo();
         status = Status.initStatus();
+        dependencies = new LinkedList<>();
         events = new LinkedList<>();
         externalFiles = new LinkedList<>();
         steps = new LinkedList<>();
@@ -81,6 +86,7 @@ public class ExecutionResult {
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
         sb.append(", status=").append(status);
+        sb.append(", dependencies=").append(dependencies);
         sb.append(", externalFiles=").append(externalFiles);
         sb.append(", steps=").append(steps);
         sb.append(", events=").append(events);
@@ -140,6 +146,15 @@ public class ExecutionResult {
 
     public ExecutionResult setEvents(List<Event> events) {
         this.events = events;
+        return this;
+    }
+
+    public List<ToolDependency> getDependencies() {
+        return dependencies;
+    }
+
+    public ExecutionResult setDependencies(List<ToolDependency> dependencies) {
+        this.dependencies = dependencies;
         return this;
     }
 

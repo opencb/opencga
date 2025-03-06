@@ -270,7 +270,12 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
      */
     public abstract OpenCGAResult<R> count(String studyId, Query query, String token) throws CatalogException;
 
-    public abstract OpenCGAResult delete(String studyStr, List<String> ids, QueryOptions options, String token) throws CatalogException;
+    public OpenCGAResult<R> delete(String studyStr, String id, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, Collections.singletonList(id), options, token);
+    }
+
+    public abstract OpenCGAResult<R> delete(String studyStr, List<String> ids, QueryOptions options, String token)
+            throws CatalogException;
 
     /**
      * Delete all entries matching the query.

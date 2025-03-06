@@ -117,4 +117,5 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     EventDBAdaptor getEventDBAdaptor(String organization) throws CatalogDBException;
 
+    WorkflowDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException;
 }

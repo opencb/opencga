@@ -67,25 +67,31 @@
 
 \item{jobTags}{Job tags.}
 
+\item{jobScheduledStartTime}{Time when the job is scheduled to start.}
+
+\item{jobPriority}{Priority of the job.}
+
+\item{jobDryRun}{Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.}
+
 \item{data}{Samtools parameters. Supported Samtools commands: sort, index, view, stats, flagstat, dict, faidx, depth, plot-bamstats.}
 }
 \description{
 This function implements the OpenCGA calls for managing Analysis - Alignment.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
-   runBwa \tab /{apiVersion}/analysis/alignment/bwa/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
-   runCoverageIndex \tab /{apiVersion}/analysis/alignment/coverage/index/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
-   coverageQcGeneCoverageStatsRun \tab /{apiVersion}/analysis/alignment/coverage/qc/geneCoverageStats/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
+   runBwa \tab /{apiVersion}/analysis/alignment/bwa/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runCoverageIndex \tab /{apiVersion}/analysis/alignment/coverage/index/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   coverageQcGeneCoverageStatsRun \tab /{apiVersion}/analysis/alignment/coverage/qc/geneCoverageStats/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    queryCoverage \tab /{apiVersion}/analysis/alignment/coverage/query \tab file\link{*}, study, region, gene, offset, onlyExons, range, windowSize, splitResults \cr
    ratioCoverage \tab /{apiVersion}/analysis/alignment/coverage/ratio \tab file1\link{*}, file2\link{*}, study, skipLog2, region, gene, offset, onlyExons, windowSize, splitResults \cr
    statsCoverage \tab /{apiVersion}/analysis/alignment/coverage/stats \tab file\link{*}, gene\link{*}, study, threshold \cr
-   runDeeptools \tab /{apiVersion}/analysis/alignment/deeptools/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
-   runFastqc \tab /{apiVersion}/analysis/alignment/fastqc/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
-   runIndex \tab /{apiVersion}/analysis/alignment/index/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
-   runPicard \tab /{apiVersion}/analysis/alignment/picard/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
-   runQc \tab /{apiVersion}/analysis/alignment/qc/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
+   runDeeptools \tab /{apiVersion}/analysis/alignment/deeptools/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runFastqc \tab /{apiVersion}/analysis/alignment/fastqc/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runIndex \tab /{apiVersion}/analysis/alignment/index/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runPicard \tab /{apiVersion}/analysis/alignment/picard/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runQc \tab /{apiVersion}/analysis/alignment/qc/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    query \tab /{apiVersion}/analysis/alignment/query \tab limit, skip, count, file\link{*}, study, region, gene, offset, onlyExons, minMappingQuality, maxNumMismatches, maxNumHits, properlyPaired, maxInsertSize, skipUnmapped, skipDuplicated, regionContained, forceMDField, binQualities, splitResults \cr
-   runSamtools \tab /{apiVersion}/analysis/alignment/samtools/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
+   runSamtools \tab /{apiVersion}/analysis/alignment/samtools/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
 }
 }
 \section{Endpoint /{apiVersion}/analysis/alignment/bwa/run}{
@@ -140,7 +146,7 @@ Picard is a set of command line tools (in Java) for manipulating high-throughput
 
 \section{Endpoint /{apiVersion}/analysis/alignment/qc/run}{
 
-Compute quality control (QC) metrics for a given alignment file (including samtools stats, samtools flag stats, FastQC and HS metrics).
+Compute quality control (QC) metrics for a given alignment file: samtools stats, samtools flag stats and FastQC metrics.
 }
 
 \section{Endpoint /{apiVersion}/analysis/alignment/query}{

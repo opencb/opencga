@@ -43,7 +43,7 @@ public class MongoBackupUtils {
     public static void dump(CatalogManager catalogManager, Path opencgaHome) throws CatalogDBException {
         StopWatch stopWatch = StopWatch.createStarted();
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(),
-                catalogManager.getIoManagerFactory())) {
+                catalogManager.getIoManagerFactory(), catalogManager.getCatalogIOManager())) {
             MongoClient mongoClient = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(dbAdaptorFactory.getOrganizationIds().get(0))
                     .getMongoDataStore().getMongoClient();
             MongoDatabase dumpDatabase = mongoClient.getDatabase("test_dump");
@@ -91,7 +91,7 @@ public class MongoBackupUtils {
     public static void restore(CatalogManager catalogManager, Path opencgaHome)
             throws Exception {
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(),
-                catalogManager.getIoManagerFactory())) {
+                catalogManager.getIoManagerFactory(), catalogManager.getCatalogIOManager())) {
             MongoClient mongoClient = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION)
                     .getMongoDataStore().getMongoClient();
 
@@ -147,7 +147,7 @@ public class MongoBackupUtils {
         logger.info("Restore opencga from source " + source + " for organizations " + organizationIds);
         StopWatch stopWatch = StopWatch.createStarted();
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(),
-                catalogManager.getIoManagerFactory())) {
+                catalogManager.getIoManagerFactory(), catalogManager.getCatalogIOManager())) {
 
             for (String existingOrganizationId : dbAdaptorFactory.getOrganizationIds()) {
                 // We need to completely remove databases that were not backed up so tests that attempt to create them again don't fail
