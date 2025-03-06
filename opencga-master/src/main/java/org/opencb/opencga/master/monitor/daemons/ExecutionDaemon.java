@@ -541,8 +541,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudyFqn(job.getStudy().getId());
         String organizationId = catalogFqn.getOrganizationId();
 
-        if (StringUtils.isEmpty(job.getTool().getId())) {
-            return abortJob(job, "Tool id '" + job.getTool().getId() + "' not found.");
+        String toolId = ToolFactory.getToolId(job.getType(), job.getTool());
+        if (StringUtils.isEmpty(toolId)) {
+            return abortJob(job, "Tool id '" + toolId + "' not found.");
         }
 
         if (killSignalSent(job)) {
@@ -564,10 +565,10 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
         Tool tool;
         try {
-            tool = new ToolFactory().getTool(job.getTool().getId(), packages);
+            tool = new ToolFactory().getTool(job.getType(), job.getTool(), packages);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            return abortJob(job, "Tool " + job.getTool().getId() + " not found", e);
+            return abortJob(job, "Tool " + toolId + " not found", e);
         }
 
         try {
@@ -577,7 +578,10 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         }
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
-        updateParams.setTool(new ToolInfo(tool.id(), tool.description(), tool.scope(), tool.type(), tool.resource()));
+        updateToolInfoInformation(job.getTool(), tool);
+        updateParams.setTool(job.getTool());
+//        updateParams.setTool(new ToolInfo(tool.id(), GitRepositoryState.getInstance().getBuildVersion(), tool.description(), tool.scope(),
+//                tool.type(), tool.resource()));
 
         if (tool.scope() == Tool.Scope.PROJECT) {
             String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR));
@@ -661,7 +665,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         try {
             String queue = getQueue(tool);
             logger.info("Queue job '{}' on queue '{}'", job.getId(), queue);
-            batchExecutor.execute(job.getId(), queue, authenticatedCommandLine, stdout, stderr);
+            batchExecutor.execute(job, queue, authenticatedCommandLine, stdout, stderr);
         } catch (Exception e) {
             return abortJob(job, "Error executing job.", e);
         }
@@ -670,6 +674,15 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         notifyStatusChange(job);
 
         return 1;
+    }
+
+    private void updateToolInfoInformation(ToolInfo toolInfo, Tool tool) {
+        if (StringUtils.isEmpty(toolInfo.getDescription())) {
+            toolInfo.setDescription(tool.description());
+        }
+        toolInfo.setScope(tool.scope());
+        toolInfo.setType(tool.type());
+        toolInfo.setResource(tool.resource());
     }
 
     private void checkIndexedSamplesQuota(Job job) throws CatalogException {
@@ -725,7 +738,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     protected void checkToolExecutionPermission(String organizationId, Job job) throws Exception {
-        Tool tool = new ToolFactory().getTool(job.getTool().getId(), packages);
+        Tool tool = new ToolFactory().getTool(job.getType(), job.getTool(), packages);
 
         AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
         String user = job.getUserId();
@@ -866,7 +879,8 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
     private File getValidDefaultOutDir(String organizationId, Job job) throws CatalogException {
         File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + organizationId + "/" + job.getUserId() + "/"
-                + TimeUtils.getDay() + "/" + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token)
+                        + TimeUtils.getDay() + "/" + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(),
+                        token)
                 .first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
@@ -897,7 +911,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     public static String buildCli(String internalCli, Job job) {
-        String toolId = job.getTool().getId();
+        String toolId = ToolFactory.getToolId(job.getType(), job.getTool());
         String internalCommand = TOOL_CLI_MAP.get(toolId);
         if (StringUtils.isEmpty(internalCommand) || job.isDryRun()) {
             ObjectMap params = new ObjectMap()

@@ -170,6 +170,29 @@ public class FileManagerTest extends AbstractManagerTest {
                 "data/test/folder/file.txt"), null, ownerToken).getNumResults());
     }
 
+    @Test
+    public void testCreateFileWithSemicolonInId() throws CatalogException {
+        StudyAclParams aclParams = new StudyAclParams("", "analyst");
+        catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId2, aclParams, ParamUtils.AclAction.ADD, ownerToken);
+        fileManager.create(studyFqn,
+                new FileCreateParams()
+                        .setType(File.Type.FILE)
+                        .setPath("data/test/folder/file::hello.txt")
+                        .setDescription("My description")
+                        .setContent("blabla"),
+                true, normalToken2);
+        OpenCGAResult<File> search = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/test/folder/file::hello.txt"), null, ownerToken);
+        assertEquals(1, search.getNumResults());
+        assertTrue(search.first().getId().contains("\\:\\:"));
+        assertEquals(1, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.ID.key(), search.first().getId()), null, ownerToken).getNumResults());
+
+        File file = fileManager.get(studyFqn, search.first().getId(), QueryOptions.empty(), ownerToken).first();
+        assertEquals(search.first().getUid(), file.getUid());
+
+        file = fileManager.get(studyFqn, search.first().getPath(), QueryOptions.empty(), ownerToken).first();
+        assertEquals(search.first().getUid(), file.getUid());
+    }
+
     URI getStudyURI() throws CatalogException {
         return catalogManager.getStudyManager().get(studyFqn,
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key()), ownerToken).first().getUri();
@@ -208,7 +231,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testLinkAnalystUser() throws CatalogException {
         catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, organizationId, 200000L, opencgaToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "analyst", new StudyAclParams("", "analyst"), ParamUtils.AclAction.SET, ownerToken);
-        String analystToken = catalogManager.getUserManager().login(organizationId, "analyst", TestParamConstants.PASSWORD).getToken();
+        String analystToken = catalogManager.getUserManager().login(organizationId, "analyst", TestParamConstants.PASSWORD).first().getToken();
 
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
         File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, analystToken).first();
@@ -220,7 +243,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testLinkUserWithNoWritePermissions() throws CatalogException {
         catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, organizationId, 200000L, opencgaToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "view_user", new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, ownerToken);
-        String analystToken = catalogManager.getUserManager().login(organizationId, "view_user", TestParamConstants.PASSWORD).getToken();
+        String analystToken = catalogManager.getUserManager().login(organizationId, "view_user", TestParamConstants.PASSWORD).first().getToken();
 
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
 
@@ -447,6 +470,26 @@ public class FileManagerTest extends AbstractManagerTest {
         actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.BasicUpdateAction.SET.name());
         fileManager.update(studyFqn, testFile1, updateParams, new QueryOptions(Constants.ACTIONS, actionMap), ownerToken);
         assertEquals(0, file.getRelatedFiles().size());
+    }
+
+    @Test
+    public void testLinkWithPathAsDirectoryOrFile() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        FileLinkParams linkParams = new FileLinkParams()
+                .setUri(vcfFile)
+                .setPath("data");
+        File file = fileManager.link(studyFqn, linkParams, true, ownerToken).first();
+        String path = "data/variant-test-file.vcf.gz";
+        assertEquals(path, file.getPath());
+        fileManager.getFileDBAdaptor(organizationId).update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(),
+                        FileStatus.PENDING_DELETE),
+                QueryOptions.empty());
+        fileManager.unlink(studyFqn, file.getPath(), ownerToken);
+        assertThrows(CatalogException.class, () -> fileManager.get(studyFqn, path, QueryOptions.empty(), ownerToken));
+
+        linkParams.setPath("data/variant-test-file.vcf.gz");
+        file = fileManager.link(studyFqn, linkParams, true, ownerToken).first();
+        assertEquals("data/variant-test-file.vcf.gz", file.getPath());
     }
 
     @Test
@@ -2445,6 +2488,19 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz")));
+
+        // We remove the file to start again
+        query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());
+        setToPendingDelete(studyFqn, query);
+        fileManager.delete(studyFqn, query, new QueryOptions(Constants.SKIP_TRASH, true), ownerToken);
+        assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), ownerToken).getNumResults());
+        Files.copy(sourcePath, copy);
+
+        // Try to register to the root path directory
+        result = fileManager.moveAndRegister(studyFqn, copy, null, "/", false, normalToken1);
+        assertEquals("variant-test-file.vcf.gz", result.first().getPath());
+        assertEquals(studyPath.resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
+        assertTrue(Files.exists(studyPath.resolve("variant-test-file.vcf.gz")));
 
         // We remove the file to start again
         query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());

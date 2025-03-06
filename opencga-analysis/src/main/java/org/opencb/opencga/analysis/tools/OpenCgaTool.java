@@ -24,10 +24,15 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.ProjectManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -36,13 +41,17 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.DataStore;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.ToolDependency;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
+import org.opencb.opencga.core.tools.result.ToolStep;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +63,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
@@ -246,6 +256,7 @@ public abstract class OpenCgaTool {
                 } else {
                     currentStep = null;
                     erm.setSteps(getSteps());
+                    erm.addDependencies(getDependencies());
                     run();
                 }
             } catch (ToolException e) {
@@ -265,6 +276,7 @@ public abstract class OpenCgaTool {
             }
             throw e;
         } finally {
+            close();
             // If the shutdown hook has been executed, the ExecutionResultManager is already closed
             if (!erm.isClosed()) {
                 result = close(exception);
@@ -300,6 +312,10 @@ public abstract class OpenCgaTool {
     }
 
     private void deleteScratchDirectory() throws ToolException {
+        if (NextFlowExecutor.ID.equals(getId())) {
+            privateLogger.info("Skip deleting scratch directory for tool '{}'.", getId());
+            return;
+        }
         try {
             FileUtils.deleteDirectory(scratchDir.toFile());
         } catch (IOException e) {
@@ -347,6 +363,12 @@ public abstract class OpenCgaTool {
     protected abstract void run() throws Exception;
 
     /**
+     * Method that may be overrided by subclasses to clean up resources.
+     */
+    protected void close() {
+    }
+
+    /**
      * Method to be called by the Runtime shutdownHook in case of an unexpected system shutdown.
      */
     protected void onShutdown() {
@@ -376,6 +398,45 @@ public abstract class OpenCgaTool {
         List<String> steps = new ArrayList<>();
         steps.add(getId());
         return steps;
+    }
+
+    protected List<ToolDependency> getDependencies() throws ToolException {
+        List<ToolDependency> dependencyList = new LinkedList<>();
+        dependencyList.add(new ToolDependency("opencga", GitRepositoryState.getInstance().getBuildVersion(),
+                GitRepositoryState.getInstance().getCommitId()));
+        ToolDependency cellbaseDependency = getCellbaseDependency();
+        if (cellbaseDependency != null) {
+            dependencyList.add(cellbaseDependency);
+        }
+        return dependencyList;
+    }
+
+    private ToolDependency getCellbaseDependency() throws ToolException {
+        String studyId = null;
+        String projectId = null;
+        if (StringUtils.isNotEmpty(params.getString(ParamConstants.PROJECT_PARAM))) {
+            projectId = params.getString(ParamConstants.PROJECT_PARAM);
+        } else if (StringUtils.isNotEmpty(params.getString(ParamConstants.STUDY_PARAM))) {
+            studyId = params.getString(ParamConstants.STUDY_PARAM);
+        } else {
+            return null;
+        }
+        try {
+            if (StringUtils.isNotEmpty(studyId)) {
+                Study study = catalogManager.getStudyManager().get(studyId, StudyManager.INCLUDE_STUDY_IDS, token).first();
+                CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudyFqn(study.getFqn());
+                projectId = catalogFqn.toProjectFqn();
+            }
+            Project project = catalogManager.getProjectManager().get(projectId, ProjectManager.INCLUDE_CELLBASE, token)
+                    .first();
+            if (project.getCellbase() != null) {
+                return new ToolDependency("cellbase:" + project.getCellbase().getDataRelease(), project.getCellbase().getVersion());
+            } else {
+                return null;
+            }
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
     }
 
     protected final String getCurrentStep() {
@@ -422,6 +483,10 @@ public abstract class OpenCgaTool {
 
     public final ObjectMap getParams() {
         return params;
+    }
+
+    public final String getExpiringToken() throws CatalogException {
+        return catalogManager.getUserManager().refreshToken(token).first().getToken();
     }
 
     private ToolParams findToolParams() throws ToolException {
@@ -488,6 +553,10 @@ public abstract class OpenCgaTool {
         }
     }
 
+    protected final void setManualSteps(List<ToolStep> steps) throws ToolException {
+        erm.setManualSteps(steps);
+    }
+
     protected final boolean checkStep(String stepId) throws ToolException {
         return erm.checkStep(stepId);
     }
@@ -516,13 +585,22 @@ public abstract class OpenCgaTool {
         erm.addAttribute(key, value);
     }
 
+    protected final void addDependencies(List<ToolDependency> dependencyList) throws ToolException {
+        erm.addDependencies(dependencyList);
+    }
+
+    protected final void addDependency(ToolDependency dependency) throws ToolException {
+        erm.addDependency(dependency);
+    }
+
     protected final void moveFile(String study, Path source, Path destiny, String catalogDirectoryPath, boolean isResource, String token)
             throws ToolException {
         File file;
         try {
             file = catalogManager.getFileManager().moveAndRegister(study, source, destiny, catalogDirectoryPath, isResource, token).first();
         } catch (Exception e) {
-            throw new ToolException("Error moving file from " + source + " to " + destiny, e);
+            throw new ToolException("Error moving file from " + source + " to {uri: " + destiny + ", path: " + catalogDirectoryPath + "}",
+                    e);
         }
         // Add only if move is successful
         addGeneratedFile(file);

@@ -28,164 +28,109 @@ import org.opencb.opencga.core.tools.result.ExecutionResult;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by jacobo on 11/09/14.
- */
-@DataClass(id = "Job", since = "1.0",
-        description = "Job data model hosts information about any job.")
+
+@DataClass(id = "Job", since = "1.0.0", description = "Job data model hosts information about any job.")
 public class Job extends PrivateStudyUid {
 
     public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
-    /**
-     * Job ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.
-     *
-     * @apiNote Required, Immutable, Unique
-     */
+
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
             description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
-    /**
-     * Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed.
-     *
-     * @apiNote Internal, Unique, Immutable
-     */
 
     @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
             description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
-    /**
-     * An string to describe the properties of the Job.
-     *
-     * @apiNote
-     */
-    @DataField(id = "description", defaultValue = "No description available",
-            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
+
+    @DataField(id = "description", defaultValue = "", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-    @DataField(id = "tool", indexed = true,
-            description = FieldConstants.JOB_TOOL)
+    @DataField(id = "type", indexed = true, description = FieldConstants.JOB_TYPE)
+    private JobType type;
+
+    @DataField(id = "tool", indexed = true, description = FieldConstants.JOB_TOOL)
     private ToolInfo tool;
 
-    @DataField(id = "userId", indexed = true,
-            description = FieldConstants.JOB_USER_ID)
+    @DataField(id = "study", indexed = true, description = FieldConstants.JOB_STUDY)
+    private JobStudyParam study;
+
+    @DataField(id = "userId", indexed = true, description = FieldConstants.JOB_USER_ID)
     private String userId;
 
-    @DataField(id = "commandLine", indexed = true,
-            description = FieldConstants.JOB_COMMAND_LINE)
+    @DataField(id = "commandLine", indexed = true, description = FieldConstants.JOB_COMMAND_LINE)
     private String commandLine;
 
-    @DataField(id = "params", indexed = true,
-            description = FieldConstants.JOB_PARAMS)
+    @DataField(id = "params", indexed = true, description = FieldConstants.JOB_PARAMS)
     private Map<String, Object> params;
-    /**
-     * String representing when the Cohort was created, this is automatically set by OpenCGA.
-     *
-     * @apiNote Internal
-     */
-    @DataField(id = "creationDate", indexed = true,
-            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
+
+    @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
-    /**
-     * String representing when was the last time the Cohort was modified, this is automatically set by OpenCGA.
-     *
-     * @apiNote Internal
-     */
-    @DataField(id = "modificationDate", indexed = true, since = "1.0",
-            description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
+
+    @DataField(id = "modificationDate", indexed = true, since = "1.0", description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
-
-    @DataField(id = "priority", indexed = true,
-            description = FieldConstants.JOB_PRIORITY_DESCRIPTION)
+    @DataField(id = "priority", indexed = true, description = FieldConstants.JOB_PRIORITY_DESCRIPTION)
     private Enums.Priority priority;
 
-    /**
-     * An object describing the internal information of the Sample. This is managed by OpenCGA.
-     *
-     * @apiNote Internal
-     */
-
-    @DataField(id = "release", indexed = true,
-            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
+    @DataField(id = "release", indexed = true, description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private JobInternal internal;
 
-    @DataField(id = "outDir", indexed = true,
-            description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
+    @DataField(id = "outDir", indexed = true, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private File outDir;
 
-    @DataField(id = "input", indexed = true,
-            description = FieldConstants.JOB_INPUT_DESCRIPTION)
-    private List<File> input;    // input files to this job
+    @DataField(id = "input", indexed = true, description = FieldConstants.JOB_INPUT_DESCRIPTION)
+    private List<File> input;
 
-    @DataField(id = "output", indexed = true,
-            description = FieldConstants.JOB_OUTPUT_DESCRIPTION)
-    private List<File> output;   // output files of this job
+    @DataField(id = "output", indexed = true, description = FieldConstants.JOB_OUTPUT_DESCRIPTION)
+    private List<File> output;
 
-    @DataField(id = "tags", indexed = true,
-            description = FieldConstants.JOB_TAGS_DESCRIPTION)
+    @DataField(id = "tags", indexed = true, description = FieldConstants.JOB_TAGS_DESCRIPTION)
     private List<String> tags;
 
-    @DataField(id = "dependsOn", indexed = true,
-            description = FieldConstants.JOB_DEPENDS_ON_DESCRIPTION)
+    @DataField(id = "dependsOn", indexed = true, description = FieldConstants.JOB_DEPENDS_ON_DESCRIPTION)
     private List<Job> dependsOn;
 
-    @DataField(id = FieldConstants.JOB_PARENT_ID, indexed = false, since = "3.2.0",
-            description = FieldConstants.JOB_PARENT_ID_DESCRIPTION)
+    @DataField(id = FieldConstants.JOB_PARENT_ID, indexed = true, since = "3.2.0", description = FieldConstants.JOB_PARENT_ID_DESCRIPTION)
     private String parentId;
 
-    @DataField(id = FieldConstants.JOB_SCHEDULED_START_TIME, indexed = false, since = "3.2.0",
+    @DataField(id = FieldConstants.JOB_SCHEDULED_START_TIME, since = "3.2.0",
             description = FieldConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION)
     private String scheduledStartTime;
 
     @DataField(id = ParamConstants.JOB_DRY_RUN, since = "3.2.0", description = ParamConstants.JOB_DRY_RUN_DESCRIPTION)
     private boolean dryRun;
 
-    @DataField(id = "execution", indexed = true,
-            description = FieldConstants.JOB_EXECUTION_DESCRIPTION)
+    @DataField(id = "execution", indexed = true, description = FieldConstants.JOB_EXECUTION_DESCRIPTION)
     private ExecutionResult execution;
 
-    @DataField(id = "stdout", indexed = true,
-            description = FieldConstants.JOB_STDOUT_DESCRIPTION)
+    @DataField(id = "stdout", indexed = true, description = FieldConstants.JOB_STDOUT_DESCRIPTION)
     private File stdout;
 
-    @DataField(id = "stderr", indexed = true,
-            description = FieldConstants.JOB_STDERR_DESCRIPTION)
+    @DataField(id = "stderr", indexed = true, description = FieldConstants.JOB_STDERR_DESCRIPTION)
     private File stderr;
 
-
-    @DataField(id = "visited", indexed = true,
-            description = FieldConstants.JOB_VISITED)
+    @DataField(id = "visited", indexed = true, description = FieldConstants.JOB_VISITED)
     private boolean visited;
-    /**
-     * An integer describing the current data release.
-     *
-     * @apiNote Internal
-     */
 
-    @DataField(id = "release", indexed = true,
-            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
+    @DataField(id = "release", indexed = true, description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
-    @DataField(id = "study", indexed = true,
-            description = FieldConstants.JOB_STUDY)
-    private JobStudyParam study;
-
-    @DataField(id = "attributes", indexed = true,
-            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
+    @DataField(id = "attributes", indexed = true, description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public Job() {
     }
 
-    public Job(String id, String uuid, String description, ToolInfo tool, String userId, String commandLine, Map<String, Object> params,
-               String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal, File outDir,
-               List<File> input, List<File> output, List<Job> dependsOn, String parentId, String scheduledStartTime, boolean dryRun,
-               List<String> tags, ExecutionResult execution, boolean visited, File stdout, File stderr, int release, JobStudyParam study,
-               Map<String, Object> attributes) {
+    public Job(String id, String uuid, String description, JobType type, ToolInfo tool, String userId, String commandLine,
+               Map<String, Object> params, String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal,
+               File outDir, List<File> input, List<File> output, List<Job> dependsOn, String parentId, String scheduledStartTime,
+               boolean dryRun, List<String> tags, ExecutionResult execution, boolean visited, File stdout, File stderr, int release,
+               JobStudyParam study, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
         this.tool = tool;
         this.description = description;
+        this.type = type;
         this.userId = userId;
         this.commandLine = commandLine;
         this.params = params;
@@ -216,6 +161,7 @@ public class Job extends PrivateStudyUid {
         sb.append("id='").append(id).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", type=").append(type);
         sb.append(", tool=").append(tool);
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", commandLine='").append(commandLine).append('\'');
@@ -282,6 +228,15 @@ public class Job extends PrivateStudyUid {
 
     public Job setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public JobType getType() {
+        return type;
+    }
+
+    public Job setType(JobType type) {
+        this.type = type;
         return this;
     }
 
