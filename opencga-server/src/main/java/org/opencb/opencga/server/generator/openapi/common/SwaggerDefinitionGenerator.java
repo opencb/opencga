@@ -31,6 +31,9 @@ public class SwaggerDefinitionGenerator {
         Field[] fields = clazz.getDeclaredFields();
 
         for (Field field : fields) {
+            if(field.getName().equals("serialVersionUID") || field.getName().contains("$")){
+                continue;
+            }
             try {
                 FieldDefinition fieldDefinition;
                 if(isCollection(field.getType())){
@@ -124,7 +127,7 @@ public class SwaggerDefinitionGenerator {
         return List.class.isAssignableFrom(fieldType) || Map.class.isAssignableFrom(fieldType);
     }
 
-    private static FieldDefinition manageCollectionType(Field field) {
+    public static FieldDefinition manageCollectionType(Field field) {
         Type genericType = field.getGenericType();
         if (genericType instanceof ParameterizedType) {
             ParameterizedType paramType = (ParameterizedType) genericType;
@@ -155,7 +158,7 @@ public class SwaggerDefinitionGenerator {
      * Handles different types, including raw classes, generic types, and parameterized types.
      * Prevents errors caused by trying to resolve generic placeholders like T, K, or V.
      */
-    private static FieldDefinition manageGenericType(Type type) {
+    public static FieldDefinition manageGenericType(Type type) {
         if (type instanceof Class<?>) {
             // If it's a concrete class, process it normally
             return manageField((Class<?>) type);

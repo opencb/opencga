@@ -8,6 +8,8 @@ import org.opencb.opencga.server.generator.openapi.models.*;
 import org.opencb.opencga.server.generator.openapi.common.SwaggerDefinitionGenerator;
 
 import javax.ws.rs.*;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 
 public class JsonOpenApiGenerator {
@@ -65,7 +67,7 @@ public class JsonOpenApiGenerator {
                     method.setDescription(apiOperation.notes());
                     method.setTags(Collections.singletonList(api.value()));
                     Map<String,Response> responses=new HashMap<>();
-                    responses.put("200",new Response().setDescription("Successful operation").setSchema(new Schema("#/definitions/"+apiOperation.response().getSimpleName())));
+                    responses.put("200",new Response().setDescription("Successful operation").setSchema(new Schema().set$ref("#/definitions/"+apiOperation.response().getSimpleName())));
                     if(!SwaggerDefinitionGenerator.isPrimitive(apiOperation.response())){
                         if(!beansDefinitions.contains((Class) apiOperation.response())  && SwaggerDefinitionGenerator.isOpencbBean((Class) apiOperation.response())){
                             beansDefinitions.add((Class) apiOperation.response());
@@ -155,10 +157,15 @@ public class JsonOpenApiGenerator {
                 parameter.setIn("body");
                 parameter.setDescription(StringUtils.isNotEmpty(apiParam.value()) ? apiParam.value() : "body");
                 parameter.setRequired(apiParam.required());
-                parameter.setType(methodParam.getType().getTypeName());
-                parameter.setSchema(new Schema("#/definitions/"+methodParam.getType().getSimpleName()));
-                if(!beansDefinitions.contains((Class) methodParam.getType())){
-                    beansDefinitions.add(methodParam.getType());
+                if("java.util.Map".equals(methodParam.getType().getTypeName())){
+                    parameter.setType("array");
+                    parameter.setSchema(getMapSchema(methodParam));
+                }else {
+                    parameter.setType(methodParam.getType().getTypeName());
+                    parameter.setSchema(new Schema().set$ref("#/definitions/" + methodParam.getType().getSimpleName()));
+                    if (!beansDefinitions.contains((Class) methodParam.getType())) {
+                        beansDefinitions.add(methodParam.getType());
+                    }
                 }
             }else {
                 // Procesar PathParam
@@ -198,6 +205,82 @@ public class JsonOpenApiGenerator {
         }
 
         return parameters;
+    }
+
+    public Schema getMapSchema(java.lang.reflect.Parameter methodParam) {
+        Schema schema = new Schema();
+        schema.setType("object");
+        Type paramType = methodParam.getParameterizedType();
+        if (paramType instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) paramType;
+            Type[] typeArguments = parameterizedType.getActualTypeArguments();
+
+            if (typeArguments.length == 2) {
+                Schema keySchema = getTypeSchema(typeArguments[0]);
+                Schema valueSchema = getTypeSchema(typeArguments[1]);
+
+                // En OpenAPI los mapas solo pueden tener claves tipo String
+                if (!"string".equals(keySchema.getType())) {
+                    throw new IllegalArgumentException("OpenAPI solo permite Map con claves de tipo String.");
+                }
+
+                schema.setAdditionalProperties(valueSchema);
+            }
+        } else {
+            // Si no es un tipo parametrizado, asumimos Map<String, Object>
+            Schema additionalPropertiesSchema = new Schema();
+            additionalPropertiesSchema.setType("object");
+            schema.setAdditionalProperties(additionalPropertiesSchema);
+        }
+
+        return schema;
+    }
+
+    private Schema getTypeSchema(Type type) {
+        Schema schema = new Schema();
+
+        if (type instanceof Class<?>) {
+            Class<?> clazz = (Class<?>) type;
+
+            if (String.class.equals(clazz)) {
+                schema.setType("string");
+            } else if (Integer.class.equals(clazz) || int.class.equals(clazz)) {
+                schema.setType("integer");
+                schema.setFormat("int32");
+            } else if (Long.class.equals(clazz) || long.class.equals(clazz)) {
+                schema.setType("integer");
+                schema.setFormat("int64");
+            } else if (Boolean.class.equals(clazz) || boolean.class.equals(clazz)) {
+                schema.setType("boolean");
+            } else if (Double.class.equals(clazz) || double.class.equals(clazz)) {
+                schema.setType("number");
+                schema.setFormat("double");
+            } else if (Float.class.equals(clazz) || float.class.equals(clazz)) {
+                schema.setType("number");
+                schema.setFormat("float");
+            } else if (clazz.isArray()) {
+                schema.setType("array");
+                schema.setItems(getTypeSchema(clazz.getComponentType()));
+            } else {
+                schema.setType("object");
+            }
+        } else {
+            schema.setType("object"); // Si es un tipo genérico desconocido, asumimos objeto
+        }
+
+        return schema;
+    }
+    private FieldDefinition getMapDefinition(java.lang.reflect.Parameter methodParam) {
+        FieldDefinition mapDefinition = new MapDefinition();
+        mapDefinition.setType("array");
+        ParameterizedType paramType = (ParameterizedType) methodParam.getParameterizedType();
+        Type[] typeArguments = paramType.getActualTypeArguments();
+        Type keyType = typeArguments[0];
+        Type valueType = typeArguments[1];
+        ((MapDefinition) mapDefinition).setKey(SwaggerDefinitionGenerator.manageGenericType(keyType));
+        ((MapDefinition) mapDefinition).setValue(SwaggerDefinitionGenerator.manageGenericType(valueType));
+        return mapDefinition;
+
     }
 
     private boolean isBody(java.lang.reflect.Parameter methodParameter) {
