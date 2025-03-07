@@ -29,7 +29,7 @@ public class EnterpriseResourceConfig extends ResourceConfig {
         logger = LoggerFactory.getLogger(EnterpriseResourceConfig.class);
 
         enterpriseApiClasses = new LinkedHashMap<>(26);
-        enterpriseApiClasses.put("federations", FederationWSServer.class);
+        enterpriseApiClasses.put("federations", EnterpriseFederationWSServer.class);
         enterpriseApiClasses.put("organizations", OrganizationWSServer.class);
         enterpriseApiClasses.put("users", EnterpriseUserWSServer.class);
         enterpriseApiClasses.put("projects", ProjectWSServer.class);

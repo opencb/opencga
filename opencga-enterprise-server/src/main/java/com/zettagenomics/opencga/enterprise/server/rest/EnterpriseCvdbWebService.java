@@ -1,5 +1,6 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
+import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
@@ -18,6 +19,7 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.tools.annotations.*;
+import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -34,7 +36,7 @@ import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 @Path("/{apiVersion}/analysis/cvdb")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "CVDB", position = 4, description = "Methods for working with CVDB (clinical variant database)")
-public class EnterpriseCvdbWebService extends EnterpriseOpenCGAWSServer {
+public class EnterpriseCvdbWebService extends OpenCGAWSServer {
 
     public static final AtomicReference<CvdbSolrEngine> cvdbEngineAtomicRef = new AtomicReference();
     public static final AtomicReference<ClinicalInterpretationManager> clinicalInterpretationManagerAtomicRef = new AtomicReference<>();
@@ -42,6 +44,7 @@ public class EnterpriseCvdbWebService extends EnterpriseOpenCGAWSServer {
     public EnterpriseCvdbWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                     @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
+        EnterpriseFactory.init(catalogManager, opencgaHome);
     }
 
     private CvdbSolrEngine getCvdbEngine() {

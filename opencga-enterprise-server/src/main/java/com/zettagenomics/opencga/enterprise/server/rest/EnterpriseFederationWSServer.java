@@ -11,6 +11,7 @@ import org.opencb.opencga.core.models.federation.FederationClientParams;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
+import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -22,11 +23,12 @@ import java.util.stream.Collectors;
 @Path("/{apiVersion}/federations")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Federations", description = "Methods for working with Federations")
-public class FederationWSServer extends EnterpriseOpenCGAWSServer {
+public class EnterpriseFederationWSServer extends OpenCGAWSServer {
 
-    public FederationWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                              @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public EnterpriseFederationWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                                        @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
+        EnterpriseFactory.init(catalogManager, opencgaHome);
     }
 
     @POST

@@ -3,33 +3,21 @@ package com.zettagenomics.opencga.enterprise.server.rest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseUserManager;
+import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
 import com.zettagenomics.opencga.enterprise.server.generator.EnterpriseApiCommonsImpl;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
-import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.io.IOManagerFactory;
-import org.opencb.opencga.catalog.managers.OrganizationManager;
-import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.organizations.Organization;
-import org.opencb.opencga.core.models.organizations.TokenConfiguration;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.generator.RestApiParser;
-import org.opencb.opencga.server.generator.commons.ApiCommonsImpl;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.openapi.JsonOpenApiGenerator;
 import org.opencb.opencga.server.generator.openapi.models.Swagger;
@@ -44,97 +32,16 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Path("/{apiVersion}/meta")
 @Produces("application/json")
 @Api(value = "Meta", description = "Meta RESTful Web Services API")
 public class EnterpriseMetaWSServer extends MetaWSServer {
 
-    private static final AtomicReference<String> opencgaTokenAtomicRef = new AtomicReference<>();
-    private static final AtomicReference<EnterpriseConfiguration> enterpriseConfigurationAtomicRef = new AtomicReference<>();
-    public static final AtomicReference<EnterpriseUserManager> enterpriseUserManagerAtomicRef = new AtomicReference<>();
-
     public EnterpriseMetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                   @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
-    }
-
-    private String getOpencgaToken() {
-        String opencgaToken = opencgaTokenAtomicRef.get();
-        if (opencgaToken == null) {
-            synchronized (opencgaTokenAtomicRef) {
-                try {
-                    OpenCGAResult<Organization> result;
-                    CatalogIOManager catalogIOManager = new CatalogIOManager(configuration);
-                    try (DBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory(),
-                            catalogIOManager)) {
-                        result = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(ParamConstants.ADMIN_ORGANIZATION)
-                                .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
-
-                        if (result.getNumResults() == 0) {
-                            throw new CatalogException("Organization '" + ParamConstants.ADMIN_ORGANIZATION + "' not found.");
-                        }
-                        Organization organization = result.first();
-                        if (organization.getConfiguration() == null
-                                || CollectionUtils.isEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
-                            throw new CatalogException("Missing authentication origin for '" + ParamConstants.ADMIN_ORGANIZATION
-                                    + "' organization.");
-                        }
-                        if (organization.getConfiguration().getToken() == null) {
-                            throw new CatalogException("Internal error: Missing required information to generate"
-                                    + " tokens.");
-                        }
-                        AuthenticationOrigin authOrigin = null;
-                        for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
-                            if (AuthenticationOrigin.AuthenticationType.OPENCGA.equals(authenticationOrigin.getType())
-                                    && CatalogAuthenticationManager.OPENCGA.equals(authenticationOrigin.getId())) {
-                                authOrigin = authenticationOrigin;
-                                break;
-                            }
-                        }
-                        if (authOrigin == null) {
-                            throw new CatalogException("Missing '" + CatalogAuthenticationManager.OPENCGA
-                                    + "'  authentication origin in '" + ParamConstants.ADMIN_ORGANIZATION
-                                    + "' organization.");
-                        }
-                        TokenConfiguration tokenConf = organization.getConfiguration().getToken();
-                        CatalogAuthenticationManager authManager = new CatalogAuthenticationManager(dbAdaptorFactory,
-                                null, tokenConf.getAlgorithm(), tokenConf.getSecretKey(), tokenConf.getExpiration());
-                        opencgaToken = authManager.createNonExpiringToken(ParamConstants.ADMIN_ORGANIZATION,
-                                ParamConstants.OPENCGA_USER_ID, null);
-                    }
-                } catch (CatalogException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
-        }
-        return opencgaToken;
-    }
-
-    private EnterpriseConfiguration getEnterpriseConfiguration() {
-        EnterpriseConfiguration enterpriseConfiguration = enterpriseConfigurationAtomicRef.get();
-        if (enterpriseConfiguration == null) {
-            synchronized (enterpriseConfigurationAtomicRef) {
-                enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
-            }
-        }
-        return enterpriseConfiguration;
-    }
-
-    private EnterpriseUserManager getEnterpriseUserManager() {
-        EnterpriseUserManager enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
-        if (enterpriseUserManager == null) {
-            synchronized (enterpriseUserManagerAtomicRef) {
-                enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
-                if (enterpriseUserManager == null) {
-                    enterpriseUserManager = new EnterpriseUserManager(catalogManager, getEnterpriseConfiguration(),
-                            getOpencgaToken());
-                    enterpriseUserManagerAtomicRef.set(enterpriseUserManager);
-                }
-            }
-        }
-        return enterpriseUserManager;
+        EnterpriseFactory.init(catalogManager, opencgaHome);
     }
 
     @Override
@@ -212,7 +119,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             queryParams.append("jsessionid").append("=").append(httpServletRequest.getSession().getId());
 
             AttributePrincipal principal = (AttributePrincipal) httpServletRequest.getUserPrincipal();
-            String token = getEnterpriseUserManager().ssoLogin(principal);
+            String token = EnterpriseFactory.getEnterpriseUserManager().ssoLogin(principal);
             // Add user and token
             queryParams.append("&").append("token").append("=").append(token);
             queryParams.append("&").append("user").append("=").append(principal.getName());
@@ -233,7 +140,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             @ApiParam(value = "Callback URL") @QueryParam("url") String service,
             @ApiParam(value = "Successfully logout from CAS service", hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout
     ) {
-        EnterpriseConfiguration enterpriseConfiguration = getEnterpriseConfiguration();
+        EnterpriseConfiguration enterpriseConfiguration = EnterpriseFactory.getEnterpriseConfiguration();
         if (enterpriseConfiguration.getSso() == null || !enterpriseConfiguration.getSso().isActive()) {
             return createErrorResponse(new CatalogException("SSO is not enabled."));
         }
