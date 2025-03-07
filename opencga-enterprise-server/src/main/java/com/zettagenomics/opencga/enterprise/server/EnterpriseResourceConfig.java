@@ -1,10 +1,6 @@
 package com.zettagenomics.opencga.enterprise.server;
 
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseClinicalWebService;
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseCvdbWebService;
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseMetaWSServer;
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseUserWSServer;
-import com.zettagenomics.opencga.enterprise.server.rest.FederationWebService;
+import com.zettagenomics.opencga.enterprise.server.rest.*;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
@@ -33,13 +29,14 @@ public class EnterpriseResourceConfig extends ResourceConfig {
         logger = LoggerFactory.getLogger(EnterpriseResourceConfig.class);
 
         enterpriseApiClasses = new LinkedHashMap<>(26);
-        enterpriseApiClasses.put("federations", FederationWebService.class);
+        enterpriseApiClasses.put("federations", FederationWSServer.class);
         enterpriseApiClasses.put("organizations", OrganizationWSServer.class);
         enterpriseApiClasses.put("users", EnterpriseUserWSServer.class);
         enterpriseApiClasses.put("projects", ProjectWSServer.class);
         enterpriseApiClasses.put("studies", StudyWSServer.class);
         enterpriseApiClasses.put("files", FileWSServer.class);
         enterpriseApiClasses.put("jobs", JobWSServer.class);
+        enterpriseApiClasses.put("workflows", WorkflowWSServer.class);
         enterpriseApiClasses.put("samples", SampleWSServer.class);
         enterpriseApiClasses.put("individuals", IndividualWSServer.class);
         enterpriseApiClasses.put("families", FamilyWSServer.class);

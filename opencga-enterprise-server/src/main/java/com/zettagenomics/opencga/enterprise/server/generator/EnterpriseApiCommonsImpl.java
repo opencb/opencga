@@ -2,8 +2,11 @@ package com.zettagenomics.opencga.enterprise.server.generator;
 
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseClinicalWebService;
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseCvdbWebService;
+
+import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseMetaWSServer;
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseUserWSServer;
-import com.zettagenomics.opencga.enterprise.server.rest.FederationWebService;
+import com.zettagenomics.opencga.enterprise.server.rest.FederationWSServer;
+
 import org.opencb.opencga.server.generator.commons.ApiCommons;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
@@ -23,6 +26,7 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
 
     public List<Class<?>> getApiClasses() {
         List<Class<?>> classes = new ArrayList();
+        classes.add(FederationWSServer.class);
         classes.add(OrganizationWSServer.class);
         classes.add(UserWSServer.class);
         classes.add(EnterpriseUserWSServer.class);
@@ -30,6 +34,7 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
         classes.add(StudyWSServer.class);
         classes.add(FileWSServer.class);
         classes.add(JobWSServer.class);
+        classes.add(WorkflowWSServer.class);
         classes.add(SampleWSServer.class);
         classes.add(IndividualWSServer.class);
         classes.add(FamilyWSServer.class);
@@ -40,11 +45,11 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
         classes.add(ClinicalWebService.class);
         classes.add(EnterpriseClinicalWebService.class);
         classes.add(VariantOperationWebService.class);
-        classes.add(MetaWSServer.class);
+        classes.add(EnterpriseMetaWSServer.class);
         classes.add(Ga4ghWSServer.class);
         classes.add(AdminWSServer.class);
         classes.add(EnterpriseCvdbWebService.class);
-        classes.add(FederationWebService.class);
+        classes.add(FederationWSServer.class);
 
         return classes;
     }
